@@ -1,5 +1,9 @@
 [workspace]
 
 members = [
-    "types"
+    "types",
+    "config",
+    "network",
+    "consensus",
+    "node"
 ]

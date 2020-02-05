@@ -1,0 +1,20 @@
+[package]
+name = "starcoin-node"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+structopt = "0.3.2"
+actix = "0.9"
+actix_derive = "0.5"
+actix-rt = "1.0"
+tokio = { version = "0.2", features = ["full"] }
+
+config = {path = "../config", package="starcoin-config"}
+consensus = {path = "../consensus", package="starcoin-consensus"}
+network = {path = "../network", package="starcoin-network"}
