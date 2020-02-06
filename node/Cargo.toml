@@ -18,3 +18,4 @@ tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}
 consensus = {path = "../consensus", package="starcoin-consensus"}
 network = {path = "../network", package="starcoin-network"}
+txnpool = {path = "../txnpool", package="starcoin-txnpool"}
