@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod network;
-pub use network::Network;
+pub use network::NetworkActor;
 
 #[cfg(test)]
 mod tests {

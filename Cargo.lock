@@ -2394,6 +2394,7 @@ name = "starcoin-consensus"
 version = "0.1.0"
 dependencies = [
  "actix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-config 0.1.0",
  "starcoin-network 0.1.0",
 ]

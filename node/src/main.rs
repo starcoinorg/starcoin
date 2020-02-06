@@ -3,8 +3,8 @@
 
 use actix::prelude::*;
 use config::NodeConfig;
-use consensus::Consensus;
-use network::Network;
+use consensus::ConsensusActor;
+use network::NetworkActor;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -24,8 +24,8 @@ async fn main() {
     let args = Args::from_args();
 
     let config = NodeConfig::load_or_default(args.config.as_ref().map(PathBuf::as_path));
-    let network = Network::start(&config).unwrap();
-    let _consensus = Consensus::new(&config, network).start();
+    let network = NetworkActor::launch(&config).unwrap();
+    let _consensus = ConsensusActor::launch(&config, network);
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();
     println!("Ctrl-C received, shutting down");

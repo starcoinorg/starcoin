@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod consensus;
-pub use consensus::Consensus;
+pub use consensus::ConsensusActor;
 
 #[cfg(test)]
 mod tests {

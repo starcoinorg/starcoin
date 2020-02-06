@@ -10,7 +10,7 @@ use libp2p::{
     PeerId, Swarm,
 };
 
-pub struct Network {
+pub struct NetworkActor {
     network_config: NetworkConfig,
     //just for test, remove later.
     counter: u64,
@@ -24,8 +24,8 @@ pub struct GetCounterMessage {}
 #[rtype(result = "()")]
 pub struct StopMessage {}
 
-impl Network {
-    pub fn start(node_config: &NodeConfig) -> Result<Addr<Network>> {
+impl NetworkActor {
+    pub fn launch(node_config: &NodeConfig) -> Result<Addr<NetworkActor>> {
         //TODO read from config
         let id_keys = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(id_keys.public());
@@ -39,32 +39,37 @@ impl Network {
         let network_config = node_config.network.clone();
 
         Swarm::listen_on(&mut swarm, (&network_config).listen_address.clone())?;
-        Ok(Network::create(move |ctx: &mut Context<Network>| {
-            ctx.add_stream(swarm);
-            Network {
-                network_config,
-                counter: 0,
-            }
-        }))
+        Ok(NetworkActor::create(
+            move |ctx: &mut Context<NetworkActor>| {
+                ctx.add_stream(swarm);
+                NetworkActor {
+                    network_config,
+                    counter: 0,
+                }
+            },
+        ))
     }
 }
 
-impl Actor for Network {
+impl Actor for NetworkActor {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("Network actor started with config: {:?}", self.network_config);
+        println!(
+            "Network actor started with config: {:?}",
+            self.network_config
+        );
     }
 }
 
-impl StreamHandler<PingEvent> for Network {
+impl StreamHandler<PingEvent> for NetworkActor {
     fn handle(&mut self, item: PingEvent, _ctx: &mut Self::Context) {
         println!("receive event {:?}", item);
         self.counter += 1;
     }
 }
 
-impl Handler<GetCounterMessage> for Network {
+impl Handler<GetCounterMessage> for NetworkActor {
     type Result = u64;
 
     fn handle(&mut self, _msg: GetCounterMessage, _ctx: &mut Self::Context) -> Self::Result {
@@ -73,7 +78,7 @@ impl Handler<GetCounterMessage> for Network {
     }
 }
 
-impl Handler<StopMessage> for Network {
+impl Handler<StopMessage> for NetworkActor {
     type Result = ();
 
     fn handle(&mut self, _msg: StopMessage, ctx: &mut Self::Context) -> Self::Result {
@@ -90,7 +95,7 @@ mod tests {
     #[actix_rt::test]
     async fn test_network() {
         let node_config = NodeConfig::default();
-        let network = Network::start(&node_config).unwrap();
+        let network = NetworkActor::launch(&node_config).unwrap();
 
         let id_keys = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(id_keys.public());
