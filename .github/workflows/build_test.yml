@@ -1,0 +1,75 @@
+name: Build and Test
+on:
+  push:
+    # only build master
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+jobs:
+  check-fmt:
+    name: check fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt,clippy
+      - name: run fmt check
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+  build-all:
+    name: build project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: setup environment
+        run: bash ./scripts/dev_setup.sh
+      - name: build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all -j 4
+  test:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: dev setup
+        run: bash ./scripts/dev_setup.sh
+      - name: build testbin
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-targets --no-run -j 4
+      - name: test
+        env:
+          RUST_LOG: debug
+          RUST_BACKTRACE: full
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-targets -- --nocapture
