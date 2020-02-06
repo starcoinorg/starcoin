@@ -1510,7 +1510,7 @@ dependencies = [
 [[package]]
 name = "libra-canonical-serialization"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra#3193ec4b7afff05e9476fd923f331f18fb7f3050"
+source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
 dependencies = [
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2403,8 +2403,12 @@ name = "starcoin-network"
 version = "0.1.0"
 dependencies = [
  "actix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix-rt 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "libp2p 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-config 0.1.0",
+ "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2425,7 +2429,7 @@ dependencies = [
 name = "starcoin-types"
 version = "0.1.0"
 dependencies = [
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra)",
+ "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
 ]
 
 [[package]]
@@ -3161,7 +3165,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum libp2p-wasm-ext 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0b4d457adb91a5e2212343218a554394cd8ced64a79fb8e36e7aed2a16d49495"
 "checksum libp2p-websocket 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bba425f2af1fdb7dece88b9ae05ca9430dfb0b72b2c078e73ded6f1556084509"
 "checksum libp2p-yamux 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0ca25b3aac78a3c93c2a567622abd3cfc16f96f26ae1bf6134f0056203d62d86"
-"checksum libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra)" = "<none>"
+"checksum libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)" = "<none>"
 "checksum libsecp256k1 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "df6edf84fd62aad1c93932b39324eaeda3912c1d26bc18dfaee6293848e49a50"
 "checksum libz-sys 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)" = "2eb5e43362e38e2bca2fd5f5134c4d4564a23a5c28e9b95411652021a8675ebe"
 "checksum linked-hash-map 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ae91b68aebc4ddb91978b11a1b02ddd8602a05ec19002801c5666000e05e0f83"

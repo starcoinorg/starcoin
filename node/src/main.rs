@@ -24,7 +24,7 @@ async fn main() {
     let args = Args::from_args();
 
     let config = NodeConfig::load_or_default(args.config.as_ref().map(PathBuf::as_path));
-    let network = Network::new(&config).start();
+    let network = Network::start(&config).unwrap();
     let _consensus = Consensus::new(&config, network).start();
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();

@@ -4,7 +4,7 @@
 use libp2p::multiaddr::Multiaddr;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct NetworkConfig {
     // The address that this node is listening on for new connections.
