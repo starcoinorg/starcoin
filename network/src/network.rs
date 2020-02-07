@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::{BroadcastTransactionMessage, GetCounterMessage, StopMessage};
 use actix::prelude::*;
 use anyhow::Result;
 use config::{NetworkConfig, NodeConfig};
@@ -15,14 +16,6 @@ pub struct NetworkActor {
     //just for test, remove later.
     counter: u64,
 }
-
-#[derive(Message)]
-#[rtype(result = "u64")]
-pub struct GetCounterMessage {}
-
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct StopMessage {}
 
 impl NetworkActor {
     pub fn launch(node_config: &NodeConfig) -> Result<Addr<NetworkActor>> {
@@ -84,6 +77,19 @@ impl Handler<StopMessage> for NetworkActor {
     fn handle(&mut self, _msg: StopMessage, ctx: &mut Self::Context) -> Self::Result {
         println!("Stop network actor.");
         ctx.stop()
+    }
+}
+
+impl Handler<BroadcastTransactionMessage> for NetworkActor {
+    type Result = ();
+
+    fn handle(
+        &mut self,
+        msg: BroadcastTransactionMessage,
+        _ctx: &mut Self::Context,
+    ) -> Self::Result {
+        //TODO
+        println!("Broadcast transaction {:?}", msg.transaction);
     }
 }
 

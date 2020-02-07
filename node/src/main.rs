@@ -7,7 +7,7 @@ use consensus::ConsensusActor;
 use network::NetworkActor;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use txnpool::TxnPoolActor;
+use txpool::TxPoolActor;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Starcoin Node")]
@@ -26,8 +26,8 @@ async fn main() {
 
     let config = NodeConfig::load_or_default(args.config.as_ref().map(PathBuf::as_path));
     let network = NetworkActor::launch(&config).unwrap();
-    let _consensus = ConsensusActor::launch(&config, network);
-    let _txn_pool = TxnPoolActor::launch(&config);
+    let _consensus = ConsensusActor::launch(&config, network.clone());
+    let _txn_pool = TxPoolActor::launch(&config, network);
 
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();

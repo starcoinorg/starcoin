@@ -2615,6 +2615,17 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "starcoin-bus"
+version = "0.1.0"
+dependencies = [
+ "actix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix-rt 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "starcoin-config"
 version = "0.1.0"
 dependencies = [
@@ -2645,6 +2656,7 @@ dependencies = [
  "futures 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "libp2p 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-config 0.1.0",
+ "starcoin-types 0.1.0",
  "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2658,19 +2670,20 @@ dependencies = [
  "starcoin-config 0.1.0",
  "starcoin-consensus 0.1.0",
  "starcoin-network 0.1.0",
- "starcoin-txnpool 0.1.0",
+ "starcoin-txpool 0.1.0",
  "structopt 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "starcoin-txnpool"
+name = "starcoin-txpool"
 version = "0.1.0"
 dependencies = [
  "actix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-rt 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-config 0.1.0",
+ "starcoin-network 0.1.0",
  "starcoin-types 0.1.0",
 ]
 
@@ -2678,6 +2691,7 @@ dependencies = [
 name = "starcoin-types"
 version = "0.1.0"
 dependencies = [
+ "actix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "bech32 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
