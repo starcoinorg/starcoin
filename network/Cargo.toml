@@ -16,3 +16,4 @@ actix = "0.9"
 actix-rt = "1.0"
 tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}
+types = {path = "../types", package="starcoin-types"}

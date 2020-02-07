@@ -3,8 +3,9 @@
 members = [
     "types",
     "config",
+    "bus",
     "network",
     "consensus",
-    "txnpool",
+    "txpool",
     "node"
 ]

@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-txnpool"
+name = "starcoin-txpool"
 version = "0.1.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
@@ -14,3 +14,4 @@ actix-rt = "1.0"
 
 types = { package = "starcoin-types", path = "../types"}
 config = {path = "../config", package="starcoin-config"}
+network = {path = "../network", package="starcoin-network"}
