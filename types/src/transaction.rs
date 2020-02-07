@@ -3,6 +3,7 @@
 
 use crate::account_address::AccountAddress;
 
+use actix::prelude::Message;
 use libra_crypto::{
     ed25519::*,
     hash::{CryptoHash, CryptoHasher},
@@ -10,6 +11,7 @@ use libra_crypto::{
 };
 use libra_crypto_derive::CryptoHasher;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// RawTransaction is the portion of a transaction that a client signs
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
@@ -71,7 +73,8 @@ pub enum TransactionPayload {
     Mock,
 }
 
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, CryptoHasher)]
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, CryptoHasher, Message)]
+#[rtype(result = "()")]
 pub struct SignedTransaction {
     /// The raw transaction
     raw_txn: RawTransaction,
@@ -95,5 +98,20 @@ impl SignedTransaction {
             public_key,
             signature,
         }
+    }
+}
+
+impl fmt::Debug for SignedTransaction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "SignedTransaction {{ \n \
+             {{ raw_txn: {:#?}, \n \
+             public_key: {:#?}, \n \
+             signature: {:#?}, \n \
+             }} \n \
+             }}",
+            self.raw_txn, self.public_key, self.signature,
+        )
     }
 }
