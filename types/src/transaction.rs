@@ -60,7 +60,7 @@ impl CryptoHash for RawTransaction {
     fn hash(&self) -> HashValue {
         let mut state = Self::Hasher::default();
         state.write(
-            lcs::to_bytes(self)
+            scs::to_bytes(self)
                 .expect("Failed to serialize RawTransaction")
                 .as_slice(),
         );

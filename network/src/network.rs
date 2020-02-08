@@ -134,7 +134,7 @@ mod tests {
         let remote = node_config.network.advertised_address;
         Swarm::dial_addr(&mut swarm, remote.clone()).unwrap();
         println!("Dialed {}", remote);
-        delay_for(Duration::from_millis(100)).await;
+        delay_for(Duration::from_millis(200)).await;
         let count = network.send(GetCounterMessage {}).await.unwrap();
         assert_eq!(count, 2);
     }

@@ -68,7 +68,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures::TryFutureExt;
     use tokio::time::{delay_for, Duration};
 
     #[derive(Debug, Message, Clone)]

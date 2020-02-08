@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "commons/scs",
     "types",
     "config",
     "bus",
