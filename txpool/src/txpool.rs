@@ -1,35 +1,23 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{TxPoolStatus, TxPoolStatusCode};
-use actix::prelude::*;
-use network::{BroadcastTransactionMessage, NetworkActor};
+use anyhow::Result;
 use types::transaction::SignedTransaction;
 
 pub struct TxPool {
     //TODO
-    transactions: Vec<SignedTransaction>,
-    network: Addr<NetworkActor>,
+    txs: Vec<SignedTransaction>,
 }
 
 impl TxPool {
-    pub fn new(network: Addr<NetworkActor>) -> Self {
-        Self {
-            transactions: vec![],
-            network,
-        }
-    }
-    pub fn add_transaction(&mut self, transaction: SignedTransaction) -> TxPoolStatus {
-        //TODO check transaction is exist, only broadcast no exist transaction.
-        self.transactions.push(transaction.clone());
-        self.broadcast_transaction(transaction);
-        TxPoolStatus {
-            code: TxPoolStatusCode::Valid,
-        }
+    pub fn new() -> Self {
+        Self { txs: vec![] }
     }
 
-    fn broadcast_transaction(&self, transaction: SignedTransaction) {
-        self.network
-            .do_send(BroadcastTransactionMessage { transaction })
+    /// Add tx to pool and return it is a new transaction.
+    pub fn add_tx(&mut self, tx: SignedTransaction) -> Result<bool> {
+        //TODO check transaction is exist, only broadcast no exist transaction.
+        self.txs.push(tx.clone());
+        return Ok(true);
     }
 }

@@ -17,6 +17,7 @@ hex = { version = "0.3.2", default-features = false }
 rand = "0.6.5"
 serde = { version = "1.0", features = ["derive"] }
 actix = "0.9"
+actix-rt = "1.0"
 lcs = { package="libra-canonical-serialization", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050"}
 libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
 libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }

@@ -14,5 +14,5 @@ pub struct StopMessage {}
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct BroadcastTransactionMessage {
-    pub transaction: SignedTransaction,
+    pub tx: SignedTransaction,
 }

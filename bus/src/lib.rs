@@ -13,7 +13,7 @@ where
     M: Message + Send + Clone,
     M::Result: Send,
 {
-    recipient: Recipient<M>,
+    pub recipient: Recipient<M>,
 }
 
 #[derive(Debug, Message)]
@@ -23,7 +23,7 @@ where
     M: Message + Send + Clone,
     M::Result: Send,
 {
-    message: M,
+    pub message: M,
 }
 
 pub struct BusActor {
@@ -38,7 +38,7 @@ impl BusActor {
 }
 
 impl Actor for BusActor {
-    type Context = Context<BusActor>;
+    type Context = Context<Self>;
 }
 
 impl<M: 'static> Handler<Subscription<M>> for BusActor
@@ -68,6 +68,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::TryFutureExt;
     use tokio::time::{delay_for, Duration};
 
     #[derive(Debug, Message, Clone)]
@@ -78,8 +79,13 @@ mod tests {
     #[rtype(result = "u64")]
     struct GetCounterMessage {}
 
+    #[derive(Debug, Message, Clone)]
+    #[rtype(result = "()")]
+    struct DoBroadcast {}
+
     struct MyActor {
         counter: u64,
+        bus: Addr<BusActor>,
     }
 
     impl Actor for MyActor {
@@ -89,7 +95,7 @@ mod tests {
     impl Handler<MyMessage> for MyActor {
         type Result = ();
 
-        fn handle(&mut self, msg: MyMessage, _ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, msg: MyMessage, _ctx: &mut Self::Context) {
             println!("handle msg: {:?}", msg);
             self.counter += 1;
         }
@@ -103,10 +109,28 @@ mod tests {
         }
     }
 
+    impl Handler<DoBroadcast> for MyActor {
+        type Result = ();
+
+        fn handle(&mut self, _msg: DoBroadcast, ctx: &mut Self::Context) {
+            self.bus
+                .send(Broadcast {
+                    message: MyMessage {},
+                })
+                .into_actor(self)
+                //need convert act to static ActorFuture and call wait.
+                .then(|_result, act, _ctx| async {}.into_actor(act))
+                .wait(ctx);
+        }
+    }
+
     #[actix_rt::test]
     async fn test_bus_actor() {
         let bus_actor = BusActor::launch();
-        let actor = MyActor { counter: 0 };
+        let actor = MyActor {
+            counter: 0,
+            bus: bus_actor.clone(),
+        };
         let addr = actor.start();
         let recipient = addr.clone().recipient::<MyMessage>();
 
@@ -117,6 +141,23 @@ mod tests {
             })
             .await
             .unwrap();
+        delay_for(Duration::from_millis(100)).await;
+        let counter = addr.send(GetCounterMessage {}).await.unwrap();
+        assert_eq!(counter, 1);
+    }
+
+    #[actix_rt::test]
+    async fn test_bus_actor_send_message_in_handle() {
+        let bus_actor = BusActor::launch();
+        let actor = MyActor {
+            counter: 0,
+            bus: bus_actor.clone(),
+        };
+        let addr = actor.start();
+        let recipient = addr.clone().recipient::<MyMessage>();
+
+        bus_actor.send(Subscription { recipient }).await.unwrap();
+        addr.send(DoBroadcast {}).await.unwrap();
         delay_for(Duration::from_millis(100)).await;
         let counter = addr.send(GetCounterMessage {}).await.unwrap();
         assert_eq!(counter, 1);

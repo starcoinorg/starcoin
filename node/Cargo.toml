@@ -16,6 +16,7 @@ actix-rt = "1.0"
 tokio = { version = "0.2", features = ["full"] }
 
 config = {path = "../config", package="starcoin-config"}
+bus = {path = "../bus", package="starcoin-bus"}
 consensus = {path = "../consensus", package="starcoin-consensus"}
 network = {path = "../network", package="starcoin-network"}
 txpool = {path = "../txpool", package="starcoin-txpool"}

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::prelude::*;
+use bus::BusActor;
 use config::NodeConfig;
 use consensus::ConsensusActor;
 use network::NetworkActor;
@@ -25,9 +26,10 @@ async fn main() {
     let args = Args::from_args();
 
     let config = NodeConfig::load_or_default(args.config.as_ref().map(PathBuf::as_path));
-    let network = NetworkActor::launch(&config).unwrap();
+    let bus = BusActor::launch();
+    let network = NetworkActor::launch(&config, bus.clone()).unwrap();
     let _consensus = ConsensusActor::launch(&config, network.clone());
-    let _txn_pool = TxPoolActor::launch(&config, network);
+    let _txn_pool = TxPoolActor::launch(&config, bus, network);
 
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();

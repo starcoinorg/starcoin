@@ -4,21 +4,24 @@
 use crate::{BroadcastTransactionMessage, GetCounterMessage, StopMessage};
 use actix::prelude::*;
 use anyhow::Result;
+use bus::{Broadcast, BusActor};
 use config::{NetworkConfig, NodeConfig};
 use libp2p::{
     identity,
     ping::{Ping, PingConfig, PingEvent},
     PeerId, Swarm,
 };
+use types::transaction::SignedTransaction;
 
 pub struct NetworkActor {
     network_config: NetworkConfig,
+    bus: Addr<BusActor>,
     //just for test, remove later.
     counter: u64,
 }
 
 impl NetworkActor {
-    pub fn launch(node_config: &NodeConfig) -> Result<Addr<NetworkActor>> {
+    pub fn launch(node_config: &NodeConfig, bus: Addr<BusActor>) -> Result<Addr<NetworkActor>> {
         //TODO read from config
         let id_keys = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(id_keys.public());
@@ -37,6 +40,7 @@ impl NetworkActor {
                 ctx.add_stream(swarm);
                 NetworkActor {
                     network_config,
+                    bus,
                     counter: 0,
                 }
             },
@@ -80,6 +84,7 @@ impl Handler<StopMessage> for NetworkActor {
     }
 }
 
+/// Broadcast transaction to other peer.
 impl Handler<BroadcastTransactionMessage> for NetworkActor {
     type Result = ();
 
@@ -89,7 +94,20 @@ impl Handler<BroadcastTransactionMessage> for NetworkActor {
         _ctx: &mut Self::Context,
     ) -> Self::Result {
         //TODO
-        println!("Broadcast transaction {:?}", msg.transaction);
+        println!("Broadcast transaction {:?}", msg.tx);
+    }
+}
+
+/// Handler for receive broadcast from other peer.
+impl Handler<SignedTransaction> for NetworkActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: SignedTransaction, ctx: &mut Self::Context) {
+        self.bus
+            .send(Broadcast { message: msg })
+            .into_actor(self)
+            .then(|_result, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
     }
 }
 
@@ -101,7 +119,8 @@ mod tests {
     #[actix_rt::test]
     async fn test_network() {
         let node_config = NodeConfig::default();
-        let network = NetworkActor::launch(&node_config).unwrap();
+        let bus = BusActor::launch();
+        let network = NetworkActor::launch(&node_config, bus).unwrap();
 
         let id_keys = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(id_keys.public());
