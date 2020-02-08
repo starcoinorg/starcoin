@@ -5,8 +5,11 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 mod network_config;
+mod rpc_config;
 
 pub use network_config::NetworkConfig;
+pub use rpc_config::RpcConfig;
+
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -16,6 +19,8 @@ use std::path::Path;
 pub struct NodeConfig {
     #[serde(default)]
     pub network: NetworkConfig,
+    #[serde(default)]
+    pub rpc: RpcConfig,
 }
 
 impl NodeConfig {

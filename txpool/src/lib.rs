@@ -13,34 +13,43 @@ mod txpool;
 
 pub struct TxPoolActor {
     pool: TxPool,
+    bus: Addr<BusActor>,
     network: Addr<NetworkActor>,
 }
 
 impl TxPoolActor {
-    pub async fn launch(
+    pub fn launch(
         _node_config: &NodeConfig,
         bus: Addr<BusActor>,
         network: Addr<NetworkActor>,
-    ) -> Result<Addr<TxPoolActor>> {
-        let addr = TxPoolActor {
+    ) -> Result<Addr<Self>> {
+        let actor_ref = Self {
             pool: TxPool::new(),
+            bus,
             network,
         }
         .start();
-        let recipient = addr.clone().recipient::<SignedTransaction>();
-        bus.send(Subscription { recipient }).await?;
-        Ok(addr)
+        Ok(actor_ref)
     }
 }
 
 impl Actor for TxPoolActor {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let recipient = ctx.address().recipient::<SignedTransaction>();
+        self.bus
+            .send(Subscription { recipient })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+    }
 }
 
 #[derive(Clone, Message)]
 #[rtype(result = "Result<bool>")]
 pub struct SubmitTransactionMessage {
-    tx: SignedTransaction,
+    pub tx: SignedTransaction,
 }
 
 impl Handler<SubmitTransactionMessage> for TxPoolActor {

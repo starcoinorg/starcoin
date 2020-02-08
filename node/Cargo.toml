@@ -20,3 +20,4 @@ bus = {path = "../bus", package="starcoin-bus"}
 consensus = {path = "../consensus", package="starcoin-consensus"}
 network = {path = "../network", package="starcoin-network"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
+json-rpc = {path = "../rpc/json-rpc", package="starcoin-json-rpc"}

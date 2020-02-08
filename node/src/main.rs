@@ -5,6 +5,7 @@ use actix::prelude::*;
 use bus::BusActor;
 use config::NodeConfig;
 use consensus::ConsensusActor;
+use json_rpc::JSONRpcActor;
 use network::NetworkActor;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -29,8 +30,8 @@ async fn main() {
     let bus = BusActor::launch();
     let network = NetworkActor::launch(&config, bus.clone()).unwrap();
     let _consensus = ConsensusActor::launch(&config, network.clone());
-    let _txn_pool = TxPoolActor::launch(&config, bus, network);
-
+    let txpool_actor_ref = TxPoolActor::launch(&config, bus, network).unwrap();
+    let _json_rpc = JSONRpcActor::launch(&config, txpool_actor_ref);
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();
     println!("Ctrl-C received, shutting down");

@@ -8,5 +8,6 @@ members = [
     "network",
     "consensus",
     "txpool",
+    "rpc/json-rpc",
     "node"
 ]

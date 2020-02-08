@@ -15,8 +15,8 @@ pub struct NetworkConfig {
 impl Default for NetworkConfig {
     fn default() -> Self {
         Self {
-            listen_address: "/ip4/0.0.0.0/tcp/6180".parse::<Multiaddr>().unwrap(),
-            advertised_address: "/ip4/127.0.0.1/tcp/6180".parse::<Multiaddr>().unwrap(),
+            listen_address: "/ip4/0.0.0.0/tcp/9840".parse::<Multiaddr>().unwrap(),
+            advertised_address: "/ip4/127.0.0.1/tcp/9840".parse::<Multiaddr>().unwrap(),
         }
     }
 }
