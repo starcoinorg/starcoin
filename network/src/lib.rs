@@ -3,6 +3,9 @@
 
 mod messages;
 mod network;
+mod node_discovery;
+mod peer;
+mod peer_manager;
 
 pub use messages::*;
 pub use network::NetworkActor;
