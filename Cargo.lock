@@ -2935,6 +2935,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-state-view"
+version = "0.1.0"
+dependencies = [
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-types 0.1.0",
+]
+
+[[package]]
 name = "starcoin-txpool"
 version = "0.1.0"
 dependencies = [

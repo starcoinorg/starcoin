@@ -1,12 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod access_path;
 pub mod account_address;
 pub mod block;
+pub mod proof;
+pub mod storage_root;
 pub mod transaction;
-
-/// Type for block number.
-pub type BlockNumber = u64;
+pub mod with_proof;
 
 #[cfg(test)]
 mod tests {

@@ -3,9 +3,11 @@
 
 use crate::account_address::AccountAddress;
 use crate::transaction::SignedTransaction;
-use crate::BlockNumber;
 use libra_crypto::HashValue;
 use serde::{Deserialize, Serialize};
+
+/// Type for block number.
+pub type BlockNumber = u64;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Header {

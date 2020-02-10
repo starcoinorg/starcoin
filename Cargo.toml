@@ -4,6 +4,7 @@ members = [
     "commons/scs",
     "types",
     "config",
+    "core/state-view",
     "bus",
     "network",
     "consensus",

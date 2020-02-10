@@ -13,6 +13,8 @@ use libra_crypto_derive::CryptoHasher;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+pub type Version = u64;
+
 /// RawTransaction is the portion of a transaction that a client signs
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
 pub struct RawTransaction {
