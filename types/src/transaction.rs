@@ -101,6 +101,42 @@ impl SignedTransaction {
             signature,
         }
     }
+
+    pub fn raw_txn(&self) -> &RawTransaction {
+        &self.raw_txn
+    }
+
+    pub fn public_key(&self) -> Ed25519PublicKey {
+        self.public_key.clone()
+    }
+
+    pub fn signature(&self) -> Ed25519Signature {
+        self.signature.clone()
+    }
+
+    pub fn sender(&self) -> AccountAddress {
+        self.raw_txn.sender
+    }
+
+    pub fn into_raw_transaction(self) -> RawTransaction {
+        self.raw_txn
+    }
+
+    pub fn sequence_number(&self) -> u64 {
+        self.raw_txn.sequence_number
+    }
+
+    pub fn payload(&self) -> &TransactionPayload {
+        &self.raw_txn.payload
+    }
+
+    pub fn max_gas_amount(&self) -> u64 {
+        self.raw_txn.max_gas_amount
+    }
+
+    pub fn gas_unit_price(&self) -> u64 {
+        self.raw_txn.gas_unit_price
+    }
 }
 
 impl fmt::Debug for SignedTransaction {
@@ -115,5 +151,74 @@ impl fmt::Debug for SignedTransaction {
              }}",
             self.raw_txn, self.public_key, self.signature,
         )
+    }
+}
+
+//TODO define code.
+type StatusCode = u64;
+
+pub struct TransactionInfo {
+    /// The hash of this transaction.
+    pub transaction_hash: HashValue,
+
+    /// The root hash of Sparse Merkle Tree describing the world state at the end of this
+    /// transaction.
+    pub state_root_hash: HashValue,
+
+    /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
+    pub event_root_hash: HashValue,
+
+    /// The amount of gas used.
+    gas_used: u64,
+
+    /// The major status. This will provide the general error class. Note that this is not
+    /// particularly high fidelity in the presence of sub statuses but, the major status does
+    /// determine whether or not the transaction is applied to the global state or not.
+    major_status: StatusCode,
+}
+
+impl TransactionInfo {
+    /// Constructs a new `TransactionInfo` object using transaction hash, state root hash and event
+    /// root hash.
+    pub fn new(
+        transaction_hash: HashValue,
+        state_root_hash: HashValue,
+        event_root_hash: HashValue,
+        gas_used: u64,
+        major_status: StatusCode,
+    ) -> TransactionInfo {
+        TransactionInfo {
+            transaction_hash,
+            state_root_hash,
+            event_root_hash,
+            gas_used,
+            major_status,
+        }
+    }
+
+    /// Returns the hash of this transaction.
+    pub fn transaction_hash(&self) -> HashValue {
+        self.transaction_hash
+    }
+
+    /// Returns root hash of Sparse Merkle Tree describing the world state at the end of this
+    /// transaction.
+    pub fn state_root_hash(&self) -> HashValue {
+        self.state_root_hash
+    }
+
+    /// Returns the root hash of Merkle Accumulator storing all events emitted during this
+    /// transaction.
+    pub fn event_root_hash(&self) -> HashValue {
+        self.event_root_hash
+    }
+
+    /// Returns the amount of gas used by this transaction.
+    pub fn gas_used(&self) -> u64 {
+        self.gas_used
+    }
+
+    pub fn major_status(&self) -> StatusCode {
+        self.major_status
     }
 }

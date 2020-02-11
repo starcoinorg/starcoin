@@ -2853,6 +2853,13 @@ dependencies = [
 [[package]]
 name = "starcoin-chain"
 version = "0.1.0"
+dependencies = [
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
+ "libra-crypto-derive 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
+ "starcoin-state-view 0.1.0",
+ "starcoin-types 0.1.0",
+]
 
 [[package]]
 name = "starcoin-config"
