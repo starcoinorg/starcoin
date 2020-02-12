@@ -114,4 +114,7 @@ impl Block {
     pub fn transactions(&self) -> &[SignedUserTransaction] {
         self.transactions.as_slice()
     }
+    pub fn into_inner(self) -> (BlockHeader, Vec<SignedUserTransaction>) {
+        (self.header, self.transactions)
+    }
 }

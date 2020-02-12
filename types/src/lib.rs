@@ -12,6 +12,7 @@ pub mod contract_event;
 pub mod language_storage;
 pub mod proof;
 pub mod storage_root;
+pub mod system_events;
 pub mod transaction;
 pub mod vm_error;
 pub mod with_proof;
