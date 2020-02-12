@@ -1,15 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::executor::Executor;
-use crate::repository::{DefaultRepository, Repository};
 use anyhow::Result;
+use config::VMConfig;
+use executor::TransactionExecutor;
 use libra_crypto::hash::CryptoHash;
 use libra_crypto::HashValue;
-use state_view::StateView;
+use state_store::StateStore;
+use std::marker::PhantomData;
 use types::{
     block::{Block, BlockHeader, BlockNumber},
-    transaction::TransactionInfo,
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
 pub struct Accumulator {}
@@ -22,7 +23,6 @@ impl Accumulator {
 
 struct Branch {
     block_header: BlockHeader,
-    repo: DefaultRepository,
 }
 
 impl Branch {
@@ -33,20 +33,23 @@ impl Branch {
     pub fn block_header(&self) -> &BlockHeader {
         &self.block_header
     }
-
-    pub fn repo(&self) -> &dyn Repository {
-        &self.repo
-    }
 }
 
-struct Chain {
-    executor: Executor,
+struct Chain<E>
+where
+    E: TransactionExecutor,
+{
+    config: VMConfig,
     accumulator: Accumulator,
     head: Branch,
     branches: Vec<Branch>,
+    phantom: PhantomData<E>,
 }
 
-impl Chain {
+impl<E> Chain<E>
+where
+    E: TransactionExecutor,
+{
     pub fn get_block_by_hash(&self, hash: HashValue) -> Block {
         unimplemented!()
     }
@@ -55,21 +58,46 @@ impl Chain {
         unimplemented!()
     }
 
-    pub fn try_connect(&mut self, block: &Block) -> Result<()> {
+    pub fn state_at(&self, root: HashValue) -> Box<dyn StateStore> {
+        unimplemented!()
+    }
+
+    //TODO define connect result.
+    pub fn try_connect(&mut self, block: Block) -> Result<()> {
         let branch = self.find_or_fork(block.header());
 
-        let repo = branch.repo();
-        for tx in block.transactions() {
-            let output = self.executor.execute_transaction(repo, tx)?;
-            let state_root = repo.commit(output.write_set())?;
-            let tx_hash = tx.raw_txn().hash();
-            let transaction_info =
-                TransactionInfo::new(tx_hash, state_root, HashValue::zero(), 0, 0);
+        let store = self.state_at(branch.block_header.state_root());
+        let (header, user_txns) = block.clone().into_inner();
+        let mut txns = user_txns
+            .iter()
+            .cloned()
+            .map(|user_txn| Transaction::UserTransaction(user_txn))
+            .collect::<Vec<Transaction>>();
+        let block_metadata = header.into_metadata();
+        txns.push(Transaction::BlockMetadata(block_metadata));
+        for txn in txns {
+            let txn_hash = txn.hash();
+            let output = E::execute_transaction(&self.config, store.as_ref(), txn)?;
+            match output.status() {
+                TransactionStatus::Discard(status) => return Err(status.clone().into()),
+                TransactionStatus::Keep(status) => {
+                    //continue.
+                }
+            }
+            let state_root = store.commit()?;
+            let transaction_info = TransactionInfo::new(
+                txn_hash,
+                state_root,
+                HashValue::zero(),
+                0,
+                output.status().vm_status().major_status,
+            );
             let accumulator_root = self.accumulator.append(transaction_info);
         }
+
         //todo verify state_root and accumulator_root;
         self.save_block(block);
-        repo.flush();
+        store.flush();
         self.select_head();
         todo!()
     }
@@ -79,7 +107,7 @@ impl Chain {
         todo!()
     }
 
-    fn save_block(&self, block: &Block) {
+    fn save_block(&self, block: Block) {
         todo!()
     }
 }

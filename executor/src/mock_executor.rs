@@ -14,16 +14,18 @@ pub struct MockExecutor;
 
 impl TransactionExecutor for MockExecutor {
     fn execute_transaction(
-        txn: Transaction,
+        config: &VMConfig,
         state_store: &dyn StateStore,
+        txn: Transaction,
     ) -> Result<TransactionOutput> {
         unimplemented!()
     }
 
     fn validate_transaction(
-        txn: SignedUserTransaction,
+        config: &VMConfig,
         state_store: &dyn StateStore,
-    ) -> Result<VMStatus, Error> {
+        txn: SignedUserTransaction,
+    ) -> Result<VMStatus> {
         unimplemented!()
     }
 }

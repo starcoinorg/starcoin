@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
-mod executor;
-mod repository;
 
 pub struct ChainActor {}
 
