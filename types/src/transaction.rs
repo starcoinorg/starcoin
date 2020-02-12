@@ -3,6 +3,8 @@
 
 use crate::account_address::AccountAddress;
 
+use crate::contract_event::ContractEvent;
+use crate::write_set::WriteSet;
 use actix::prelude::Message;
 use libra_crypto::{
     ed25519::*,
@@ -220,5 +222,56 @@ impl TransactionInfo {
 
     pub fn major_status(&self) -> StatusCode {
         self.major_status
+    }
+}
+
+//TODO define TransactionStatus
+type TransactionStatus = u64;
+
+/// The output of executing a transaction.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TransactionOutput {
+    /// The list of writes this transaction intends to do.
+    write_set: WriteSet,
+
+    /// The list of events emitted during this transaction.
+    events: Vec<ContractEvent>,
+
+    /// The amount of gas used during execution.
+    gas_used: u64,
+
+    /// The execution status.
+    status: TransactionStatus,
+}
+
+impl TransactionOutput {
+    pub fn new(
+        write_set: WriteSet,
+        events: Vec<ContractEvent>,
+        gas_used: u64,
+        status: TransactionStatus,
+    ) -> Self {
+        TransactionOutput {
+            write_set,
+            events,
+            gas_used,
+            status,
+        }
+    }
+
+    pub fn write_set(&self) -> &WriteSet {
+        &self.write_set
+    }
+
+    pub fn events(&self) -> &[ContractEvent] {
+        &self.events
+    }
+
+    pub fn gas_used(&self) -> u64 {
+        self.gas_used
+    }
+
+    pub fn status(&self) -> &TransactionStatus {
+        &self.status
     }
 }

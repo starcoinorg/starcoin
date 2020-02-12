@@ -6,6 +6,7 @@ pub mod account_address;
 pub mod account_state;
 pub mod block;
 pub mod change_set;
+pub mod contract_event;
 pub mod language;
 pub mod proof;
 pub mod storage_root;

@@ -11,6 +11,6 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 types = {path = "../types", package="starcoin-types"}
-state-viwe = {path = "../core/state-view", package="starcoin-state-view"}
+state-view = {path = "../core/state-view", package="starcoin-state-view"}
 libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
 libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
