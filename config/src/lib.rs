@@ -6,9 +6,11 @@ use serde::{Deserialize, Serialize};
 
 mod network_config;
 mod rpc_config;
+mod vm_config;
 
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
+pub use vm_config::VMConfig;
 
 use std::fs::File;
 use std::io::Read;
@@ -21,6 +23,8 @@ pub struct NodeConfig {
     pub network: NetworkConfig,
     #[serde(default)]
     pub rpc: RpcConfig,
+    #[serde(default)]
+    pub vm: VMConfig,
 }
 
 impl NodeConfig {
