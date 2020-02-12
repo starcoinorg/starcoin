@@ -11,7 +11,7 @@ use libp2p::{
     ping::{Ping, PingConfig, PingEvent},
     PeerId, Swarm,
 };
-use types::transaction::SignedTransaction;
+use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 pub struct NetworkActor {
     network_config: NetworkConfig,
@@ -99,12 +99,14 @@ impl Handler<BroadcastTransactionMessage> for NetworkActor {
 }
 
 /// Handler for receive broadcast from other peer.
-impl Handler<SignedTransaction> for NetworkActor {
+impl Handler<SignedUserTransaction> for NetworkActor {
     type Result = ();
 
-    fn handle(&mut self, msg: SignedTransaction, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: SignedUserTransaction, ctx: &mut Self::Context) {
         self.bus
-            .send(Broadcast { message: msg })
+            .send(Broadcast {
+                message: SystemEvents::NewUserTransaction(msg),
+            })
             .into_actor(self)
             .then(|_result, act, _ctx| async {}.into_actor(act))
             .wait(ctx);

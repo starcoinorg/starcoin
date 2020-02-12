@@ -4,7 +4,7 @@
 use starcoin_config::config::VMConfig;
 use starcoin_state_view::StateView;
 use starcoin_types::{
-    transaction::{SignedTransaction, Transaction, TransactionOutput},
+    transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
 
@@ -15,7 +15,7 @@ pub trait VMVerifier {
     /// was unable to be validated with status `VMStatus`.
     fn validate_transaction(
         &self,
-        transaction: SignedTransaction,
+        transaction: SignedUserTransaction,
         state_view: &dyn StateView,
     ) -> Option<VMStatus>;
 }

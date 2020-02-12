@@ -4,12 +4,13 @@ members = [
     "commons/scs",
     "types",
     "config",
-    "core/state-view",
+    "storage/state-store",
     "bus",
     "network",
     "consensus",
     "txpool",
     "rpc/json-rpc",
+    "executor",
     "chain",
     "node"
 ]

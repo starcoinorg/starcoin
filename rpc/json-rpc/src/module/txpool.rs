@@ -7,12 +7,12 @@ use jsonrpc_core::BoxFuture;
 use jsonrpc_core::Error;
 use jsonrpc_derive::rpc;
 use txpool::{SubmitTransactionMessage, TxPoolActor};
-use types::transaction::SignedTransaction;
+use types::transaction::SignedUserTransaction;
 
 #[rpc(server)]
 pub trait TxPoolRpc {
     #[rpc(name = "submit_transaction")]
-    fn submit_transaction(&self, tx: SignedTransaction) -> BoxFuture<bool>;
+    fn submit_transaction(&self, tx: SignedUserTransaction) -> BoxFuture<bool>;
 }
 
 pub(crate) struct TxPoolRpcImpl {
@@ -26,7 +26,7 @@ impl TxPoolRpcImpl {
 }
 
 impl TxPoolRpc for TxPoolRpcImpl {
-    fn submit_transaction(&self, tx: SignedTransaction) -> BoxFuture<bool> {
+    fn submit_transaction(&self, tx: SignedUserTransaction) -> BoxFuture<bool> {
         let fut = self
             .actor_ref
             .send(SubmitTransactionMessage { tx })

@@ -7,7 +7,7 @@ use anyhow::Result;
 use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use network::{BroadcastTransactionMessage, NetworkActor};
-use types::transaction::SignedTransaction;
+use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 mod txpool;
 
@@ -37,7 +37,7 @@ impl Actor for TxPoolActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let recipient = ctx.address().recipient::<SignedTransaction>();
+        let recipient = ctx.address().recipient::<SignedUserTransaction>();
         self.bus
             .send(Subscription { recipient })
             .into_actor(self)
@@ -49,7 +49,7 @@ impl Actor for TxPoolActor {
 #[derive(Clone, Message)]
 #[rtype(result = "Result<bool>")]
 pub struct SubmitTransactionMessage {
-    pub tx: SignedTransaction,
+    pub tx: SignedUserTransaction,
 }
 
 impl Handler<SubmitTransactionMessage> for TxPoolActor {
@@ -66,13 +66,16 @@ impl Handler<SubmitTransactionMessage> for TxPoolActor {
 }
 
 /// handle bus broadcast Transaction.
-impl Handler<SignedTransaction> for TxPoolActor {
+impl Handler<SystemEvents> for TxPoolActor {
     type Result = ();
 
-    fn handle(&mut self, msg: SignedTransaction, _ctx: &mut Self::Context) {
-        match self.pool.add_tx(msg) {
-            Ok(_) => {}
-            Err(err) => println!("Add tx to pool error:{:?}", err),
+    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) {
+        match msg {
+            SystemEvents::NewUserTransaction(txn) => match self.pool.add_tx(txn) {
+                Ok(_) => {}
+                Err(err) => println!("Add tx to pool error:{:?}", err),
+            },
+            _ => {}
         }
     }
 }
