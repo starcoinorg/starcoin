@@ -41,9 +41,9 @@ pub type Version = u64; // Height - also used for MVCC in StateDB
 
 pub const MAX_TRANSACTION_SIZE_IN_BYTES: usize = 4096;
 
-/// RawTransaction is the portion of a transaction that a client signs
+/// RawUserTransaction is the portion of a transaction that a client signs
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
-pub struct RawTransaction {
+pub struct RawUserTransaction {
     /// Sender's address.
     sender: AccountAddress,
     // Sequence number of this transaction corresponding to sender's account.
@@ -97,8 +97,8 @@ where
     deserializer.deserialize_u64(DurationVisitor)
 }
 
-impl RawTransaction {
-    /// Create a new `RawTransaction` with a payload.
+impl RawUserTransaction {
+    /// Create a new `RawUserTransaction` with a payload.
     ///
     /// It can be either to publish a module, to execute a script, or to issue a writeset
     /// transaction.
@@ -110,7 +110,7 @@ impl RawTransaction {
         gas_unit_price: u64,
         expiration_time: Duration,
     ) -> Self {
-        RawTransaction {
+        RawUserTransaction {
             sender,
             sequence_number,
             payload,
@@ -120,7 +120,7 @@ impl RawTransaction {
         }
     }
 
-    /// Create a new `RawTransaction` with a script.
+    /// Create a new `RawUserTransaction` with a script.
     ///
     /// A script transaction contains only code to execute. No publishing is allowed in scripts.
     pub fn new_script(
@@ -131,7 +131,7 @@ impl RawTransaction {
         gas_unit_price: u64,
         expiration_time: Duration,
     ) -> Self {
-        RawTransaction {
+        RawUserTransaction {
             sender,
             sequence_number,
             payload: TransactionPayload::Script(script),
@@ -141,7 +141,7 @@ impl RawTransaction {
         }
     }
 
-    /// Create a new `RawTransaction` with a module to publish.
+    /// Create a new `RawUserTransaction` with a module to publish.
     ///
     /// A module transaction is the only way to publish code. Only one module per transaction
     /// can be published.
@@ -153,7 +153,7 @@ impl RawTransaction {
         gas_unit_price: u64,
         expiration_time: Duration,
     ) -> Self {
-        RawTransaction {
+        RawUserTransaction {
             sender,
             sequence_number,
             payload: TransactionPayload::Module(module),
@@ -163,7 +163,7 @@ impl RawTransaction {
         }
     }
 
-    /// Signs the given `RawTransaction`. Note that this consumes the `RawTransaction` and turns it
+    /// Signs the given `RawUserTransaction`. Note that this consumes the `RawUserTransaction` and turns it
     /// into a `SignatureCheckedTransaction`.
     ///
     /// For a transaction that has just been signed, its signature is expected to be valid.
@@ -173,7 +173,7 @@ impl RawTransaction {
         public_key: Ed25519PublicKey,
     ) -> Result<SignatureCheckedTransaction> {
         let signature = private_key.sign_message(&self.hash());
-        Ok(SignatureCheckedTransaction(SignedTransaction::new(
+        Ok(SignatureCheckedTransaction(SignedUserTransaction::new(
             self, public_key, signature,
         )))
     }
@@ -195,7 +195,7 @@ impl RawTransaction {
             f_args = format!("{}\n\t\t\t{:#?},", f_args, arg);
         }
         format!(
-            "RawTransaction {{ \n\
+            "RawUserTransaction {{ \n\
              \tsender: {}, \n\
              \tsequence_number: {}, \n\
              \tpayload: {{, \n\
@@ -222,14 +222,14 @@ impl RawTransaction {
     }
 }
 
-impl CryptoHash for RawTransaction {
-    type Hasher = RawTransactionHasher;
+impl CryptoHash for RawUserTransaction {
+    type Hasher = RawUserTransactionHasher;
 
     fn hash(&self) -> HashValue {
         let mut state = Self::Hasher::default();
         state.write(
             scs::to_bytes(self)
-                .expect("Failed to serialize RawTransaction")
+                .expect("Failed to serialize RawUserTransaction")
                 .as_slice(),
         );
         state.finish()
@@ -246,16 +246,16 @@ pub enum TransactionPayload {
 
 /// A transaction that has been signed.
 ///
-/// A `SignedTransaction` is a single transaction that can be atomically executed. Clients submit
+/// A `SignedUserTransaction` is a single transaction that can be atomically executed. Clients submit
 /// these to validator nodes, and the validator and executor submits these to the VM.
 ///
-/// **IMPORTANT:** The signature of a `SignedTransaction` is not guaranteed to be verified. For a
+/// **IMPORTANT:** The signature of a `SignedUserTransaction` is not guaranteed to be verified. For a
 /// transaction whose signature is statically guaranteed to be verified, see
 /// [`SignatureCheckedTransaction`].
 #[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, CryptoHasher)]
-pub struct SignedTransaction {
+pub struct SignedUserTransaction {
     /// The raw transaction
-    raw_txn: RawTransaction,
+    raw_txn: RawUserTransaction,
 
     /// Sender's public key. When checking the signature, we first need to check whether this key
     /// is indeed the pre-image of the pubkey hash stored under sender's account.
@@ -266,35 +266,35 @@ pub struct SignedTransaction {
 }
 
 /// A transaction for which the signature has been verified. Created by
-/// [`SignedTransaction::check_signature`] and [`RawTransaction::sign`].
+/// [`SignedUserTransaction::check_signature`] and [`RawUserTransaction::sign`].
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct SignatureCheckedTransaction(SignedTransaction);
+pub struct SignatureCheckedTransaction(SignedUserTransaction);
 
 impl SignatureCheckedTransaction {
-    /// Returns the `SignedTransaction` within.
-    pub fn into_inner(self) -> SignedTransaction {
+    /// Returns the `SignedUserTransaction` within.
+    pub fn into_inner(self) -> SignedUserTransaction {
         self.0
     }
 
-    /// Returns the `RawTransaction` within.
-    pub fn into_raw_transaction(self) -> RawTransaction {
+    /// Returns the `RawUserTransaction` within.
+    pub fn into_raw_transaction(self) -> RawUserTransaction {
         self.0.into_raw_transaction()
     }
 }
 
 impl Deref for SignatureCheckedTransaction {
-    type Target = SignedTransaction;
+    type Target = SignedUserTransaction;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl fmt::Debug for SignedTransaction {
+impl fmt::Debug for SignedUserTransaction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "SignedTransaction {{ \n \
+            "SignedUserTransaction {{ \n \
              {{ raw_txn: {:#?}, \n \
              public_key: {:#?}, \n \
              signature: {:#?}, \n \
@@ -305,13 +305,13 @@ impl fmt::Debug for SignedTransaction {
     }
 }
 
-impl SignedTransaction {
+impl SignedUserTransaction {
     pub fn new(
-        raw_txn: RawTransaction,
+        raw_txn: RawUserTransaction,
         public_key: Ed25519PublicKey,
         signature: Ed25519Signature,
-    ) -> SignedTransaction {
-        SignedTransaction {
+    ) -> SignedUserTransaction {
+        SignedUserTransaction {
             raw_txn,
             public_key,
             signature,
@@ -330,7 +330,7 @@ impl SignedTransaction {
         self.raw_txn.sender
     }
 
-    pub fn into_raw_transaction(self) -> RawTransaction {
+    pub fn into_raw_transaction(self) -> RawUserTransaction {
         self.raw_txn
     }
 
@@ -356,7 +356,7 @@ impl SignedTransaction {
 
     pub fn raw_txn_bytes_len(&self) -> usize {
         scs::to_bytes(&self.raw_txn)
-            .expect("Unable to serialize RawTransaction")
+            .expect("Unable to serialize RawUserTransaction")
             .len()
     }
 
@@ -370,7 +370,7 @@ impl SignedTransaction {
 
     pub fn format_for_client(&self, get_transaction_name: impl Fn(&[u8]) -> String) -> String {
         format!(
-            "SignedTransaction {{ \n \
+            "SignedUserTransaction {{ \n \
              raw_txn: {}, \n \
              public_key: {:#?}, \n \
              signature: {:#?}, \n \
@@ -553,7 +553,7 @@ impl CryptoHash for TransactionInfo {
 pub enum Transaction {
     /// Transaction submitted by the user. e.g: P2P payment transaction, publishing module
     /// transaction, etc.
-    UserTransaction(SignedTransaction),
+    UserTransaction(SignedUserTransaction),
 
     /// Transaction that applies a WriteSet to the current storage. This should be used for ONLY for
     /// genesis right now.
@@ -564,7 +564,7 @@ pub enum Transaction {
 }
 
 impl Transaction {
-    pub fn as_signed_user_txn(&self) -> Result<&SignedTransaction> {
+    pub fn as_signed_user_txn(&self) -> Result<&SignedUserTransaction> {
         match self {
             Transaction::UserTransaction(txn) => Ok(txn),
             _ => Err(format_err!("Not a user transaction.")),
@@ -594,7 +594,7 @@ impl CryptoHash for Transaction {
     }
 }
 
-impl TryFrom<Transaction> for SignedTransaction {
+impl TryFrom<Transaction> for SignedUserTransaction {
     type Error = Error;
 
     fn try_from(txn: Transaction) -> Result<Self> {

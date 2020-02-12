@@ -3,7 +3,7 @@
 
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::transaction::SignedTransaction;
+use crate::transaction::SignedUserTransaction;
 use libra_crypto::{
     hash::{CryptoHash, CryptoHasher},
     HashValue,
@@ -104,14 +104,14 @@ pub struct Block {
     /// The header of this block.
     header: BlockHeader,
     /// The transactions in this block.
-    transactions: Vec<SignedTransaction>,
+    transactions: Vec<SignedUserTransaction>,
 }
 
 impl Block {
     pub fn header(&self) -> &BlockHeader {
         &self.header
     }
-    pub fn transactions(&self) -> &[SignedTransaction] {
+    pub fn transactions(&self) -> &[SignedUserTransaction] {
         self.transactions.as_slice()
     }
 }
