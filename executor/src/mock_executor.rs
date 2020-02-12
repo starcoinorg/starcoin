@@ -1,7 +1,8 @@
-// Copyright (c) The Starcoin Core Contributors
+// Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use crate::TransactionExecutor;
+use anyhow::{Error, Result};
 use config::VMConfig;
 use state_store::StateStore;
 use types::{
@@ -9,18 +10,20 @@ use types::{
     vm_error::VMStatus,
 };
 
-mod mock_executor;
+pub struct MockExecutor;
 
-pub trait TransactionExecutor {
-    /// Execute transaction, update state to state_store, and return events and TransactionStatus.
+impl TransactionExecutor for MockExecutor {
     fn execute_transaction(
         txn: Transaction,
         state_store: &dyn StateStore,
-    ) -> Result<TransactionOutput>;
+    ) -> Result<TransactionOutput> {
+        unimplemented!()
+    }
 
-    /// Executes the prologue and verifies that the transaction is valid.
     fn validate_transaction(
         txn: SignedUserTransaction,
         state_store: &dyn StateStore,
-    ) -> Result<VMStatus>;
+    ) -> Result<VMStatus, Error> {
+        unimplemented!()
+    }
 }
