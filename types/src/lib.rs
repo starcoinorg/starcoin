@@ -5,12 +5,15 @@ pub mod access_path;
 pub mod account_address;
 pub mod account_state;
 pub mod block;
+pub mod block_metadata;
+pub mod byte_array;
 pub mod change_set;
 pub mod contract_event;
-pub mod language;
+pub mod language_storage;
 pub mod proof;
 pub mod storage_root;
 pub mod transaction;
+pub mod vm_error;
 pub mod with_proof;
 pub mod write_set;
 

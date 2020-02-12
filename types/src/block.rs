@@ -2,14 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
+use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedTransaction;
-use libra_crypto::HashValue;
+use libra_crypto::{
+    hash::{CryptoHash, CryptoHasher},
+    HashValue,
+};
+use libra_crypto_derive::CryptoHasher;
 use serde::{Deserialize, Serialize};
 
 /// Type for block number.
 pub type BlockNumber = u64;
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
 pub struct BlockHeader {
     /// Parent hash.
     parent_hash: HashValue,
@@ -34,8 +39,24 @@ pub struct BlockHeader {
 }
 
 impl BlockHeader {
+    pub fn id(&self) -> HashValue {
+        self.hash()
+    }
+
     pub fn parent_hash(&self) -> HashValue {
         self.parent_hash
+    }
+
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp
+    }
+
+    pub fn number(&self) -> BlockNumber {
+        self.number
+    }
+
+    pub fn author(&self) -> AccountAddress {
+        self.author
     }
 
     pub fn accumulator_root(&self) -> HashValue {
@@ -44,6 +65,36 @@ impl BlockHeader {
 
     pub fn state_root(&self) -> HashValue {
         self.state_root
+    }
+
+    pub fn gas_used(&self) -> u64 {
+        self.gas_used
+    }
+
+    pub fn gas_limit(&self) -> u64 {
+        self.gas_limit
+    }
+
+    pub fn pow(&self) -> &[u8] {
+        self.pow.as_slice()
+    }
+
+    pub fn into_metadata(self) -> BlockMetadata {
+        BlockMetadata::new(self.id(), self.timestamp, self.author)
+    }
+}
+
+impl CryptoHash for BlockHeader {
+    type Hasher = BlockHeaderHasher;
+
+    fn hash(&self) -> HashValue {
+        let mut state = Self::Hasher::default();
+        state.write(
+            scs::to_bytes(self)
+                .expect("Failed to serialize BlockHeader")
+                .as_slice(),
+        );
+        state.finish()
     }
 }
 
