@@ -27,12 +27,16 @@ impl SparseMerkleTree {
         Self { store, root_hash }
     }
 
-    pub fn update(hash: HashValue, value: Vec<u8>) -> Result<Self> {
+    pub fn update(&self, hash: HashValue, value: Vec<u8>) -> Result<Self> {
         unimplemented!()
     }
 
     pub fn root_hash(&self) -> HashValue {
         self.root_hash
+    }
+
+    pub fn get(&self, hash: HashValue) -> Result<Option<Vec<u8>>> {
+        unimplemented!()
     }
 }
 

@@ -11,7 +11,13 @@ use types::{
     language_storage::{ModuleId, StructTag},
 };
 
-pub struct StarcoinChainState {}
+use crypto::hash::CryptoHash;
+use starcoin_canonical_serialization::SCSCodec;
+use state_tree::SparseMerkleTree;
+
+pub struct StarcoinChainState {
+    state_tree: SparseMerkleTree,
+}
 
 impl StarcoinChainState {
     /// Commit and calculate new state root
@@ -47,7 +53,9 @@ impl ChainState for StarcoinChainState {
     }
 
     fn get_account_state(&self, address: AccountAddress) -> Result<Option<AccountState>> {
-        unimplemented!()
+        self.state_tree
+            .get(address.crypto_hash())?
+            .map(|value| AccountState::decode(value.as_slice()))
     }
 
     fn is_genesis(&self) -> bool {

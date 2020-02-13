@@ -3,6 +3,7 @@
 
 use crypto::HashValue;
 
+#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Default, Clone)]
 pub struct AccountState {
     code_root: HashValue,
     storage_root: HashValue,
