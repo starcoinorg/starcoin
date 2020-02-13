@@ -2956,6 +2956,16 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "starcoin-accumulator"
+version = "0.1.0"
+dependencies = [
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-crypto 0.1.0",
+ "starcoin-types 0.1.0",
+]
+
+[[package]]
 name = "starcoin-bus"
 version = "0.1.0"
 dependencies = [
@@ -2970,7 +2980,9 @@ dependencies = [
 name = "starcoin-canonical-serialization"
 version = "0.1.0"
 dependencies = [
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3093,6 +3105,17 @@ dependencies = [
  "starcoin-txpool 0.1.0",
  "structopt 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "starcoin-storage"
+version = "0.1.0"
+dependencies = [
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-canonical-serialization 0.1.0",
+ "starcoin-crypto 0.1.0",
+ "starcoin-types 0.1.0",
 ]
 
 [[package]]

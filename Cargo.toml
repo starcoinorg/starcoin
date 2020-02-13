@@ -3,9 +3,12 @@
 members = [
     "commons/scs",
     "commons/crypto",
+    "core/accumulator",
+    "core/chain-state",
     "types",
     "config",
     "bus",
+    "storage",
     "network",
     "consensus",
     "txpool",
