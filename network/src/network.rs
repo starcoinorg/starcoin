@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{BroadcastTransactionMessage, GetCounterMessage, StopMessage};
+use crate::{BroadcastTransactionMessage, GetCounterMessage, PeerMessage, StopMessage};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
@@ -99,17 +99,21 @@ impl Handler<BroadcastTransactionMessage> for NetworkActor {
 }
 
 /// Handler for receive broadcast from other peer.
-impl Handler<SignedUserTransaction> for NetworkActor {
+impl Handler<PeerMessage> for NetworkActor {
     type Result = ();
 
-    fn handle(&mut self, msg: SignedUserTransaction, ctx: &mut Self::Context) {
-        self.bus
-            .send(Broadcast {
-                message: SystemEvents::NewUserTransaction(msg),
-            })
-            .into_actor(self)
-            .then(|_result, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
+    fn handle(&mut self, msg: PeerMessage, ctx: &mut Self::Context) {
+        match msg {
+            PeerMessage::UserTransaction(txn) => {
+                self.bus
+                    .send(Broadcast {
+                        message: SystemEvents::NewUserTransaction(txn),
+                    })
+                    .into_actor(self)
+                    .then(|_result, act, _ctx| async {}.into_actor(act))
+                    .wait(ctx);
+            }
+        }
     }
 }
 

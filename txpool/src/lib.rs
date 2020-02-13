@@ -37,7 +37,7 @@ impl Actor for TxPoolActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let recipient = ctx.address().recipient::<SignedUserTransaction>();
+        let recipient = ctx.address().recipient::<SystemEvents>();
         self.bus
             .send(Subscription { recipient })
             .into_actor(self)

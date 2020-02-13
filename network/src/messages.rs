@@ -16,3 +16,10 @@ pub struct StopMessage {}
 pub struct BroadcastTransactionMessage {
     pub tx: SignedUserTransaction,
 }
+
+/// message from peer
+#[derive(Message)]
+#[rtype(result = "()")]
+pub enum PeerMessage {
+    UserTransaction(SignedUserTransaction),
+}
