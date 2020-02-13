@@ -3,8 +3,8 @@
 
 use crate::TransactionExecutor;
 use anyhow::{Error, Result};
+use chain_state::ChainState;
 use config::VMConfig;
-use state_store::StateStore;
 use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
@@ -15,7 +15,7 @@ pub struct MockExecutor;
 impl TransactionExecutor for MockExecutor {
     fn execute_transaction(
         config: &VMConfig,
-        state_store: &dyn StateStore,
+        chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> Result<TransactionOutput> {
         unimplemented!()
@@ -23,7 +23,7 @@ impl TransactionExecutor for MockExecutor {
 
     fn validate_transaction(
         config: &VMConfig,
-        state_store: &dyn StateStore,
+        chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Result<VMStatus> {
         unimplemented!()

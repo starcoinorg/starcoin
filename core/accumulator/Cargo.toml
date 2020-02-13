@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-state-store"
+name = "starcoin-accumulator"
 version = "0.1.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
@@ -11,4 +11,4 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 types = {path = "../../types", package="starcoin-types"}
-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }

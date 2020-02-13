@@ -1,12 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright (c) The Libra Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 #![forbid(unsafe_code)]
-
-//! This crate defines [`trait StateView`](StateView).
 
 use anyhow::Result;
 use crypto::HashValue;
@@ -17,8 +12,8 @@ use types::{
     language_storage::{ModuleId, StructTag},
 };
 
-/// `StateView` is a trait that defines a read-only snapshot of the global state.
-pub trait StateView {
+/// `ChainState` s a trait that defines updatable chain's global state.
+pub trait ChainState {
     /// Gets the state for a single access path.
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>>;
 
@@ -43,11 +38,6 @@ pub trait StateView {
 
     /// Gets current state root.
     fn state_root(&self) -> HashValue;
-}
-
-/// `StateStore` s a trait that defines chain's global state store.
-pub trait StateStore: StateView {
-    fn is_dirty(&self) -> bool;
 
     /// Sets state at access_path.
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()>;
@@ -65,12 +55,4 @@ pub trait StateStore: StateView {
     fn delete_at(&self, account_state: &AccountState, struct_tag: &StructTag) -> Result<()>;
 
     fn set_code(&self, module_id: &ModuleId) -> Result<()>;
-
-    /// Write state to state tree and calculate new root. return new state root after commit
-    fn commit(&self) -> Result<HashValue>;
-
-    fn state_root(&self) -> HashValue;
-
-    /// Write data to storage.
-    fn flush(&self) -> Result<()>;
 }

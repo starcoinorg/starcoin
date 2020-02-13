@@ -11,6 +11,6 @@ edition = "2018"
 anyhow = "1.0"
 types = {path = "../types", package="starcoin-types"}
 config = {path = "../config", package="starcoin-config"}
-state-store = {path = "../storage/state-store", package="starcoin-state-store"}
+chain-state = {path = "../core/chain-state", package="starcoin-chain-state"}
 libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
 libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }

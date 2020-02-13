@@ -1,11 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::starcoin_chain_state::StarcoinChainState;
 use anyhow::Result;
+use chain_state::ChainState;
 use config::VMConfig;
 use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
-use state_store::StateStore;
 use std::marker::PhantomData;
 use types::{
     block::{Block, BlockHeader, BlockNumber},
@@ -57,7 +58,7 @@ where
         unimplemented!()
     }
 
-    pub fn state_at(&self, root: HashValue) -> Box<dyn StateStore> {
+    pub fn state_at(&self, root: HashValue) -> StarcoinChainState {
         unimplemented!()
     }
 
@@ -65,7 +66,7 @@ where
     pub fn try_connect(&mut self, block: Block) -> Result<()> {
         let branch = self.find_or_fork(block.header());
 
-        let store = self.state_at(branch.block_header.state_root());
+        let chain_state = self.state_at(branch.block_header.state_root());
         let (header, user_txns) = block.clone().into_inner();
         let mut txns = user_txns
             .iter()
@@ -76,14 +77,14 @@ where
         txns.push(Transaction::BlockMetadata(block_metadata));
         for txn in txns {
             let txn_hash = txn.crypto_hash();
-            let output = E::execute_transaction(&self.config, store.as_ref(), txn)?;
+            let output = E::execute_transaction(&self.config, &chain_state, txn)?;
             match output.status() {
                 TransactionStatus::Discard(status) => return Err(status.clone().into()),
                 TransactionStatus::Keep(status) => {
                     //continue.
                 }
             }
-            let state_root = store.commit()?;
+            let state_root = chain_state.commit()?;
             let transaction_info = TransactionInfo::new(
                 txn_hash,
                 state_root,
@@ -96,7 +97,7 @@ where
 
         //todo verify state_root and accumulator_root;
         self.save_block(block);
-        store.flush();
+        chain_state.flush();
         self.select_head();
         todo!()
     }

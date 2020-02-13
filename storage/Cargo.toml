@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-chain"
+name = "starcoin-storage"
 version = "0.1.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
@@ -11,7 +11,4 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 types = {path = "../types", package="starcoin-types"}
-config = {path = "../config", package="starcoin-config"}
-chain-state = {path = "../core/chain-state", package="starcoin-chain-state"}
-executor = {path = "../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}

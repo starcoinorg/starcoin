@@ -5,7 +5,6 @@ members = [
     "commons/crypto",
     "types",
     "config",
-    "storage/state-store",
     "bus",
     "network",
     "consensus",

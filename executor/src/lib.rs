@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use chain_state::ChainState;
 use config::VMConfig;
-use state_store::StateStore;
 use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
@@ -15,14 +15,14 @@ pub trait TransactionExecutor {
     /// Execute transaction, update state to state_store, and return events and TransactionStatus.
     fn execute_transaction(
         config: &VMConfig,
-        state_store: &dyn StateStore,
+        chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> Result<TransactionOutput>;
 
     /// Executes the prologue and verifies that the transaction is valid.
     fn validate_transaction(
         config: &VMConfig,
-        state_store: &dyn StateStore,
+        chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Result<VMStatus>;
 }

@@ -2978,10 +2978,19 @@ name = "starcoin-chain"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-chain-state 0.1.0",
  "starcoin-config 0.1.0",
  "starcoin-crypto 0.1.0",
  "starcoin-executor 0.1.0",
- "starcoin-state-store 0.1.0",
+ "starcoin-types 0.1.0",
+]
+
+[[package]]
+name = "starcoin-chain-state"
+version = "0.1.0"
+dependencies = [
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-crypto 0.1.0",
  "starcoin-types 0.1.0",
 ]
 
@@ -3022,8 +3031,8 @@ dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
  "libra-crypto-derive 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
+ "starcoin-chain-state 0.1.0",
  "starcoin-config 0.1.0",
- "starcoin-state-store 0.1.0",
  "starcoin-types 0.1.0",
 ]
 
@@ -3084,15 +3093,6 @@ dependencies = [
  "starcoin-txpool 0.1.0",
  "structopt 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "starcoin-state-store"
-version = "0.1.0"
-dependencies = [
- "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
- "starcoin-crypto 0.1.0",
- "starcoin-types 0.1.0",
 ]
 
 [[package]]
