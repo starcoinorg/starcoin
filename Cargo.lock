@@ -3108,6 +3108,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-state-tree"
+version = "0.1.0"
+dependencies = [
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-crypto 0.1.0",
+ "starcoin-types 0.1.0",
+]
+
+[[package]]
 name = "starcoin-storage"
 version = "0.1.0"
 dependencies = [
