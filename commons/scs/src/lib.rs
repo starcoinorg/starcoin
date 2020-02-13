@@ -25,29 +25,21 @@ where
     lcs::from_bytes(bytes).map_err(|e| e.into())
 }
 
-pub trait SCSToBytes {
-    fn to_bytes(&self) -> Result<Vec<u8>>;
+pub trait SCSCodec<'a>: Sized {
+    fn encode(&self) -> Result<Vec<u8>>;
+    fn decode(bytes: &'a [u8]) -> Result<Self>;
 }
 
-impl<T> SCSToBytes for T
+impl<'a, T> SCSCodec<'a> for T
 where
-    T: Serialize,
+    T: Serialize + Deserialize<'a>,
 {
-    fn to_bytes(&self) -> Result<Vec<u8>> {
+    fn encode(&self) -> Result<Vec<u8>> {
         to_bytes(self)
     }
-}
 
-pub trait SCSFromBytes<'a>: Sized {
-    fn from_bytes(bytes: &'a [u8]) -> Result<Self>;
-}
-
-impl<'a, T> SCSFromBytes<'a> for T
-where
-    T: Deserialize<'a>,
-{
-    fn from_bytes(bytes: &'a [u8]) -> Result<Self> {
-        from_bytes(bytes).map_err(|e| e.into())
+    fn decode(bytes: &'a [u8]) -> Result<Self> {
+        from_bytes(bytes)
     }
 }
 
@@ -63,8 +55,8 @@ mod tests {
     #[test]
     fn test_serialize() {
         let t1 = Test { f: 1 };
-        let bytes = t1.to_bytes().unwrap();
-        let t2 = Test::from_bytes(bytes.as_slice()).unwrap();
+        let bytes = t1.encode().unwrap();
+        let t2 = Test::decode(bytes.as_slice()).unwrap();
         assert_eq!(t1, t2);
     }
 }
