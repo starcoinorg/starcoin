@@ -9,13 +9,8 @@ use crate::{
     write_set::WriteSet,
 };
 use anyhow::{ensure, format_err, Error, Result};
-use libra_crypto::{
-    ed25519::*,
-    hash::{CryptoHash, CryptoHasher, EventAccumulatorHasher},
-    traits::*,
-    HashValue,
-};
-use libra_crypto_derive::CryptoHasher;
+use crypto::{ed25519::*, hash::CryptoHash, traits::*, HashValue};
+
 use serde::{de, ser, Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -42,7 +37,7 @@ pub type Version = u64; // Height - also used for MVCC in StateDB
 pub const MAX_TRANSACTION_SIZE_IN_BYTES: usize = 4096;
 
 /// RawUserTransaction is the portion of a transaction that a client signs
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RawUserTransaction {
     /// Sender's address.
     sender: AccountAddress,
@@ -172,7 +167,7 @@ impl RawUserTransaction {
         private_key: &Ed25519PrivateKey,
         public_key: Ed25519PublicKey,
     ) -> Result<SignatureCheckedTransaction> {
-        let signature = private_key.sign_message(&self.hash());
+        let signature = private_key.sign_message(&self.crypto_hash());
         Ok(SignatureCheckedTransaction(SignedUserTransaction::new(
             self, public_key, signature,
         )))
@@ -222,20 +217,6 @@ impl RawUserTransaction {
     }
 }
 
-impl CryptoHash for RawUserTransaction {
-    type Hasher = RawUserTransactionHasher;
-
-    fn hash(&self) -> HashValue {
-        let mut state = Self::Hasher::default();
-        state.write(
-            scs::to_bytes(self)
-                .expect("Failed to serialize RawUserTransaction")
-                .as_slice(),
-        );
-        state.finish()
-    }
-}
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TransactionPayload {
     /// A transaction that executes code.
@@ -252,7 +233,7 @@ pub enum TransactionPayload {
 /// **IMPORTANT:** The signature of a `SignedUserTransaction` is not guaranteed to be verified. For a
 /// transaction whose signature is statically guaranteed to be verified, see
 /// [`SignatureCheckedTransaction`].
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, CryptoHasher)]
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct SignedUserTransaction {
     /// The raw transaction
     raw_txn: RawUserTransaction,
@@ -364,7 +345,7 @@ impl SignedUserTransaction {
     /// the signature is valid.
     pub fn check_signature(self) -> Result<SignatureCheckedTransaction> {
         self.public_key
-            .verify_signature(&self.raw_txn.hash(), &self.signature)?;
+            .verify_signature(&self.raw_txn.crypto_hash(), &self.signature)?;
         Ok(SignatureCheckedTransaction(self))
     }
 
@@ -466,7 +447,7 @@ impl TransactionOutput {
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
 /// transaction as well as the execution result of this transaction.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionInfo {
     /// The hash of this transaction.
     transaction_hash: HashValue,
@@ -533,23 +514,13 @@ impl TransactionInfo {
     }
 }
 
-impl CryptoHash for TransactionInfo {
-    type Hasher = TransactionInfoHasher;
-
-    fn hash(&self) -> HashValue {
-        let mut state = Self::Hasher::default();
-        state.write(&scs::to_bytes(self).expect("Serialization should work."));
-        state.finish()
-    }
-}
-
 /// `Transaction` will be the transaction type used internally in the libra node to represent the
 /// transaction to be processed and persisted.
 ///
 /// We suppress the clippy warning here as we would expect most of the transaction to be user
 /// transaction.
 #[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Transaction {
     /// Transaction submitted by the user. e.g: P2P payment transaction, publishing module
     /// transaction, etc.
@@ -581,16 +552,6 @@ impl Transaction {
             // TODO: display proper information for client
             Transaction::BlockMetadata(_block_metadata) => String::from("block_metadata"),
         }
-    }
-}
-
-impl CryptoHash for Transaction {
-    type Hasher = TransactionHasher;
-
-    fn hash(&self) -> HashValue {
-        let mut state = Self::Hasher::default();
-        state.write(&scs::to_bytes(self).expect("Failed to serialize Transaction."));
-        state.finish()
     }
 }
 

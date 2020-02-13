@@ -4,17 +4,14 @@
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedUserTransaction;
-use libra_crypto::{
-    hash::{CryptoHash, CryptoHasher},
-    HashValue,
-};
-use libra_crypto_derive::CryptoHasher;
+use crypto::{hash::CryptoHash, HashValue};
+
 use serde::{Deserialize, Serialize};
 
 /// Type for block number.
 pub type BlockNumber = u64;
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockHeader {
     /// Parent hash.
     parent_hash: HashValue,
@@ -40,7 +37,7 @@ pub struct BlockHeader {
 
 impl BlockHeader {
     pub fn id(&self) -> HashValue {
-        self.hash()
+        self.crypto_hash()
     }
 
     pub fn parent_hash(&self) -> HashValue {
@@ -81,20 +78,6 @@ impl BlockHeader {
 
     pub fn into_metadata(self) -> BlockMetadata {
         BlockMetadata::new(self.id(), self.timestamp, self.author)
-    }
-}
-
-impl CryptoHash for BlockHeader {
-    type Hasher = BlockHeaderHasher;
-
-    fn hash(&self) -> HashValue {
-        let mut state = Self::Hasher::default();
-        state.write(
-            scs::to_bytes(self)
-                .expect("Failed to serialize BlockHeader")
-                .as_slice(),
-        );
-        state.finish()
     }
 }
 

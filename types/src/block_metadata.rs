@@ -8,7 +8,7 @@ use crate::account_address::AccountAddress;
 use crate::block::BlockHeader;
 use crate::byte_array::ByteArray;
 use anyhow::Result;
-use libra_crypto::{ed25519::Ed25519Signature, HashValue};
+use crypto::{ed25519::Ed25519Signature, HashValue};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

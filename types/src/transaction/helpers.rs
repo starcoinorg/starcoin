@@ -7,13 +7,7 @@ use crate::{
 };
 use anyhow::Result;
 use chrono::Utc;
-use libra_crypto::{
-    ed25519::*,
-    hash::{CryptoHash, TestOnlyHash},
-    test_utils::KeyPair,
-    traits::SigningKey,
-    HashValue,
-};
+use crypto::{ed25519::*, hash::CryptoHash, test_utils::KeyPair, traits::SigningKey, HashValue};
 
 pub fn create_unsigned_txn(
     payload: TransactionPayload,
@@ -60,7 +54,7 @@ pub fn create_user_txn<T: TransactionSigner + ?Sized>(
 
 impl TransactionSigner for KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
     fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        let signature = self.private_key.sign_message(&raw_txn.hash());
+        let signature = self.private_key.sign_message(&raw_txn.crypto_hash());
         Ok(SignedUserTransaction::new(
             raw_txn,
             self.public_key.clone(),

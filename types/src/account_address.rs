@@ -7,12 +7,8 @@
 use anyhow::{ensure, Error, Result};
 use bech32::{Bech32, FromBase32, ToBase32};
 use bytes::Bytes;
+use crypto::{hash::CryptoHash, HashValue, VerifyingKey};
 use hex;
-use libra_crypto::{
-    hash::{CryptoHash, CryptoHasher},
-    HashValue, VerifyingKey,
-};
-use libra_crypto_derive::CryptoHasher;
 use rand::{rngs::OsRng, Rng};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, fmt, str::FromStr};
@@ -25,7 +21,7 @@ const STARCOIN_NETWORK_ID_SHORT: &str = "stc";
 
 /// A struct that represents an account address.
 /// Currently Public Key is used.
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Default, Clone, Copy, CryptoHasher)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Default, Clone, Copy)]
 pub struct AccountAddress([u8; ADDRESS_LENGTH]);
 
 impl AccountAddress {
@@ -71,16 +67,6 @@ impl AccountAddress {
 
         assert!(result.len() >= 32);
         AccountAddress::try_from(result)
-    }
-}
-
-impl CryptoHash for AccountAddress {
-    type Hasher = AccountAddressHasher;
-
-    fn hash(&self) -> HashValue {
-        let mut state = Self::Hasher::default();
-        state.write(&self.0);
-        state.finish()
     }
 }
 
