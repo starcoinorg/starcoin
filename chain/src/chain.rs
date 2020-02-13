@@ -3,9 +3,8 @@
 
 use anyhow::Result;
 use config::VMConfig;
+use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
-use libra_crypto::hash::CryptoHash;
-use libra_crypto::HashValue;
 use state_store::StateStore;
 use std::marker::PhantomData;
 use types::{
@@ -76,7 +75,7 @@ where
         let block_metadata = header.into_metadata();
         txns.push(Transaction::BlockMetadata(block_metadata));
         for txn in txns {
-            let txn_hash = txn.hash();
+            let txn_hash = txn.crypto_hash();
             let output = E::execute_transaction(&self.config, store.as_ref(), txn)?;
             match output.status() {
                 TransactionStatus::Discard(status) => return Err(status.clone().into()),

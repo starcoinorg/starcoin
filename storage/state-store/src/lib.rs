@@ -9,7 +9,7 @@
 //! This crate defines [`trait StateView`](StateView).
 
 use anyhow::Result;
-use libra_crypto::HashValue;
+use crypto::HashValue;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,

@@ -2,6 +2,7 @@
 
 members = [
     "commons/scs",
+    "commons/crypto",
     "types",
     "config",
     "storage/state-store",

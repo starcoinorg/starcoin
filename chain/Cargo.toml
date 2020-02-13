@@ -14,5 +14,4 @@ types = {path = "../types", package="starcoin-types"}
 config = {path = "../config", package="starcoin-config"}
 state-store = {path = "../storage/state-store", package="starcoin-state-store"}
 executor = {path = "../executor", package="starcoin-executor"}
-libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
