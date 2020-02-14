@@ -16,3 +16,4 @@ chain-state = {path = "../core/chain-state", package="starcoin-chain-state"}
 state-tree = {path = "../core/state-tree", package="starcoin-state-tree"}
 executor = {path = "../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}

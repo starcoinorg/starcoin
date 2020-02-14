@@ -4,7 +4,7 @@
 #![forbid(unsafe_code)]
 
 use anyhow::Result;
-use crypto::HashValue;
+use crypto::{hash::CryptoHash, HashValue};
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -15,16 +15,39 @@ use types::{
 /// `ChainState` s a trait that defines updatable chain's global state.
 pub trait ChainState {
     /// Gets the state for a single access path.
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>>;
+    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+        self.get_account_state(access_path.address)
+            .and_then(|account_state| match account_state {
+                Some(account_state) => self.get_by_hash(
+                    account_state.storage_root(),
+                    HashValue::from_slice(access_path.path.as_slice())?,
+                ),
+                None => Ok(None),
+            })
+    }
 
     /// Gets states for a list of access paths.
-    fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>>;
+    fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
+        access_paths
+            .iter()
+            .map(|access_path| self.get(access_path))
+            .collect()
+    }
 
     /// Gets states at account_state's storage_root.
     fn get_at(
         &self,
         account_state: &AccountState,
         struct_tag: &StructTag,
+    ) -> Result<Option<Vec<u8>>> {
+        self.get_by_hash(account_state.storage_root(), struct_tag.crypto_hash())
+    }
+
+    /// Gets states at with account storage_root and hash.
+    fn get_by_hash(
+        &self,
+        storage_root: HashValue,
+        resource_key: HashValue,
     ) -> Result<Option<Vec<u8>>>;
 
     /// Gets Move module by id.

@@ -2990,6 +2990,7 @@ name = "starcoin-chain"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-canonical-serialization 0.1.0",
  "starcoin-chain-state 0.1.0",
  "starcoin-config 0.1.0",
  "starcoin-crypto 0.1.0",

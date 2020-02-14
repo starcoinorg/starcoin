@@ -3,12 +3,14 @@
 
 pub mod access_path;
 pub mod account_address;
+pub mod account_config;
 pub mod account_state;
 pub mod block;
 pub mod block_metadata;
 pub mod byte_array;
 pub mod change_set;
 pub mod contract_event;
+pub mod identifier;
 pub mod language_storage;
 pub mod proof;
 pub mod storage_root;
