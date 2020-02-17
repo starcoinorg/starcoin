@@ -10,6 +10,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+actix = "0.9"
 types = {path = "../types", package="starcoin-types"}
 config = {path = "../config", package="starcoin-config"}
 chain-state = {path = "../core/chain-state", package="starcoin-chain-state"}

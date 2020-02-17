@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::starcoin_chain_state::StarcoinChainState;
+use crate::BlockChain;
 use anyhow::Result;
 use chain_state::ChainState;
 use config::VMConfig;
@@ -90,8 +91,45 @@ where
         unimplemented!()
     }
 
+    fn select_head(&self) {
+        //select head branch;
+        todo!()
+    }
+
+    fn save_block(&self, block: &Block) {
+        todo!()
+    }
+
+    pub fn create_block(&self) -> Result<Block> {
+        let h = C::create_header(self)?;
+        let previous_header = self.current_header();
+        let header = BlockHeader::new(
+            previous_header.id(),
+            previous_header.number() + 1,
+            0,
+            AccountAddress::default(),
+            HashValue::zero(),
+            HashValue::zero(),
+            0,
+            0,
+            h,
+        );
+        todo!()
+    }
+}
+
+impl<E, H, C> BlockChain for Chain<E, H, C>
+    where
+        E: TransactionExecutor,
+        H: ConsensusHeader,
+        C: Consensus<H>,
+{
+    fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
+        unimplemented!()
+    }
+
     //TODO define connect result.
-    pub fn try_connect(&mut self, block: Block) -> Result<()> {
+    fn try_connect(&mut self, block: Block) -> Result<()> {
         let header = block.header();
         let branch = self.find_or_fork(&header);
         C::verify_header(self, header)?;
@@ -128,32 +166,6 @@ where
         self.save_block(&block);
         chain_state.flush();
         self.select_head();
-        todo!()
-    }
-
-    fn select_head(&self) {
-        //select head branch;
-        todo!()
-    }
-
-    fn save_block(&self, block: &Block) {
-        todo!()
-    }
-
-    pub fn create_block(&self) -> Result<Block> {
-        let h = C::create_header(self)?;
-        let previous_header = self.current_header();
-        let header = BlockHeader::new(
-            previous_header.id(),
-            previous_header.number() + 1,
-            0,
-            AccountAddress::default(),
-            HashValue::zero(),
-            HashValue::zero(),
-            0,
-            0,
-            h,
-        );
         todo!()
     }
 }

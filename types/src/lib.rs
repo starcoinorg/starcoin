@@ -12,6 +12,7 @@ pub mod change_set;
 pub mod contract_event;
 pub mod identifier;
 pub mod language_storage;
+pub mod peer_info;
 pub mod proof;
 pub mod storage_root;
 pub mod system_events;

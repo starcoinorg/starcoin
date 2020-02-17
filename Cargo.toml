@@ -16,5 +16,7 @@ members = [
     "rpc/json-rpc",
     "executor",
     "chain",
-    "node"
+    "node",
+    "synchronizer",
+    "mint",
 ]

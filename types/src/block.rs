@@ -7,11 +7,13 @@ use crate::transaction::SignedUserTransaction;
 use crypto::{hash::CryptoHash, HashValue};
 
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
+use std::cmp::PartialOrd;
 
 /// Type for block number.
 pub type BlockNumber = u64;
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct BlockHeader {
     /// Parent hash.
     parent_hash: HashValue,
@@ -104,6 +106,43 @@ impl BlockHeader {
     pub fn into_metadata(self) -> BlockMetadata {
         BlockMetadata::new(self.id(), self.timestamp, self.author)
     }
+
+    #[cfg(any(test))]
+    pub fn new_block_for_test(parent_hash: HashValue, parent_height: BlockNumber) -> Self {
+        BlockHeader {
+            parent_hash,
+            timestamp: parent_height + 1,
+            /// Block number.
+            number: parent_height + 1,
+            /// Block author.
+            author: AccountAddress::random(),
+            /// Transactions root.
+            transactions_root: HashValue::random(),
+            /// The accumulator root hash after executing this block.
+            accumulator_root: HashValue::random(),
+            /// The last transaction state_root of this block after execute.
+            state_root: HashValue::random(),
+            /// Gas used for contracts execution.
+            gas_used: 0,
+            /// Block gas limit.
+            gas_limit: std::u64::MAX(),
+            /// Block proof of work extend field.
+            pow: HashValue::random().to_vec(),
+        }
+    }
+}
+
+impl Ord for BlockHeader {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.number.cmp(&other.number) {
+            Ordering::Equal => {}
+            ordering => return ordering,
+        }
+        match self.timestamp.cmp(&other.timestamp) {
+            Ordering::Equal => return self.gas_used.cmp(&other.gas_used).reverse(),
+            ordering => return ordering,
+        }
+    }
 }
 
 /// A block, encoded as it is on the block chain.
@@ -124,5 +163,13 @@ impl Block {
     }
     pub fn into_inner(self) -> (BlockHeader, Vec<SignedUserTransaction>) {
         (self.header, self.transactions)
+    }
+
+    #[cfg(any(test))]
+    pub fn new_nil_block_for_test(header: BlockHeader) -> Self {
+        Block {
+            header,
+            transactions: Vec::new(),
+        }
     }
 }
