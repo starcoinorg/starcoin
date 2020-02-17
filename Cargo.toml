@@ -18,5 +18,5 @@ members = [
     "chain",
     "node",
     "sync",
-    "mint",
+    "miner",
 ]

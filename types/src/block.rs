@@ -171,3 +171,7 @@ impl Block {
         }
     }
 }
+
+pub struct BlockTemplate{
+    //TODO
+}

@@ -12,7 +12,7 @@ use executor::TransactionExecutor;
 use std::marker::PhantomData;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockNumber},
+    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
@@ -38,27 +38,23 @@ impl Branch {
     }
 }
 
-struct Chain<E, H, C>
+struct Chain<E, C>
 where
     E: TransactionExecutor,
-    H: ConsensusHeader,
-    C: Consensus<H>,
+    C: Consensus,
 {
     config: VMConfig,
     accumulator: Accumulator,
     head: Branch,
     branches: Vec<Branch>,
     phantom_e: PhantomData<E>,
-    //TODO remove this field.
-    phantom_h: PhantomData<H>,
     phantom_c: PhantomData<C>,
 }
 
-impl<E, H, C> ChainReader for Chain<E, H, C>
+impl<E, C> ChainReader for Chain<E, C>
 where
     E: TransactionExecutor,
-    H: ConsensusHeader,
-    C: Consensus<H>,
+    C: Consensus,
 {
     fn current_header(&self) -> BlockHeader {
         unimplemented!()
@@ -75,13 +71,29 @@ where
     fn get_block(&self, hash: HashValue) -> Block {
         unimplemented!()
     }
+
+    fn create_block_template(&self) -> Result<BlockTemplate> {
+        let previous_header = self.current_header();
+        let header = BlockHeader::new(
+            previous_header.id(),
+            previous_header.number() + 1,
+            0,
+            AccountAddress::default(),
+            HashValue::zero(),
+            HashValue::zero(),
+            0,
+            0,
+            vec![],
+        );
+        // get pending tx from pool, and execute to build BlockTemplate.
+        todo!()
+    }
 }
 
-impl<E, H, C> Chain<E, H, C>
+impl<E, C> Chain<E, C>
 where
     E: TransactionExecutor,
-    H: ConsensusHeader,
-    C: Consensus<H>,
+    C: Consensus,
 {
     pub fn find_or_fork(&self, header: &BlockHeader) -> Branch {
         unimplemented!()
@@ -99,30 +111,12 @@ where
     fn save_block(&self, block: &Block) {
         todo!()
     }
-
-    pub fn create_block(&self) -> Result<Block> {
-        let h = C::create_header(self)?;
-        let previous_header = self.current_header();
-        let header = BlockHeader::new(
-            previous_header.id(),
-            previous_header.number() + 1,
-            0,
-            AccountAddress::default(),
-            HashValue::zero(),
-            HashValue::zero(),
-            0,
-            0,
-            h,
-        );
-        todo!()
-    }
 }
 
-impl<E, H, C> BlockChain for Chain<E, H, C>
+impl<E, C> BlockChain for Chain<E, C>
 where
     E: TransactionExecutor,
-    H: ConsensusHeader,
-    C: Consensus<H>,
+    C: Consensus,
 {
     fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
         unimplemented!()

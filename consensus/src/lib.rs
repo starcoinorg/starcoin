@@ -4,26 +4,31 @@
 use anyhow::Result;
 use config::NodeConfig;
 use crypto::HashValue;
+use futures::channel::oneshot;
 use std::convert::TryFrom;
-use types::block::{Block, BlockHeader, BlockNumber};
+use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
 
 pub mod dummy;
 
-pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> {}
+pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin {}
 
+//TODO this trait should be async.
 pub trait ChainReader {
     fn current_header(&self) -> BlockHeader;
     fn get_header(&self, hash: HashValue) -> BlockHeader;
     fn get_header_by_number(&self, number: BlockNumber) -> BlockHeader;
     fn get_block(&self, hash: HashValue) -> Block;
+    fn create_block_template(&self) -> Result<BlockTemplate>;
 }
 
-pub trait Consensus<H>
-where
-    H: ConsensusHeader,
-{
+pub trait Consensus: std::marker::Unpin {
     fn verify_header(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()>;
-    fn create_header(reader: &dyn ChainReader) -> Result<H>;
+    /// Construct block with BlockTemplate
+    fn create_block(
+        reader: &dyn ChainReader,
+        block_template: BlockTemplate,
+        cancel: oneshot::Receiver<()>,
+    ) -> Result<Block>;
 }
 
 #[cfg(test)]

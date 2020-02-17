@@ -10,6 +10,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+futures = { version = "0.3.2"}
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}

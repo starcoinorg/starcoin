@@ -3,8 +3,9 @@
 
 use crate::{ChainReader, Consensus, ConsensusHeader};
 use anyhow::{Error, Result};
+use futures::channel::oneshot::Receiver;
 use std::convert::TryFrom;
-use types::block::BlockHeader;
+use types::block::{Block, BlockHeader, BlockTemplate};
 
 pub struct DummyHeader {}
 
@@ -26,12 +27,16 @@ impl Into<Vec<u8>> for DummyHeader {
 
 pub struct DummyConsensus {}
 
-impl Consensus<DummyHeader> for DummyConsensus {
+impl Consensus for DummyConsensus {
     fn verify_header(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
         Ok(())
     }
 
-    fn create_header(reader: &dyn ChainReader) -> Result<DummyHeader> {
-        Ok(DummyHeader {})
+    fn create_block(
+        reader: &dyn ChainReader,
+        block_template: BlockTemplate,
+        cancel: Receiver<()>,
+    ) -> Result<Block> {
+        unimplemented!()
     }
 }
