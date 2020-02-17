@@ -11,10 +11,15 @@ edition = "2018"
 anyhow = "1.0"
 actix = "0.9"
 actix-rt = "1.0"
-
+log = "0.4"
 transaction-pool = "2.0"
-
+futures = "0.3"
+futures-channel = "0.3"
+rand = "0.6"
+serde = "1.0"
+serde_derive = "1.0"
 types = { package = "starcoin-types", path = "../types"}
 config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
 network = {path = "../network", package="starcoin-network"}
+common_crypto = {package = "starcoin-crypto", path = "../commons/crypto"}

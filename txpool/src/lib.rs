@@ -1,6 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+extern crate log;
+
 use crate::txpool::TxPool;
 use actix::prelude::*;
 use anyhow::Result;
@@ -8,9 +13,8 @@ use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use network::{BroadcastTransactionMessage, NetworkActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
-
+mod pool;
 mod txpool;
-
 pub struct TxPoolActor {
     pool: TxPool,
     bus: Addr<BusActor>,
