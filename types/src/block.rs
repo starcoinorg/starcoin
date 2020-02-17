@@ -116,8 +116,6 @@ impl BlockHeader {
             number: parent_height + 1,
             /// Block author.
             author: AccountAddress::random(),
-            /// Transactions root.
-            transactions_root: HashValue::random(),
             /// The accumulator root hash after executing this block.
             accumulator_root: HashValue::random(),
             /// The last transaction state_root of this block after execute.
@@ -125,9 +123,9 @@ impl BlockHeader {
             /// Gas used for contracts execution.
             gas_used: 0,
             /// Block gas limit.
-            gas_limit: std::u64::MAX(),
+            gas_limit: std::u64::MAX,
             /// Block proof of work extend field.
-            pow: HashValue::random().to_vec(),
+            consensus_header: HashValue::random().to_vec(),
         }
     }
 }
