@@ -17,6 +17,6 @@ members = [
     "executor",
     "chain",
     "node",
-    "synchronizer",
+    "sync",
     "mint",
 ]

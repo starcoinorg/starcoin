@@ -9,40 +9,40 @@ use network::NetworkActor;
 use std::sync::Arc;
 use types::block::BlockHeader;
 
-pub struct SynchronizerActor {
-    block_sync: BlockSynchronizer,
+pub struct SyncActor {
+    block_sync: BlockSync,
 }
 
-impl SynchronizerActor {
+impl SyncActor {
     pub fn launch(
         _node_config: &NodeConfig,
         _network: Addr<NetworkActor>,
         chain: Addr<ChainActor>,
-    ) -> Result<Addr<SynchronizerActor>> {
-        let block_sync = BlockSynchronizer {
+    ) -> Result<Addr<SyncActor>> {
+        let block_sync = BlockSync {
             chain,
             hash_pool: TTLPool::new(),
             header_pool: TTLPool::new(),
             body_pool: TTLPool::new(),
         };
-        let actor = SynchronizerActor { block_sync };
+        let actor = SyncActor { block_sync };
         Ok(actor.start())
     }
 }
 
-impl Actor for SynchronizerActor {
+impl Actor for SyncActor {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("Synchronizer actor started");
+        println!("Sync actor started");
     }
 }
 
-pub struct BlockSynchronizer {
+pub struct BlockSync {
     chain: Addr<ChainActor>,
     hash_pool: TTLPool<HashWithHeight>,
     header_pool: TTLPool<BlockHeader>,
     body_pool: TTLPool<BlockBody>,
 }
 
-impl Synchronizer for BlockSynchronizer {}
+impl Synchronizer for BlockSync {}

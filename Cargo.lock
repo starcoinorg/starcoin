@@ -3144,7 +3144,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-synchronizer"
+name = "starcoin-sync"
 version = "0.1.0"
 dependencies = [
  "actix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",

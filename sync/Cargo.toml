@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-synchronizer"
+name = "starcoin-sync"
 version = "0.1.0"
 authors = ["tiangong3624749 <tiangong3624749@163.com>"]
 edition = "2018"

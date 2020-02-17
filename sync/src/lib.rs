@@ -1,6 +1,6 @@
 mod pool;
 mod proto;
-mod synchronizer;
+mod sync;
 #[cfg(test)]
 mod tests;
 
