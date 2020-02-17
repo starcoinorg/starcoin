@@ -119,10 +119,10 @@ where
 }
 
 impl<E, H, C> BlockChain for Chain<E, H, C>
-    where
-        E: TransactionExecutor,
-        H: ConsensusHeader,
-        C: Consensus<H>,
+where
+    E: TransactionExecutor,
+    H: ConsensusHeader,
+    C: Consensus<H>,
 {
     fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
         unimplemented!()
