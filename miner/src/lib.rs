@@ -15,6 +15,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 
+mod headblock_pacemaker;
 mod miner;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
