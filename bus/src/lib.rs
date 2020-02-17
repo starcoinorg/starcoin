@@ -1,8 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::bus::Bus;
+use crate::bus::BusImpl;
 use actix::prelude::*;
+use anyhow::Result;
 
 mod bus;
 
@@ -23,16 +24,31 @@ where
     M: Message + Send + Clone,
     M::Result: Send,
 {
-    pub message: M,
+    pub msg: M,
+}
+
+#[async_trait::async_trait]
+pub trait Bus {
+    async fn subscribe<M: 'static>(&self, recipient: Recipient<M>) -> Result<()>
+    where
+        M: Message + Send + Clone,
+        M::Result: Send;
+
+    async fn broadcast<M: 'static>(&self, msg: M) -> Result<()>
+    where
+        M: Message + Send + Clone,
+        M::Result: Send;
 }
 
 pub struct BusActor {
-    bus: Bus,
+    bus: BusImpl,
 }
 
 impl BusActor {
     pub fn launch() -> Addr<BusActor> {
-        let bus = BusActor { bus: Bus::new() };
+        let bus = BusActor {
+            bus: BusImpl::new(),
+        };
         bus.start()
     }
 }
@@ -61,7 +77,28 @@ where
     type Result = ();
 
     fn handle(&mut self, msg: Broadcast<M>, _ctx: &mut Self::Context) -> Self::Result {
-        self.bus.broadcast(msg.message)
+        self.bus.broadcast(msg.msg)
+    }
+}
+
+#[async_trait::async_trait]
+impl Bus for Addr<BusActor> {
+    async fn subscribe<M: 'static>(&self, recipient: Recipient<M>) -> Result<()>
+    where
+        M: Message + Send + Clone,
+        M::Result: Send,
+    {
+        self.send(Subscription { recipient })
+            .await
+            .map_err(|e| e.into())
+    }
+
+    async fn broadcast<M: 'static>(&self, msg: M) -> Result<()>
+    where
+        M: Message + Send + Clone,
+        M::Result: Send,
+    {
+        self.send(Broadcast { msg }).await.map_err(|e| e.into())
     }
 }
 
@@ -81,6 +118,10 @@ mod tests {
     #[derive(Debug, Message, Clone)]
     #[rtype(result = "()")]
     struct DoBroadcast {}
+
+    #[derive(Debug, Message, Clone)]
+    #[rtype(result = "()")]
+    struct DoBroadcast2 {}
 
     struct MyActor {
         counter: u64,
@@ -113,11 +154,23 @@ mod tests {
 
         fn handle(&mut self, _msg: DoBroadcast, ctx: &mut Self::Context) {
             self.bus
-                .send(Broadcast {
-                    message: MyMessage {},
-                })
+                .send(Broadcast { msg: MyMessage {} })
                 .into_actor(self)
                 //need convert act to static ActorFuture and call wait.
+                .then(|_result, act, _ctx| async {}.into_actor(act))
+                .wait(ctx);
+        }
+    }
+
+    impl Handler<DoBroadcast2> for MyActor {
+        type Result = ();
+
+        fn handle(&mut self, _msg: DoBroadcast2, ctx: &mut Self::Context) {
+            // can not use async broadcast at here, lifetime error.
+            self.bus
+                //.broadcast(MyMessage {})
+                .send(Broadcast { msg: MyMessage {} })
+                .into_actor(self)
                 .then(|_result, act, _ctx| async {}.into_actor(act))
                 .wait(ctx);
         }
@@ -135,9 +188,7 @@ mod tests {
 
         bus_actor.send(Subscription { recipient }).await.unwrap();
         bus_actor
-            .send(Broadcast {
-                message: MyMessage {},
-            })
+            .send(Broadcast { msg: MyMessage {} })
             .await
             .unwrap();
         delay_for(Duration::from_millis(100)).await;
@@ -157,6 +208,23 @@ mod tests {
 
         bus_actor.send(Subscription { recipient }).await.unwrap();
         addr.send(DoBroadcast {}).await.unwrap();
+        delay_for(Duration::from_millis(100)).await;
+        let counter = addr.send(GetCounterMessage {}).await.unwrap();
+        assert_eq!(counter, 1);
+    }
+
+    #[actix_rt::test]
+    async fn test_bus_actor_async_trait() {
+        let bus_actor = BusActor::launch();
+        let actor = MyActor {
+            counter: 0,
+            bus: bus_actor.clone(),
+        };
+        let addr = actor.start();
+        let recipient = addr.clone().recipient::<MyMessage>();
+
+        bus_actor.subscribe(recipient).await.unwrap();
+        addr.send(DoBroadcast2 {}).await.unwrap();
         delay_for(Duration::from_millis(100)).await;
         let counter = addr.send(GetCounterMessage {}).await.unwrap();
         assert_eq!(counter, 1);

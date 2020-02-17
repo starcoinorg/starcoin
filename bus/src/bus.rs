@@ -5,11 +5,11 @@ use actix::prelude::*;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
-pub struct Bus {
+pub struct BusImpl {
     subscribers: HashMap<TypeId, Vec<Box<dyn Any + Send>>>,
 }
 
-impl Bus {
+impl BusImpl {
     pub fn new() -> Self {
         Self {
             subscribers: HashMap::new(),
