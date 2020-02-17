@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{BroadcastTransactionMessage, GetCounterMessage, PeerMessage, StopMessage};
+use crate::{GetCounterMessage, PeerMessage, StopMessage};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
@@ -11,17 +11,23 @@ use libp2p::{
     ping::{Ping, PingConfig, PingEvent},
     PeerId, Swarm,
 };
+use txpool::{SubmitTransactionMessage, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 pub struct NetworkActor {
     network_config: NetworkConfig,
     bus: Addr<BusActor>,
+    txpool: Addr<TxPoolActor>,
     //just for test, remove later.
     counter: u64,
 }
 
 impl NetworkActor {
-    pub fn launch(node_config: &NodeConfig, bus: Addr<BusActor>) -> Result<Addr<NetworkActor>> {
+    pub fn launch(
+        node_config: &NodeConfig,
+        bus: Addr<BusActor>,
+        txpool: Addr<TxPoolActor>,
+    ) -> Result<Addr<NetworkActor>> {
         //TODO read from config
         let id_keys = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(id_keys.public());
@@ -41,6 +47,7 @@ impl NetworkActor {
                 NetworkActor {
                     network_config,
                     bus,
+                    txpool,
                     counter: 0,
                 }
             },
@@ -84,17 +91,21 @@ impl Handler<StopMessage> for NetworkActor {
     }
 }
 
-/// Broadcast transaction to other peer.
-impl Handler<BroadcastTransactionMessage> for NetworkActor {
+/// handler system events.
+impl Handler<SystemEvents> for NetworkActor {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: BroadcastTransactionMessage,
-        _ctx: &mut Self::Context,
-    ) -> Self::Result {
-        //TODO
-        println!("Broadcast transaction {:?}", msg.tx);
+    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            SystemEvents::NewUserTransaction(txn) => {
+                //TODO
+                println!("Broadcast transaction {:?} to peers", txn);
+            }
+            SystemEvents::NewHeadBlock(block) => {
+                //TODO broadcast block to peers.
+            }
+            _ => {}
+        }
     }
 }
 
@@ -105,10 +116,8 @@ impl Handler<PeerMessage> for NetworkActor {
     fn handle(&mut self, msg: PeerMessage, ctx: &mut Self::Context) {
         match msg {
             PeerMessage::UserTransaction(txn) => {
-                self.bus
-                    .send(Broadcast {
-                        msg: SystemEvents::NewUserTransaction(txn),
-                    })
+                self.txpool
+                    .send(SubmitTransactionMessage { tx: txn })
                     .into_actor(self)
                     .then(|_result, act, _ctx| async {}.into_actor(act))
                     .wait(ctx);
@@ -126,7 +135,8 @@ mod tests {
     async fn test_network() {
         let node_config = NodeConfig::default();
         let bus = BusActor::launch();
-        let network = NetworkActor::launch(&node_config, bus).unwrap();
+        let txpool = TxPoolActor::launch(&node_config, bus.clone());
+        let network = NetworkActor::launch(&node_config, bus, txpool).unwrap();
 
         let id_keys = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(id_keys.public());

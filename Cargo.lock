@@ -3198,6 +3198,7 @@ dependencies = [
  "libp2p 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-bus 0.1.0",
  "starcoin-config 0.1.0",
+ "starcoin-txpool 0.1.0",
  "starcoin-types 0.1.0",
  "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -3271,7 +3272,6 @@ dependencies = [
  "starcoin-bus 0.1.0",
  "starcoin-config 0.1.0",
  "starcoin-crypto 0.1.0",
- "starcoin-network 0.1.0",
  "starcoin-types 0.1.0",
  "transaction-pool 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

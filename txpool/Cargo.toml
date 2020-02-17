@@ -21,5 +21,4 @@ serde_derive = "1.0"
 types = { package = "starcoin-types", path = "../types"}
 config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
-network = {path = "../network", package="starcoin-network"}
 common_crypto = {package = "starcoin-crypto", path = "../commons/crypto"}

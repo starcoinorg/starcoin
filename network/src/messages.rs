@@ -11,12 +11,6 @@ pub struct GetCounterMessage {}
 #[rtype(result = "()")]
 pub struct StopMessage {}
 
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct BroadcastTransactionMessage {
-    pub tx: SignedUserTransaction,
-}
-
 /// message from peer
 #[derive(Message)]
 #[rtype(result = "()")]

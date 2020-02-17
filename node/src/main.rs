@@ -27,8 +27,8 @@ async fn main() {
 
     let config = NodeConfig::load_or_default(args.config.as_ref().map(PathBuf::as_path));
     let bus = BusActor::launch();
-    let network = NetworkActor::launch(&config, bus.clone()).unwrap();
-    let txpool_actor_ref = TxPoolActor::launch(&config, bus, network).unwrap();
+    let txpool_actor_ref = TxPoolActor::launch(&config, bus.clone()).unwrap();
+    let network = NetworkActor::launch(&config, bus.clone(), txpool_actor_ref.clone()).unwrap();
     let _json_rpc = JSONRpcActor::launch(&config, txpool_actor_ref);
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();

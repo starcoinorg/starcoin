@@ -9,28 +9,22 @@ extern crate log;
 use crate::txpool::TxPool;
 use actix::prelude::*;
 use anyhow::Result;
-use bus::{BusActor, Subscription};
+use bus::{Broadcast, BusActor, Subscription};
 use config::NodeConfig;
-use network::{BroadcastTransactionMessage, NetworkActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
+
 mod pool;
 mod txpool;
 pub struct TxPoolActor {
     pool: TxPool,
     bus: Addr<BusActor>,
-    network: Addr<NetworkActor>,
 }
 
 impl TxPoolActor {
-    pub fn launch(
-        _node_config: &NodeConfig,
-        bus: Addr<BusActor>,
-        network: Addr<NetworkActor>,
-    ) -> Result<Addr<Self>> {
+    pub fn launch(_node_config: &NodeConfig, bus: Addr<BusActor>) -> Result<Addr<Self>> {
         let actor_ref = Self {
             pool: TxPool::new(),
             bus,
-            network,
         }
         .start();
         Ok(actor_ref)
@@ -62,8 +56,9 @@ impl Handler<SubmitTransactionMessage> for TxPoolActor {
     fn handle(&mut self, msg: SubmitTransactionMessage, _ctx: &mut Self::Context) -> Self::Result {
         let new_tx = self.pool.add_tx(msg.tx.clone())?;
         if new_tx {
-            self.network
-                .do_send(BroadcastTransactionMessage { tx: msg.tx });
+            self.bus.do_send(Broadcast {
+                msg: SystemEvents::NewUserTransaction(msg.tx),
+            });
         }
         return Ok(new_tx);
     }
@@ -75,10 +70,9 @@ impl Handler<SystemEvents> for TxPoolActor {
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) {
         match msg {
-            SystemEvents::NewUserTransaction(txn) => match self.pool.add_tx(txn) {
-                Ok(_) => {}
-                Err(err) => println!("Add tx to pool error:{:?}", err),
-            },
+            SystemEvents::NewHeadBlock(_block) => {
+                //TODO remove block's txn from pool.
+            }
             _ => {}
         }
     }
