@@ -1,31 +1,29 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-mod consensus;
-
-use actix::prelude::*;
 use anyhow::Result;
 use config::NodeConfig;
-use network::NetworkActor;
+use crypto::HashValue;
+use std::convert::TryFrom;
+use types::block::{Block, BlockHeader, BlockNumber};
 
-pub struct ConsensusActor {}
+pub mod dummy;
 
-impl ConsensusActor {
-    pub fn launch(
-        _node_config: &NodeConfig,
-        _network: Addr<NetworkActor>,
-    ) -> Result<Addr<ConsensusActor>> {
-        let actor = ConsensusActor {};
-        Ok(actor.start())
-    }
+pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> {}
+
+pub trait ChainReader {
+    fn current_header(&self) -> BlockHeader;
+    fn get_header(&self, hash: HashValue) -> BlockHeader;
+    fn get_header_by_number(&self, number: BlockNumber) -> BlockHeader;
+    fn get_block(&self, hash: HashValue) -> Block;
 }
 
-impl Actor for ConsensusActor {
-    type Context = Context<Self>;
-
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("Consensus actor started");
-    }
+pub trait Consensus<H>
+where
+    H: ConsensusHeader,
+{
+    fn verify_header(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()>;
+    fn create_header(reader: &dyn ChainReader) -> Result<H>;
 }
 
 #[cfg(test)]

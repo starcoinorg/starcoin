@@ -21,8 +21,6 @@ pub struct BlockHeader {
     number: BlockNumber,
     /// Block author.
     author: AccountAddress,
-    /// Transactions root.
-    transactions_root: HashValue,
     /// The accumulator root hash after executing this block.
     accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
@@ -31,11 +29,38 @@ pub struct BlockHeader {
     gas_used: u64,
     /// Block gas limit.
     gas_limit: u64,
-    /// Block proof of work extend field.
-    pow: Vec<u8>,
+    /// Consensus extend header field.
+    consensus_header: Vec<u8>,
 }
 
 impl BlockHeader {
+    pub fn new<H>(
+        parent_hash: HashValue,
+        number: BlockNumber,
+        timestamp: u64,
+        author: AccountAddress,
+        accumulator_root: HashValue,
+        state_root: HashValue,
+        gas_used: u64,
+        gas_limit: u64,
+        consensus_header: H,
+    ) -> BlockHeader
+    where
+        H: Into<Vec<u8>>,
+    {
+        BlockHeader {
+            parent_hash,
+            number,
+            timestamp,
+            author,
+            accumulator_root: HashValue::zero(),
+            state_root: HashValue::zero(),
+            gas_used: 0,
+            gas_limit: 0,
+            consensus_header: consensus_header.into(),
+        }
+    }
+
     pub fn id(&self) -> HashValue {
         self.crypto_hash()
     }
@@ -72,8 +97,8 @@ impl BlockHeader {
         self.gas_limit
     }
 
-    pub fn pow(&self) -> &[u8] {
-        self.pow.as_slice()
+    pub fn consensus_header(&self) -> &[u8] {
+        self.consensus_header.as_slice()
     }
 
     pub fn into_metadata(self) -> BlockMetadata {

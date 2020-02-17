@@ -10,6 +10,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-actix = "0.9"
 config = {path = "../config", package="starcoin-config"}
-network = {path = "../network", package="starcoin-network"}
+types = {path = "../types", package="starcoin-types"}
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}

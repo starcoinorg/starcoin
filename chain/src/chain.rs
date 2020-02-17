@@ -5,10 +5,12 @@ use crate::starcoin_chain_state::StarcoinChainState;
 use anyhow::Result;
 use chain_state::ChainState;
 use config::VMConfig;
+use consensus::{ChainReader, Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use std::marker::PhantomData;
 use types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
@@ -35,25 +37,51 @@ impl Branch {
     }
 }
 
-struct Chain<E>
+struct Chain<E, H, C>
 where
     E: TransactionExecutor,
+    H: ConsensusHeader,
+    C: Consensus<H>,
 {
     config: VMConfig,
     accumulator: Accumulator,
     head: Branch,
     branches: Vec<Branch>,
-    phantom: PhantomData<E>,
+    phantom_e: PhantomData<E>,
+    //TODO remove this field.
+    phantom_h: PhantomData<H>,
+    phantom_c: PhantomData<C>,
 }
 
-impl<E> Chain<E>
+impl<E, H, C> ChainReader for Chain<E, H, C>
 where
     E: TransactionExecutor,
+    H: ConsensusHeader,
+    C: Consensus<H>,
 {
-    pub fn get_block_by_hash(&self, hash: HashValue) -> Block {
+    fn current_header(&self) -> BlockHeader {
         unimplemented!()
     }
 
+    fn get_header(&self, hash: HashValue) -> BlockHeader {
+        unimplemented!()
+    }
+
+    fn get_header_by_number(&self, number: u64) -> BlockHeader {
+        unimplemented!()
+    }
+
+    fn get_block(&self, hash: HashValue) -> Block {
+        unimplemented!()
+    }
+}
+
+impl<E, H, C> Chain<E, H, C>
+where
+    E: TransactionExecutor,
+    H: ConsensusHeader,
+    C: Consensus<H>,
+{
     pub fn find_or_fork(&self, header: &BlockHeader) -> Branch {
         unimplemented!()
     }
@@ -64,16 +92,17 @@ where
 
     //TODO define connect result.
     pub fn try_connect(&mut self, block: Block) -> Result<()> {
-        let branch = self.find_or_fork(block.header());
-
+        let header = block.header();
+        let branch = self.find_or_fork(&header);
+        C::verify_header(self, header)?;
         let chain_state = self.state_at(branch.block_header.state_root());
-        let (header, user_txns) = block.clone().into_inner();
-        let mut txns = user_txns
+        let mut txns = block
+            .transactions()
             .iter()
             .cloned()
             .map(|user_txn| Transaction::UserTransaction(user_txn))
             .collect::<Vec<Transaction>>();
-        let block_metadata = header.into_metadata();
+        let block_metadata = header.clone().into_metadata();
         txns.push(Transaction::BlockMetadata(block_metadata));
         for txn in txns {
             let txn_hash = txn.crypto_hash();
@@ -96,7 +125,7 @@ where
         }
 
         //todo verify state_root and accumulator_root;
-        self.save_block(block);
+        self.save_block(&block);
         chain_state.flush();
         self.select_head();
         todo!()
@@ -107,7 +136,24 @@ where
         todo!()
     }
 
-    fn save_block(&self, block: Block) {
+    fn save_block(&self, block: &Block) {
+        todo!()
+    }
+
+    pub fn create_block(&self) -> Result<Block> {
+        let h = C::create_header(self)?;
+        let previous_header = self.current_header();
+        let header = BlockHeader::new(
+            previous_header.id(),
+            previous_header.number() + 1,
+            0,
+            AccountAddress::default(),
+            HashValue::zero(),
+            HashValue::zero(),
+            0,
+            0,
+            h,
+        );
         todo!()
     }
 }
