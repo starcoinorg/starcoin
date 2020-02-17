@@ -7,6 +7,9 @@ use anyhow::Result;
 use std::sync::Arc;
 
 pub mod kv;
+pub mod memory_storage;
+pub mod persistence_storage;
+pub mod storage;
 pub mod transaction_info_store;
 
 struct StarcoinStorage {
