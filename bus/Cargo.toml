@@ -14,3 +14,4 @@ futures = "0.3"
 actix = "0.9"
 actix-rt = "1.0"
 tokio = { version = "0.2", features = ["full"] }
+async-trait = "0.1"

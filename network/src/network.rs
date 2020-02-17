@@ -107,7 +107,7 @@ impl Handler<PeerMessage> for NetworkActor {
             PeerMessage::UserTransaction(txn) => {
                 self.bus
                     .send(Broadcast {
-                        message: SystemEvents::NewUserTransaction(txn),
+                        msg: SystemEvents::NewUserTransaction(txn),
                     })
                     .into_actor(self)
                     .then(|_result, act, _ctx| async {}.into_actor(act))
