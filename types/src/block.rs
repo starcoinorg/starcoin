@@ -107,8 +107,30 @@ impl BlockHeader {
         BlockMetadata::new(self.id(), self.timestamp, self.author)
     }
 
-    #[cfg(any(test))]
-    pub fn new_block_for_test(parent_hash: HashValue, parent_height: BlockNumber) -> Self {
+    //#[cfg(test)]
+    pub fn genesis_block_header_for_test() -> Self {
+        BlockHeader {
+            parent_hash: HashValue::zero(),
+            timestamp: 0,
+            /// Block number.
+            number: 0,
+            /// Block author.
+            author: AccountAddress::random(),
+            /// The accumulator root hash after executing this block.
+            accumulator_root: HashValue::random(),
+            /// The last transaction state_root of this block after execute.
+            state_root: HashValue::random(),
+            /// Gas used for contracts execution.
+            gas_used: 0,
+            /// Block gas limit.
+            gas_limit: std::u64::MAX,
+            /// Block proof of work extend field.
+            consensus_header: HashValue::random().to_vec(),
+        }
+    }
+
+    //#[cfg(test)]
+    pub fn new_block_header_for_test(parent_hash: HashValue, parent_height: BlockNumber) -> Self {
         BlockHeader {
             parent_hash,
             timestamp: parent_height + 1,
@@ -163,7 +185,7 @@ impl Block {
         (self.header, self.transactions)
     }
 
-    #[cfg(any(test))]
+    //#[cfg(test)]
     pub fn new_nil_block_for_test(header: BlockHeader) -> Self {
         Block {
             header,

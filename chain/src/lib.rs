@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
-#[cfg(any(test))]
-mod mock_chain;
+mod mem_chain;
 mod starcoin_chain_state;
 
 use actix::prelude::*;
@@ -59,10 +58,4 @@ impl ChainReader for ChainActorRef {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+mod tests;

@@ -17,14 +17,14 @@ use types::block::{Block, BlockNumber};
 /// blocks: all block
 /// indexes: block number to block
 /// main_chain: B0 B1 B2 B3 B4 B5
-pub struct MockChain {
+pub struct MemChain {
     latest_block_number: BlockNumber,
     blocks: HashMap<HashValue, Block>,
     indexes: HashMap<BlockNumber, Vec<HashValue>>,
     main_chain: HashMap<BlockNumber, HashValue>,
 }
 
-impl MockChain {
+impl MemChain {
     pub fn new(genesis_block: Block) -> Self {
         assert_eq!(genesis_block.header().number(), 0);
 
@@ -39,7 +39,7 @@ impl MockChain {
         let mut main_chain = HashMap::new();
         main_chain.insert(genesis_block_number, genesis_block_hash);
 
-        MockChain {
+        MemChain {
             latest_block_number: genesis_block_number,
             blocks,
             indexes,
@@ -48,7 +48,7 @@ impl MockChain {
     }
 }
 
-impl BlockChain for MockChain {
+impl BlockChain for MemChain {
     fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
         match self.blocks.get(&hash) {
             Some(b) => Some(b.clone()),
