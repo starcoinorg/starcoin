@@ -20,15 +20,18 @@ use std::{
 };
 
 mod change_set;
+mod error;
 pub mod helpers;
 mod module;
+mod pending_transaction;
 mod script;
 mod transaction_argument;
 
 pub use change_set::ChangeSet;
+pub use error::Error as TransactionError;
 pub use module::Module;
+pub use pending_transaction::{Condition, PendingTransaction};
 pub use script::{Script, SCRIPT_HASH_LENGTH};
-
 use std::ops::Deref;
 pub use transaction_argument::{parse_as_transaction_argument, TransactionArgument};
 
@@ -297,6 +300,10 @@ impl SignedUserTransaction {
             public_key,
             signature,
         }
+    }
+
+    pub fn raw_txn(&self) -> &RawUserTransaction {
+        &self.raw_txn
     }
 
     pub fn public_key(&self) -> Ed25519PublicKey {

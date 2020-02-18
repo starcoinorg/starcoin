@@ -5,7 +5,7 @@
 extern crate serde_derive;
 #[macro_use]
 extern crate log;
-
+extern crate transaction_pool as tx_pool;
 use crate::txpool::TxPool;
 use actix::prelude::*;
 use anyhow::Result;

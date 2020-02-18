@@ -1,15 +1,24 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod client;
 mod listener;
-// mod ready;
+mod ready;
 // mod replace;
-// mod scoring;
-// mod verifier;
+mod scoring;
+mod verifier;
 
 use common_crypto::hash::{CryptoHash, HashValue};
 use transaction_pool as tx_pool;
 use types::{account_address::AccountAddress, transaction};
+
+pub type Nonce = u64;
+pub type GasPrice = u64;
+pub type Gas = u64;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct UnverifiedUserTransaction(transaction::SignedUserTransaction);
+
 /// Transaction priority.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Clone, Copy)]
 pub enum Priority {
@@ -26,11 +35,18 @@ pub enum Priority {
     /// submitted over local RPC connection
     Local,
 }
-
+impl Priority {
+    fn is_local(&self) -> bool {
+        match *self {
+            Priority::Local => true,
+            _ => false,
+        }
+    }
+}
 /// Verified transaction stored in the pool.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerifiedTransaction {
-    transaction: transaction::SignedUserTransaction,
+    transaction: transaction::PendingTransaction,
     // TODO: use transaction's hash/sender
     hash: HashValue,
     sender: AccountAddress,
@@ -48,7 +64,7 @@ impl VerifiedTransaction {
         let hash = CryptoHash::crypto_hash(&tx);
         let sender = tx.sender();
         VerifiedTransaction {
-            transaction: tx,
+            transaction: tx.into(),
             hash,
             sender,
             priority: Priority::Retracted,
@@ -66,10 +82,10 @@ impl VerifiedTransaction {
         &self.transaction
     }
 
-    //    /// Gets wrapped `PendingTransaction`
-    //    pub fn pending(&self) -> &transaction::PendingTransaction {
-    //        &self.transaction
-    //    }
+    /// Gets wrapped `PendingTransaction`
+    pub fn pending(&self) -> &transaction::PendingTransaction {
+        &self.transaction
+    }
 }
 
 impl tx_pool::VerifiedTransaction for VerifiedTransaction {
@@ -112,7 +128,7 @@ impl ScoredTransaction for VerifiedTransaction {
     }
 
     /// Gets transaction nonce.
-    fn nonce(&self) -> u64 {
+    fn nonce(&self) -> Nonce {
         self.transaction.sequence_number()
     }
 }
@@ -143,7 +159,7 @@ pub struct PendingSettings {
     /// Current timestamp (affects readiness of some transactions).
     pub current_timestamp: u64,
     /// Nonce cap (for dust protection; EIP-168)
-    pub nonce_cap: Option<u64>,
+    pub nonce_cap: Option<Nonce>,
     /// Maximal number of transactions in pending the set.
     pub max_len: usize,
     /// Ordering of transactions.
