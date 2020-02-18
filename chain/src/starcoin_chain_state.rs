@@ -20,6 +20,11 @@ pub struct StarcoinChainState {
 }
 
 impl StarcoinChainState {
+    // create empty chain state
+    pub fn new() -> Self {
+        unimplemented!()
+    }
+
     /// Commit and calculate new state root
     pub fn commit(&self) -> Result<HashValue> {
         //TODO

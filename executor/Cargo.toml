@@ -9,8 +9,10 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-types = {path = "../types", package="starcoin-types"}
-config = {path = "../config", package="starcoin-config"}
-chain-state = {path = "../core/chain-state", package="starcoin-chain-state"}
-libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+once_cell = "1.2.0"
+types = { package="starcoin-types", path = "../types"}
+config = { package="starcoin-config", path = "../config"}
+chain-state = {package="starcoin-chain-state", path = "../core/chain-state"}
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+state-tree = {path = "../core/state-tree", package="starcoin-state-tree"}

@@ -9,7 +9,7 @@ use types::{
     vm_error::VMStatus,
 };
 
-mod mock_executor;
+pub mod mock_executor;
 
 pub trait TransactionExecutor {
     /// Execute transaction, update state to state_store, and return events and TransactionStatus.
