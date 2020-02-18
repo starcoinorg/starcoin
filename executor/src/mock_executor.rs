@@ -43,16 +43,21 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
     TransactionStatus::Discard(VMStatus::new(StatusCode::ABORTED).with_sub_status(10))
 });
 
+fn empty_tree() {
+    unimplemented!()
+}
+
 pub struct MockChainState {
-    state_tree: SparseMerkleTree,
+//    state_tree: SparseMerkleTree,
 }
 
 impl MockChainState {
     // create empty chain state
     pub fn new() -> Self {
-        unimplemented!()
+        MockChainState {
+//            state_tree: empty_tree(),
+        }
     }
-
     /// Commit and calculate new state root
     pub fn commit(&self) -> Result<HashValue> {
         unimplemented!()
@@ -78,7 +83,7 @@ impl ChainState for MockChainState {
     }
 
     fn get_account_state(&self, address: AccountAddress) -> Result<Option<AccountState>> {
-        unimplemented!()
+        Ok(None)
     }
 
     fn is_genesis(&self) -> bool {

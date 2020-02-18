@@ -4,9 +4,19 @@
 //use super::*;
 use crate::{
     mock_executor::{
-        encode_mint_transaction, encode_transfer_transaction, MockExecutor, DISCARD_STATUS, KEEP_STATUS,
+        MockChainState,  MockExecutor, encode_mint_transaction, encode_transfer_transaction, DISCARD_STATUS, KEEP_STATUS,
     },
+    TransactionExecutor,
 };
+use config::VMConfig;
+use types::{
+    access_path::AccessPath,
+    account_address::{AccountAddress, ADDRESS_LENGTH},
+};
+
+fn gen_address(index: u8) -> AccountAddress {
+    AccountAddress::new([index; ADDRESS_LENGTH])
+}
 
 #[test]
 fn test_execute_txn() {
@@ -14,10 +24,10 @@ fn test_execute_txn() {
     let txn = encode_mint_transaction(gen_address(0), 100);
     let config = VMConfig::default();
 
-    let output = MockExecutor::execute_transaction(&config, &chain_state, txn)?;
+    let output = MockExecutor::execute_transaction(&config, &chain_state, txn).unwrap();
 
     assert_eq!(
         KEEP_STATUS.clone(),
-        output.status()
+        *output.status()
     );
 }

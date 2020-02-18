@@ -9,6 +9,7 @@ use types::{
     vm_error::VMStatus,
 };
 
+mod executor_test;
 pub mod mock_executor;
 
 pub trait TransactionExecutor {
