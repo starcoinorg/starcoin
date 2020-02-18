@@ -4,7 +4,7 @@
 mod client;
 mod listener;
 mod ready;
-// mod replace;
+mod replace;
 mod scoring;
 mod verifier;
 
