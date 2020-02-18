@@ -71,7 +71,7 @@ impl Handler<SystemEvents> for TxPoolActor {
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) {
         match msg {
             SystemEvents::NewHeadBlock(_block) => {
-                //TODO remove block's txn from pool.
+                // TODO remove block's txn from pool.
             }
             _ => {}
         }

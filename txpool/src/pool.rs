@@ -2,16 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod listener;
-//mod ready;
-//mod replace;
-//mod scoring;
-//mod verifier;
+// mod ready;
+// mod replace;
+// mod scoring;
+// mod verifier;
 
-use common_crypto::hash::CryptoHash;
-use common_crypto::hash::HashValue;
+use common_crypto::hash::{CryptoHash, HashValue};
 use transaction_pool as tx_pool;
-use types::account_address::AccountAddress;
-use types::transaction;
+use types::{account_address::AccountAddress, transaction};
 /// Transaction priority.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Clone, Copy)]
 pub enum Priority {

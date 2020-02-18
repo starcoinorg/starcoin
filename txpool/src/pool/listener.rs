@@ -1,8 +1,6 @@
-use std::fmt;
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 
-use super::TxStatus;
-use super::VerifiedTransaction as Transaction;
+use super::{TxStatus, VerifiedTransaction as Transaction};
 use common_crypto::hash::HashValue as H256;
 use futures_channel::mpsc;
 use transaction_pool as tx_pool;
@@ -143,15 +141,15 @@ impl tx_pool::Listener<Transaction> for TransactionsPoolNotifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use common_crypto::ed25519;
-    use common_crypto::Uniform;
+    use common_crypto::{ed25519, Uniform};
     use rand::SeedableRng;
     use std::time::Duration;
     use tx_pool::Listener;
-    use types::account_address::AccountAddress;
-    use types::transaction;
-    use types::transaction::Script;
-    use types::transaction::TransactionPayload;
+    use types::{
+        account_address::AccountAddress,
+        transaction,
+        transaction::{Script, TransactionPayload},
+    };
 
     #[test]
     fn should_notify_listeners() {

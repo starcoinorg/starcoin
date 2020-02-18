@@ -5,7 +5,7 @@ use anyhow::Result;
 use types::transaction::SignedUserTransaction;
 
 pub struct TxPool {
-    //TODO
+    // TODO
     txs: Vec<SignedUserTransaction>,
 }
 
@@ -16,8 +16,8 @@ impl TxPool {
 
     /// Add tx to pool and return it is a new transaction.
     pub fn add_tx(&mut self, txn: SignedUserTransaction) -> Result<bool> {
-        //TODO verify txn.
-        //TODO check transaction is exist, only broadcast no exist transaction.
+        // TODO verify txn.
+        // TODO check transaction is exist, only broadcast no exist transaction.
         self.txs.push(txn.clone());
         return Ok(true);
     }

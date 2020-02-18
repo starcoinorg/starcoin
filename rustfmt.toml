@@ -1,2 +1,7 @@
 edition = "2018"
 use_field_init_shorthand = true
+merge_imports = true
+reorder_imports = true
+normalize_comments = true
+normalize_doc_attributes = true
+reorder_impl_items = true
