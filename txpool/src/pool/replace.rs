@@ -10,11 +10,10 @@
 use std::cmp;
 
 use super::{client, ScoredTransaction};
-use tx_pool::VerifiedTransaction;
 use tx_pool::{
     self,
     scoring::{Choice, Scoring},
-    ReplaceTransaction,
+    ReplaceTransaction, VerifiedTransaction,
 };
 use types::account_address::AccountAddress as Address;
 

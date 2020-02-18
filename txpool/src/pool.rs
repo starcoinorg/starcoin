@@ -3,11 +3,12 @@
 
 mod client;
 mod listener;
+mod local_transactions;
+mod queue;
 mod ready;
 mod replace;
 mod scoring;
 mod verifier;
-
 use common_crypto::hash::{CryptoHash, HashValue};
 use transaction_pool as tx_pool;
 use types::{account_address::AccountAddress, transaction};

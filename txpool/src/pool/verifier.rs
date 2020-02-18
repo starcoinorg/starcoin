@@ -18,6 +18,7 @@ use tx_pool;
 use types::transaction;
 
 use super::{client::Client, Gas, GasPrice, VerifiedTransaction};
+use crate::pool::scoring;
 use std::ops::Deref;
 
 /// Verification options.
@@ -142,195 +143,196 @@ impl<C, S, V> Verifier<C, S, V> {
     }
 }
 
-// impl<C: Client> txpool::Verifier<Transaction>
-//    for Verifier<C, ::pool::scoring::NonceAndGasPrice, VerifiedTransaction>
-//{
-//    type Error = transaction::TransactionError;
-//    type VerifiedTransaction = VerifiedTransaction;
-//
-//    fn verify_transaction(
-//        &self,
-//        tx: Transaction,
-//    ) -> Result<Self::VerifiedTransaction, Self::Error> {
-//        // The checks here should be ordered by cost/complexity.
-//        // Cheap checks should be done as early as possible to discard unneeded transactions early.
-//
-//        let hash = tx.hash();
-//
-//        if self.client.transaction_already_included(&hash) {
-//            trace!(target: "txqueue", "[{:?}] Rejected tx already in the blockchain", hash);
-//            return Err(transaction::Error::AlreadyImported);
-//        }
-//
-//        let gas_limit = cmp::min(self.options.tx_gas_limit, self.options.block_gas_limit);
-//        if tx.gas() > &gas_limit {
-//            debug!(
-//                target: "txqueue",
-//                "[{:?}] Rejected transaction above gas limit: {} > min({}, {})",
-//                hash,
-//                tx.gas(),
-//                self.options.block_gas_limit,
-//                self.options.tx_gas_limit,
-//            );
-//            return Err(transaction::Error::GasLimitExceeded {
-//                limit: gas_limit,
-//                got: *tx.gas(),
-//            });
-//        }
-//
-//        let minimal_gas = self.client.required_gas(tx.transaction());
-//        if tx.gas() < &minimal_gas {
-//            trace!(target: "txqueue",
-//                   "[{:?}] Rejected transaction with insufficient gas: {} < {}",
-//                   hash,
-//                   tx.gas(),
-//                   minimal_gas,
-//            );
-//
-//            return Err(transaction::Error::InsufficientGas {
-//                minimal: minimal_gas,
-//                got: *tx.gas(),
-//            });
-//        }
-//
-//        let is_own = tx.is_local();
-//        // Quick exit for non-service and non-local transactions
-//        //
-//        // We're checking if the transaction is below configured minimal gas price
-//        // or the effective minimal gas price in case the pool is full.
-//        if !tx.gas_price().is_zero() && !is_own {
-//            if tx.gas_price() < &self.options.minimal_gas_price {
-//                trace!(
-//                    target: "txqueue",
-//                    "[{:?}] Rejected tx below minimal gas price threshold: {} < {}",
-//                    hash,
-//                    tx.gas_price(),
-//                    self.options.minimal_gas_price,
-//                );
-//                return Err(transaction::Error::InsufficientGasPrice {
-//                    minimal: self.options.minimal_gas_price,
-//                    got: *tx.gas_price(),
-//                });
-//            }
-//
-//            if let Some((ref scoring, ref vtx)) = self.transaction_to_replace {
-//                if scoring.should_reject_early(vtx, &tx) {
-//                    trace!(
-//                        target: "txqueue",
-//                        "[{:?}] Rejected tx early, cause it doesn't have any chance to get to the pool: (gas price: {} < {})",
-//                        hash,
-//                        tx.gas_price(),
-//                        vtx.transaction.gas_price,
-//                    );
-//                    return Err(transaction::Error::TooCheapToReplace {
-//                        prev: Some(vtx.transaction.gas_price),
-//                        new: Some(*tx.gas_price()),
-//                    });
-//                }
-//            }
-//        }
-//
-//        // Some more heavy checks below.
-//        // Actually recover sender and verify that transaction
-//        let is_retracted = tx.is_retracted();
-//        let transaction = match tx {
-//            Transaction::Retracted(tx) | Transaction::Unverified(tx) => {
-//                match self.client.verify_transaction(tx) {
-//                    Ok(signed) => signed.into(),
-//                    Err(err) => {
-//                        debug!(target: "txqueue", "[{:?}] Rejected tx {:?}", hash, err);
-//                        return Err(err);
-//                    }
-//                }
-//            }
-//            Transaction::Local(tx) => match self.client.verify_transaction_basic(&**tx) {
-//                Ok(()) => tx,
-//                Err(err) => {
-//                    warn!(target: "txqueue", "[{:?}] Rejected local tx {:?}", hash, err);
-//                    return Err(err);
-//                }
-//            },
-//        };
-//
-//        // Verify RLP payload
-//        if let Err(err) = self.client.decode_transaction(&transaction.rlp_bytes()) {
-//            debug!(target: "txqueue", "[{:?}] Rejected transaction's rlp payload", err);
-//            return Err(err);
-//        }
-//
-//        let sender = transaction.sender();
-//        let account_details = self.client.account_details(&sender);
-//
-//        if transaction.gas_price < self.options.minimal_gas_price {
-//            let transaction_type = self.client.transaction_type(&transaction);
-//            if let TransactionType::Service = transaction_type {
-//                debug!(target: "txqueue", "Service tx {:?} below minimal gas price accepted", hash);
-//            } else if is_own || account_details.is_local {
-//                info!(target: "own_tx", "Local tx {:?} below minimal gas price accepted", hash);
-//            } else {
-//                trace!(
-//                    target: "txqueue",
-//                    "[{:?}] Rejected tx below minimal gas price threshold: {} < {}",
-//                    hash,
-//                    transaction.gas_price,
-//                    self.options.minimal_gas_price,
-//                );
-//                return Err(transaction::Error::InsufficientGasPrice {
-//                    minimal: self.options.minimal_gas_price,
-//                    got: transaction.gas_price,
-//                });
-//            }
-//        }
-//
-//        let (full_gas_price, overflow_1) = transaction.gas_price.overflowing_mul(transaction.gas);
-//        let (cost, overflow_2) = transaction.value.overflowing_add(full_gas_price);
-//        if overflow_1 || overflow_2 {
-//            trace!(
-//                target: "txqueue",
-//                "[{:?}] Rejected tx, price overflow",
-//                hash
-//            );
-//            return Err(transaction::Error::InsufficientBalance {
-//                cost: U256::max_value(),
-//                balance: account_details.balance,
-//            });
-//        }
-//        if account_details.balance < cost {
-//            debug!(
-//                target: "txqueue",
-//                "[{:?}] Rejected tx with not enough balance: {} < {}",
-//                hash,
-//                account_details.balance,
-//                cost,
-//            );
-//            return Err(transaction::Error::InsufficientBalance {
-//                cost,
-//                balance: account_details.balance,
-//            });
-//        }
-//
-//        if transaction.nonce < account_details.nonce {
-//            debug!(
-//                target: "txqueue",
-//                "[{:?}] Rejected tx with old nonce ({} < {})",
-//                hash,
-//                transaction.nonce,
-//                account_details.nonce,
-//            );
-//            return Err(transaction::Error::Old);
-//        }
-//
-//        let priority = match (is_own || account_details.is_local, is_retracted) {
-//            (true, _) => super::Priority::Local,
-//            (false, false) => super::Priority::Regular,
-//            (false, true) => super::Priority::Retracted,
-//        };
-//        Ok(VerifiedTransaction {
-//            transaction,
-//            priority,
-//            hash,
-//            sender,
-//            insertion_id: self.id.fetch_add(1, atomic::Ordering::AcqRel),
-//        })
-//    }
-//}
+impl<C: Client> tx_pool::Verifier<Transaction>
+    for Verifier<C, scoring::NonceAndGasPrice, VerifiedTransaction>
+{
+    type Error = transaction::TransactionError;
+    type VerifiedTransaction = VerifiedTransaction;
+
+    fn verify_transaction(
+        &self,
+        tx: Transaction,
+    ) -> Result<Self::VerifiedTransaction, Self::Error> {
+        todo!()
+        //        // The checks here should be ordered by cost/complexity.
+        //        // Cheap checks should be done as early as possible to discard unneeded transactions early.
+        //
+        //        let hash = tx.hash();
+        //
+        //        if self.client.transaction_already_included(&hash) {
+        //            trace!(target: "txqueue", "[{:?}] Rejected tx already in the blockchain", hash);
+        //            return Err(transaction::Error::AlreadyImported);
+        //        }
+        //
+        //        let gas_limit = cmp::min(self.options.tx_gas_limit, self.options.block_gas_limit);
+        //        if tx.gas() > &gas_limit {
+        //            debug!(
+        //                target: "txqueue",
+        //                "[{:?}] Rejected transaction above gas limit: {} > min({}, {})",
+        //                hash,
+        //                tx.gas(),
+        //                self.options.block_gas_limit,
+        //                self.options.tx_gas_limit,
+        //            );
+        //            return Err(transaction::Error::GasLimitExceeded {
+        //                limit: gas_limit,
+        //                got: *tx.gas(),
+        //            });
+        //        }
+        //
+        //        let minimal_gas = self.client.required_gas(tx.transaction());
+        //        if tx.gas() < &minimal_gas {
+        //            trace!(target: "txqueue",
+        //                   "[{:?}] Rejected transaction with insufficient gas: {} < {}",
+        //                   hash,
+        //                   tx.gas(),
+        //                   minimal_gas,
+        //            );
+        //
+        //            return Err(transaction::Error::InsufficientGas {
+        //                minimal: minimal_gas,
+        //                got: *tx.gas(),
+        //            });
+        //        }
+        //
+        //        let is_own = tx.is_local();
+        //        // Quick exit for non-service and non-local transactions
+        //        //
+        //        // We're checking if the transaction is below configured minimal gas price
+        //        // or the effective minimal gas price in case the pool is full.
+        //        if !tx.gas_price().is_zero() && !is_own {
+        //            if tx.gas_price() < &self.options.minimal_gas_price {
+        //                trace!(
+        //                    target: "txqueue",
+        //                    "[{:?}] Rejected tx below minimal gas price threshold: {} < {}",
+        //                    hash,
+        //                    tx.gas_price(),
+        //                    self.options.minimal_gas_price,
+        //                );
+        //                return Err(transaction::Error::InsufficientGasPrice {
+        //                    minimal: self.options.minimal_gas_price,
+        //                    got: *tx.gas_price(),
+        //                });
+        //            }
+        //
+        //            if let Some((ref scoring, ref vtx)) = self.transaction_to_replace {
+        //                if scoring.should_reject_early(vtx, &tx) {
+        //                    trace!(
+        //                        target: "txqueue",
+        //                        "[{:?}] Rejected tx early, cause it doesn't have any chance to get to the pool: (gas price: {} < {})",
+        //                        hash,
+        //                        tx.gas_price(),
+        //                        vtx.transaction.gas_price,
+        //                    );
+        //                    return Err(transaction::Error::TooCheapToReplace {
+        //                        prev: Some(vtx.transaction.gas_price),
+        //                        new: Some(*tx.gas_price()),
+        //                    });
+        //                }
+        //            }
+        //        }
+        //
+        //        // Some more heavy checks below.
+        //        // Actually recover sender and verify that transaction
+        //        let is_retracted = tx.is_retracted();
+        //        let transaction = match tx {
+        //            Transaction::Retracted(tx) | Transaction::Unverified(tx) => {
+        //                match self.client.verify_transaction(tx) {
+        //                    Ok(signed) => signed.into(),
+        //                    Err(err) => {
+        //                        debug!(target: "txqueue", "[{:?}] Rejected tx {:?}", hash, err);
+        //                        return Err(err);
+        //                    }
+        //                }
+        //            }
+        //            Transaction::Local(tx) => match self.client.verify_transaction_basic(&**tx) {
+        //                Ok(()) => tx,
+        //                Err(err) => {
+        //                    warn!(target: "txqueue", "[{:?}] Rejected local tx {:?}", hash, err);
+        //                    return Err(err);
+        //                }
+        //            },
+        //        };
+        //
+        //        // Verify RLP payload
+        //        if let Err(err) = self.client.decode_transaction(&transaction.rlp_bytes()) {
+        //            debug!(target: "txqueue", "[{:?}] Rejected transaction's rlp payload", err);
+        //            return Err(err);
+        //        }
+        //
+        //        let sender = transaction.sender();
+        //        let account_details = self.client.account_details(&sender);
+        //
+        //        if transaction.gas_price < self.options.minimal_gas_price {
+        //            let transaction_type = self.client.transaction_type(&transaction);
+        //            if let TransactionType::Service = transaction_type {
+        //                debug!(target: "txqueue", "Service tx {:?} below minimal gas price accepted", hash);
+        //            } else if is_own || account_details.is_local {
+        //                info!(target: "own_tx", "Local tx {:?} below minimal gas price accepted", hash);
+        //            } else {
+        //                trace!(
+        //                    target: "txqueue",
+        //                    "[{:?}] Rejected tx below minimal gas price threshold: {} < {}",
+        //                    hash,
+        //                    transaction.gas_price,
+        //                    self.options.minimal_gas_price,
+        //                );
+        //                return Err(transaction::Error::InsufficientGasPrice {
+        //                    minimal: self.options.minimal_gas_price,
+        //                    got: transaction.gas_price,
+        //                });
+        //            }
+        //        }
+        //
+        //        let (full_gas_price, overflow_1) = transaction.gas_price.overflowing_mul(transaction.gas);
+        //        let (cost, overflow_2) = transaction.value.overflowing_add(full_gas_price);
+        //        if overflow_1 || overflow_2 {
+        //            trace!(
+        //                target: "txqueue",
+        //                "[{:?}] Rejected tx, price overflow",
+        //                hash
+        //            );
+        //            return Err(transaction::Error::InsufficientBalance {
+        //                cost: U256::max_value(),
+        //                balance: account_details.balance,
+        //            });
+        //        }
+        //        if account_details.balance < cost {
+        //            debug!(
+        //                target: "txqueue",
+        //                "[{:?}] Rejected tx with not enough balance: {} < {}",
+        //                hash,
+        //                account_details.balance,
+        //                cost,
+        //            );
+        //            return Err(transaction::Error::InsufficientBalance {
+        //                cost,
+        //                balance: account_details.balance,
+        //            });
+        //        }
+        //
+        //        if transaction.nonce < account_details.nonce {
+        //            debug!(
+        //                target: "txqueue",
+        //                "[{:?}] Rejected tx with old nonce ({} < {})",
+        //                hash,
+        //                transaction.nonce,
+        //                account_details.nonce,
+        //            );
+        //            return Err(transaction::Error::Old);
+        //        }
+        //
+        //        let priority = match (is_own || account_details.is_local, is_retracted) {
+        //            (true, _) => super::Priority::Local,
+        //            (false, false) => super::Priority::Regular,
+        //            (false, true) => super::Priority::Retracted,
+        //        };
+        //        Ok(VerifiedTransaction {
+        //            transaction,
+        //            priority,
+        //            hash,
+        //            sender,
+        //            insertion_id: self.id.fetch_add(1, atomic::Ordering::AcqRel),
+        //        })
+    }
+}
