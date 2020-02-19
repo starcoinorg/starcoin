@@ -3,8 +3,8 @@
 
 use crate::memory_storage::MemoryCache;
 use crate::persistence_storage::PersistenceStorage;
-use crate::storage::Store::{MemoryStore, PersistenceStore};
 use anyhow::{bail, Error, Result};
+use std::sync::Arc;
 
 pub trait Repository {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
@@ -14,16 +14,13 @@ pub trait Repository {
 }
 
 pub struct Storage {
-    cache: Store,
-    persistence: Store,
+    cache: Arc<dyn Repository>,
+    persistence: Arc<dyn Repository>,
 }
 
 impl Storage {
-    pub fn new() -> Self {
-        Storage {
-            cache: MemoryStore(MemoryCache::new()),
-            persistence: PersistenceStore(PersistenceStorage::new()),
-        }
+    pub fn new(cache: Arc<dyn Repository>, persistence: Arc<dyn Repository>) -> Self {
+        Storage { cache, persistence }
     }
 }
 
@@ -45,30 +42,6 @@ impl Repository for Storage {
     }
 
     fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
-        unimplemented!()
-    }
-}
-
-pub enum Store {
-    MemoryStore(MemoryCache),
-    PersistenceStore(PersistenceStorage),
-}
-
-impl Store {
-    pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        match *self {
-            MemoryStore(ref c) => c.get(key),
-            PersistenceStore(ref c) => c.get(key),
-        }
-    }
-
-    pub fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        unimplemented!()
-    }
-    pub fn contains_key(&self, key: Vec<u8>) -> Result<bool> {
-        unimplemented!()
-    }
-    pub fn remove(&self, key: Vec<u8>) -> Result<()> {
         unimplemented!()
     }
 }
