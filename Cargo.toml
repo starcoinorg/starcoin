@@ -3,10 +3,11 @@
 members = [
     "commons/scs",
     "commons/crypto",
+    "types",
+    "core/traits",
     "core/accumulator",
     "core/chain-state",
     "core/state-tree",
-    "types",
     "config",
     "bus",
     "storage",

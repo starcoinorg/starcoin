@@ -13,6 +13,7 @@ use actix::prelude::*;
 use anyhow::{Error, Result};
 use bus::{Broadcast, BusActor, Subscription};
 use config::NodeConfig;
+use traits::TxPool;
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 mod pool;
@@ -23,13 +24,13 @@ pub struct TxPoolActor {
 }
 
 impl TxPoolActor {
-    pub fn launch(_node_config: &NodeConfig, bus: Addr<BusActor>) -> Result<Addr<Self>> {
+    pub fn launch(_node_config: &NodeConfig, bus: Addr<BusActor>) -> Result<TxPoolRef> {
         let actor_ref = Self {
             pool: TxPoolImpl::new(),
             bus,
         }
         .start();
-        Ok(actor_ref)
+        Ok(actor_ref.into())
     }
 }
 
@@ -92,22 +93,33 @@ impl Handler<SystemEvents> for TxPoolActor {
     }
 }
 
-#[async_trait::async_trait]
-pub trait TxPool {
-    async fn add(self, txn: SignedUserTransaction) -> Result<bool>;
-    async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>>;
+#[derive(Clone)]
+pub struct TxPoolRef(pub Addr<TxPoolActor>);
+
+impl Into<Addr<TxPoolActor>> for TxPoolRef {
+    fn into(self) -> Addr<TxPoolActor> {
+        self.0
+    }
+}
+
+impl Into<TxPoolRef> for Addr<TxPoolActor> {
+    fn into(self) -> TxPoolRef {
+        TxPoolRef(self)
+    }
 }
 
 #[async_trait::async_trait]
-impl TxPool for Addr<TxPoolActor> {
+impl TxPool for TxPoolRef {
     async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
-        self.send(AddTransaction { txn })
+        self.0
+            .send(AddTransaction { txn })
             .await
             .map_err(|e| Into::<Error>::into(e))?
     }
 
     async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>> {
-        self.send(GetPendingTransactions {})
+        self.0
+            .send(GetPendingTransactions {})
             .await
             .map_err(|e| Into::<Error>::into(e))?
     }

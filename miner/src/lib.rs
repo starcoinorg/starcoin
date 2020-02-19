@@ -3,6 +3,7 @@
 
 use crate::miner::Miner;
 use crate::ondemand_pacemaker::OndemandPacemaker;
+use crate::schedule_pacemaker::SchedulePacemaker;
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
@@ -10,7 +11,6 @@ use chain::ChainActor;
 use config::NodeConfig;
 use consensus::{ChainReader, Consensus, ConsensusHeader};
 use futures::channel::mpsc;
-use network::NetworkActor;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
@@ -37,18 +37,17 @@ where
 {
     pub fn launch(
         _node_config: &NodeConfig,
-        _network: Addr<NetworkActor>,
         bus: Addr<BusActor>,
         chain_reader: Arc<dyn ChainReader>,
     ) -> Result<Addr<Self>> {
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
             ///TODO create pacemaker by config.
-            let pacemaker = OndemandPacemaker::new(bus, sender);
+            let pacemaker = SchedulePacemaker::new(Duration::from_millis(1000), sender);
             ctx.add_stream(receiver);
             pacemaker.start();
             MinerActor {
-                miner: Miner::new(chain_reader),
+                miner: Miner::new(bus, chain_reader),
             }
         });
         Ok(actor)

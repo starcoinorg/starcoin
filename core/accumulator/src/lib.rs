@@ -27,8 +27,9 @@ impl Accumulator {
         Self { store, root_hash }
     }
 
-    pub fn append(leaves: &[HashValue]) -> Result<Self> {
-        unimplemented!()
+    pub fn append(&self, leaves: &[HashValue]) -> Result<()> {
+        //TODO
+        Ok(())
     }
 
     pub fn root_hash(&self) -> HashValue {

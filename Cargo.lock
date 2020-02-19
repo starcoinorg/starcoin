@@ -3189,6 +3189,7 @@ dependencies = [
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-canonical-serialization 0.1.0",
  "starcoin-config 0.1.0",
+ "starcoin-traits 0.1.0",
  "starcoin-txpool 0.1.0",
  "starcoin-types 0.1.0",
  "thiserror 1.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3205,6 +3206,7 @@ dependencies = [
  "libp2p 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-bus 0.1.0",
  "starcoin-config 0.1.0",
+ "starcoin-traits 0.1.0",
  "starcoin-txpool 0.1.0",
  "starcoin-types 0.1.0",
  "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3265,6 +3267,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-traits"
+version = "0.1.0"
+dependencies = [
+ "actix-rt 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "async-trait 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-crypto 0.1.0",
+ "starcoin-types 0.1.0",
+]
+
+[[package]]
 name = "starcoin-txpool"
 version = "0.1.0"
 dependencies = [
@@ -3283,6 +3297,7 @@ dependencies = [
  "starcoin-bus 0.1.0",
  "starcoin-config 0.1.0",
  "starcoin-crypto 0.1.0",
+ "starcoin-traits 0.1.0",
  "starcoin-types 0.1.0",
  "trace-time 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "transaction-pool 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",

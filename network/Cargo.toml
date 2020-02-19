@@ -18,4 +18,5 @@ tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
 bus = {path = "../bus", package="starcoin-bus"}
+traits = { package = "starcoin-traits", path = "../core/traits"}
 txpool = {path = "../txpool", package="starcoin-txpool"}

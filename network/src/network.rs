@@ -13,23 +13,31 @@ use libp2p::{
     PeerId, Swarm,
 };
 use std::sync::Arc;
-use txpool::{AddTransaction, TxPool, TxPoolActor};
+use traits::TxPool;
+use txpool::{AddTransaction, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
-pub struct NetworkActor {
+pub struct NetworkActor<P>
+where
+    P: TxPool,
+    P: 'static,
+{
     network_config: NetworkConfig,
     bus: Addr<BusActor>,
-    txpool: Addr<TxPoolActor>,
+    txpool: P,
     //just for test, remove later.
     counter: u64,
 }
 
-impl NetworkActor {
+impl<P> NetworkActor<P>
+where
+    P: TxPool,
+{
     pub fn launch(
         node_config: &NodeConfig,
         bus: Addr<BusActor>,
-        txpool: Addr<TxPoolActor>,
-    ) -> Result<Addr<NetworkActor>> {
+        txpool: P,
+    ) -> Result<Addr<NetworkActor<P>>> {
         //TODO read from config
         let id_keys = identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(id_keys.public());
@@ -44,7 +52,7 @@ impl NetworkActor {
 
         Swarm::listen_on(&mut swarm, (&network_config).listen_address.clone())?;
         Ok(NetworkActor::create(
-            move |ctx: &mut Context<NetworkActor>| {
+            move |ctx: &mut Context<NetworkActor<P>>| {
                 ctx.add_stream(swarm);
                 NetworkActor {
                     network_config,
@@ -57,7 +65,10 @@ impl NetworkActor {
     }
 }
 
-impl Actor for NetworkActor {
+impl<P> Actor for NetworkActor<P>
+where
+    P: TxPool,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
@@ -68,14 +79,20 @@ impl Actor for NetworkActor {
     }
 }
 
-impl StreamHandler<PingEvent> for NetworkActor {
+impl<P> StreamHandler<PingEvent> for NetworkActor<P>
+where
+    P: TxPool,
+{
     fn handle(&mut self, item: PingEvent, _ctx: &mut Self::Context) {
         println!("receive event {:?}", item);
         self.counter += 1;
     }
 }
 
-impl Handler<GetCounterMessage> for NetworkActor {
+impl<P> Handler<GetCounterMessage> for NetworkActor<P>
+where
+    P: TxPool,
+{
     type Result = u64;
 
     fn handle(&mut self, _msg: GetCounterMessage, _ctx: &mut Self::Context) -> Self::Result {
@@ -85,7 +102,10 @@ impl Handler<GetCounterMessage> for NetworkActor {
 }
 
 /// handler system events.
-impl Handler<SystemEvents> for NetworkActor {
+impl<P> Handler<SystemEvents> for NetworkActor<P>
+where
+    P: TxPool,
+{
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
@@ -103,10 +123,13 @@ impl Handler<SystemEvents> for NetworkActor {
 }
 
 /// Handler for receive broadcast from other peer.
-impl Handler<PeerMessage> for NetworkActor {
+impl<P> Handler<PeerMessage> for NetworkActor<P>
+where
+    P: TxPool,
+{
     type Result = ResponseActFuture<Self, Result<()>>;
 
-    fn handle(&mut self, msg: PeerMessage, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: PeerMessage, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
             PeerMessage::UserTransaction(txn) => {
                 let f = self.txpool.clone().add(txn).and_then(|new_txn| async move {
@@ -132,6 +155,21 @@ mod tests {
         let node_config = NodeConfig::default();
         let bus = BusActor::launch();
         let txpool = TxPoolActor::launch(&node_config, bus.clone()).unwrap();
+        let network = NetworkActor::launch(&node_config, bus, txpool.clone()).unwrap();
+        network
+            .send(PeerMessage::UserTransaction(SignedUserTransaction::mock()))
+            .await
+            .unwrap();
+
+        let txns = txpool.get_pending_txns().await.unwrap();
+        assert_eq!(1, txns.len());
+    }
+
+    #[actix_rt::test]
+    async fn test_network_with_mock() {
+        let node_config = NodeConfig::default();
+        let bus = BusActor::launch();
+        let txpool = traits::mock::MockTxPool::new();
         let network = NetworkActor::launch(&node_config, bus, txpool.clone()).unwrap();
         network
             .send(PeerMessage::UserTransaction(SignedUserTransaction::mock()))

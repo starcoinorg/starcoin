@@ -24,11 +24,16 @@ impl<C> Miner<C>
 where
     C: Consensus,
 {
-    pub fn new(chain: Arc<dyn ChainReader>) -> Self {
-        unimplemented!()
+    pub fn new(bus: Addr<BusActor>, chain: Arc<dyn ChainReader>) -> Self {
+        Miner {
+            bus,
+            chain,
+            phantom: PhantomData,
+        }
     }
 
     pub fn mint(&self) -> Result<()> {
+        println!("miner new block.");
         let block_template = self.chain.create_block_template()?;
         let (_sender, receiver) = oneshot::channel();
         /// spawn a async task, maintain a task list, when new task coming, cancel old task.

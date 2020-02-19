@@ -7,7 +7,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use config::NodeConfig;
 use jsonrpc_core::IoHandler;
-use txpool::TxPoolActor;
+use txpool::TxPoolRef;
 
 mod module;
 mod server;
@@ -17,12 +17,9 @@ pub struct JSONRpcActor {
 }
 
 impl JSONRpcActor {
-    pub fn launch(
-        config: &NodeConfig,
-        txpool_actor_ref: Addr<TxPoolActor>,
-    ) -> Result<Addr<JSONRpcActor>> {
+    pub fn launch(config: &NodeConfig, txpool_ref: TxPoolRef) -> Result<Addr<JSONRpcActor>> {
         let mut io_handler = IoHandler::new();
-        io_handler.extend_with(TxPoolRpcImpl::new(txpool_actor_ref).to_delegate());
+        io_handler.extend_with(TxPoolRpcImpl::new(txpool_ref).to_delegate());
         let server = RpcServer::new(config, io_handler);
         Ok(JSONRpcActor { server }.start())
     }

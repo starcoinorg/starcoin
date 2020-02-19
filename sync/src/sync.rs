@@ -19,7 +19,6 @@ pub struct SyncActor {
 impl SyncActor {
     pub fn launch(
         _node_config: &NodeConfig,
-        _network: Addr<NetworkActor>,
         //        chain: Addr<ChainActor>,
         chain_reader: Arc<AtomicRefCell<MemChain>>,
     ) -> Result<Addr<SyncActor>> {
