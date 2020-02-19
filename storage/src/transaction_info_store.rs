@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::kv::{CodecKVStore, KVStore, ValueCodec};
+use crate::storage::{CodecStorage, Repository, ValueCodec};
 use anyhow::Result;
 use crypto::hash::CryptoHash;
 use crypto::HashValue;
@@ -10,7 +10,7 @@ use std::sync::Arc;
 use types::transaction::TransactionInfo;
 
 pub struct TransactionInfoStore {
-    store: CodecKVStore<HashValue, TransactionInfo>,
+    store: CodecStorage<HashValue, TransactionInfo>,
 }
 
 impl ValueCodec for TransactionInfo {
@@ -24,9 +24,9 @@ impl ValueCodec for TransactionInfo {
 }
 
 impl TransactionInfoStore {
-    pub fn new(kv_store: Arc<dyn KVStore>) -> Self {
+    pub fn new(kv_store: Arc<dyn Repository>) -> Self {
         TransactionInfoStore {
-            store: CodecKVStore::new(kv_store),
+            store: CodecStorage::new(kv_store),
         }
     }
 

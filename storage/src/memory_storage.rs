@@ -6,19 +6,19 @@ use anyhow::{Error, Result};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-pub struct MemoryCache {
+pub struct MemoryStorage {
     map: RefCell<HashMap<Vec<u8>, Vec<u8>>>,
 }
 
-impl MemoryCache {
+impl MemoryStorage {
     pub fn new() -> Self {
-        MemoryCache {
+        MemoryStorage {
             map: RefCell::new(HashMap::new()),
         }
     }
 }
 
-impl Repository for MemoryCache {
+impl Repository for MemoryStorage {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         Ok(self.map.borrow().get(key).map(|v| v.to_vec()))
     }

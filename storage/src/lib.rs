@@ -1,12 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::kv::KVStore;
+use crate::storage::Repository;
 use crate::transaction_info_store::TransactionInfoStore;
 use anyhow::Result;
 use std::sync::Arc;
 
-pub mod kv;
 pub mod memory_storage;
 pub mod persistence_storage;
 pub mod storage;
@@ -17,9 +16,9 @@ struct StarcoinStorage {
 }
 
 impl StarcoinStorage {
-    pub fn new(kv_store: Arc<dyn KVStore>) -> Result<Self> {
+    pub fn new(storage: Arc<dyn Repository>) -> Result<Self> {
         Ok(Self {
-            transaction_info_store: TransactionInfoStore::new(kv_store.clone()),
+            transaction_info_store: TransactionInfoStore::new(storage.clone()),
         })
     }
 }
@@ -27,7 +26,7 @@ impl StarcoinStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::kv::HashMapKVStore;
+    use crate::memory_storage::MemoryStorage;
     use anyhow::Result;
     use crypto::{hash::CryptoHash, HashValue};
     use types::transaction::TransactionInfo;
@@ -35,8 +34,8 @@ mod tests {
 
     #[test]
     fn test_storage() {
-        let kv = Arc::new(HashMapKVStore::new());
-        let storage = StarcoinStorage::new(kv).unwrap();
+        let store = Arc::new(MemoryStorage::new());
+        let storage = StarcoinStorage::new(store).unwrap();
         let transaction_info1 = TransactionInfo::new(
             HashValue::random(),
             HashValue::zero(),
