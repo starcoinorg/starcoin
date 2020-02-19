@@ -48,22 +48,22 @@ impl Actor for TxPoolActor {
 
 #[derive(Clone, Message)]
 #[rtype(result = "Result<bool>")]
-pub struct SubmitTransactionMessage {
-    pub tx: SignedUserTransaction,
+pub struct AddTransaction {
+    pub txn: SignedUserTransaction,
 }
 
 #[derive(Clone, Message)]
 #[rtype(result = "Result<Vec<SignedUserTransaction>>")]
 pub struct GetPendingTransactions {}
 
-impl Handler<SubmitTransactionMessage> for TxPoolActor {
+impl Handler<AddTransaction> for TxPoolActor {
     type Result = Result<bool>;
 
-    fn handle(&mut self, msg: SubmitTransactionMessage, _ctx: &mut Self::Context) -> Self::Result {
-        let new_tx = self.pool.add_tx(msg.tx.clone())?;
+    fn handle(&mut self, msg: AddTransaction, _ctx: &mut Self::Context) -> Self::Result {
+        let new_tx = self.pool.add_tx(msg.txn.clone())?;
         if new_tx {
             self.bus.do_send(Broadcast {
-                msg: SystemEvents::NewUserTransaction(msg.tx),
+                msg: SystemEvents::NewUserTransaction(msg.txn),
             });
         }
         return Ok(new_tx);
@@ -101,7 +101,7 @@ pub trait TxPool {
 #[async_trait::async_trait]
 impl TxPool for Addr<TxPoolActor> {
     async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
-        self.send(SubmitTransactionMessage { tx: txn })
+        self.send(AddTransaction { txn })
             .await
             .map_err(|e| Into::<Error>::into(e))?
     }

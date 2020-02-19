@@ -6,7 +6,7 @@ use futures::future::{FutureExt, TryFutureExt};
 use jsonrpc_core::BoxFuture;
 use jsonrpc_core::Error;
 use jsonrpc_derive::rpc;
-use txpool::{SubmitTransactionMessage, TxPoolActor};
+use txpool::{AddTransaction, TxPoolActor};
 use types::transaction::SignedUserTransaction;
 
 #[rpc(server)]
@@ -29,7 +29,7 @@ impl TxPoolRpc for TxPoolRpcImpl {
     fn submit_transaction(&self, tx: SignedUserTransaction) -> BoxFuture<bool> {
         let fut = self
             .actor_ref
-            .send(SubmitTransactionMessage { tx })
+            .send(AddTransaction { txn: tx })
             .map(|res|
                 //TODO
                 res.unwrap())

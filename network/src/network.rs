@@ -13,7 +13,7 @@ use libp2p::{
     PeerId, Swarm,
 };
 use std::sync::Arc;
-use txpool::{SubmitTransactionMessage, TxPool, TxPoolActor};
+use txpool::{AddTransaction, TxPool, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 pub struct NetworkActor {
