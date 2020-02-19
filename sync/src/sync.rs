@@ -1,13 +1,16 @@
+use crate::inbound::Processor;
+use crate::outbound::Downloader;
 use crate::pool::TTLPool;
-use crate::proto::{BlockBody, HashWithHeight};
+use crate::proto::{BlockBody, HashWithNumber};
 use crate::Synchronizer;
 use actix::{Actor, Addr, Context};
 use anyhow::Result;
-use chain::ChainActor;
+use atomic_refcell::AtomicRefCell;
+use chain::{mem_chain::MemChain, ChainActor};
 use config::NodeConfig;
 use network::NetworkActor;
 use std::sync::Arc;
-use types::block::BlockHeader;
+use types::{block::BlockHeader, peer_info::PeerInfo};
 
 pub struct SyncActor {
     block_sync: BlockSync,
@@ -17,13 +20,16 @@ impl SyncActor {
     pub fn launch(
         _node_config: &NodeConfig,
         _network: Addr<NetworkActor>,
-        chain: Addr<ChainActor>,
+        //        chain: Addr<ChainActor>,
+        chain_reader: Arc<AtomicRefCell<MemChain>>,
     ) -> Result<Addr<SyncActor>> {
+        let downloader = Downloader::new(chain_reader.clone());
+        let processor = Processor::new(chain_reader);
+        let peer_info = PeerInfo::random();
         let block_sync = BlockSync {
-            chain,
-            hash_pool: TTLPool::new(),
-            header_pool: TTLPool::new(),
-            body_pool: TTLPool::new(),
+            downloader,
+            processor,
+            my_peer_info: peer_info,
         };
         let actor = SyncActor { block_sync };
         Ok(actor.start())
@@ -39,10 +45,21 @@ impl Actor for SyncActor {
 }
 
 pub struct BlockSync {
-    chain: Addr<ChainActor>,
-    hash_pool: TTLPool<HashWithHeight>,
-    header_pool: TTLPool<BlockHeader>,
-    body_pool: TTLPool<BlockBody>,
+    pub downloader: Downloader,
+    pub processor: Processor,
+    pub my_peer_info: PeerInfo,
+}
+
+impl BlockSync {
+    pub fn new(my_peer_info: PeerInfo, chain_reader: Arc<AtomicRefCell<MemChain>>) -> Self {
+        let downloader = Downloader::new(chain_reader.clone());
+        let processor = Processor::new(chain_reader);
+        BlockSync {
+            downloader,
+            processor,
+            my_peer_info,
+        }
+    }
 }
 
 impl Synchronizer for BlockSync {}

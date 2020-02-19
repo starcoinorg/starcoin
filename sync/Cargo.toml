@@ -13,6 +13,7 @@ actix = "0.9"
 config = {path = "../config", package="starcoin-config"}
 network = {path = "../network", package="starcoin-network"}
 types = {path = "../types", package = "starcoin-types" }
-libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+itertools = { version = "0.8.0", default-features = false }
+atomic_refcell = "0.1.3"
 

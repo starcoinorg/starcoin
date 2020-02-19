@@ -118,7 +118,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
 {
-    fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
+    fn get_block_by_hash(&self, hash: &HashValue) -> Option<Block> {
         unimplemented!()
     }
 

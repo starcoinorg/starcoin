@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
-mod mem_chain;
+pub mod mem_chain;
 mod starcoin_chain_state;
 
 use actix::prelude::*;
@@ -30,7 +30,7 @@ impl Actor for ChainActor {
 }
 
 pub trait BlockChain {
-    fn get_block_by_hash(&self, hash: HashValue) -> Option<Block>;
+    fn get_block_by_hash(&self, hash: &HashValue) -> Option<Block>;
     fn try_connect(&mut self, block: Block) -> Result<()>;
 }
 
@@ -59,3 +59,4 @@ impl ChainReader for ChainActorRef {
 }
 
 mod tests;
+pub use tests::gen_mem_chain_for_test;

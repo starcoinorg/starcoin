@@ -115,27 +115,27 @@ impl BlockHeader {
             /// Block number.
             number: 0,
             /// Block author.
-            author: AccountAddress::random(),
+            author: AccountAddress::new(*HashValue::zero().as_ref()),
             /// The accumulator root hash after executing this block.
-            accumulator_root: HashValue::random(),
+            accumulator_root: HashValue::zero(),
             /// The last transaction state_root of this block after execute.
-            state_root: HashValue::random(),
+            state_root: HashValue::zero(),
             /// Gas used for contracts execution.
             gas_used: 0,
             /// Block gas limit.
             gas_limit: std::u64::MAX,
             /// Block proof of work extend field.
-            consensus_header: HashValue::random().to_vec(),
+            consensus_header: HashValue::zero().to_vec(),
         }
     }
 
     //#[cfg(test)]
-    pub fn new_block_header_for_test(parent_hash: HashValue, parent_height: BlockNumber) -> Self {
+    pub fn new_block_header_for_test(parent_hash: HashValue, parent_number: BlockNumber) -> Self {
         BlockHeader {
             parent_hash,
-            timestamp: parent_height + 1,
+            timestamp: parent_number + 1,
             /// Block number.
-            number: parent_height + 1,
+            number: parent_number + 1,
             /// Block author.
             author: AccountAddress::random(),
             /// The accumulator root hash after executing this block.
@@ -175,6 +175,13 @@ pub struct Block {
 }
 
 impl Block {
+    pub fn new(header: BlockHeader, transactions: Vec<SignedUserTransaction>) -> Self {
+        Block {
+            header,
+            transactions,
+        }
+    }
+
     pub fn header(&self) -> &BlockHeader {
         &self.header
     }
