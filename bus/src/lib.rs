@@ -29,12 +29,12 @@ where
 
 #[async_trait::async_trait]
 pub trait Bus {
-    async fn subscribe<M: 'static>(&self, recipient: Recipient<M>) -> Result<()>
+    async fn subscribe<M: 'static>(self, recipient: Recipient<M>) -> Result<()>
     where
         M: Message + Send + Clone,
         M::Result: Send;
 
-    async fn broadcast<M: 'static>(&self, msg: M) -> Result<()>
+    async fn broadcast<M: 'static>(self, msg: M) -> Result<()>
     where
         M: Message + Send + Clone,
         M::Result: Send;
@@ -83,7 +83,7 @@ where
 
 #[async_trait::async_trait]
 impl Bus for Addr<BusActor> {
-    async fn subscribe<M: 'static>(&self, recipient: Recipient<M>) -> Result<()>
+    async fn subscribe<M: 'static>(self, recipient: Recipient<M>) -> Result<()>
     where
         M: Message + Send + Clone,
         M::Result: Send,
@@ -93,7 +93,7 @@ impl Bus for Addr<BusActor> {
             .map_err(|e| e.into())
     }
 
-    async fn broadcast<M: 'static>(&self, msg: M) -> Result<()>
+    async fn broadcast<M: 'static>(self, msg: M) -> Result<()>
     where
         M: Message + Send + Clone,
         M::Result: Send,
@@ -120,7 +120,7 @@ mod tests {
     struct DoBroadcast {}
 
     #[derive(Debug, Message, Clone)]
-    #[rtype(result = "()")]
+    #[rtype(result = "Result<()>")]
     struct DoBroadcast2 {}
 
     struct MyActor {
@@ -163,16 +163,12 @@ mod tests {
     }
 
     impl Handler<DoBroadcast2> for MyActor {
-        type Result = ();
+        type Result = ResponseActFuture<Self, Result<()>>;
 
-        fn handle(&mut self, _msg: DoBroadcast2, ctx: &mut Self::Context) {
-            // can not use async broadcast at here, lifetime error.
-            self.bus
-                //.broadcast(MyMessage {})
-                .send(Broadcast { msg: MyMessage {} })
-                .into_actor(self)
-                .then(|_result, act, _ctx| async {}.into_actor(act))
-                .wait(ctx);
+        fn handle(&mut self, _msg: DoBroadcast2, ctx: &mut Self::Context) -> Self::Result {
+            let f = self.bus.clone().broadcast(MyMessage {});
+            let f = actix::fut::wrap_future::<_, Self>(f);
+            Box::new(f)
         }
     }
 
