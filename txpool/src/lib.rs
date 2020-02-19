@@ -8,9 +8,9 @@ extern crate log;
 #[macro_use]
 extern crate trace_time;
 extern crate transaction_pool as tx_pool;
-use crate::txpool::TxPool;
+use crate::txpool::TxPoolImpl;
 use actix::prelude::*;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use bus::{Broadcast, BusActor, Subscription};
 use config::NodeConfig;
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
@@ -18,14 +18,14 @@ use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 mod pool;
 mod txpool;
 pub struct TxPoolActor {
-    pool: TxPool,
+    pool: TxPoolImpl,
     bus: Addr<BusActor>,
 }
 
 impl TxPoolActor {
     pub fn launch(_node_config: &NodeConfig, bus: Addr<BusActor>) -> Result<Addr<Self>> {
         let actor_ref = Self {
-            pool: TxPool::new(),
+            pool: TxPoolImpl::new(),
             bus,
         }
         .start();
@@ -52,6 +52,10 @@ pub struct SubmitTransactionMessage {
     pub tx: SignedUserTransaction,
 }
 
+#[derive(Clone, Message)]
+#[rtype(result = "Result<Vec<SignedUserTransaction>>")]
+pub struct GetPendingTransactions {}
+
 impl Handler<SubmitTransactionMessage> for TxPoolActor {
     type Result = Result<bool>;
 
@@ -66,7 +70,15 @@ impl Handler<SubmitTransactionMessage> for TxPoolActor {
     }
 }
 
-/// handle bus broadcast Transaction.
+impl Handler<GetPendingTransactions> for TxPoolActor {
+    type Result = Result<Vec<SignedUserTransaction>>;
+
+    fn handle(&mut self, _msg: GetPendingTransactions, _ctx: &mut Self::Context) -> Self::Result {
+        self.pool.get_pending_txns()
+    }
+}
+
+/// handle bus broadcast events.
 impl Handler<SystemEvents> for TxPoolActor {
     type Result = ();
 
@@ -77,6 +89,27 @@ impl Handler<SystemEvents> for TxPoolActor {
             }
             _ => {}
         }
+    }
+}
+
+#[async_trait::async_trait]
+pub trait TxPool {
+    async fn add(self, txn: SignedUserTransaction) -> Result<bool>;
+    async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>>;
+}
+
+#[async_trait::async_trait]
+impl TxPool for Addr<TxPoolActor> {
+    async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
+        self.send(SubmitTransactionMessage { tx: txn })
+            .await
+            .map_err(|e| Into::<Error>::into(e))?
+    }
+
+    async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>> {
+        self.send(GetPendingTransactions {})
+            .await
+            .map_err(|e| Into::<Error>::into(e))?
     }
 }
 

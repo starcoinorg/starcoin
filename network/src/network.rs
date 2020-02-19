@@ -1,17 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{GetCounterMessage, PeerMessage, StopMessage};
+use crate::{GetCounterMessage, PeerMessage};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::{NetworkConfig, NodeConfig};
+use futures::TryFutureExt;
 use libp2p::{
     identity,
     ping::{Ping, PingConfig, PingEvent},
     PeerId, Swarm,
 };
-use txpool::{SubmitTransactionMessage, TxPoolActor};
+use std::sync::Arc;
+use txpool::{SubmitTransactionMessage, TxPool, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 pub struct NetworkActor {
@@ -82,15 +84,6 @@ impl Handler<GetCounterMessage> for NetworkActor {
     }
 }
 
-impl Handler<StopMessage> for NetworkActor {
-    type Result = ();
-
-    fn handle(&mut self, _msg: StopMessage, ctx: &mut Self::Context) -> Self::Result {
-        println!("Stop network actor.");
-        ctx.stop()
-    }
-}
-
 /// handler system events.
 impl Handler<SystemEvents> for NetworkActor {
     type Result = ();
@@ -111,16 +104,17 @@ impl Handler<SystemEvents> for NetworkActor {
 
 /// Handler for receive broadcast from other peer.
 impl Handler<PeerMessage> for NetworkActor {
-    type Result = ();
+    type Result = ResponseActFuture<Self, Result<()>>;
 
-    fn handle(&mut self, msg: PeerMessage, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: PeerMessage, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             PeerMessage::UserTransaction(txn) => {
-                self.txpool
-                    .send(SubmitTransactionMessage { tx: txn })
-                    .into_actor(self)
-                    .then(|_result, act, _ctx| async {}.into_actor(act))
-                    .wait(ctx);
+                let f = self.txpool.clone().add(txn).and_then(|new_txn| async move {
+                    println!("add tx success, is new tx: {}", new_txn);
+                    Ok(())
+                });
+                let f = actix::fut::wrap_future(f);
+                Box::new(f)
             }
         }
     }
@@ -129,29 +123,22 @@ impl Handler<PeerMessage> for NetworkActor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
     use tokio::time::{delay_for, Duration};
+    use txpool::TxPoolActor;
 
     #[actix_rt::test]
     async fn test_network() {
         let node_config = NodeConfig::default();
         let bus = BusActor::launch();
-        let txpool = TxPoolActor::launch(&node_config, bus.clone());
-        let network = NetworkActor::launch(&node_config, bus, txpool).unwrap();
+        let txpool = TxPoolActor::launch(&node_config, bus.clone()).unwrap();
+        let network = NetworkActor::launch(&node_config, bus, txpool.clone()).unwrap();
+        network
+            .send(PeerMessage::UserTransaction(SignedUserTransaction::mock()))
+            .await
+            .unwrap();
 
-        let id_keys = identity::Keypair::generate_ed25519();
-        let peer_id = PeerId::from(id_keys.public());
-        println!("Local peer id: {:?}", peer_id);
-
-        let transport = libp2p::build_development_transport(id_keys).unwrap();
-
-        let behaviour = Ping::new(PingConfig::new().with_keep_alive(true));
-
-        let mut swarm = Swarm::new(transport, behaviour, peer_id);
-        let remote = node_config.network.advertised_address;
-        Swarm::dial_addr(&mut swarm, remote.clone()).unwrap();
-        println!("Dialed {}", remote);
-        delay_for(Duration::from_millis(200)).await;
-        let count = network.send(GetCounterMessage {}).await.unwrap();
-        assert_eq!(count, 2);
+        let txns = txpool.get_pending_txns().await.unwrap();
+        assert_eq!(1, txns.len());
     }
 }

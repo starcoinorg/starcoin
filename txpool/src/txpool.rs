@@ -4,12 +4,12 @@
 use anyhow::Result;
 use types::transaction::SignedUserTransaction;
 
-pub struct TxPool {
+pub struct TxPoolImpl {
     // TODO
     txs: Vec<SignedUserTransaction>,
 }
 
-impl TxPool {
+impl TxPoolImpl {
     pub fn new() -> Self {
         Self { txs: vec![] }
     }
@@ -20,5 +20,9 @@ impl TxPool {
         // TODO check transaction is exist, only broadcast no exist transaction.
         self.txs.push(txn.clone());
         return Ok(true);
+    }
+
+    pub fn get_pending_txns(&self) -> Result<Vec<SignedUserTransaction>> {
+        Ok(self.txs.clone())
     }
 }
