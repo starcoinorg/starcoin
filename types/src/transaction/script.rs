@@ -8,7 +8,7 @@ use std::fmt;
 #[allow(dead_code)]
 pub const SCRIPT_HASH_LENGTH: usize = 32;
 
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
     code: Vec<u8>,
     args: Vec<TransactionArgument>,

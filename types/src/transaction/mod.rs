@@ -31,6 +31,8 @@ pub use change_set::ChangeSet;
 pub use error::Error as TransactionError;
 pub use module::Module;
 pub use pending_transaction::{Condition, PendingTransaction};
+use rand::rngs::{EntropyRng, StdRng};
+use rand::{Rng, SeedableRng};
 pub use script::{Script, SCRIPT_HASH_LENGTH};
 use std::ops::Deref;
 pub use transaction_argument::{parse_as_transaction_argument, TransactionArgument};
@@ -218,6 +220,17 @@ impl RawUserTransaction {
     pub fn sender(&self) -> AccountAddress {
         self.sender
     }
+
+    pub fn mock() -> Self {
+        Self::new(
+            AccountAddress::default(),
+            0,
+            TransactionPayload::Script(Script::default()),
+            0,
+            0,
+            Duration::new(0, 0),
+        )
+    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -367,6 +380,18 @@ impl SignedUserTransaction {
             self.public_key,
             self.signature,
         )
+    }
+
+    //TODO
+    pub fn mock() -> Self {
+        let seed: [u8; 32] = EntropyRng::new().gen();
+        let mut rng = StdRng::from_seed(seed);
+        let key_pair = crypto::test_utils::KeyPair::generate_for_testing(&mut rng);
+        let raw_txn = RawUserTransaction::mock();
+        raw_txn
+            .sign(&key_pair.private_key, key_pair.public_key)
+            .unwrap()
+            .into_inner()
     }
 }
 
