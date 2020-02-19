@@ -18,9 +18,10 @@ use types::{
     vm_error::{StatusCode, VMStatus},
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use crypto::{ed25519::compat, hash::CryptoHash, HashValue};
+use crypto::{ed25519::*, ed25519::compat, hash::CryptoHash, traits::SigningKey, HashValue};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use state_tree::SparseMerkleTree;
 
 enum MockTransaction {
@@ -42,6 +43,9 @@ pub static KEEP_STATUS: Lazy<TransactionStatus> =
 pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
     TransactionStatus::Discard(VMStatus::new(StatusCode::ABORTED).with_sub_status(10))
 });
+
+const MOCK_GAS_AMOUNT: u64 = 140_000;
+const MOCK_GAS_PRICE: u64 = 1;
 
 fn empty_tree() {
     unimplemented!()
@@ -207,8 +211,8 @@ impl TransactionExecutor for MockExecutor {
         config: &VMConfig,
         chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
-    ) -> Result<VMStatus> {
-        unimplemented!()
+    ) -> Option<VMStatus> {
+        None
     }
 }
 
@@ -372,4 +376,30 @@ fn decode_transaction(txn: &SignedUserTransaction) -> MockTransaction {
             unimplemented!("MockExecutor does not support Module transaction payload.")
         }
     }
+}
+
+pub fn get_signed_txn(
+    sender: AccountAddress,
+    sequence_number: u64,
+    private_key: &Ed25519PrivateKey,
+    public_key: Ed25519PublicKey,
+    script: Script,
+) -> SignedUserTransaction {
+    let expiration_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        + 10; // 10 seconds from now.
+    let raw_txn = RawUserTransaction::new_script(
+        sender,
+        sequence_number,
+        script,
+        MOCK_GAS_AMOUNT,
+        MOCK_GAS_PRICE,
+        Duration::from_secs(expiration_time),
+    );
+
+    let signature = private_key.sign_message(&raw_txn.crypto_hash());
+
+    SignedUserTransaction::new(raw_txn, public_key, signature)
 }

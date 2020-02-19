@@ -4,7 +4,10 @@
 //use super::*;
 use crate::{
     mock_executor::{
-        MockChainState,  MockExecutor, encode_mint_transaction, encode_transfer_transaction, DISCARD_STATUS, KEEP_STATUS,
+        MockChainState,  MockExecutor,
+        encode_mint_transaction, encode_transfer_transaction,
+        encode_transfer_program, get_signed_txn,
+        DISCARD_STATUS, KEEP_STATUS,
     },
     TransactionExecutor,
 };
@@ -13,6 +16,7 @@ use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
 };
+use crypto::{ed25519::compat};
 
 fn gen_address(index: u8) -> AccountAddress {
     AccountAddress::new([index; ADDRESS_LENGTH])
@@ -29,5 +33,31 @@ fn test_execute_txn() {
     assert_eq!(
         KEEP_STATUS.clone(),
         *output.status()
+    );
+}
+
+#[test]
+fn test_validate_txn() {
+    let chain_state = MockChainState::new();
+    let txn = encode_mint_transaction(gen_address(0), 100);
+    let config = VMConfig::default();
+
+    let (private_key, public_key) = compat::generate_keypair(None);
+
+    let receiver = gen_address(1);
+    let program = encode_transfer_program(receiver, 100);
+    let txn = get_signed_txn(
+        receiver,
+        1,
+        &private_key,
+        public_key,
+        program,
+    );
+
+    let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+
+    assert_eq!(
+        None,
+        output
     );
 }

@@ -25,5 +25,5 @@ pub trait TransactionExecutor {
         config: &VMConfig,
         chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
-    ) -> Result<VMStatus>;
+    ) -> Option<VMStatus>;
 }
