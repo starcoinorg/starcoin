@@ -3244,6 +3244,7 @@ name = "starcoin-storage"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "rocksdb 0.3.0 (git+https://github.com/pingcap/rust-rocksdb.git?rev=3cd18c44d160a3cdba586d6502d51b7cc67efc59)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-canonical-serialization 0.1.0",
