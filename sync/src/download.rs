@@ -1,14 +1,14 @@
-/// Sync message which outbound
-use crate::pool::TTLPool;
-use crate::proto::{
+use crate::message::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithBlockHeader, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
+/// Sync message which outbound
+use crate::pool::TTLPool;
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::Result;
 use atomic_refcell::AtomicRefCell;
-use chain::{mem_chain::MemChain, BlockChain};
+use chain::{mem_chain::MemChain, ChainWriter};
 use itertools;
 use network::NetworkActor;
 use std::collections::HashMap;

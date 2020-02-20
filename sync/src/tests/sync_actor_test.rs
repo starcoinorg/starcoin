@@ -1,7 +1,7 @@
 use super::gen_chains;
 use crate::download::DownloadActor;
+use crate::message::{ProcessMessage, SyncMessage};
 use crate::process::ProcessActor;
-use crate::proto::{ProcessMessage, SyncMessage};
 use crate::sync::SyncActor;
 use actix::Addr;
 use atomic_refcell::AtomicRefCell;

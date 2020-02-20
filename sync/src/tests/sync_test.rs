@@ -1,4 +1,4 @@
-use crate::proto::{BatchBodyMsg, BatchHeaderMsg, HashWithNumber};
+use crate::message::{BatchBodyMsg, BatchHeaderMsg, HashWithNumber};
 use crate::sync::SyncFlow;
 use atomic_refcell::AtomicRefCell;
 use chain::{gen_mem_chain_for_test, mem_chain::MemChain};

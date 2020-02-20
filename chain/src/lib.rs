@@ -3,6 +3,7 @@
 
 mod chain;
 pub mod mem_chain;
+mod message;
 mod starcoin_chain_state;
 
 use actix::prelude::*;
@@ -10,7 +11,9 @@ use anyhow::{Error, Result};
 use config::NodeConfig;
 use consensus::ChainReader;
 use crypto::HashValue;
-use types::block::{Block, BlockHeader, BlockTemplate};
+use message::ChainMessage;
+use traits::Chain;
+use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
 
 pub struct ChainActor {}
 
@@ -29,34 +32,70 @@ impl Actor for ChainActor {
     }
 }
 
-pub trait BlockChain {
+impl Handler<ChainMessage> for ChainActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: ChainMessage, ctx: &mut Self::Context) -> Self::Result {
+        unimplemented!()
+    }
+}
+
+pub trait ChainWriter {
     fn get_block_by_hash(&self, hash: &HashValue) -> Option<Block>;
     fn try_connect(&mut self, block: Block) -> Result<()>;
 }
 
-pub struct ChainActorRef(Addr<ChainActor>);
+pub struct ChainActorRef<A: Actor + Handler<ChainMessage>> {
+    pub address: Addr<A>,
+}
 
-impl ChainReader for ChainActorRef {
-    fn current_header(&self) -> BlockHeader {
+impl<A: Actor + Handler<ChainMessage>> Clone for ChainActorRef<A> {
+    fn clone(&self) -> ChainActorRef<A> {
+        ChainActorRef {
+            address: self.address.clone(),
+        }
+    }
+}
+
+impl<A: Actor + Handler<ChainMessage>> Into<Addr<A>> for ChainActorRef<A> {
+    fn into(self) -> Addr<A> {
+        self.address
+    }
+}
+
+impl<A: Actor + Handler<ChainMessage>> Into<ChainActorRef<A>> for Addr<A> {
+    fn into(self) -> ChainActorRef<A> {
+        ChainActorRef { address: self }
+    }
+}
+
+#[async_trait::async_trait]
+impl Chain for ChainActorRef<ChainActor> {
+    async fn current_header(self) -> BlockHeader {
         unimplemented!()
     }
 
-    fn get_header(&self, hash: HashValue) -> BlockHeader {
+    async fn get_header(self, hash: &HashValue) -> BlockHeader {
         unimplemented!()
     }
 
-    fn get_header_by_number(&self, number: u64) -> BlockHeader {
+    async fn get_header_by_number(self, number: BlockNumber) -> BlockHeader {
         unimplemented!()
     }
 
-    fn get_block(&self, hash: HashValue) -> Block {
+    async fn create_block_template(self) -> Result<BlockTemplate> {
         unimplemented!()
     }
 
-    fn create_block_template(&self) -> Result<BlockTemplate, Error> {
+    async fn get_block_by_hash(self, hash: &HashValue) -> Result<Option<Block>> {
+        unimplemented!()
+    }
+
+    async fn try_connect(self, block: Block) -> Result<()> {
         unimplemented!()
     }
 }
 
 mod tests;
+
 pub use tests::gen_mem_chain_for_test;

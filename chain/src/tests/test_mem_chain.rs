@@ -1,5 +1,5 @@
 use crate::mem_chain::MemChain;
-use crate::BlockChain;
+use crate::ChainWriter;
 use crypto::{hash::CryptoHash, HashValue};
 use types::block::{Block, BlockHeader, BlockNumber};
 

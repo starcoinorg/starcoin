@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::starcoin_chain_state::StarcoinChainState;
-use crate::BlockChain;
+use crate::ChainWriter;
+use actix::prelude::*;
 use anyhow::Result;
 use chain_state::ChainState;
 use config::VMConfig;
@@ -38,7 +39,7 @@ impl Branch {
     }
 }
 
-struct Chain<E, C>
+struct BlockChain<E, C>
 where
     E: TransactionExecutor,
     C: Consensus,
@@ -51,7 +52,7 @@ where
     phantom_c: PhantomData<C>,
 }
 
-impl<E, C> ChainReader for Chain<E, C>
+impl<E, C> ChainReader for BlockChain<E, C>
 where
     E: TransactionExecutor,
     C: Consensus,
@@ -90,7 +91,7 @@ where
     }
 }
 
-impl<E, C> Chain<E, C>
+impl<E, C> BlockChain<E, C>
 where
     E: TransactionExecutor,
     C: Consensus,
@@ -113,7 +114,7 @@ where
     }
 }
 
-impl<E, C> BlockChain for Chain<E, C>
+impl<E, C> ChainWriter for BlockChain<E, C>
 where
     E: TransactionExecutor,
     C: Consensus,
