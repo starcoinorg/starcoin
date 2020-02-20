@@ -14,6 +14,7 @@ serde = { version = "1.0" }
 types = {path = "../types", package="starcoin-types"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+chrono = "0.4"
 
 [dependencies.rocksdb]
 git = "https://github.com/pingcap/rust-rocksdb.git"

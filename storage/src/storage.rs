@@ -3,7 +3,7 @@
 
 use crate::memory_storage::MemoryStorage;
 use crate::persistence_storage::PersistenceStorage;
-use anyhow::{bail, Error, Result};
+use anyhow::{Error, Result};
 use crypto::HashValue;
 use std::fmt::Debug;
 use std::marker::PhantomData;
