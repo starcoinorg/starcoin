@@ -14,6 +14,7 @@ pub trait Repository {
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, key: Vec<u8>) -> Result<bool>;
     fn remove(&self, key: Vec<u8>) -> Result<()>;
+    fn get_len(&self) -> Result<u64>;
 }
 
 pub struct Storage {
@@ -45,6 +46,10 @@ impl Repository for Storage {
     }
 
     fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn get_len(&self) -> Result<u64, Error> {
         unimplemented!()
     }
 }
@@ -100,6 +105,10 @@ where
     pub fn remove(&self, key: K) -> Result<()> {
         self.store.remove(key.encode_key()?)
     }
+
+    pub fn get_len(&self) -> Result<u64> {
+        self.store.get_len()
+    }
 }
 
 impl KeyCodec for HashValue {
@@ -108,6 +117,16 @@ impl KeyCodec for HashValue {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, Error> {
+        Ok(HashValue::from_slice(data)?)
+    }
+}
+
+impl ValueCodec for HashValue {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        Ok(self.to_vec())
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self, Error> {
         Ok(HashValue::from_slice(data)?)
     }
 }

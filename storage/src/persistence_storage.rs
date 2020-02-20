@@ -32,4 +32,8 @@ impl Repository for PersistenceStorage {
     fn remove(&self, key: Vec<u8>) -> Result<()> {
         unimplemented!()
     }
+
+    fn get_len(&self) -> Result<u64, Error> {
+        unimplemented!()
+    }
 }

@@ -35,4 +35,8 @@ impl Repository for MemoryStorage {
         self.map.borrow_mut().remove(&key);
         Ok(())
     }
+
+    fn get_len(&self) -> Result<u64, Error> {
+        Ok(self.map.borrow_mut().len() as u64)
+    }
 }
