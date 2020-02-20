@@ -280,8 +280,8 @@ impl TransactionQueue {
         let mut replace =
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
-        let txn_iter: impl Iterator<Item = verifier::Transaction> = transactions.into_iter();
-        let results = txn_iter
+        let results = transactions
+            .into_iter()
             .map(|transaction| {
                 let hash = transaction.hash();
 
@@ -539,8 +539,8 @@ impl TransactionQueue {
         let results = {
             let mut pool = self.pool.write();
 
-            let hashs_iter: impl Iterator<Item = &'a HashValue> = hashes.into_iter();
-            hashs_iter
+            hashes
+                .into_iter()
                 .map(|hash| pool.remove(hash, is_invalid))
                 .collect::<Vec<_>>()
         };
