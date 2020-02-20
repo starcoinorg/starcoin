@@ -6,6 +6,7 @@ use crate::sync::SyncActor;
 use actix::Addr;
 use atomic_refcell::AtomicRefCell;
 use chain::{gen_mem_chain_for_test, mem_chain::MemChain};
+use crypto::hash::CryptoHash;
 use std::sync::Arc;
 use tokio::time::{delay_for, Duration};
 use types::peer_info::PeerInfo;
@@ -56,12 +57,12 @@ async fn test_sync_actors() {
     let second_chain = Arc::new(AtomicRefCell::new(second_mem_chain));
     let first_p_actor = ProcessActor::launch(Arc::clone(&first_p), Arc::clone(&first_chain))
         .expect("launch ProcessActor failed.");
-    let first_d_actor =
-        DownloadActor::launch(first_p, first_chain).expect("launch DownloadActor failed.");
+    let first_d_actor = DownloadActor::launch(first_p, Arc::clone(&first_chain))
+        .expect("launch DownloadActor failed.");
     let second_p_actor = ProcessActor::launch(Arc::clone(&second_p), Arc::clone(&second_chain))
         .expect("launch ProcessActor failed.");
-    let second_d_actor =
-        DownloadActor::launch(second_p, second_chain).expect("launch DownloadActor failed.");
+    let second_d_actor = DownloadActor::launch(second_p, Arc::clone(&second_chain))
+        .expect("launch DownloadActor failed.");
 
     let first_sync_actor = SyncActor::launch(first_p_actor, first_d_actor.clone()).unwrap();
     let second_sync_actor = SyncActor::launch(second_p_actor, second_d_actor.clone()).unwrap();
@@ -77,4 +78,13 @@ async fn test_sync_actors() {
     )));
 
     delay_for(Duration::from_millis(50)).await;
+
+    let block_1 = first_chain.borrow().head_block().clone();
+    let block_2 = second_chain.borrow().head_block().clone();
+    println!(
+        "{}:{}",
+        block_1.header().number(),
+        block_2.header().number()
+    );
+    assert_eq!(block_1.crypto_hash(), block_2.crypto_hash());
 }

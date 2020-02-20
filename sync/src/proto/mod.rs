@@ -19,6 +19,7 @@ pub enum DownloadMessage {
     BatchHashByNumberMsg(Option<Addr<ProcessActor>>, PeerInfo, BatchHashByNumberMsg),
     BatchHeaderMsg(Option<Addr<ProcessActor>>, PeerInfo, BatchHeaderMsg),
     BatchBodyMsg(Option<Addr<ProcessActor>>, BatchBodyMsg),
+    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg), // just fo test
 }
 
 #[derive(Message)]
@@ -87,13 +88,13 @@ struct BatchStateNodeDataMsg {
     //nodes:
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum DataType {
     HEADER,
     BODY,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GetDataByHashMsg {
     pub hashs: Vec<HashValue>,
     pub data_type: DataType,

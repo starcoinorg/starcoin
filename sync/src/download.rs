@@ -53,18 +53,19 @@ impl Handler<DownloadMessage> for DownloadActor {
                 self.downloader
                     .handle_latest_state_msg(peer_info, latest_state_msg);
                 match addr {
-                    Some(a) => {
+                    Some(address) => {
                         let send_get_hash_by_number_msg =
                             self.downloader.send_get_hash_by_number_msg();
                         match send_get_hash_by_number_msg {
                             Some(get_hash_by_number_msg) => {
-                                a.send(ProcessMessage::GetHashByNumberMsg(
-                                    Some(ctx.address()),
-                                    get_hash_by_number_msg,
-                                ))
-                                .into_actor(self)
-                                .then(|_result, act, _ctx| async {}.into_actor(act))
-                                .wait(ctx);
+                                address
+                                    .send(ProcessMessage::GetHashByNumberMsg(
+                                        Some(ctx.address()),
+                                        get_hash_by_number_msg,
+                                    ))
+                                    .into_actor(self)
+                                    .then(|_result, act, _ctx| async {}.into_actor(act))
+                                    .wait(ctx);
                             }
                             _ => {}
                         }
@@ -82,14 +83,15 @@ impl Handler<DownloadMessage> for DownloadActor {
                             self.downloader.send_get_header_by_hash_msg();
                         match send_get_header_by_hash_msg {
                             Some(get_data_by_hash_msg) => match addr {
-                                Some(a) => {
-                                    a.send(ProcessMessage::GetDataByHashMsg(
-                                        Some(ctx.address()),
-                                        get_data_by_hash_msg,
-                                    ))
-                                    .into_actor(self)
-                                    .then(|_result, act, _ctx| async {}.into_actor(act))
-                                    .wait(ctx);
+                                Some(address) => {
+                                    address
+                                        .send(ProcessMessage::GetDataByHashMsg(
+                                            Some(ctx.address()),
+                                            get_data_by_hash_msg,
+                                        ))
+                                        .into_actor(self)
+                                        .then(|_result, act, _ctx| async {}.into_actor(act))
+                                        .wait(ctx);
                                 }
                                 _ => {}
                             },
@@ -105,14 +107,15 @@ impl Handler<DownloadMessage> for DownloadActor {
                 let send_get_body_by_hash_msg = self.downloader.send_get_body_by_hash_msg();
                 match send_get_body_by_hash_msg {
                     Some(get_body_by_hash_msg) => match addr {
-                        Some(a) => {
-                            a.send(ProcessMessage::GetDataByHashMsg(
-                                Some(ctx.address()),
-                                get_body_by_hash_msg,
-                            ))
-                            .into_actor(self)
-                            .then(|_result, act, _ctx| async {}.into_actor(act))
-                            .wait(ctx);
+                        Some(address) => {
+                            address
+                                .send(ProcessMessage::GetDataByHashMsg(
+                                    Some(ctx.address()),
+                                    get_body_by_hash_msg,
+                                ))
+                                .into_actor(self)
+                                .then(|_result, act, _ctx| async {}.into_actor(act))
+                                .wait(ctx);
                         }
                         _ => {}
                     },
@@ -121,7 +124,10 @@ impl Handler<DownloadMessage> for DownloadActor {
             }
             DownloadMessage::BatchBodyMsg(addr, batch_body_msg) => {
                 println!("{:?}", batch_body_msg);
-                //self.downloader.do_block();
+            }
+            DownloadMessage::BatchHeaderAndBodyMsg(batch_header_msg, batch_body_msg) => {
+                self.downloader
+                    .do_block(batch_header_msg.headers, batch_body_msg.bodies);
             }
         }
     }
@@ -137,7 +143,7 @@ pub struct Downloader {
     chain_reader: Arc<AtomicRefCell<MemChain>>,
 }
 
-const HEAD_CT: u64 = 10;
+const HEAD_CT: u64 = 100;
 
 impl Downloader {
     pub fn new(chain_reader: Arc<AtomicRefCell<MemChain>>) -> Self {

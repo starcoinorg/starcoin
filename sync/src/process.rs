@@ -1,3 +1,4 @@
+/// Sync message which inbound
 use crate::proto::{
     BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
     GetDataByHashMsg, GetHashByNumberMsg, HashWithBlockHeader, HashWithNumber, LatestStateMsg,
@@ -7,7 +8,6 @@ use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::Result;
 use atomic_refcell::AtomicRefCell;
-/// Sync message which inbound
 use chain::{mem_chain::MemChain, BlockChain};
 use crypto::hash::CryptoHash;
 use network::NetworkActor;
@@ -49,15 +49,16 @@ impl Handler<ProcessMessage> for ProcessActor {
             ProcessMessage::NewPeerMsg(addr, peer_info) => {
                 let latest_state_msg = self.processor.send_latest_state_msg();
                 match addr {
-                    Some(a) => {
-                        a.send(DownloadMessage::LatestStateMsg(
-                            Some(ctx.address()),
-                            self.peer_info.as_ref().clone(),
-                            latest_state_msg,
-                        ))
-                        .into_actor(self)
-                        .then(|_result, act, _ctx| async {}.into_actor(act))
-                        .wait(ctx);
+                    Some(address) => {
+                        address
+                            .send(DownloadMessage::LatestStateMsg(
+                                Some(ctx.address()),
+                                self.peer_info.as_ref().clone(),
+                                latest_state_msg,
+                            ))
+                            .into_actor(self)
+                            .then(|_result, act, _ctx| async {}.into_actor(act))
+                            .wait(ctx);
                     }
                     _ => {}
                 }
@@ -67,15 +68,16 @@ impl Handler<ProcessMessage> for ProcessActor {
                     .processor
                     .handle_get_hash_by_number_msg(get_hash_by_number_msg);
                 match addr {
-                    Some(a) => {
-                        a.send(DownloadMessage::BatchHashByNumberMsg(
-                            Some(ctx.address()),
-                            self.peer_info.as_ref().clone(),
-                            batch_hash_by_number_msg,
-                        ))
-                        .into_actor(self)
-                        .then(|_result, act, _ctx| async {}.into_actor(act))
-                        .wait(ctx);
+                    Some(address) => {
+                        address
+                            .send(DownloadMessage::BatchHashByNumberMsg(
+                                Some(ctx.address()),
+                                self.peer_info.as_ref().clone(),
+                                batch_hash_by_number_msg,
+                            ))
+                            .into_actor(self)
+                            .then(|_result, act, _ctx| async {}.into_actor(act))
+                            .wait(ctx);
                     }
                     _ => {}
                 }
@@ -85,39 +87,64 @@ impl Handler<ProcessMessage> for ProcessActor {
                     DataType::HEADER => {
                         let batch_header_msg = self
                             .processor
-                            .handle_get_header_by_hash_msg(get_data_by_hash_msg);
-                        match addr {
-                            Some(a) => {
-                                a.send(DownloadMessage::BatchHeaderMsg(
-                                    Some(ctx.address()),
-                                    self.peer_info.as_ref().clone(),
-                                    batch_header_msg,
-                                ))
-                                .into_actor(self)
-                                .then(|_result, act, _ctx| async {}.into_actor(act))
-                                .wait(ctx);
-                            }
-                            _ => {}
-                        }
-                    }
-                    DataType::BODY => {
+                            .handle_get_header_by_hash_msg(get_data_by_hash_msg.clone());
                         let batch_body_msg = self
                             .processor
                             .handle_get_body_by_hash_msg(get_data_by_hash_msg);
                         match addr {
-                            Some(a) => {
-                                a.send(DownloadMessage::BatchBodyMsg(
-                                    Some(ctx.address()),
-                                    batch_body_msg,
-                                ))
-                                .into_actor(self)
-                                .then(|_result, act, _ctx| async {}.into_actor(act))
-                                .wait(ctx);
+                            Some(address) => {
+                                address
+                                    .send(DownloadMessage::BatchHeaderAndBodyMsg(
+                                        batch_header_msg,
+                                        batch_body_msg,
+                                    ))
+                                    .into_actor(self)
+                                    .then(|_result, act, _ctx| async {}.into_actor(act))
+                                    .wait(ctx);
                             }
                             _ => {}
                         }
                     }
-                };
+                    _ => {}
+                }
+
+                // match get_data_by_hash_msg.data_type {
+                //     DataType::HEADER => {
+                //         let batch_header_msg = self
+                //             .processor
+                //             .handle_get_header_by_hash_msg(get_data_by_hash_msg);
+                //         match addr {
+                //             Some(address) => {
+                //                 address.send(DownloadMessage::BatchHeaderMsg(
+                //                     Some(ctx.address()),
+                //                     self.peer_info.as_ref().clone(),
+                //                     batch_header_msg,
+                //                 ))
+                //                 .into_actor(self)
+                //                 .then(|_result, act, _ctx| async {}.into_actor(act))
+                //                 .wait(ctx);
+                //             }
+                //             _ => {}
+                //         }
+                //     }
+                //     DataType::BODY => {
+                //         let batch_body_msg = self
+                //             .processor
+                //             .handle_get_body_by_hash_msg(get_data_by_hash_msg);
+                //         match addr {
+                //             Some(address) => {
+                //                 address.send(DownloadMessage::BatchBodyMsg(
+                //                     Some(ctx.address()),
+                //                     batch_body_msg,
+                //                 ))
+                //                 .into_actor(self)
+                //                 .then(|_result, act, _ctx| async {}.into_actor(act))
+                //                 .wait(ctx);
+                //             }
+                //             _ => {}
+                //         }
+                //     }
+                // };
             }
         }
     }
