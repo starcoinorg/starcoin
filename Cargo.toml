@@ -20,6 +20,4 @@ members = [
     "node",
     "sync",
     "miner",
-    "vm/vm-runtime",
-    "vm-validator",
 ]
