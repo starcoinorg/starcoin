@@ -1,9 +1,9 @@
-use crate::inbound::Processor;
-use crate::outbound::Downloader;
+use crate::download::{DownloadActor, Downloader};
 use crate::pool::TTLPool;
-use crate::proto::{BlockBody, HashWithNumber};
-use crate::Synchronizer;
-use actix::{Actor, Addr, Context};
+use crate::process::{ProcessActor, Processor};
+use crate::proto::{BlockBody, HashWithNumber, SyncMessage};
+use actix::prelude::*;
+use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
 use atomic_refcell::AtomicRefCell;
 use chain::{mem_chain::MemChain, ChainActor};
@@ -13,24 +13,22 @@ use std::sync::Arc;
 use types::{block::BlockHeader, peer_info::PeerInfo};
 
 pub struct SyncActor {
-    block_sync: BlockSync,
+    process_address: Addr<ProcessActor>,
+    download_address: Addr<DownloadActor>,
 }
 
 impl SyncActor {
     pub fn launch(
-        _node_config: &NodeConfig,
+        // _node_config: &NodeConfig,
+        // _network: Addr<NetworkActor>,
         //        chain: Addr<ChainActor>,
-        chain_reader: Arc<AtomicRefCell<MemChain>>,
+        process_address: Addr<ProcessActor>,
+        download_address: Addr<DownloadActor>,
     ) -> Result<Addr<SyncActor>> {
-        let downloader = Downloader::new(chain_reader.clone());
-        let processor = Processor::new(chain_reader);
-        let peer_info = PeerInfo::random();
-        let block_sync = BlockSync {
-            downloader,
-            processor,
-            my_peer_info: peer_info,
+        let actor = SyncActor {
+            download_address,
+            process_address,
         };
-        let actor = SyncActor { block_sync };
         Ok(actor.start())
     }
 }
@@ -43,22 +41,43 @@ impl Actor for SyncActor {
     }
 }
 
-pub struct BlockSync {
-    pub downloader: Downloader,
-    pub processor: Processor,
-    pub my_peer_info: PeerInfo,
-}
+impl Handler<SyncMessage> for SyncActor {
+    type Result = ();
 
-impl BlockSync {
-    pub fn new(my_peer_info: PeerInfo, chain_reader: Arc<AtomicRefCell<MemChain>>) -> Self {
-        let downloader = Downloader::new(chain_reader.clone());
-        let processor = Processor::new(chain_reader);
-        BlockSync {
-            downloader,
-            processor,
-            my_peer_info,
+    fn handle(&mut self, msg: SyncMessage, ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            SyncMessage::DownloadMessage(download_msg) => {
+                self.download_address
+                    .send(download_msg)
+                    .into_actor(self)
+                    .then(|_result, act, _ctx| async {}.into_actor(act))
+                    .wait(ctx);
+            }
+            SyncMessage::ProcessMessage(process_msg) => {
+                self.process_address
+                    .send(process_msg)
+                    .into_actor(self)
+                    .then(|_result, act, _ctx| async {}.into_actor(act))
+                    .wait(ctx);
+            }
         }
     }
 }
 
-impl Synchronizer for BlockSync {}
+pub struct SyncFlow {
+    pub downloader: Downloader,
+    pub processor: Processor,
+    pub peer_info: PeerInfo,
+}
+
+impl SyncFlow {
+    pub fn new(peer_info: PeerInfo, chain_reader: Arc<AtomicRefCell<MemChain>>) -> Self {
+        let downloader = Downloader::new(chain_reader.clone());
+        let processor = Processor::new(chain_reader);
+        SyncFlow {
+            downloader,
+            processor,
+            peer_info,
+        }
+    }
+}

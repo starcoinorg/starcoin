@@ -1,12 +1,12 @@
 use crate::proto::{BatchBodyMsg, BatchHeaderMsg, HashWithNumber};
-use crate::sync::BlockSync;
+use crate::sync::SyncFlow;
 use atomic_refcell::AtomicRefCell;
 use chain::{gen_mem_chain_for_test, mem_chain::MemChain};
 use crypto::{hash::CryptoHash, HashValue};
 use std::sync::Arc;
 use types::peer_info::PeerInfo;
 
-fn gen_chains(times: u64) -> (PeerInfo, MemChain, PeerInfo, MemChain) {
+pub fn gen_chains(times: u64) -> (PeerInfo, MemChain, PeerInfo, MemChain) {
     let first_peer = PeerInfo::random();
     let first_chain = gen_mem_chain_for_test(times);
     let second_peer = PeerInfo::random();
@@ -14,26 +14,29 @@ fn gen_chains(times: u64) -> (PeerInfo, MemChain, PeerInfo, MemChain) {
     (first_peer, first_chain, second_peer, second_chain)
 }
 
-fn gen_syncs(times: u64) -> (BlockSync, BlockSync) {
+fn gen_syncs(times: u64) -> (SyncFlow, SyncFlow) {
     let (first_peer, first_chain, second_peer, second_chain) = gen_chains(times);
 
-    let first = BlockSync::new(first_peer, Arc::new(AtomicRefCell::new(first_chain)));
-    let second = BlockSync::new(second_peer, Arc::new(AtomicRefCell::new(second_chain)));
+    let first = SyncFlow::new(first_peer, Arc::new(AtomicRefCell::new(first_chain)));
+    let second = SyncFlow::new(second_peer, Arc::new(AtomicRefCell::new(second_chain)));
     (first, second)
 }
 
-fn find_ancestor(first: &mut BlockSync, second: &mut BlockSync) -> HashWithNumber {
+fn find_ancestor(first: &mut SyncFlow, second: &mut SyncFlow) -> HashWithNumber {
     let latest_state_msg_1 = first.processor.send_latest_state_msg();
     let latest_state_msg_2 = second.processor.send_latest_state_msg();
 
     first
         .downloader
-        .handle_latest_state_msg(second.my_peer_info.clone(), latest_state_msg_2);
+        .handle_latest_state_msg(second.peer_info.clone(), latest_state_msg_2);
     second
         .downloader
-        .handle_latest_state_msg(first.my_peer_info.clone(), latest_state_msg_1);
+        .handle_latest_state_msg(first.peer_info.clone(), latest_state_msg_1);
 
-    let get_hash_by_number_msg = second.downloader.send_get_hash_by_number_msg();
+    let get_hash_by_number_msg = second
+        .downloader
+        .send_get_hash_by_number_msg()
+        .expect("get_hash_by_number_msg is none.");
 
     let batch_hash_by_number_msg = first
         .processor
@@ -41,11 +44,11 @@ fn find_ancestor(first: &mut BlockSync, second: &mut BlockSync) -> HashWithNumbe
 
     second
         .downloader
-        .find_ancestor(first.my_peer_info.clone(), batch_hash_by_number_msg)
+        .find_ancestor(first.peer_info.clone(), batch_hash_by_number_msg)
         .expect("ancestor is none.")
 }
 
-fn sync_header(first: &mut BlockSync, second: &mut BlockSync) -> BatchHeaderMsg {
+fn sync_header(first: &mut SyncFlow, second: &mut SyncFlow) -> BatchHeaderMsg {
     find_ancestor(first, second);
     let get_header_by_hash_msg = second
         .downloader
@@ -56,11 +59,11 @@ fn sync_header(first: &mut BlockSync, second: &mut BlockSync) -> BatchHeaderMsg 
         .handle_get_header_by_hash_msg(get_header_by_hash_msg)
 }
 
-fn sync_body(first: &mut BlockSync, second: &mut BlockSync) -> BatchBodyMsg {
+fn sync_body(first: &mut SyncFlow, second: &mut SyncFlow) -> BatchBodyMsg {
     let batch_header_msg = sync_header(first, second);
     second
         .downloader
-        .handle_batch_header_msg(first.my_peer_info.clone(), batch_header_msg.clone());
+        .handle_batch_header_msg(first.peer_info.clone(), batch_header_msg.clone());
     let get_body_by_hash_msg = second
         .downloader
         .send_get_body_by_hash_msg()
@@ -98,7 +101,7 @@ fn test_do_block() {
     let batch_header_msg = sync_header(&mut first, &mut second);
     second
         .downloader
-        .handle_batch_header_msg(first.my_peer_info.clone(), batch_header_msg.clone());
+        .handle_batch_header_msg(first.peer_info.clone(), batch_header_msg.clone());
     let get_body_by_hash_msg = second
         .downloader
         .send_get_body_by_hash_msg()

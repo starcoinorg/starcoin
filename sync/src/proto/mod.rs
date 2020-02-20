@@ -1,6 +1,33 @@
+use crate::download::DownloadActor;
+use crate::process::ProcessActor;
+use actix::prelude::*;
 use crypto::HashValue;
 use std::cmp::Ordering;
-use types::{block::BlockHeader, transaction::SignedUserTransaction};
+use types::{block::BlockHeader, peer_info::PeerInfo, transaction::SignedUserTransaction};
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub enum SyncMessage {
+    DownloadMessage(DownloadMessage),
+    ProcessMessage(ProcessMessage),
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub enum DownloadMessage {
+    LatestStateMsg(Option<Addr<ProcessActor>>, PeerInfo, LatestStateMsg),
+    BatchHashByNumberMsg(Option<Addr<ProcessActor>>, PeerInfo, BatchHashByNumberMsg),
+    BatchHeaderMsg(Option<Addr<ProcessActor>>, PeerInfo, BatchHeaderMsg),
+    BatchBodyMsg(Option<Addr<ProcessActor>>, BatchBodyMsg),
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub enum ProcessMessage {
+    NewPeerMsg(Option<Addr<DownloadActor>>, PeerInfo),
+    GetHashByNumberMsg(Option<Addr<DownloadActor>>, GetHashByNumberMsg),
+    GetDataByHashMsg(Option<Addr<DownloadActor>>, GetDataByHashMsg),
+}
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct LatestStateMsg {
@@ -25,6 +52,7 @@ impl Ord for HashWithBlockHeader {
     }
 }
 
+#[derive(Debug)]
 pub struct GetHashByNumberMsg {
     pub numbers: Vec<u64>,
 }
@@ -59,11 +87,13 @@ struct BatchStateNodeDataMsg {
     //nodes:
 }
 
+#[derive(Debug)]
 pub enum DataType {
     HEADER,
     BODY,
 }
 
+#[derive(Debug)]
 pub struct GetDataByHashMsg {
     pub hashs: Vec<HashValue>,
     pub data_type: DataType,

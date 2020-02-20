@@ -17,3 +17,7 @@ crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 itertools = { version = "0.8.0", default-features = false }
 atomic_refcell = "0.1.3"
 
+[dev-dependencies]
+tokio = { version = "0.2", features = ["full"] }
+actix-rt = "1.0"
+

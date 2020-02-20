@@ -47,8 +47,8 @@ impl BlockHeader {
         gas_limit: u64,
         consensus_header: H,
     ) -> BlockHeader
-    where
-        H: Into<Vec<u8>>,
+        where
+            H: Into<Vec<u8>>,
     {
         BlockHeader {
             parent_hash,
@@ -200,8 +200,8 @@ pub struct Block {
 
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
-    where
-        B: Into<BlockBody>,
+        where
+            B: Into<BlockBody>,
     {
         Block {
             header,
@@ -251,8 +251,8 @@ pub struct BlockTemplate {
 
 impl BlockTemplate {
     pub fn into_block<H>(self, consensus_header: H) -> Block
-    where
-        H: Into<Vec<u8>>,
+        where
+            H: Into<Vec<u8>>,
     {
         let header = BlockHeader::new(
             self.parent_hash,

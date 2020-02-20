@@ -5,6 +5,11 @@ use crate::TransactionExecutor;
 use anyhow::{Error, Result};
 use chain_state::ChainState;
 use config::VMConfig;
+use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
+use once_cell::sync::Lazy;
+use state_tree::SparseMerkleTree;
+use std::collections::HashMap;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
@@ -18,11 +23,6 @@ use types::{
     vm_error::{StatusCode, VMStatus},
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use crypto::{ed25519::*, ed25519::compat, hash::CryptoHash, traits::SigningKey, HashValue};
-use once_cell::sync::Lazy;
-use std::collections::HashMap;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use state_tree::SparseMerkleTree;
 
 enum MockTransaction {
     Mint {
@@ -52,7 +52,7 @@ fn empty_tree() {
 }
 
 pub struct MockChainState {
-//    state_tree: SparseMerkleTree,
+    //    state_tree: SparseMerkleTree,
 }
 
 impl MockChainState {
@@ -135,7 +135,6 @@ impl MockExecutor {
             config: VMConfig::default(),
         }
     }
-
 }
 
 impl TransactionExecutor for MockExecutor {
@@ -144,7 +143,6 @@ impl TransactionExecutor for MockExecutor {
         chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> Result<TransactionOutput> {
-
         // ToDo: output_cache is not used currently.
         let mut output_cache = HashMap::new();
         let mut output;
@@ -160,11 +158,7 @@ impl TransactionExecutor for MockExecutor {
                 output_cache.insert(seqnum_ap(sender), new_seqnum);
 
                 let write_set = gen_mint_writeset(sender, new_balance, new_seqnum);
-                output = TransactionOutput::new(
-                    vec![],
-                    0,
-                    KEEP_STATUS.clone(),
-                );
+                output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
             }
             MockTransaction::Payment {
                 sender,
@@ -174,11 +168,7 @@ impl TransactionExecutor for MockExecutor {
                 let sender_old_balance = read_balance(&output_cache, chain_state, sender);
                 let recipient_old_balance = read_balance(&output_cache, chain_state, recipient);
                 if sender_old_balance < amount {
-                    output = TransactionOutput::new(
-                        vec![],
-                        0,
-                        DISCARD_STATUS.clone(),
-                    );
+                    output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
                 } else {
                     let sender_old_seqnum = read_seqnum(&output_cache, chain_state, sender);
                     let sender_new_seqnum = sender_old_seqnum + 1;
@@ -216,7 +206,6 @@ impl TransactionExecutor for MockExecutor {
     }
 }
 
-
 fn read_balance(
     output_cache: &HashMap<AccessPath, u64>,
     chain_state: &dyn ChainState,
@@ -241,7 +230,10 @@ fn read_seqnum(
     }
 }
 
-fn read_balance_from_storage(chain_state: &dyn ChainState, balance_access_path: &AccessPath) -> u64 {
+fn read_balance_from_storage(
+    chain_state: &dyn ChainState,
+    balance_access_path: &AccessPath,
+) -> u64 {
     read_u64_from_storage(chain_state, &balance_access_path)
 }
 

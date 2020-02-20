@@ -128,4 +128,3 @@ impl ::std::iter::IntoIterator for WriteSet {
         self.0.write_set.into_iter()
     }
 }
-
