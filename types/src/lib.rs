@@ -11,6 +11,7 @@ pub mod byte_array;
 pub mod change_set;
 pub mod contract_event;
 pub mod identifier;
+pub mod ids;
 pub mod language_storage;
 pub mod peer_info;
 pub mod proof;
@@ -20,7 +21,6 @@ pub mod transaction;
 pub mod vm_error;
 pub mod with_proof;
 pub mod write_set;
-
 #[cfg(test)]
 mod tests {
     #[test]

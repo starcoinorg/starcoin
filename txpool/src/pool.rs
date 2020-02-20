@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod client;
-mod listener;
-mod local_transactions;
-mod queue;
-mod ready;
-mod replace;
-mod scoring;
-mod verifier;
+pub(crate) mod listener;
+pub(crate) mod local_transactions;
+pub(crate) mod queue;
+pub(crate) mod ready;
+pub(crate) mod replace;
+pub(crate) mod scoring;
+pub(crate) mod verifier;
 use common_crypto::hash::{CryptoHash, HashValue};
 use transaction_pool as tx_pool;
 use types::{account_address::AccountAddress, transaction};
@@ -16,6 +16,9 @@ use types::{account_address::AccountAddress, transaction};
 pub type Nonce = u64;
 pub type GasPrice = u64;
 pub type Gas = u64;
+pub use client::{Client, NonceClient};
+pub use queue::{Status, TransactionQueue};
+pub use verifier::Options as VerifierOptions;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UnverifiedUserTransaction(transaction::SignedUserTransaction);

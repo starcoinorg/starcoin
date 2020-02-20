@@ -32,24 +32,24 @@ pub trait Client: fmt::Debug + Sync {
         t: &UnverifiedUserTransaction,
     ) -> Result<(), transaction::TransactionError>;
 
-    /// Structurarily verify given transaction.
+    /// Structurally verify given transaction.
     fn verify_transaction(
         &self,
         tx: UnverifiedUserTransaction,
     ) -> Result<transaction::SignatureCheckedTransaction, transaction::TransactionError>;
 
-    /// Estimate minimal gas requirurement for given transaction.
-    fn required_gas(&self, tx: &transaction::RawUserTransaction) -> Gas;
+    // /// Estimate minimal gas requirurement for given transaction.
+    // fn required_gas(&self, tx: &transaction::RawUserTransaction) -> Gas;
 
-    //    /// Fetch account details for given sender.
-    //    fn account_details(&self, address: &Address) -> AccountDetails;
-
-    //    /// Classify transaction (check if transaction is filtered by some contracts).
-    //    fn transaction_type(&self, tx: &transaction::SignedUserTransaction) -> TransactionType;
-
-    //    /// Performs pre-validation of RLP decoded transaction
-    //    fn decode_transaction(
-    //        &self,
-    //        transaction: &[u8],
-    //    ) -> Result<transaction::UnverifiedTransaction, transaction::Error>;
+    // /// Fetch account details for given sender.
+    // fn account_details(&self, address: &Address) -> AccountDetails;
+    //
+    // /// Classify transaction (check if transaction is filtered by some contracts).
+    // fn transaction_type(&self, tx: &transaction::SignedUserTransaction) -> TransactionType;
+    //
+    // /// Performs pre-validation of RLP decoded transaction
+    // fn decode_transaction(
+    //     &self,
+    //     transaction: &[u8],
+    // ) -> Result<transaction::UnverifiedTransaction, transaction::Error>;
 }

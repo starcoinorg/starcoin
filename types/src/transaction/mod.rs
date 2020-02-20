@@ -287,6 +287,29 @@ impl Deref for SignatureCheckedTransaction {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct UnverifiedUserTransaction(SignedUserTransaction);
+
+impl UnverifiedUserTransaction {
+    /// Returns the `SignedUserTransaction` within.
+    pub fn into_inner(self) -> SignedUserTransaction {
+        self.0
+    }
+}
+
+impl Deref for UnverifiedUserTransaction {
+    type Target = SignedUserTransaction;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl From<SignedUserTransaction> for UnverifiedUserTransaction {
+    fn from(tx: SignedUserTransaction) -> Self {
+        UnverifiedUserTransaction(tx)
+    }
+}
+
 impl fmt::Debug for SignedUserTransaction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(

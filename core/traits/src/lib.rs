@@ -6,12 +6,11 @@ pub mod mock;
 mod txpool;
 
 pub use chain::Chain;
+use crypto::HashValue;
 pub use txpool::TxPool;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_traits() {}
+use types::ids::TransactionId;
+/// Provides various information on a transaction by it's ID
+pub trait TransactionInfo {
+    /// Get the hash of block that contains the transaction, if any.
+    fn transaction_block(&self, id: TransactionId) -> Option<HashValue>;
 }
