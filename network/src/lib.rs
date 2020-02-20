@@ -10,6 +10,8 @@ mod transport;
 mod utils;
 mod discovery;
 mod debug_info;
+mod config;
+mod protocol;
 
 pub use messages::*;
 pub use network::NetworkActor;

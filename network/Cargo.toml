@@ -24,3 +24,6 @@ config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
 bus = {path = "../bus", package="starcoin-bus"}
 fnv = "1.0.6"
+zeroize = "1.0.0"
+bitflags = "1.2.0"
+smallvec = "0.6.10"
