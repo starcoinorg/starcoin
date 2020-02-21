@@ -3,6 +3,7 @@
 members = [
     "commons/scs",
     "commons/crypto",
+    "commons/transaction-pool",
     "types",
     "core/traits",
     "core/accumulator",

@@ -13,7 +13,7 @@ actix = "0.9"
 actix-rt = "1.0"
 async-trait = "0.1"
 log = "0.4"
-transaction-pool = "2.0"
+#transaction-pool = "2.0"
 futures = "0.3"
 futures-channel = "0.3"
 rand = "0.6"
@@ -27,3 +27,4 @@ traits = { package = "starcoin-traits", path = "../core/traits"}
 config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
 common_crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
+transaction-pool = {path = "../commons/transaction-pool", package="tx-pool"}

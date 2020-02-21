@@ -1,0 +1,12 @@
+[package]
+name = "tx-pool"
+version = "0.1.0"
+authors = ["caojiafeng <funfriendcjf@gmail.com>"]
+edition = "2018"
+publish = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.8"
+smallvec = "0.6.10"
+#trace-time = { path = "../trace-time", version = "0.1" }
