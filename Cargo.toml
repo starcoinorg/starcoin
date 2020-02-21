@@ -7,10 +7,11 @@ members = [
     "core/state-view",
     "bus",
     "network",
-    "network/peerset",
     "consensus",
     "txpool",
     "rpc/json-rpc",
     "chain",
-    "node"
+    "node",
+    "network-libp2p",
+    "network-libp2p/peerset",
 ]

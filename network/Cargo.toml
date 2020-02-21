@@ -30,3 +30,10 @@ smallvec = "0.6.10"
 
 tempfile = "3.1.0"
 rand = "0.7.2"
+parking_lot = "0.10.0"
+
+serde = { version = "1.0.101", features = ["derive"] }
+serde_json = "1.0.41"
+slog = { version = "2.5.2", features = ["nested-values"] }
+slog_derive = "0.2.0"
+derive_more = "0.99.2"
