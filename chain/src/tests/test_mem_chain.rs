@@ -36,4 +36,6 @@ pub fn gen_mem_chain_for_test(times: u64) -> MemChain {
 #[test]
 fn test_mem_chain() {
     let chain = gen_mem_chain_for_test(10);
+    println!("{}", chain.head_block().header().number());
+    assert_eq!(chain.head_block().header().number(), 10);
 }

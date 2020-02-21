@@ -1,8 +1,55 @@
-use crate::ChainWriter;
+use crate::message::ChainMessage;
+use crate::{ChainReader, ChainWriter};
+use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
+use config::NodeConfig;
 use crypto::{hash::CryptoHash, HashValue};
 use std::collections::HashMap;
-use types::block::{Block, BlockHeader, BlockNumber};
+use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
+
+pub struct MemChainActor {
+    mem_chain: MemChain,
+}
+
+impl MemChainActor {
+    pub fn launch(
+        // _node_config: &NodeConfig,
+        genesis_block: Block,
+    ) -> Result<Addr<MemChainActor>> {
+        let actor = MemChainActor {
+            mem_chain: MemChain::new(genesis_block),
+        };
+        Ok(actor.start())
+    }
+}
+
+impl Actor for MemChainActor {
+    type Context = Context<Self>;
+
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        println!("ChainActor actor started");
+    }
+}
+
+impl Handler<ChainMessage> for MemChainActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: ChainMessage, ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            ChainMessage::CreateBlock(times) => {
+                let head_block = self.mem_chain.head_block().clone();
+                let mut parent_block_hash = head_block.crypto_hash();
+                for i in 0..times {
+                    let current_block_header =
+                        BlockHeader::new_block_header_for_test(parent_block_hash, i);
+                    let current_block = Block::new_nil_block_for_test(current_block_header);
+                    parent_block_hash = current_block.crypto_hash();
+                    self.mem_chain.try_connect(current_block);
+                }
+            }
+        }
+    }
+}
 
 ///
 /// unsafe block chain in memory
@@ -108,5 +155,23 @@ impl ChainWriter for MemChain {
         }
 
         Ok(())
+    }
+}
+
+impl ChainReader for MemChain {
+    fn current_header(&self) -> BlockHeader {
+        unimplemented!()
+    }
+    fn get_header(&self, hash: HashValue) -> BlockHeader {
+        unimplemented!()
+    }
+    fn get_header_by_number(&self, number: BlockNumber) -> BlockHeader {
+        unimplemented!()
+    }
+    fn get_block(&self, hash: HashValue) -> Block {
+        unimplemented!()
+    }
+    fn create_block_template(&self) -> Result<BlockTemplate> {
+        unimplemented!()
     }
 }

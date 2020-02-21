@@ -1,6 +1,7 @@
 use crate::download::DownloadActor;
 use crate::process::ProcessActor;
 use actix::prelude::*;
+use anyhow::Result;
 use crypto::HashValue;
 use std::cmp::Ordering;
 use types::{block::BlockHeader, peer_info::PeerInfo, transaction::SignedUserTransaction};
@@ -12,8 +13,6 @@ pub enum SyncMessage {
     ProcessMessage(ProcessMessage),
 }
 
-#[derive(Message)]
-#[rtype(result = "()")]
 pub enum DownloadMessage {
     LatestStateMsg(Option<Addr<ProcessActor>>, PeerInfo, LatestStateMsg),
     BatchHashByNumberMsg(Option<Addr<ProcessActor>>, PeerInfo, BatchHashByNumberMsg),
@@ -22,12 +21,18 @@ pub enum DownloadMessage {
     BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg), // just fo test
 }
 
-#[derive(Message)]
-#[rtype(result = "()")]
+impl Message for DownloadMessage {
+    type Result = Result<()>;
+}
+
 pub enum ProcessMessage {
     NewPeerMsg(Option<Addr<DownloadActor>>, PeerInfo),
     GetHashByNumberMsg(Option<Addr<DownloadActor>>, GetHashByNumberMsg),
     GetDataByHashMsg(Option<Addr<DownloadActor>>, GetDataByHashMsg),
+}
+
+impl Message for ProcessMessage {
+    type Result = Result<()>;
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]

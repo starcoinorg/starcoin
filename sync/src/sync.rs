@@ -5,9 +5,9 @@ use crate::process::{ProcessActor, Processor};
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
-use atomic_refcell::AtomicRefCell;
-use chain::{mem_chain::MemChain, ChainActor};
+use chain::{mem_chain::MemChainActor, ChainActorRef};
 use config::NodeConfig;
+use futures_locks::RwLock;
 use network::NetworkActor;
 use std::sync::Arc;
 use types::{block::BlockHeader, peer_info::PeerInfo};
@@ -64,16 +64,17 @@ impl Handler<SyncMessage> for SyncActor {
     }
 }
 
+#[derive(Clone)]
 pub struct SyncFlow {
-    pub downloader: Downloader,
-    pub processor: Processor,
+    pub downloader: Arc<RwLock<Downloader>>,
+    pub processor: Arc<RwLock<Processor>>,
     pub peer_info: PeerInfo,
 }
 
 impl SyncFlow {
-    pub fn new(peer_info: PeerInfo, chain_reader: Arc<AtomicRefCell<MemChain>>) -> Self {
-        let downloader = Downloader::new(chain_reader.clone());
-        let processor = Processor::new(chain_reader);
+    pub fn new(peer_info: PeerInfo, chain_reader: ChainActorRef<MemChainActor>) -> Self {
+        let downloader = Arc::new(RwLock::new(Downloader::new(chain_reader.clone())));
+        let processor = Arc::new(RwLock::new(Processor::new(chain_reader)));
         SyncFlow {
             downloader,
             processor,

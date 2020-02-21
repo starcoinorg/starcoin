@@ -5,31 +5,39 @@ use crate::message::{
 /// Sync message which outbound
 use crate::pool::TTLPool;
 use actix::prelude::*;
-use actix::{Actor, Addr, AsyncContext, Context, Handler};
-use anyhow::Result;
+use actix::{
+    fut::wrap_future, fut::FutureWrap, Actor, Addr, AsyncContext, Context, Handler,
+    ResponseActFuture,
+};
+use anyhow::{Error, Result};
 use atomic_refcell::AtomicRefCell;
-use chain::{mem_chain::MemChain, ChainWriter};
+use chain::{mem_chain::MemChainActor, ChainActorRef};
+use futures::compat::Future01CompatExt;
+use futures_locks::{Mutex, RwLock};
 use itertools;
 use network::NetworkActor;
+use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::sync::Arc;
+use traits::Chain;
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
 };
 
+#[derive(Clone)]
 pub struct DownloadActor {
-    downloader: Downloader,
+    downloader: Arc<RwLock<Downloader>>,
     peer_info: Arc<PeerInfo>,
 }
 
 impl DownloadActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: Arc<AtomicRefCell<MemChain>>,
+        chain_reader: ChainActorRef<MemChainActor>,
     ) -> Result<Addr<DownloadActor>> {
         let download_actor = DownloadActor {
-            downloader: Downloader::new(chain_reader),
+            downloader: Arc::new(RwLock::new(Downloader::new(chain_reader))),
             peer_info,
         };
         Ok(download_actor.start())
@@ -45,91 +53,113 @@ impl Actor for DownloadActor {
 }
 
 impl Handler<DownloadMessage> for DownloadActor {
-    type Result = ();
+    type Result = ResponseActFuture<Self, Result<()>>;
 
     fn handle(&mut self, msg: DownloadMessage, ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            DownloadMessage::LatestStateMsg(addr, peer_info, latest_state_msg) => {
-                self.downloader
-                    .handle_latest_state_msg(peer_info, latest_state_msg);
-                match addr {
-                    Some(address) => {
-                        let send_get_hash_by_number_msg =
-                            self.downloader.send_get_hash_by_number_msg();
-                        match send_get_hash_by_number_msg {
-                            Some(get_hash_by_number_msg) => {
-                                address
-                                    .send(ProcessMessage::GetHashByNumberMsg(
-                                        Some(ctx.address()),
-                                        get_hash_by_number_msg,
-                                    ))
-                                    .into_actor(self)
-                                    .then(|_result, act, _ctx| async {}.into_actor(act))
-                                    .wait(ctx);
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            DownloadMessage::BatchHashByNumberMsg(addr, peer_info, batch_hash_by_number_msg) => {
-                let hash_with_number = self
-                    .downloader
-                    .find_ancestor(peer_info, batch_hash_by_number_msg);
-                match hash_with_number {
-                    Some(_) => {
-                        let send_get_header_by_hash_msg =
-                            self.downloader.send_get_header_by_hash_msg();
-                        match send_get_header_by_hash_msg {
-                            Some(get_data_by_hash_msg) => match addr {
-                                Some(address) => {
+        let downloader = self.downloader.clone();
+        let my_addr = ctx.address();
+        let fut = async move {
+            match msg {
+                DownloadMessage::LatestStateMsg(addr, peer_info, latest_state_msg) => {
+                    Downloader::handle_latest_state_msg(
+                        downloader.clone(),
+                        peer_info,
+                        latest_state_msg,
+                    )
+                    .await;
+                    match addr {
+                        Some(address) => {
+                            let send_get_hash_by_number_msg =
+                                Downloader::send_get_hash_by_number_msg(downloader.clone()).await;
+                            match send_get_hash_by_number_msg {
+                                Some(get_hash_by_number_msg) => {
                                     address
-                                        .send(ProcessMessage::GetDataByHashMsg(
-                                            Some(ctx.address()),
-                                            get_data_by_hash_msg,
+                                        .send(ProcessMessage::GetHashByNumberMsg(
+                                            Some(my_addr),
+                                            get_hash_by_number_msg,
                                         ))
-                                        .into_actor(self)
-                                        .then(|_result, act, _ctx| async {}.into_actor(act))
-                                        .wait(ctx);
+                                        .await;
                                 }
                                 _ => {}
-                            },
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            DownloadMessage::BatchHeaderMsg(addr, peer_info, batch_header_msg) => {
-                self.downloader
-                    .handle_batch_header_msg(peer_info, batch_header_msg);
-                let send_get_body_by_hash_msg = self.downloader.send_get_body_by_hash_msg();
-                match send_get_body_by_hash_msg {
-                    Some(get_body_by_hash_msg) => match addr {
-                        Some(address) => {
-                            address
-                                .send(ProcessMessage::GetDataByHashMsg(
-                                    Some(ctx.address()),
-                                    get_body_by_hash_msg,
-                                ))
-                                .into_actor(self)
-                                .then(|_result, act, _ctx| async {}.into_actor(act))
-                                .wait(ctx);
+                            }
                         }
                         _ => {}
-                    },
-                    _ => {}
+                    }
+                }
+                DownloadMessage::BatchHashByNumberMsg(
+                    addr,
+                    peer_info,
+                    batch_hash_by_number_msg,
+                ) => {
+                    let hash_with_number = Downloader::find_ancestor(
+                        downloader.clone(),
+                        peer_info,
+                        batch_hash_by_number_msg,
+                    )
+                    .await;
+                    match hash_with_number {
+                        Some(_) => {
+                            let send_get_header_by_hash_msg =
+                                Downloader::send_get_header_by_hash_msg(downloader.clone()).await;
+                            match send_get_header_by_hash_msg {
+                                Some(get_data_by_hash_msg) => match addr {
+                                    Some(address) => {
+                                        address
+                                            .send(ProcessMessage::GetDataByHashMsg(
+                                                Some(my_addr),
+                                                get_data_by_hash_msg,
+                                            ))
+                                            .await;
+                                    }
+                                    _ => {}
+                                },
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                DownloadMessage::BatchHeaderMsg(addr, peer_info, batch_header_msg) => {
+                    Downloader::handle_batch_header_msg(
+                        downloader.clone(),
+                        peer_info,
+                        batch_header_msg,
+                    )
+                    .await;
+                    let send_get_body_by_hash_msg =
+                        Downloader::send_get_body_by_hash_msg(downloader.clone()).await;
+                    match send_get_body_by_hash_msg {
+                        Some(get_body_by_hash_msg) => match addr {
+                            Some(address) => {
+                                address
+                                    .send(ProcessMessage::GetDataByHashMsg(
+                                        Some(my_addr),
+                                        get_body_by_hash_msg,
+                                    ))
+                                    .await;
+                            }
+                            _ => {}
+                        },
+                        _ => {}
+                    }
+                }
+                DownloadMessage::BatchBodyMsg(addr, batch_body_msg) => {
+                    println!("{:?}", batch_body_msg);
+                }
+                DownloadMessage::BatchHeaderAndBodyMsg(batch_header_msg, batch_body_msg) => {
+                    Downloader::do_block(
+                        downloader.clone(),
+                        batch_header_msg.headers,
+                        batch_body_msg.bodies,
+                    )
+                    .await;
                 }
             }
-            DownloadMessage::BatchBodyMsg(addr, batch_body_msg) => {
-                println!("{:?}", batch_body_msg);
-            }
-            DownloadMessage::BatchHeaderAndBodyMsg(batch_header_msg, batch_body_msg) => {
-                self.downloader
-                    .do_block(batch_header_msg.headers, batch_body_msg.bodies);
-            }
-        }
+
+            Ok(())
+        };
+
+        Box::new(wrap_future::<_, Self>(fut))
     }
 }
 
@@ -140,13 +170,13 @@ pub struct Downloader {
     body_pool: TTLPool<BlockBody>,
     //    _network: Addr<NetworkActor>,
     peers: HashMap<PeerInfo, LatestStateMsg>,
-    chain_reader: Arc<AtomicRefCell<MemChain>>,
+    chain_reader: ChainActorRef<MemChainActor>,
 }
 
 const HEAD_CT: u64 = 100;
 
 impl Downloader {
-    pub fn new(chain_reader: Arc<AtomicRefCell<MemChain>>) -> Self {
+    pub fn new(chain_reader: ChainActorRef<MemChainActor>) -> Self {
         Downloader {
             hash_pool: TTLPool::new(),
             header_pool: TTLPool::new(),
@@ -157,30 +187,44 @@ impl Downloader {
         }
     }
 
-    pub fn handle_latest_state_msg(&mut self, peer: PeerInfo, latest_state_msg: LatestStateMsg) {
+    pub async fn handle_latest_state_msg(
+        downloader: Arc<RwLock<Downloader>>,
+        peer: PeerInfo,
+        latest_state_msg: LatestStateMsg,
+    ) {
         // let hash_num = HashWithNumber {
         //     hash: latest_state_msg.hash_header.hash.clone(),
         //     number: latest_state_msg.hash_header.header.number(),
         // };
         //        self.hash_pool
         //            .insert(peer.clone(), latest_state_msg.header.number(), hash_num);
-        self.peers.insert(peer, latest_state_msg.clone());
+        downloader
+            .write()
+            .compat()
+            .await
+            .unwrap()
+            .peers
+            .insert(peer, latest_state_msg.clone());
     }
 
-    fn best_peer(&self) -> PeerInfo {
-        assert!(self.peers.len() > 0);
+    async fn best_peer(downloader: Arc<RwLock<Downloader>>) -> PeerInfo {
+        let lock = downloader.read().compat().await.unwrap();
+        assert!(lock.peers.len() > 0);
         let mut peer = None;
-        self.peers.keys().for_each(|p| peer = Some(p.clone()));
+        lock.peers.keys().for_each(|p| peer = Some(p.clone()));
 
         peer.take().expect("best peer is none.")
     }
 
-    pub fn send_get_hash_by_number_msg(&self) -> Option<GetHashByNumberMsg> {
+    pub async fn send_get_hash_by_number_msg(
+        downloader: Arc<RwLock<Downloader>>,
+    ) -> Option<GetHashByNumberMsg> {
+        let best_peer = Self::best_peer(downloader.clone()).await;
+        let lock = downloader.read().compat().await.unwrap();
         //todo：binary search
 
-        let best_peer = self.best_peer();
-        let latest_number = self.chain_reader.borrow().current_header().number();
-        let number = self
+        let latest_number = lock.chain_reader.clone().current_header().await.number();
+        let number = lock
             .peers
             .get(&best_peer)
             .expect("Latest state is none.")
@@ -205,11 +249,12 @@ impl Downloader {
         }
     }
 
-    pub fn find_ancestor(
-        &mut self,
+    pub async fn find_ancestor(
+        downloader: Arc<RwLock<Downloader>>,
         peer: PeerInfo,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) -> Option<HashWithNumber> {
+        let mut lock = downloader.write().compat().await.unwrap();
         //TODO
         let mut exist_ancestor = false;
         let mut ancestor = None;
@@ -217,10 +262,12 @@ impl Downloader {
         let mut not_exist_hash = Vec::new();
         hashs.reverse();
         for hash in hashs {
-            if self
+            if lock
                 .chain_reader
-                .borrow()
+                .clone()
                 .get_block_by_hash(&hash.hash)
+                .await
+                .expect("block is none.")
                 .is_some()
             {
                 exist_ancestor = true;
@@ -233,15 +280,19 @@ impl Downloader {
 
         if exist_ancestor {
             for hash in not_exist_hash {
-                self.hash_pool
+                lock.borrow_mut()
+                    .hash_pool
                     .insert(peer.clone(), hash.number.clone(), hash);
             }
         }
         ancestor
     }
 
-    pub fn send_get_header_by_hash_msg(&mut self) -> Option<GetDataByHashMsg> {
-        let hash_vec = self.hash_pool.take(100);
+    pub async fn send_get_header_by_hash_msg(
+        downloader: Arc<RwLock<Downloader>>,
+    ) -> Option<GetDataByHashMsg> {
+        let mut lock = downloader.write().compat().await.unwrap();
+        let hash_vec = lock.borrow_mut().hash_pool.take(100);
         if !hash_vec.is_empty() {
             let mut hashs = hash_vec.iter().map(|hash| hash.hash).collect();
             Some(GetDataByHashMsg {
@@ -253,17 +304,26 @@ impl Downloader {
         }
     }
 
-    pub fn handle_batch_header_msg(&mut self, peer: PeerInfo, batch_header_msg: BatchHeaderMsg) {
+    pub async fn handle_batch_header_msg(
+        downloader: Arc<RwLock<Downloader>>,
+        peer: PeerInfo,
+        batch_header_msg: BatchHeaderMsg,
+    ) {
+        let mut lock = downloader.write().compat().await.unwrap();
         if !batch_header_msg.headers.is_empty() {
             for header in batch_header_msg.headers {
-                self.header_pool
+                lock.header_pool
+                    .borrow_mut()
                     .insert(peer.clone(), header.header.number(), header);
             }
         }
     }
 
-    pub fn send_get_body_by_hash_msg(&mut self) -> Option<GetDataByHashMsg> {
-        let header_vec = self.header_pool.take(100);
+    pub async fn send_get_body_by_hash_msg(
+        downloader: Arc<RwLock<Downloader>>,
+    ) -> Option<GetDataByHashMsg> {
+        let mut lock = downloader.write().compat().await.unwrap();
+        let header_vec = lock.borrow_mut().header_pool.take(100);
         if !header_vec.is_empty() {
             let mut hashs = header_vec.iter().map(|header| header.hash).collect();
             Some(GetDataByHashMsg {
@@ -275,11 +335,16 @@ impl Downloader {
         }
     }
 
-    pub fn do_block(&mut self, headers: Vec<HashWithBlockHeader>, bodies: Vec<BlockBody>) {
+    pub async fn do_block(
+        downloader: Arc<RwLock<Downloader>>,
+        headers: Vec<HashWithBlockHeader>,
+        bodies: Vec<BlockBody>,
+    ) {
+        let lock = downloader.write().compat().await.unwrap();
         for (header, body) in itertools::zip_eq(headers, bodies) {
             let block = Block::new(header.header, body.transactions);
             //todo:verify block
-            let _ = self.chain_reader.borrow_mut().try_connect(block);
+            let _ = lock.chain_reader.clone().try_connect(block);
         }
     }
 }

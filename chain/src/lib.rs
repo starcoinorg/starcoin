@@ -3,7 +3,7 @@
 
 mod chain;
 pub mod mem_chain;
-mod message;
+pub mod message;
 mod starcoin_chain_state;
 
 use actix::prelude::*;
@@ -70,7 +70,7 @@ impl<A: Actor + Handler<ChainMessage>> Into<ChainActorRef<A>> for Addr<A> {
 }
 
 #[async_trait::async_trait]
-impl Chain for ChainActorRef<ChainActor> {
+impl<A: Actor + Handler<ChainMessage>> Chain for ChainActorRef<A> {
     async fn current_header(self) -> BlockHeader {
         unimplemented!()
     }
@@ -79,7 +79,15 @@ impl Chain for ChainActorRef<ChainActor> {
         unimplemented!()
     }
 
+    async fn head_block(self) -> Block {
+        unimplemented!()
+    }
+
     async fn get_header_by_number(self, number: BlockNumber) -> BlockHeader {
+        unimplemented!()
+    }
+
+    async fn get_block_by_number(self, number: BlockNumber) -> Block {
         unimplemented!()
     }
 
