@@ -48,8 +48,8 @@ impl<P> tx_pool::Scoring<P> for NonceAndGasPrice
 where
     P: ScoredTransaction + tx_pool::VerifiedTransaction,
 {
-    type Event = ();
     type Score = u64;
+    type Event = ();
 
     fn compare(&self, old: &P, other: &P) -> cmp::Ordering {
         old.nonce().cmp(&other.nonce())

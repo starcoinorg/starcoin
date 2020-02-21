@@ -53,7 +53,9 @@ where
         } else {
             let old_score = (old.priority(), old.gas_price());
             let new_score = (new.priority(), new.gas_price());
-            if new_score > old_score {
+            if new_score <= old_score {
+                Choice::RejectNew
+            } else {
                 // Check if this is a replacement transaction.
                 //
                 // With replacement transactions we can safely return `InsertNew` here, because
@@ -92,8 +94,6 @@ where
                 } else {
                     Choice::ReplaceOld
                 }
-            } else {
-                Choice::RejectNew
             }
         }
     }
