@@ -1,4 +1,4 @@
-use crate::BlockChain;
+use crate::ChainWriter;
 use anyhow::Result;
 use crypto::{hash::CryptoHash, HashValue};
 use std::collections::HashMap;
@@ -68,7 +68,7 @@ impl MemChain {
     }
 }
 
-impl BlockChain for MemChain {
+impl ChainWriter for MemChain {
     fn get_block_by_hash(&self, hash: &HashValue) -> Option<Block> {
         match self.blocks.get(hash) {
             Some(b) => Some(b.clone()),

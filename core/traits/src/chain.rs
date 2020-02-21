@@ -1,13 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::TransactionInfo;
 use anyhow::Result;
 use crypto::HashValue;
 use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
 
 #[async_trait::async_trait]
-pub trait Chain: Clone + std::marker::Unpin + TransactionInfo {
+pub trait Chain: Clone + std::marker::Unpin {
     async fn current_header(self) -> BlockHeader;
     async fn get_header(self, hash: &HashValue) -> BlockHeader;
     async fn get_header_by_number(self, number: BlockNumber) -> BlockHeader;

@@ -19,3 +19,5 @@ executor = {path = "../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 consensus = { package="starcoin-consensus", path = "../consensus"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+traits = {path = "../core/traits", package="starcoin-traits"}
+async-trait = "0.1"

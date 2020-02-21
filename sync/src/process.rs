@@ -1,5 +1,5 @@
 /// Sync message which inbound
-use crate::proto::{
+use crate::message::{
     BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
     GetDataByHashMsg, GetHashByNumberMsg, HashWithBlockHeader, HashWithNumber, LatestStateMsg,
     ProcessMessage,
@@ -8,7 +8,7 @@ use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::Result;
 use atomic_refcell::AtomicRefCell;
-use chain::{mem_chain::MemChain, BlockChain};
+use chain::{mem_chain::MemChain, ChainWriter};
 use crypto::hash::CryptoHash;
 use network::NetworkActor;
 use std::hash::Hash;

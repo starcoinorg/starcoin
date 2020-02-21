@@ -3103,6 +3103,7 @@ version = "0.1.0"
 dependencies = [
  "actix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+ "async-trait 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "starcoin-canonical-serialization 0.1.0",
  "starcoin-chain-state 0.1.0",
  "starcoin-config 0.1.0",
@@ -3110,6 +3111,7 @@ dependencies = [
  "starcoin-crypto 0.1.0",
  "starcoin-executor 0.1.0",
  "starcoin-state-tree 0.1.0",
+ "starcoin-traits 0.1.0",
  "starcoin-types 0.1.0",
 ]
 

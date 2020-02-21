@@ -1,7 +1,7 @@
 use crate::download::{DownloadActor, Downloader};
+use crate::message::{BlockBody, HashWithNumber, SyncMessage};
 use crate::pool::TTLPool;
 use crate::process::{ProcessActor, Processor};
-use crate::proto::{BlockBody, HashWithNumber, SyncMessage};
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
