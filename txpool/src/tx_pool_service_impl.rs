@@ -6,12 +6,71 @@ use crate::{
     pool,
     pool::{PendingOrdering, PendingSettings},
 };
+use actix::prelude::*;
 use anyhow::Result;
 use std::sync::Arc;
 use types::{
     transaction,
     transaction::{SignatureCheckedTransaction, SignedUserTransaction, UnverifiedUserTransaction},
 };
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct TxPool {
+    addr: Addr<TxPoolActor>,
+}
+
+impl TxPool {
+    pub fn start() -> TxPool {
+        let addr = TxPoolActor::start_default();
+        TxPool { addr }
+    }
+
+    pub async fn import_txns<C>(
+        &self,
+        client: C,
+        txns: Vec<transaction::SignedUserTransaction>,
+    ) -> Result<Vec<Result<(), transaction::TransactionError>>>
+    where
+        C: pool::NonceClient + pool::Client + Clone + Send + 'static,
+    {
+        let r = self.addr.send(ImportTxns { client, txns });
+        Ok(r.await?)
+    }
+}
+
+struct ImportTxns<C> {
+    client: C,
+    txns: Vec<transaction::SignedUserTransaction>,
+}
+
+impl<C> Message for ImportTxns<C>
+where
+    C: pool::NonceClient + pool::Client + Clone,
+{
+    type Result = Vec<Result<(), transaction::TransactionError>>;
+}
+
+#[derive(Debug)]
+struct TxPoolActor;
+impl Default for TxPoolActor {
+    fn default() -> Self {
+        TxPoolActor
+    }
+}
+
+impl Actor for TxPoolActor {
+    type Context = Context<Self>;
+}
+impl<C> Handler<ImportTxns<C>> for TxPoolActor
+where
+    C: pool::NonceClient + pool::Client + Clone,
+{
+    type Result = MessageResult<ImportTxns<C>>;
+
+    fn handle(&mut self, msg: ImportTxns<C>, ctx: &mut Self::Context) -> Self::Result {
+        todo!()
+    }
+}
 
 pub struct TxPoolServiceImpl {
     queue: TransactionQueue,
