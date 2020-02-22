@@ -20,6 +20,13 @@ impl<T: serde::Serialize> CryptoHash for T {
     }
 }
 
+pub fn create_literal_hash(word: &str) -> HashValue {
+    let mut s = word.as_bytes().to_vec();
+    assert!(s.len() <= HashValue::LENGTH);
+    s.resize(HashValue::LENGTH, 0);
+    HashValue::from_slice(&s).expect("Cannot fail")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -42,5 +49,12 @@ mod tests {
         );
         let hash2 = o.crypto_hash();
         assert_eq!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_crypto_hash_for_basic_type() {
+        assert_eq!("test".crypto_hash(), "test".to_string().crypto_hash());
+        //lcs serde::Serialize &[u8] is different with Vec<u8>, TODO conform.
+        assert_ne!(b"test".crypto_hash(), b"test".to_vec().crypto_hash());
     }
 }
