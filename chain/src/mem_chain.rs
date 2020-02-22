@@ -1,8 +1,105 @@
-use crate::ChainWriter;
+use crate::message::{ChainRequest, ChainResponse};
+use crate::{ChainReader, ChainWriter};
+use actix::fut::wrap_future;
+use actix::{Actor, Addr, Context, Handler, ResponseActFuture};
 use anyhow::Result;
+use config::NodeConfig;
 use crypto::{hash::CryptoHash, HashValue};
+use futures::compat::Future01CompatExt;
+use futures_locks::RwLock;
 use std::collections::HashMap;
-use types::block::{Block, BlockHeader, BlockNumber};
+use std::sync::Arc;
+use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
+
+pub struct MemChainActor {
+    mem_chain: Arc<RwLock<MemChain>>,
+}
+
+impl MemChainActor {
+    pub fn launch(
+        // _node_config: &NodeConfig,
+        genesis_block: Block,
+    ) -> Result<Addr<MemChainActor>> {
+        let actor = MemChainActor {
+            mem_chain: Arc::new(RwLock::new(MemChain::new(genesis_block))),
+        };
+        Ok(actor.start())
+    }
+}
+
+impl Actor for MemChainActor {
+    type Context = Context<Self>;
+
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        println!("ChainActor actor started");
+    }
+}
+
+impl Handler<ChainRequest> for MemChainActor {
+    type Result = ResponseActFuture<Self, Result<ChainResponse>>;
+
+    fn handle(&mut self, msg: ChainRequest, ctx: &mut Self::Context) -> Self::Result {
+        let mem_chain = self.mem_chain.clone();
+        let fut = async move {
+            match msg {
+                ChainRequest::CreateBlock(times) => {
+                    let mut lock = mem_chain.clone().write().compat().await.unwrap();
+                    let head_block = lock.head_block().clone();
+                    let mut parent_block_hash = head_block.crypto_hash();
+                    for i in 0..times {
+                        println!("parent_block_hash: {:?}", parent_block_hash);
+                        let current_block_header =
+                            BlockHeader::new_block_header_for_test(parent_block_hash, i);
+                        let current_block = Block::new_nil_block_for_test(current_block_header);
+                        parent_block_hash = current_block.crypto_hash();
+                        lock.try_connect(current_block);
+                    }
+                    Ok(ChainResponse::None)
+                }
+                ChainRequest::CurrentHeader() => {
+                    let lock = mem_chain.clone().read().compat().await.unwrap();
+                    Ok(ChainResponse::BlockHeader(lock.current_header()))
+                }
+                ChainRequest::GetHeaderByHash(hash) => {
+                    let lock = mem_chain.clone().read().compat().await.unwrap();
+                    Ok(ChainResponse::BlockHeader(lock.get_header_by_hash(hash)))
+                }
+                ChainRequest::HeadBlock() => {
+                    let lock = mem_chain.clone().read().compat().await.unwrap();
+                    Ok(ChainResponse::Block(lock.head_block()))
+                }
+                ChainRequest::GetHeaderByNumber(number) => {
+                    let lock = mem_chain.clone().read().compat().await.unwrap();
+                    Ok(ChainResponse::BlockHeader(
+                        lock.get_header_by_number(number),
+                    ))
+                }
+                ChainRequest::GetBlockByNumber(number) => {
+                    let lock = mem_chain.clone().read().compat().await.unwrap();
+                    Ok(ChainResponse::Block(lock.get_block_by_number(number)))
+                }
+                ChainRequest::CreateBlockTemplate() => {
+                    let lock = mem_chain.clone().read().compat().await.unwrap();
+                    Ok(ChainResponse::BlockTemplate(
+                        lock.create_block_template().unwrap(),
+                    ))
+                }
+                ChainRequest::GetBlockByHash(hash) => {
+                    let lock = mem_chain.clone().read().compat().await.unwrap();
+                    Ok(ChainResponse::OptionBlock(lock.get_block_by_hash(hash)))
+                }
+                ChainRequest::ConnectBlock(block) => {
+                    println!("{:?}:{:?}", "connect block", block.crypto_hash());
+                    let mut lock = mem_chain.clone().write().compat().await.unwrap();
+                    lock.try_connect(block).unwrap();
+                    Ok(ChainResponse::None)
+                }
+            }
+        };
+
+        Box::new(wrap_future::<_, Self>(fut))
+    }
+}
 
 ///
 /// unsafe block chain in memory
@@ -47,19 +144,6 @@ impl MemChain {
         }
     }
 
-    pub fn head_block(&self) -> &Block {
-        let head_hash = self
-            .master
-            .get(&self.head_number)
-            .expect("Get head block by head number none.");
-        self.blocks.get(head_hash).expect("Get block by hash none.")
-    }
-
-    pub fn current_header(&self) -> BlockHeader {
-        let head_block = self.head_block();
-        head_block.header().clone()
-    }
-
     pub fn get_block_by_number_from_master(&self, number: &BlockNumber) -> Option<Block> {
         match self.master.get(number) {
             Some(hash) => Some(self.blocks.get(hash).expect("block is none.").clone()),
@@ -69,13 +153,6 @@ impl MemChain {
 }
 
 impl ChainWriter for MemChain {
-    fn get_block_by_hash(&self, hash: &HashValue) -> Option<Block> {
-        match self.blocks.get(hash) {
-            Some(b) => Some(b.clone()),
-            None => None,
-        }
-    }
-
     fn try_connect(&mut self, block: Block) -> Result<()> {
         assert!((self.head_number + 1) >= block.header().number());
 
@@ -84,8 +161,8 @@ impl ChainWriter for MemChain {
 
         if !self.blocks.contains_key(&block_hash) && self.blocks.contains_key(&parent_hash) {
             assert_eq!(
-                self.get_block_by_hash(&parent_hash)
-                    .expect("parent block is none.")
+                self.get_block_by_hash(parent_hash)
+                    .unwrap()
                     .header()
                     .number()
                     + 1,
@@ -108,5 +185,51 @@ impl ChainWriter for MemChain {
         }
 
         Ok(())
+    }
+}
+
+impl ChainReader for MemChain {
+    fn current_header(&self) -> BlockHeader {
+        let head_block = self.head_block();
+        head_block.header().clone()
+    }
+    fn get_header_by_hash(&self, hash: HashValue) -> BlockHeader {
+        self.get_block_by_hash(hash).unwrap().header().clone()
+    }
+
+    fn head_block(&self) -> Block {
+        let head_hash = self
+            .master
+            .get(&self.head_number)
+            .expect("Get head block by head number none.");
+        self.blocks
+            .get(head_hash)
+            .expect("Get block by hash none.")
+            .clone()
+    }
+
+    fn get_header_by_number(&self, number: BlockNumber) -> BlockHeader {
+        self.get_block_by_number(number).header().clone()
+    }
+
+    fn get_block_by_number(&self, number: BlockNumber) -> Block {
+        let hash = self.master.get(&number).expect("hash is none.");
+        self.blocks.get(hash).expect("block is none.").clone()
+    }
+
+    fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
+        match self.blocks.get(&hash) {
+            Some(block) => Some(block.clone()),
+            None => None,
+        }
+    }
+
+    fn create_block_template(&self) -> Result<BlockTemplate> {
+        let head_block = self.head_block().clone();
+        let head_block_hash = head_block.crypto_hash();
+        let block_template_header =
+            BlockHeader::new_block_header_for_test(head_block_hash, head_block.header().number());
+        let current_block = Block::new_nil_block_for_test(block_template_header);
+        Ok(BlockTemplate::from_block(current_block))
     }
 }

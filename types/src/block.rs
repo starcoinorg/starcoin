@@ -228,6 +228,7 @@ impl Block {
     }
 }
 
+#[derive(Clone)]
 pub struct BlockTemplate {
     /// Parent hash.
     pub parent_hash: HashValue,
@@ -268,6 +269,21 @@ impl BlockTemplate {
         Block {
             header,
             body: self.body,
+        }
+    }
+
+    pub fn from_block(block: Block) -> Self {
+        BlockTemplate {
+            parent_hash: block.header().parent_hash,
+            timestamp: block.header().timestamp,
+            number: block.header().number,
+            author: block.header().author,
+            accumulator_root: block.header().accumulator_root,
+            state_root: block.header().state_root,
+            gas_used: block.header().gas_used,
+            gas_limit: block.header().gas_limit,
+
+            body: block.body,
         }
     }
 }

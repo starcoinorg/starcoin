@@ -14,9 +14,9 @@ pub mod persistence_storage;
 pub mod storage;
 pub mod transaction_info_store;
 
-struct StarcoinStorage {
+pub struct StarcoinStorage {
     transaction_info_store: TransactionInfoStore,
-    block_store: BlockStore,
+    pub block_store: BlockStore,
 }
 
 impl StarcoinStorage {
