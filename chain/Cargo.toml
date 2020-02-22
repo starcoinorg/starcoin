@@ -23,3 +23,4 @@ traits = {path = "../core/traits", package="starcoin-traits"}
 async-trait = "0.1"
 futures = "0.3"
 futures_locks = { version = "0.5.0", package = "futures-locks"}
+storage = { package="starcoin-storage", path = "../storage"}

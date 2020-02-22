@@ -3123,6 +3123,7 @@ dependencies = [
  "starcoin-crypto 0.1.0",
  "starcoin-executor 0.1.0",
  "starcoin-state-tree 0.1.0",
+ "starcoin-storage 0.1.0",
  "starcoin-traits 0.1.0",
  "starcoin-types 0.1.0",
 ]
