@@ -103,6 +103,11 @@ impl Handler<ProcessMessage> for ProcessActor {
                                 get_data_by_hash_msg,
                             )
                             .await;
+                            println!(
+                                "batch block size: {} : {}",
+                                batch_header_msg.headers.len(),
+                                batch_body_msg.bodies.len()
+                            );
                             match addr {
                                 Some(address) => {
                                     address
@@ -174,7 +179,7 @@ impl Processor {
 
     pub async fn head_block(processor: Arc<RwLock<Processor>>) -> Block {
         let lock = processor.read().compat().await.unwrap();
-        lock.chain_reader.clone().head_block().await
+        lock.chain_reader.clone().head_block().await.unwrap()
     }
 
     pub async fn send_latest_state_msg(processor: Arc<RwLock<Processor>>) -> LatestStateMsg {
@@ -195,7 +200,17 @@ impl Processor {
         let lock = processor.read().compat().await.unwrap();
         let mut hashs = Vec::new();
         for number in get_hash_by_number_msg.numbers {
-            let block = lock.chain_reader.clone().get_block_by_number(number).await;
+            let block = lock
+                .chain_reader
+                .clone()
+                .get_block_by_number(number)
+                .await
+                .unwrap();
+            println!(
+                "block number:{:?}, hash {:?}",
+                block.header().number(),
+                block.crypto_hash()
+            );
             let hash_with_number = HashWithNumber {
                 number: block.header().number(),
                 hash: block.crypto_hash(),
@@ -215,7 +230,12 @@ impl Processor {
 
         let mut headers = Vec::new();
         for hash in get_header_by_hash_msg.hashs {
-            let header = lock.chain_reader.clone().get_header(&hash).await;
+            let header = lock
+                .chain_reader
+                .clone()
+                .get_header_by_hash(&hash)
+                .await
+                .unwrap();
             let header = HashWithBlockHeader { header, hash };
 
             headers.push(header);
@@ -231,13 +251,7 @@ impl Processor {
 
         let mut bodies = Vec::new();
         for hash in get_body_by_hash_msg.hashs {
-            let transactions = match lock
-                .chain_reader
-                .clone()
-                .get_block_by_hash(&hash)
-                .await
-                .expect("block is none.")
-            {
+            let transactions = match lock.chain_reader.clone().get_block_by_hash(&hash).await {
                 Some(block) => block.transactions().clone().to_vec(),
                 _ => Vec::new(),
             };

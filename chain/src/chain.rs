@@ -61,7 +61,11 @@ where
         unimplemented!()
     }
 
-    fn get_header(&self, hash: HashValue) -> BlockHeader {
+    fn get_header_by_hash(&self, hash: HashValue) -> BlockHeader {
+        unimplemented!()
+    }
+
+    fn head_block(&self) -> Block {
         unimplemented!()
     }
 
@@ -69,7 +73,10 @@ where
         unimplemented!()
     }
 
-    fn get_block(&self, hash: HashValue) -> Block {
+    fn get_block_by_number(&self, number: BlockNumber) -> Block {
+        unimplemented!()
+    }
+    fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
         unimplemented!()
     }
 
@@ -119,10 +126,6 @@ where
     E: TransactionExecutor,
     C: Consensus,
 {
-    fn get_block_by_hash(&self, hash: &HashValue) -> Option<Block> {
-        unimplemented!()
-    }
-
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
         let header = block.header();

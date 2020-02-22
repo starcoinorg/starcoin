@@ -12,6 +12,7 @@ use actix::{
 use anyhow::{Error, Result};
 use atomic_refcell::AtomicRefCell;
 use chain::{mem_chain::MemChainActor, ChainActorRef};
+use crypto::hash::CryptoHash;
 use futures::compat::Future01CompatExt;
 use futures_locks::{Mutex, RwLock};
 use itertools;
@@ -97,6 +98,7 @@ impl Handler<DownloadMessage> for DownloadActor {
                         batch_hash_by_number_msg,
                     )
                     .await;
+                    println!("hash_with_number:{:?}", hash_with_number);
                     match hash_with_number {
                         Some(_) => {
                             let send_get_header_by_hash_msg =
@@ -223,7 +225,13 @@ impl Downloader {
         let lock = downloader.read().compat().await.unwrap();
         //todo：binary search
 
-        let latest_number = lock.chain_reader.clone().current_header().await.number();
+        let latest_number = lock
+            .chain_reader
+            .clone()
+            .current_header()
+            .await
+            .unwrap()
+            .number();
         let number = lock
             .peers
             .get(&best_peer)
@@ -267,7 +275,6 @@ impl Downloader {
                 .clone()
                 .get_block_by_hash(&hash.hash)
                 .await
-                .expect("block is none.")
                 .is_some()
             {
                 exist_ancestor = true;
@@ -343,8 +350,9 @@ impl Downloader {
         let lock = downloader.write().compat().await.unwrap();
         for (header, body) in itertools::zip_eq(headers, bodies) {
             let block = Block::new(header.header, body.transactions);
+
             //todo:verify block
-            let _ = lock.chain_reader.clone().try_connect(block);
+            let _ = lock.chain_reader.clone().try_connect(block).await;
         }
     }
 }

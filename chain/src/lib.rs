@@ -11,7 +11,7 @@ use anyhow::{Error, Result};
 use config::NodeConfig;
 use consensus::ChainReader;
 use crypto::HashValue;
-use message::ChainMessage;
+use message::ChainRequest;
 use traits::Chain;
 use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
 
@@ -32,24 +32,33 @@ impl Actor for ChainActor {
     }
 }
 
-impl Handler<ChainMessage> for ChainActor {
-    type Result = ();
+impl Handler<ChainRequest> for ChainActor {
+    type Result = ResponseActFuture<Self, Result<ChainResponse>>;
 
-    fn handle(&mut self, msg: ChainMessage, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ChainRequest, ctx: &mut Self::Context) -> Self::Result {
         unimplemented!()
     }
 }
 
 pub trait ChainWriter {
-    fn get_block_by_hash(&self, hash: &HashValue) -> Option<Block>;
     fn try_connect(&mut self, block: Block) -> Result<()>;
 }
 
-pub struct ChainActorRef<A: Actor + Handler<ChainMessage>> {
+pub struct ChainActorRef<A>
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
+{
     pub address: Addr<A>,
 }
 
-impl<A: Actor + Handler<ChainMessage>> Clone for ChainActorRef<A> {
+impl<A> Clone for ChainActorRef<A>
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
+{
     fn clone(&self) -> ChainActorRef<A> {
         ChainActorRef {
             address: self.address.clone(),
@@ -57,53 +66,150 @@ impl<A: Actor + Handler<ChainMessage>> Clone for ChainActorRef<A> {
     }
 }
 
-impl<A: Actor + Handler<ChainMessage>> Into<Addr<A>> for ChainActorRef<A> {
+impl<A> Into<Addr<A>> for ChainActorRef<A>
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
+{
     fn into(self) -> Addr<A> {
         self.address
     }
 }
 
-impl<A: Actor + Handler<ChainMessage>> Into<ChainActorRef<A>> for Addr<A> {
+impl<A> Into<ChainActorRef<A>> for Addr<A>
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
+{
     fn into(self) -> ChainActorRef<A> {
         ChainActorRef { address: self }
     }
 }
 
 #[async_trait::async_trait]
-impl<A: Actor + Handler<ChainMessage>> Chain for ChainActorRef<A> {
-    async fn current_header(self) -> BlockHeader {
-        unimplemented!()
+impl<A> Chain for ChainActorRef<A>
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
+{
+    async fn current_header(self) -> Option<BlockHeader> {
+        if let ChainResponse::BlockHeader(header) = self
+            .address
+            .send(ChainRequest::CurrentHeader())
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(header)
+        } else {
+            None
+        }
     }
 
-    async fn get_header(self, hash: &HashValue) -> BlockHeader {
-        unimplemented!()
+    async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader> {
+        if let ChainResponse::BlockHeader(header) = self
+            .address
+            .send(ChainRequest::GetHeaderByHash(hash.clone()))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(header)
+        } else {
+            None
+        }
     }
 
-    async fn head_block(self) -> Block {
-        unimplemented!()
+    async fn head_block(self) -> Option<Block> {
+        if let ChainResponse::Block(block) = self
+            .address
+            .send(ChainRequest::HeadBlock())
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(block)
+        } else {
+            None
+        }
     }
 
-    async fn get_header_by_number(self, number: BlockNumber) -> BlockHeader {
-        unimplemented!()
+    async fn get_header_by_number(self, number: BlockNumber) -> Option<BlockHeader> {
+        if let ChainResponse::BlockHeader(header) = self
+            .address
+            .send(ChainRequest::GetHeaderByNumber(number))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(header)
+        } else {
+            None
+        }
     }
 
-    async fn get_block_by_number(self, number: BlockNumber) -> Block {
-        unimplemented!()
+    async fn get_block_by_number(self, number: BlockNumber) -> Option<Block> {
+        if let ChainResponse::Block(block) = self
+            .address
+            .send(ChainRequest::GetBlockByNumber(number))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(block)
+        } else {
+            None
+        }
     }
 
-    async fn create_block_template(self) -> Result<BlockTemplate> {
-        unimplemented!()
+    async fn create_block_template(self) -> Option<BlockTemplate> {
+        if let ChainResponse::BlockTemplate(block_template) = self
+            .address
+            .send(ChainRequest::CreateBlockTemplate())
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(block_template)
+        } else {
+            None
+        }
     }
 
-    async fn get_block_by_hash(self, hash: &HashValue) -> Result<Option<Block>> {
-        unimplemented!()
+    async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block> {
+        println!("hash: {:?}", hash);
+        if let ChainResponse::OptionBlock(block) = self
+            .address
+            .send(ChainRequest::GetBlockByHash(hash.clone()))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            match block {
+                Some(b) => Some(b),
+                _ => None,
+            }
+        } else {
+            None
+        }
     }
 
     async fn try_connect(self, block: Block) -> Result<()> {
-        unimplemented!()
+        let a = self
+            .address
+            .send(ChainRequest::ConnectBlock(block))
+            .await
+            .unwrap()
+            .unwrap();
+        Ok(())
     }
 }
 
 mod tests;
 
+use crate::message::ChainResponse;
+use actix::dev::ToEnvelope;
 pub use tests::gen_mem_chain_for_test;

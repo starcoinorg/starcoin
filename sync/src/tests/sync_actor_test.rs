@@ -5,7 +5,7 @@ use crate::sync::SyncActor;
 use actix::Addr;
 use atomic_refcell::AtomicRefCell;
 use chain::{
-    gen_mem_chain_for_test, mem_chain::MemChainActor, message::ChainMessage, ChainActorRef,
+    gen_mem_chain_for_test, mem_chain::MemChainActor, message::ChainRequest, ChainActorRef,
 };
 use crypto::hash::CryptoHash;
 use std::sync::Arc;
@@ -23,9 +23,10 @@ fn genesis_block_for_test() -> Block {
 fn gen_mem_chain_actor(times: u64) -> (PeerInfo, ChainActorRef<MemChainActor>) {
     let peer = PeerInfo::random();
     let genesis_block = genesis_block_for_test();
+    println!("genesis_block: {:?}", genesis_block.crypto_hash());
     let mut first_chain_actor_address = MemChainActor::launch(genesis_block.clone()).unwrap();
     if times > 0 {
-        first_chain_actor_address.do_send(ChainMessage::CreateBlock(times));
+        first_chain_actor_address.do_send(ChainRequest::CreateBlock(times));
     }
     let chain = ChainActorRef {
         address: first_chain_actor_address,
@@ -66,7 +67,7 @@ async fn test_actors() {
     // let second_p = Arc::new(second_peer.clone());
     // let genesis_block = genesis_block_for_test();
     // let mut first_chain_actor_address = MemChainActor::launch(genesis_block.clone()).unwrap();
-    // first_chain_actor_address.do_send(ChainMessage::CreateBlock(5));
+    // first_chain_actor_address.do_send(ChainRequest::CreateBlock(5));
     // let mut second_chain_actor_address = MemChainActor::launch(genesis_block).unwrap();
     // let first_chain = ChainActorRef { address: first_chain_actor_address };
     // let second_chain = ChainActorRef { address: second_chain_actor_address };
@@ -101,7 +102,7 @@ async fn test_sync_actors() {
     // let second_p = Arc::new(second_peer.clone());
     // let genesis_block = genesis_block_for_test();
     // let mut first_chain_actor_address = MemChainActor::launch(genesis_block.clone()).unwrap();
-    // first_chain_actor_address.do_send(ChainMessage::CreateBlock(5));
+    // first_chain_actor_address.do_send(ChainRequest::CreateBlock(5));
     // let mut second_chain_actor_address = MemChainActor::launch(genesis_block).unwrap();
     // let first_chain = ChainActorRef { address: first_chain_actor_address };
     // let second_chain = ChainActorRef { address: second_chain_actor_address };
@@ -134,8 +135,8 @@ async fn test_sync_actors() {
 
     delay_for(Duration::from_millis(50)).await;
 
-    let block_1 = first_chain.head_block().await;
-    let block_2 = second_chain.head_block().await;
+    let block_1 = first_chain.head_block().await.unwrap();
+    let block_2 = second_chain.head_block().await.unwrap();
     println!(
         "{}:{}",
         block_1.header().number(),

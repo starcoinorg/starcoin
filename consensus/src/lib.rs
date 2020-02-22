@@ -15,9 +15,11 @@ pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin
 //TODO this trait should be async.
 pub trait ChainReader {
     fn current_header(&self) -> BlockHeader;
-    fn get_header(&self, hash: HashValue) -> BlockHeader;
+    fn get_header_by_hash(&self, hash: HashValue) -> BlockHeader;
+    fn head_block(&self) -> Block;
     fn get_header_by_number(&self, number: BlockNumber) -> BlockHeader;
-    fn get_block(&self, hash: HashValue) -> Block;
+    fn get_block_by_number(&self, number: BlockNumber) -> Block;
+    fn get_block_by_hash(&self, hash: HashValue) -> Option<Block>;
     fn create_block_template(&self) -> Result<BlockTemplate>;
 }
 
