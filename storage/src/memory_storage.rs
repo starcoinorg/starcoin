@@ -39,4 +39,12 @@ impl Repository for MemoryStorage {
     fn get_len(&self) -> Result<u64, Error> {
         Ok(self.map.borrow_mut().len() as u64)
     }
+
+    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
+        let mut all_keys = vec![];
+        for key in self.map.borrow_mut().keys() {
+            all_keys.push(key.to_vec());
+        }
+        Ok(all_keys)
+    }
 }

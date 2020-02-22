@@ -15,6 +15,7 @@ pub trait Repository {
     fn contains_key(&self, key: Vec<u8>) -> Result<bool>;
     fn remove(&self, key: Vec<u8>) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
+    fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
 
 pub struct Storage {
@@ -50,6 +51,10 @@ impl Repository for Storage {
     }
 
     fn get_len(&self) -> Result<u64, Error> {
+        unimplemented!()
+    }
+
+    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         unimplemented!()
     }
 }
@@ -108,6 +113,9 @@ where
 
     pub fn get_len(&self) -> Result<u64> {
         self.store.get_len()
+    }
+    pub fn keys(&self) -> Result<Vec<Vec<u8>>> {
+        self.store.keys()
     }
 }
 

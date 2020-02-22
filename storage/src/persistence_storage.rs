@@ -36,4 +36,8 @@ impl Repository for PersistenceStorage {
     fn get_len(&self) -> Result<u64, Error> {
         unimplemented!()
     }
+
+    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
+        unimplemented!()
+    }
 }
