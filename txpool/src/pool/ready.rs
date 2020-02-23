@@ -27,20 +27,20 @@ use std::{cmp, collections::HashMap};
 use tx_pool::{self, VerifiedTransaction as PoolVerifiedTransaction};
 use types::{account_address::AccountAddress as Address, transaction};
 
-use super::{client::NonceClient, Nonce, VerifiedTransaction};
+use super::{client::AccountSeqNumberClient, SeqNumber, VerifiedTransaction};
 
 /// Checks readiness of transactions by comparing the nonce to state nonce.
 #[derive(Debug)]
 pub struct State<C> {
-    nonces: HashMap<Address, Nonce>,
+    nonces: HashMap<Address, SeqNumber>,
     state: C,
-    max_nonce: Option<Nonce>,
+    max_nonce: Option<SeqNumber>,
     stale_id: Option<usize>,
 }
 
 impl<C> State<C> {
     /// Create new State checker, given client interface.
-    pub fn new(state: C, stale_id: Option<usize>, max_nonce: Option<Nonce>) -> Self {
+    pub fn new(state: C, stale_id: Option<usize>, max_nonce: Option<SeqNumber>) -> Self {
         State {
             nonces: Default::default(),
             state,
@@ -51,7 +51,7 @@ impl<C> State<C> {
 }
 
 #[async_trait(?Send)]
-impl<C: NonceClient> tx_pool::Ready<VerifiedTransaction> for State<C> {
+impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C> {
     async fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         // Check max nonce
         match self.max_nonce {
@@ -64,7 +64,7 @@ impl<C: NonceClient> tx_pool::Ready<VerifiedTransaction> for State<C> {
         let sender = tx.sender();
         let state = &self.state;
         if !self.nonces.contains_key(sender) {
-            let state_nonce = state.account_nonce(sender).await;
+            let state_nonce = state.account_seq_number(sender).await;
             self.nonces.insert(*sender, state_nonce);
         }
         let nonce = self
@@ -121,7 +121,7 @@ impl tx_pool::Ready<VerifiedTransaction> for Condition {
 /// isn't found in provided state nonce store, defaults to the tx nonce and updates
 /// the nonce store. Useful for using with a state nonce cache when false positives are allowed.
 pub struct OptionalState<C> {
-    nonces: HashMap<Address, Nonce>,
+    nonces: HashMap<Address, SeqNumber>,
     state: C,
 }
 
@@ -134,12 +134,14 @@ impl<C> OptionalState<C> {
     }
 }
 #[async_trait(?Send)]
-impl<C: Fn(&Address) -> Option<Nonce>> tx_pool::Ready<VerifiedTransaction> for OptionalState<C> {
+impl<C: Fn(&Address) -> Option<SeqNumber>> tx_pool::Ready<VerifiedTransaction>
+    for OptionalState<C>
+{
     async fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         let sender = tx.sender();
         let state = &self.state;
         let nonce = self.nonces.entry(*sender).or_insert_with(|| {
-            let state_nonce: Option<Nonce> = state(sender);
+            let state_nonce: Option<SeqNumber> = state(sender);
             state_nonce.unwrap_or_else(|| tx.transaction.sequence_number())
         });
         match tx.transaction.sequence_number().cmp(nonce) {

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::pool::{
-    replace::ReplaceByScoreAndReadiness, scoring::NonceAndGasPrice, verifier, NonceClient,
-    PrioritizationStrategy, VerifierOptions,
+    replace::ReplaceByScoreAndReadiness, scoring::SeqNumberAndGasPrice, verifier,
+    AccountSeqNumberClient, PrioritizationStrategy, VerifierOptions,
 };
 use crate::{
     pool,
@@ -15,31 +15,27 @@ use actix::{
     fut::wrap_future,
     prelude::*,
 };
-use actix_rt;
 use anyhow::Result;
 use futures::lock::Mutex as FutureMutux;
 use pool::Gas;
 use std::sync::Arc;
-use types::{
-    transaction,
-    transaction::{SignatureCheckedTransaction, SignedUserTransaction, UnverifiedUserTransaction},
-};
+use types::transaction;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TxPool<C>
 where
-    C: NonceClient + Clone,
+    C: AccountSeqNumberClient,
 {
     addr: Addr<TxPoolActor<C>>,
 }
 
 impl<C> TxPool<C>
 where
-    C: NonceClient + Clone,
+    C: AccountSeqNumberClient,
 {
     pub fn start(client: C) -> TxPool<C>
     where
-        C: NonceClient + Clone,
+        C: AccountSeqNumberClient,
     {
         let addr = TxPoolActor::new(client).start();
         TxPool { addr }
@@ -70,21 +66,19 @@ impl Message for ImportTxns {
     type Result = Vec<Result<(), transaction::TransactionError>>;
 }
 
-type Listener = tx_pool::NoopListener;
-type Pool = tx_pool::Pool<VerifiedTransaction, NonceAndGasPrice, Listener>;
 type TxnQueue = pool::TransactionQueue;
 #[derive(Debug)]
 struct TxPoolActor<C>
 where
-    C: NonceClient + Clone,
+    C: AccountSeqNumberClient,
 {
     queue: Arc<FutureMutux<TxnQueue>>,
-    nonce_client: C,
+    seq_number_client: C,
 }
 
 impl<C> TxPoolActor<C>
 where
-    C: NonceClient + Clone,
+    C: AccountSeqNumberClient,
 {
     pub fn new(client: C) -> Self {
         let verifier_options = pool::VerifierOptions {
@@ -101,45 +95,45 @@ where
         let queue = Arc::new(FutureMutux::new(queue));
         Self {
             queue,
-            nonce_client: client,
+            seq_number_client: client,
         }
     }
 }
 
 impl<C> Actor for TxPoolActor<C>
 where
-    C: NonceClient + Clone + Unpin,
+    C: AccountSeqNumberClient,
 {
     type Context = Context<Self>;
 }
 
 impl<C> Handler<ImportTxns> for TxPoolActor<C>
 where
-    C: NonceClient + Clone,
+    C: AccountSeqNumberClient,
 {
     type Result = ImportTxnsResponse<C>;
 
-    fn handle(&mut self, msg: ImportTxns, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ImportTxns, _ctx: &mut Self::Context) -> Self::Result {
         ImportTxnsResponse {
             msg,
             queue: self.queue.clone(),
-            nonce_client: self.nonce_client.clone(),
+            seq_number_client: self.seq_number_client.clone(),
         }
     }
 }
 
 struct ImportTxnsResponse<C>
 where
-    C: NonceClient + Clone,
+    C: AccountSeqNumberClient,
 {
     msg: ImportTxns,
     queue: Arc<FutureMutux<TxnQueue>>,
-    nonce_client: C,
+    seq_number_client: C,
 }
 
 impl<C> MessageResponse<TxPoolActor<C>, ImportTxns> for ImportTxnsResponse<C>
 where
-    C: NonceClient + Clone + Unpin + 'static,
+    C: AccountSeqNumberClient,
 {
     fn handle<R: ResponseChannel<ImportTxns>>(
         self,
@@ -149,9 +143,9 @@ where
         let Self {
             msg,
             queue,
-            nonce_client,
+            seq_number_client,
         } = self;
-        let ImportTxns { mut txns } = msg;
+        let ImportTxns { txns } = msg;
         ctx.wait(wrap_future(async move {
             let txns = txns
                 .into_iter()
@@ -159,7 +153,7 @@ where
 
             let import_result = {
                 let mut queue = queue.lock().await;
-                queue.import(nonce_client, txns).await
+                queue.import(seq_number_client, txns).await
             };
             if let Some(tx) = tx {
                 tx.send(import_result)
@@ -178,15 +172,15 @@ impl Message for GetPendingTxns {
 
 struct GetPendingTxnsResponse<C>
 where
-    C: NonceClient,
+    C: AccountSeqNumberClient,
 {
     msg: GetPendingTxns,
     queue: Arc<FutureMutux<TxnQueue>>,
-    nonce_client: C,
+    seq_number_client: C,
 }
 impl<C> MessageResponse<TxPoolActor<C>, GetPendingTxns> for GetPendingTxnsResponse<C>
 where
-    C: NonceClient,
+    C: AccountSeqNumberClient,
 {
     fn handle<R: ResponseChannel<GetPendingTxns>>(
         self,
@@ -196,7 +190,7 @@ where
         let Self {
             msg,
             queue,
-            nonce_client,
+            seq_number_client,
         } = self;
         let GetPendingTxns { max_len } = msg;
         ctx.wait(wrap_future(async move {
@@ -209,7 +203,7 @@ where
                     max_len: max_len as usize,
                     ordering: PendingOrdering::Priority,
                 };
-                queue.pending(nonce_client, pending_settings).await
+                queue.pending(seq_number_client, pending_settings).await
             };
             if let Some(tx) = tx {
                 tx.send(import_result)
@@ -219,15 +213,15 @@ where
 }
 impl<C> Handler<GetPendingTxns> for TxPoolActor<C>
 where
-    C: NonceClient,
+    C: AccountSeqNumberClient,
 {
     type Result = GetPendingTxnsResponse<C>;
 
-    fn handle(&mut self, msg: GetPendingTxns, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: GetPendingTxns, _ctx: &mut Self::Context) -> Self::Result {
         GetPendingTxnsResponse {
             msg,
             queue: self.queue.clone(),
-            nonce_client: self.nonce_client.clone(),
+            seq_number_client: self.seq_number_client.clone(),
         }
     }
 }

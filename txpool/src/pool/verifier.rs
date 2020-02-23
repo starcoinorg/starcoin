@@ -152,7 +152,7 @@ impl<C, S, V> Verifier<C, S, V> {
 }
 
 impl<C: Client> tx_pool::Verifier<Transaction>
-    for Verifier<C, scoring::NonceAndGasPrice, VerifiedTransaction>
+    for Verifier<C, scoring::SeqNumberAndGasPrice, VerifiedTransaction>
 {
     type Error = transaction::TransactionError;
     type VerifiedTransaction = VerifiedTransaction;

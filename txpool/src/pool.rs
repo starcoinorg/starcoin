@@ -13,10 +13,10 @@ use common_crypto::hash::{CryptoHash, HashValue};
 use transaction_pool as tx_pool;
 use types::{account_address::AccountAddress, transaction};
 
-pub type Nonce = u64;
+pub type SeqNumber = u64;
 pub type GasPrice = u64;
 pub type Gas = u64;
-pub use client::{Client, NonceClient};
+pub use client::{AccountSeqNumberClient, Client};
 pub use queue::{Status, TransactionQueue};
 pub use verifier::Options as VerifierOptions;
 
@@ -117,8 +117,8 @@ pub trait ScoredTransaction {
     /// Gets transaction gas price.
     fn gas_price(&self) -> u64;
 
-    /// Gets transaction nonce.
-    fn nonce(&self) -> u64;
+    /// Gets transaction seq number.
+    fn seq_number(&self) -> u64;
 }
 
 impl ScoredTransaction for VerifiedTransaction {
@@ -132,7 +132,7 @@ impl ScoredTransaction for VerifiedTransaction {
     }
 
     /// Gets transaction nonce.
-    fn nonce(&self) -> Nonce {
+    fn seq_number(&self) -> SeqNumber {
         self.transaction.sequence_number()
     }
 }
@@ -163,7 +163,7 @@ pub struct PendingSettings {
     /// Current timestamp (affects readiness of some transactions).
     pub current_timestamp: u64,
     /// Nonce cap (for dust protection; EIP-168)
-    pub nonce_cap: Option<Nonce>,
+    pub nonce_cap: Option<SeqNumber>,
     /// Maximal number of transactions in pending the set.
     pub max_len: usize,
     /// Ordering of transactions.

@@ -1,6 +1,6 @@
 use std::cmp;
 
-use super::{verifier, GasPrice, PrioritizationStrategy, ScoredTransaction, VerifiedTransaction};
+use super::{GasPrice, PrioritizationStrategy, ScoredTransaction, VerifiedTransaction};
 use tx_pool::{self, scoring};
 /// Transaction with the same (sender, nonce) can be replaced only if
 /// `new_gas_price >= old_gas_price + old_gas_price >> SHIFT`
@@ -17,9 +17,9 @@ fn bump_gas_price(old_gp: GasPrice) -> GasPrice {
 /// NOTE: Currently penalization does not apply to new transactions that enter the pool.
 /// We might want to store penalization status in some persistent state.
 #[derive(Debug, Clone)]
-pub struct NonceAndGasPrice(pub PrioritizationStrategy);
+pub struct SeqNumberAndGasPrice(pub PrioritizationStrategy);
 
-impl NonceAndGasPrice {
+impl SeqNumberAndGasPrice {
     /// Decide if the transaction should even be considered into the pool (if the pool is full).
     ///
     /// Used by Verifier to quickly reject transactions that don't have any chance to get into the pool later on,
@@ -27,7 +27,7 @@ impl NonceAndGasPrice {
     ///
     /// NOTE The method is never called for zero-gas-price transactions or local transactions
     /// (such transactions are always considered to the pool and potentially rejected later on)
-    pub fn should_reject_early(&self, old: &VerifiedTransaction) -> bool {
+    pub fn should_reject_early(&self, _old: &VerifiedTransaction) -> bool {
         todo!()
     }
 
@@ -44,7 +44,7 @@ impl NonceAndGasPrice {
     //    }
 }
 
-impl<P> tx_pool::Scoring<P> for NonceAndGasPrice
+impl<P> tx_pool::Scoring<P> for SeqNumberAndGasPrice
 where
     P: ScoredTransaction + tx_pool::VerifiedTransaction,
 {
@@ -52,11 +52,11 @@ where
     type Score = u64;
 
     fn compare(&self, old: &P, other: &P) -> cmp::Ordering {
-        old.nonce().cmp(&other.nonce())
+        old.seq_number().cmp(&other.seq_number())
     }
 
     fn choose(&self, old: &P, new: &P) -> scoring::Choice {
-        if old.nonce() != new.nonce() {
+        if old.seq_number() != new.seq_number() {
             return scoring::Choice::InsertNew;
         }
 

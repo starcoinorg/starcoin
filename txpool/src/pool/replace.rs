@@ -37,7 +37,7 @@ impl<T, S, C> tx_pool::ShouldReplace<T> for ReplaceByScoreAndReadiness<S, C>
 where
     T: VerifiedTransaction<Sender = Address> + ScoredTransaction + PartialEq,
     S: Scoring<T> + Sync,
-    C: client::NonceClient,
+    C: client::AccountSeqNumberClient,
 {
     async fn should_replace<'r>(
         &self,
@@ -47,7 +47,7 @@ where
         let both_local = old.priority().is_local() && new.priority().is_local();
         if old.sender() == new.sender() {
             // prefer earliest transaction
-            match new.nonce().cmp(&old.nonce()) {
+            match new.seq_number().cmp(&old.seq_number()) {
                 cmp::Ordering::Equal => self.scoring.choose(&old, &new),
                 _ if both_local => Choice::InsertNew,
                 cmp::Ordering::Less => Choice::ReplaceOld,

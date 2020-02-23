@@ -15,9 +15,9 @@ use actix::prelude::*;
 use anyhow::{Error, Result};
 use bus::{Broadcast, BusActor, Subscription};
 use config::NodeConfig;
-use std::sync::Arc;
+
 use traits::TxPool;
-use types::{system_events::SystemEvents, transaction, transaction::SignedUserTransaction};
+use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 mod pool;
 mod tx_pool_service_impl;

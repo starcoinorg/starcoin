@@ -5,7 +5,7 @@
 
 use std::{
     cmp,
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, HashMap},
     fmt,
     sync::{
         atomic::{self, AtomicUsize},
@@ -15,20 +15,20 @@ use std::{
 
 use super::{
     client, listener, local_transactions::LocalTransactionsList, ready, replace, scoring, verifier,
-    Gas, GasPrice, Nonce, PendingOrdering, PendingSettings, PrioritizationStrategy, TxStatus,
+    GasPrice, PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
 };
 use crate::{pool, pool::VerifiedTransaction};
 use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
-use tx_pool::{self, Verifier};
+use tx_pool::{self};
 use types::{account_address::AccountAddress as Address, transaction};
 
 type Listener = (
     LocalTransactionsList,
     (listener::TransactionsPoolNotifier, listener::Logger),
 );
-type Pool = tx_pool::Pool<pool::VerifiedTransaction, scoring::NonceAndGasPrice, Listener>;
+type Pool = tx_pool::Pool<pool::VerifiedTransaction, scoring::SeqNumberAndGasPrice, Listener>;
 
 /// Max cache time in milliseconds for pending transactions.
 ///
@@ -77,7 +77,7 @@ impl fmt::Display for Status {
 struct CachedPending {
     block_number: u64,
     current_timestamp: u64,
-    nonce_cap: Option<Nonce>,
+    nonce_cap: Option<SeqNumber>,
     has_local_pending: bool,
     pending: Option<Vec<Arc<pool::VerifiedTransaction>>>,
     max_len: usize,
@@ -106,7 +106,7 @@ impl CachedPending {
         &self,
         block_number: u64,
         current_timestamp: u64,
-        nonce_cap: Option<&Nonce>,
+        nonce_cap: Option<&SeqNumber>,
         max_len: usize,
     ) -> Option<Vec<Arc<pool::VerifiedTransaction>>> {
         // First check if we have anything in cache.
@@ -212,7 +212,7 @@ impl TransactionQueue {
             insertion_id: Default::default(),
             pool: tx_pool::Pool::new(
                 Default::default(),
-                scoring::NonceAndGasPrice(strategy),
+                scoring::SeqNumberAndGasPrice(strategy),
                 limits,
             ),
             options: verification_options,
@@ -250,11 +250,11 @@ impl TransactionQueue {
     ) -> Vec<Result<(), transaction::TransactionError>>
     where
         T: IntoIterator<Item = verifier::Transaction>,
-        C: client::NonceClient + Clone,
+        C: client::AccountSeqNumberClient,
     {
         // Run verification
         trace_time!("pool::verify_and_import");
-        let options = self.options.clone();
+        let _options = self.options.clone();
 
         // let transaction_to_replace = {
         //     if options.no_early_reject {
@@ -362,7 +362,7 @@ impl TransactionQueue {
         settings: PendingSettings,
     ) -> Vec<Arc<pool::VerifiedTransaction>>
     where
-        C: client::NonceClient,
+        C: client::AccountSeqNumberClient,
     {
         let PendingSettings {
             block_number,
@@ -406,10 +406,10 @@ impl TransactionQueue {
         client: C,
         block_number: u64,
         current_timestamp: u64,
-        nonce_cap: Option<Nonce>,
+        nonce_cap: Option<SeqNumber>,
     ) -> (ready::Condition, ready::State<C>)
     where
-        C: client::NonceClient,
+        C: client::AccountSeqNumberClient,
     {
         let pending_readiness = ready::Condition::new(block_number, current_timestamp);
         // don't mark any transactions as stale at this point.
@@ -420,7 +420,7 @@ impl TransactionQueue {
     }
 
     /// Culls all stalled transactions from the pool.
-    pub async fn cull<C: client::NonceClient>(&mut self, client: C) {
+    pub async fn cull<C: client::AccountSeqNumberClient>(&mut self, client: C) {
         trace_time!("pool::cull");
         // We don't care about future transactions, so nonce_cap is not important.
         let nonce_cap = None;
@@ -493,7 +493,7 @@ impl TransactionQueue {
     ) -> Vec<Option<Arc<pool::VerifiedTransaction>>> {
         let results = {
             let mut removed = vec![];
-            let mut pool = &mut self.pool;
+            let pool = &mut self.pool;
             for hash in hashes.into_iter() {
                 removed.push(pool.remove(hash, is_invalid));
             }
