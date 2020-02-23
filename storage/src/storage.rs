@@ -91,12 +91,12 @@ where
     V: ValueCodec,
 {
     // const COLUMN_FAMILY_NAME: schemadb::ColumnFamilyName = BLOCK_CF_NAME;
-    pub fn new(store: Arc<dyn Repository>, prefixKey: KeyPrefixName) -> Self {
+    pub fn new(store: Arc<dyn Repository>, prefix_key: KeyPrefixName) -> Self {
         Self {
             store,
             k: PhantomData,
             v: PhantomData,
-            prefix_key: prefixKey,
+            prefix_key,
         }
     }
     pub fn get(&self, key: K) -> Result<Option<V>> {
