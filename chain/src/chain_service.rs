@@ -6,7 +6,6 @@ use crate::message::{ChainRequest, ChainResponse};
 use crate::starcoin_chain_state::StarcoinChainState;
 use actix::prelude::*;
 use anyhow::{Error, Result};
-use chain_state::ChainState;
 use config::NodeConfig;
 use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
@@ -94,27 +93,27 @@ where
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
-        unimplemented!()
+        self.head.get_header(hash)
     }
 
     fn get_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        unimplemented!()
+        self.head.get_header_by_number(number)
     }
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
-        unimplemented!()
+        self.head.get_block_by_number(number)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        unimplemented!()
+        self.head.get_block(hash)
     }
 
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>> {
-        unimplemented!()
+        self.head.get_transaction(hash)
     }
 
     fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>> {
-        unimplemented!()
+        self.head.get_transaction_info(hash)
     }
 
     fn create_block_template(&self) -> Result<BlockTemplate> {
@@ -122,6 +121,6 @@ where
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
-        unimplemented!()
+        self.head.chain_state_reader()
     }
 }

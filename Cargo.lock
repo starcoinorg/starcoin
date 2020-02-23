@@ -4083,7 +4083,6 @@ dependencies = [
  "futures 0.3.4",
  "futures-locks",
  "starcoin-canonical-serialization",
- "starcoin-chain-state",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -4091,15 +4090,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-storage",
  "starcoin-traits",
- "starcoin-types",
-]
-
-[[package]]
-name = "starcoin-chain-state"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "starcoin-crypto",
  "starcoin-types",
 ]
 
