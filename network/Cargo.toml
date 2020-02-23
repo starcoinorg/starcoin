@@ -10,13 +10,40 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-futures = "0.3"
+futures = "0.1"
+
 libp2p = "0.15.0"
 actix = "0.9"
 actix-rt = "1.0"
-tokio = { version = "0.2", features = ["full"] }
+yamux = "0.4.2"
+futures-timer = "3.0.1"
+log = "0.4.8"
+hex = "0.4.2"
+
+parity-codec = { version = "3.2", features = ["derive"] }
+
+tokio = { version = "0.1"}
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
 bus = {path = "../bus", package="starcoin-bus"}
 traits = { package = "starcoin-traits", path = "../core/traits"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
+network-libp2p = {path = "../network-libp2p", package="network-libp2p"}
+
+libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+
+fnv = "1.0.6"
+zeroize = "1.0.0"
+bitflags = "1.2.0"
+smallvec = "0.6.10"
+
+tempfile = "3.1.0"
+rand = "0.7.2"
+parking_lot = "0.10.0"
+
+serde = { version = "1.0.101", features = ["derive"] }
+serde_json = "1.0.41"
+slog = { version = "2.5.2", features = ["nested-values"] }
+slog_derive = "0.2.0"
+derive_more = "0.99.2"

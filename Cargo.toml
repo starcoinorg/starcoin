@@ -21,4 +21,7 @@ members = [
     "node",
     "sync",
     "miner",
+    "node",
+    "network-libp2p",
+    "network-libp2p/peerset",
 ]
