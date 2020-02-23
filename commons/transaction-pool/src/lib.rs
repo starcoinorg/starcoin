@@ -58,6 +58,9 @@
 //!    - Replace the transaction with next transaction (by ordering) from that sender (if any)
 //!    - Repeat
 
+#[macro_use]
+extern crate async_trait;
+
 mod error;
 mod listener;
 mod options;
@@ -70,21 +73,22 @@ mod verifier;
 
 pub mod scoring;
 
-pub use self::error::Error;
-pub use self::listener::{Listener, NoopListener};
-pub use self::options::Options;
-pub use self::pool::{PendingIterator, Pool, Transaction, UnorderedIterator};
-pub use self::ready::{Readiness, Ready};
-pub use self::replace::{ReplaceTransaction, ShouldReplace};
-pub use self::scoring::Scoring;
-pub use self::status::{LightStatus, Status};
-pub use self::verifier::Verifier;
+pub use self::{
+    error::Error,
+    listener::{Listener, NoopListener},
+    options::Options,
+    pool::{Pool, Transaction},
+    ready::{Readiness, Ready},
+    replace::{ReplaceTransaction, ShouldReplace},
+    scoring::Scoring,
+    status::{LightStatus, Status},
+    verifier::Verifier,
+};
 
-use std::fmt;
-use std::hash::Hash;
+use std::{fmt, hash::Hash};
 
 /// Already verified transaction that can be safely queued.
-pub trait VerifiedTransaction: fmt::Debug {
+pub trait VerifiedTransaction: fmt::Debug + Sync + Send {
     /// Transaction hash type.
     type Hash: fmt::Debug + fmt::LowerHex + Eq + Clone + Hash;
 

@@ -32,13 +32,18 @@ impl<S, C> ReplaceByScoreAndReadiness<S, C> {
     }
 }
 
+#[async_trait]
 impl<T, S, C> tx_pool::ShouldReplace<T> for ReplaceByScoreAndReadiness<S, C>
 where
     T: VerifiedTransaction<Sender = Address> + ScoredTransaction + PartialEq,
-    S: Scoring<T>,
+    S: Scoring<T> + Sync,
     C: client::NonceClient,
 {
-    fn should_replace(&self, old: &ReplaceTransaction<T>, new: &ReplaceTransaction<T>) -> Choice {
+    async fn should_replace<'r>(
+        &self,
+        old: ReplaceTransaction<'r, T>,
+        new: ReplaceTransaction<'r, T>,
+    ) -> Choice {
         let both_local = old.priority().is_local() && new.priority().is_local();
         if old.sender() == new.sender() {
             // prefer earliest transaction
@@ -61,39 +66,40 @@ where
                 // With replacement transactions we can safely return `InsertNew` here, because
                 // we don't need to remove `old` (worst transaction in the pool) since `new` will replace
                 // some other transaction in the pool so we will never go above limit anyway.
-                if let Some(txs) = new.pooled_by_sender {
-                    if let Ok(index) = txs.binary_search_by(|old| self.scoring.compare(old, new)) {
-                        return match self.scoring.choose(&txs[index], new) {
+                if let Some(txs) = (&new).pooled_by_sender {
+                    if let Ok(index) = txs.binary_search_by(|old| self.scoring.compare(old, &new)) {
+                        return match self.scoring.choose(&txs[index], &new) {
                             Choice::ReplaceOld => Choice::InsertNew,
                             choice => choice,
                         };
                     }
                 }
 
-                let state = &self.client;
-                // calculate readiness based on state nonce + pooled txs from same sender
-                let is_ready = |replace: &ReplaceTransaction<T>| {
-                    let mut nonce = state.account_nonce(replace.sender());
-                    if let Some(txs) = replace.pooled_by_sender {
-                        for tx in txs.iter() {
-                            if nonce == tx.nonce()
-                                && (&tx.transaction != &replace.transaction.transaction)
-                            {
-                                nonce = nonce.saturating_add(1)
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                    nonce == replace.nonce()
-                };
-
-                if !is_ready(new) && is_ready(old) {
-                    // prevent a ready transaction being replace by a non-ready transaction
-                    Choice::RejectNew
-                } else {
-                    Choice::ReplaceOld
-                }
+                Choice::ReplaceOld
+                // let state = &self.client;
+                // // calculate readiness based on state nonce + pooled txs from same sender
+                // let is_ready = |replace: &ReplaceTransaction<T>| {
+                //     let mut nonce = state.account_nonce(replace.sender());
+                //     if let Some(txs) = replace.pooled_by_sender {
+                //         for tx in txs.iter() {
+                //             if nonce == tx.nonce()
+                //                 && (&tx.transaction != &replace.transaction.transaction)
+                //             {
+                //                 nonce = nonce.saturating_add(1)
+                //             } else {
+                //                 break;
+                //             }
+                //         }
+                //     }
+                //     nonce == replace.nonce()
+                // };
+                //
+                // if !is_ready(new) && is_ready(old) {
+                //     // prevent a ready transaction being replace by a non-ready transaction
+                //     Choice::RejectNew
+                // } else {
+                //     Choice::ReplaceOld
+                // }
             }
         }
     }

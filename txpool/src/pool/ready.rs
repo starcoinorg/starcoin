@@ -50,8 +50,9 @@ impl<C> State<C> {
     }
 }
 
+#[async_trait(?Send)]
 impl<C: NonceClient> tx_pool::Ready<VerifiedTransaction> for State<C> {
-    fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
+    async fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         // Check max nonce
         match self.max_nonce {
             Some(nonce) if tx.transaction.sequence_number() > nonce => {
@@ -62,8 +63,14 @@ impl<C: NonceClient> tx_pool::Ready<VerifiedTransaction> for State<C> {
 
         let sender = tx.sender();
         let state = &self.state;
-        let state_nonce = || state.account_nonce(sender);
-        let nonce = self.nonces.entry(*sender).or_insert_with(state_nonce);
+        if !self.nonces.contains_key(sender) {
+            let state_nonce = state.account_nonce(sender).await;
+            self.nonces.insert(*sender, state_nonce);
+        }
+        let nonce = self
+            .nonces
+            .get_mut(sender)
+            .expect("sender nonce should exists");
         match tx.transaction.sequence_number().cmp(nonce) {
             // Before marking as future check for stale ids
             cmp::Ordering::Greater => match self.stale_id {
@@ -93,8 +100,9 @@ impl Condition {
     }
 }
 
+#[async_trait(?Send)]
 impl tx_pool::Ready<VerifiedTransaction> for Condition {
-    fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
+    async fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         match tx.transaction.condition {
             Some(transaction::Condition::Number(block)) if block > self.block_number => {
                 tx_pool::Readiness::Future
@@ -125,9 +133,9 @@ impl<C> OptionalState<C> {
         }
     }
 }
-
+#[async_trait(?Send)]
 impl<C: Fn(&Address) -> Option<Nonce>> tx_pool::Ready<VerifiedTransaction> for OptionalState<C> {
-    fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
+    async fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         let sender = tx.sender();
         let state = &self.state;
         let nonce = self.nonces.entry(*sender).or_insert_with(|| {

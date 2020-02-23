@@ -75,6 +75,14 @@ impl Transaction {
         }
     }
 
+    pub fn signed(&self) -> &transaction::SignedUserTransaction {
+        match self {
+            Transaction::Unverified(t) => t,
+            Transaction::Retracted(t) => t,
+            Transaction::Local(t) => &t.transaction,
+        }
+    }
+
     /// Return transaction gas price
     pub fn gas_price(&self) -> GasPrice {
         match self {

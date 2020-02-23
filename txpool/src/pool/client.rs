@@ -11,9 +11,10 @@ use std::fmt;
 use types::{account_address::AccountAddress as Address, transaction};
 
 /// State nonce client
-pub trait NonceClient: fmt::Debug + Sync {
+#[async_trait]
+pub trait NonceClient: fmt::Debug + Clone + Sync + Unpin + 'static {
     /// Fetch only account nonce for given sender.
-    fn account_nonce(&self, address: &Address) -> Nonce;
+    async fn account_nonce(&self, address: &Address) -> Nonce;
 }
 
 /// Verification client.
