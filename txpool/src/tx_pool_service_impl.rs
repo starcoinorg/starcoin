@@ -18,6 +18,7 @@ use actix::{
 use actix_rt;
 use anyhow::Result;
 use futures::lock::Mutex as FutureMutux;
+use pool::Gas;
 use std::sync::Arc;
 use types::{
     transaction,
@@ -87,12 +88,13 @@ impl Message for GetPendingTxns {
 
 type Listener = tx_pool::NoopListener;
 type Pool = tx_pool::Pool<VerifiedTransaction, NonceAndGasPrice, Listener>;
+type TxnQueue = pool::TransactionQueue;
 #[derive(Debug)]
 struct TxPoolActor<C>
 where
     C: NonceClient + Clone,
 {
-    pool: Arc<FutureMutux<Pool>>,
+    queue: Arc<FutureMutux<TxnQueue>>,
     nonce_client: C,
 }
 
@@ -101,16 +103,20 @@ where
     C: NonceClient + Clone,
 {
     pub fn new(client: C) -> Self {
-        let pool = tx_pool::Pool::new(
-            tx_pool::NoopListener,
-            super::pool::scoring::NonceAndGasPrice(
-                super::pool::PrioritizationStrategy::GasPriceOnly,
-            ),
+        let verifier_options = pool::VerifierOptions {
+            minimal_gas_price: 0,
+            block_gas_limit: Gas::max_value(),
+            tx_gas_limit: Gas::max_value(),
+            no_early_reject: false,
+        };
+        let queue = TxnQueue::new(
             tx_pool::Options::default(),
+            verifier_options,
+            PrioritizationStrategy::GasPriceOnly,
         );
-        let pool = Arc::new(FutureMutux::new(pool));
+        let queue = Arc::new(FutureMutux::new(queue));
         Self {
-            pool,
+            queue,
             nonce_client: client,
         }
     }
@@ -127,10 +133,14 @@ impl<C> Handler<ImportTxns> for TxPoolActor<C>
 where
     C: NonceClient + Clone,
 {
-    type Result = MessageResult<ImportTxns>;
+    type Result = ImportTxnsResponse<C>;
 
     fn handle(&mut self, msg: ImportTxns, ctx: &mut Self::Context) -> Self::Result {
-        todo!()
+        ImportTxnsResponse {
+            msg,
+            queue: self.queue.clone(),
+            nonce_client: self.nonce_client.clone(),
+        }
     }
 }
 
@@ -139,7 +149,7 @@ where
     C: NonceClient + Clone,
 {
     msg: ImportTxns,
-    pool: Arc<FutureMutux<Pool>>,
+    queue: Arc<FutureMutux<TxnQueue>>,
     nonce_client: C,
 }
 
@@ -154,19 +164,21 @@ where
     ) {
         let Self {
             msg,
-            pool,
+            queue,
             nonce_client,
         } = self;
         let ImportTxns { mut txns } = msg;
         ctx.wait(wrap_future(async move {
-            let txn = txns.pop().unwrap();
-            let verified_txn = VerifiedTransaction::from_pending_block_transaction(txn);
-            let mut pool = pool.lock().await;
-            let scoring = pool.scoring().clone();
-            let replace = ReplaceByScoreAndReadiness::new(scoring, nonce_client);
-            let import_result = pool.import(verified_txn, &replace).await;
+            let txns = txns
+                .into_iter()
+                .map(|t| verifier::Transaction::Unverified(t));
+
+            let import_result = {
+                let mut queue = queue.lock().await;
+                queue.import(nonce_client, txns).await
+            };
             if let Some(tx) = tx {
-                tx.send(vec![])
+                tx.send(import_result)
             }
         }));
     }
