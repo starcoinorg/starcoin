@@ -30,6 +30,7 @@ use parking_lot::Mutex;
 use config::NetworkConfig;
 use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::prelude::task::AtomicTask;
+use parity_codec::alloc::collections::HashSet;
 
 #[derive(Clone)]
 pub struct NetworkService {
@@ -289,6 +290,24 @@ impl NetworkService {
         debug!("Send message with ack");
         self.acks.lock().insert(message_id, tx);
         rx
+    }
+
+    pub fn broadcast_message(&mut self, message: Vec<u8>){
+        let (protocol_msg, message_id) = Message::new_payload(message);
+
+        let message_bytes=protocol_msg.into_bytes();
+
+        let mut peers = HashSet::new();
+
+        for p in self.libp2p_service.lock().connected_peers(){
+            peers.insert(p.clone());
+        }
+
+        for peer_id in peers{
+            self.libp2p_service
+                .lock()
+                .send_custom_message(&peer_id, message_bytes.clone());
+        }
     }
 }
 
