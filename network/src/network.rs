@@ -6,7 +6,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::{NetworkConfig, NodeConfig};
-use futures::TryFutureExt;
+use futures_03::TryFutureExt;
 use libp2p::{
     identity,
     ping::{Ping, PingConfig, PingEvent},

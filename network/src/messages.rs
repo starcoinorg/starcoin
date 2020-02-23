@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::helper::get_unix_ts;
-use libra_crypto::{
-    hash::{CryptoHash, CryptoHasher, TestOnlyHasher},
+use crypto::{
+    hash::CryptoHash,
     HashValue,
 };
 use types::account_address::AccountAddress;
@@ -23,29 +23,19 @@ pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone,Hash, Debug)]
 pub struct InnerMessage {
     pub peer_id: AccountAddress,
     pub msg: Message,
 }
 
-impl CryptoHash for InnerMessage {
-    type Hasher = TestOnlyHasher;
-
-    fn hash(&self) -> HashValue {
-        let mut state = Self::Hasher::default();
-        state.write(&self.msg.clone().into_bytes());
-        state.finish()
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Debug, PartialEq, Hash,Eq, Clone, Encode, Decode)]
 pub enum Message {
     ACK(u128),
     Payload(PayloadMsg),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Debug, PartialEq,Hash, Eq, Clone, Encode, Decode)]
 pub struct PayloadMsg {
     pub id: u128,
     pub data: Vec<u8>,

@@ -5,7 +5,7 @@ use crate::{
     convert_account_address_to_peer_id, convert_peer_id_to_account_address,
     helper::convert_boot_nodes,
 };
-use libra_crypto::{
+use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
 };
