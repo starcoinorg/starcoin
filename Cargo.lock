@@ -4168,6 +4168,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-miner"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "futures 0.3.4",
+ "starcoin-bus",
+ "starcoin-chain",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-executor",
+ "starcoin-network",
+ "starcoin-storage",
+ "starcoin-traits",
+ "starcoin-types",
+]
+
+[[package]]
 name = "starcoin-network"
 version = "0.1.0"
 dependencies = [
@@ -4212,10 +4231,14 @@ dependencies = [
  "actix-rt",
  "actix_derive",
  "starcoin-bus",
+ "starcoin-chain",
  "starcoin-config",
  "starcoin-consensus",
+ "starcoin-executor",
  "starcoin-json-rpc",
+ "starcoin-miner",
  "starcoin-network",
+ "starcoin-storage",
  "starcoin-txpool",
  "structopt",
  "tokio 0.2.11",
@@ -4297,6 +4320,7 @@ dependencies = [
  "starcoin-bus",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-storage",
  "starcoin-traits",
  "starcoin-types",
  "trace-time",
@@ -4330,23 +4354,6 @@ dependencies = [
  "starcoin-crypto",
  "thiserror",
  "tiny-keccak",
-]
-
-[[package]]
-name = "starcon-minter"
-version = "0.1.0"
-dependencies = [
- "actix",
- "actix-rt",
- "anyhow",
- "futures 0.3.4",
- "starcoin-bus",
- "starcoin-chain",
- "starcoin-config",
- "starcoin-consensus",
- "starcoin-network",
- "starcoin-traits",
- "starcoin-types",
 ]
 
 [[package]]

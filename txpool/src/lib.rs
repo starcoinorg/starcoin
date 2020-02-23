@@ -17,6 +17,7 @@ use anyhow::{Error, Result};
 use bus::{Broadcast, BusActor, Subscription};
 use config::NodeConfig;
 use std::sync::Arc;
+use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
@@ -30,7 +31,11 @@ pub struct TxPoolActor {
 }
 
 impl TxPoolActor {
-    pub fn launch(_node_config: &NodeConfig, bus: Addr<BusActor>) -> Result<TxPoolRef> {
+    pub fn launch(
+        _node_config: Arc<NodeConfig>,
+        bus: Addr<BusActor>,
+        _storage: Arc<StarcoinStorage>,
+    ) -> Result<TxPoolRef> {
         let actor_ref = Self {
             pool: TxPoolImpl::new(),
             bus,

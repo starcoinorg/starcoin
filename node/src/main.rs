@@ -3,12 +3,18 @@
 
 use actix::prelude::*;
 use bus::BusActor;
+use chain::ChainActor;
 use config::NodeConfig;
+use consensus::{dummy::DummyConsensus, Consensus};
+use executor::{mock_executor::MockExecutor, TransactionExecutor};
 use json_rpc::JSONRpcActor;
+use miner::MinerActor;
 use network::NetworkActor;
 use std::path::PathBuf;
+use std::sync::Arc;
+use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use structopt::StructOpt;
-use txpool::TxPoolActor;
+use txpool::{TxPoolActor, TxPoolRef};
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Starcoin Node")]
@@ -25,11 +31,22 @@ struct Args {
 async fn main() {
     let args = Args::from_args();
 
-    let config = NodeConfig::load_or_default(args.config.as_ref().map(PathBuf::as_path));
+    let config = Arc::new(NodeConfig::load_or_default(
+        args.config.as_ref().map(PathBuf::as_path),
+    ));
     let bus = BusActor::launch();
-    let txpool_actor_ref = TxPoolActor::launch(&config, bus.clone()).unwrap();
-    let network = NetworkActor::launch(&config, bus.clone(), txpool_actor_ref.clone()).unwrap();
-    let _json_rpc = JSONRpcActor::launch(&config, txpool_actor_ref);
+    let repo = Arc::new(MemoryStorage::new());
+    let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
+    let txpool = TxPoolActor::launch(config.clone(), bus.clone(), storage.clone()).unwrap();
+    let _chain = ChainActor::launch(config.clone(), storage.clone()).unwrap();
+    let _network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone()).unwrap();
+    let _json_rpc = JSONRpcActor::launch(config.clone(), txpool.clone());
+    let _miner = MinerActor::<DummyConsensus, MockExecutor, TxPoolRef>::launch(
+        config.clone(),
+        bus.clone(),
+        storage.clone(),
+        txpool.clone(),
+    );
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();
     println!("Ctrl-C received, shutting down");

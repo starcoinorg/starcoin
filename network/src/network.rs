@@ -34,7 +34,7 @@ where
     P: TxPoolAsyncService,
 {
     pub fn launch(
-        node_config: &NodeConfig,
+        node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         txpool: P,
     ) -> Result<Addr<NetworkActor<P>>> {

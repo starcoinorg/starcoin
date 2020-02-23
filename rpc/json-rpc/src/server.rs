@@ -8,6 +8,7 @@ use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
 use jsonrpc_tcp_server;
 use jsonrpc_ws_server;
+use std::sync::Arc;
 
 pub struct RpcServer {
     pub(crate) http: jsonrpc_http_server::Server,
@@ -16,7 +17,7 @@ pub struct RpcServer {
 }
 
 impl RpcServer {
-    pub fn new(config: &NodeConfig, mut io_handler: IoHandler) -> RpcServer {
+    pub fn new(config: Arc<NodeConfig>, mut io_handler: IoHandler) -> RpcServer {
         io_handler.add_method("status", |_| jsonrpc_core::futures::future::ok("ok".into()));
 
         let http = jsonrpc_http_server::ServerBuilder::new(io_handler.clone())

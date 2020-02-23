@@ -38,6 +38,6 @@ impl Consensus for DummyConsensus {
         block_template: BlockTemplate,
         cancel: Receiver<()>,
     ) -> Result<Block> {
-        unimplemented!()
+        Ok(block_template.into_block(DummyHeader {}))
     }
 }

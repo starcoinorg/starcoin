@@ -29,3 +29,4 @@ config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
 common_crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
 transaction-pool = {path = "../commons/transaction-pool", package="tx-pool"}
+storage = {path = "../storage", package="starcoin-storage"}

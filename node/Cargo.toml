@@ -18,6 +18,10 @@ tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
 consensus = {path = "../consensus", package="starcoin-consensus"}
+executor = {path = "../executor", package="starcoin-executor"}
 network = {path = "../network", package="starcoin-network"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
+chain = {path = "../chain", package="starcoin-chain"}
 json-rpc = {path = "../rpc/json-rpc", package="starcoin-json-rpc"}
+storage = {path = "../storage", package="starcoin-storage"}
+miner = {path = "../miner", package="starcoin-miner"}

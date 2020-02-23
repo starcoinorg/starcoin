@@ -200,6 +200,9 @@ impl BlockStore {
 
     pub fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
         let max_number = self.number_store.get_len()?;
+        if max_number == 0 {
+            return Ok(None);
+        }
         self.get_block_header_by_number(max_number - 1)
     }
 

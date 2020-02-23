@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
-mod chain_service;
-mod chain_state_store;
+
+pub use chain::BlockChain;
+
+pub mod chain_service;
+pub mod chain_state_store;
 pub mod mem_chain;
 pub mod message;
 
@@ -13,7 +16,6 @@ use actix::dev::ToEnvelope;
 use actix::fut::wrap_future;
 use actix::prelude::*;
 use anyhow::{Error, Result};
-use chain::BlockChain;
 use config::NodeConfig;
 use consensus::dummy::DummyConsensus;
 use crypto::{hash::CryptoHash, HashValue};
