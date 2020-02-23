@@ -97,6 +97,7 @@ mod tests {
                 .block_store
                 .get_block_header_by_hash(block_id.clone())
                 .unwrap()
+                .unwrap()
         );
         let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()]);
         storage
@@ -113,6 +114,7 @@ mod tests {
         let block_header3 = storage
             .block_store
             .get_block_header_by_hash(block_id)
+            .unwrap()
             .unwrap();
         assert_eq!(block_header1, block_header3);
     }
@@ -145,6 +147,7 @@ mod tests {
             storage
                 .block_store
                 .get_block_header_by_hash(block_id)
+                .unwrap()
                 .unwrap(),
             block_header1
         );
@@ -164,12 +167,14 @@ mod tests {
         let block3 = storage
             .block_store
             .get_block_by_number(block_number1)
+            .unwrap()
             .unwrap();
         assert_eq!(block1, block3);
         //get header by number
         let block4_header = storage
             .block_store
             .get_block_header_by_number(block_number1)
+            .unwrap()
             .unwrap();
         assert_eq!(block_header1, block4_header);
         // get latest block
