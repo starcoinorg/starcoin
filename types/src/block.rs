@@ -251,6 +251,30 @@ pub struct BlockTemplate {
 }
 
 impl BlockTemplate {
+    pub fn new(
+        parent_hash: HashValue,
+        timestamp: u64,
+        number: BlockNumber,
+        author: AccountAddress,
+        accumulator_root: HashValue,
+        state_root: HashValue,
+        gas_used: u64,
+        gas_limit: u64,
+        body: BlockBody,
+    ) -> Self {
+        Self {
+            parent_hash,
+            timestamp,
+            number,
+            author,
+            accumulator_root,
+            state_root,
+            gas_used,
+            gas_limit,
+            body,
+        }
+    }
+
     pub fn into_block<H>(self, consensus_header: H) -> Block
     where
         H: Into<Vec<u8>>,

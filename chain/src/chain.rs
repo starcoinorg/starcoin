@@ -112,9 +112,10 @@ where
         unimplemented!()
     }
 
-    fn create_block_template(&self) -> Result<BlockTemplate> {
+    fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
         let previous_header = self.current_header();
-        let header = BlockHeader::new(
+        //TODO execute txns and computer state.
+        Ok(BlockTemplate::new(
             previous_header.id(),
             previous_header.number() + 1,
             0,
@@ -123,10 +124,8 @@ where
             HashValue::zero(),
             0,
             0,
-            vec![],
-        );
-        // get pending tx from pool, and execute to build BlockTemplate.
-        todo!()
+            txns.into(),
+        ))
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

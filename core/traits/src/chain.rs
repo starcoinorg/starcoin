@@ -6,7 +6,7 @@ use anyhow::Result;
 use crypto::HashValue;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
-    transaction::{Transaction, TransactionInfo},
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
 #[async_trait::async_trait]
@@ -30,7 +30,7 @@ pub trait ChainReader {
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// get transaction info by transaction info hash.
     fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
-    fn create_block_template(&self) -> Result<BlockTemplate>;
+    fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
 }
 

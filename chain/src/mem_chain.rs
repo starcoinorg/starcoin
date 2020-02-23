@@ -11,7 +11,7 @@ use std::sync::Arc;
 use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter};
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
-    transaction::{Transaction, TransactionInfo},
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
 pub struct MemChainActor {
@@ -88,7 +88,7 @@ impl Handler<ChainRequest> for MemChainActor {
                 ChainRequest::CreateBlockTemplate() => {
                     let lock = mem_chain.clone().read().compat().await.unwrap();
                     Ok(ChainResponse::BlockTemplate(
-                        lock.create_block_template().unwrap(),
+                        lock.create_block_template(vec![]).unwrap(),
                     ))
                 }
                 ChainRequest::GetBlockByHash(hash) => {
@@ -224,7 +224,7 @@ impl ChainReader for MemChain {
         Ok(self.blocks.get(hash).cloned())
     }
 
-    fn create_block_template(&self) -> Result<BlockTemplate> {
+    fn create_block_template(&self, _txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
         let head_block = self.head_block().clone();
         let head_block_hash = head_block.crypto_hash();
         let block_template_header =

@@ -120,8 +120,8 @@ where
         self.head.get_transaction_info(hash)
     }
 
-    fn create_block_template(&self) -> Result<BlockTemplate> {
-        self.head.create_block_template()
+    fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
+        self.head.create_block_template(txns)
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

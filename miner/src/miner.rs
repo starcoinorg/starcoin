@@ -10,7 +10,7 @@ use futures::channel::oneshot;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use traits::ChainReader;
-use types::system_events::SystemEvents;
+use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 pub(crate) struct Miner<C>
 where
@@ -33,9 +33,9 @@ where
         }
     }
 
-    pub fn mint(&self) -> Result<()> {
+    pub fn mint(&self, txns: Vec<SignedUserTransaction>) -> Result<()> {
         println!("miner new block.");
-        let block_template = self.chain.create_block_template()?;
+        let block_template = self.chain.create_block_template(txns)?;
         let (_sender, receiver) = oneshot::channel();
         /// spawn a async task, maintain a task list, when new task coming, cancel old task.
         let block = C::create_block(self.chain.as_ref(), block_template, receiver)?;

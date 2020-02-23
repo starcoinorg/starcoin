@@ -85,7 +85,8 @@ impl Handler<ChainRequest> for ChainActor {
                 self.service.get_block_by_number(number)?.unwrap(),
             )),
             ChainRequest::CreateBlockTemplate() => Ok(ChainResponse::BlockTemplate(
-                self.service.create_block_template().unwrap(),
+                //TODO get txn from txpool.
+                self.service.create_block_template(vec![]).unwrap(),
             )),
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
                 self.service.get_block(hash).unwrap(),
