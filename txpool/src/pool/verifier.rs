@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 //! Transaction Verifier
 //!
 //! Responsible for verifying a transaction before importing to the pool.

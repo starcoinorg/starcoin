@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 //! Transaction Pool state client.
 //!
 //! `Client` encapsulates all external data required for the verifaction and readiness.

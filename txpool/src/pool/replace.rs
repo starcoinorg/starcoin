@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 //! Replacing Transactions
 //!
 //! When queue limits are reached, a new transaction may replace one already
