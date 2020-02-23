@@ -20,20 +20,14 @@ pub struct StarcoinStorage {
 }
 
 impl StarcoinStorage {
-    pub fn new(
-        storage: Arc<dyn Repository>,
-        block_store: Arc<dyn Repository>,
-        header_store: Arc<dyn Repository>,
-        sons_store: Arc<dyn Repository>,
-        body_store: Arc<dyn Repository>,
-    ) -> Result<Self> {
+    pub fn new(storage: Arc<dyn Repository>) -> Result<Self> {
         Ok(Self {
             transaction_info_store: TransactionInfoStore::new(storage.clone()),
             block_store: BlockStore::new(
-                block_store,
-                header_store,
-                sons_store,
-                body_store,
+                storage.clone(),
+                storage.clone(),
+                storage.clone(),
+                storage.clone(),
                 storage.clone(),
             ),
         })
@@ -57,12 +51,7 @@ mod tests {
     #[test]
     fn test_storage() {
         let store = Arc::new(MemoryStorage::new());
-        let block_store = Arc::new(MemoryStorage::new());
-        let header_store = Arc::new(MemoryStorage::new());
-        let sons_store = Arc::new(MemoryStorage::new());
-        let body_store = Arc::new(MemoryStorage::new());
-        let storage =
-            StarcoinStorage::new(store, block_store, header_store, sons_store, body_store).unwrap();
+        let storage = StarcoinStorage::new(store).unwrap();
         let transaction_info1 = TransactionInfo::new(
             HashValue::random(),
             HashValue::zero(),
@@ -81,12 +70,11 @@ mod tests {
     #[test]
     fn test_block() {
         let store = Arc::new(MemoryStorage::new());
-        let block_store = Arc::new(MemoryStorage::new());
-        let header_store = Arc::new(MemoryStorage::new());
-        let sons_store = Arc::new(MemoryStorage::new());
-        let body_store = Arc::new(MemoryStorage::new());
-        let storage =
-            StarcoinStorage::new(store, block_store, header_store, sons_store, body_store).unwrap();
+        // let block_store = Arc::new(MemoryStorage::new());
+        // let header_store = Arc::new(MemoryStorage::new());
+        // let sons_store = Arc::new(MemoryStorage::new());
+        // let body_store = Arc::new(MemoryStorage::new());
+        let storage = StarcoinStorage::new(store).unwrap();
         let consensus_header = vec![0u8; 1];
         let dt = Local::now();
 
@@ -132,12 +120,11 @@ mod tests {
     #[test]
     fn test_block_number() {
         let store = Arc::new(MemoryStorage::new());
-        let block_store = Arc::new(MemoryStorage::new());
-        let header_store = Arc::new(MemoryStorage::new());
-        let sons_store = Arc::new(MemoryStorage::new());
-        let body_store = Arc::new(MemoryStorage::new());
-        let storage =
-            StarcoinStorage::new(store, block_store, header_store, sons_store, body_store).unwrap();
+        // let block_store = Arc::new(MemoryStorage::new());
+        // let header_store = Arc::new(MemoryStorage::new());
+        // let sons_store = Arc::new(MemoryStorage::new());
+        // let body_store = Arc::new(MemoryStorage::new());
+        let storage = StarcoinStorage::new(store).unwrap();
         let consensus_header = vec![0u8; 1];
         let dt = Local::now();
 
@@ -196,8 +183,7 @@ mod tests {
         let header_store = Arc::new(MemoryStorage::new());
         let sons_store = Arc::new(MemoryStorage::new());
         let body_store = Arc::new(MemoryStorage::new());
-        let storage =
-            StarcoinStorage::new(store, block_store, header_store, sons_store, body_store).unwrap();
+        let storage = StarcoinStorage::new(store).unwrap();
         let consensus_header = vec![0u8; 1];
         let dt = Local::now();
 
