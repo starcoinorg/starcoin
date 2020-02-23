@@ -10,7 +10,7 @@ use chain::{
 use crypto::hash::CryptoHash;
 use std::sync::Arc;
 use tokio::time::{delay_for, Duration};
-use traits::Chain;
+use traits::AsyncChain;
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,

@@ -4083,7 +4083,6 @@ dependencies = [
  "futures 0.3.4",
  "futures-locks",
  "starcoin-canonical-serialization",
- "starcoin-chain-state",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -4091,15 +4090,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-storage",
  "starcoin-traits",
- "starcoin-types",
-]
-
-[[package]]
-name = "starcoin-chain-state"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "starcoin-crypto",
  "starcoin-types",
 ]
 
@@ -4122,6 +4112,7 @@ dependencies = [
  "futures 0.3.4",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-traits",
  "starcoin-types",
 ]
 
@@ -4141,10 +4132,10 @@ dependencies = [
  "anyhow",
  "once_cell",
  "starcoin-canonical-serialization",
- "starcoin-chain-state",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-state-tree",
+ "starcoin-traits",
  "starcoin-types",
 ]
 
@@ -4251,6 +4242,7 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-state-tree",
  "starcoin-types",
 ]
 
@@ -4353,6 +4345,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-network",
+ "starcoin-traits",
  "starcoin-types",
 ]
 

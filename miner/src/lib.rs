@@ -9,11 +9,12 @@ use anyhow::Result;
 use bus::BusActor;
 use chain::ChainActor;
 use config::NodeConfig;
-use consensus::{ChainReader, Consensus, ConsensusHeader};
+use consensus::{Consensus, ConsensusHeader};
 use futures::channel::mpsc;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
+use traits::ChainReader;
 
 mod headblock_pacemaker;
 mod miner;

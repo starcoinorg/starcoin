@@ -1,19 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#![forbid(unsafe_code)]
-
 use anyhow::Result;
 use crypto::{hash::CryptoHash, HashValue};
+use std::collections::HashMap;
+use std::sync::Arc;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_state::AccountState,
     language_storage::{ModuleId, StructTag},
+    transaction::{Transaction, TransactionInfo},
 };
 
-/// `ChainState` s a trait that defines updatable chain's global state.
-pub trait ChainState {
+pub trait ChainStateReader {
     /// Gets the state for a single access path.
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         self.get_account_state(access_path.address)
@@ -61,7 +61,9 @@ pub trait ChainState {
 
     /// Gets current state root.
     fn state_root(&self) -> HashValue;
+}
 
+pub trait ChainStateWriter {
     /// Sets state at access_path.
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()>;
 
@@ -79,3 +81,6 @@ pub trait ChainState {
 
     fn set_code(&self, module_id: &ModuleId) -> Result<()>;
 }
+
+/// `ChainState` is a trait that defines chain's global state.
+pub trait ChainState: ChainStateReader + ChainStateWriter {}

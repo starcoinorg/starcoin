@@ -3,14 +3,18 @@
 
 use crate::block_store::BlockStore;
 use crate::memory_storage::MemoryStorage;
+use crate::state_node_store::StateNodeStorage;
 use crate::storage::Repository;
 use crate::transaction_info_store::TransactionInfoStore;
-use anyhow::Result;
+use anyhow::{Error, Result};
+use crypto::HashValue;
+use state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
 
 pub mod block_store;
 pub mod memory_storage;
 pub mod persistence_storage;
+pub mod state_node_store;
 pub mod storage;
 pub mod transaction_info_store;
 
@@ -19,6 +23,7 @@ pub type KeyPrefixName = &'static str;
 pub struct StarcoinStorage {
     transaction_info_store: TransactionInfoStore,
     pub block_store: BlockStore,
+    state_node_store: StateNodeStorage,
 }
 
 impl StarcoinStorage {
@@ -32,14 +37,27 @@ impl StarcoinStorage {
                 storage.clone(),
                 storage.clone(),
             ),
+            state_node_store: StateNodeStorage::new(storage.clone()),
         })
+    }
+}
+
+impl StateNodeStore for StarcoinStorage {
+    fn get_node(&self, hash: HashValue) -> Result<Option<StateNode>> {
+        self.state_node_store.get_node(hash)
+    }
+
+    fn save_node(&self, node: StateNode) -> Result<()> {
+        self.state_node_store.save_node(node)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
     extern crate chrono;
+
     use crate::memory_storage::MemoryStorage;
     use anyhow::Result;
     use chrono::prelude::*;
@@ -99,6 +117,7 @@ mod tests {
                 .block_store
                 .get_block_header_by_hash(block_id.clone())
                 .unwrap()
+                .unwrap()
         );
         let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()]);
         storage
@@ -115,6 +134,7 @@ mod tests {
         let block_header3 = storage
             .block_store
             .get_block_header_by_hash(block_id)
+            .unwrap()
             .unwrap();
         assert_eq!(block_header1, block_header3);
     }
@@ -147,6 +167,7 @@ mod tests {
             storage
                 .block_store
                 .get_block_header_by_hash(block_id)
+                .unwrap()
                 .unwrap(),
             block_header1
         );
@@ -166,12 +187,14 @@ mod tests {
         let block3 = storage
             .block_store
             .get_block_by_number(block_number1)
+            .unwrap()
             .unwrap();
         assert_eq!(block1, block3);
         //get header by number
         let block4_header = storage
             .block_store
             .get_block_header_by_number(block_number1)
+            .unwrap()
             .unwrap();
         assert_eq!(block_header1, block4_header);
         //TODO fixme

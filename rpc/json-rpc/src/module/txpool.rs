@@ -6,7 +6,7 @@ use futures::future::{FutureExt, TryFutureExt};
 use jsonrpc_core::BoxFuture;
 use jsonrpc_core::Error;
 use jsonrpc_derive::rpc;
-use traits::TxPool;
+use traits::TxPoolAsyncService;
 use txpool::{AddTransaction, TxPoolRef};
 use types::transaction::SignedUserTransaction;
 

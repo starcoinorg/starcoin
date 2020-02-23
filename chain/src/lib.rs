@@ -2,39 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
+mod chain_service;
+mod chain_state_store;
 pub mod mem_chain;
 pub mod message;
-mod starcoin_chain_state;
 
+use crate::chain_service::ChainServiceImpl;
+use crate::message::ChainResponse;
+use actix::dev::ToEnvelope;
+use actix::fut::wrap_future;
 use actix::prelude::*;
 use anyhow::{Error, Result};
 use chain::BlockChain;
 use config::NodeConfig;
-use consensus::{dummy::DummyConsensus, ChainReader};
-use crypto::{HashValue, hash::CryptoHash};
+use consensus::dummy::DummyConsensus;
+use crypto::{hash::CryptoHash, HashValue};
 use executor::mock_executor::MockExecutor;
-use message::ChainRequest;
-use traits::Chain;
-use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
-use crate::message::ChainResponse;
-use actix::dev::ToEnvelope;
-use futures_locks::RwLock;
-use std::sync::Arc;
-pub use tests::gen_mem_chain_for_test;
-use actix::fut::wrap_future;
 use futures::compat::Future01CompatExt;
+use futures_locks::RwLock;
+use message::ChainRequest;
+use std::sync::Arc;
+use storage::StarcoinStorage;
+pub use tests::gen_mem_chain_for_test;
+use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService, ChainWriter};
+use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
 
 /// actor for block chain.
 pub struct ChainActor {
-    block_chain: Arc<RwLock<BlockChain<MockExecutor, DummyConsensus>>>,
+    //TODO use Generic Parameter for Executor and Consensus.
+    service: ChainServiceImpl<MockExecutor, DummyConsensus>,
 }
 
 impl ChainActor {
-    pub fn launch(_node_config: &NodeConfig) -> Result<Addr<ChainActor>> {
+    pub fn launch(
+        config: Arc<NodeConfig>,
+        storage: Arc<StarcoinStorage>,
+    ) -> Result<Addr<ChainActor>> {
         let actor = ChainActor {
-            block_chain: Arc::new(RwLock::new(BlockChain::new(Block::new_nil_block_for_test(
-                BlockHeader::genesis_block_header_for_test(),
-            )))),
+            service: ChainServiceImpl::new(config, storage)?,
         };
         Ok(actor.start())
     }
@@ -49,89 +54,64 @@ impl Actor for ChainActor {
 }
 
 impl Handler<ChainRequest> for ChainActor {
-    type Result = ResponseActFuture<Self, Result<ChainResponse>>;
+    type Result = Result<ChainResponse>;
 
     fn handle(&mut self, msg: ChainRequest, ctx: &mut Self::Context) -> Self::Result {
-        let block_chain = self.block_chain.clone();
-        let fut = async move {
-            match msg {
-                ChainRequest::CreateBlock(times) => {
-                    let mut lock = block_chain.clone().write().compat().await.unwrap();
-                    let head_block = lock.head_block().clone();
-                    let mut parent_block_hash = head_block.crypto_hash();
-                    for i in 0..times {
-                        println!("parent_block_hash: {:?}", parent_block_hash);
-                        let current_block_header =
-                            BlockHeader::new_block_header_for_test(parent_block_hash, i);
-                        let current_block = Block::new_nil_block_for_test(current_block_header);
-                        parent_block_hash = current_block.crypto_hash();
-                        lock.try_connect(current_block);
-                    }
-                    Ok(ChainResponse::None)
+        match msg {
+            ChainRequest::CreateBlock(times) => {
+                let head_block = self.service.head_block();
+                let mut parent_block_hash = head_block.crypto_hash();
+                for i in 0..times {
+                    println!("parent_block_hash: {:?}", parent_block_hash);
+                    let current_block_header =
+                        BlockHeader::new_block_header_for_test(parent_block_hash, i);
+                    let current_block = Block::new_nil_block_for_test(current_block_header);
+                    parent_block_hash = current_block.crypto_hash();
+                    self.service.try_connect(current_block)?;
                 }
-                ChainRequest::CurrentHeader() => {
-                    let lock = block_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::BlockHeader(lock.current_header()))
-                }
-                ChainRequest::GetHeaderByHash(hash) => {
-                    let lock = block_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::BlockHeader(lock.get_header_by_hash(hash)))
-                }
-                ChainRequest::HeadBlock() => {
-                    let lock = block_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::Block(lock.head_block()))
-                }
-                ChainRequest::GetHeaderByNumber(number) => {
-                    let lock = block_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::BlockHeader(
-                        lock.get_header_by_number(number),
-                    ))
-                }
-                ChainRequest::GetBlockByNumber(number) => {
-                    let lock = block_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::Block(lock.get_block_by_number(number)))
-                }
-                ChainRequest::CreateBlockTemplate() => {
-                    let lock = block_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::BlockTemplate(
-                        lock.create_block_template().unwrap(),
-                    ))
-                }
-                ChainRequest::GetBlockByHash(hash) => {
-                    let lock = block_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::OptionBlock(lock.get_block_by_hash(hash)))
-                }
-                ChainRequest::ConnectBlock(block) => {
-                    println!("{:?}:{:?}", "connect block", block.crypto_hash());
-                    let mut lock = block_chain.clone().write().compat().await.unwrap();
-                    lock.try_connect(block).unwrap();
-                    Ok(ChainResponse::None)
-                }
+                Ok(ChainResponse::None)
             }
-        };
-
-        Box::new(wrap_future::<_, Self>(fut))
+            ChainRequest::CurrentHeader() => {
+                Ok(ChainResponse::BlockHeader(self.service.current_header()))
+            }
+            ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeader(
+                self.service.get_header(hash).unwrap().unwrap(),
+            )),
+            ChainRequest::HeadBlock() => Ok(ChainResponse::Block(self.service.head_block())),
+            ChainRequest::GetHeaderByNumber(number) => Ok(ChainResponse::BlockHeader(
+                self.service.get_header_by_number(number)?.unwrap(),
+            )),
+            ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(
+                self.service.get_block_by_number(number)?.unwrap(),
+            )),
+            ChainRequest::CreateBlockTemplate() => Ok(ChainResponse::BlockTemplate(
+                self.service.create_block_template().unwrap(),
+            )),
+            ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
+                self.service.get_block(hash).unwrap(),
+            )),
+            ChainRequest::ConnectBlock(block) => {
+                self.service.try_connect(block).unwrap();
+                Ok(ChainResponse::None)
+            }
+        }
     }
 }
 
-pub trait ChainWriter {
-    fn try_connect(&mut self, block: Block) -> Result<()>;
-}
-
 pub struct ChainActorRef<A>
-    where
-        A: Actor + Handler<ChainRequest>,
-        A::Context: ToEnvelope<A, ChainRequest>,
-        A: Send,
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
 {
     pub address: Addr<A>,
 }
 
 impl<A> Clone for ChainActorRef<A>
-    where
-        A: Actor + Handler<ChainRequest>,
-        A::Context: ToEnvelope<A, ChainRequest>,
-        A: Send,
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
 {
     fn clone(&self) -> ChainActorRef<A> {
         ChainActorRef {
@@ -141,10 +121,10 @@ impl<A> Clone for ChainActorRef<A>
 }
 
 impl<A> Into<Addr<A>> for ChainActorRef<A>
-    where
-        A: Actor + Handler<ChainRequest>,
-        A::Context: ToEnvelope<A, ChainRequest>,
-        A: Send,
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
 {
     fn into(self) -> Addr<A> {
         self.address
@@ -152,10 +132,10 @@ impl<A> Into<Addr<A>> for ChainActorRef<A>
 }
 
 impl<A> Into<ChainActorRef<A>> for Addr<A>
-    where
-        A: Actor + Handler<ChainRequest>,
-        A::Context: ToEnvelope<A, ChainRequest>,
-        A: Send,
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
 {
     fn into(self) -> ChainActorRef<A> {
         ChainActorRef { address: self }
@@ -163,11 +143,11 @@ impl<A> Into<ChainActorRef<A>> for Addr<A>
 }
 
 #[async_trait::async_trait]
-impl<A> Chain for ChainActorRef<A>
-    where
-        A: Actor + Handler<ChainRequest>,
-        A::Context: ToEnvelope<A, ChainRequest>,
-        A: Send,
+impl<A> AsyncChain for ChainActorRef<A>
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
 {
     async fn current_header(self) -> Option<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
@@ -270,13 +250,20 @@ impl<A> Chain for ChainActorRef<A>
             None
         }
     }
+}
 
+#[async_trait::async_trait]
+impl<A> ChainAsyncService for ChainActorRef<A>
+where
+    A: Actor + Handler<ChainRequest>,
+    A::Context: ToEnvelope<A, ChainRequest>,
+    A: Send,
+{
     async fn try_connect(self, block: Block) -> Result<()> {
         self.address
             .send(ChainRequest::ConnectBlock(block))
             .await
-            .unwrap()
-            .unwrap();
+            .map_err(|e| Into::<Error>::into(e))?;
         Ok(())
     }
 }

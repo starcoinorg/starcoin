@@ -3,4 +3,4 @@
 
 mod mock_txpool;
 
-pub use mock_txpool::MockTxPool;
+pub use mock_txpool::MockTxPoolService;

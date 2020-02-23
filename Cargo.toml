@@ -7,7 +7,6 @@ members = [
     "types",
     "core/traits",
     "core/accumulator",
-    "core/chain-state",
     "core/state-tree",
     "config",
     "bus",

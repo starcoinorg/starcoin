@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use chain_state::ChainState;
 use crypto::HashValue;
+use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -13,16 +13,21 @@ use types::{
 
 use crypto::hash::CryptoHash;
 use scs::SCSCodec;
-use state_tree::SparseMerkleTree;
+use state_tree::{StateNodeStore, StateTree};
+use std::sync::Arc;
 
-pub struct StarcoinChainState {
-    state_tree: SparseMerkleTree,
+pub struct ChainStateStore {
+    store: Arc<dyn StateNodeStore>,
+    state_tree: StateTree,
 }
 
-impl StarcoinChainState {
+impl ChainStateStore {
     // create empty chain state
-    pub fn new() -> Self {
-        unimplemented!()
+    pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
+        Self {
+            store: store.clone(),
+            state_tree: StateTree::new(store, root_hash),
+        }
     }
 
     /// Commit and calculate new state root
@@ -37,16 +42,18 @@ impl StarcoinChainState {
         Ok(())
     }
 
-    fn get_account_storage_tree(&self, storage_root: HashValue) -> SparseMerkleTree {
-        unimplemented!()
+    fn get_account_storage_tree(&self, storage_root: HashValue) -> StateTree {
+        StateTree::new(self.store.clone(), Some(storage_root))
     }
 
-    fn get_code_storage_tree(&self, code_root: HashValue) -> SparseMerkleTree {
-        unimplemented!()
+    fn get_code_storage_tree(&self, code_root: HashValue) -> StateTree {
+        StateTree::new(self.store.clone(), Some(code_root))
     }
 }
 
-impl ChainState for StarcoinChainState {
+impl ChainState for ChainStateStore {}
+
+impl ChainStateReader for ChainStateStore {
     fn get_by_hash(
         &self,
         storage_root: HashValue,
@@ -83,7 +90,9 @@ impl ChainState for StarcoinChainState {
     fn state_root(&self) -> HashValue {
         unimplemented!()
     }
+}
 
+impl ChainStateWriter for ChainStateStore {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
         unimplemented!()
     }

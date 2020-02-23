@@ -1,60 +1,44 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain_state_store::ChainStateStore;
 use crate::message::{ChainRequest, ChainResponse};
-use crate::starcoin_chain_state::StarcoinChainState;
-use crate::ChainWriter;
 use actix::prelude::*;
-use anyhow::Result;
-use chain_state::ChainState;
-use config::VMConfig;
-use consensus::{ChainReader, Consensus, ConsensusHeader};
+use anyhow::{format_err, Error, Result};
+use config::{NodeConfig, VMConfig};
+use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
+use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use traits::{ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
-pub struct Accumulator {}
-
-impl Accumulator {
-    pub fn append(&mut self, tx_info: TransactionInfo) -> HashValue {
-        unimplemented!()
-    }
-}
-
-struct Branch {
-    block_header: BlockHeader,
-}
-
-impl Branch {
-    pub fn set_block_header(&mut self, block_header: BlockHeader) {
-        self.block_header = block_header;
-    }
-
-    pub fn block_header(&self) -> &BlockHeader {
-        &self.block_header
-    }
-}
-
 pub struct BlockChain<E, C>
 where
     E: TransactionExecutor,
     C: Consensus,
 {
-    config: VMConfig,
-    accumulator: Accumulator,
-    head: Branch,
-    branches: Vec<Branch>,
+    config: Arc<NodeConfig>,
+    //TODO
+    //accumulator: Accumulator,
+    head: Block,
+    chain_state: ChainStateStore,
     phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
-    storage: StarcoinStorage,
+    storage: Arc<StarcoinStorage>,
+}
+
+fn load_genesis_block() -> Block {
+    let header = BlockHeader::genesis_block_header_for_test();
+    Block::new_nil_block_for_test(header)
 }
 
 impl<E, C> BlockChain<E, C>
@@ -62,38 +46,27 @@ where
     E: TransactionExecutor,
     C: Consensus,
 {
-    pub fn new(genesis_block: Block) -> Self {
-        let config = VMConfig::default();
-        let accumulator = Accumulator {};
-        let head = Branch {
-            block_header: genesis_block.header().clone(),
+    pub fn new(
+        config: Arc<NodeConfig>,
+        storage: Arc<StarcoinStorage>,
+        head_block_hash: Option<HashValue>,
+    ) -> Result<Self> {
+        let head = match head_block_hash {
+            Some(hash) => storage
+                .block_store
+                .get_block_by_hash(hash)?
+                .ok_or(format_err!("Can not find block by hash {}", hash))?,
+            None => load_genesis_block(),
         };
-        let branches = Vec::new();
-        let store = Arc::new(MemoryStorage::new());
-        let storage = StarcoinStorage::new(store).unwrap();
-
-        BlockChain {
+        let state_root = head.header().state_root();
+        Ok(Self {
             config,
-            accumulator,
             head,
-            branches,
+            chain_state: ChainStateStore::new(storage.clone(), Some(state_root)),
             phantom_e: PhantomData,
             phantom_c: PhantomData,
             storage,
-        }
-    }
-
-    pub fn find_or_fork(&self, header: &BlockHeader) -> Branch {
-        unimplemented!()
-    }
-
-    pub fn state_at(&self, root: HashValue) -> StarcoinChainState {
-        unimplemented!()
-    }
-
-    fn select_head(&self) {
-        //select head branch;
-        todo!()
+        })
     }
 
     fn save_block(&self, block: &Block) {
@@ -107,41 +80,36 @@ where
     E: TransactionExecutor,
     C: Consensus,
 {
-    fn current_header(&self) -> BlockHeader {
-        self.head.block_header.clone()
-    }
-
-    fn get_header_by_hash(&self, hash: HashValue) -> BlockHeader {
-        self.storage
-            .block_store
-            .get_block_header_by_hash(hash)
-            .unwrap()
-    }
-
     fn head_block(&self) -> Block {
-        let head_number = self.head.block_header.number();
-        self.storage
-            .block_store
-            .get_block_by_number(head_number)
-            .unwrap()
+        self.head.clone()
     }
 
-    fn get_header_by_number(&self, number: u64) -> BlockHeader {
-        self.storage
-            .block_store
-            .get_block_header_by_number(number)
-            .unwrap()
+    fn current_header(&self) -> BlockHeader {
+        self.head.header().clone()
     }
 
-    fn get_block_by_number(&self, number: BlockNumber) -> Block {
-        self.storage
-            .block_store
-            .get_block_by_number(number)
-            .unwrap()
+    fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
+        self.storage.block_store.get_block_header_by_hash(hash)
     }
 
-    fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
-        Some(self.storage.block_store.get_block_by_hash(hash).unwrap())
+    fn get_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
+        self.storage.block_store.get_block_header_by_number(number)
+    }
+
+    fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
+        self.storage.block_store.get_block_by_number(number)
+    }
+
+    fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
+        self.storage.block_store.get_block_by_hash(hash)
+    }
+
+    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>, Error> {
+        unimplemented!()
+    }
+
+    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
+        unimplemented!()
     }
 
     fn create_block_template(&self) -> Result<BlockTemplate> {
@@ -160,6 +128,10 @@ where
         // get pending tx from pool, and execute to build BlockTemplate.
         todo!()
     }
+
+    fn chain_state_reader(&self) -> &dyn ChainStateReader {
+        &self.chain_state
+    }
 }
 
 impl<E, C> ChainWriter for BlockChain<E, C>
@@ -167,12 +139,12 @@ where
     E: TransactionExecutor,
     C: Consensus,
 {
-    //TODO define connect result.
-    fn try_connect(&mut self, block: Block) -> Result<()> {
+    fn apply(&mut self, block: Block) -> Result<HashValue> {
         let header = block.header();
-        let branch = self.find_or_fork(&header);
+        assert_eq!(self.head.header().id(), block.header().parent_hash());
+
         C::verify_header(self, header)?;
-        let chain_state = self.state_at(branch.block_header.state_root());
+        let chain_state = &self.chain_state;
         let mut txns = block
             .transactions()
             .iter()
@@ -183,7 +155,7 @@ where
         txns.push(Transaction::BlockMetadata(block_metadata));
         for txn in txns {
             let txn_hash = txn.crypto_hash();
-            let output = E::execute_transaction(&self.config, &chain_state, txn)?;
+            let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
             match output.status() {
                 TransactionStatus::Discard(status) => return Err(status.clone().into()),
                 TransactionStatus::Keep(status) => {
@@ -198,13 +170,18 @@ where
                 0,
                 output.status().vm_status().major_status,
             );
-            let accumulator_root = self.accumulator.append(transaction_info);
+            //TODO accumulator
+            //let accumulator_root = self.accumulator.append(transaction_info);
         }
 
         //todo verify state_root and accumulator_root;
         self.save_block(&block);
         chain_state.flush();
-        self.select_head();
+        self.head = block;
         todo!()
+    }
+
+    fn chain_state(&mut self) -> &dyn ChainState {
+        &self.chain_state
     }
 }

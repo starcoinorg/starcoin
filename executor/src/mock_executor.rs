@@ -3,13 +3,12 @@
 
 use crate::TransactionExecutor;
 use anyhow::{Error, Result};
-use chain_state::ChainState;
 use config::VMConfig;
 use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
 use once_cell::sync::Lazy;
-use state_tree::SparseMerkleTree;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
@@ -73,7 +72,9 @@ impl MockChainState {
     }
 }
 
-impl ChainState for MockChainState {
+impl ChainState for MockChainState {}
+
+impl ChainStateReader for MockChainState {
     fn get_by_hash(
         &self,
         storage_root: HashValue,
@@ -97,7 +98,9 @@ impl ChainState for MockChainState {
     fn state_root(&self) -> HashValue {
         unimplemented!()
     }
+}
 
+impl ChainStateWriter for MockChainState {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
         unimplemented!()
     }

@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ChainReader, Consensus, ConsensusHeader};
+use crate::{Consensus, ConsensusHeader};
 use anyhow::{Error, Result};
 use futures::channel::oneshot::Receiver;
 use std::convert::TryFrom;
+use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
 
 pub struct DummyHeader {}

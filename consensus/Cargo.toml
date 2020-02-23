@@ -13,4 +13,5 @@ anyhow = "1.0"
 futures = { version = "0.3.2"}
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
+traits = {path = "../core/traits", package="starcoin-traits"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}

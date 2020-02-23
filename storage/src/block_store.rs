@@ -176,8 +176,8 @@ impl BlockStore {
         loop {
             println!("block_id: {}", temp_block_id.to_hex());
             //get header by block_id
-            match self.get_block_header_by_hash(temp_block_id) {
-                Ok(header) => {
+            match self.get_block_header_by_hash(temp_block_id)? {
+                Some(header) => {
                     if header.id() != block_id {
                         vev_hash.push(header.id());
                     }
@@ -192,13 +192,13 @@ impl BlockStore {
                         Err(err) => bail!("get sons Error: {:?}", err),
                     }
                 }
-                Err(err) => bail!("Error: {:?}", err),
+                None => bail!("Error: can not find block {:?}", temp_block_id),
             }
         }
         Ok(vev_hash)
     }
 
-    pub fn get_latest_block_header(&self) -> Result<BlockHeader> {
+    pub fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
         let max_number = self.number_store.get_len()?;
         self.get_block_header_by_number(max_number - 1)
     }
@@ -206,46 +206,33 @@ impl BlockStore {
     pub fn get_latest_block(&self) -> Result<Block> {
         //get storage current len
         let max_number = self.number_store.get_len()?;
-        self.get_block_by_number(max_number - 1)
+        Ok(self.get_block_by_number(max_number - 1)?.unwrap())
     }
 
-    pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<BlockHeader> {
-        let result = self.header_store.get(block_id);
-        match result {
-            Ok(option_header) => match option_header {
-                Some(header) => Ok(header),
-                None => bail!("can't find block header:{}", block_id.to_hex()),
-            },
-            Err(err) => bail!("Error: {:?}", err),
-        }
+    pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
+        self.header_store.get(block_id)
     }
 
-    pub fn get_block_by_hash(&self, block_id: HashValue) -> Result<Block> {
-        match self.get(block_id).unwrap() {
-            Some(block) => Ok(block),
-            None => bail!("can't find block:{}", block_id),
-        }
+    pub fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
+        self.get(block_id)
     }
 
-    pub fn get_block_header_by_number(&self, number: u64) -> Result<BlockHeader> {
+    pub fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
         match self.number_store.get(number).unwrap() {
             Some(block_id) => self.get_block_header_by_hash(block_id),
             None => bail!("can't find block header by number:{}", number),
         }
     }
 
-    pub fn get_block_by_number(&self, number: u64) -> Result<Block> {
-        match self.number_store.get(number).unwrap() {
-            Some(block_id) => match self.block_store.get(block_id).unwrap() {
-                Some(block) => Ok(block),
-                None => bail!("can't find block:{}", number),
-            },
-            None => bail!("can't find block  by number:{}", number),
+    pub fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
+        match self.number_store.get(number)? {
+            Some(block_id) => self.block_store.get(block_id),
+            None => Ok(None),
         }
     }
 
     fn get_sons(&self, parent_hash: HashValue) -> Result<Vec<HashValue>> {
-        match self.sons_store.get(parent_hash).unwrap() {
+        match self.sons_store.get(parent_hash)? {
             Some(sons) => Ok(sons),
             None => bail!("cant't find sons: {}", parent_hash),
         }
