@@ -351,117 +351,73 @@ impl TransactionQueue {
     //         .collect()
     // }
 
-    // /// Returns current pending transactions ordered by priority.
-    // ///
-    // /// NOTE: This may return a cached version of pending transaction set.
-    // /// Re-computing the pending set is possible with `#collect_pending` method,
-    // /// but be aware that it's a pretty expensive operation.
-    // pub fn pending<C>(
-    //     &self,
-    //     client: C,
-    //     settings: PendingSettings,
-    // ) -> Vec<Arc<pool::VerifiedTransaction>>
-    // where
-    //     C: client::NonceClient,
-    // {
-    //     let PendingSettings {
-    //         block_number,
-    //         current_timestamp,
-    //         nonce_cap,
-    //         max_len,
-    //         ordering,
-    //     } = settings;
-    //     if let Some(pending) = self.cached_pending.read().pending(
-    //         block_number,
-    //         current_timestamp,
-    //         nonce_cap.as_ref(),
-    //         max_len,
-    //     ) {
-    //         return pending;
-    //     }
-    //
-    //     // Double check after acquiring write lock
-    //     let mut cached_pending = self.cached_pending.write();
-    //     if let Some(pending) =
-    //         cached_pending.pending(block_number, current_timestamp, nonce_cap.as_ref(), max_len)
-    //     {
-    //         return pending;
-    //     }
-    //
-    //     // In case we don't have a cached set, but we don't care about order
-    //     // just return the unordered set.
-    //     if let PendingOrdering::Unordered = ordering {
-    //         let ready = Self::ready(client, block_number, current_timestamp, nonce_cap);
-    //         return self
-    //             .pool
-    //             .read()
-    //             .unordered_pending(ready)
-    //             .take(max_len)
-    //             .collect();
-    //     }
-    //
-    //     let pending: Vec<_> =
-    //         self.collect_pending(client, block_number, current_timestamp, nonce_cap, |i| {
-    //             i.take(max_len).collect()
-    //         });
-    //
-    //     *cached_pending = CachedPending {
-    //         block_number,
-    //         current_timestamp,
-    //         nonce_cap,
-    //         has_local_pending: self.has_local_pending_transactions(),
-    //         pending: Some(pending.clone()),
-    //         max_len,
-    //     };
-    //
-    //     pending
-    // }
+    /// Returns current pending transactions ordered by priority.
+    ///
+    /// NOTE: This may return a cached version of pending transaction set.
+    /// Re-computing the pending set is possible with `#collect_pending` method,
+    /// but be aware that it's a pretty expensive operation.
+    pub async fn pending<C>(
+        &mut self,
+        client: C,
+        settings: PendingSettings,
+    ) -> Vec<Arc<pool::VerifiedTransaction>>
+    where
+        C: client::NonceClient,
+    {
+        let PendingSettings {
+            block_number,
+            current_timestamp,
+            nonce_cap,
+            max_len,
+            ordering,
+        } = settings;
 
-    // /// Collect pending transactions.
-    // ///
-    // /// NOTE This is re-computing the pending set and it might be expensive to do so.
-    // /// Prefer using cached pending set using `#pending` method.
-    // pub fn collect_pending<C, F, T>(
-    //     &self,
-    //     client: C,
-    //     block_number: u64,
-    //     current_timestamp: u64,
-    //     nonce_cap: Option<Nonce>,
-    //     collect: F,
-    // ) -> T
-    // where
-    //     C: client::NonceClient,
-    //     F: FnOnce(
-    //         tx_pool::PendingIterator<
-    //             pool::VerifiedTransaction,
-    //             (ready::Condition, ready::State<C>),
-    //             scoring::NonceAndGasPrice,
-    //             Listener,
-    //         >,
-    //     ) -> T,
-    // {
-    //     debug!(target: "txqueue", "Re-computing pending set for block: {}", block_number);
-    //     trace_time!("pool::collect_pending");
-    //     let ready = Self::ready(client, block_number, current_timestamp, nonce_cap);
-    //     collect(self.pool.read().pending(ready))
-    // }
-    //
-    // fn ready<C>(
-    //     client: C,
-    //     block_number: u64,
-    //     current_timestamp: u64,
-    //     nonce_cap: Option<Nonce>,
-    // ) -> (ready::Condition, ready::State<C>)
-    // where
-    //     C: client::NonceClient,
-    // {
-    //     let pending_readiness = ready::Condition::new(block_number, current_timestamp);
-    //     // don't mark any transactions as stale at this point.
-    //     let stale_id = None;
-    //     let state_readiness = ready::State::new(client, stale_id, nonce_cap);
-    //
-    //     (pending_readiness, state_readiness)
-    // }
+        // if let Some(pending) = self.cached_pending.pending(
+        //     block_number,
+        //     current_timestamp,
+        //     nonce_cap.as_ref(),
+        //     max_len,
+        // ) {
+        //     return pending;
+        // }
+
+        let ready = Self::ready(client, block_number, current_timestamp, nonce_cap);
+
+        match ordering {
+            // In case we don't have a cached set, but we don't care about order
+            // just return the unordered set.
+            PendingOrdering::Unordered => return self.pool.unordered_pending(ready, max_len).await,
+            PendingOrdering::Priority => {
+                let pending = self.pool.pending(ready, max_len).await;
+                // *cached_pending = CachedPending {
+                //     block_number,
+                //     current_timestamp,
+                //     nonce_cap,
+                //     has_local_pending: self.has_local_pending_transactions(),
+                //     pending: Some(pending.clone()),
+                //     max_len,
+                // };
+                pending
+            }
+        }
+    }
+
+    fn ready<C>(
+        client: C,
+        block_number: u64,
+        current_timestamp: u64,
+        nonce_cap: Option<Nonce>,
+    ) -> (ready::Condition, ready::State<C>)
+    where
+        C: client::NonceClient,
+    {
+        let pending_readiness = ready::Condition::new(block_number, current_timestamp);
+        // don't mark any transactions as stale at this point.
+        let stale_id = None;
+        let state_readiness = ready::State::new(client, stale_id, nonce_cap);
+
+        (pending_readiness, state_readiness)
+    }
 
     /// Culls all stalled transactions from the pool.
     pub async fn cull<C: client::NonceClient>(&mut self, client: C) {

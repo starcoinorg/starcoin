@@ -25,7 +25,6 @@ use crate::{
     VerifiedTransaction,
 };
 
-
 /// Internal representation of transaction.
 ///
 /// Includes unique insertion id that can be used for scoring explicitly,
@@ -462,32 +461,118 @@ where
             .map(|tx| tx.transaction.sender())
     }
 
-    // /// Returns an iterator of pending (ready) transactions.
-    // pub fn pending<R: Ready<T>>(&self, ready: R) -> PendingIterator<'_, T, R, S, L> {
-    // 	PendingIterator { ready, best_transactions: self.best_transactions.clone(), pool: self }
-    // }
-    //
-    // /// Returns pending (ready) transactions from given sender.
-    // pub fn pending_from_sender<R: Ready<T>>(&self, ready: R, sender: &T::Sender) -> PendingIterator<'_, T, R, S, L> {
-    // 	let best_transactions = self
-    // 		.transactions
-    // 		.get(sender)
-    // 		.and_then(|transactions| transactions.worst_and_best())
-    // 		.map(|(_, best)| ScoreWithRef::new(best.0, best.1))
-    // 		.map(|s| {
-    // 			let mut set = BTreeSet::new();
-    // 			set.insert(s);
-    // 			set
-    // 		})
-    // 		.unwrap_or_default();
-    //
-    // 	PendingIterator { ready, best_transactions, pool: self }
-    // }
+    /// Returns an iterator of pending (ready) transactions.
+    /// NOTE: the transactions are not removed from the queue.
+    pub async fn pending<R: Ready<T>>(&self, ready: R, max_len: usize) -> Vec<Arc<T>> {
+        let mut best_transactions = self.best_transactions.clone();
+        self.ordered_pending(ready, best_transactions, max_len)
+            .await
+    }
 
-    // /// Returns unprioritized list of ready transactions.
-    // pub fn unordered_pending<R: Ready<T>>(&self, ready: R) -> UnorderedIterator<'_, T, R, S> {
-    // 	UnorderedIterator { ready, senders: self.transactions.iter(), transactions: None }
-    // }
+    /// Returns pending (ready) transactions from given sender.
+    pub async fn pending_from_sender<R: Ready<T>>(
+        &self,
+        ready: R,
+        sender: &T::Sender,
+        max_len: usize,
+    ) -> Vec<Arc<T>> {
+        let best_txn = match self
+            .transactions
+            .get(sender)
+            .and_then(|transactions| transactions.worst_and_best())
+        {
+            None => return vec![],
+            Some((_, best)) => {
+                let s = ScoreWithRef::new(best.0, best.1);
+                s
+            }
+        };
+        let best_transactions = {
+            let mut set = BTreeSet::new();
+            set.insert(best_txn);
+            set
+        };
+        self.ordered_pending(ready, best_transactions, max_len)
+            .await
+    }
+
+    async fn ordered_pending<R: Ready<T>>(
+        &self,
+        mut ready: R,
+        mut best_transactions: BTreeSet<ScoreWithRef<T, S::Score>>,
+        max_len: usize,
+    ) -> Vec<Arc<T>> {
+        let mut result = vec![];
+
+        while !best_transactions.is_empty() && result.len() < max_len {
+            let best = {
+                let best = best_transactions
+                    .iter()
+                    .next()
+                    .expect("current_best is not empty; qed")
+                    .clone();
+                best_transactions
+                    .take(&best)
+                    .expect("Just taken from iterator; qed")
+            };
+
+            let tx_state = ready.is_ready(&best.transaction).await;
+            // Add the next best sender's transaction when applicable
+            match tx_state {
+                Readiness::Ready | Readiness::Stale => {
+                    // retrieve next one from the same sender.
+                    let next = self
+                        .transactions
+                        .get(best.transaction.sender())
+                        .and_then(|s| s.find_next(&best.transaction, &self.scoring));
+                    if let Some((score, tx)) = next {
+                        best_transactions.insert(ScoreWithRef::new(score, tx));
+                    }
+                }
+                _ => (),
+            }
+
+            if tx_state == Readiness::Ready {
+                result.push(best.transaction.transaction);
+            } else {
+                trace!(
+                    "[{:?}] Ignoring {:?} transaction.",
+                    best.transaction.hash(),
+                    tx_state
+                );
+            }
+        }
+
+        result
+    }
+
+    /// Returns unprioritized list of ready transactions.
+    /// NOTE: Current implementation will iterate over all transactions from particular sender
+    /// ordered by nonce, but that might change in the future.
+    ///
+    /// NOTE: the transactions are not removed from the queue.
+    /// You might remove them later by calling `cull`.
+    pub async fn unordered_pending<R: Ready<T>>(
+        &self,
+        mut ready: R,
+        max_len: usize,
+    ) -> Vec<Arc<T>> {
+        let mut result = vec![];
+        'outer: for (sender, transactions) in self.transactions.iter() {
+            for tx in transactions.iter() {
+                match ready.is_ready(tx).await {
+                    Readiness::Ready => {
+                        result.push(tx.transaction.clone());
+                        if result.len() >= max_len {
+                            break 'outer;
+                        }
+                    }
+                    state => trace!("[{:?}] Ignoring {:?} transaction.", tx.hash(), state),
+                }
+            }
+        }
+        result
+    }
 
     /// Update score of transactions of a particular sender.
     pub fn update_scores(&mut self, sender: &T::Sender, event: S::Event) {
@@ -555,116 +640,3 @@ where
         &mut self.listener
     }
 }
-
-// /// An iterator over all pending (ready) transactions in unoredered fashion.
-// ///
-// /// NOTE: Current implementation will iterate over all transactions from particular sender
-// /// ordered by nonce, but that might change in the future.
-// ///
-// /// NOTE: the transactions are not removed from the queue.
-// /// You might remove them later by calling `cull`.
-// pub struct UnorderedIterator<'a, T, R, S>
-// where
-//     T: VerifiedTransaction + 'a,
-//     S: Scoring<T> + 'a,
-// {
-//     ready: R,
-//     senders: hash_map::Iter<'a, T::Sender, Transactions<T, S>>,
-//     transactions: Option<slice::Iter<'a, Transaction<T>>>,
-// }
-
-// impl<'a, T, R, S> Iterator for UnorderedIterator<'a, T, R, S>
-// where
-//     T: VerifiedTransaction,
-//     R: Ready<T>,
-//     S: Scoring<T>,
-// {
-//     type Item = Arc<T>;
-//
-//     fn next(&mut self) -> Option<Self::Item> {
-//         loop {
-//             if let Some(transactions) = self.transactions.as_mut() {
-//                 if let Some(tx) = transactions.next() {
-//                     match self.ready.is_ready(&tx) {
-//                         Readiness::Ready => {
-//                             return Some(tx.transaction.clone());
-//                         }
-//                         state => trace!("[{:?}] Ignoring {:?} transaction.", tx.hash(), state),
-//                     }
-//                 }
-//             }
-//
-//             // otherwise fallback and try next sender
-//             let next_sender = self.senders.next()?;
-//             self.transactions = Some(next_sender.1.iter());
-//         }
-//     }
-// }
-//
-// /// An iterator over all pending (ready) transactions.
-// /// NOTE: the transactions are not removed from the queue.
-// /// You might remove them later by calling `cull`.
-// pub struct PendingIterator<'a, T, R, S, L>
-// where
-//     T: VerifiedTransaction + 'a,
-//     S: Scoring<T> + 'a,
-//     L: 'a,
-// {
-//     ready: R,
-//     best_transactions: BTreeSet<ScoreWithRef<T, S::Score>>,
-//     pool: &'a Pool<T, S, L>,
-// }
-//
-// impl<'a, T, R, S, L> Iterator for PendingIterator<'a, T, R, S, L>
-// where
-//     T: VerifiedTransaction,
-//     R: Ready<T>,
-//     S: Scoring<T>,
-// {
-//     type Item = Arc<T>;
-//
-//     fn next(&mut self) -> Option<Self::Item> {
-//         while !self.best_transactions.is_empty() {
-//             let best = {
-//                 let best = self
-//                     .best_transactions
-//                     .iter()
-//                     .next()
-//                     .expect("current_best is not empty; qed")
-//                     .clone();
-//                 self.best_transactions
-//                     .take(&best)
-//                     .expect("Just taken from iterator; qed")
-//             };
-//
-//             let tx_state = self.ready.is_ready(&best.transaction);
-//             // Add the next best sender's transaction when applicable
-//             match tx_state {
-//                 Readiness::Ready | Readiness::Stale => {
-//                     // retrieve next one from the same sender.
-//                     let next = self
-//                         .pool
-//                         .transactions
-//                         .get(best.transaction.sender())
-//                         .and_then(|s| s.find_next(&best.transaction, &self.pool.scoring));
-//                     if let Some((score, tx)) = next {
-//                         self.best_transactions.insert(ScoreWithRef::new(score, tx));
-//                     }
-//                 }
-//                 _ => (),
-//             }
-//
-//             if tx_state == Readiness::Ready {
-//                 return Some(best.transaction.transaction);
-//             }
-//
-//             trace!(
-//                 "[{:?}] Ignoring {:?} transaction.",
-//                 best.transaction.hash(),
-//                 tx_state
-//             );
-//         }
-//
-//         None
-//     }
-// }

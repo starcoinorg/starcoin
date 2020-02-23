@@ -23,31 +23,6 @@ mod pool;
 mod tx_pool_service_impl;
 mod txpool;
 
-pub trait TxPoolService: Send + Sync {
-    /// Import a set of transactions to the pool.
-    ///
-    /// Given blockchain and state access (Client)
-    /// verifies and imports transactions to the pool.
-    fn import_txns<C>(
-        &self,
-        client: C,
-        txns: Vec<transaction::UnverifiedUserTransaction>,
-    ) -> Vec<Result<(), transaction::TransactionError>>
-    where
-        C: pool::NonceClient + pool::Client + Clone;
-
-    /// Returns pending txns (if any)
-    fn get_pending_txns<C>(
-        &self,
-        client: C,
-        best_block_number: u64,
-        best_block_timestamp: u64,
-        max_len: u64,
-    ) -> Option<Vec<Arc<pool::VerifiedTransaction>>>
-    where
-        C: pool::NonceClient;
-}
-
 pub struct TxPoolActor {
     pool: TxPoolImpl,
     bus: Addr<BusActor>,

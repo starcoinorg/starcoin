@@ -53,19 +53,13 @@ where
         Ok(r.await?)
     }
 
-    // pub async fn get_pending_txns(
-    //     &self,
-    //     best_block_number: u64,
-    //     best_block_timestamp: u64,
-    //     max_len: u64,
-    // ) -> Option<Vec<Arc<pool::VerifiedTransaction>>> {
-    //     let r = self.addr.send(GetPendingTxns {
-    //         best_block_number,
-    //         best_block_timestamp,
-    //         max_len,
-    //     });
-    //     Ok(r.await?)
-    // }
+    pub async fn get_pending_txns(
+        &self,
+        max_len: u64,
+    ) -> Result<Vec<Arc<pool::VerifiedTransaction>>> {
+        let r = self.addr.send(GetPendingTxns { max_len });
+        Ok(r.await?)
+    }
 }
 
 struct ImportTxns {
@@ -74,16 +68,6 @@ struct ImportTxns {
 
 impl Message for ImportTxns {
     type Result = Vec<Result<(), transaction::TransactionError>>;
-}
-
-struct GetPendingTxns {
-    best_block_number: u64,
-    best_block_timestamp: u64,
-    max_len: u64,
-}
-
-impl Message for GetPendingTxns {
-    type Result = Option<Vec<Arc<pool::VerifiedTransaction>>>;
 }
 
 type Listener = tx_pool::NoopListener;
@@ -181,5 +165,69 @@ where
                 tx.send(import_result)
             }
         }));
+    }
+}
+
+struct GetPendingTxns {
+    max_len: u64,
+}
+
+impl Message for GetPendingTxns {
+    type Result = Vec<Arc<pool::VerifiedTransaction>>;
+}
+
+struct GetPendingTxnsResponse<C>
+where
+    C: NonceClient,
+{
+    msg: GetPendingTxns,
+    queue: Arc<FutureMutux<TxnQueue>>,
+    nonce_client: C,
+}
+impl<C> MessageResponse<TxPoolActor<C>, GetPendingTxns> for GetPendingTxnsResponse<C>
+where
+    C: NonceClient,
+{
+    fn handle<R: ResponseChannel<GetPendingTxns>>(
+        self,
+        ctx: &mut <TxPoolActor<C> as Actor>::Context,
+        tx: Option<R>,
+    ) {
+        let Self {
+            msg,
+            queue,
+            nonce_client,
+        } = self;
+        let GetPendingTxns { max_len } = msg;
+        ctx.wait(wrap_future(async move {
+            let import_result = {
+                let mut queue = queue.lock().await;
+                let pending_settings = PendingSettings {
+                    block_number: u64::max_value(),
+                    current_timestamp: u64::max_value(),
+                    nonce_cap: None,
+                    max_len: max_len as usize,
+                    ordering: PendingOrdering::Priority,
+                };
+                queue.pending(nonce_client, pending_settings).await
+            };
+            if let Some(tx) = tx {
+                tx.send(import_result)
+            }
+        }));
+    }
+}
+impl<C> Handler<GetPendingTxns> for TxPoolActor<C>
+where
+    C: NonceClient,
+{
+    type Result = GetPendingTxnsResponse<C>;
+
+    fn handle(&mut self, msg: GetPendingTxns, ctx: &mut Self::Context) -> Self::Result {
+        GetPendingTxnsResponse {
+            msg,
+            queue: self.queue.clone(),
+            nonce_client: self.nonce_client.clone(),
+        }
     }
 }
