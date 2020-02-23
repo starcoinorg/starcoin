@@ -5,10 +5,11 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use chain::ChainActor;
-use consensus::{ChainReader, Consensus, ConsensusHeader};
+use consensus::{Consensus, ConsensusHeader};
 use futures::channel::oneshot;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use traits::ChainReader;
 use types::system_events::SystemEvents;
 
 pub(crate) struct Miner<C>

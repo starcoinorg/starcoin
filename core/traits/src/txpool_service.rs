@@ -5,7 +5,7 @@ use anyhow::{Error, Result};
 use types::transaction::SignedUserTransaction;
 
 #[async_trait::async_trait]
-pub trait TxPool: Clone + std::marker::Unpin {
+pub trait TxPoolAsyncService: Clone + std::marker::Unpin {
     async fn add(self, txn: SignedUserTransaction) -> Result<bool>;
     async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>>;
 }

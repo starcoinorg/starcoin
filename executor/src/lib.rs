@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use chain_state::ChainState;
 use config::VMConfig;
+use traits::ChainState;
 use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,

@@ -13,13 +13,13 @@ use libp2p::{
     PeerId, Swarm,
 };
 use std::sync::Arc;
-use traits::TxPool;
+use traits::TxPoolAsyncService;
 use txpool::{AddTransaction, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 pub struct NetworkActor<P>
 where
-    P: TxPool,
+    P: TxPoolAsyncService,
     P: 'static,
 {
     network_config: NetworkConfig,
@@ -31,7 +31,7 @@ where
 
 impl<P> NetworkActor<P>
 where
-    P: TxPool,
+    P: TxPoolAsyncService,
 {
     pub fn launch(
         node_config: &NodeConfig,
@@ -67,7 +67,7 @@ where
 
 impl<P> Actor for NetworkActor<P>
 where
-    P: TxPool,
+    P: TxPoolAsyncService,
 {
     type Context = Context<Self>;
 
@@ -81,7 +81,7 @@ where
 
 impl<P> StreamHandler<PingEvent> for NetworkActor<P>
 where
-    P: TxPool,
+    P: TxPoolAsyncService,
 {
     fn handle(&mut self, item: PingEvent, _ctx: &mut Self::Context) {
         println!("receive event {:?}", item);
@@ -91,7 +91,7 @@ where
 
 impl<P> Handler<GetCounterMessage> for NetworkActor<P>
 where
-    P: TxPool,
+    P: TxPoolAsyncService,
 {
     type Result = u64;
 
@@ -104,7 +104,7 @@ where
 /// handler system events.
 impl<P> Handler<SystemEvents> for NetworkActor<P>
 where
-    P: TxPool,
+    P: TxPoolAsyncService,
 {
     type Result = ();
 
@@ -125,7 +125,7 @@ where
 /// Handler for receive broadcast from other peer.
 impl<P> Handler<PeerMessage> for NetworkActor<P>
 where
-    P: TxPool,
+    P: TxPoolAsyncService,
 {
     type Result = ResponseActFuture<Self, Result<()>>;
 
@@ -169,7 +169,7 @@ mod tests {
     async fn test_network_with_mock() {
         let node_config = NodeConfig::default();
         let bus = BusActor::launch();
-        let txpool = traits::mock::MockTxPool::new();
+        let txpool = traits::mock::MockTxPoolService::new();
         let network = NetworkActor::launch(&node_config, bus, txpool.clone()).unwrap();
         network
             .send(PeerMessage::UserTransaction(SignedUserTransaction::mock()))

@@ -2,15 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
+mod chain_service;
+mod chain_state;
 pub mod mock;
-mod txpool;
+mod txpool_service;
 
-pub use chain::Chain;
-use crypto::HashValue;
-pub use txpool::TxPool;
-use types::ids::TransactionId;
-/// Provides various information on a transaction by it's ID
-pub trait TransactionInfo {
-    /// Get the hash of block that contains the transaction, if any.
-    fn transaction_block(&self, id: TransactionId) -> Option<HashValue>;
+pub use chain::{AsyncChain, Chain, ChainReader, ChainWriter};
+pub use chain_service::{ChainAsyncService, ChainService};
+pub use chain_state::{ChainState, ChainStateReader, ChainStateWriter};
+pub use txpool_service::TxPoolAsyncService;
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
 }

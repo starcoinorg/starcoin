@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::TxPool;
+use crate::TxPoolAsyncService;
 use anyhow::Result;
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
@@ -9,24 +9,24 @@ use std::sync::{Arc, Mutex};
 use types::transaction::SignedUserTransaction;
 
 #[derive(Clone)]
-pub struct MockTxPool {
+pub struct MockTxPoolService {
     pool: Arc<Mutex<Vec<SignedUserTransaction>>>,
 }
 
-impl MockTxPool {
+impl MockTxPoolService {
     pub fn new() -> Self {
         Self::new_with_txns(vec![])
     }
 
     pub fn new_with_txns(txns: Vec<SignedUserTransaction>) -> Self {
-        MockTxPool {
+        MockTxPoolService {
             pool: Arc::new(Mutex::new(txns)),
         }
     }
 }
 
 #[async_trait::async_trait]
-impl TxPool for MockTxPool {
+impl TxPoolAsyncService for MockTxPoolService {
     async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
         self.pool.lock().unwrap().push(txn);
         //TODO check txn is exist.
@@ -44,7 +44,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_txpool() {
-        let pool = MockTxPool::new();
+        let pool = MockTxPoolService::new();
 
         pool.clone()
             .add(SignedUserTransaction::mock())

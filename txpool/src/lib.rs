@@ -10,13 +10,14 @@ extern crate log;
 #[macro_use]
 extern crate trace_time;
 extern crate transaction_pool as tx_pool;
+
 use crate::txpool::TxPoolImpl;
 use actix::prelude::*;
 use anyhow::{Error, Result};
 use bus::{Broadcast, BusActor, Subscription};
 use config::NodeConfig;
-
-use traits::TxPool;
+use std::sync::Arc;
+use traits::TxPoolAsyncService;
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 mod pool;
@@ -114,7 +115,7 @@ impl Into<TxPoolRef> for Addr<TxPoolActor> {
 }
 
 #[async_trait::async_trait]
-impl TxPool for TxPoolRef {
+impl TxPoolAsyncService for TxPoolRef {
     async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
         self.0
             .send(AddTransaction { txn })
