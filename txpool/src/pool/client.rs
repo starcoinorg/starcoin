@@ -8,7 +8,6 @@
 //! any consensus-required structure of the transaction.
 
 use super::{SeqNumber, UnverifiedUserTransaction};
-use common_crypto::hash::HashValue;
 use std::fmt;
 use types::{account_address::AccountAddress as Address, transaction};
 

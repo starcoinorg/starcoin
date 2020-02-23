@@ -8,13 +8,7 @@
 //!
 //! May have some overlap with `Readiness` since we don't want to keep around
 //! stalled transactions.
-use std::{
-    cmp,
-    sync::{
-        atomic::{self, AtomicUsize},
-        Arc,
-    },
-};
+use std::sync::{atomic::AtomicUsize, Arc};
 
 use common_crypto::hash::*;
 use tx_pool;

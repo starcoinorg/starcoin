@@ -9,14 +9,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use super::{Address, Transaction, H256, U256};
-use ethereum_types::BigEndianHash;
+use super::{Address, HashValue, Transaction};
 
 #[derive(Debug, Default, Clone)]
 pub struct TransactionBuilder {
-    nonce: U256,
-    gas_price: U256,
-    gas: U256,
+    nonce: u64,
+    gas_price: u64,
+    gas: u64,
     sender: Address,
     mem_usage: usize,
 }
@@ -27,17 +26,17 @@ impl TransactionBuilder {
     }
 
     pub fn nonce(mut self, nonce: usize) -> Self {
-        self.nonce = U256::from(nonce);
+        self.nonce = nonce as u64;
         self
     }
 
     pub fn gas_price(mut self, gas_price: usize) -> Self {
-        self.gas_price = U256::from(gas_price);
+        self.gas_price = gas_price as u64;
         self
     }
 
-    pub fn sender(mut self, sender: u64) -> Self {
-        self.sender = Address::from_low_u64_be(sender);
+    pub fn sender(mut self, sender: Address) -> Self {
+        self.sender = sender;
         self
     }
 
@@ -47,14 +46,12 @@ impl TransactionBuilder {
     }
 
     pub fn new(self) -> Transaction {
-        let hash: U256 = self.nonce
-            ^ (U256::from(100) * self.gas_price)
-            ^ (U256::from(100_000) * U256::from(self.sender.to_low_u64_be()));
+        let hash = HashValue::random();
         Transaction {
-            hash: H256::from_uint(&hash),
+            hash,
             nonce: self.nonce,
             gas_price: self.gas_price,
-            gas: 21_000.into(),
+            gas: 21_000,
             sender: self.sender,
             mem_usage: self.mem_usage,
         }

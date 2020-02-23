@@ -11,8 +11,7 @@
 
 use log::{trace, warn};
 use std::{
-    collections::{hash_map, BTreeSet, HashMap},
-    slice,
+    collections::{BTreeSet, HashMap},
     sync::Arc,
 };
 
@@ -467,7 +466,7 @@ where
     /// Returns an iterator of pending (ready) transactions.
     /// NOTE: the transactions are not removed from the queue.
     pub async fn pending<R: Ready<T>>(&self, ready: R, max_len: usize) -> Vec<Arc<T>> {
-        let mut best_transactions = self.best_transactions.clone();
+        let best_transactions = self.best_transactions.clone();
         self.ordered_pending(ready, best_transactions, max_len)
             .await
     }
@@ -561,7 +560,7 @@ where
         max_len: usize,
     ) -> Vec<Arc<T>> {
         let mut result = vec![];
-        'outer: for (sender, transactions) in self.transactions.iter() {
+        'outer: for (_sender, transactions) in self.transactions.iter() {
             for tx in transactions.iter() {
                 match ready.is_ready(tx).await {
                     Readiness::Ready => {

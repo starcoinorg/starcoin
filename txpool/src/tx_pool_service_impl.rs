@@ -1,14 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::pool::{
-    replace::ReplaceByScoreAndReadiness, scoring::SeqNumberAndGasPrice, verifier,
-    AccountSeqNumberClient, PrioritizationStrategy, VerifierOptions,
-};
+use super::pool::{verifier, AccountSeqNumberClient, PrioritizationStrategy};
 use crate::{
     pool,
-    pool::{PendingOrdering, PendingSettings, VerifiedTransaction},
-    GetPendingTransactions,
+    pool::{PendingOrdering, PendingSettings},
 };
 use actix::{
     dev::{MessageResponse, ResponseChannel},

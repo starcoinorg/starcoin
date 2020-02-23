@@ -13,7 +13,7 @@ use std::{cmp, collections::HashMap};
 
 use super::Transaction;
 use crate::{pool, scoring, Readiness, Ready, ReplaceTransaction, Scoring, ShouldReplace};
-use ethereum_types::{H160 as Sender, U256};
+use types::account_address::AccountAddress as Sender;
 
 #[derive(Debug, Default)]
 pub struct DummyScoring {
@@ -30,7 +30,7 @@ impl DummyScoring {
 
 impl Scoring<Transaction> for DummyScoring {
     type Event = ();
-    type Score = U256;
+    type Score = u64;
 
     fn compare(&self, old: &Transaction, new: &Transaction) -> cmp::Ordering {
         old.nonce.cmp(&new.nonce)
@@ -57,7 +57,7 @@ impl Scoring<Transaction> for DummyScoring {
         if let scoring::Change::Event(_) = change {
             // In case of event reset all scores to 0
             for i in 0..txs.len() {
-                scores[i] = 0.into();
+                scores[i] = 0;
             }
         } else {
             // Set to a gas price otherwise
@@ -72,11 +72,12 @@ impl Scoring<Transaction> for DummyScoring {
     }
 }
 
+#[async_trait]
 impl ShouldReplace<Transaction> for DummyScoring {
-    fn should_replace(
+    async fn should_replace<'a>(
         &self,
-        old: &ReplaceTransaction<'_, Transaction>,
-        new: &ReplaceTransaction<'_, Transaction>,
+        old: ReplaceTransaction<'a, Transaction>,
+        new: ReplaceTransaction<'a, Transaction>,
     ) -> scoring::Choice {
         if self.always_insert {
             scoring::Choice::InsertNew
@@ -89,24 +90,24 @@ impl ShouldReplace<Transaction> for DummyScoring {
 }
 
 #[derive(Default)]
-pub struct NonceReady(HashMap<Sender, U256>, U256);
+pub struct NonceReady(HashMap<Sender, u64>, u64);
 
 impl NonceReady {
-    pub fn new<T: Into<U256>>(min: T) -> Self {
+    pub fn new<T: Into<u64>>(min: T) -> Self {
         let mut n = NonceReady::default();
         n.1 = min.into();
         n
     }
 }
-
+#[async_trait(?Send)]
 impl Ready<Transaction> for NonceReady {
-    fn is_ready(&mut self, tx: &Transaction) -> Readiness {
+    async fn is_ready(&mut self, tx: &Transaction) -> Readiness {
         let min = self.1;
         let nonce = self.0.entry(tx.sender).or_insert_with(|| min);
         match tx.nonce.cmp(nonce) {
             cmp::Ordering::Greater => Readiness::Future,
             cmp::Ordering::Equal => {
-                *nonce += 1.into();
+                *nonce += 1;
                 Readiness::Ready
             }
             cmp::Ordering::Less => Readiness::Stale,

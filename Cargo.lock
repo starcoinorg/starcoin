@@ -4927,6 +4927,9 @@ dependencies = [
  "futures-util",
  "log",
  "smallvec 0.6.13",
+ "starcoin-crypto",
+ "starcoin-types",
+ "tokio 0.2.11",
 ]
 
 [[package]]

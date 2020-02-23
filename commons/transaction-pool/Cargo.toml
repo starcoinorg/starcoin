@@ -12,3 +12,8 @@ smallvec = "0.6.10"
 async-trait = "0.1.24"
 #trace-time = { path = "../trace-time", version = "0.1" }
 futures-util = "0.3"
+
+[dev-dependencies]
+types = {path="../../types", "package" = "starcoin-types"}
+crypto = {path="../crypto", "package" = "starcoin-crypto"}
+tokio = { version = "0.2", features = ["full"] }
