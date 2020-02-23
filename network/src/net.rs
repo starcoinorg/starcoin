@@ -10,7 +10,7 @@ use libra_crypto::{
     test_utils::KeyPair,
 };
 
-use crate::message::{Message, NetworkMessage};
+use crate::messages::{Message, NetworkMessage};
 use futures::{
     future,
     stream::{self, Stream},
@@ -20,14 +20,14 @@ use futures::{
     },
     try_ready, Async, Future,
 };
-use slog::prelude::*;
+
 use types::account_address::AccountAddress;
 use network_libp2p::{
     identity, start_service, NetworkConfiguration, NodeKeyConfig, Secret, Service as Libp2pService,
     ServiceEvent,
 };
 use parking_lot::Mutex;
-use config::network_config::NetworkConfig;
+use config::NetworkConfig;
 use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::prelude::task::AtomicTask;
 
