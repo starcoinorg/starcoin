@@ -3,9 +3,9 @@
 
 mod chain;
 mod chain_service;
+mod chain_state_store;
 pub mod mem_chain;
 pub mod message;
-mod starcoin_chain_state;
 
 use crate::chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;

@@ -4,40 +4,51 @@
 use anyhow::{Error, Result};
 use crypto::{hash::CryptoHash, HashValue};
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::sync::Arc;
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StateProof {}
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct StateNode {}
+pub struct StateNode {
+    pub value: Vec<u8>,
+}
 
-pub trait StateStore {
-    fn get_node(&self, hash: HashValue) -> Result<StateNode>;
+pub trait StateNodeStore {
+    fn get_node(&self, hash: HashValue) -> Result<Option<StateNode>>;
     fn save_node(&self, node: StateNode) -> Result<()>;
 }
 
-pub struct SparseMerkleTree {
-    store: Arc<dyn StateStore>,
-    root_hash: HashValue,
+pub struct StateTree {
+    store: Arc<dyn StateNodeStore>,
+    root_hash: RefCell<HashValue>,
 }
 
-impl SparseMerkleTree {
-    pub fn new(store: Arc<dyn StateStore>, root_hash: HashValue) -> Self {
-        Self { store, root_hash }
+impl StateTree {
+    pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
+        //TODO
+        let root_hash = root_hash.unwrap_or(HashValue::zero());
+        Self {
+            store,
+            root_hash: RefCell::new(root_hash),
+        }
     }
 
     pub fn update(&self, hash: HashValue, value: Vec<u8>) -> Result<()> {
+        let mut node = self.store.get_node(hash)?.unwrap_or_default();
+        node.value = value;
+        self.store.save_node(node);
         //TODO
         Ok(())
     }
 
     pub fn root_hash(&self) -> HashValue {
-        self.root_hash
+        self.root_hash.borrow().clone()
     }
 
     pub fn get(&self, hash: HashValue) -> Result<Option<Vec<u8>>> {
-        unimplemented!()
+        Ok(self.store.get_node(hash)?.map(|node| node.value))
     }
 }
 

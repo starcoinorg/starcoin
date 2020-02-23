@@ -4242,6 +4242,7 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-state-tree",
  "starcoin-types",
 ]
 

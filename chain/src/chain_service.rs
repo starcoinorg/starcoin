@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain::BlockChain;
+use crate::chain_state_store::ChainStateStore;
 use crate::message::{ChainRequest, ChainResponse};
-use crate::starcoin_chain_state::StarcoinChainState;
 use actix::prelude::*;
 use anyhow::{Error, Result};
 use config::NodeConfig;
@@ -40,7 +40,11 @@ where
 {
     pub fn new(config: Arc<NodeConfig>, storage: Arc<StarcoinStorage>) -> Result<Self> {
         let latest_header = storage.block_store.get_latest_block_header()?;
-        let head = BlockChain::new(config.clone(), storage.clone(), latest_header)?;
+        let head = BlockChain::new(
+            config.clone(),
+            storage.clone(),
+            latest_header.map(|header| header.id()),
+        )?;
         let branches = Vec::new();
         Ok(Self {
             config,
@@ -54,7 +58,7 @@ where
         unimplemented!()
     }
 
-    pub fn state_at(&self, root: HashValue) -> StarcoinChainState {
+    pub fn state_at(&self, root: HashValue) -> ChainStateStore {
         unimplemented!()
     }
 

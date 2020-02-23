@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain_state_store::ChainStateStore;
 use crate::message::{ChainRequest, ChainResponse};
-use crate::starcoin_chain_state::StarcoinChainState;
 use actix::prelude::*;
-use anyhow::{Error, Result};
+use anyhow::{format_err, Error, Result};
 use config::{NodeConfig, VMConfig};
 use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
@@ -30,7 +30,7 @@ where
     //TODO
     //accumulator: Accumulator,
     head: Block,
-    chain_state: StarcoinChainState,
+    chain_state: ChainStateStore,
     phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
     storage: Arc<StarcoinStorage>,
@@ -49,17 +49,20 @@ where
     pub fn new(
         config: Arc<NodeConfig>,
         storage: Arc<StarcoinStorage>,
-        head_block_header: Option<BlockHeader>,
+        head_block_hash: Option<HashValue>,
     ) -> Result<Self> {
-        let head = match head_block_header {
-            Some(head) => storage.block_store.get_block_by_hash(head.id())?.expect(""),
+        let head = match head_block_hash {
+            Some(hash) => storage
+                .block_store
+                .get_block_by_hash(hash)?
+                .ok_or(format_err!("Can not find block by hash {}", hash))?,
             None => load_genesis_block(),
         };
-
+        let state_root = head.header().state_root();
         Ok(Self {
             config,
             head,
-            chain_state: StarcoinChainState::new(),
+            chain_state: ChainStateStore::new(storage.clone(), Some(state_root)),
             phantom_e: PhantomData,
             phantom_c: PhantomData,
             storage,

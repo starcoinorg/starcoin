@@ -6,7 +6,6 @@ use anyhow::{Error, Result};
 use config::VMConfig;
 use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
 use once_cell::sync::Lazy;
-use state_tree::SparseMerkleTree;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
