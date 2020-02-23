@@ -20,7 +20,7 @@ use network::NetworkActor;
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::sync::Arc;
-use traits::Chain;
+use traits::{AsyncChain, ChainAsyncService};
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,

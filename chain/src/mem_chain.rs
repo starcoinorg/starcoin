@@ -1,15 +1,18 @@
 use crate::message::{ChainRequest, ChainResponse};
-use crate::{ChainReader, ChainWriter};
 use actix::fut::wrap_future;
 use actix::{Actor, Addr, Context, Handler, ResponseActFuture};
-use anyhow::Result;
+use anyhow::{Error, Result};
 use config::NodeConfig;
 use crypto::{hash::CryptoHash, HashValue};
 use futures::compat::Future01CompatExt;
 use futures_locks::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
-use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
+use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter};
+use types::{
+    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    transaction::{Transaction, TransactionInfo},
+};
 
 pub struct MemChainActor {
     mem_chain: Arc<RwLock<MemChain>>,
@@ -62,7 +65,9 @@ impl Handler<ChainRequest> for MemChainActor {
                 }
                 ChainRequest::GetHeaderByHash(hash) => {
                     let lock = mem_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::BlockHeader(lock.get_header_by_hash(hash)))
+                    Ok(ChainResponse::BlockHeader(
+                        lock.get_header(hash).unwrap().unwrap(),
+                    ))
                 }
                 ChainRequest::HeadBlock() => {
                     let lock = mem_chain.clone().read().compat().await.unwrap();
@@ -71,12 +76,14 @@ impl Handler<ChainRequest> for MemChainActor {
                 ChainRequest::GetHeaderByNumber(number) => {
                     let lock = mem_chain.clone().read().compat().await.unwrap();
                     Ok(ChainResponse::BlockHeader(
-                        lock.get_header_by_number(number),
+                        lock.get_header_by_number(number).unwrap().unwrap(),
                     ))
                 }
                 ChainRequest::GetBlockByNumber(number) => {
                     let lock = mem_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::Block(lock.get_block_by_number(number)))
+                    Ok(ChainResponse::Block(
+                        lock.get_block_by_number(number).unwrap().unwrap(),
+                    ))
                 }
                 ChainRequest::CreateBlockTemplate() => {
                     let lock = mem_chain.clone().read().compat().await.unwrap();
@@ -86,7 +93,7 @@ impl Handler<ChainRequest> for MemChainActor {
                 }
                 ChainRequest::GetBlockByHash(hash) => {
                     let lock = mem_chain.clone().read().compat().await.unwrap();
-                    Ok(ChainResponse::OptionBlock(lock.get_block_by_hash(hash)))
+                    Ok(ChainResponse::OptionBlock(lock.get_block(hash).unwrap()))
                 }
                 ChainRequest::ConnectBlock(block) => {
                     println!("{:?}:{:?}", "connect block", block.crypto_hash());
@@ -152,7 +159,7 @@ impl MemChain {
     }
 }
 
-impl ChainWriter for MemChain {
+impl ChainService for MemChain {
     fn try_connect(&mut self, block: Block) -> Result<()> {
         assert!((self.head_number + 1) >= block.header().number());
 
@@ -161,7 +168,8 @@ impl ChainWriter for MemChain {
 
         if !self.blocks.contains_key(&block_hash) && self.blocks.contains_key(&parent_hash) {
             assert_eq!(
-                self.get_block_by_hash(parent_hash)
+                self.get_block(parent_hash)
+                    .unwrap()
                     .unwrap()
                     .header()
                     .number()
@@ -193,9 +201,6 @@ impl ChainReader for MemChain {
         let head_block = self.head_block();
         head_block.header().clone()
     }
-    fn get_header_by_hash(&self, hash: HashValue) -> BlockHeader {
-        self.get_block_by_hash(hash).unwrap().header().clone()
-    }
 
     fn head_block(&self) -> Block {
         let head_hash = self
@@ -208,20 +213,15 @@ impl ChainReader for MemChain {
             .clone()
     }
 
-    fn get_header_by_number(&self, number: BlockNumber) -> BlockHeader {
-        self.get_block_by_number(number).header().clone()
+    fn get_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
+        Ok(self
+            .get_block_by_number(number)?
+            .map(|block| block.header().clone()))
     }
 
-    fn get_block_by_number(&self, number: BlockNumber) -> Block {
+    fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
         let hash = self.master.get(&number).expect("hash is none.");
-        self.blocks.get(hash).expect("block is none.").clone()
-    }
-
-    fn get_block_by_hash(&self, hash: HashValue) -> Option<Block> {
-        match self.blocks.get(&hash) {
-            Some(block) => Some(block.clone()),
-            None => None,
-        }
+        Ok(self.blocks.get(hash).cloned())
     }
 
     fn create_block_template(&self) -> Result<BlockTemplate> {
@@ -231,5 +231,28 @@ impl ChainReader for MemChain {
             BlockHeader::new_block_header_for_test(head_block_hash, head_block.header().number());
         let current_block = Block::new_nil_block_for_test(block_template_header);
         Ok(BlockTemplate::from_block(current_block))
+    }
+
+    fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
+        Ok(self.get_block(hash)?.map(|block| block.header().clone()))
+    }
+
+    fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
+        Ok(match self.blocks.get(&hash) {
+            Some(block) => Some(block.clone()),
+            None => None,
+        })
+    }
+
+    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>> {
+        unimplemented!()
+    }
+
+    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>> {
+        unimplemented!()
+    }
+
+    fn chain_state_reader(&self) -> &ChainStateReader {
+        unimplemented!()
     }
 }

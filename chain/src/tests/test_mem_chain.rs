@@ -1,6 +1,7 @@
 use crate::mem_chain::MemChain;
 use crate::{ChainReader, ChainWriter};
 use crypto::{hash::CryptoHash, HashValue};
+use traits::ChainService;
 use types::block::{Block, BlockHeader, BlockNumber};
 
 #[test]

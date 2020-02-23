@@ -17,7 +17,7 @@ use futures_locks::{Mutex, RwLock};
 use network::NetworkActor;
 use std::hash::Hash;
 use std::sync::Arc;
-use traits::Chain;
+use traits::{AsyncChain, Chain, ChainAsyncService, ChainReader, ChainService};
 use types::{block::Block, peer_info::PeerInfo};
 
 pub struct ProcessActor {

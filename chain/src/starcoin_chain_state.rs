@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use chain_state::ChainState;
 use crypto::HashValue;
+use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -46,7 +46,9 @@ impl StarcoinChainState {
     }
 }
 
-impl ChainState for StarcoinChainState {
+impl ChainState for StarcoinChainState {}
+
+impl ChainStateReader for StarcoinChainState {
     fn get_by_hash(
         &self,
         storage_root: HashValue,
@@ -83,7 +85,9 @@ impl ChainState for StarcoinChainState {
     fn state_root(&self) -> HashValue {
         unimplemented!()
     }
+}
 
+impl ChainStateWriter for StarcoinChainState {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
         unimplemented!()
     }
