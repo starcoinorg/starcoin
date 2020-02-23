@@ -23,6 +23,11 @@ tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
 bus = {path = "../bus", package="starcoin-bus"}
+network-libp2p = {path = "../network-libp2p", package="network-libp2p"}
+
+libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+
 fnv = "1.0.6"
 zeroize = "1.0.0"
 bitflags = "1.2.0"
