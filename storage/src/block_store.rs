@@ -3,7 +3,7 @@
 
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
+use super::KeyPrefixName;
 use crate::memory_storage::MemoryStorage;
 use crate::storage::{CodecStorage, KeyCodec, Repository, ValueCodec};
 use anyhow::{bail, Error, Result};
@@ -16,6 +16,12 @@ use std::mem::size_of;
 use std::sync::Arc;
 use types::block::{Block, BlockBody, BlockHeader, BlockNumber};
 
+const BLOCK_KEY_NAME: &'static str = "block";
+const BLOCK_KEY_PREFIX_NAME: KeyPrefixName = BLOCK_KEY_NAME;
+const BLOCK_HEADER_KEY_PREFIX_NAME: KeyPrefixName = "block_header";
+const BLOCK_SONS_KEY_PREFIX_NAME: KeyPrefixName = "block_sons";
+const BLOCK_BODY_KEY_PREFIX_NAME: KeyPrefixName = "block_body";
+const BLOCK_NUM_KEY_PREFIX_NAME: KeyPrefixName = "block_num";
 pub struct BlockStore {
     block_store: CodecStorage<HashValue, Block>,
     header_store: CodecStorage<HashValue, BlockHeader>,
@@ -103,11 +109,11 @@ impl BlockStore {
         number_store: Arc<dyn Repository>,
     ) -> Self {
         BlockStore {
-            block_store: CodecStorage::new(block_store),
-            header_store: CodecStorage::new(header_store),
-            sons_store: CodecStorage::new(sons_store),
-            body_store: CodecStorage::new(body_store),
-            number_store: CodecStorage::new(number_store),
+            block_store: CodecStorage::new(block_store, BLOCK_KEY_PREFIX_NAME),
+            header_store: CodecStorage::new(header_store, BLOCK_HEADER_KEY_PREFIX_NAME),
+            sons_store: CodecStorage::new(sons_store, BLOCK_SONS_KEY_PREFIX_NAME),
+            body_store: CodecStorage::new(body_store, BLOCK_BODY_KEY_PREFIX_NAME),
+            number_store: CodecStorage::new(number_store, BLOCK_NUM_KEY_PREFIX_NAME),
         }
     }
 

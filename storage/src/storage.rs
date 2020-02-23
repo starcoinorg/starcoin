@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use super::KeyPrefixName;
 use crate::memory_storage::MemoryStorage;
 use crate::persistence_storage::PersistenceStorage;
 use anyhow::{Error, Result};
@@ -81,6 +82,7 @@ where
     store: Arc<dyn Repository>,
     k: PhantomData<K>,
     v: PhantomData<V>,
+    prefix_key: KeyPrefixName,
 }
 
 impl<K, V> CodecStorage<K, V>
@@ -88,27 +90,34 @@ where
     K: KeyCodec,
     V: ValueCodec,
 {
-    pub fn new(store: Arc<dyn Repository>) -> Self {
+    // const COLUMN_FAMILY_NAME: schemadb::ColumnFamilyName = BLOCK_CF_NAME;
+    pub fn new(store: Arc<dyn Repository>, prefixKey: KeyPrefixName) -> Self {
         Self {
             store,
             k: PhantomData,
             v: PhantomData,
+            prefix_key: prefixKey,
         }
     }
     pub fn get(&self, key: K) -> Result<Option<V>> {
-        match self.store.get(key.encode_key()?.as_slice())? {
+        match self
+            .store
+            .get(self.compose_key(key.encode_key()?)?.as_slice())?
+        {
             Some(v) => Ok(Some(V::decode_value(v.as_slice())?)),
             None => Ok(None),
         }
     }
     pub fn put(&self, key: K, value: V) -> Result<()> {
-        self.store.put(key.encode_key()?, value.encode_value()?)
+        self.store
+            .put(self.compose_key(key.encode_key()?)?, value.encode_value()?)
     }
     pub fn contains_key(&self, key: K) -> Result<bool> {
-        self.store.contains_key(key.encode_key()?)
+        self.store
+            .contains_key(self.compose_key(key.encode_key()?)?)
     }
     pub fn remove(&self, key: K) -> Result<()> {
-        self.store.remove(key.encode_key()?)
+        self.store.remove(self.compose_key(key.encode_key()?)?)
     }
 
     pub fn get_len(&self) -> Result<u64> {
@@ -116,6 +125,13 @@ where
     }
     pub fn keys(&self) -> Result<Vec<Vec<u8>>> {
         self.store.keys()
+    }
+    fn compose_key(&self, source_key: Vec<u8>) -> Result<Vec<u8>> {
+        let mut temp_vec = self.prefix_key.as_bytes().to_vec();
+        let mut compose = Vec::with_capacity(temp_vec.len() + source_key.len());
+        compose.extend(temp_vec);
+        compose.extend(source_key);
+        Ok(compose)
     }
 }
 
