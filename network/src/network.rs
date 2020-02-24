@@ -6,7 +6,10 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::{NetworkConfig, NodeConfig};
-use futures_03::TryFutureExt;
+use futures_03::{
+    compat::Stream01CompatExt,
+    TryFutureExt,
+};
 use libp2p::{
     identity,
     ping::{Ping, PingConfig, PingEvent},
@@ -22,6 +25,7 @@ use crypto::{test_utils::KeyPair, Uniform};
 use scs::SCSCodec;
 
 use futures::{
+    stream::Stream,
     sync::{
         mpsc,
         oneshot,
@@ -35,7 +39,6 @@ where
 {
     network_service:NetworkService,
     tx:mpsc::UnboundedSender<NetworkMessage>,
-    rx:mpsc::UnboundedReceiver<NetworkMessage>,
     tx_command:oneshot::Sender<()>,
     bus: Addr<BusActor>,
     txpool: P,
@@ -59,11 +62,10 @@ where
         info!("network started at {} with seed {},network address is {}",&node_config.network.listen,&node_config.network.seeds.iter().fold(String::new(), |acc, arg| acc + arg.as_str()),service.identify());
         Ok(NetworkActor::create(
             move |ctx: &mut Context<NetworkActor<P>>| {
-                //ctx.add_stream(swarm);
+                ctx.add_stream(rx.fuse().compat());
                 NetworkActor {
                     network_service:service,
                     tx,
-                    rx,
                     tx_command,
                     bus,
                     txpool,
@@ -84,6 +86,31 @@ where
         info!(
             "Network actor started ",
         );
+    }
+}
+
+impl<P> StreamHandler<Result<NetworkMessage,()>> for NetworkActor<P>
+    where
+        P: TxPoolAsyncService,
+{
+    fn handle(&mut self, item: Result<NetworkMessage,()>, ctx: &mut Self::Context) {
+        match item {
+            Ok(network_msg)=>{
+                info!("receive network_message {:?}", network_msg);
+                let message = PeerMessage::decode(&network_msg.data);
+                match message {
+                    Ok(msg)=>{
+                        ctx.notify(msg);
+                    },
+                    Err(e)=>{
+                        warn!("get error {:?}",e);
+                    }
+                }
+            },
+            Err(e)=>{
+                warn!("get error {:?}",e);
+            }
+        }
     }
 }
 
@@ -146,7 +173,7 @@ mod tests {
 
     impl log::Log for SimpleLogger {
         fn enabled(&self, metadata: &Metadata) -> bool {
-            metadata.level() <= Level::Debug
+            metadata.level() <= Level::Info
         }
 
         fn log(&self, record: &Record) {
@@ -162,7 +189,7 @@ mod tests {
 
     fn init_log() -> Result<(), SetLoggerError> {
         log::set_logger(&LOGGER)
-            .map(|()| log::set_max_level(LevelFilter::Debug))
+            .map(|()| log::set_max_level(LevelFilter::Info))
     }
     // #[actix_rt::test]
     // async fn test_network() {
@@ -208,13 +235,13 @@ mod tests {
             .await
             .unwrap();
 
-        let txns = txpool1.get_pending_txns().await.unwrap();
-        //assert_eq!(1, txns.len());
-
         network2
             .send(SystemEvents::NewUserTransaction(SignedUserTransaction::mock()))
             .await
             .unwrap();
+
+        let txns = txpool1.get_pending_txns().await.unwrap();
+        //assert_eq!(1, txns.len());
 
         let txns = txpool2.get_pending_txns().await.unwrap();
         //assert_eq!(1, txns.len());
