@@ -11,14 +11,15 @@ use parity_codec::{Decode, Encode};
 use actix::prelude::*;
 use anyhow::Result;
 use types::transaction::SignedUserTransaction;
+use serde::{Deserialize, Serialize};
 
 #[derive(Message)]
 #[rtype(result = "u64")]
 pub struct GetCounterMessage {}
 
 /// message from peer
-#[derive(Message)]
 #[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq,Message)]
 pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
 }

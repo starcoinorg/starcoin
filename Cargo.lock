@@ -4212,6 +4212,7 @@ dependencies = [
  "slog_derive",
  "smallvec 0.6.13",
  "starcoin-bus",
+ "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-traits",

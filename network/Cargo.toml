@@ -32,6 +32,7 @@ txpool = {path = "../txpool", package="starcoin-txpool"}
 network-libp2p = {path = "../network-libp2p", package="network-libp2p"}
 
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
 fnv = "1.0.6"
 zeroize = "1.0.0"
