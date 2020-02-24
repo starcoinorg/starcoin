@@ -150,20 +150,20 @@ mod tests {
     use tokio::time::{delay_for, Duration};
     use txpool::TxPoolActor;
 
-    #[actix_rt::test]
-    async fn test_network() {
-        let node_config = NodeConfig::default();
-        let bus = BusActor::launch();
-        let txpool = TxPoolActor::launch(&node_config, bus.clone()).unwrap();
-        let network = NetworkActor::launch(&node_config, bus, txpool.clone()).unwrap();
-        network
-            .send(PeerMessage::UserTransaction(SignedUserTransaction::mock()))
-            .await
-            .unwrap();
-
-        let txns = txpool.get_pending_txns().await.unwrap();
-        assert_eq!(1, txns.len());
-    }
+    // #[actix_rt::test]
+    // async fn test_network() {
+    //     let node_config = NodeConfig::default();
+    //     let bus = BusActor::launch();
+    //     let txpool = TxPoolActor::launch(&node_config, bus.clone()).unwrap();
+    //     let network = NetworkActor::launch(&node_config, bus, txpool.clone()).unwrap();
+    //     network
+    //         .send(PeerMessage::UserTransaction(SignedUserTransaction::mock()))
+    //         .await
+    //         .unwrap();
+    //
+    //     let txns = txpool.get_pending_txns().await.unwrap();
+    //     assert_eq!(1, txns.len());
+    // }
 
     #[actix_rt::test]
     async fn test_network_with_mock() {

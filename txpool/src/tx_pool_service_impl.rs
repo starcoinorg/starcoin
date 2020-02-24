@@ -14,10 +14,34 @@ use actix::{
 use anyhow::{Error, Result};
 use futures::lock::Mutex as FutureMutux;
 use pool::Gas;
+use pool::SeqNumber;
 use std::sync::Arc;
+use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
+use types::account_address::AccountAddress;
 use types::transaction;
 use types::transaction::SignedUserTransaction;
+pub type TxPoolRef = TxPool<CachedSeqNumberClient>;
+
+#[derive(Clone, Debug)]
+pub struct CachedSeqNumberClient {
+    // storage: Arc<StarcoinStorage>,
+}
+
+impl CachedSeqNumberClient {
+    pub fn new(_storage: Arc<StarcoinStorage>) -> Self {
+        Self {}
+    }
+}
+
+#[async_trait]
+impl AccountSeqNumberClient for CachedSeqNumberClient {
+    async fn account_seq_number(&self, address: &AccountAddress) -> SeqNumber {
+        // TODO: hit real storage
+        0u64
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TxPool<C>
 where

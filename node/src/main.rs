@@ -14,8 +14,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use structopt::StructOpt;
-use txpool::{TxPoolActor, TxPoolRef};
-
+use txpool::TxPoolRef;
+use txpool::{CachedSeqNumberClient, TxPool};
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Starcoin Node")]
 struct Args {
@@ -37,7 +37,8 @@ async fn main() {
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-    let txpool = TxPoolActor::launch(config.clone(), bus.clone(), storage.clone()).unwrap();
+    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
+    let txpool = TxPool::start(seq_number_client);
     let _chain = ChainActor::launch(config.clone(), storage.clone()).unwrap();
     let _network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone()).unwrap();
     let _json_rpc = JSONRpcActor::launch(config.clone(), txpool.clone());

@@ -25,24 +25,26 @@ mod pool;
 mod tx_pool_service_impl;
 mod txpool;
 
+pub use tx_pool_service_impl::{CachedSeqNumberClient, TxPool, TxPoolRef};
+
 pub struct TxPoolActor {
     pool: TxPoolImpl,
     bus: Addr<BusActor>,
 }
 
 impl TxPoolActor {
-    pub fn launch(
-        _node_config: Arc<NodeConfig>,
-        bus: Addr<BusActor>,
-        _storage: Arc<StarcoinStorage>,
-    ) -> Result<TxPoolRef> {
-        let actor_ref = Self {
-            pool: TxPoolImpl::new(),
-            bus,
-        }
-        .start();
-        Ok(actor_ref.into())
-    }
+    // pub fn launch(
+    //     _node_config: Arc<NodeConfig>,
+    //     bus: Addr<BusActor>,
+    //     _storage: Arc<StarcoinStorage>,
+    // ) -> Result<TxPoolRef> {
+    //     let actor_ref = Self {
+    //         pool: TxPoolImpl::new(),
+    //         bus,
+    //     }
+    //     .start();
+    //     Ok(actor_ref.into())
+    // }
 }
 
 impl Actor for TxPoolActor {
@@ -101,45 +103,5 @@ impl Handler<SystemEvents> for TxPoolActor {
             }
             _ => {}
         }
-    }
-}
-
-#[derive(Clone)]
-pub struct TxPoolRef(pub Addr<TxPoolActor>);
-
-impl Into<Addr<TxPoolActor>> for TxPoolRef {
-    fn into(self) -> Addr<TxPoolActor> {
-        self.0
-    }
-}
-
-impl Into<TxPoolRef> for Addr<TxPoolActor> {
-    fn into(self) -> TxPoolRef {
-        TxPoolRef(self)
-    }
-}
-
-#[async_trait::async_trait]
-impl TxPoolAsyncService for TxPoolRef {
-    async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
-        self.0
-            .send(AddTransaction { txn })
-            .await
-            .map_err(|e| Into::<Error>::into(e))?
-    }
-
-    async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>> {
-        self.0
-            .send(GetPendingTransactions {})
-            .await
-            .map_err(|e| Into::<Error>::into(e))?
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }
