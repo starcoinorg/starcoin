@@ -11,18 +11,38 @@ use actix::{
     fut::wrap_future,
     prelude::*,
 };
-use anyhow::Result;
+use anyhow::{Error, Result};
 use futures::lock::Mutex as FutureMutux;
 use pool::Gas;
 use std::sync::Arc;
+use traits::TxPoolAsyncService;
 use types::transaction;
-
+use types::transaction::SignedUserTransaction;
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TxPool<C>
 where
     C: AccountSeqNumberClient,
 {
     addr: Addr<TxPoolActor<C>>,
+}
+
+#[async_trait]
+impl<C> TxPoolAsyncService for TxPool<C>
+where
+    C: AccountSeqNumberClient + Send,
+{
+    async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
+        match self.import_txns(vec![txn]).await {
+            Err(e) => Err(Into::<Error>::into(e)),
+            Ok(mut result) => Ok(result.pop().unwrap().is_ok()),
+        }
+    }
+    async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>> {
+        match self.pending_txns(u64::max_value()).await {
+            Ok(r) => Ok(r.into_iter().map(|t| t.signed().clone()).collect()),
+            Err(e) => Err(e.into()),
+        }
+    }
 }
 
 impl<C> TxPool<C>
@@ -41,14 +61,10 @@ where
         &self,
         txns: Vec<transaction::SignedUserTransaction>,
     ) -> Result<Vec<Result<(), transaction::TransactionError>>> {
-        let r = self.addr.send(ImportTxns { txns });
-        Ok(r.await?)
+        Ok(self.addr.send(ImportTxns { txns }).await?)
     }
 
-    pub async fn get_pending_txns(
-        &self,
-        max_len: u64,
-    ) -> Result<Vec<Arc<pool::VerifiedTransaction>>> {
+    pub async fn pending_txns(&self, max_len: u64) -> Result<Vec<Arc<pool::VerifiedTransaction>>> {
         let r = self.addr.send(GetPendingTxns { max_len });
         Ok(r.await?)
     }
