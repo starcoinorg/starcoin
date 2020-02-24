@@ -16,6 +16,10 @@ use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use structopt::StructOpt;
 use txpool::TxPoolRef;
 use txpool::{CachedSeqNumberClient, TxPool};
+
+use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use crypto::{test_utils::KeyPair, Uniform};
+
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Starcoin Node")]
 struct Args {
@@ -34,13 +38,15 @@ async fn main() {
     let config = Arc::new(NodeConfig::load_or_default(
         args.config.as_ref().map(PathBuf::as_path),
     ));
+
+    let keypair= gen_keypair();
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
     let seq_number_client = CachedSeqNumberClient::new(storage.clone());
     let txpool = TxPool::start(seq_number_client);
     let _chain = ChainActor::launch(config.clone(), storage.clone()).unwrap();
-    let _network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone()).unwrap();
+    let _network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(),keypair).unwrap();
     let _json_rpc = JSONRpcActor::launch(config.clone(), txpool.clone());
     let _miner = MinerActor::<DummyConsensus, MockExecutor, TxPoolRef>::launch(
         config.clone(),
@@ -52,4 +58,15 @@ async fn main() {
     tokio::signal::ctrl_c().await.unwrap();
     println!("Ctrl-C received, shutting down");
     System::current().stop();
+}
+
+fn gen_keypair()->Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>{
+    use rand::prelude::*;
+
+    let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
+    let seed_buf: [u8; 32] = seed_rng.gen();
+    let mut rng0: StdRng = SeedableRng::from_seed(seed_buf);
+    let account_keypair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> =
+        Arc::new(KeyPair::generate_for_testing(&mut rng0));
+    account_keypair
 }

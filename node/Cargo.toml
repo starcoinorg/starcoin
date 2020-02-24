@@ -14,6 +14,7 @@ actix = "0.9"
 actix_derive = "0.5"
 actix-rt = "1.0"
 tokio = { version = "0.2", features = ["full"] }
+rand = "0.6.5"
 
 config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
@@ -25,3 +26,5 @@ chain = {path = "../chain", package="starcoin-chain"}
 json-rpc = {path = "../rpc/json-rpc", package="starcoin-json-rpc"}
 storage = {path = "../storage", package="starcoin-storage"}
 miner = {path = "../miner", package="starcoin-miner"}
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+

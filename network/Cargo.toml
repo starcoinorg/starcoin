@@ -39,7 +39,7 @@ bitflags = "1.2.0"
 smallvec = "0.6.10"
 
 tempfile = "3.1.0"
-rand = "0.7.2"
+rand = "0.6.5"
 parking_lot = "0.10.0"
 
 serde = { version = "1.0.101", features = ["derive"] }
