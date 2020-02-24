@@ -22,6 +22,7 @@ use crypto::{hash::CryptoHash, HashValue};
 use executor::mock_executor::MockExecutor;
 use futures::compat::Future01CompatExt;
 use futures_locks::RwLock;
+use logger::prelude::*;
 use message::ChainRequest;
 use std::sync::Arc;
 use storage::StarcoinStorage;
@@ -51,7 +52,7 @@ impl Actor for ChainActor {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("ChainActor actor started");
+        info!("ChainActor actor started");
     }
 }
 
@@ -64,7 +65,7 @@ impl Handler<ChainRequest> for ChainActor {
                 let head_block = self.service.head_block();
                 let mut parent_block_hash = head_block.crypto_hash();
                 for i in 0..times {
-                    println!("parent_block_hash: {:?}", parent_block_hash);
+                    info!("parent_block_hash: {:?}", parent_block_hash);
                     let current_block_header =
                         BlockHeader::new_block_header_for_test(parent_block_hash, i);
                     let current_block = Block::new_nil_block_for_test(current_block_header);
@@ -237,7 +238,7 @@ where
     }
 
     async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block> {
-        println!("hash: {:?}", hash);
+        info!("hash: {:?}", hash);
         if let ChainResponse::OptionBlock(block) = self
             .address
             .send(ChainRequest::GetBlockByHash(hash.clone()))

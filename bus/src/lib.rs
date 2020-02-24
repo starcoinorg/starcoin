@@ -4,6 +4,7 @@
 use crate::bus::BusImpl;
 use actix::prelude::*;
 use anyhow::Result;
+use logger::prelude::*;
 
 mod bus;
 
@@ -136,7 +137,7 @@ mod tests {
         type Result = ();
 
         fn handle(&mut self, msg: MyMessage, _ctx: &mut Self::Context) {
-            println!("handle msg: {:?}", msg);
+            info!("handle MyMessage: {:?}", msg);
             self.counter += 1;
         }
     }
@@ -145,6 +146,7 @@ mod tests {
         type Result = u64;
 
         fn handle(&mut self, _msg: GetCounterMessage, _ctx: &mut Self::Context) -> Self::Result {
+            info!("handle GetCounterMessage: {:?}", self.counter);
             self.counter
         }
     }
@@ -153,6 +155,7 @@ mod tests {
         type Result = ();
 
         fn handle(&mut self, _msg: DoBroadcast, ctx: &mut Self::Context) {
+            info!("handle DoBroadcast");
             self.bus
                 .send(Broadcast { msg: MyMessage {} })
                 .into_actor(self)
@@ -165,14 +168,14 @@ mod tests {
     impl Handler<DoBroadcast2> for MyActor {
         type Result = ResponseActFuture<Self, Result<()>>;
 
-        fn handle(&mut self, _msg: DoBroadcast2, ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, _msg: DoBroadcast2, _ctx: &mut Self::Context) -> Self::Result {
             let f = self.bus.clone().broadcast(MyMessage {});
             let f = actix::fut::wrap_future::<_, Self>(f);
             Box::new(f)
         }
     }
 
-    #[actix_rt::test]
+    #[stest::test]
     async fn test_bus_actor() {
         let bus_actor = BusActor::launch();
         let actor = MyActor {
@@ -192,7 +195,7 @@ mod tests {
         assert_eq!(counter, 1);
     }
 
-    #[actix_rt::test]
+    #[stest::test]
     async fn test_bus_actor_send_message_in_handle() {
         let bus_actor = BusActor::launch();
         let actor = MyActor {
@@ -209,7 +212,7 @@ mod tests {
         assert_eq!(counter, 1);
     }
 
-    #[actix_rt::test]
+    #[stest::test]
     async fn test_bus_actor_async_trait() {
         let bus_actor = BusActor::launch();
         let actor = MyActor {
@@ -220,7 +223,7 @@ mod tests {
         let recipient = addr.clone().recipient::<MyMessage>();
 
         bus_actor.subscribe(recipient).await.unwrap();
-        addr.send(DoBroadcast2 {}).await.unwrap();
+        addr.send(DoBroadcast2 {}).await.unwrap().unwrap();
         delay_for(Duration::from_millis(100)).await;
         let counter = addr.send(GetCounterMessage {}).await.unwrap();
         assert_eq!(counter, 1);

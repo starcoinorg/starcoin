@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::prelude::*;
+use logger::prelude::*;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
@@ -40,7 +41,7 @@ impl BusImpl {
                             Result::Ok(_) => {}
                             Result::Err(e) => {
                                 //TODO retry.
-                                println!("broadcast to {:?} error {:?}", recipient, e);
+                                error!("broadcast to {:?} error {:?}", recipient, e);
                             }
                         }
                     }

@@ -27,4 +27,5 @@ json-rpc = {path = "../rpc/json-rpc", package="starcoin-json-rpc"}
 storage = {path = "../storage", package="starcoin-storage"}
 miner = {path = "../miner", package="starcoin-miner"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-
+logger = {path = "../commons/logger", package="starcoin-logger"}
+env_logger = "0.7.1"

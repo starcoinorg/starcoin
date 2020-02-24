@@ -3,6 +3,7 @@
 
 use anyhow::{Error, Result};
 use crypto::{hash::CryptoHash, HashValue};
+use logger::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -56,6 +57,8 @@ impl StateTree {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_state_tree() {}
+    #[stest::test]
+    fn test_state_tree() {
+        info!("test logger.");
+    }
 }

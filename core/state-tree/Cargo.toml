@@ -12,3 +12,6 @@ anyhow = "1.0"
 types = {path = "../../types", package="starcoin-types"}
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 serde = { version = "1.0" }
+logger = {path = "../../commons/logger", package="starcoin-logger"}
+env_logger = "0.7.1"
+stest = {path = "../../commons/stest"}

@@ -1,8 +1,10 @@
 [workspace]
 
 members = [
+    "commons/stest",
     "commons/scs",
     "commons/crypto",
+    "commons/logger",
     "commons/transaction-pool",
     "types",
     "core/traits",
