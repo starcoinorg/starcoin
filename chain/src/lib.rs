@@ -224,8 +224,9 @@ where
     }
 
     async fn create_block_template(self) -> Option<BlockTemplate> {
-        if let ChainResponse::BlockTemplate(block_template) = self
-            .address
+        let address = self.address.clone();
+        drop(self);
+        if let ChainResponse::BlockTemplate(block_template) = address
             .send(ChainRequest::CreateBlockTemplate())
             .await
             .unwrap()
