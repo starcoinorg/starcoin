@@ -60,7 +60,7 @@ where
                 let genesis_block = load_genesis_block();
                 if storage
                     .block_store
-                    .get_block_by_hash(genesis_block.crypto_hash())?
+                    .get_block_by_hash(genesis_block.header().id())?
                     .is_none()
                 {
                     storage.block_store.commit_block(genesis_block.clone());
@@ -81,7 +81,7 @@ where
 
     fn save_block(&self, block: &Block) {
         self.storage.block_store.commit_block(block.clone());
-        todo!()
+        //todo
     }
 }
 
@@ -148,7 +148,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
 {
-    fn apply(&mut self, block: Block) -> Result<HashValue> {
+    fn apply(&mut self, block: Block) -> Result<()> {
         let header = block.header();
         assert_eq!(self.head.header().id(), block.header().parent_hash());
 
@@ -161,7 +161,7 @@ where
             .map(|user_txn| Transaction::UserTransaction(user_txn))
             .collect::<Vec<Transaction>>();
         let block_metadata = header.clone().into_metadata();
-        txns.push(Transaction::BlockMetadata(block_metadata));
+        //txns.push(Transaction::BlockMetadata(block_metadata));
         for txn in txns {
             let txn_hash = txn.crypto_hash();
             let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
@@ -187,7 +187,8 @@ where
         self.save_block(&block);
         chain_state.flush();
         self.head = block;
-        todo!()
+        //todo
+        Ok(())
     }
 
     fn chain_state(&mut self) -> &dyn ChainState {

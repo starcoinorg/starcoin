@@ -8,7 +8,7 @@ pub trait ChainService {
     fn try_connect(&mut self, block: Block) -> Result<()>;
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 pub trait ChainAsyncService: Clone + std::marker::Unpin {
     /// connect to head chain or a fork chain.
     async fn try_connect(self, block: Block) -> Result<()>;

@@ -4,9 +4,7 @@ use crate::process::ProcessActor;
 use crate::sync::SyncActor;
 use actix::Addr;
 use atomic_refcell::AtomicRefCell;
-use chain::{
-    gen_mem_chain_for_test, mem_chain::MemChainActor, message::ChainRequest, ChainActorRef,
-};
+use chain::{mem_chain::MemChainActor, message::ChainRequest, ChainActorRef};
 use crypto::hash::CryptoHash;
 use std::sync::Arc;
 use tokio::time::{delay_for, Duration};

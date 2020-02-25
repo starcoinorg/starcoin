@@ -23,6 +23,7 @@ async-trait = "0.1"
 futures = "0.3"
 futures_locks = { version = "0.5.0", package = "futures-locks"}
 storage = { package="starcoin-storage", path = "../storage"}
+actix-rt = "1.0"
 
 logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}

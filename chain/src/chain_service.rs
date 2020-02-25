@@ -55,6 +55,7 @@ where
     }
 
     pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C>> {
+        println!("{:?}:{:?}", header.parent_hash(), header.id());
         let block_in_head = self.head.get_block(header.parent_hash()).unwrap();
         match block_in_head {
             Some(block) => {

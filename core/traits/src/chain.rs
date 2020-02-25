@@ -9,7 +9,7 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 pub trait AsyncChain: Clone + std::marker::Unpin {
     async fn current_header(self) -> Option<BlockHeader>;
     async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader>;
@@ -36,7 +36,7 @@ pub trait ChainReader {
 
 pub trait ChainWriter {
     /// execute and insert block to current chain.
-    fn apply(&mut self, block: Block) -> Result<HashValue>;
+    fn apply(&mut self, block: Block) -> Result<()>;
     fn chain_state(&mut self) -> &dyn ChainState;
 }
 

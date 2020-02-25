@@ -106,7 +106,6 @@ pub struct ChainActorRef<A>
 where
     A: Actor + Handler<ChainRequest>,
     A::Context: ToEnvelope<A, ChainRequest>,
-    A: Send,
 {
     pub address: Addr<A>,
 }
@@ -115,7 +114,6 @@ impl<A> Clone for ChainActorRef<A>
 where
     A: Actor + Handler<ChainRequest>,
     A::Context: ToEnvelope<A, ChainRequest>,
-    A: Send,
 {
     fn clone(&self) -> ChainActorRef<A> {
         ChainActorRef {
@@ -128,7 +126,6 @@ impl<A> Into<Addr<A>> for ChainActorRef<A>
 where
     A: Actor + Handler<ChainRequest>,
     A::Context: ToEnvelope<A, ChainRequest>,
-    A: Send,
 {
     fn into(self) -> Addr<A> {
         self.address
@@ -139,19 +136,17 @@ impl<A> Into<ChainActorRef<A>> for Addr<A>
 where
     A: Actor + Handler<ChainRequest>,
     A::Context: ToEnvelope<A, ChainRequest>,
-    A: Send,
 {
     fn into(self) -> ChainActorRef<A> {
         ChainActorRef { address: self }
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl<A> AsyncChain for ChainActorRef<A>
 where
     A: Actor + Handler<ChainRequest>,
     A::Context: ToEnvelope<A, ChainRequest>,
-    A: Send,
 {
     async fn current_header(self) -> Option<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
@@ -257,12 +252,11 @@ where
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl<A> ChainAsyncService for ChainActorRef<A>
 where
     A: Actor + Handler<ChainRequest>,
     A::Context: ToEnvelope<A, ChainRequest>,
-    A: Send,
 {
     async fn try_connect(self, block: Block) -> Result<()> {
         self.address

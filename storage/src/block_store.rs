@@ -118,6 +118,11 @@ impl BlockStore {
     }
 
     pub fn save(&self, block: Block) -> Result<()> {
+        println!(
+            "insert block:{:?}, block:{:?}",
+            block.header().id(),
+            block.crypto_hash()
+        );
         self.block_store.put(block.header().id(), block)
     }
 
