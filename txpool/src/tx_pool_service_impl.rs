@@ -115,6 +115,18 @@ where
         let r = self.addr.send(SubscribeTxns);
         Ok(r.await?)
     }
+
+    /// when new block happened in chain, use this to notify txn pool
+    /// the `HashValue` of `enacted`/`retracted` is the hash of blocks.
+    /// enacted: the blocks which enter into main chain.
+    /// retracted: the blocks which is rollbacked.
+    pub async fn chain_new_blocks(
+        &self,
+        enacted: Vec<HashValue>,
+        retracted: Vec<HashValue>,
+    ) -> Result<()> {
+        todo!()
+    }
 }
 
 struct ImportTxns {

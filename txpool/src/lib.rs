@@ -27,6 +27,7 @@ mod txpool;
 
 pub use tx_pool_service_impl::{CachedSeqNumberClient, TxPool, TxPoolRef};
 
+/// TODO: deprecate
 pub struct TxPoolActor {
     pool: TxPoolImpl,
     bus: Addr<BusActor>,
