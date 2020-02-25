@@ -8,8 +8,7 @@
 //! any consensus-required structure of the transaction.
 
 use super::{SeqNumber, UnverifiedUserTransaction};
-use std::any::Any;
-use std::fmt;
+use std::{any::Any, fmt};
 use types::{account_address::AccountAddress as Address, transaction};
 
 /// State sequence number client

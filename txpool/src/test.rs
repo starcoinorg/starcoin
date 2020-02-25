@@ -1,13 +1,10 @@
 use super::TxPool;
-use super::TxPoolRef;
 use crate::pool::AccountSeqNumberClient;
 use common_crypto::hash::CryptoHash;
 use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use traits::TxPoolAsyncService;
-use types::account_address::AccountAddress;
-use types::transaction::SignedUserTransaction;
+use types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 
 #[derive(Clone, Debug)]
 struct MockNonceClient {

@@ -13,11 +13,9 @@ extern crate transaction_pool as tx_pool;
 
 use crate::txpool::TxPoolImpl;
 use actix::prelude::*;
-use anyhow::{Error, Result};
+use anyhow::Result;
 use bus::{Broadcast, BusActor, Subscription};
-use config::NodeConfig;
-use std::sync::Arc;
-use storage::StarcoinStorage;
+
 use traits::TxPoolAsyncService;
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 

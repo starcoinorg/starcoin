@@ -13,17 +13,13 @@ use actix::{
 };
 use anyhow::{Error, Result};
 use common_crypto::hash::HashValue;
-use futures::lock::Mutex as FutureMutux;
+
 use futures_channel::mpsc;
-use pool::Gas;
-use pool::SeqNumber;
-use pool::TxStatus;
+use pool::{Gas, SeqNumber, TxStatus};
 use std::sync::Arc;
 use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
-use types::account_address::AccountAddress;
-use types::transaction;
-use types::transaction::SignedUserTransaction;
+use types::{account_address::AccountAddress, transaction, transaction::SignedUserTransaction};
 
 pub type TxPoolRef = TxPool<CachedSeqNumberClient>;
 
@@ -39,7 +35,7 @@ impl CachedSeqNumberClient {
 }
 
 impl AccountSeqNumberClient for CachedSeqNumberClient {
-    fn account_seq_number(&self, address: &AccountAddress) -> SeqNumber {
+    fn account_seq_number(&self, _address: &AccountAddress) -> SeqNumber {
         // TODO: hit real storage
         0u64
     }
@@ -64,6 +60,7 @@ where
             Ok(mut result) => Ok(result.pop().unwrap().is_ok()),
         }
     }
+
     async fn add_txns(
         self,
         txns: Vec<SignedUserTransaction>,
@@ -73,6 +70,7 @@ where
             Ok(r) => Ok(r),
         }
     }
+
     async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>> {
         match self
             .pending_txns(max_len.unwrap_or_else(|| u64::max_value()))
@@ -121,8 +119,8 @@ where
     /// retracted: the blocks which is rollbacked.
     pub async fn chain_new_blocks(
         &self,
-        enacted: Vec<HashValue>,
-        retracted: Vec<HashValue>,
+        _enacted: Vec<HashValue>,
+        _retracted: Vec<HashValue>,
     ) -> Result<()> {
         todo!()
     }
