@@ -4,7 +4,11 @@ use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
 use std::cmp::Ordering;
-use types::{block::BlockHeader, peer_info::PeerInfo, transaction::SignedUserTransaction};
+use types::{
+    block::{Block, BlockHeader},
+    peer_info::PeerInfo,
+    transaction::SignedUserTransaction,
+};
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -19,6 +23,7 @@ pub enum DownloadMessage {
     BatchHeaderMsg(Option<Addr<ProcessActor>>, PeerInfo, BatchHeaderMsg),
     BatchBodyMsg(Option<Addr<ProcessActor>>, BatchBodyMsg),
     BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg), // just fo test
+    NewBlock(Block),
 }
 
 impl Message for DownloadMessage {

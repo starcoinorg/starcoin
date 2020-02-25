@@ -3,7 +3,7 @@
 
 use actix::prelude::*;
 use bus::BusActor;
-use chain::ChainActor;
+use chain::{ChainActor, ChainActorRef};
 use config::NodeConfig;
 use consensus::{dummy::DummyConsensus, Consensus};
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
@@ -47,16 +47,18 @@ async fn main() {
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
     let seq_number_client = CachedSeqNumberClient::new(storage.clone());
     let txpool = TxPool::start(seq_number_client);
-    let _chain = ChainActor::launch(config.clone(), storage.clone()).unwrap();
+    let chain = ChainActor::launch(config.clone(), storage.clone()).unwrap();
     let _network =
         NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), keypair).unwrap();
     let _json_rpc = JSONRpcActor::launch(config.clone(), txpool.clone());
-    let _miner = MinerActor::<DummyConsensus, MockExecutor, TxPoolRef>::launch(
-        config.clone(),
-        bus.clone(),
-        storage.clone(),
-        txpool.clone(),
-    );
+    let _miner =
+        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
+            config.clone(),
+            bus.clone(),
+            storage.clone(),
+            txpool.clone(),
+            chain.clone(),
+        );
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();
     info!("Ctrl-C received, shutting down");

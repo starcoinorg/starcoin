@@ -140,6 +140,10 @@ where
         self.select_head(branch);
         Ok(())
     }
+
+    fn get_head_branch(&self) -> HashValue {
+        self.head.current_header().id()
+    }
 }
 
 impl<E, C> ChainReader for ChainServiceImpl<E, C>

@@ -4220,8 +4220,11 @@ dependencies = [
  "starcoin-executor",
  "starcoin-network",
  "starcoin-storage",
+ "starcoin-sync",
  "starcoin-traits",
+ "starcoin-txpool",
  "starcoin-types",
+ "tokio 0.2.11",
 ]
 
 [[package]]
@@ -4326,10 +4329,12 @@ dependencies = [
  "futures 0.3.4",
  "futures-locks",
  "itertools",
+ "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-network",
+ "starcoin-storage",
  "starcoin-traits",
  "starcoin-types",
  "tokio 0.2.11",

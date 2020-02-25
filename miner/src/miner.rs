@@ -24,11 +24,12 @@ where
     let (_sender, receiver) = oneshot::channel();
     /// spawn a async task, maintain a task list, when new task coming, cancel old task.
     let block = C::create_block(chain, block_template, receiver)?;
-    println!("miner new block: {:?}", block);
+    //println!("miner new block: {:?}", block);
     ///fire SystemEvents::MinedBlock.
     //TODO handle result.
     bus.do_send(Broadcast {
         msg: SystemEvents::MinedBlock(block),
     });
+    println!("broadcast new block.");
     Ok(())
 }

@@ -292,7 +292,7 @@ impl NetworkService {
         rx
     }
 
-    pub fn broadcast_message(&mut self, message: Vec<u8>){
+    pub fn broadcast_message(&mut self, message: Vec<u8>) {
         debug!("start send broadcast message");
         let (protocol_msg, message_id) = Message::new_payload(message);
 
@@ -300,8 +300,8 @@ impl NetworkService {
 
         let mut peers = HashSet::new();
 
-        for p in self.libp2p_service.lock().connected_peers(){
-            debug!("will send message to {}",p);
+        for p in self.libp2p_service.lock().connected_peers() {
+            debug!("will send message to {}", p);
             peers.insert(p.clone());
         }
 

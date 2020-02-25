@@ -118,7 +118,7 @@ async fn test_do_block() {
         .expect("body is none.");
     let batch_body_msg =
         Processor::handle_get_body_by_hash_msg(first.processor.clone(), get_body_by_hash_msg).await;
-    Downloader::do_block(
+    Downloader::do_blocks(
         second.downloader.clone(),
         batch_header_msg.headers,
         batch_body_msg.bodies,

@@ -20,3 +20,8 @@ consensus = {path = "../consensus", package="starcoin-consensus" }
 bus = {path = "../bus", package="starcoin-bus" }
 storage = {path = "../storage", package="starcoin-storage" }
 executor = {path = "../executor", package="starcoin-executor" }
+txpool = {path = "../txpool", package="starcoin-txpool"}
+tokio = { version = "0.2", features = ["full"] }
+
+[dev-dependencies]
+sync = {path = "../sync", package="starcoin-sync" }

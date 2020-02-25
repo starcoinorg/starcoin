@@ -16,6 +16,7 @@ pub enum ChainRequest {
     CreateBlockTemplate(),
     GetBlockByHash(HashValue),
     ConnectBlock(Block),
+    GetHeadBranch(),
 }
 
 impl Message for ChainRequest {
@@ -28,5 +29,6 @@ pub enum ChainResponse {
     Block(Block),
     OptionBlock(Option<Block>),
     BlockHeader(BlockHeader),
+    HashValue(HashValue),
     None,
 }

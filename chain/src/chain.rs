@@ -128,7 +128,7 @@ where
         Ok(BlockTemplate::new(
             previous_header.id(),
             previous_header.number() + 1,
-            0,
+            previous_header.number() + 1,
             AccountAddress::default(),
             HashValue::zero(),
             HashValue::zero(),
@@ -154,34 +154,34 @@ where
 
         C::verify_header(self, header)?;
         let chain_state = &self.chain_state;
-        let mut txns = block
-            .transactions()
-            .iter()
-            .cloned()
-            .map(|user_txn| Transaction::UserTransaction(user_txn))
-            .collect::<Vec<Transaction>>();
-        let block_metadata = header.clone().into_metadata();
-        //txns.push(Transaction::BlockMetadata(block_metadata));
-        for txn in txns {
-            let txn_hash = txn.crypto_hash();
-            let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
-            match output.status() {
-                TransactionStatus::Discard(status) => return Err(status.clone().into()),
-                TransactionStatus::Keep(status) => {
-                    //continue.
-                }
-            }
-            let state_root = chain_state.commit()?;
-            let transaction_info = TransactionInfo::new(
-                txn_hash,
-                state_root,
-                HashValue::zero(),
-                0,
-                output.status().vm_status().major_status,
-            );
-            //TODO accumulator
-            //let accumulator_root = self.accumulator.append(transaction_info);
-        }
+        // let mut txns = block
+        //     .transactions()
+        //     .iter()
+        //     .cloned()
+        //     .map(|user_txn| Transaction::UserTransaction(user_txn))
+        //     .collect::<Vec<Transaction>>();
+        // let block_metadata = header.clone().into_metadata();
+        // txns.push(Transaction::BlockMetadata(block_metadata));//todo
+        // for txn in txns {
+        //     let txn_hash = txn.crypto_hash();
+        //     let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
+        //     match output.status() {
+        //         TransactionStatus::Discard(status) => return Err(status.clone().into()),
+        //         TransactionStatus::Keep(status) => {
+        //             //continue.
+        //         }
+        //     }
+        //     let state_root = chain_state.commit()?;
+        //     let transaction_info = TransactionInfo::new(
+        //         txn_hash,
+        //         state_root,
+        //         HashValue::zero(),
+        //         0,
+        //         output.status().vm_status().major_status,
+        //     );
+        //     //TODO accumulator
+        //     //let accumulator_root = self.accumulator.append(transaction_info);
+        // }
 
         //todo verify state_root and accumulator_root;
         self.save_block(&block);

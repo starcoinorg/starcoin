@@ -6,9 +6,9 @@ use actix::prelude::*;
 use anyhow::Result;
 use crypto::{hash::CryptoHash, HashValue};
 use parity_codec::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 use types::account_address::AccountAddress;
 use types::transaction::SignedUserTransaction;
-use serde::{Deserialize, Serialize};
 
 #[derive(Message)]
 #[rtype(result = "u64")]
@@ -16,7 +16,7 @@ pub struct GetCounterMessage {}
 
 /// message from peer
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq,Message)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
 pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
 }

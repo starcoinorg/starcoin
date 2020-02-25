@@ -11,7 +11,7 @@ use actix::{
 };
 use anyhow::{Error, Result};
 use atomic_refcell::AtomicRefCell;
-use chain::{mem_chain::MemChainActor, ChainActorRef};
+use chain::{ChainActor, ChainActorRef};
 use crypto::hash::CryptoHash;
 use futures::compat::Future01CompatExt;
 use futures_locks::{Mutex, RwLock};
@@ -35,7 +35,7 @@ pub struct DownloadActor {
 impl DownloadActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: ChainActorRef<MemChainActor>,
+        chain_reader: ChainActorRef<ChainActor>,
     ) -> Result<Addr<DownloadActor>> {
         let download_actor = DownloadActor {
             downloader: Arc::new(RwLock::new(Downloader::new(chain_reader))),
@@ -149,12 +149,16 @@ impl Handler<DownloadMessage> for DownloadActor {
                     println!("{:?}", batch_body_msg);
                 }
                 DownloadMessage::BatchHeaderAndBodyMsg(batch_header_msg, batch_body_msg) => {
-                    Downloader::do_block(
+                    Downloader::do_blocks(
                         downloader.clone(),
                         batch_header_msg.headers,
                         batch_body_msg.bodies,
                     )
                     .await;
+                }
+                DownloadMessage::NewBlock(block) => {
+                    println!("new block: {:?}", block.header().id());
+                    Downloader::do_block(downloader.clone(), block).await;
                 }
             }
 
@@ -172,13 +176,13 @@ pub struct Downloader {
     body_pool: TTLPool<BlockBody>,
     //    _network: Addr<NetworkActor>,
     peers: HashMap<PeerInfo, LatestStateMsg>,
-    chain_reader: ChainActorRef<MemChainActor>,
+    chain_reader: ChainActorRef<ChainActor>,
 }
 
 const HEAD_CT: u64 = 100;
 
 impl Downloader {
-    pub fn new(chain_reader: ChainActorRef<MemChainActor>) -> Self {
+    pub fn new(chain_reader: ChainActorRef<ChainActor>) -> Self {
         Downloader {
             hash_pool: TTLPool::new(),
             header_pool: TTLPool::new(),
@@ -342,17 +346,22 @@ impl Downloader {
         }
     }
 
-    pub async fn do_block(
+    pub async fn do_blocks(
         downloader: Arc<RwLock<Downloader>>,
         headers: Vec<HashWithBlockHeader>,
         bodies: Vec<BlockBody>,
     ) {
-        let lock = downloader.write().compat().await.unwrap();
         for (header, body) in itertools::zip_eq(headers, bodies) {
             let block = Block::new(header.header, body.transactions);
-
             //todo:verify block
-            let _ = lock.chain_reader.clone().try_connect(block).await;
+            let _ = Self::do_block(downloader.clone(), block).await;
         }
+    }
+
+    pub async fn do_block(downloader: Arc<RwLock<Downloader>>, block: Block) {
+        println!("do block {:?}", block.header().id());
+        let lock = downloader.write().compat().await.unwrap();
+        //todo:verify block
+        let _ = lock.chain_reader.clone().try_connect(block).await;
     }
 }

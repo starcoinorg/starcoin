@@ -1,35 +1,29 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{GetCounterMessage, PeerMessage,NetworkMessage};
+use crate::net::{build_network_service, NetworkService};
+use crate::{GetCounterMessage, NetworkMessage, PeerMessage};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::{NetworkConfig, NodeConfig};
-use futures_03::{
-    compat::Stream01CompatExt,
-    TryFutureExt,
-};
+use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use crypto::{test_utils::KeyPair, Uniform};
+use futures_03::{compat::Stream01CompatExt, TryFutureExt};
 use libp2p::{
     identity,
     ping::{Ping, PingConfig, PingEvent},
     PeerId, Swarm,
 };
+use scs::SCSCodec;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
 use txpool::{AddTransaction, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
-use crate::net::{build_network_service,NetworkService};
-use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use crypto::{test_utils::KeyPair, Uniform};
-use scs::SCSCodec;
 
 use futures::{
     stream::Stream,
-    sync::{
-        mpsc,
-        oneshot,
-    }
+    sync::{mpsc, oneshot},
 };
 
 pub struct NetworkActor<P>
@@ -37,9 +31,9 @@ where
     P: TxPoolAsyncService,
     P: 'static,
 {
-    network_service:NetworkService,
-    tx:mpsc::UnboundedSender<NetworkMessage>,
-    tx_command:oneshot::Sender<()>,
+    network_service: NetworkService,
+    tx: mpsc::UnboundedSender<NetworkMessage>,
+    tx_command: oneshot::Sender<()>,
     bus: Addr<BusActor>,
     txpool: P,
     //just for test, remove later.
@@ -58,13 +52,22 @@ where
     ) -> Result<Addr<NetworkActor<P>>> {
         //TODO read from config
 
-        let (service,tx,rx,tx_command)=build_network_service(&node_config.network,key_pair);
-        info!("network started at {} with seed {},network address is {}",&node_config.network.listen,&node_config.network.seeds.iter().fold(String::new(), |acc, arg| acc + arg.as_str()),service.identify());
+        let (service, tx, rx, tx_command) = build_network_service(&node_config.network, key_pair);
+        info!(
+            "network started at {} with seed {},network address is {}",
+            &node_config.network.listen,
+            &node_config
+                .network
+                .seeds
+                .iter()
+                .fold(String::new(), |acc, arg| acc + arg.as_str()),
+            service.identify()
+        );
         Ok(NetworkActor::create(
             move |ctx: &mut Context<NetworkActor<P>>| {
                 ctx.add_stream(rx.fuse().compat());
                 NetworkActor {
-                    network_service:service,
+                    network_service: service,
                     tx,
                     tx_command,
                     bus,
@@ -83,32 +86,30 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        info!(
-            "Network actor started ",
-        );
+        info!("Network actor started ",);
     }
 }
 
-impl<P> StreamHandler<Result<NetworkMessage,()>> for NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
+impl<P> StreamHandler<Result<NetworkMessage, ()>> for NetworkActor<P>
+where
+    P: TxPoolAsyncService,
 {
-    fn handle(&mut self, item: Result<NetworkMessage,()>, ctx: &mut Self::Context) {
+    fn handle(&mut self, item: Result<NetworkMessage, ()>, ctx: &mut Self::Context) {
         match item {
-            Ok(network_msg)=>{
+            Ok(network_msg) => {
                 info!("receive network_message {:?}", network_msg);
                 let message = PeerMessage::decode(&network_msg.data);
                 match message {
-                    Ok(msg)=>{
+                    Ok(msg) => {
                         ctx.notify(msg);
-                    },
-                    Err(e)=>{
-                        warn!("get error {:?}",e);
+                    }
+                    Err(e) => {
+                        warn!("get error {:?}", e);
                     }
                 }
-            },
-            Err(e)=>{
-                warn!("get error {:?}",e);
+            }
+            Err(e) => {
+                warn!("get error {:?}", e);
             }
         }
     }
@@ -124,7 +125,7 @@ where
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
             SystemEvents::NewUserTransaction(txn) => {
-                debug!("new user transaction {:?}",txn);
+                debug!("new user transaction {:?}", txn);
                 let peer_msg = PeerMessage::UserTransaction(txn);
                 let bytes = peer_msg.encode().unwrap();
                 self.network_service.broadcast_message(bytes);
@@ -162,12 +163,12 @@ where
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
-    use txpool::TxPoolActor;
     use traits::mock::MockTxPoolService;
+    use txpool::TxPoolActor;
     use types::account_address::AccountAddress;
 
-    use log::{Record, Level, Metadata};
-    use log::{SetLoggerError, LevelFilter};
+    use log::{Level, Metadata, Record};
+    use log::{LevelFilter, SetLoggerError};
 
     struct SimpleLogger;
 
@@ -188,8 +189,7 @@ mod tests {
     static LOGGER: SimpleLogger = SimpleLogger;
 
     fn init_log() -> Result<(), SetLoggerError> {
-        log::set_logger(&LOGGER)
-            .map(|()| log::set_max_level(LevelFilter::Info))
+        log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info))
     }
     // #[actix_rt::test]
     // async fn test_network() {
@@ -214,7 +214,7 @@ mod tests {
         node_config1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
         let node_config1 = Arc::new(node_config1);
 
-        let (txpool1, network1,addr1) = build_network(node_config1.clone());
+        let (txpool1, network1, addr1) = build_network(node_config1.clone());
 
         let mut node_config2 = NodeConfig::default();
         let addr1_hex = hex::encode(addr1);
@@ -223,7 +223,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (txpool2, network2,addr2) = build_network(node_config2.clone());
+        let (txpool2, network2, addr2) = build_network(node_config2.clone());
 
         use std::thread;
         use std::time::Duration;
@@ -231,12 +231,16 @@ mod tests {
         thread::sleep(Duration::from_millis(1000));
 
         network1
-            .send(SystemEvents::NewUserTransaction(SignedUserTransaction::mock()))
+            .send(SystemEvents::NewUserTransaction(
+                SignedUserTransaction::mock(),
+            ))
             .await
             .unwrap();
 
         network2
-            .send(SystemEvents::NewUserTransaction(SignedUserTransaction::mock()))
+            .send(SystemEvents::NewUserTransaction(
+                SignedUserTransaction::mock(),
+            ))
             .await
             .unwrap();
 
@@ -245,19 +249,25 @@ mod tests {
 
         let txns = txpool2.get_pending_txns(None).await.unwrap();
         //assert_eq!(1, txns.len());
-
     }
 
-    fn build_network(node_config:Arc<NodeConfig>) -> (MockTxPoolService, Addr<NetworkActor<MockTxPoolService>>,AccountAddress) {
+    fn build_network(
+        node_config: Arc<NodeConfig>,
+    ) -> (
+        MockTxPoolService,
+        Addr<NetworkActor<MockTxPoolService>>,
+        AccountAddress,
+    ) {
         let bus = BusActor::launch();
         let key_pair = gen_keypair();
         let addr = AccountAddress::from_public_key(&key_pair.public_key);
         let txpool = traits::mock::MockTxPoolService::new();
-        let network = NetworkActor::launch(node_config.clone(), bus, txpool.clone(), key_pair).unwrap();
-        (txpool, network,addr)
+        let network =
+            NetworkActor::launch(node_config.clone(), bus, txpool.clone(), key_pair).unwrap();
+        (txpool, network, addr)
     }
 
-    fn gen_keypair()->Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>{
+    fn gen_keypair() -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
         use rand::prelude::*;
 
         let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
@@ -281,9 +291,7 @@ mod tests {
     }
 
     fn get_ephemeral_port() -> ::std::io::Result<u16> {
-        use std::{
-            net::{TcpListener, TcpStream},
-        };
+        use std::net::{TcpListener, TcpStream};
 
         // Request a random available port from the OS
         let listener = TcpListener::bind(("localhost", 0))?;
@@ -297,5 +305,4 @@ mod tests {
 
         Ok(addr.port())
     }
-
 }

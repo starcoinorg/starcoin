@@ -40,11 +40,12 @@ impl ChainActor {
     pub fn launch(
         config: Arc<NodeConfig>,
         storage: Arc<StarcoinStorage>,
-    ) -> Result<Addr<ChainActor>> {
+    ) -> Result<ChainActorRef<ChainActor>> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(config, storage)?,
-        };
-        Ok(actor.start())
+        }
+        .start();
+        Ok(actor.into())
     }
 }
 
@@ -98,6 +99,10 @@ impl Handler<ChainRequest> for ChainActor {
                 self.service.try_connect(block).unwrap();
                 Ok(ChainResponse::None)
             }
+            ChainRequest::GetHeadBranch() => {
+                let hash = self.service.get_head_branch();
+                Ok(ChainResponse::HashValue(hash))
+            }
         }
     }
 }
@@ -142,7 +147,7 @@ where
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait(? Send)]
 impl<A> AsyncChain for ChainActorRef<A>
 where
     A: Actor + Handler<ChainRequest>,
@@ -252,7 +257,7 @@ where
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait(? Send)]
 impl<A> ChainAsyncService for ChainActorRef<A>
 where
     A: Actor + Handler<ChainRequest>,
@@ -264,6 +269,20 @@ where
             .await
             .map_err(|e| Into::<Error>::into(e))?;
         Ok(())
+    }
+
+    async fn get_head_branch(self) -> Option<HashValue> {
+        if let ChainResponse::HashValue(hash) = self
+            .address
+            .send(ChainRequest::GetHeadBranch())
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(hash)
+        } else {
+            None
+        }
     }
 }
 

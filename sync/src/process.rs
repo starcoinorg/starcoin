@@ -10,7 +10,7 @@ use actix::{
     ResponseActFuture,
 };
 use anyhow::Result;
-use chain::{mem_chain::MemChainActor, ChainActorRef};
+use chain::{ChainActor, ChainActorRef};
 use crypto::hash::CryptoHash;
 use futures::compat::Future01CompatExt;
 use futures_locks::{Mutex, RwLock};
@@ -28,7 +28,7 @@ pub struct ProcessActor {
 impl ProcessActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: ChainActorRef<MemChainActor>,
+        chain_reader: ChainActorRef<ChainActor>,
     ) -> Result<Addr<ProcessActor>> {
         let process_actor = ProcessActor {
             processor: Arc::new(RwLock::new(Processor::new(chain_reader))),
@@ -166,11 +166,11 @@ impl Handler<ProcessMessage> for ProcessActor {
 pub struct Processor {
     //    chain: Addr<ChainActor>,
     //    _network: Addr<NetworkActor>,
-    chain_reader: ChainActorRef<MemChainActor>,
+    chain_reader: ChainActorRef<ChainActor>,
 }
 
 impl Processor {
-    pub fn new(chain_reader: ChainActorRef<MemChainActor>) -> Self {
+    pub fn new(chain_reader: ChainActorRef<ChainActor>) -> Self {
         Processor {
             chain_reader,
             //            _network: network,

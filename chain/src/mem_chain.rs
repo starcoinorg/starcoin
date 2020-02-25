@@ -48,13 +48,13 @@ impl Handler<ChainRequest> for MemChainActor {
                 ChainRequest::CreateBlock(times) => {
                     let mut lock = mem_chain.clone().write().compat().await.unwrap();
                     let head_block = lock.head_block().clone();
-                    let mut parent_block_hash = head_block.crypto_hash();
+                    let mut parent_block_hash = head_block.header().id();
                     for i in 0..times {
                         println!("parent_block_hash: {:?}", parent_block_hash);
                         let current_block_header =
                             BlockHeader::new_block_header_for_test(parent_block_hash, i);
                         let current_block = Block::new_nil_block_for_test(current_block_header);
-                        parent_block_hash = current_block.crypto_hash();
+                        parent_block_hash = current_block.header().id();
                         lock.try_connect(current_block);
                     }
                     Ok(ChainResponse::None)
@@ -96,10 +96,15 @@ impl Handler<ChainRequest> for MemChainActor {
                     Ok(ChainResponse::OptionBlock(lock.get_block(hash).unwrap()))
                 }
                 ChainRequest::ConnectBlock(block) => {
-                    println!("{:?}:{:?}", "connect block", block.crypto_hash());
+                    println!("{:?}:{:?}", "connect block", block.header().id());
                     let mut lock = mem_chain.clone().write().compat().await.unwrap();
                     lock.try_connect(block).unwrap();
                     Ok(ChainResponse::None)
+                }
+                ChainRequest::GetHeadBranch() => {
+                    let lock = mem_chain.clone().read().compat().await.unwrap();
+                    let hash = lock.get_head_branch();
+                    Ok(ChainResponse::HashValue(hash))
                 }
             }
         };
@@ -133,7 +138,7 @@ impl MemChain {
         assert_eq!(genesis_block.header().number(), 0);
 
         let genesis_block_number = genesis_block.header().number();
-        let genesis_block_hash = genesis_block.crypto_hash();
+        let genesis_block_hash = genesis_block.header().id();
         let mut blocks = HashMap::new();
         blocks.insert(genesis_block_hash, genesis_block);
         let mut indexes = HashMap::new();
@@ -163,7 +168,7 @@ impl ChainService for MemChain {
     fn try_connect(&mut self, block: Block) -> Result<()> {
         assert!((self.head_number + 1) >= block.header().number());
 
-        let block_hash = block.crypto_hash();
+        let block_hash = block.header().id();
         let parent_hash = block.header().parent_hash();
 
         if !self.blocks.contains_key(&block_hash) && self.blocks.contains_key(&parent_hash) {
@@ -193,6 +198,10 @@ impl ChainService for MemChain {
         }
 
         Ok(())
+    }
+
+    fn get_head_branch(&self) -> HashValue {
+        unimplemented!()
     }
 }
 
@@ -226,7 +235,7 @@ impl ChainReader for MemChain {
 
     fn create_block_template(&self, _txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
         let head_block = self.head_block().clone();
-        let head_block_hash = head_block.crypto_hash();
+        let head_block_hash = head_block.header().id();
         let block_template_header =
             BlockHeader::new_block_header_for_test(head_block_hash, head_block.header().number());
         let current_block = Block::new_nil_block_for_test(block_template_header);
