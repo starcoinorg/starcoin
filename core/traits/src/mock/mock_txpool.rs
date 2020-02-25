@@ -5,9 +5,10 @@ use crate::TxPoolAsyncService;
 use anyhow::Result;
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
+use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
+use types::transaction;
 use types::transaction::SignedUserTransaction;
-
 #[derive(Clone)]
 pub struct MockTxPoolService {
     pool: Arc<Mutex<Vec<SignedUserTransaction>>>,
@@ -32,9 +33,28 @@ impl TxPoolAsyncService for MockTxPoolService {
         //TODO check txn is exist.
         Ok(true)
     }
-
-    async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>> {
-        Ok(self.pool.lock().unwrap().clone())
+    async fn add_txns(
+        self,
+        mut txns: Vec<SignedUserTransaction>,
+    ) -> Result<Vec<Result<(), transaction::TransactionError>>> {
+        let len = txns.len();
+        self.pool.lock().unwrap().append(&mut txns);
+        let mut results = vec![];
+        results.resize_with(len, || Ok(()));
+        Ok(results)
+    }
+    async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>> {
+        match max_len {
+            Some(max) => Ok(self
+                .pool
+                .lock()
+                .unwrap()
+                .iter()
+                .take(max as usize)
+                .map(|c| c.clone())
+                .collect::<Vec<_>>()),
+            None => Ok(self.pool.lock().unwrap().clone()),
+        }
     }
 }
 
@@ -50,7 +70,7 @@ mod tests {
             .add(SignedUserTransaction::mock())
             .await
             .unwrap();
-        let txns = pool.get_pending_txns().await.unwrap();
+        let txns = pool.get_pending_txns(None).await.unwrap();
         assert_eq!(1, txns.len())
     }
 }

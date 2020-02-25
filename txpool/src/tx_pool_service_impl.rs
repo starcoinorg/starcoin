@@ -61,8 +61,20 @@ where
             Ok(mut result) => Ok(result.pop().unwrap().is_ok()),
         }
     }
-    async fn get_pending_txns(self) -> Result<Vec<SignedUserTransaction>> {
-        match self.pending_txns(u64::max_value()).await {
+    async fn add_txns(
+        self,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Result<Vec<Result<(), transaction::TransactionError>>> {
+        match self.import_txns(txns).await {
+            Err(e) => Err(e.into()),
+            Ok(r) => Ok(r),
+        }
+    }
+    async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>> {
+        match self
+            .pending_txns(max_len.unwrap_or_else(|| u64::max_value()))
+            .await
+        {
             Ok(r) => Ok(r.into_iter().map(|t| t.signed().clone()).collect()),
             Err(e) => Err(e.into()),
         }

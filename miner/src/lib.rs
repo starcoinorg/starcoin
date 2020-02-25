@@ -101,7 +101,7 @@ where
 
         let f = async {
             //TODO handle error.
-            let txns = txpool.get_pending_txns().await.unwrap_or(vec![]);
+            let txns = txpool.get_pending_txns(None).await.unwrap_or(vec![]);
             //TODO load latest head block.
             let block_chain = BlockChain::<E, C>::new(config, storage, None).unwrap();
             miner::mint::<C>(txns, &block_chain, bus);

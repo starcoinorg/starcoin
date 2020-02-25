@@ -240,10 +240,10 @@ mod tests {
             .await
             .unwrap();
 
-        let txns = txpool1.get_pending_txns().await.unwrap();
+        let txns = txpool1.get_pending_txns(None).await.unwrap();
         //assert_eq!(1, txns.len());
 
-        let txns = txpool2.get_pending_txns().await.unwrap();
+        let txns = txpool2.get_pending_txns(None).await.unwrap();
         //assert_eq!(1, txns.len());
 
     }
