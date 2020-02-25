@@ -12,15 +12,19 @@ use actix::{
     prelude::*,
 };
 use anyhow::{Error, Result};
+use common_crypto::hash::HashValue;
 use futures::lock::Mutex as FutureMutux;
+use futures_channel::mpsc;
 use pool::Gas;
 use pool::SeqNumber;
+use pool::TxStatus;
 use std::sync::Arc;
 use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
 use types::account_address::AccountAddress;
 use types::transaction;
 use types::transaction::SignedUserTransaction;
+
 pub type TxPoolRef = TxPool<CachedSeqNumberClient>;
 
 #[derive(Clone, Debug)]
@@ -102,6 +106,13 @@ where
 
     pub async fn pending_txns(&self, max_len: u64) -> Result<Vec<Arc<pool::VerifiedTransaction>>> {
         let r = self.addr.send(GetPendingTxns { max_len });
+        Ok(r.await?)
+    }
+
+    pub async fn subscribe_txns(
+        &self,
+    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>> {
+        let r = self.addr.send(SubscribeTxns);
         Ok(r.await?)
     }
 }
@@ -270,6 +281,51 @@ where
             msg,
             queue: self.queue.clone(),
             seq_number_client: self.seq_number_client.clone(),
+        }
+    }
+}
+
+struct SubscribeTxns;
+
+impl Message for SubscribeTxns {
+    type Result = mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>;
+}
+
+struct SubscribeTxnResponse {
+    queue: Arc<FutureMutux<TxnQueue>>,
+}
+impl<C> MessageResponse<TxPoolActor<C>, SubscribeTxns> for SubscribeTxnResponse
+where
+    C: AccountSeqNumberClient,
+{
+    fn handle<R: ResponseChannel<SubscribeTxns>>(
+        self,
+        ctx: &mut <TxPoolActor<C> as Actor>::Context,
+        tx: Option<R>,
+    ) {
+        let Self { queue } = self;
+        ctx.wait(wrap_future(async move {
+            let result = {
+                let mut queue = queue.lock().await;
+                let (tx, rx) = mpsc::unbounded();
+                queue.add_full_listener(tx);
+                rx
+            };
+            if let Some(tx) = tx {
+                tx.send(result)
+            }
+        }));
+    }
+}
+impl<C> Handler<SubscribeTxns> for TxPoolActor<C>
+where
+    C: AccountSeqNumberClient,
+{
+    type Result = SubscribeTxnResponse;
+
+    fn handle(&mut self, _: SubscribeTxns, _ctx: &mut Self::Context) -> Self::Result {
+        SubscribeTxnResponse {
+            queue: self.queue.clone(),
         }
     }
 }
