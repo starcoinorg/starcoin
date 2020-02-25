@@ -19,8 +19,8 @@ impl Default for NetworkConfig {
         Self {
             listen_address: "/ip4/0.0.0.0/tcp/9840".parse::<Multiaddr>().unwrap(),
             advertised_address: "/ip4/127.0.0.1/tcp/9840".parse::<Multiaddr>().unwrap(),
-            listen:"/ip4/0.0.0.0/tcp/9840".to_string(),
-            seeds:vec![],
+            listen: "/ip4/0.0.0.0/tcp/9840".to_string(),
+            seeds: vec![],
         }
     }
 }

@@ -4103,6 +4103,7 @@ name = "starcoin-chain"
 version = "0.1.0"
 dependencies = [
  "actix",
+ "actix-rt",
  "anyhow",
  "async-trait",
  "env_logger",
@@ -4119,6 +4120,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "stest",
+ "tokio 0.2.11",
 ]
 
 [[package]]

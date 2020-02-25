@@ -36,7 +36,7 @@ where
     storage: Arc<StarcoinStorage>,
 }
 
-fn load_genesis_block() -> Block {
+pub fn load_genesis_block() -> Block {
     let header = BlockHeader::genesis_block_header_for_test();
     Block::new_nil_block_for_test(header)
 }
@@ -56,7 +56,17 @@ where
                 .block_store
                 .get_block_by_hash(hash)?
                 .ok_or(format_err!("Can not find block by hash {}", hash))?,
-            None => load_genesis_block(),
+            None => {
+                let genesis_block = load_genesis_block();
+                if storage
+                    .block_store
+                    .get_block_by_hash(genesis_block.crypto_hash())?
+                    .is_none()
+                {
+                    storage.block_store.commit_block(genesis_block.clone());
+                }
+                genesis_block
+            }
         };
         let state_root = head.header().state_root();
         Ok(Self {

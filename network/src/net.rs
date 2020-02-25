@@ -21,16 +21,16 @@ use futures::{
     try_ready, Async, Future,
 };
 
-use types::account_address::AccountAddress;
+use config::NetworkConfig;
 use network_libp2p::{
     identity, start_service, NetworkConfiguration, NodeKeyConfig, Secret, Service as Libp2pService,
     ServiceEvent,
 };
+use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
-use config::NetworkConfig;
 use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::prelude::task::AtomicTask;
-use parity_codec::alloc::collections::HashSet;
+use types::account_address::AccountAddress;
 
 #[derive(Clone)]
 pub struct NetworkService {
@@ -296,7 +296,7 @@ impl NetworkService {
         debug!("start send broadcast message");
         let (protocol_msg, message_id) = Message::new_payload(message);
 
-        let message_bytes=protocol_msg.into_bytes();
+        let message_bytes = protocol_msg.into_bytes();
 
         let mut peers = HashSet::new();
 
@@ -305,7 +305,7 @@ impl NetworkService {
             peers.insert(p.clone());
         }
 
-        for peer_id in peers{
+        for peer_id in peers {
             self.libp2p_service
                 .lock()
                 .send_custom_message(&peer_id, message_bytes.clone());

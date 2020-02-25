@@ -4,13 +4,13 @@
 #[macro_use]
 extern crate log;
 
+mod helper;
 mod messages;
+mod net;
 mod network;
 mod node_discovery;
 mod peer;
 mod peer_manager;
-mod helper;
-mod net;
 
 pub use messages::*;
 pub use network::NetworkActor;

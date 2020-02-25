@@ -1,3 +1,4 @@
+use super::random_block;
 use crate::mem_chain::MemChain;
 use crate::{ChainReader, ChainWriter};
 use crypto::{hash::CryptoHash, HashValue};
@@ -7,17 +8,6 @@ use types::block::{Block, BlockHeader, BlockNumber};
 #[test]
 fn it_works() {
     assert_eq!(2 + 2, 4);
-}
-
-fn random_block(parent_block: Option<(HashValue, BlockNumber)>) -> Block {
-    let header = match parent_block {
-        None => BlockHeader::genesis_block_header_for_test(),
-        Some((parent_hash, parent_number)) => {
-            BlockHeader::new_block_header_for_test(parent_hash, parent_number)
-        }
-    };
-
-    Block::new_nil_block_for_test(header)
 }
 
 pub fn gen_mem_chain_for_test(times: u64) -> MemChain {

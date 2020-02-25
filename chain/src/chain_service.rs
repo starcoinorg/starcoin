@@ -54,17 +54,75 @@ where
         })
     }
 
-    pub fn find_or_fork(&mut self, header: &BlockHeader) -> BlockChain<E, C> {
-        unimplemented!()
+    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C>> {
+        let block_in_head = self.head.get_block(header.parent_hash()).unwrap();
+        match block_in_head {
+            Some(block) => {
+                return Some(
+                    BlockChain::new(
+                        self.config.clone(),
+                        self.storage.clone(),
+                        Some(header.parent_hash()),
+                    )
+                    .unwrap(),
+                );
+            }
+            None => {
+                for branch in &self.branches {
+                    if let Ok(Some(block)) = branch.get_block(header.parent_hash()) {
+                        return Some(
+                            BlockChain::new(
+                                self.config.clone(),
+                                self.storage.clone(),
+                                Some(header.parent_hash()),
+                            )
+                            .unwrap(),
+                        );
+                    }
+                }
+            }
+        }
+
+        None
     }
 
     pub fn state_at(&self, root: HashValue) -> ChainStateStore {
         unimplemented!()
     }
 
-    fn select_head(&mut self) {
-        //select head branch;
-        todo!()
+    fn select_head(&mut self, new_branch: BlockChain<E, C>) {
+        let new_branch_parent_hash = new_branch.current_header().parent_hash();
+        if new_branch_parent_hash == self.head.current_header().id() {
+            //1. update head branch
+            self.head = new_branch;
+        //todo:delete txpool
+        } else {
+            //2. update branches
+            let mut update_branch_flag = false;
+            for mut branch in &self.branches {
+                if new_branch_parent_hash == branch.current_header().id() {
+                    if new_branch.current_header().number() > self.head.current_header().number() {
+                        //3. change head
+                        //todo: rollback txpool
+                        branch = &self.head;
+                        self.head = BlockChain::new(
+                            self.config.clone(),
+                            self.storage.clone(),
+                            Some(new_branch.current_header().id()),
+                        )
+                        .unwrap();
+                    } else {
+                        branch = &new_branch;
+                    }
+                    update_branch_flag = true;
+                    break;
+                }
+            }
+
+            if !update_branch_flag {
+                self.branches.push(new_branch);
+            }
+        }
     }
 }
 
@@ -76,10 +134,10 @@ where
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
         let header = block.header();
-        let mut branch = self.find_or_fork(&header);
+        let mut branch = self.find_or_fork(&header).unwrap();
         branch.apply(block)?;
-        self.select_head();
-        todo!()
+        self.select_head(branch);
+        Ok(())
     }
 }
 

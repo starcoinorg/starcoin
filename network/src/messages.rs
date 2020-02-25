@@ -2,14 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::helper::get_unix_ts;
-use crypto::{
-    hash::CryptoHash,
-    HashValue,
-};
-use types::account_address::AccountAddress;
-use parity_codec::{Decode, Encode};
 use actix::prelude::*;
 use anyhow::Result;
+use crypto::{hash::CryptoHash, HashValue};
+use parity_codec::{Decode, Encode};
+use types::account_address::AccountAddress;
 use types::transaction::SignedUserTransaction;
 use serde::{Deserialize, Serialize};
 
@@ -24,35 +21,35 @@ pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
 }
 
-#[derive(Clone,Hash, Debug)]
+#[derive(Clone, Hash, Debug)]
 pub struct InnerMessage {
     pub peer_id: AccountAddress,
     pub msg: Message,
 }
 
-#[derive(Debug, PartialEq, Hash,Eq, Clone, Encode, Decode)]
+#[derive(Debug, PartialEq, Hash, Eq, Clone, Encode, Decode)]
 pub enum Message {
     ACK(u128),
     Payload(PayloadMsg),
 }
 
-#[derive(Debug, PartialEq,Hash, Eq, Clone, Encode, Decode)]
+#[derive(Debug, PartialEq, Hash, Eq, Clone, Encode, Decode)]
 pub struct PayloadMsg {
     pub id: u128,
     pub data: Vec<u8>,
 }
 
 impl Message
-    where
-        Self: Decode + Encode,
+where
+    Self: Decode + Encode,
 {
     pub fn into_bytes(self) -> Vec<u8> {
         self.encode()
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         Decode::decode(&mut &bytes[..]).ok_or(())
     }
