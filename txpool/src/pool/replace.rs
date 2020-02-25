@@ -35,17 +35,16 @@ impl<S, C> ReplaceByScoreAndReadiness<S, C> {
     }
 }
 
-#[async_trait]
 impl<T, S, C> tx_pool::ShouldReplace<T> for ReplaceByScoreAndReadiness<S, C>
 where
     T: VerifiedTransaction<Sender = Address> + ScoredTransaction + PartialEq,
     S: Scoring<T> + Sync,
     C: client::AccountSeqNumberClient,
 {
-    async fn should_replace<'r>(
+    fn should_replace<'r>(
         &self,
-        old: ReplaceTransaction<'r, T>,
-        new: ReplaceTransaction<'r, T>,
+        old: &'r ReplaceTransaction<'r, T>,
+        new: &'r ReplaceTransaction<'r, T>,
     ) -> Choice {
         let both_local = old.priority().is_local() && new.priority().is_local();
         if old.sender() == new.sender() {

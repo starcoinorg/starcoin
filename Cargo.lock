@@ -4368,7 +4368,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "trace-time",
- "tx-pool",
+ "transaction-pool",
 ]
 
 [[package]]
@@ -4934,6 +4934,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9adf04084eeb9a1ea91be6c3f8ef3df392391c91fc7d8f696d4875f6754e715"
 dependencies = [
  "log",
+]
+
+[[package]]
+name = "transaction-pool"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8bbee24c711a878e7d8f89460569034cacf2d8c58dde785b5ffa06ed6b59663"
+dependencies = [
+ "log",
+ "smallvec 0.6.13",
+ "trace-time",
 ]
 
 [[package]]

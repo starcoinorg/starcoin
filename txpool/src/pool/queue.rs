@@ -194,9 +194,9 @@ const MIN_REJECTED_CACHE_SIZE: usize = 2048;
 #[derive(Debug)]
 pub struct TransactionQueue {
     insertion_id: Arc<AtomicUsize>,
-    pool: Pool,
-    options: verifier::Options,
-    cached_pending: CachedPending,
+    pool: RwLock<Pool>,
+    options: RwLock<verifier::Options>,
+    cached_pending: RwLock<CachedPending>,
     recently_rejected: RecentlyRejected,
 }
 
@@ -210,13 +210,13 @@ impl TransactionQueue {
         let max_count = limits.max_count;
         TransactionQueue {
             insertion_id: Default::default(),
-            pool: tx_pool::Pool::new(
+            pool: RwLock::new(tx_pool::Pool::new(
                 Default::default(),
                 scoring::SeqNumberAndGasPrice(strategy),
                 limits,
-            ),
-            options: verification_options,
-            cached_pending: CachedPending::none(),
+            )),
+            options: RwLock::new(verification_options),
+            cached_pending: RwLock::new(CachedPending::none()),
             recently_rejected: RecentlyRejected::new(cmp::max(
                 MIN_REJECTED_CACHE_SIZE,
                 max_count / 4,
@@ -227,24 +227,24 @@ impl TransactionQueue {
     /// Update verification options
     ///
     /// Some parameters of verification may vary in time (like block gas limit or minimal gas price).
-    pub fn set_verifier_options(&mut self, options: verifier::Options) {
-        self.options = options;
+    pub fn set_verifier_options(&self, options: verifier::Options) {
+        *self.options.write() = options;
     }
 
     /// Sets the in-chain transaction checker for pool listener.
-    pub fn set_in_chain_checker<F>(&mut self, f: F)
+    pub fn set_in_chain_checker<F>(&self, f: F)
     where
         F: Fn(&HashValue) -> bool + Send + Sync + 'static,
     {
-        self.pool.listener_mut().0.set_in_chain_checker(f)
+        self.pool.write().listener_mut().0.set_in_chain_checker(f)
     }
 
     /// Import a set of transactions to the pool.
     ///
     /// Given blockchain and state access (Client)
     /// verifies and imports transactions to the pool.
-    pub async fn import<T, C>(
-        &mut self,
+    pub fn import<T, C>(
+        &self,
         client: C,
         transactions: T,
     ) -> Vec<Result<(), transaction::TransactionError>>
@@ -254,7 +254,7 @@ impl TransactionQueue {
     {
         // Run verification
         trace_time!("pool::verify_and_import");
-        let _options = self.options.clone();
+        let _options = self.options.read().clone();
 
         // let transaction_to_replace = {
         //     if options.no_early_reject {
@@ -278,13 +278,13 @@ impl TransactionQueue {
         // );
 
         let mut replace =
-            replace::ReplaceByScoreAndReadiness::new(self.pool.scoring().clone(), client);
+            replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
         let mut results = Vec::new();
         for transaction in transactions.into_iter() {
             let hash = transaction.hash();
 
-            if self.pool.find(&hash).is_some() {
+            if self.pool.read().find(&hash).is_some() {
                 results.push(Err(transaction::TransactionError::AlreadyImported));
             }
 
@@ -298,8 +298,8 @@ impl TransactionQueue {
                 VerifiedTransaction::from_pending_block_transaction(transaction.signed().clone());
             let imported = self
                 .pool
+                .write()
                 .import(verified, &mut replace)
-                .await
                 .map_err(convert_error);
 
             results.push(match imported {
@@ -312,10 +312,10 @@ impl TransactionQueue {
         }
 
         // Notify about imported transactions.
-        (self.pool.listener_mut().1).0.notify();
+        (self.pool.write().listener_mut().1).0.notify();
 
         if results.iter().any(|r| r.is_ok()) {
-            self.cached_pending.clear();
+            self.cached_pending.write().clear();
         }
 
         results
@@ -356,8 +356,8 @@ impl TransactionQueue {
     /// NOTE: This may return a cached version of pending transaction set.
     /// Re-computing the pending set is possible with `#collect_pending` method,
     /// but be aware that it's a pretty expensive operation.
-    pub async fn pending<C>(
-        &mut self,
+    pub fn pending<C>(
+        &self,
         client: C,
         settings: PendingSettings,
     ) -> Vec<Arc<pool::VerifiedTransaction>>
@@ -386,9 +386,16 @@ impl TransactionQueue {
         match ordering {
             // In case we don't have a cached set, but we don't care about order
             // just return the unordered set.
-            PendingOrdering::Unordered => return self.pool.unordered_pending(ready, max_len).await,
+            PendingOrdering::Unordered => {
+                return self
+                    .pool
+                    .read()
+                    .unordered_pending(ready)
+                    .take(max_len)
+                    .collect()
+            }
             PendingOrdering::Priority => {
-                let pending = self.pool.pending(ready, max_len).await;
+                let pending = self.pool.read().pending(ready).take(max_len).collect();
                 // *cached_pending = CachedPending {
                 //     block_number,
                 //     current_timestamp,
@@ -420,7 +427,7 @@ impl TransactionQueue {
     }
 
     /// Culls all stalled transactions from the pool.
-    pub async fn cull<C: client::AccountSeqNumberClient>(&mut self, client: C) {
+    pub fn cull<C: client::AccountSeqNumberClient>(&self, client: C) {
         trace_time!("pool::cull");
         // We don't care about future transactions, so nonce_cap is not important.
         let nonce_cap = None;
@@ -429,7 +436,7 @@ impl TransactionQueue {
         let stale_id = {
             let current_id = self.insertion_id.load(atomic::Ordering::Relaxed);
             // wait at least for half of the queue to be replaced
-            let gap = self.pool.options().max_count / 2;
+            let gap = self.pool.read().options().max_count / 2;
             // but never less than 100 transactions
             let gap = cmp::max(100, gap);
 
@@ -440,14 +447,14 @@ impl TransactionQueue {
 
         let mut removed = 0;
         let senders: Vec<_> = {
-            let pool = &self.pool;
+            let pool = &self.pool.read();
             let senders = pool.senders().cloned().collect();
             senders
         };
         for chunk in senders.chunks(CULL_SENDERS_CHUNK) {
             trace_time!("pool::cull::chunk");
             let state_readiness = ready::State::new(client.clone(), stale_id, nonce_cap);
-            removed += self.pool.cull(Some(chunk), state_readiness).await;
+            removed += self.pool.write().cull(Some(chunk), state_readiness);
         }
         debug!(target: "txqueue", "Removed {} stalled transactions. {}", removed, self.status());
     }
@@ -477,7 +484,7 @@ impl TransactionQueue {
     /// Given transaction hash looks up that transaction in the pool
     /// and returns a shared pointer to it or `None` if it's not present.
     pub fn find(&self, hash: &HashValue) -> Option<Arc<pool::VerifiedTransaction>> {
-        self.pool.find(hash)
+        self.pool.read().find(hash)
     }
 
     /// Remove a set of transactions from the pool.
@@ -487,13 +494,13 @@ impl TransactionQueue {
     /// That method should be used if invalid transactions are detected
     /// or you want to cancel a transaction.
     pub fn remove<'a, T: IntoIterator<Item = &'a HashValue>>(
-        &mut self,
+        &self,
         hashes: T,
         is_invalid: bool,
     ) -> Vec<Option<Arc<pool::VerifiedTransaction>>> {
         let results = {
             let mut removed = vec![];
-            let pool = &mut self.pool;
+            let pool = &mut self.pool.write();
             for hash in hashes.into_iter() {
                 removed.push(pool.remove(hash, is_invalid));
             }
@@ -501,38 +508,38 @@ impl TransactionQueue {
         };
 
         if results.iter().any(Option::is_some) {
-            self.cached_pending.clear();
+            self.cached_pending.write().clear();
         }
 
         results
     }
 
     /// Clear the entire pool.
-    pub fn clear(&mut self) {
-        self.pool.clear();
+    pub fn clear(&self) {
+        self.pool.write().clear();
     }
 
     /// Penalize given senders.
-    pub fn penalize<'a, T: IntoIterator<Item = &'a Address>>(&mut self, senders: T) {
+    pub fn penalize<'a, T: IntoIterator<Item = &'a Address>>(&self, senders: T) {
         for sender in senders {
-            self.pool.update_scores(sender, ());
+            self.pool.write().update_scores(sender, ());
         }
     }
 
     /// Returns gas price of currently the worst transaction in the pool.
     pub fn current_worst_gas_price(&self) -> GasPrice {
-        match self.pool.worst_transaction() {
+        match self.pool.read().worst_transaction() {
             Some(tx) => tx.signed().gas_unit_price(),
-            None => self.options.minimal_gas_price,
+            None => self.options.read().minimal_gas_price,
         }
     }
 
     /// Returns a status of the queue.
     pub fn status(&self) -> Status {
-        let pool = &self.pool;
+        let pool = &self.pool.read();
         let status = pool.light_status();
         let limits = pool.options();
-        let options = self.options.clone();
+        let options = self.options.read().clone();
 
         Status {
             options,
@@ -549,12 +556,13 @@ impl TransactionQueue {
     /// Local transactions are the ones from accounts managed by this node
     /// and transactions submitted via local RPC (`eth_sendRawTransaction`)
     pub fn has_local_pending_transactions(&self) -> bool {
-        self.pool.listener().0.has_pending()
+        self.pool.read().listener().0.has_pending()
     }
 
     /// Returns status of recently seen local transactions.
     pub fn local_transactions(&self) -> BTreeMap<HashValue, pool::local_transactions::Status> {
         self.pool
+            .read()
             .listener()
             .0
             .all_transactions()
@@ -564,19 +572,21 @@ impl TransactionQueue {
     }
 
     /// Add a listener to be notified about all transactions the pool
-    pub fn add_pending_listener(&mut self, f: mpsc::UnboundedSender<Arc<Vec<HashValue>>>) {
-        (self.pool.listener_mut().1).0.add_pending_listener(f);
+    pub fn add_pending_listener(&self, f: mpsc::UnboundedSender<Arc<Vec<HashValue>>>) {
+        (self.pool.write().listener_mut().1)
+            .0
+            .add_pending_listener(f);
     }
 
     /// Add a listener to be notified about all transactions the pool
-    pub fn add_full_listener(&mut self, f: mpsc::UnboundedSender<Arc<Vec<(HashValue, TxStatus)>>>) {
-        (self.pool.listener_mut().1).0.add_full_listener(f);
+    pub fn add_full_listener(&self, f: mpsc::UnboundedSender<Arc<Vec<(HashValue, TxStatus)>>>) {
+        (self.pool.write().listener_mut().1).0.add_full_listener(f);
     }
 
     /// Check if pending set is cached.
     #[cfg(test)]
     pub fn is_pending_cached(&self) -> bool {
-        self.cached_pending.pending.is_some()
+        self.cached_pending.read().pending.is_some()
     }
 }
 

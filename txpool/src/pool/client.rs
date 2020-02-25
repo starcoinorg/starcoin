@@ -8,14 +8,14 @@
 //! any consensus-required structure of the transaction.
 
 use super::{SeqNumber, UnverifiedUserTransaction};
+use std::any::Any;
 use std::fmt;
 use types::{account_address::AccountAddress as Address, transaction};
 
 /// State sequence number client
-#[async_trait]
-pub trait AccountSeqNumberClient: fmt::Debug + Clone + Sync + Unpin + 'static {
+pub trait AccountSeqNumberClient: fmt::Debug + Clone + Sync + Unpin + Any {
     /// Fetch only account nonce for given sender.
-    async fn account_seq_number(&self, address: &Address) -> SeqNumber;
+    fn account_seq_number(&self, address: &Address) -> SeqNumber;
 }
 
 /// Verification client.

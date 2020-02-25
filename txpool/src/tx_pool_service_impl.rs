@@ -38,9 +38,8 @@ impl CachedSeqNumberClient {
     }
 }
 
-#[async_trait]
 impl AccountSeqNumberClient for CachedSeqNumberClient {
-    async fn account_seq_number(&self, address: &AccountAddress) -> SeqNumber {
+    fn account_seq_number(&self, address: &AccountAddress) -> SeqNumber {
         // TODO: hit real storage
         0u64
     }
@@ -143,7 +142,7 @@ struct TxPoolActor<C>
 where
     C: AccountSeqNumberClient,
 {
-    queue: Arc<FutureMutux<TxnQueue>>,
+    queue: TxnQueue,
     seq_number_client: C,
 }
 
@@ -163,7 +162,7 @@ where
             verifier_options,
             PrioritizationStrategy::GasPriceOnly,
         );
-        let queue = Arc::new(FutureMutux::new(queue));
+        // let queue = Arc::new(FutureMutux::new(queue));
         Self {
             queue,
             seq_number_client: client,
@@ -182,54 +181,17 @@ impl<C> Handler<ImportTxns> for TxPoolActor<C>
 where
     C: AccountSeqNumberClient,
 {
-    type Result = ImportTxnsResponse<C>;
+    type Result = MessageResult<ImportTxns>;
 
     fn handle(&mut self, msg: ImportTxns, _ctx: &mut Self::Context) -> Self::Result {
-        ImportTxnsResponse {
-            msg,
-            queue: self.queue.clone(),
-            seq_number_client: self.seq_number_client.clone(),
-        }
-    }
-}
-
-struct ImportTxnsResponse<C>
-where
-    C: AccountSeqNumberClient,
-{
-    msg: ImportTxns,
-    queue: Arc<FutureMutux<TxnQueue>>,
-    seq_number_client: C,
-}
-
-impl<C> MessageResponse<TxPoolActor<C>, ImportTxns> for ImportTxnsResponse<C>
-where
-    C: AccountSeqNumberClient,
-{
-    fn handle<R: ResponseChannel<ImportTxns>>(
-        self,
-        ctx: &mut <TxPoolActor<C> as Actor>::Context,
-        tx: Option<R>,
-    ) {
-        let Self {
-            msg,
-            queue,
-            seq_number_client,
-        } = self;
         let ImportTxns { txns } = msg;
-        ctx.wait(wrap_future(async move {
-            let txns = txns
-                .into_iter()
-                .map(|t| verifier::Transaction::Unverified(t));
 
-            let import_result = {
-                let mut queue = queue.lock().await;
-                queue.import(seq_number_client, txns).await
-            };
-            if let Some(tx) = tx {
-                tx.send(import_result)
-            }
-        }));
+        let txns = txns
+            .into_iter()
+            .map(|t| verifier::Transaction::Unverified(t));
+
+        let import_result = { self.queue.import(self.seq_number_client.clone(), txns) };
+        MessageResult(import_result)
     }
 }
 
@@ -241,59 +203,26 @@ impl Message for GetPendingTxns {
     type Result = Vec<Arc<pool::VerifiedTransaction>>;
 }
 
-struct GetPendingTxnsResponse<C>
-where
-    C: AccountSeqNumberClient,
-{
-    msg: GetPendingTxns,
-    queue: Arc<FutureMutux<TxnQueue>>,
-    seq_number_client: C,
-}
-impl<C> MessageResponse<TxPoolActor<C>, GetPendingTxns> for GetPendingTxnsResponse<C>
-where
-    C: AccountSeqNumberClient,
-{
-    fn handle<R: ResponseChannel<GetPendingTxns>>(
-        self,
-        ctx: &mut <TxPoolActor<C> as Actor>::Context,
-        tx: Option<R>,
-    ) {
-        let Self {
-            msg,
-            queue,
-            seq_number_client,
-        } = self;
-        let GetPendingTxns { max_len } = msg;
-        ctx.wait(wrap_future(async move {
-            let import_result = {
-                let mut queue = queue.lock().await;
-                let pending_settings = PendingSettings {
-                    block_number: u64::max_value(),
-                    current_timestamp: u64::max_value(),
-                    nonce_cap: None,
-                    max_len: max_len as usize,
-                    ordering: PendingOrdering::Priority,
-                };
-                queue.pending(seq_number_client, pending_settings).await
-            };
-            if let Some(tx) = tx {
-                tx.send(import_result)
-            }
-        }));
-    }
-}
 impl<C> Handler<GetPendingTxns> for TxPoolActor<C>
 where
     C: AccountSeqNumberClient,
 {
-    type Result = GetPendingTxnsResponse<C>;
+    type Result = MessageResult<GetPendingTxns>;
 
     fn handle(&mut self, msg: GetPendingTxns, _ctx: &mut Self::Context) -> Self::Result {
-        GetPendingTxnsResponse {
-            msg,
-            queue: self.queue.clone(),
-            seq_number_client: self.seq_number_client.clone(),
-        }
+        let GetPendingTxns { max_len } = msg;
+        let result = {
+            let pending_settings = PendingSettings {
+                block_number: u64::max_value(),
+                current_timestamp: u64::max_value(),
+                nonce_cap: None,
+                max_len: max_len as usize,
+                ordering: PendingOrdering::Priority,
+            };
+            self.queue
+                .pending(self.seq_number_client.clone(), pending_settings)
+        };
+        MessageResult(result)
     }
 }
 
@@ -303,41 +232,18 @@ impl Message for SubscribeTxns {
     type Result = mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>;
 }
 
-struct SubscribeTxnResponse {
-    queue: Arc<FutureMutux<TxnQueue>>,
-}
-impl<C> MessageResponse<TxPoolActor<C>, SubscribeTxns> for SubscribeTxnResponse
-where
-    C: AccountSeqNumberClient,
-{
-    fn handle<R: ResponseChannel<SubscribeTxns>>(
-        self,
-        ctx: &mut <TxPoolActor<C> as Actor>::Context,
-        tx: Option<R>,
-    ) {
-        let Self { queue } = self;
-        ctx.wait(wrap_future(async move {
-            let result = {
-                let mut queue = queue.lock().await;
-                let (tx, rx) = mpsc::unbounded();
-                queue.add_full_listener(tx);
-                rx
-            };
-            if let Some(tx) = tx {
-                tx.send(result)
-            }
-        }));
-    }
-}
 impl<C> Handler<SubscribeTxns> for TxPoolActor<C>
 where
     C: AccountSeqNumberClient,
 {
-    type Result = SubscribeTxnResponse;
+    type Result = MessageResult<SubscribeTxns>;
 
     fn handle(&mut self, _: SubscribeTxns, _ctx: &mut Self::Context) -> Self::Result {
-        SubscribeTxnResponse {
-            queue: self.queue.clone(),
-        }
+        let result = {
+            let (tx, rx) = mpsc::unbounded();
+            self.queue.add_full_listener(tx);
+            rx
+        };
+        MessageResult(result)
     }
 }
