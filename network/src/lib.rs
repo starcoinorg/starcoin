@@ -11,6 +11,7 @@ mod network;
 mod node_discovery;
 mod peer;
 mod peer_manager;
+mod message_processor;
 
 pub use messages::*;
 pub use network::NetworkActor;

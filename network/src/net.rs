@@ -1,10 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    convert_account_address_to_peer_id, convert_peer_id_to_account_address,
-    helper::convert_boot_nodes,
-};
+use crate::{convert_account_address_to_peer_id, convert_peer_id_to_account_address, helper::convert_boot_nodes, PayloadMsg};
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
@@ -31,11 +28,13 @@ use parking_lot::Mutex;
 use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::prelude::task::AtomicTask;
 use types::account_address::AccountAddress;
+use crate::message_processor::MessageProcessor;
 
 #[derive(Clone)]
 pub struct NetworkService {
     pub libp2p_service: Arc<Mutex<Libp2pService>>,
     acks: Arc<Mutex<HashMap<u128, Sender<()>>>>,
+    message_processor:MessageProcessor<PayloadMsg>,
 }
 
 pub fn build_network_service(
@@ -257,6 +256,7 @@ impl NetworkService {
             Self {
                 libp2p_service,
                 acks,
+                message_processor: MessageProcessor::new(),
             },
             network_sender,
             network_receiver,
@@ -311,6 +311,12 @@ impl NetworkService {
                 .send_custom_message(&peer_id, message_bytes.clone());
         }
         debug!("finish send broadcast message");
+    }
+
+    pub fn rpc(&mut self,
+               account_address: AccountAddress,
+               message:Vec<u8>){
+
     }
 }
 
