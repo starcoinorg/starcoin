@@ -26,7 +26,6 @@ pub enum PeerMessage {
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
 pub enum RPCMessage {
-
 }
 
 #[derive(Clone, Hash, Debug)]

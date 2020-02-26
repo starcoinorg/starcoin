@@ -25,24 +25,6 @@ pub use network_libp2p::PeerId;
 pub use messages::RPCMessage;
 use types::{system_events::SystemEvents};
 use anyhow::{Error, Result};
-use types::account_address::AccountAddress;
-use crypto::hash::HashValue;
-
-#[async_trait::async_trait]
-pub trait NetWorkAsyncService: Clone + std::marker::Unpin {
-    async fn send_system_event(self,peer_id:AccountAddress, event: SystemEvents) -> Result<bool>;
-
-    async fn broadcast_system_event(self,event: SystemEvents) -> Result<bool>;
-
-    async fn send_request(
-        self,
-        peer_id:AccountAddress,
-        message:RPCMessage,
-    ) -> Result<RPCMessage>;
-
-    async fn response_for(self, id: HashValue,response:RPCMessage);
-}
-
 
 #[cfg(test)]
 mod tests {

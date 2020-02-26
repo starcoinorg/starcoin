@@ -21,16 +21,55 @@ use traits::TxPoolAsyncService;
 use txpool::{AddTransaction, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 use crate::message_processor::MessageProcessor;
+use types::account_address::AccountAddress;
+use crypto::hash::HashValue;
 
 use futures::{
     stream::Stream,
     sync::{mpsc, oneshot},
 };
 
+#[derive(Clone, Eq, PartialEq, Hash)]
+pub struct NetworkAsyncService<P>
+    where
+        P: TxPoolAsyncService,
+        P: 'static,
+{
+    addr: Addr<NetworkActor<P>>,
+}
+
+impl<P> NetworkAsyncService<P>
+    where
+        P: TxPoolAsyncService,
+        P: 'static,
+{
+    async fn send_system_event(self,peer_id:AccountAddress, event: SystemEvents) -> Result<()>{
+        Ok(())
+    }
+
+    async fn broadcast_system_event(self,event: SystemEvents) -> Result<()>{
+        Ok(())
+    }
+
+    async fn send_request(
+        self,
+        peer_id:AccountAddress,
+        message:RPCMessage,
+    ) -> Result<RPCMessage>{
+        unimplemented!()
+    }
+
+    async fn response_for(self,peer_id:AccountAddress,
+                          id: HashValue,response:RPCMessage){
+        unimplemented!()
+    }
+
+}
+
 pub struct NetworkActor<P>
-where
-    P: TxPoolAsyncService,
-    P: 'static,
+    where
+        P: TxPoolAsyncService,
+        P: 'static,
 {
     network_service: NetworkService,
     tx: mpsc::UnboundedSender<NetworkMessage>,
@@ -49,8 +88,7 @@ where
         bus: Addr<BusActor>,
         txpool: P,
         key_pair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
-    ) -> Result<Addr<NetworkActor<P>>> {
-        //TODO read from config
+    ) -> NetworkAsyncService<P>{
 
         let (service, tx, rx, tx_command) = build_network_service(&node_config.network, key_pair);
         info!(
@@ -63,7 +101,7 @@ where
                 .fold(String::new(), |acc, arg| acc + arg.as_str()),
             service.identify()
         );
-        Ok(NetworkActor::create(
+        let addr=NetworkActor::create(
             move |ctx: &mut Context<NetworkActor<P>>| {
                 ctx.add_stream(rx.fuse().compat());
                 NetworkActor {
@@ -75,7 +113,8 @@ where
                     message_processor:MessageProcessor::new(),
                 }
             },
-        ))
+        );
+        NetworkAsyncService{addr}
     }
 }
 
