@@ -9,7 +9,7 @@ use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
 use traits::{AsyncChain, TxPoolAsyncService};
-use txpool::{TxPoolActor, TxPoolRef};
+use txpool::{CachedSeqNumberClient, TxPool, TxPoolActor, TxPoolRef};
 use types::{peer_info::PeerInfo, transaction::SignedUserTransaction};
 
 #[test]
@@ -24,7 +24,8 @@ async fn test_miner_with_schedule_pacemaker() {
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-    let txpool = TxPoolActor::launch(config.clone(), bus.clone(), storage.clone()).unwrap();
+    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
+    let txpool = TxPool::start(seq_number_client);
     let chain = ChainActor::launch(config.clone(), storage.clone()).unwrap();
     let _miner =
         MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
@@ -40,7 +41,7 @@ async fn test_miner_with_schedule_pacemaker() {
         DownloadActor::launch(peer_info, chain.clone()).expect("launch DownloadActor failed.");
     let sync = SyncActor::launch(bus, process_actor, download_actor).unwrap();
 
-    for _i in 0..5 {
+    for _i in 0..5 as usize {
         txpool
             .clone()
             .add(SignedUserTransaction::mock())
