@@ -9,7 +9,7 @@ use bus::{Broadcast, BusActor};
 use config::{NetworkConfig, NodeConfig};
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::{test_utils::KeyPair, Uniform};
-use futures_03::{compat::Stream01CompatExt, TryFutureExt};
+use futures_03::{compat::{Stream01CompatExt,Future01CompatExt}, TryFutureExt};
 use libp2p::{
     identity,
     ping::{Ping, PingConfig, PingEvent},
@@ -30,13 +30,14 @@ use futures::{
 };
 use std::time::Duration;
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 pub struct NetworkAsyncService<P>
     where
         P: TxPoolAsyncService,
         P: 'static,
 {
     addr: Addr<NetworkActor<P>>,
+    message_processor:MessageProcessor<RPCResponse>,
 }
 
 impl<P> NetworkAsyncService<P>
@@ -59,7 +60,10 @@ impl<P> NetworkAsyncService<P>
         message:RPCRequest,
         time_out:Duration,
     ) -> Result<RPCResponse>{
-        unimplemented!()
+        let (tx, rx) = futures::sync::mpsc::channel(1);
+        let message_future = MessageFuture::new(rx);
+        self.message_processor.add_future(message.get_id(),tx);
+        message_future.compat().await
     }
 
     async fn response_for(self,peer_id:AccountAddress,
@@ -104,6 +108,8 @@ where
                 .fold(String::new(), |acc, arg| acc + arg.as_str()),
             service.identify()
         );
+        let message_processor = MessageProcessor::new();
+        let message_processor_clone = message_processor.clone();
         let addr=NetworkActor::create(
             move |ctx: &mut Context<NetworkActor<P>>| {
                 ctx.add_stream(rx.fuse().compat());
@@ -113,11 +119,11 @@ where
                     tx_command,
                     bus,
                     txpool,
-                    message_processor:MessageProcessor::new(),
+                    message_processor:message_processor_clone,
                 }
             },
         );
-        NetworkAsyncService{addr}
+        NetworkAsyncService{addr,message_processor}
     }
 }
 
@@ -198,11 +204,8 @@ where
                 Box::new(f)
             },
             PeerMessage::RPCRequest(request)=>{
-                let (tx, rx) = futures::sync::mpsc::channel(1);
-                let message_future = MessageFuture::new(rx);
-                self.message_processor.add_future(request.get_id(),tx);
-                let f =  async move {
-                    info!("get request");
+                let f= async move {
+                    info!("receive rpc request");
                     Ok(())
                 };
                 let f = actix::fut::wrap_future(f);
