@@ -28,13 +28,11 @@ use parking_lot::Mutex;
 use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::prelude::task::AtomicTask;
 use types::account_address::AccountAddress;
-use crate::message_processor::MessageProcessor;
 
 #[derive(Clone)]
 pub struct NetworkService {
     pub libp2p_service: Arc<Mutex<Libp2pService>>,
     acks: Arc<Mutex<HashMap<u128, Sender<()>>>>,
-    message_processor:MessageProcessor<PayloadMsg>,
 }
 
 pub fn build_network_service(
@@ -256,7 +254,6 @@ impl NetworkService {
             Self {
                 libp2p_service,
                 acks,
-                message_processor: MessageProcessor::new(),
             },
             network_sender,
             network_receiver,
@@ -313,11 +310,6 @@ impl NetworkService {
         debug!("finish send broadcast message");
     }
 
-    pub fn rpc(&mut self,
-               account_address: AccountAddress,
-               message:Vec<u8>){
-
-    }
 }
 
 pub type NetworkComponent = (

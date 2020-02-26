@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::net::{build_network_service, NetworkService};
-use crate::{GetCounterMessage, NetworkMessage, PeerMessage};
+use crate::{GetCounterMessage, NetworkMessage, PeerMessage,RPCMessage};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
@@ -20,6 +20,7 @@ use std::sync::Arc;
 use traits::TxPoolAsyncService;
 use txpool::{AddTransaction, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
+use crate::message_processor::MessageProcessor;
 
 use futures::{
     stream::Stream,
@@ -36,8 +37,7 @@ where
     tx_command: oneshot::Sender<()>,
     bus: Addr<BusActor>,
     txpool: P,
-    //just for test, remove later.
-    counter: u64,
+    message_processor:MessageProcessor<RPCMessage>,
 }
 
 impl<P> NetworkActor<P>
@@ -72,7 +72,7 @@ where
                     tx_command,
                     bus,
                     txpool,
-                    counter: 0,
+                    message_processor:MessageProcessor::new(),
                 }
             },
         ))

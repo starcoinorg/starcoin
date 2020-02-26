@@ -13,6 +13,7 @@ use futures::{
 };
 
 use anyhow::{Error, Result};
+use crypto::hash::HashValue;
 
 pub struct MessageFuture<T> {
     rx: Receiver<Result<T>>,
@@ -51,7 +52,7 @@ impl<T> Future for MessageFuture<T> {
 
 #[derive(Clone)]
 pub struct MessageProcessor<T> {
-    tx_map: Arc<Mutex<HashMap<u128, Sender<Result<T>>>>>,
+    tx_map: Arc<Mutex<HashMap<HashValue, Sender<Result<T>>>>>,
 }
 
 impl<T> MessageProcessor<T>
@@ -64,7 +65,7 @@ where
         }
     }
 
-    pub fn add_future(&self, hash: u128, sender: Sender<Result<T>>) {
+    pub fn add_future(&self, hash: HashValue, sender: Sender<Result<T>>) {
         self.tx_map
             .lock()
             .unwrap()
@@ -72,7 +73,7 @@ where
             .or_insert(sender.clone());
     }
 
-    pub fn send_response(&self, hash: u128, value: T) -> Result<()> {
+    pub fn send_response(&self, hash: HashValue, value: T) -> Result<()> {
         let mut tx_map = self.tx_map.lock().unwrap();
         match tx_map.get(&hash) {
             Some(tx) => {
@@ -89,7 +90,7 @@ where
         Ok(())
     }
 
-    pub fn remove_future(&self, hash: u128) {
+    pub fn remove_future(&self, hash: HashValue) {
         let mut tx_map = self.tx_map.lock().unwrap();
         match tx_map.get(&hash) {
             Some(_tx) => {
