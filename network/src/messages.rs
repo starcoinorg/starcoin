@@ -11,7 +11,7 @@ use types::account_address::AccountAddress;
 use types::transaction::SignedUserTransaction;
 
 pub trait RPCMessage {
-    fn get_id()->HashValue;
+    fn get_id(&self)->HashValue;
 }
 
 #[derive(Message)]
@@ -23,7 +23,8 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
 pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
-    RPCMessage(RPCRequest),
+    RPCRequest(RPCRequest),
+    RPCResponse(RPCResponse),
 }
 
 /// message from peer
@@ -33,18 +34,18 @@ pub enum  RPCRequest {
 }
 
 impl RPCMessage for RPCRequest {
-    fn get_id() -> HashValue {
+    fn get_id(&self) -> HashValue {
         unimplemented!()
     }
 }
 
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message,Clone)]
 pub enum  RPCResponse {
 }
 
 impl RPCMessage for RPCResponse {
-    fn get_id() -> HashValue {
+    fn get_id(&self) -> HashValue {
         unimplemented!()
     }
 }

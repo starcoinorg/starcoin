@@ -4234,7 +4234,6 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
- "async-trait",
  "bitflags",
  "derive_more",
  "fnv",

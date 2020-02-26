@@ -20,7 +20,7 @@ use std::sync::Arc;
 use traits::TxPoolAsyncService;
 use txpool::{AddTransaction, TxPoolActor};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
-use crate::message_processor::MessageProcessor;
+use crate::message_processor::{MessageProcessor, MessageFuture};
 use types::account_address::AccountAddress;
 use crypto::hash::HashValue;
 
@@ -28,6 +28,7 @@ use futures::{
     stream::Stream,
     sync::{mpsc, oneshot},
 };
+use std::time::Duration;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct NetworkAsyncService<P>
@@ -56,6 +57,7 @@ impl<P> NetworkAsyncService<P>
         self,
         peer_id:AccountAddress,
         message:RPCRequest,
+        time_out:Duration,
     ) -> Result<RPCResponse>{
         unimplemented!()
     }
@@ -77,7 +79,7 @@ pub struct NetworkActor<P>
     tx_command: oneshot::Sender<()>,
     bus: Addr<BusActor>,
     txpool: P,
-    message_processor:MessageProcessor<RPCRequest>,
+    message_processor:MessageProcessor<RPCResponse>,
 }
 
 impl<P> NetworkActor<P>
@@ -194,7 +196,28 @@ where
                 });
                 let f = actix::fut::wrap_future(f);
                 Box::new(f)
-            }
+            },
+            PeerMessage::RPCRequest(request)=>{
+                let (tx, rx) = futures::sync::mpsc::channel(1);
+                let message_future = MessageFuture::new(rx);
+                self.message_processor.add_future(request.get_id(),tx);
+                let f =  async move {
+                    info!("get request");
+                    Ok(())
+                };
+                let f = actix::fut::wrap_future(f);
+                Box::new(f)
+            },
+            PeerMessage::RPCResponse(response)=>{
+                let message_processor = self.message_processor.clone();
+                let f = async move {
+                    let id=response.get_id();
+                    message_processor.send_response(id,response)?;
+                    Ok(())
+                };
+                let f = actix::fut::wrap_future(f);
+                Box::new(f)
+            },
         }
     }
 }
