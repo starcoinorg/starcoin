@@ -19,6 +19,14 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
 pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
+    //RPC(RPCMessage),
+}
+
+/// message from peer
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
+pub enum RPCMessage {
+
 }
 
 #[derive(Clone, Hash, Debug)]
