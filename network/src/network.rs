@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::net::{build_network_service, NetworkService};
-use crate::{GetCounterMessage, NetworkMessage, PeerMessage,RPCMessage};
+use crate::{GetCounterMessage, NetworkMessage, PeerMessage, RPCMessage, RPCRequest, RPCResponse};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
@@ -48,19 +48,20 @@ impl<P> NetworkAsyncService<P>
     }
 
     async fn broadcast_system_event(self,event: SystemEvents) -> Result<()>{
+        self.addr.send(event).await;
         Ok(())
     }
 
     async fn send_request(
         self,
         peer_id:AccountAddress,
-        message:RPCMessage,
-    ) -> Result<RPCMessage>{
+        message:RPCRequest,
+    ) -> Result<RPCResponse>{
         unimplemented!()
     }
 
     async fn response_for(self,peer_id:AccountAddress,
-                          id: HashValue,response:RPCMessage){
+                          id: HashValue,response:RPCResponse){
         unimplemented!()
     }
 
@@ -76,7 +77,7 @@ pub struct NetworkActor<P>
     tx_command: oneshot::Sender<()>,
     bus: Addr<BusActor>,
     txpool: P,
-    message_processor:MessageProcessor<RPCMessage>,
+    message_processor:MessageProcessor<RPCRequest>,
 }
 
 impl<P> NetworkActor<P>
@@ -194,6 +195,19 @@ where
                 let f = actix::fut::wrap_future(f);
                 Box::new(f)
             }
+        }
+    }
+}
+
+/// Handler for send rpc message.
+impl<P> Handler<RPCRequest> for NetworkActor<P>
+    where
+        P: TxPoolAsyncService,
+{
+    type Result = ResponseActFuture<Self, Result<()>>;
+
+    fn handle(&mut self, msg: RPCRequest, _ctx: &mut Self::Context) -> Self::Result {
+        match msg {
         }
     }
 }

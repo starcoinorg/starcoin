@@ -10,6 +10,10 @@ use serde::{Deserialize, Serialize};
 use types::account_address::AccountAddress;
 use types::transaction::SignedUserTransaction;
 
+pub trait RPCMessage {
+    fn get_id()->HashValue;
+}
+
 #[derive(Message)]
 #[rtype(result = "u64")]
 pub struct GetCounterMessage {}
@@ -19,13 +23,30 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
 pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
-    //RPC(RPCMessage),
+    RPCMessage(RPCRequest),
 }
 
 /// message from peer
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
-pub enum RPCMessage {
+pub enum  RPCRequest {
+}
+
+impl RPCMessage for RPCRequest {
+    fn get_id() -> HashValue {
+        unimplemented!()
+    }
+}
+
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
+pub enum  RPCResponse {
+}
+
+impl RPCMessage for RPCResponse {
+    fn get_id() -> HashValue {
+        unimplemented!()
+    }
 }
 
 #[derive(Clone, Hash, Debug)]
