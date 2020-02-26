@@ -67,8 +67,8 @@ impl<P> NetworkAsyncService<P>
     }
 
     async fn response_for(self,peer_id:AccountAddress,
-                          id: HashValue,response:RPCResponse){
-        unimplemented!()
+                          id: HashValue,mut response:RPCResponse){
+        response.set_request_id(id);
     }
 
 }

@@ -39,6 +39,7 @@ impl RPCMessage for RPCRequest {
     }
 }
 
+
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message,Clone)]
 pub enum  RPCResponse {
@@ -46,6 +47,12 @@ pub enum  RPCResponse {
 
 impl RPCMessage for RPCResponse {
     fn get_id(&self) -> HashValue {
+        unimplemented!()
+    }
+}
+
+impl RPCResponse{
+    pub fn set_request_id(&mut self,id:HashValue){
         unimplemented!()
     }
 }
