@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use crypto::{hash::CryptoHash, HashValue};
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::cell::RefCell;
 use std::sync::Arc;
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
 pub struct StateProof {}
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
 pub struct StateNode {
     pub value: Vec<u8>,
 }

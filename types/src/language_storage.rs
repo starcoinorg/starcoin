@@ -10,11 +10,11 @@ use crate::{
     identifier::{IdentStr, Identifier},
 };
 use anyhow::{Error, Result};
-use crypto::hash::{CryptoHash, HashValue};
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::{CryptoHash, HashValue};
 use std::convert::{TryFrom, TryInto};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
 pub enum TypeTag {
     Bool,
     U8,
@@ -25,7 +25,7 @@ pub enum TypeTag {
     Struct(StructTag),
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
 pub struct StructTag {
     pub address: AccountAddress,
     pub module: Identifier,
@@ -35,7 +35,7 @@ pub struct StructTag {
 
 /// Represents the intitial key into global storage where we first index by the address, and then
 /// the struct tag
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
 pub struct ResourceKey {
     address: AccountAddress,
     type_: StructTag,
@@ -59,7 +59,7 @@ impl ResourceKey {
 
 /// Represents the initial key into global storage where we first index by the address, and then
 /// the struct tag
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
 pub struct ModuleId {
     address: AccountAddress,
     name: Identifier,

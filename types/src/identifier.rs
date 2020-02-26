@@ -32,6 +32,7 @@
 use anyhow::{bail, Result};
 use ref_cast::RefCast;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::CryptoHash;
 use std::{borrow::Borrow, fmt, ops::Deref};
 
 /// Describes what identifiers are allowed.
@@ -67,7 +68,7 @@ pub(crate) static ALLOWED_IDENTIFIERS: &str =
 /// An owned identifier.
 ///
 /// For more details, see the module level documentation.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHash)]
 pub struct Identifier(Box<str>);
 // An identifier cannot be mutated so use Box<str> instead of String -- it is 1 word smaller.
 

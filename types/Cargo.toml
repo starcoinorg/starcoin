@@ -31,4 +31,4 @@ tiny-keccak = { version = "1.5.0", default-features = false }
 num_enum = "0.4.1"
 actix = "0.9"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-crypto = { path = "../commons/crypto"}

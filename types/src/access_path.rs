@@ -45,10 +45,10 @@ use crate::{
     language_storage::{ModuleId, ResourceKey, StructTag},
 };
 use anyhow::{Error, Result};
-use crypto::hash::{CryptoHash, HashValue};
 use mirai_annotations::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::{CryptoHash, HashValue};
 use std::{
     convert::{TryFrom, TryInto},
     fmt,
@@ -186,7 +186,9 @@ impl From<Vec<Access>> for Accesses {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Default, Hash, Serialize, Deserialize, Ord, PartialOrd)]
+#[derive(
+    Clone, Eq, PartialEq, Default, Hash, Serialize, Deserialize, Ord, PartialOrd, CryptoHash,
+)]
 pub struct AccessPath {
     pub address: AccountAddress,
     pub path: Vec<u8>,

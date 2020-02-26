@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crypto::HashValue;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::{hash::CryptoHash, HashValue};
 
-#[derive(Default, Eq, PartialEq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Default, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHash)]
 pub struct AccountState {
     code_root: HashValue,
     storage_root: HashValue,

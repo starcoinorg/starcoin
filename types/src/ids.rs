@@ -1,5 +1,5 @@
 use crate::block::BlockNumber;
-use crypto::hash::HashValue;
+use starcoin_crypto::hash::HashValue;
 /// Uniquely identifies block.
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum BlockId {

@@ -4,7 +4,7 @@
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedUserTransaction;
-use crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{hash::CryptoHash, HashValue};
 
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -13,7 +13,9 @@ use std::cmp::PartialOrd;
 /// Type for block number.
 pub type BlockNumber = u64;
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Default, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHash,
+)]
 pub struct BlockHeader {
     /// Parent hash.
     parent_hash: HashValue,
@@ -190,7 +192,7 @@ impl Into<Vec<SignedUserTransaction>> for BlockBody {
 }
 
 /// A block, encoded as it is on the block chain.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
 pub struct Block {
     /// The header of this block.
     header: BlockHeader,
@@ -309,5 +311,16 @@ impl BlockTemplate {
 
             body: block.body,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_block_hash() {
+        let block = Block::new_nil_block_for_test(BlockHeader::genesis_block_header_for_test());
+        let hash = block.crypto_hash();
     }
 }

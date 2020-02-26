@@ -7,7 +7,9 @@ use crate::{
 };
 use anyhow::Result;
 use chrono::Utc;
-use crypto::{ed25519::*, hash::CryptoHash, test_utils::KeyPair, traits::SigningKey, HashValue};
+use starcoin_crypto::{
+    ed25519::*, hash::CryptoHash, test_utils::KeyPair, traits::SigningKey, HashValue,
+};
 
 pub fn create_unsigned_txn(
     payload: TransactionPayload,

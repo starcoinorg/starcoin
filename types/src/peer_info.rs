@@ -1,4 +1,4 @@
-use crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{hash::CryptoHash, HashValue};
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct PeerInfo {

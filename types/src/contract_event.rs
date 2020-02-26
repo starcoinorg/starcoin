@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crypto::hash::CryptoHash;
+use starcoin_crypto::hash::CryptoHash;
 
 use serde::{Deserialize, Serialize};
 

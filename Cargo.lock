@@ -4153,6 +4153,17 @@ dependencies = [
  "libra-crypto",
  "serde",
  "starcoin-canonical-serialization",
+ "starcoin-crypto-macro",
+]
+
+[[package]]
+name = "starcoin-crypto-macro"
+version = "0.1.0"
+dependencies = [
+ "quote 1.0.2",
+ "serde",
+ "starcoin-canonical-serialization",
+ "syn 1.0.15",
 ]
 
 [[package]]
@@ -4299,6 +4310,7 @@ dependencies = [
  "anyhow",
  "env_logger",
  "serde",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-types",

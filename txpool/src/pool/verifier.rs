@@ -66,8 +66,8 @@ impl Transaction {
     /// Return transaction hash
     pub fn hash(&self) -> HashValue {
         match *self {
-            Transaction::Unverified(ref tx) => CryptoHash::crypto_hash(&tx),
-            Transaction::Retracted(ref tx) => CryptoHash::crypto_hash(&tx),
+            Transaction::Unverified(ref tx) => CryptoHash::crypto_hash(tx),
+            Transaction::Retracted(ref tx) => CryptoHash::crypto_hash(tx),
             Transaction::Local(ref tx) => CryptoHash::crypto_hash(tx.deref()),
         }
     }

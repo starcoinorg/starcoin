@@ -8,8 +8,8 @@ use crate::account_address::AccountAddress;
 use crate::block::BlockHeader;
 use crate::byte_array::ByteArray;
 use anyhow::Result;
-use crypto::{ed25519::Ed25519Signature, HashValue};
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::{ed25519::Ed25519Signature, hash::CryptoHash, HashValue};
 use std::collections::BTreeMap;
 
 /// Struct that will be persisted on chain to store the information of the current block.
@@ -23,7 +23,7 @@ use std::collections::BTreeMap;
 /// 3. Once that special resource is modified, the other user transactions can read the consensus
 ///    info by calling into the read method of that resource, which would thus give users the
 ///    information such as the current leader.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, CryptoHash)]
 pub struct BlockMetadata {
     id: HashValue,
     timestamp: u64,
