@@ -1,0 +1,18 @@
+[package]
+name = "starcoin-crypto-macro"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "^1"
+syn = { version = "^1", features = ["full"] }
+
+[dev-dependencies]
+serde = { version = "1.0" }
+scs = { package="starcoin-canonical-serialization", path = "../../scs"}
