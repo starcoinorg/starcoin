@@ -29,3 +29,5 @@ miner = {path = "../miner", package="starcoin-miner"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
 env_logger = "0.7.1"
+types = {path = "../types", package="starcoin-types" }
+sync = {path = "../sync", package="starcoin-sync" }

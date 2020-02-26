@@ -4285,7 +4285,9 @@ dependencies = [
  "starcoin-miner",
  "starcoin-network",
  "starcoin-storage",
+ "starcoin-sync",
  "starcoin-txpool",
+ "starcoin-types",
  "structopt",
  "tokio 0.2.11",
 ]

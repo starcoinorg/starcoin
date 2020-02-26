@@ -14,8 +14,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use structopt::StructOpt;
+use sync::{DownloadActor, ProcessActor, SyncActor};
 use txpool::TxPoolRef;
 use txpool::{CachedSeqNumberClient, TxPool};
+use types::peer_info::PeerInfo;
 
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::{test_utils::KeyPair, Uniform};
@@ -59,6 +61,10 @@ async fn main() {
             txpool.clone(),
             chain.clone(),
         );
+    let peer_info = Arc::new(PeerInfo::random());
+    let process_actor = ProcessActor::launch(Arc::clone(&peer_info), chain.clone()).unwrap();
+    let download_actor = DownloadActor::launch(peer_info, chain).unwrap();
+    let _sync = SyncActor::launch(bus, process_actor, download_actor).unwrap();
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();
     info!("Ctrl-C received, shutting down");
