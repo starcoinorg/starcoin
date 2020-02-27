@@ -339,7 +339,7 @@ mod tests {
     }
 
     async fn _delay(duration: Duration){
-        Delay::new(Duration::from_secs(3)).await;
+        Delay::new(duration).await;
     }
 
     fn build_network(
