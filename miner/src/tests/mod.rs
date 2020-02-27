@@ -26,7 +26,7 @@ async fn test_miner_with_schedule_pacemaker() {
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
     let seq_number_client = CachedSeqNumberClient::new(storage.clone());
     let txpool = TxPool::start(seq_number_client);
-    let chain = ChainActor::launch(config.clone(), storage.clone()).unwrap();
+    let chain = ChainActor::launch(config.clone(), storage.clone(), None).unwrap();
     let _miner =
         MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
             config.clone(),

@@ -24,25 +24,28 @@ use futures::compat::Future01CompatExt;
 use futures_locks::RwLock;
 use logger::prelude::*;
 use message::ChainRequest;
+use network::network::NetworkAsyncService;
 use std::sync::Arc;
 use storage::StarcoinStorage;
 pub use tests::gen_mem_chain_for_test;
 use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService, ChainWriter};
+use txpool::TxPoolRef;
 use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
 
 /// actor for block chain.
 pub struct ChainActor {
     //TODO use Generic Parameter for Executor and Consensus.
-    service: ChainServiceImpl<MockExecutor, DummyConsensus>,
+    service: ChainServiceImpl<MockExecutor, DummyConsensus, TxPoolRef>,
 }
 
 impl ChainActor {
     pub fn launch(
         config: Arc<NodeConfig>,
         storage: Arc<StarcoinStorage>,
+        network: Option<NetworkAsyncService<TxPoolRef>>,
     ) -> Result<ChainActorRef<ChainActor>> {
         let actor = ChainActor {
-            service: ChainServiceImpl::new(config, storage)?,
+            service: ChainServiceImpl::new(config, storage, network)?,
         }
         .start();
         Ok(actor.into())

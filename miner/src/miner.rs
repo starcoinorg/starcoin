@@ -27,9 +27,9 @@ where
     //println!("miner new block: {:?}", block);
     ///fire SystemEvents::MinedBlock.
     //TODO handle result.
+    println!("broadcast new block: {:?}.", block.header().id());
     bus.do_send(Broadcast {
         msg: SystemEvents::MinedBlock(block),
     });
-    println!("broadcast new block.");
     Ok(())
 }

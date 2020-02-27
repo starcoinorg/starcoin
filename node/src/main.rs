@@ -49,9 +49,8 @@ async fn main() {
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
     let seq_number_client = CachedSeqNumberClient::new(storage.clone());
     let txpool = TxPool::start(seq_number_client);
-    let chain = ChainActor::launch(config.clone(), storage.clone()).unwrap();
-    let _network =
-        NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), keypair);
+    let chain = ChainActor::launch(config.clone(), storage.clone(), None).unwrap();
+    let _network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), keypair);
     let _json_rpc = JSONRpcActor::launch(config.clone(), txpool.clone());
     let _miner =
         MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(

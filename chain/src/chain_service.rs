@@ -11,34 +11,45 @@ use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
+use network::network::NetworkAsyncService;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
-use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter};
+use traits::{
+    ChainAsyncService, ChainReader, ChainService, ChainStateReader, ChainWriter, TxPoolAsyncService,
+};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    system_events::SystemEvents,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
-pub struct ChainServiceImpl<E, C>
+pub struct ChainServiceImpl<E, C, P>
 where
     E: TransactionExecutor,
     C: Consensus,
+    P: TxPoolAsyncService + 'static,
 {
     config: Arc<NodeConfig>,
     head: BlockChain<E, C>,
     branches: Vec<BlockChain<E, C>>,
     storage: Arc<StarcoinStorage>,
+    network: Option<NetworkAsyncService<P>>,
 }
 
-impl<E, C> ChainServiceImpl<E, C>
+impl<E, C, P> ChainServiceImpl<E, C, P>
 where
     E: TransactionExecutor,
     C: Consensus,
+    P: TxPoolAsyncService,
 {
-    pub fn new(config: Arc<NodeConfig>, storage: Arc<StarcoinStorage>) -> Result<Self> {
+    pub fn new(
+        config: Arc<NodeConfig>,
+        storage: Arc<StarcoinStorage>,
+        network: Option<NetworkAsyncService<P>>,
+    ) -> Result<Self> {
         let latest_header = storage.block_store.get_latest_block_header()?;
         let head = BlockChain::new(
             config.clone(),
@@ -51,6 +62,7 @@ where
             head,
             branches,
             storage,
+            network,
         })
     }
 
@@ -127,17 +139,39 @@ where
     }
 }
 
-impl<E, C> ChainService for ChainServiceImpl<E, C>
+impl<E, C, P> ChainService for ChainServiceImpl<E, C, P>
 where
     E: TransactionExecutor,
     C: Consensus,
+    P: TxPoolAsyncService,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
-        let header = block.header();
-        let mut branch = self.find_or_fork(&header).unwrap();
-        branch.apply(block)?;
-        self.select_head(branch);
+        if self
+            .storage
+            .block_store
+            .get_block_by_hash(block.header().id())?
+            .is_none()
+            && self
+                .storage
+                .block_store
+                .get_block_by_hash(block.header().parent_hash())?
+                .is_some()
+        {
+            let header = block.header();
+            let mut branch = self.find_or_fork(&header).unwrap();
+            branch.apply(block.clone())?;
+            self.select_head(branch);
+            if let Some(network) = self.network.clone() {
+                Arbiter::spawn(async move {
+                    println!("broadcast systemevent : {:?}", block.header().id());
+                    network
+                        .clone()
+                        .broadcast_system_event(SystemEvents::NewHeadBlock(block))
+                        .await;
+                });
+            };
+        }
         Ok(())
     }
 
@@ -146,10 +180,11 @@ where
     }
 }
 
-impl<E, C> ChainReader for ChainServiceImpl<E, C>
+impl<E, C, P> ChainReader for ChainServiceImpl<E, C, P>
 where
     E: TransactionExecutor,
     C: Consensus,
+    P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
         self.head.head_block()

@@ -4,14 +4,12 @@
 use crate::TransactionExecutor;
 use anyhow::{Error, Result};
 use config::VMConfig;
+use traits::ChainState;
 use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
-    vm_error::{VMStatus},
+    vm_error::VMStatus,
 };
-use vm_runtime::{
-    starcoin_vm::StarcoinVM,
-};
-use traits::{ChainState};
+use vm_runtime::starcoin_vm::StarcoinVM;
 
 pub struct Executor {
     config: VMConfig,
@@ -45,4 +43,3 @@ impl TransactionExecutor for Executor {
         None
     }
 }
-
