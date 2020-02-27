@@ -27,33 +27,60 @@ pub enum PeerMessage {
     RPCResponse(RPCResponse),
 }
 
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message,Clone)]
+pub struct TestRequest {
+    pub data : HashValue,
+}
+
 /// message from peer
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message,Clone)]
 pub enum  RPCRequest {
+    TestRequest(TestRequest)
+}
+
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message,Clone)]
+pub struct RpcRequestMessage {
+    pub request: RPCRequest,
+    pub peer_id:AccountAddress,
 }
 
 impl RPCMessage for RPCRequest {
     fn get_id(&self) -> HashValue {
-        unimplemented!()
+        return match self {
+            RPCRequest::TestRequest(request) =>request.data,
+        };
     }
 }
 
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message,Clone)]
+pub struct TestResponse{
+    pub len :u8,
+    pub id : HashValue,
+}
 
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message,Clone)]
 pub enum  RPCResponse {
+    TestResponse(TestResponse),
 }
 
 impl RPCMessage for RPCResponse {
     fn get_id(&self) -> HashValue {
-        unimplemented!()
+        match self {
+            RPCResponse::TestResponse(r)=>r.id,
+        }
     }
 }
 
 impl RPCResponse{
     pub fn set_request_id(&mut self,id:HashValue){
-        unimplemented!()
+        match self {
+            RPCResponse::TestResponse(r)=>r.id=id,
+        };
     }
 }
 

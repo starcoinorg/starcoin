@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::net::{build_network_service, NetworkService};
-use crate::{GetCounterMessage, NetworkMessage, PeerMessage, RPCMessage, RPCRequest, RPCResponse};
+use crate::{GetCounterMessage, NetworkMessage, PeerMessage, RPCMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
@@ -23,12 +23,12 @@ use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 use crate::message_processor::{MessageProcessor, MessageFuture};
 use types::account_address::AccountAddress;
 use crypto::hash::HashValue;
-
 use futures::{
     stream::Stream,
     sync::{mpsc, oneshot},
 };
 use std::time::Duration;
+use actix::fut::wrap_future;
 
 #[derive(Clone)]
 pub struct NetworkAsyncService<P>
@@ -38,6 +38,7 @@ pub struct NetworkAsyncService<P>
 {
     addr: Addr<NetworkActor<P>>,
     message_processor:MessageProcessor<RPCResponse>,
+    tx: mpsc::UnboundedSender<NetworkMessage>,
 }
 
 impl<P> NetworkAsyncService<P>
@@ -45,7 +46,14 @@ impl<P> NetworkAsyncService<P>
         P: TxPoolAsyncService,
         P: 'static,
 {
-    pub async fn send_system_event(&self,peer_id:AccountAddress, event: SystemEvents) -> Result<()>{
+    pub async fn send_peer_message(&self,peer_id:AccountAddress, msg: PeerMessage) -> Result<()>{
+        let data = msg.encode().unwrap();
+        let network_message = NetworkMessage{
+            peer_id,
+            data
+        };
+        self.tx.unbounded_send(network_message)?;
+
         Ok(())
     }
 
@@ -58,17 +66,34 @@ impl<P> NetworkAsyncService<P>
         &self,
         peer_id:AccountAddress,
         message:RPCRequest,
-        time_out:Duration,
+        _time_out:Duration,
     ) -> Result<RPCResponse>{
+        let request_id=message.get_id();
+        let peer_msg = PeerMessage::RPCRequest(message);
+        let data = peer_msg.encode().unwrap();
+        let network_message = NetworkMessage{
+            peer_id,
+            data
+        };
+        self.tx.unbounded_send(network_message)?;
         let (tx, rx) = futures::sync::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
-        self.message_processor.add_future(message.get_id(),tx);
+        self.message_processor.add_future(request_id,tx);
+        info!("send request to {}",peer_id);
         message_future.compat().await
     }
 
     pub async fn response_for(&self,peer_id:AccountAddress,
-                          id: HashValue,mut response:RPCResponse){
+                          id: HashValue,mut response:RPCResponse)->Result<()>{
         response.set_request_id(id);
+        let peer_msg = PeerMessage::RPCResponse(response);
+        let data = peer_msg.encode().unwrap();
+        let network_message = NetworkMessage{
+            peer_id,
+            data
+        };
+        self.tx.unbounded_send(network_message)?;
+        Ok(())
     }
 
 }
@@ -110,12 +135,13 @@ where
         );
         let message_processor = MessageProcessor::new();
         let message_processor_clone = message_processor.clone();
+        let tx_clone = tx.clone();
         let addr=NetworkActor::create(
             move |ctx: &mut Context<NetworkActor<P>>| {
                 ctx.add_stream(rx.fuse().compat());
                 NetworkActor {
                     network_service: service,
-                    tx,
+                    tx:tx_clone,
                     tx_command,
                     bus,
                     txpool,
@@ -123,7 +149,7 @@ where
                 }
             },
         );
-        NetworkAsyncService{addr,message_processor}
+        NetworkAsyncService{addr,message_processor,tx}
     }
 }
 
@@ -149,7 +175,7 @@ where
                 let message = PeerMessage::decode(&network_msg.data);
                 match message {
                     Ok(msg) => {
-                        ctx.notify(msg);
+                        self.handle_network_message(network_msg.peer_id,msg,ctx);
                     }
                     Err(e) => {
                         warn!("get error {:?}", e);
@@ -159,6 +185,46 @@ where
             Err(e) => {
                 warn!("get error {:?}", e);
             }
+        }
+    }
+}
+
+impl<P> NetworkActor<P>
+    where
+        P: TxPoolAsyncService,
+{
+    fn handle_network_message(&self,peer_id:AccountAddress,msg:PeerMessage, ctx: &mut Context<Self>){
+        match msg {
+            PeerMessage::UserTransaction(txn) => {
+                let txpool=self.txpool.clone();
+                let f = async move{
+                    let new_txn=txpool.add(txn).await.unwrap();
+                    info!("add tx success, is new tx: {}", new_txn);
+                };
+                let f = actix::fut::wrap_future(f);
+                ctx.spawn(Box::new(f));
+            },
+            PeerMessage::RPCRequest(request)=>{
+                let bus = self.bus.clone();
+                let f= async move {
+                    bus.send(Broadcast{msg:RpcRequestMessage{
+                        peer_id,
+                        request,
+                    }}).await;
+                    info!("receive rpc request");
+                };
+                let f = actix::fut::wrap_future(f);
+                ctx.spawn(Box::new(f));
+            },
+            PeerMessage::RPCResponse(response)=>{
+                let message_processor = self.message_processor.clone();
+                let f = async move {
+                    let id=response.get_id();
+                    message_processor.send_response(id,response).unwrap();
+                };
+                let f = actix::fut::wrap_future(f);
+                ctx.spawn(Box::new(f));
+            },
         }
     }
 }
@@ -186,57 +252,16 @@ where
     }
 }
 
-/// Handler for receive broadcast from other peer.
-impl<P> Handler<PeerMessage> for NetworkActor<P>
-where
-    P: TxPoolAsyncService,
-{
-    type Result = ResponseActFuture<Self, Result<()>>;
-
-    fn handle(&mut self, msg: PeerMessage, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            PeerMessage::UserTransaction(txn) => {
-                let f = self.txpool.clone().add(txn).and_then(|new_txn| async move {
-                    info!("add tx success, is new tx: {}", new_txn);
-                    Ok(())
-                });
-                let f = actix::fut::wrap_future(f);
-                Box::new(f)
-            },
-            PeerMessage::RPCRequest(request)=>{
-                let f= async move {
-                    info!("receive rpc request");
-                    Ok(())
-                };
-                let f = actix::fut::wrap_future(f);
-                Box::new(f)
-            },
-            PeerMessage::RPCResponse(response)=>{
-                let message_processor = self.message_processor.clone();
-                let f = async move {
-                    let id=response.get_id();
-                    message_processor.send_response(id,response)?;
-                    Ok(())
-                };
-                let f = actix::fut::wrap_future(f);
-                Box::new(f)
-            },
-        }
-    }
-}
-
-/// Handler for send rpc message.
-impl<P> Handler<RPCRequest> for NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
-{
-    type Result = ResponseActFuture<Self, Result<()>>;
-
-    fn handle(&mut self, msg: RPCRequest, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-        }
-    }
-}
+// /// Handler for receive broadcast from other peer.
+// impl<P> Handler<PeerMessage> for NetworkActor<P>
+// where
+//     P: TxPoolAsyncService,
+// {
+//     type Result = ResponseActFuture<Self, Result<()>>;
+//
+//     fn handle(&mut self, msg: PeerMessage, _ctx: &mut Self::Context) -> Self::Result {
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -250,6 +275,8 @@ mod tests {
     use log::{LevelFilter, SetLoggerError};
     use std::time::Instant;
     use futures::future::IntoFuture;
+    use crate::{TestRequest, RpcRequestMessage,TestResponse};
+    use bus::{Subscription};
 
     struct SimpleLogger;
 
@@ -298,7 +325,7 @@ mod tests {
         node_config1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
         let node_config1 = Arc::new(node_config1);
 
-        let (txpool1, network1, addr1) = build_network(node_config1.clone());
+        let (txpool1, network1, addr1,bus1) = build_network(node_config1.clone());
 
         let mut node_config2 = NodeConfig::default();
         let addr1_hex = hex::encode(addr1);
@@ -307,7 +334,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (txpool2, network2, addr2) = build_network(node_config2.clone());
+        let (txpool2, network2, addr2,bus2) = build_network(node_config2.clone());
 
         use std::thread;
         use std::time::Duration;
@@ -323,13 +350,26 @@ mod tests {
                 SignedUserTransaction::mock(),
             )).await;
 
+            let network_clone2 = network2.clone();
+
+            let response_actor = TestResponseActor::create(network_clone2);
+            let addr=response_actor.start();
+
+            let recipient = addr.recipient::<RpcRequestMessage>();
+            bus2.send(Subscription { recipient }).await;
+
             _delay(Duration::from_millis(100)).await;
 
             let txns = txpool1.get_pending_txns(None).await.unwrap();
-            assert_eq!(1, txns.len());
+            //assert_eq!(1, txns.len());
 
             let txns = txpool2.get_pending_txns(None).await.unwrap();
-            assert_eq!(1, txns.len());
+            //assert_eq!(1, txns.len());
+
+            let request= RPCRequest::TestRequest(TestRequest{data:HashValue::random()});
+            network1.send_request(addr2,request,Duration::from_secs(1)).await;
+
+            _delay(Duration::from_millis(100)).await;
 
             System::current().stop();
             ()
@@ -348,14 +388,15 @@ mod tests {
         MockTxPoolService,
         NetworkAsyncService<MockTxPoolService>,
         AccountAddress,
+        Addr<BusActor>,
     ) {
         let bus = BusActor::launch();
         let key_pair = gen_keypair();
         let addr = AccountAddress::from_public_key(&key_pair.public_key);
         let txpool = traits::mock::MockTxPoolService::new();
         let network =
-            NetworkActor::launch(node_config.clone(), bus, txpool.clone(), key_pair);
-        (txpool, network, addr)
+            NetworkActor::launch(node_config.clone(), bus.clone(), txpool.clone(), key_pair);
+        (txpool, network, addr,bus)
     }
 
     fn gen_keypair() -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
@@ -396,4 +437,55 @@ mod tests {
 
         Ok(addr.port())
     }
+
+    struct TestResponseActor {
+        network_service:NetworkAsyncService<MockTxPoolService>
+    }
+
+    impl TestResponseActor {
+
+        fn create(network_service:NetworkAsyncService<MockTxPoolService>) -> TestResponseActor {
+            let instance=Self{
+                network_service
+            };
+            instance
+        }
+    }
+
+    impl Actor for TestResponseActor
+    {
+        type Context = Context<Self>;
+
+        fn started(&mut self, _ctx: &mut Self::Context) {
+            info!("Test actor started ",);
+        }
+    }
+
+    impl Handler<RpcRequestMessage> for TestResponseActor
+    {
+        type Result = Result<()>;
+
+        fn handle(&mut self, msg:RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
+            let id= (&msg.request).get_id();
+            let peer_id = (&msg).peer_id;
+            match msg.request {
+                RPCRequest::TestRequest(_r)=>{
+                    info!("request is {:?}",_r);
+                    let response=TestResponse{len:1,id:id.clone()};
+                    let network_service=self.network_service.clone();
+                    let f=async move {
+                        network_service.response_for(peer_id,id,RPCResponse::TestResponse(response)).await;
+                    };
+                    let f = actix::fut::wrap_future(f);
+                    ctx.spawn(Box::new(f));
+                    Ok(())
+                }
+                _ => {
+                    Ok(())
+                }
+            }
+        }
+    }
+
+
 }
