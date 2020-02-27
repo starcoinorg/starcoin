@@ -45,17 +45,17 @@ impl<P> NetworkAsyncService<P>
         P: TxPoolAsyncService,
         P: 'static,
 {
-    async fn send_system_event(self,peer_id:AccountAddress, event: SystemEvents) -> Result<()>{
+    async fn send_system_event(&self,peer_id:AccountAddress, event: SystemEvents) -> Result<()>{
         Ok(())
     }
 
-    async fn broadcast_system_event(self,event: SystemEvents) -> Result<()>{
+    async fn broadcast_system_event(&self,event: SystemEvents) -> Result<()>{
         self.addr.send(event).await;
         Ok(())
     }
 
     async fn send_request(
-        self,
+        &self,
         peer_id:AccountAddress,
         message:RPCRequest,
         time_out:Duration,
@@ -66,7 +66,7 @@ impl<P> NetworkAsyncService<P>
         message_future.compat().await
     }
 
-    async fn response_for(self,peer_id:AccountAddress,
+    async fn response_for(&self,peer_id:AccountAddress,
                           id: HashValue,mut response:RPCResponse){
         response.set_request_id(id);
     }
@@ -245,9 +245,11 @@ mod tests {
     use traits::mock::MockTxPoolService;
     use txpool::TxPoolActor;
     use types::account_address::AccountAddress;
-
+    use futures_timer::Delay;
     use log::{Level, Metadata, Record};
     use log::{LevelFilter, SetLoggerError};
+    use std::time::Instant;
+    use futures::future::IntoFuture;
 
     struct SimpleLogger;
 
@@ -285,8 +287,11 @@ mod tests {
     //     assert_eq!(1, txns.len());
     // }
 
-    #[actix_rt::test]
-    async fn test_network_with_mock() {
+
+    #[test]
+    fn test_network_with_mock() {
+        let mut system = System::new("test");
+
         init_log();
 
         let mut node_config1 = NodeConfig::default();
@@ -309,32 +314,39 @@ mod tests {
 
         thread::sleep(Duration::from_millis(1000));
 
-        network1
-            .send(SystemEvents::NewUserTransaction(
+        Arbiter::spawn(async move {
+
+            network1.broadcast_system_event(SystemEvents::NewUserTransaction(
                 SignedUserTransaction::mock(),
-            ))
-            .await
-            .unwrap();
-
-        network2
-            .send(SystemEvents::NewUserTransaction(
+            )).await;
+            network2.broadcast_system_event(SystemEvents::NewUserTransaction(
                 SignedUserTransaction::mock(),
-            ))
-            .await
-            .unwrap();
+            )).await;
 
-        let txns = txpool1.get_pending_txns(None).await.unwrap();
-        //assert_eq!(1, txns.len());
+            _delay(Duration::from_millis(100)).await;
 
-        let txns = txpool2.get_pending_txns(None).await.unwrap();
-        //assert_eq!(1, txns.len());
+            let txns = txpool1.get_pending_txns(None).await.unwrap();
+            assert_eq!(1, txns.len());
+
+            let txns = txpool2.get_pending_txns(None).await.unwrap();
+            assert_eq!(1, txns.len());
+
+            System::current().stop();
+            ()
+        });
+
+        system.run();
+    }
+
+    async fn _delay(duration: Duration){
+        Delay::new(Duration::from_secs(3)).await;
     }
 
     fn build_network(
         node_config: Arc<NodeConfig>,
     ) -> (
         MockTxPoolService,
-        Addr<NetworkActor<MockTxPoolService>>,
+        NetworkAsyncService<MockTxPoolService>,
         AccountAddress,
     ) {
         let bus = BusActor::launch();
@@ -342,7 +354,7 @@ mod tests {
         let addr = AccountAddress::from_public_key(&key_pair.public_key);
         let txpool = traits::mock::MockTxPoolService::new();
         let network =
-            NetworkActor::launch(node_config.clone(), bus, txpool.clone(), key_pair).unwrap();
+            NetworkActor::launch(node_config.clone(), bus, txpool.clone(), key_pair);
         (txpool, network, addr)
     }
 
