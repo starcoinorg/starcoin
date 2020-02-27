@@ -68,6 +68,10 @@ impl AccountAddress {
         assert!(result.len() >= 32);
         AccountAddress::try_from(result)
     }
+
+    pub fn into_inner(self) -> [u8; ADDRESS_LENGTH] {
+        self.0
+    }
 }
 
 impl AsRef<[u8]> for AccountAddress {
