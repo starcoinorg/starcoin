@@ -45,16 +45,16 @@ impl<P> NetworkAsyncService<P>
         P: TxPoolAsyncService,
         P: 'static,
 {
-    async fn send_system_event(&self,peer_id:AccountAddress, event: SystemEvents) -> Result<()>{
+    pub async fn send_system_event(&self,peer_id:AccountAddress, event: SystemEvents) -> Result<()>{
         Ok(())
     }
 
-    async fn broadcast_system_event(&self,event: SystemEvents) -> Result<()>{
+    pub async fn broadcast_system_event(&self,event: SystemEvents) -> Result<()>{
         self.addr.send(event).await;
         Ok(())
     }
 
-    async fn send_request(
+    pub async fn send_request(
         &self,
         peer_id:AccountAddress,
         message:RPCRequest,
@@ -66,7 +66,7 @@ impl<P> NetworkAsyncService<P>
         message_future.compat().await
     }
 
-    async fn response_for(&self,peer_id:AccountAddress,
+    pub async fn response_for(&self,peer_id:AccountAddress,
                           id: HashValue,mut response:RPCResponse){
         response.set_request_id(id);
     }
