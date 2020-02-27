@@ -11,6 +11,7 @@ use types::{
 
 mod executor_test;
 pub mod mock_executor;
+pub mod executor;
 
 pub trait TransactionExecutor: std::marker::Unpin {
     /// Execute transaction, update state to state_store, and return events and TransactionStatus.
