@@ -6,6 +6,10 @@ pub struct PeerInfo {
 }
 
 impl PeerInfo {
+    pub fn new(hash: HashValue) -> Self {
+        PeerInfo { id: hash }
+    }
+
     pub fn random() -> Self {
         PeerInfo {
             id: HashValue::random(),

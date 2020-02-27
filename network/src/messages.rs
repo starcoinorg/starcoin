@@ -8,10 +8,11 @@ use crypto::{hash::CryptoHash, HashValue};
 use parity_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use types::account_address::AccountAddress;
+use types::block::Block;
 use types::transaction::SignedUserTransaction;
 
 pub trait RPCMessage {
-    fn get_id(&self)->HashValue;
+    fn get_id(&self) -> HashValue;
 }
 
 #[derive(Message)]
@@ -23,37 +24,65 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
 pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
+    Block(Block),
     RPCRequest(RPCRequest),
     RPCResponse(RPCResponse),
 }
 
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+pub struct TestRequest {
+    pub data: HashValue,
+}
+
 /// message from peer
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
-pub enum  RPCRequest {
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+pub enum RPCRequest {
+    TestRequest(TestRequest),
+}
+
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+pub struct RpcRequestMessage {
+    pub request: RPCRequest,
+    pub peer_id: AccountAddress,
 }
 
 impl RPCMessage for RPCRequest {
     fn get_id(&self) -> HashValue {
-        unimplemented!()
+        return match self {
+            RPCRequest::TestRequest(request) => request.data,
+        };
     }
 }
 
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+pub struct TestResponse {
+    pub len: u8,
+    pub id: HashValue,
+}
 
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message,Clone)]
-pub enum  RPCResponse {
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+pub enum RPCResponse {
+    TestResponse(TestResponse),
 }
 
 impl RPCMessage for RPCResponse {
     fn get_id(&self) -> HashValue {
-        unimplemented!()
+        match self {
+            RPCResponse::TestResponse(r) => r.id,
+        }
     }
 }
 
-impl RPCResponse{
-    pub fn set_request_id(&mut self,id:HashValue){
-        unimplemented!()
+impl RPCResponse {
+    pub fn set_request_id(&mut self, id: HashValue) {
+        match self {
+            RPCResponse::TestResponse(r) => r.id = id,
+        };
     }
 }
 

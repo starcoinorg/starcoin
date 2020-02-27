@@ -1,4 +1,4 @@
-use super::gen_mem_chain_actors;
+use super::gen_chain_actors;
 use crate::download::Downloader;
 use crate::message::{BatchBodyMsg, BatchHeaderMsg, HashWithNumber};
 use crate::process::Processor;
@@ -18,7 +18,7 @@ fn gen_chains(times: u64) -> (PeerInfo, MemChain, PeerInfo, MemChain) {
 }
 
 fn gen_syncs(times: u64) -> (SyncFlow, SyncFlow) {
-    let (first_peer, first_chain, second_peer, second_chain) = gen_mem_chain_actors(times);
+    let (first_peer, first_chain, second_peer, second_chain) = gen_chain_actors(times);
 
     let first = SyncFlow::new(first_peer, first_chain);
     let second = SyncFlow::new(second_peer, second_chain);

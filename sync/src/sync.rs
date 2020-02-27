@@ -79,7 +79,7 @@ impl Handler<SystemEvents> for SyncActor {
     fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
         println!("mined block.");
         match msg {
-            SystemEvents::MinedBlock(new_block) => {
+            SystemEvents::MinedBlock(new_block) | SystemEvents::NewHeadBlock(new_block) => {
                 self.download_address
                     .send(DownloadMessage::NewBlock(new_block))
                     .into_actor(self)

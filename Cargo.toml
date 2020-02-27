@@ -25,4 +25,5 @@ members = [
     "node",
     "network-libp2p",
     "network-libp2p/peerset",
+    "vm/vm-runtime",
 ]

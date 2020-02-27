@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{convert_account_address_to_peer_id, convert_peer_id_to_account_address, helper::convert_boot_nodes, PayloadMsg};
+use crate::{
+    convert_account_address_to_peer_id, convert_peer_id_to_account_address,
+    helper::convert_boot_nodes, PayloadMsg,
+};
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
@@ -309,7 +312,6 @@ impl NetworkService {
         }
         debug!("finish send broadcast message");
     }
-
 }
 
 pub type NetworkComponent = (

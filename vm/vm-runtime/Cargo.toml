@@ -1,7 +1,20 @@
 [package]
-name = "vm-runtime"
+name = "starcoin-vm-runtime"
 version = "0.1.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+types = { package="starcoin-types", path = "../../types"}
+libra-state-view = { package="libra-state-view", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+vm-runtime = { package="vm-runtime", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+vm-runtime-types = { package="vm-runtime-types", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+vm = { package="vm", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+traits = {package="starcoin-traits", path = "../../core/traits"}
+config = { package="starcoin-config", path = "../../config"}
+libra_types = { package="libra-types", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+
+

@@ -7,14 +7,24 @@ use atomic_refcell::AtomicRefCell;
 use bus::BusActor;
 use chain::{message::ChainRequest, ChainActor, ChainActorRef};
 use config::NodeConfig;
-use crypto::hash::CryptoHash;
-use std::sync::Arc;
+use config::{gen_keypair, get_available_port};
+use consensus::{dummy::DummyConsensus, Consensus};
+use crypto::hash::{CryptoHash, HashValue};
+use executor::{mock_executor::MockExecutor, TransactionExecutor};
+use futures_timer::Delay;
+use miner::MinerActor;
+use network::{network::NetworkAsyncService, NetworkActor};
+use std::{sync::Arc, time::Duration};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
-use tokio::time::{delay_for, Duration};
+use traits::mock::MockTxPoolService;
 use traits::AsyncChain;
+use txpool::{CachedSeqNumberClient, TxPool, TxPoolRef};
+use types::account_address::AccountAddress;
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
+    system_events::SystemEvents,
+    transaction::SignedUserTransaction,
 };
 
 fn genesis_block_for_test() -> Block {
@@ -27,7 +37,7 @@ fn gen_chain_actor(times: u64) -> (PeerInfo, ChainActorRef<ChainActor>) {
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
 
-    let mut chain = ChainActor::launch(config, storage).unwrap();
+    let mut chain = ChainActor::launch(config, storage, None).unwrap();
     if times > 0 {
         chain
             .clone()
@@ -59,7 +69,7 @@ async fn test_process_actor_new_peer() {
     process_actor
         .send(ProcessMessage::NewPeerMsg(None, new_peer))
         .await;
-    delay_for(Duration::from_millis(50)).await;
+    Delay::new(Duration::from_millis(50)).await;
 }
 
 #[actix_rt::test]
@@ -83,7 +93,7 @@ async fn test_actors() {
     ));
     second_p_actor.do_send(ProcessMessage::NewPeerMsg(Some(first_d_actor), first_peer));
 
-    delay_for(Duration::from_millis(50)).await;
+    Delay::new(Duration::from_millis(50)).await;
 }
 
 #[actix_rt::test]
@@ -119,7 +129,7 @@ async fn test_sync_actors() {
         first_peer,
     )));
 
-    delay_for(Duration::from_millis(50)).await;
+    Delay::new(Duration::from_millis(50)).await;
 
     let block_1 = first_chain.head_block().await.unwrap();
     let block_2 = second_chain.head_block().await.unwrap();
@@ -129,4 +139,83 @@ async fn test_sync_actors() {
         block_2.header().number()
     );
     assert_eq!(block_1.crypto_hash(), block_2.crypto_hash());
+}
+
+fn gen_network(
+    node_config: Arc<NodeConfig>,
+    bus: Addr<BusActor>,
+    txpool: TxPoolRef,
+) -> (NetworkAsyncService<TxPoolRef>, AccountAddress) {
+    let key_pair = gen_keypair();
+    let addr = AccountAddress::from_public_key(&key_pair.public_key);
+    let network = NetworkActor::launch(node_config.clone(), bus, txpool, key_pair);
+    (network, addr)
+}
+
+#[actix_rt::test]
+async fn test_network_actor() {
+    //bus
+    let bus_1 = BusActor::launch();
+    let bus_2 = BusActor::launch();
+
+    //storage
+    let storage_1 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
+    let storage_2 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
+
+    //txpool
+    let txpool_1 = TxPool::start(CachedSeqNumberClient::new(storage_1.clone()));
+    let txpool_2 = TxPool::start(CachedSeqNumberClient::new(storage_2.clone()));
+
+    //network actor
+    let mut config_1 = NodeConfig::default();
+    config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
+    let node_config_1 = Arc::new(config_1);
+    let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), txpool_1.clone());
+
+    let mut config_2 = NodeConfig::default();
+    let addr_1_hex = hex::encode(addr_1);
+    let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
+    config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+    config_2.network.seeds = vec![seed];
+    let mut node_config_2 = Arc::new(config_2);
+    let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
+
+    //chain actor
+    let first_chain =
+        ChainActor::launch(node_config_1.clone(), storage_1.clone(), Some(network_1)).unwrap();
+    let second_chain =
+        ChainActor::launch(node_config_2.clone(), storage_2.clone(), Some(network_2)).unwrap();
+
+    //miner
+    let _miner_1 =
+        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
+            node_config_1.clone(),
+            bus_1.clone(),
+            storage_1.clone(),
+            txpool_1.clone(),
+            first_chain.clone(),
+        );
+
+    //sync
+    let first_p = Arc::new(PeerInfo::new(
+        HashValue::from_slice(addr_1.as_ref()).unwrap(),
+    ));
+    let first_p_actor = ProcessActor::launch(Arc::clone(&first_p), first_chain.clone()).unwrap();
+    let first_d_actor = DownloadActor::launch(first_p, first_chain.clone()).unwrap();
+    let _first_sync_actor = SyncActor::launch(bus_1, first_p_actor, first_d_actor.clone()).unwrap();
+
+    let second_p = Arc::new(PeerInfo::new(
+        HashValue::from_slice(addr_2.as_ref()).unwrap(),
+    ));
+    let second_p_actor = ProcessActor::launch(Arc::clone(&second_p), second_chain.clone()).unwrap();
+    let second_d_actor = DownloadActor::launch(second_p, second_chain.clone()).unwrap();
+    let _second_sync_actor =
+        SyncActor::launch(bus_2, second_p_actor, second_d_actor.clone()).unwrap();
+
+    Delay::new(Duration::from_secs(5)).await;
+
+    let block_2 = second_chain.head_block().await.unwrap();
+
+    println!("block number:{}", block_2.header().number());
+    assert!(block_2.header().number() > 0);
 }

@@ -15,7 +15,7 @@ fn it_works() {
 fn gen_block_chain_actor() -> ChainActorRef<ChainActor> {
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-    ChainActor::launch(Arc::new(NodeConfig::default()), storage.clone()).unwrap()
+    ChainActor::launch(Arc::new(NodeConfig::default()), storage.clone(), None).unwrap()
 }
 
 async fn gen_head_chain(times: u64) -> ChainActorRef<ChainActor> {

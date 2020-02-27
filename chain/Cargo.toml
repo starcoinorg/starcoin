@@ -27,6 +27,8 @@ actix-rt = "1.0"
 
 logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
+network = {path = "../network", package="starcoin-network"}
+txpool = {path = "../txpool", package="starcoin-txpool"}
 
 [dev-dependencies]
 env_logger = "0.7.1"
