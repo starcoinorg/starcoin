@@ -4,17 +4,16 @@
 use anyhow::{ensure, format_err, Result};
 use crypto::hash::{create_literal_hash, CryptoHash, HashValue};
 
+use crate::node_index::NodeIndex;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
-use std::marker::PhantomData;
-use std::sync::Arc;
 
 /// Placeholder hash of `Accumulator`.
 pub static ACCUMULATOR_PLACEHOLDER_HASH: Lazy<HashValue> =
     Lazy::new(|| create_literal_hash("ACCUMULATOR_PLACEHOLDER_HASH"));
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AccumulatorNode {
     Internal(InternalNode),
     Leaf(LeafNode),
@@ -33,16 +32,24 @@ pub enum AccumulatorNode {
 // }
 
 impl AccumulatorNode {
-    pub fn new_internal(left: HashValue, right: HashValue) -> Self {
-        AccumulatorNode::Internal(InternalNode::new(left, right))
+    pub fn new_internal(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
+        AccumulatorNode::Internal(InternalNode::new(index, left, right))
     }
 
-    pub fn new_leaf(value: HashValue) -> Self {
-        AccumulatorNode::Leaf(LeafNode::new(value))
+    pub fn new_leaf(index: NodeIndex, value: HashValue) -> Self {
+        AccumulatorNode::Leaf(LeafNode::new(index, value))
     }
 
     pub fn new_empty() -> Self {
         AccumulatorNode::Empty
+    }
+
+    pub fn hash(&self) -> HashValue {
+        match self {
+            AccumulatorNode::Internal(internal) => internal.hash(),
+            AccumulatorNode::Leaf(leaf) => leaf.value(),
+            AccumulatorNode::Empty => *ACCUMULATOR_PLACEHOLDER_HASH,
+        }
     }
 
     #[cfg(test)]
@@ -56,49 +63,52 @@ impl AccumulatorNode {
 }
 
 /// An internal node.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct InternalNode {
     /// The hash of this internal node which is the root hash of the subtree.
-    #[serde(skip)]
-    hash: Cell<Option<HashValue>>,
+    // #[serde(skip)]
+    // hash: Cell<Option<HashValue>>,
+    index: NodeIndex,
     left: HashValue,
     right: HashValue,
 }
 
 impl InternalNode {
-    fn new(left: HashValue, right: HashValue) -> Self {
+    pub fn new(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
         InternalNode {
-            hash: Cell::new(None),
+            // hash: Cell::new(None),
+            index,
             left,
             right,
         }
     }
+    pub fn hash(&self) -> HashValue {
+        // match self.hash.get() {
+        //     Some(hash) => hash,
+        //     None => {
+        let mut bytes = self.left.to_vec();
+        bytes.extend(self.right.to_vec());
+        let hash = HashValue::from_sha3_256(bytes.as_slice());
+        // self.hash.set(Some(hash));
+        hash
+        //     }
+        // }
+    }
 }
 
-// impl CryptoHash for InternalNode {
-//     fn crypto_hash(&self) -> HashValue {
-//         match self.hash.get() {
-//             Some(hash) => hash,
-//             None => {
-//                 let mut bytes = self.left.to_vec();
-//                 bytes.extend(self.right.to_vec());
-//                 let hash = HashValue::from_sha3_256(bytes.as_slice());
-//                 self.hash.set(Some(hash))
-//             }
-//         }
-//     }
-// }
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct LeafNode(HashValue);
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct LeafNode {
+    index: NodeIndex,
+    hash: HashValue,
+}
 
 impl LeafNode {
-    pub fn new(value: HashValue) -> Self {
-        LeafNode(value)
+    pub fn new(index: NodeIndex, hash: HashValue) -> Self {
+        LeafNode { index, hash }
     }
 
     pub fn value(&self) -> HashValue {
-        self.0
+        self.hash
     }
 }
 

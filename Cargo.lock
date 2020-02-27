@@ -4068,6 +4068,8 @@ name = "starcoin-accumulator"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "byteorder 1.3.4",
+ "mirai-annotations",
  "once_cell",
  "serde",
  "starcoin-crypto",
@@ -4326,6 +4328,7 @@ dependencies = [
  "chrono",
  "rocksdb",
  "serde",
+ "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-state-tree",

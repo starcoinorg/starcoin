@@ -6,11 +6,12 @@ use crate::memory_storage::MemoryStorage;
 use crate::state_node_store::StateNodeStorage;
 use crate::storage::Repository;
 use crate::transaction_info_store::TransactionInfoStore;
-use anyhow::{Error, Result};
+use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
 
+pub mod accumulator_store;
 pub mod block_store;
 pub mod memory_storage;
 pub mod persistence_storage;
@@ -50,6 +51,16 @@ impl StateNodeStore for StarcoinStorage {
     fn save_node(&self, node: StateNode) -> Result<()> {
         self.state_node_store.save_node(node)
     }
+}
+///ensure slice length
+fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {
+    ensure!(
+        data.len() == len,
+        "Unexpected data len {}, expected {}.",
+        data.len(),
+        len,
+    );
+    Ok(())
 }
 
 #[cfg(test)]
