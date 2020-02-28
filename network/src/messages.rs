@@ -152,3 +152,10 @@ pub struct NetworkMessage {
     pub peer_id: AccountAddress,
     pub data: Vec<u8>,
 }
+
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+pub enum PeerEvent {
+    Open(AccountAddress),
+    Close(AccountAddress),
+}

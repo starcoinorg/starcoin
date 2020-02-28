@@ -3,7 +3,7 @@
 
 use crate::{
     convert_account_address_to_peer_id, convert_peer_id_to_account_address,
-    helper::convert_boot_nodes, PayloadMsg,
+    helper::convert_boot_nodes, PayloadMsg, PeerEvent,
 };
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
@@ -28,6 +28,7 @@ use network_libp2p::{
 };
 use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
+use scs::SCSCodec;
 use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::prelude::task::AtomicTask;
 use types::account_address::AccountAddress;
@@ -45,6 +46,7 @@ pub fn build_network_service(
     NetworkService,
     mpsc::UnboundedSender<NetworkMessage>,
     mpsc::UnboundedReceiver<NetworkMessage>,
+    mpsc::UnboundedReceiver<PeerEvent>,
     oneshot::Sender<()>,
 ) {
     let config = NetworkConfiguration {
@@ -75,25 +77,12 @@ fn run_network(
 ) -> (
     mpsc::UnboundedSender<NetworkMessage>,
     mpsc::UnboundedReceiver<NetworkMessage>,
+    mpsc::UnboundedReceiver<PeerEvent>,
     impl Future<Item = (), Error = std::io::Error>,
 ) {
     let (mut _tx, net_rx) = mpsc::unbounded();
     let (net_tx, mut _rx) = mpsc::unbounded::<NetworkMessage>();
-    let net_srv_1 = net_srv.clone();
-    let connected_fut = future::poll_fn(move || {
-        match try_ready!(net_srv_1.lock().poll()) {
-            Some(ServiceEvent::OpenedCustomProtocol { peer_id, .. }) => {
-                debug!(
-                    "Connected peer: {}",
-                    convert_peer_id_to_account_address(&peer_id).unwrap()
-                );
-            }
-            _ => {
-                debug!("Connected checked");
-            }
-        }
-        Ok(Async::Ready(()))
-    });
+    let (event_tx, mut event_rx) = mpsc::unbounded::<PeerEvent>();
 
     let net_srv_2 = net_srv.clone();
     let ack_sender = net_srv.clone();
@@ -143,15 +132,20 @@ fn run_network(
                 version: _,
                 debug_info: _,
             } => {
-                info!(
-                    "Connected peer {:?}",
-                    convert_peer_id_to_account_address(&peer_id).unwrap()
-                );
+                let addr = convert_peer_id_to_account_address(&peer_id).unwrap();
+                info!("Connected peer {:?}", addr);
+                let open_msg = PeerEvent::Open(addr);
+                let _ = event_tx.unbounded_send(open_msg);
             }
             ServiceEvent::ClosedCustomProtocol {
-                peer_id: _,
+                peer_id,
                 debug_info: _,
-            } => debug!("Network close custom protol"),
+            } => {
+                let addr = convert_peer_id_to_account_address(&peer_id).unwrap();
+                info!("Close peer {:?}", addr);
+                let open_msg = PeerEvent::Close(addr);
+                let _ = event_tx.unbounded_send(open_msg);
+            }
             ServiceEvent::Clogged {
                 peer_id: _,
                 messages: _,
@@ -201,9 +195,9 @@ fn run_network(
         })
         .map_err(|(r, _, _)| r);
 
-    let futs = connected_fut.and_then(move |_| futs);
+    //let futs = connected_fut.and_then(move |_| futs);
 
-    (net_tx, net_rx, futs)
+    (net_tx, net_rx, event_rx, futs)
 }
 
 fn spawn_network(
@@ -213,8 +207,10 @@ fn spawn_network(
 ) -> (
     mpsc::UnboundedSender<NetworkMessage>,
     mpsc::UnboundedReceiver<NetworkMessage>,
+    mpsc::UnboundedReceiver<PeerEvent>,
 ) {
-    let (network_sender, network_receiver, network_future) = run_network(libp2p_service, acks);
+    let (network_sender, network_receiver, event_rx, network_future) =
+        run_network(libp2p_service, acks);
     let fut = network_future
         .select(close_rx.then(|_| {
             debug!("Shutdown the network");
@@ -231,7 +227,7 @@ fn spawn_network(
         .spawn(move || {
             let _ = runtime.block_on(fut);
         });
-    (network_sender, network_receiver)
+    (network_sender, network_receiver, event_rx)
 }
 
 impl NetworkService {
@@ -241,12 +237,13 @@ impl NetworkService {
         NetworkService,
         mpsc::UnboundedSender<NetworkMessage>,
         mpsc::UnboundedReceiver<NetworkMessage>,
+        mpsc::UnboundedReceiver<PeerEvent>,
         oneshot::Sender<()>,
     ) {
         let (close_tx, close_rx) = oneshot::channel::<()>();
         let libp2p_service = build_libp2p_service(cfg).unwrap();
         let acks = Arc::new(Mutex::new(HashMap::new()));
-        let (network_sender, network_receiver) =
+        let (network_sender, network_receiver, event_rx) =
             spawn_network(libp2p_service.clone(), acks.clone(), close_rx);
         info!("Network started, connected peers:");
         for p in libp2p_service.lock().connected_peers() {
@@ -260,6 +257,7 @@ impl NetworkService {
             },
             network_sender,
             network_receiver,
+            event_rx,
             close_tx,
         )
     }

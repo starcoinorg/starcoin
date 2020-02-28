@@ -4,7 +4,7 @@
 use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, NetworkService};
 use crate::{
-    GetCounterMessage, NetworkMessage, PeerMessage, RPCMessage, RPCRequest, RPCResponse,
+    GetCounterMessage, NetworkMessage, PeerEvent, PeerMessage, RPCMessage, RPCRequest, RPCResponse,
     RpcRequestMessage,
 };
 use actix::prelude::*;
@@ -122,7 +122,8 @@ where
         txpool: P,
         key_pair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
     ) -> NetworkAsyncService<P> {
-        let (service, tx, rx, tx_command) = build_network_service(&node_config.network, key_pair);
+        let (service, tx, rx, event_rx, tx_command) =
+            build_network_service(&node_config.network, key_pair);
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -138,6 +139,7 @@ where
         let tx_clone = tx.clone();
         let addr = NetworkActor::create(move |ctx: &mut Context<NetworkActor<P>>| {
             ctx.add_stream(rx.fuse().compat());
+            ctx.add_stream(event_rx.fuse().compat());
             NetworkActor {
                 network_service: service,
                 tx: tx_clone,
@@ -188,6 +190,22 @@ where
                 warn!("get error {:?}", e);
             }
         }
+    }
+}
+
+impl<P> StreamHandler<Result<PeerEvent, ()>> for NetworkActor<P>
+where
+    P: TxPoolAsyncService,
+{
+    fn handle(&mut self, item: Result<PeerEvent, ()>, ctx: &mut Self::Context) {
+        info!("event is {:?}", item);
+        let event = item.unwrap();
+        let bus = self.bus.clone();
+        let f = async move {
+            bus.send(Broadcast { msg: event }).await;
+        };
+        let f = actix::fut::wrap_future(f);
+        ctx.spawn(Box::new(f));
     }
 }
 
