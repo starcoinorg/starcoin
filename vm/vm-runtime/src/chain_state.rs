@@ -1,15 +1,23 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::access_path_helper::AccessPathHelper;
 use anyhow::{Error, Result};
-use libra_state_view::StateView;
-use libra_types::access_path::AccessPath;
 use std::sync::Arc;
-use traits::ChainState;
-use types::access_path::AccessPath as StarcoinAccessPath;
-use vm::errors::VMResult;
-use vm_runtime::data_cache::{BlockDataCache, RemoteCache};
+use traits::{ChainState};
+use libra_state_view::StateView;
+use libra_types::{
+    access_path::AccessPath,
+};
+use types::{
+    access_path::AccessPath as StarcoinAccessPath,
+};
+use vm_runtime::{
+    data_cache::{BlockDataCache, RemoteCache},
+};
+use vm::{
+    errors::VMResult,
+};
+use crate::access_path_helper::AccessPathHelper;
 /// Adaptor for chain state
 
 pub struct StateStore<'txn> {
@@ -24,10 +32,7 @@ impl<'txn> StateStore<'txn> {
 
 impl<'txn> StateView for StateStore<'txn> {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        ChainState::get(
-            self.chain_state,
-            &AccessPathHelper::to_Starcoin_AccessPath(access_path),
-        )
+        ChainState::get(self.chain_state, &AccessPathHelper::to_Starcoin_AccessPath(access_path))
     }
 
     fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
@@ -45,3 +50,4 @@ impl<'txn> RemoteCache for StateStore<'txn> {
         Ok(StateView::get(self, access_path).expect("it should not error"))
     }
 }
+

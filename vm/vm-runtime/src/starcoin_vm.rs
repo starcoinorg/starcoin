@@ -2,51 +2,48 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    chain_state::StateStore, transaction_helper::TransactionHelper,
-    transaction_helper::VerifiedTranscationPayload,
+    chain_state::StateStore,
+    transaction_helper::TransactionHelper,
+    transaction_helper::VerifiedTranscationPayload
+};
+use vm_runtime::{
+    chain_state::{ChainState as LibraChainState, SystemExecutionContext, TransactionExecutionContext},
+    data_cache::{BlockDataCache, RemoteCache},
+    move_vm::MoveVM,
 };
 use config::VMConfig;
 use libra_state_view::StateView;
-use libra_types::{
-    transaction::{
-        Module as LibraModule, Script as LibraScript,
-        SignatureCheckedTransaction as LibraSignatureCheckedTransaction,
-        SignedTransaction as LibraSignedTransaction,
-        TransactionArgument as LibraTransactionArgument,
-        TransactionOutput as LibraTransactionOutput, TransactionPayload as LibraTransactionPayload,
-        TransactionStatus as LibraTransactionStatus,
-    },
-    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
-    write_set::{
-        WriteOp as LibraWriteOp, WriteSet as LibraWriteSet, WriteSetMut as LibraMutWriteSetMut,
-    },
-};
 use std::sync::Arc;
-use traits::ChainState;
-use types::{
-    access_path::AccessPath,
-    account_address::{AccountAddress, ADDRESS_LENGTH},
-    account_state::AccountState,
-    transaction::{
-        RawUserTransaction, Script, SignatureCheckedTransaction, SignedUserTransaction,
-        Transaction, TransactionArgument, TransactionOutput, TransactionPayload, TransactionStatus,
-    },
-    vm_error::{StatusCode, VMStatus},
-    write_set::{WriteOp, WriteSet, WriteSetMut},
-};
 use vm::{
     errors::VMResult,
     gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
-use vm_runtime::{
-    chain_state::{
-        ChainState as LibraChainState, SystemExecutionContext, TransactionExecutionContext,
+use types::{
+    access_path::AccessPath,
+    account_address::{AccountAddress, ADDRESS_LENGTH},
+    account_state::AccountState,
+    transaction::{
+        RawUserTransaction, Script, SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
+        TransactionOutput, TransactionPayload, TransactionStatus,
     },
-    data_cache::{BlockDataCache, RemoteCache},
-    move_vm::MoveVM,
+    vm_error::{StatusCode, VMStatus},
+    write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use vm_runtime_types::value::Value;
+use libra_types::{
+    transaction::{
+        SignedTransaction as LibraSignedTransaction, TransactionOutput as LibraTransactionOutput,
+        TransactionStatus as LibraTransactionStatus, SignatureCheckedTransaction as LibraSignatureCheckedTransaction,
+        TransactionPayload as LibraTransactionPayload,
+        TransactionArgument as LibraTransactionArgument,
+        Script as LibraScript,
+        Module as LibraModule,
+    },
+    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
+    write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet, WriteSetMut as LibraMutWriteSetMut},
+};
+use traits::{ChainState};
 
 #[derive(Clone)]
 /// Wrapper of MoveVM
@@ -72,9 +69,9 @@ impl StarcoinVM {
     }
 
     fn get_gas_schedule(&self) -> VMResult<&CostTable> {
-        self.gas_schedule
-            .as_ref()
-            .ok_or_else(|| LibraVMStatus::new(LibraStatusCode::VM_STARTUP_FAILURE))
+        self.gas_schedule.as_ref().ok_or_else(|| {
+            LibraVMStatus::new(LibraStatusCode::VM_STARTUP_FAILURE)
+        })
     }
 
     fn verify_transaction(
@@ -97,9 +94,7 @@ impl StarcoinVM {
             }
             LibraTransactionPayload::Module(module) => {
                 // ToDo: run prologue?
-                Ok(VerifiedTranscationPayload::LibraModule(
-                    module.code().to_vec(),
-                ))
+                Ok(VerifiedTranscationPayload::LibraModule(module.code().to_vec()))
             }
             _ => Err(LibraVMStatus::new(LibraStatusCode::UNREACHABLE)),
         }
@@ -131,21 +126,20 @@ impl StarcoinVM {
                 )
             }
         }
-        .map_err(|err| {
-            failed_gas_left = ctx.gas_left();
-            err
-        })
-        .and_then(|_| {
-            failed_gas_left = ctx.gas_left();
-            let mut gas_free_ctx = SystemExecutionContext::from(ctx);
-            gas_free_ctx.get_transaction_output(txn_data, Ok(()))
-        })
-        .unwrap_or_else(|err| {
-            let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
-            gas_free_ctx
-                .get_transaction_output(txn_data, Err(err))
-                .unwrap_or_else(discard_error_output)
-        })
+            .map_err(|err| {
+                failed_gas_left = ctx.gas_left();
+                err
+            })
+            .and_then(|_| {
+                failed_gas_left = ctx.gas_left();
+                let mut gas_free_ctx = SystemExecutionContext::from(ctx);
+                gas_free_ctx.get_transaction_output(txn_data, Ok(()))
+            })
+            .unwrap_or_else(|err| {
+                let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
+                gas_free_ctx.get_transaction_output(txn_data, Err(err))
+                    .unwrap_or_else(discard_error_output)
+            })
     }
 
     pub fn execute_transaction(
@@ -183,7 +177,8 @@ impl StarcoinVM {
                 // TODO convert to starcoin type
                 TransactionHelper::to_starcoin_TransactionOutput(result)
             }
-            _ => TransactionHelper::fake_starcoin_TransactionOutput(),
+            _ => TransactionHelper::fake_starcoin_TransactionOutput()
+
         }
     }
 }
@@ -209,3 +204,4 @@ fn convert_txn_args(args: Vec<LibraTransactionArgument>) -> Vec<Value> {
         })
         .collect()
 }
+
