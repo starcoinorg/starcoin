@@ -91,6 +91,6 @@ impl TransactionHelper {
 }
 
 pub enum VerifiedTranscationPayload {
-    LibraScript(Vec<u8>, Vec<LibraTransactionArgument>),
-    LibraModule(Vec<u8>),
+    Script(Vec<u8>, Vec<TransactionArgument>),
+    Module(Vec<u8>),
 }

@@ -42,8 +42,10 @@ use libra_types::{
     },
     vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
     write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet, WriteSetMut as LibraMutWriteSetMut},
+    byte_array::ByteArray as LibraByteArray,
 };
 use traits::{ChainState};
+use logger::prelude::*;
 
 #[derive(Clone)]
 /// Wrapper of MoveVM
@@ -64,39 +66,40 @@ impl StarcoinVM {
     }
 
     fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
+        info!("load gas schedule");
         let mut ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
         self.gas_schedule = self.move_vm.load_gas_schedule(&mut ctx, data_cache).ok();
     }
 
-    fn get_gas_schedule(&self) -> VMResult<&CostTable> {
+    fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
         self.gas_schedule.as_ref().ok_or_else(|| {
-            LibraVMStatus::new(LibraStatusCode::VM_STARTUP_FAILURE)
+            VMStatus::new(StatusCode::VM_STARTUP_FAILURE)
         })
     }
 
     fn verify_transaction(
         &self,
-        transaction: &LibraSignatureCheckedTransaction,
+        transaction: &SignatureCheckedTransaction,
         state_view: &dyn StateView,
         remote_cache: &dyn RemoteCache,
-    ) -> VMResult<VerifiedTranscationPayload> {
+        txn_data: &TransactionMetadata,
+    ) -> Result<VerifiedTranscationPayload, VMStatus> {
+        info!("very transaction");
         let mut ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
         // ToDo: check gas
-        //let txn = TransactionHelper::to_libra_SignedTransaction(&transaction);
-        let txn_data = TransactionMetadata::new(&transaction);
         match transaction.payload() {
-            LibraTransactionPayload::Script(script) => {
+            TransactionPayload::Script(script) => {
                 // ToDo: run prologue?
-                Ok(VerifiedTranscationPayload::LibraScript(
+                Ok(VerifiedTranscationPayload::Script(
                     script.code().to_vec(),
                     script.args().to_vec(),
                 ))
             }
-            LibraTransactionPayload::Module(module) => {
+            TransactionPayload::Module(module) => {
                 // ToDo: run prologue?
-                Ok(VerifiedTranscationPayload::LibraModule(module.code().to_vec()))
+                Ok(VerifiedTranscationPayload::Module(module.code().to_vec()))
             }
-            _ => Err(LibraVMStatus::new(LibraStatusCode::UNREACHABLE)),
+            _ => Err(VMStatus::new(StatusCode::UNREACHABLE)),
         }
     }
 
@@ -105,18 +108,23 @@ impl StarcoinVM {
         remote_cache: &mut BlockDataCache<'_>,
         txn_data: &TransactionMetadata,
         payload: VerifiedTranscationPayload,
-    ) -> libra_types::transaction::TransactionOutput {
+    ) -> TransactionOutput {
+        info!("execute verified payload");
         let mut ctx = TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
         let mut failed_gas_left = GasUnits::new(0);
-        match payload {
-            VerifiedTranscationPayload::LibraModule(m) => {
+        let output = match payload {
+            VerifiedTranscationPayload::Module(m) => {
                 self.move_vm.publish_module(m, &mut ctx, txn_data)
             }
-            VerifiedTranscationPayload::LibraScript(s, args) => {
+            VerifiedTranscationPayload::Script(s, args) => {
+                ////////
                 let gas_schedule = match self.get_gas_schedule() {
                     Ok(s) => s,
-                    Err(e) => return discard_error_output(e),
+                    Err(e) => {
+                        return discard_error_output(e)
+                    },
                 };
+                info!("invoke MoveVM::execute_script()");
                 self.move_vm.execute_script(
                     s,
                     gas_schedule,
@@ -138,8 +146,10 @@ impl StarcoinVM {
             .unwrap_or_else(|err| {
                 let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
                 gas_free_ctx.get_transaction_output(txn_data, Err(err))
-                    .unwrap_or_else(discard_error_output)
-            })
+                    .unwrap_or_else(discard_libra_error_output)
+            });
+        // TODO convert to starcoin type
+        TransactionHelper::to_starcoin_TransactionOutput(output)
     }
 
     pub fn execute_transaction(
@@ -148,34 +158,49 @@ impl StarcoinVM {
         txn: Transaction,
     ) -> TransactionOutput {
         let state_store = StateStore::new(chain_state);
+        info!("new remote cache");
         let mut data_cache = BlockDataCache::new(&state_store);
         self.load_gas_schedule(&data_cache);
 
         match txn {
             Transaction::UserTransaction(txn) => {
-                let txn = TransactionHelper::to_libra_SignedTransaction(&txn);
-                let txn_data = TransactionMetadata::new(&txn);
+                let libra_txn = TransactionHelper::to_libra_SignedTransaction(&txn);
+                let txn_data = TransactionMetadata::new(&libra_txn);
+
                 // check signature
-                let signature_checked_txn = txn.check_signature().unwrap();
-
-                let verified_payload =
-                    self.verify_transaction(&signature_checked_txn, &state_store, &data_cache);
-
-                let result = verified_payload
-                    .and_then(|verified_payload| {
-                        Ok(self.execute_verified_payload(
-                            &mut data_cache,
-                            &txn_data,
-                            verified_payload,
-                        ))
-                    })
-                    .unwrap_or_else(discard_error_output);
-
-                if let libra_types::transaction::TransactionStatus::Keep(_) = result.status() {
-                    data_cache.push_write_set(result.write_set())
+                let signature_checked_txn = match txn.check_signature() {
+                    Ok(t) => Ok(t),
+                    Err(_) => Err(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
                 };
-                // TODO convert to starcoin type
-                TransactionHelper::to_starcoin_TransactionOutput(result)
+
+                let output = match signature_checked_txn {
+                    Ok(txn) => {
+
+                        let verified_payload =
+                            self.verify_transaction(&txn, &state_store, &data_cache, &txn_data);
+
+                        let result = verified_payload
+                            .and_then(|verified_payload| {
+                                Ok(self.execute_verified_payload(
+                                    &mut data_cache,
+                                    &txn_data,
+                                    verified_payload,
+                                ))
+                            })
+                            .unwrap_or_else(discard_error_output);
+
+                        if let TransactionStatus::Keep(_) = result.status() {
+                            //ToDo: when to write back the state changes?
+//                            data_cache.push_write_set(result.write_set())
+                        };
+                        result
+                    }
+                    Err(e) => {
+                        info!("we are here!!!");
+                        discard_error_output(e)
+                    },
+                };
+                output
             }
             _ => TransactionHelper::fake_starcoin_TransactionOutput()
 
@@ -183,7 +208,18 @@ impl StarcoinVM {
     }
 }
 
-pub(crate) fn discard_error_output(err: LibraVMStatus) -> LibraTransactionOutput {
+pub(crate) fn discard_error_output(err: VMStatus) -> TransactionOutput {
+    info!("discard error output: {:?}", err);
+    // Since this transaction will be discarded, no writeset will be included.
+    TransactionOutput::new(
+        vec![],
+        0,
+        TransactionStatus::Discard(err),
+    )
+}
+
+pub(crate) fn discard_libra_error_output(err: LibraVMStatus) -> LibraTransactionOutput {
+    info!("discard error output: {:?}", err);
     // Since this transaction will be discarded, no writeset will be included.
     LibraTransactionOutput::new(
         LibraWriteSet::default(),
@@ -194,13 +230,13 @@ pub(crate) fn discard_error_output(err: LibraVMStatus) -> LibraTransactionOutput
 }
 
 /// Convert the transaction arguments into move values.
-fn convert_txn_args(args: Vec<LibraTransactionArgument>) -> Vec<Value> {
+fn convert_txn_args(args: Vec<TransactionArgument>) -> Vec<Value> {
     args.into_iter()
         .map(|arg| match arg {
-            LibraTransactionArgument::U64(i) => Value::u64(i),
-            LibraTransactionArgument::Address(a) => Value::address(a),
-            LibraTransactionArgument::Bool(b) => Value::bool(b),
-            LibraTransactionArgument::ByteArray(b) => Value::byte_array(b),
+            TransactionArgument::U64(i) => Value::u64(i),
+            TransactionArgument::Address(a) => Value::address(TransactionHelper::to_libra_AccountAddress(a)),
+            TransactionArgument::Bool(b) => Value::bool(b),
+            TransactionArgument::ByteArray(b) => Value::byte_array(LibraByteArray::new((b.clone()).into_inner())),
         })
         .collect()
 }
