@@ -203,6 +203,7 @@ where
         let bus = self.bus.clone();
         let f = async move {
             bus.send(Broadcast { msg: event }).await;
+            info!("already broadcast event");
         };
         let f = actix::fut::wrap_future(f);
         ctx.spawn(Box::new(f));
@@ -401,7 +402,10 @@ mod tests {
             let response_actor = TestResponseActor::create(network_clone2);
             let addr = response_actor.start();
 
-            let recipient = addr.recipient::<RpcRequestMessage>();
+            let recipient = addr.clone().recipient::<RpcRequestMessage>();
+            bus2.send(Subscription { recipient }).await;
+
+            let recipient = addr.recipient::<PeerEvent>();
             bus2.send(Subscription { recipient }).await;
 
             _delay(Duration::from_millis(100)).await;
@@ -493,6 +497,15 @@ mod tests {
                 }
                 _ => Ok(()),
             }
+        }
+    }
+
+    impl Handler<PeerEvent> for TestResponseActor {
+        type Result = Result<()>;
+
+        fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
+            info!("Event is {:?}", msg);
+            Ok(())
         }
     }
 }
