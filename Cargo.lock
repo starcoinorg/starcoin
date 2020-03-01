@@ -4508,6 +4508,7 @@ dependencies = [
  "mirai-annotations",
  "once_cell",
  "serde",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-types",
 ]
@@ -4614,14 +4615,17 @@ name = "starcoin-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "env_logger",
  "once_cell",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-state-tree",
  "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-runtime",
+ "stest",
 ]
 
 [[package]]
@@ -4877,11 +4881,14 @@ name = "starcoin-vm-runtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "env_logger",
  "libra-state-view",
  "libra-types",
  "starcoin-config",
+ "starcoin-logger",
  "starcoin-traits",
  "starcoin-types",
+ "stest",
  "vm",
  "vm-runtime",
  "vm-runtime-types",

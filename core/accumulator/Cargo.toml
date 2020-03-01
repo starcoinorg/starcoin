@@ -14,5 +14,6 @@ mirai-annotations = "1.5.0"
 byteorder = "1.3.2"
 
 types = {path = "../../types", package="starcoin-types"}
-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0" }

@@ -3,11 +3,12 @@
 
 use crate::LeafCount;
 use mirai_annotations::*;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeIndex(u64);
-
+pub static NODE_ERROR_INDEX: Lazy<NodeIndex> = Lazy::new(|| NodeIndex::new(u64::max_value()));
 impl NodeIndex {
     pub fn new(index: u64) -> Self {
         NodeIndex(index)
@@ -33,6 +34,17 @@ impl NodeIndex {
         Self::from_level_and_pos(0, leaf_index)
     }
 
+    // Given a leaf index, calculate the position of a minimum root which contains this leaf
+    /// This method calculates the index of the smallest root which contains this leaf.
+    /// Observe that, the root position is composed by a "height" number of ones
+    ///
+    /// For example
+    /// ```text
+    ///     0010010(node)
+    ///     0011111(smearing)
+    ///     -------
+    ///     0001111(root)
+    /// ```
     pub fn root_from_leaf_index(leaf_index: u64) -> Self {
         let leaf = Self::from_leaf_index(leaf_index);
         Self(smear_ones_for_u64(leaf.0) >> 1)
@@ -85,6 +97,17 @@ impl NodeIndex {
     pub fn sibling(self) -> Self {
         assume!(self.0 < u64::max_value() - 1); // invariant
         Self(self.0 ^ (isolate_rightmost_zero_bit(self.0) << 1))
+    }
+    /// Whether this node_index is a left child of its parent.  The observation is that,
+    /// after stripping out all right-most 1 bits, a left child will have a bit pattern
+    /// of xxx00(11..), while a right child will be represented by xxx10(11..)
+    pub fn is_left_child(self) -> bool {
+        assume!(self.0 < u64::max_value() - 1); // invariant
+        self.0 & (isolate_rightmost_zero_bit(self.0) << 1) == 0
+    }
+
+    pub fn is_right_child(self) -> bool {
+        !self.is_left_child()
     }
 }
 

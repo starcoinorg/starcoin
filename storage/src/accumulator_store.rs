@@ -84,4 +84,18 @@ impl AccumulatorNodeWriter for MockHashStore {
     fn save_node(&self, node: AccumulatorNode) -> Result<()> {
         self.node_store.put(node.hash(), node)
     }
+
+    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
+        for hash in node_hash_vec {
+            self.node_store.remove(hash);
+        }
+        Ok(())
+    }
+
+    fn delete_larger_index(&self, from_index: u64, max_notes: u64) -> Result<(), Error> {
+        for index in from_index..max_notes {
+            self.index_storage.remove(NodeIndex::new(index));
+        }
+        Ok(())
+    }
 }

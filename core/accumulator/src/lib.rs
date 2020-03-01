@@ -3,10 +3,8 @@
 
 use anyhow::bail;
 use anyhow::{ensure, Error, Result};
-use crypto::{hash::CryptoHash, HashValue};
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
-use std::sync::Arc;
+use starcoin_crypto::{hash::CryptoHash, HashValue};
 
 pub mod node;
 pub mod node_index;
@@ -16,6 +14,7 @@ use crate::node_index::NodeIndex;
 pub use node::AccumulatorNode;
 
 pub type LeafCount = u64;
+pub type NodeCount = u64;
 
 pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 pub const MAX_ACCUMULATOR_LEAVES: LeafCount = 1 << MAX_ACCUMULATOR_PROOF_DEPTH;
@@ -90,9 +89,9 @@ pub trait Accumulator {
     fn append(&self, leaves: &[HashValue]) -> Result<HashValue>;
     /// Get leaf hash by leaf index.
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>>;
-
+    /// Get proof by leaf index.
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
-
+    /// Get current accumulator tree root hash.
     fn root_hash(&self) -> HashValue;
 }
 
@@ -104,8 +103,14 @@ pub trait AccumulatorNodeReader {
 }
 
 pub trait AccumulatorNodeWriter {
+    /// save node index
     fn save(&self, index: NodeIndex, hash: HashValue) -> Result<()>;
+    /// save node
     fn save_node(&self, node: AccumulatorNode) -> Result<()>;
+    ///delete node
+    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()>;
+    ///delete larger index than one
+    fn delete_larger_index(&self, index: u64, max_notes: u64) -> Result<()>;
 }
 
 pub trait AccumulatorNodeStore: AccumulatorNodeReader + AccumulatorNodeWriter {}
@@ -115,6 +120,8 @@ pub struct MerkleAccumulator<'a, S> {
     frozen_subtree_roots: Vec<HashValue>,
     /// The total number of leaves in this accumulator.
     num_leaves: LeafCount,
+    /// The total number of nodes in this accumulator.
+    num_notes: NodeCount,
     /// The root hash of this accumulator.
     root_hash: HashValue,
     node_store: &'a S,
@@ -127,6 +134,7 @@ where
     pub fn new(
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: LeafCount,
+        num_notes: NodeCount,
         node_store: &'a S,
     ) -> Result<Self> {
         ensure!(
@@ -142,6 +150,7 @@ where
         Ok(Self {
             frozen_subtree_roots,
             num_leaves,
+            num_notes,
             root_hash,
             node_store,
         })
@@ -152,21 +161,23 @@ where
         frozen_subtree_roots: &mut Vec<HashValue>,
         num_existing_leaves: LeafCount,
         leaf: HashValue,
-    ) {
+    ) -> u64 {
         // First just append the leaf.
         frozen_subtree_roots.push(leaf);
 
         // Next, merge the last two subtrees into one. If `num_existing_leaves` has N trailing
         // ones, the carry will happen N times.
         let num_trailing_ones = (!num_existing_leaves).trailing_zeros();
-
+        let mut num_internal_nodes = 0u64;
         for i in 0..num_trailing_ones {
             let right_hash = frozen_subtree_roots.pop().expect("Invalid accumulator.");
             let left_hash = frozen_subtree_roots.pop().expect("Invalid accumulator.");
             let parent_hash =
                 InternalNode::new(NodeIndex::new(i as u64), left_hash, right_hash).hash();
             frozen_subtree_roots.push(parent_hash);
+            num_internal_nodes += 1;
         }
+        num_internal_nodes
     }
 
     /// Computes the root hash of an accumulator given the frozen subtree roots and the number of
@@ -205,6 +216,50 @@ where
 
         current_hash
     }
+    ///delete node from leaf_index
+    fn delete(&mut self, leaf_index: u64) -> Result<()> {
+        ensure!(
+            leaf_index < self.num_leaves as u64,
+            "invalid leaf_index {}, num_leaves {}",
+            leaf_index,
+            self.num_leaves
+        );
+        //find deleting node by leaf_index
+        let larger_nodes = self.get_larger_nodes_from_index(leaf_index).unwrap();
+        //delete node and index
+        self.node_store.delete_nodes(larger_nodes.clone());
+        self.node_store
+            .delete_larger_index(leaf_index, self.num_notes);
+
+        // update self frozen_subtree_roots
+        for hash in larger_nodes {
+            let pos = self
+                .frozen_subtree_roots
+                .iter()
+                .position(|x| *x == hash)
+                .unwrap();
+            self.frozen_subtree_roots.remove(pos);
+        }
+        //update self leaves number
+        self.num_leaves = leaf_index - 1;
+
+        //update root hash
+        let node_index = NodeIndex::new(leaf_index);
+        if node_index.is_left_child() {
+            //if index is left, update root hash
+            let new_root_index = NodeIndex::root_from_leaf_count(leaf_index);
+            self.root_hash = self.node_store.get(new_root_index).unwrap().unwrap().hash();
+        } else {
+            self.root_hash = self.get_new_root_and_update_right_node(node_index).unwrap();
+        };
+
+        Ok(())
+    }
+
+    /// update
+    fn update(&self, leaf_index: u64) -> Result<()> {
+        unimplemented!()
+    }
     /// filter function can be applied to filter out certain siblings.
     fn get_siblings(
         &self,
@@ -224,6 +279,53 @@ where
             })
             .collect::<Result<Vec<_>>>()?;
         Ok(siblings)
+    }
+
+    ///get all nodes larger than index of leaf_node
+    fn get_larger_nodes_from_index(&self, leaf_index: u64) -> Result<Vec<HashValue>> {
+        let mut node_vec = vec![];
+        for index in leaf_index..self.num_leaves {
+            match self.node_store.get(NodeIndex::new(index)).unwrap() {
+                Some(node) => node_vec.push(node.hash()),
+                _ => {}
+            }
+        }
+        Ok(node_vec)
+    }
+
+    ///get new root by right leaf index
+    fn get_new_root_and_update_right_node(&self, leaf_index: NodeIndex) -> Result<HashValue> {
+        let mut right_hash = *ACCUMULATOR_PLACEHOLDER_HASH;
+        let mut right_index = leaf_index;
+        //save current node
+        self.node_store.save(leaf_index, right_hash);
+        self.node_store
+            .save_node(AccumulatorNode::new_leaf(leaf_index, right_hash));
+        let mut new_root = right_hash;
+        loop {
+            //get sibling
+            let left_node_index = right_index.sibling();
+            match self.node_store.get(left_node_index).unwrap() {
+                Some(node) => {
+                    let left_hash = node.hash();
+                    let parent_index = right_index.parent();
+                    //set new root hash to parent node hash
+                    let parent_node =
+                        AccumulatorNode::new_internal(parent_index, left_hash, right_hash);
+                    //save parent node
+                    self.node_store.save_node(parent_node.clone());
+                    new_root = parent_node.hash();
+                    self.node_store.save(parent_index, new_root);
+                    //for next loop
+                    right_index = parent_node.index();
+                    right_hash = new_root;
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+        Ok(new_root)
     }
 
     fn rightmost_leaf_index(&self) -> u64 {
@@ -250,12 +352,14 @@ where
     fn append(&self, leaves: &[HashValue]) -> Result<HashValue, Error> {
         let mut frozen_subtree_roots = self.frozen_subtree_roots.clone();
         let mut num_leaves = self.num_leaves;
+        let mut num_nodes = self.num_notes;
         for leaf in leaves {
-            Self::append_one(&mut frozen_subtree_roots, num_leaves, *leaf);
+            let internal_notes = Self::append_one(&mut frozen_subtree_roots, num_leaves, *leaf);
             num_leaves += 1;
+            num_nodes = num_nodes + internal_notes;
         }
 
-        Ok(Self::new(frozen_subtree_roots, num_leaves, self.node_store)
+        Ok(Self::new(frozen_subtree_roots, num_leaves,num_nodes, self.node_store)
             .expect(
                 "Appending leaves to a valid accumulator should create another valid accumulator.",
             )
