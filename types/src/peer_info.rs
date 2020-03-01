@@ -1,18 +1,20 @@
+use crate::account_address::AccountAddress;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
-#[derive(Eq, PartialEq, Hash, Clone, Debug)]
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
-    id: HashValue,
+    pub id: AccountAddress,
 }
 
 impl PeerInfo {
-    pub fn new(hash: HashValue) -> Self {
-        PeerInfo { id: hash }
+    pub fn new(address: AccountAddress) -> Self {
+        PeerInfo { id: address }
     }
 
     pub fn random() -> Self {
         PeerInfo {
-            id: HashValue::random(),
+            id: AccountAddress::random(),
         }
     }
 }
