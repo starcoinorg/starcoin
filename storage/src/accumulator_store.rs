@@ -20,9 +20,9 @@ use std::marker::PhantomData;
 use std::mem::size_of;
 use std::sync::Arc;
 
-pub type MockAccumulator<'a> = MerkleAccumulator<'a, MockHashStore>;
+pub type MockAccumulator<'a> = MerkleAccumulator<'a, AccumulatorStore>;
 
-pub struct MockHashStore {
+pub struct AccumulatorStore {
     index_storage: CodecStorage<NodeIndex, HashValue>,
     node_store: CodecStorage<HashValue, AccumulatorNode>,
 }
@@ -30,7 +30,7 @@ pub struct MockHashStore {
 const MOCK_ACCUMULATOR_INDEX_KEY_PREFIX: &str = "NockAccumulatorIndex";
 const MOCK_ACCUMULATOR_NODE_KEY_PREFIX: &str = "NockAccumulatorNode";
 
-impl MockHashStore {
+impl AccumulatorStore {
     pub fn new(storage: Arc<dyn Repository>) -> Self {
         Self {
             index_storage: CodecStorage::new(storage.clone(), MOCK_ACCUMULATOR_INDEX_KEY_PREFIX),
@@ -61,8 +61,8 @@ impl ValueCodec for AccumulatorNode {
     }
 }
 
-impl AccumulatorNodeStore for MockHashStore {}
-impl AccumulatorNodeReader for MockHashStore {
+impl AccumulatorNodeStore for AccumulatorStore {}
+impl AccumulatorNodeReader for AccumulatorStore {
     fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>, Error> {
         let node_index = self.index_storage.get(index).unwrap();
         match node_index {
@@ -76,7 +76,7 @@ impl AccumulatorNodeReader for MockHashStore {
     }
 }
 
-impl AccumulatorNodeWriter for MockHashStore {
+impl AccumulatorNodeWriter for AccumulatorStore {
     fn save(&self, index: NodeIndex, hash: HashValue) -> Result<(), Error> {
         self.index_storage.put(index, hash)
     }
@@ -93,6 +93,12 @@ impl AccumulatorNodeWriter for MockHashStore {
     }
 
     fn delete_larger_index(&self, from_index: u64, max_notes: u64) -> Result<(), Error> {
+        ensure!(
+            from_index <= max_notes,
+            " invalid index form: {} to max notes:{}.",
+            from_index,
+            max_notes
+        );
         for index in from_index..max_notes {
             self.index_storage.remove(NodeIndex::new(index));
         }

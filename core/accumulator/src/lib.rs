@@ -6,12 +6,16 @@ use anyhow::{ensure, Error, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
+#[cfg(test)]
+mod accumulator_test;
+
 pub mod node;
 pub mod node_index;
 
 use crate::node::{InternalNode, ACCUMULATOR_PLACEHOLDER_HASH};
 use crate::node_index::NodeIndex;
 pub use node::AccumulatorNode;
+use std::collections::HashMap;
 
 pub type LeafCount = u64;
 pub type NodeCount = u64;
@@ -85,6 +89,8 @@ impl AccumulatorProof {
 }
 /// accumulator method define
 pub trait Accumulator {
+    /// From leaves constructed accumulator
+    fn from_leaves(&self, leaves: &[HashValue]) -> Self;
     /// Append leaves and return new root
     fn append(&self, leaves: &[HashValue]) -> Result<HashValue>;
     /// Get leaf hash by leaf index.
@@ -93,6 +99,10 @@ pub trait Accumulator {
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
     /// Get current accumulator tree root hash.
     fn root_hash(&self) -> HashValue;
+    /// Get current accumulator tree number of leaves.
+    fn num_leaves(&self) -> u64;
+    /// Update current accumulator tree for rollback
+    fn update(&mut self, leaf_index: u64, leaves: &[HashValue]) -> Result<HashValue>;
 }
 
 pub trait AccumulatorNodeReader {
@@ -256,10 +266,6 @@ where
         Ok(())
     }
 
-    /// update
-    fn update(&self, leaf_index: u64) -> Result<()> {
-        unimplemented!()
-    }
     /// filter function can be applied to filter out certain siblings.
     fn get_siblings(
         &self,
@@ -349,7 +355,7 @@ impl<'a, S> Accumulator for MerkleAccumulator<'a, S>
 where
     S: AccumulatorNodeStore,
 {
-    fn append(&self, leaves: &[HashValue]) -> Result<HashValue, Error> {
+    fn from_leaves(&self, leaves: &[HashValue]) -> Self {
         let mut frozen_subtree_roots = self.frozen_subtree_roots.clone();
         let mut num_leaves = self.num_leaves;
         let mut num_nodes = self.num_notes;
@@ -359,11 +365,13 @@ where
             num_nodes = num_nodes + internal_notes;
         }
 
-        Ok(Self::new(frozen_subtree_roots, num_leaves,num_nodes, self.node_store)
-            .expect(
-                "Appending leaves to a valid accumulator should create another valid accumulator.",
-            )
-            .root_hash)
+        Self::new(frozen_subtree_roots, num_leaves, num_nodes, self.node_store).expect(
+            "Appending leaves to a valid accumulator should create another valid accumulator.",
+        )
+    }
+
+    fn append(&self, leaves: &[HashValue]) -> Result<HashValue, Error> {
+        Ok(self.from_leaves(leaves).root_hash)
     }
 
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error> {
@@ -387,12 +395,86 @@ where
     fn root_hash(&self) -> HashValue {
         self.root_hash
     }
+
+    fn num_leaves(&self) -> u64 {
+        self.num_leaves
+    }
+
+    fn update(&mut self, leaf_index: u64, leaves: &[HashValue]) -> Result<HashValue, Error> {
+        //ensure leaves is null
+        ensure!(leaves.len() > 0, "invalid leaves len: {}", leaves.len());
+        ensure!(
+            leaf_index < self.num_leaves as u64,
+            "invalid leaf_index {}, num_leaves {}",
+            leaf_index,
+            self.num_leaves
+        );
+        // delete larger nodes from index
+        self.delete(leaf_index);
+        // append new notes
+        self.append(leaves)
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub struct MockAccumulatorStore {
+    index_store: HashMap<NodeIndex, HashValue>,
+    node_store: HashMap<HashValue, AccumulatorNode>,
+}
 
-    #[test]
-    fn test_accumulator() {}
+impl MockAccumulatorStore {
+    pub fn new() -> Self {
+        Self {
+            index_store: HashMap::new(),
+            node_store: HashMap::new(),
+        }
+    }
+}
+
+impl AccumulatorNodeStore for MockAccumulatorStore {}
+impl AccumulatorNodeReader for MockAccumulatorStore {
+    fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>, Error> {
+        let node_hash = self.index_store.get(&index).unwrap();
+        match self.node_store.get(&node_hash) {
+            Some(node) => Ok(Some(node.clone())),
+            None => bail!("get node is null"),
+        }
+    }
+
+    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
+        match self.node_store.get(&hash) {
+            Some(node) => Ok(Some(node.clone())),
+            None => bail!("get node is null"),
+        }
+    }
+}
+impl AccumulatorNodeWriter for MockAccumulatorStore {
+    fn save(&self, index: NodeIndex, hash: HashValue) -> Result<(), Error> {
+        self.index_store.clone().insert(index, hash);
+        Ok(())
+    }
+
+    fn save_node(&self, node: AccumulatorNode) -> Result<()> {
+        self.node_store.clone().insert(node.hash(), node);
+        Ok(())
+    }
+
+    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
+        for hash in node_hash_vec {
+            self.node_store.clone().remove(&hash);
+        }
+        Ok(())
+    }
+
+    fn delete_larger_index(&self, from_index: u64, max_notes: u64) -> Result<(), Error> {
+        ensure!(
+            from_index <= max_notes,
+            " invalid index form: {} to max notes:{}.",
+            from_index,
+            max_notes
+        );
+        for index in from_index..max_notes {
+            self.index_store.clone().remove(&NodeIndex::new(index));
+        }
+        Ok(())
+    }
 }

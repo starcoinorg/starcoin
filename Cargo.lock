@@ -4505,6 +4505,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "byteorder 1.3.4",
+ "itertools",
  "mirai-annotations",
  "once_cell",
  "serde",

@@ -12,6 +12,7 @@ anyhow = "1.0"
 once_cell = "1.3.1"
 mirai-annotations = "1.5.0"
 byteorder = "1.3.2"
+itertools = { version = "0.8.0", default-features = false }
 
 types = {path = "../../types", package="starcoin-types"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
