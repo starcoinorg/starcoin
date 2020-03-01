@@ -1,28 +1,30 @@
-use crate::download::DownloadActor;
-use crate::process::ProcessActor;
 use actix::prelude::*;
 use anyhow::Result;
-use crypto::HashValue;
+use crypto::{hash::CryptoHash, HashValue};
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
     transaction::SignedUserTransaction,
 };
 
-#[derive(Message)]
+#[derive(Message, Clone)]
 #[rtype(result = "()")]
 pub enum SyncMessage {
     DownloadMessage(DownloadMessage),
     ProcessMessage(ProcessMessage),
 }
 
+#[derive(Clone)]
 pub enum DownloadMessage {
-    LatestStateMsg(Option<Addr<ProcessActor>>, PeerInfo, LatestStateMsg),
-    BatchHashByNumberMsg(Option<Addr<ProcessActor>>, PeerInfo, BatchHashByNumberMsg),
-    BatchHeaderMsg(Option<Addr<ProcessActor>>, PeerInfo, BatchHeaderMsg),
-    BatchBodyMsg(Option<Addr<ProcessActor>>, BatchBodyMsg),
-    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg), // just fo test
+    LatestStateMsg(PeerInfo, LatestStateMsg),
+    BatchHashByNumberMsg(PeerInfo, BatchHashByNumberMsg),
+    BatchHeaderMsg(PeerInfo, BatchHeaderMsg),
+    BatchBodyMsg(BatchBodyMsg),
+    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
+    // just fo test
     NewBlock(Block),
 }
 
@@ -30,22 +32,33 @@ impl Message for DownloadMessage {
     type Result = Result<()>;
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ProcessMessage {
-    NewPeerMsg(Option<Addr<DownloadActor>>, PeerInfo),
-    GetHashByNumberMsg(Option<Addr<DownloadActor>>, GetHashByNumberMsg),
-    GetDataByHashMsg(Option<Addr<DownloadActor>>, GetDataByHashMsg),
+    NewPeerMsg(PeerInfo),
+    GetHashByNumberMsg(GetHashByNumberMsg),
+    GetDataByHashMsg(GetDataByHashMsg),
+}
+
+impl CryptoHash for ProcessMessage {
+    fn crypto_hash(&self) -> HashValue {
+        HashValue::from_sha3_256(
+            scs::to_bytes(self)
+                .expect("Serialization should work.")
+                .as_slice(),
+        )
+    }
 }
 
 impl Message for ProcessMessage {
     type Result = Result<()>;
 }
 
-#[derive(Eq, PartialEq, Hash, Clone, Debug)]
+#[derive(Eq, Serialize, Deserialize, PartialEq, Hash, Clone, Debug)]
 pub struct LatestStateMsg {
     pub hash_header: HashWithBlockHeader,
 }
 
-#[derive(Eq, PartialEq, Hash, Clone, Debug)]
+#[derive(Eq, Serialize, Deserialize, PartialEq, Hash, Clone, Debug)]
 pub struct HashWithBlockHeader {
     pub hash: HashValue,
     pub header: BlockHeader,
@@ -63,12 +76,12 @@ impl Ord for HashWithBlockHeader {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetHashByNumberMsg {
     pub numbers: Vec<u64>,
 }
 
-#[derive(Eq, PartialEq, PartialOrd, Clone, Debug)]
+#[derive(Eq, Serialize, Deserialize, PartialEq, PartialOrd, Clone, Debug)]
 pub struct HashWithNumber {
     pub hash: HashValue,
     pub number: u64,
@@ -85,8 +98,9 @@ impl Ord for HashWithNumber {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct BatchHashByNumberMsg {
+    pub id: HashValue,
     pub hashs: Vec<HashWithNumber>,
 }
 
@@ -98,24 +112,24 @@ struct BatchStateNodeDataMsg {
     //nodes:
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum DataType {
     HEADER,
     BODY,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct GetDataByHashMsg {
     pub hashs: Vec<HashValue>,
     pub data_type: DataType,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Eq, Serialize, Deserialize, PartialEq, Debug)]
 pub struct BatchHeaderMsg {
     pub headers: Vec<HashWithBlockHeader>,
 }
 
-#[derive(Eq, PartialEq, Clone, Debug)]
+#[derive(Eq, Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct BlockBody {
     pub hash: HashValue,
     pub transactions: Vec<SignedUserTransaction>,
@@ -133,7 +147,7 @@ impl Ord for BlockBody {
     }
 }
 
-#[derive(Debug)]
+#[derive(Eq, Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct BatchBodyMsg {
     pub bodies: Vec<BlockBody>,
 }

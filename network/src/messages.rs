@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::helper::get_unix_ts;
+use crate::sync_messages::*;
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::{hash::CryptoHash, HashValue};
 use parity_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use types::account_address::AccountAddress;
-use types::block::Block;
 use types::transaction::SignedUserTransaction;
+use types::{block::Block, peer_info::PeerInfo};
 
 pub trait RPCMessage {
     fn get_id(&self) -> HashValue;
@@ -21,10 +22,11 @@ pub struct GetCounterMessage {}
 
 /// message from peer
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message)]
+#[derive(Debug, Serialize, Deserialize, Message)]
 pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
     Block(Block),
+    LatestStateMsg(LatestStateMsg),
     RPCRequest(RPCRequest),
     RPCResponse(RPCResponse),
 }
@@ -37,13 +39,15 @@ pub struct TestRequest {
 
 /// message from peer
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+#[derive(Debug, Serialize, Deserialize, Message, Clone)]
 pub enum RPCRequest {
     TestRequest(TestRequest),
+    GetHashByNumberMsg(ProcessMessage),
+    GetDataByHashMsg(ProcessMessage),
 }
 
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+#[derive(Debug, Serialize, Deserialize, Message, Clone)]
 pub struct RpcRequestMessage {
     pub request: RPCRequest,
     pub peer_id: AccountAddress,
@@ -53,6 +57,8 @@ impl RPCMessage for RPCRequest {
     fn get_id(&self) -> HashValue {
         return match self {
             RPCRequest::TestRequest(request) => request.data,
+            RPCRequest::GetHashByNumberMsg(request) => request.crypto_hash(),
+            RPCRequest::GetDataByHashMsg(request) => request.crypto_hash(),
         };
     }
 }
@@ -68,12 +74,16 @@ pub struct TestResponse {
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
 pub enum RPCResponse {
     TestResponse(TestResponse),
+    BatchHashByNumberMsg(BatchHashByNumberMsg),
+    BatchHeaderAndBodyMsg(HashValue, BatchHeaderMsg, BatchBodyMsg),
 }
 
 impl RPCMessage for RPCResponse {
     fn get_id(&self) -> HashValue {
         match self {
             RPCResponse::TestResponse(r) => r.id,
+            RPCResponse::BatchHashByNumberMsg(resp) => resp.id,
+            RPCResponse::BatchHeaderAndBodyMsg(req_id, headers, bodies) => req_id.clone(),
         }
     }
 }
@@ -82,6 +92,8 @@ impl RPCResponse {
     pub fn set_request_id(&mut self, id: HashValue) {
         match self {
             RPCResponse::TestResponse(r) => r.id = id,
+            RPCResponse::BatchHashByNumberMsg(resp) => resp.id = id,
+            RPCResponse::BatchHeaderAndBodyMsg(mut req_id, headers, bodies) => req_id = id,
         };
     }
 }

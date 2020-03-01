@@ -1,5 +1,4 @@
 use crate::download::{DownloadActor, Downloader};
-use crate::message::{BlockBody, DownloadMessage, HashWithNumber, SyncMessage};
 use crate::pool::TTLPool;
 use crate::process::{ProcessActor, Processor};
 use actix::{prelude::*, Actor, Addr, Context, Handler};
@@ -7,8 +6,12 @@ use anyhow::Result;
 use bus::{Bus, BusActor, Subscription};
 use chain::{ChainActor, ChainActorRef};
 use config::NodeConfig;
+use crypto::HashValue;
 use futures_locks::RwLock;
-use network::NetworkActor;
+use network::sync_messages::{
+    BlockBody, DownloadMessage, HashWithNumber, ProcessMessage, SyncMessage,
+};
+use network::{PeerEvent, RPCMessage, RPCRequest, RpcRequestMessage};
 use std::sync::Arc;
 use types::{block::BlockHeader, peer_info::PeerInfo, system_events::SystemEvents};
 
@@ -21,7 +24,6 @@ pub struct SyncActor {
 impl SyncActor {
     pub fn launch(
         // _node_config: &NodeConfig,
-        // _network: Addr<NetworkActor>,
         //        chain: Addr<ChainActor>,
         bus: Addr<BusActor>,
         process_address: Addr<ProcessActor>,
@@ -40,9 +42,29 @@ impl Actor for SyncActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let recipient = ctx.address().recipient::<SystemEvents>();
+        let sys_recipient = ctx.address().recipient::<SystemEvents>();
         self.bus
-            .send(Subscription { recipient })
+            .send(Subscription {
+                recipient: sys_recipient,
+            })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+
+        let peer_recipient = ctx.address().recipient::<PeerEvent>();
+        self.bus
+            .send(Subscription {
+                recipient: peer_recipient,
+            })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+
+        let sync_recipient = ctx.address().recipient::<SyncMessage>();
+        self.bus
+            .send(Subscription {
+                recipient: sync_recipient,
+            })
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
@@ -88,6 +110,28 @@ impl Handler<SystemEvents> for SyncActor {
             }
             _ => {}
         }
+    }
+}
+
+impl Handler<PeerEvent> for SyncActor {
+    type Result = Result<()>;
+
+    fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            PeerEvent::Open(open_peer) => {
+                println!("connect new peer:{:?}", open_peer);
+                let peer_info = PeerInfo::new(open_peer);
+                let process_msg = ProcessMessage::NewPeerMsg(peer_info);
+                self.process_address
+                    .send(process_msg)
+                    .into_actor(self)
+                    .then(|_result, act, _ctx| async {}.into_actor(act))
+                    .wait(ctx);
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 }
 

@@ -3,6 +3,7 @@
 
 use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, NetworkService};
+use crate::sync_messages::{DownloadMessage, SyncMessage};
 use crate::{
     GetCounterMessage, NetworkMessage, PeerEvent, PeerMessage, RPCMessage, RPCRequest, RPCResponse,
     RpcRequestMessage,
@@ -27,7 +28,7 @@ use scs::SCSCodec;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
 use txpool::{AddTransaction, TxPoolActor};
-use types::account_address::AccountAddress;
+use types::{account_address::AccountAddress, peer_info::PeerInfo};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 use actix::fut::wrap_future;
@@ -241,7 +242,24 @@ where
                 let f = actix::fut::wrap_future(f);
                 ctx.spawn(Box::new(f));
             }
+            PeerMessage::LatestStateMsg(state) => {
+                info!("broadcast LatestStateMsg.");
+                let bus = self.bus.clone();
+                let account_address = PeerInfo::new(peer_id);
+                let f = async move {
+                    bus.send(Broadcast {
+                        msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
+                            account_address,
+                            state,
+                        )),
+                    })
+                    .await;
+                };
+                let f = actix::fut::wrap_future(f);
+                ctx.spawn(Box::new(f));
+            }
             PeerMessage::RPCRequest(request) => {
+                info!("do request.");
                 let bus = self.bus.clone();
                 let f = async move {
                     bus.send(Broadcast {
@@ -254,6 +272,7 @@ where
                 ctx.spawn(Box::new(f));
             }
             PeerMessage::RPCResponse(response) => {
+                info!("do response.");
                 let message_processor = self.message_processor.clone();
                 let f = async move {
                     let id = response.get_id();
@@ -419,9 +438,11 @@ mod tests {
             let request = RPCRequest::TestRequest(TestRequest {
                 data: HashValue::random(),
             });
-            network1
+            info!("req :{:?}", request);
+            let resp = network1
                 .send_request(addr2, request, Duration::from_secs(1))
                 .await;
+            info!("resp :{:?}", resp);
 
             _delay(Duration::from_millis(100)).await;
 

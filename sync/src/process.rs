@@ -1,38 +1,50 @@
-/// Sync message which inbound
-use crate::message::{
-    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithBlockHeader, HashWithNumber, LatestStateMsg,
-    ProcessMessage,
-};
 use actix::prelude::*;
 use actix::{
     fut::wrap_future, fut::FutureWrap, Actor, Addr, AsyncContext, Context, Handler,
     ResponseActFuture,
 };
 use anyhow::Result;
+use bus::{Bus, BusActor, Subscription};
 use chain::{ChainActor, ChainActorRef};
-use crypto::hash::CryptoHash;
+use crypto::{hash::CryptoHash, HashValue};
 use futures::compat::Future01CompatExt;
 use futures_locks::{Mutex, RwLock};
-use network::NetworkActor;
+use futures_timer::Delay;
+/// Sync message which inbound
+use network::sync_messages::{
+    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
+    GetDataByHashMsg, GetHashByNumberMsg, HashWithBlockHeader, HashWithNumber, LatestStateMsg,
+    ProcessMessage,
+};
+use network::{
+    NetworkAsyncService, PeerMessage, RPCMessage, RPCRequest, RPCResponse, RpcRequestMessage,
+};
 use std::hash::Hash;
 use std::sync::Arc;
+use std::time::Duration;
 use traits::{AsyncChain, Chain, ChainAsyncService, ChainReader, ChainService};
+use txpool::TxPoolRef;
 use types::{block::Block, peer_info::PeerInfo};
 
 pub struct ProcessActor {
     processor: Arc<RwLock<Processor>>,
     peer_info: Arc<PeerInfo>,
+    network: NetworkAsyncService<TxPoolRef>,
+    bus: Addr<BusActor>,
 }
 
 impl ProcessActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
         chain_reader: ChainActorRef<ChainActor>,
+        network: NetworkAsyncService<TxPoolRef>,
+        bus: Addr<BusActor>,
     ) -> Result<Addr<ProcessActor>> {
         let process_actor = ProcessActor {
             processor: Arc::new(RwLock::new(Processor::new(chain_reader))),
             peer_info,
+            network,
+            bus,
         };
         Ok(process_actor.start())
     }
@@ -41,7 +53,15 @@ impl ProcessActor {
 impl Actor for ProcessActor {
     type Context = Context<Self>;
 
-    fn started(&mut self, _ctx: &mut Self::Context) {
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let rpc_recipient = ctx.address().recipient::<RpcRequestMessage>();
+        self.bus
+            .send(Subscription {
+                recipient: rpc_recipient,
+            })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
         println!("Process actor started");
     }
 }
@@ -51,114 +71,99 @@ impl Handler<ProcessMessage> for ProcessActor {
 
     fn handle(&mut self, msg: ProcessMessage, ctx: &mut Self::Context) -> Self::Result {
         let processor = self.processor.clone();
-        let my_addr = ctx.address();
-        let peer_info = self.peer_info.as_ref().clone();
+        let my_peer_info = self.peer_info.as_ref().clone();
+        let network = self.network.clone();
         let fut = async move {
+            let id = msg.crypto_hash();
             match msg {
-                ProcessMessage::NewPeerMsg(addr, peer_info) => {
+                ProcessMessage::NewPeerMsg(peer_info) => {
+                    println!(
+                        "send latest_state_msg to peer : {:?}:{:?}",
+                        peer_info.id, my_peer_info.id
+                    );
                     let latest_state_msg =
                         Processor::send_latest_state_msg(processor.clone()).await;
-                    match addr {
-                        Some(address) => {
-                            address
-                                .send(DownloadMessage::LatestStateMsg(
-                                    Some(my_addr),
-                                    peer_info,
-                                    latest_state_msg,
-                                ))
-                                .await;
-                        }
-                        _ => {}
-                    }
+                    Delay::new(Duration::from_secs(1)).await;
+                    network
+                        .clone()
+                        .send_peer_message(
+                            peer_info.id,
+                            PeerMessage::LatestStateMsg(latest_state_msg),
+                        )
+                        .await;
                 }
-                ProcessMessage::GetHashByNumberMsg(addr, get_hash_by_number_msg) => {
-                    let batch_hash_by_number_msg = Processor::handle_get_hash_by_number_msg(
-                        processor.clone(),
-                        get_hash_by_number_msg,
-                    )
-                    .await;
-                    match addr {
-                        Some(address) => {
-                            address
-                                .send(DownloadMessage::BatchHashByNumberMsg(
-                                    Some(my_addr),
-                                    peer_info,
-                                    batch_hash_by_number_msg,
-                                ))
-                                .await;
-                        }
-                        _ => {}
-                    }
-                }
-                ProcessMessage::GetDataByHashMsg(addr, get_data_by_hash_msg) => {
-                    match get_data_by_hash_msg.data_type {
-                        DataType::HEADER => {
-                            let batch_header_msg = Processor::handle_get_header_by_hash_msg(
-                                processor.clone(),
-                                get_data_by_hash_msg.clone(),
-                            )
-                            .await;
-                            let batch_body_msg = Processor::handle_get_body_by_hash_msg(
-                                processor.clone(),
-                                get_data_by_hash_msg,
-                            )
-                            .await;
-                            println!(
-                                "batch block size: {} : {}",
-                                batch_header_msg.headers.len(),
-                                batch_body_msg.bodies.len()
-                            );
-                            match addr {
-                                Some(address) => {
-                                    address
-                                        .send(DownloadMessage::BatchHeaderAndBodyMsg(
-                                            batch_header_msg,
-                                            batch_body_msg,
-                                        ))
-                                        .await;
-                                }
-                                _ => {}
-                            }
-                        }
-                        _ => {}
-                    }
-
-                    // match get_data_by_hash_msg.data_type {
-                    //     DataType::HEADER => {
-                    //         let batch_header_msg = Processor::handle_get_header_by_hash_msg(processor.clone(), get_data_by_hash_msg);
-                    //         match addr {
-                    //             Some(address) => {
-                    //                 address.send(DownloadMessage::BatchHeaderMsg(
-                    //                     Some(my_addr),
-                    //                     peer_info,
-                    //                     batch_header_msg,
-                    //                 ))
-                    //                 .await;
-                    //             }
-                    //             _ => {}
-                    //         }
-                    //     }
-                    //     DataType::BODY => {
-                    //         let batch_body_msg = Processor::handle_get_body_by_hash_msg(processor.clone(), get_data_by_hash_msg);
-                    //         match addr {
-                    //             Some(address) => {
-                    //                 address.send(DownloadMessage::BatchBodyMsg(
-                    //                     Some(my_addr),
-                    //                     batch_body_msg,
-                    //                 ))
-                    //                 .await;
-                    //             }
-                    //             _ => {}
-                    //         }
-                    //     }
-                    // };
-                }
+                _ => {}
             }
 
             Ok(())
         };
 
         Box::new(wrap_future::<_, Self>(fut))
+    }
+}
+
+impl Handler<RpcRequestMessage> for ProcessActor {
+    type Result = Result<()>;
+
+    fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
+        let id = (&msg.request).get_id();
+        let peer_id = (&msg).peer_id;
+        let processor = self.processor.clone();
+        let network = self.network.clone();
+        match msg.request {
+            RPCRequest::TestRequest(_r) => {}
+            RPCRequest::GetHashByNumberMsg(process_msg)
+            | RPCRequest::GetDataByHashMsg(process_msg) => match process_msg {
+                ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg) => {
+                    println!("get_hash_by_number_msg");
+                    Arbiter::spawn(async move {
+                        let batch_hash_by_number_msg = Processor::handle_get_hash_by_number_msg(
+                            id.clone(),
+                            processor.clone(),
+                            get_hash_by_number_msg,
+                        )
+                        .await;
+
+                        let resp = RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg);
+                        network.clone().response_for(peer_id, id, resp).await;
+                    });
+                }
+                ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg) => {
+                    Arbiter::spawn(async move {
+                        match get_data_by_hash_msg.data_type {
+                            DataType::HEADER => {
+                                let batch_header_msg = Processor::handle_get_header_by_hash_msg(
+                                    processor.clone(),
+                                    get_data_by_hash_msg.clone(),
+                                )
+                                .await;
+                                let batch_body_msg = Processor::handle_get_body_by_hash_msg(
+                                    processor.clone(),
+                                    get_data_by_hash_msg,
+                                )
+                                .await;
+                                println!(
+                                    "batch block size: {} : {}",
+                                    batch_header_msg.headers.len(),
+                                    batch_body_msg.bodies.len()
+                                );
+
+                                let resp = RPCResponse::BatchHeaderAndBodyMsg(
+                                    id,
+                                    batch_header_msg,
+                                    batch_body_msg,
+                                );
+                                network.clone().response_for(peer_id, id, resp).await;
+                            }
+                            _ => {}
+                        }
+                    });
+                }
+                ProcessMessage::NewPeerMsg(_) => unreachable!(),
+            },
+        }
+
+        Ok(())
     }
 }
 
@@ -194,6 +199,7 @@ impl Processor {
     }
 
     pub async fn handle_get_hash_by_number_msg(
+        req_id: HashValue,
         processor: Arc<RwLock<Processor>>,
         get_hash_by_number_msg: GetHashByNumberMsg,
     ) -> BatchHashByNumberMsg {
@@ -209,17 +215,17 @@ impl Processor {
             println!(
                 "block number:{:?}, hash {:?}",
                 block.header().number(),
-                block.crypto_hash()
+                block.header().id()
             );
             let hash_with_number = HashWithNumber {
                 number: block.header().number(),
-                hash: block.crypto_hash(),
+                hash: block.header().id(),
             };
 
             hashs.push(hash_with_number);
         }
 
-        BatchHashByNumberMsg { hashs }
+        BatchHashByNumberMsg { id: req_id, hashs }
     }
 
     pub async fn handle_get_header_by_hash_msg(

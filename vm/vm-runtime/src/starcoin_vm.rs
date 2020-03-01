@@ -2,50 +2,53 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    chain_state::StateStore,
-    transaction_helper::TransactionHelper,
-    transaction_helper::VerifiedTranscationPayload
-};
-use vm_runtime::{
-    chain_state::{ChainState as LibraChainState, SystemExecutionContext, TransactionExecutionContext},
-    data_cache::{BlockDataCache, RemoteCache},
-    move_vm::MoveVM,
+    chain_state::StateStore, transaction_helper::TransactionHelper,
+    transaction_helper::VerifiedTranscationPayload,
 };
 use config::VMConfig;
 use libra_state_view::StateView;
-use std::sync::Arc;
-use vm::{
-    errors::VMResult,
-    gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits},
-    transaction_metadata::TransactionMetadata,
+use libra_types::{
+    byte_array::ByteArray as LibraByteArray,
+    transaction::{
+        Module as LibraModule, Script as LibraScript,
+        SignatureCheckedTransaction as LibraSignatureCheckedTransaction,
+        SignedTransaction as LibraSignedTransaction,
+        TransactionArgument as LibraTransactionArgument,
+        TransactionOutput as LibraTransactionOutput, TransactionPayload as LibraTransactionPayload,
+        TransactionStatus as LibraTransactionStatus,
+    },
+    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
+    write_set::{
+        WriteOp as LibraWriteOp, WriteSet as LibraWriteSet, WriteSetMut as LibraMutWriteSetMut,
+    },
 };
+use logger::prelude::*;
+use std::sync::Arc;
+use traits::ChainState;
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
     account_state::AccountState,
     transaction::{
-        RawUserTransaction, Script, SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus,
+        RawUserTransaction, Script, SignatureCheckedTransaction, SignedUserTransaction,
+        Transaction, TransactionArgument, TransactionOutput, TransactionPayload, TransactionStatus,
     },
     vm_error::{StatusCode, VMStatus},
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use vm_runtime_types::value::Value;
-use libra_types::{
-    transaction::{
-        SignedTransaction as LibraSignedTransaction, TransactionOutput as LibraTransactionOutput,
-        TransactionStatus as LibraTransactionStatus, SignatureCheckedTransaction as LibraSignatureCheckedTransaction,
-        TransactionPayload as LibraTransactionPayload,
-        TransactionArgument as LibraTransactionArgument,
-        Script as LibraScript,
-        Module as LibraModule,
-    },
-    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
-    write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet, WriteSetMut as LibraMutWriteSetMut},
-    byte_array::ByteArray as LibraByteArray,
+use vm::{
+    errors::VMResult,
+    gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits},
+    transaction_metadata::TransactionMetadata,
 };
-use traits::{ChainState};
-use logger::prelude::*;
+use vm_runtime::{
+    chain_state::{
+        ChainState as LibraChainState, SystemExecutionContext, TransactionExecutionContext,
+    },
+    data_cache::{BlockDataCache, RemoteCache},
+    move_vm::MoveVM,
+};
+use vm_runtime_types::value::Value;
 
 #[derive(Clone)]
 /// Wrapper of MoveVM
@@ -72,9 +75,9 @@ impl StarcoinVM {
     }
 
     fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
-        self.gas_schedule.as_ref().ok_or_else(|| {
-            VMStatus::new(StatusCode::VM_STARTUP_FAILURE)
-        })
+        self.gas_schedule
+            .as_ref()
+            .ok_or_else(|| VMStatus::new(StatusCode::VM_STARTUP_FAILURE))
     }
 
     fn verify_transaction(
@@ -120,9 +123,7 @@ impl StarcoinVM {
                 ////////
                 let gas_schedule = match self.get_gas_schedule() {
                     Ok(s) => s,
-                    Err(e) => {
-                        return discard_error_output(e)
-                    },
+                    Err(e) => return discard_error_output(e),
                 };
                 info!("invoke MoveVM::execute_script()");
                 self.move_vm.execute_script(
@@ -134,20 +135,21 @@ impl StarcoinVM {
                 )
             }
         }
-            .map_err(|err| {
-                failed_gas_left = ctx.gas_left();
-                err
-            })
-            .and_then(|_| {
-                failed_gas_left = ctx.gas_left();
-                let mut gas_free_ctx = SystemExecutionContext::from(ctx);
-                gas_free_ctx.get_transaction_output(txn_data, Ok(()))
-            })
-            .unwrap_or_else(|err| {
-                let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
-                gas_free_ctx.get_transaction_output(txn_data, Err(err))
-                    .unwrap_or_else(discard_libra_error_output)
-            });
+        .map_err(|err| {
+            failed_gas_left = ctx.gas_left();
+            err
+        })
+        .and_then(|_| {
+            failed_gas_left = ctx.gas_left();
+            let mut gas_free_ctx = SystemExecutionContext::from(ctx);
+            gas_free_ctx.get_transaction_output(txn_data, Ok(()))
+        })
+        .unwrap_or_else(|err| {
+            let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
+            gas_free_ctx
+                .get_transaction_output(txn_data, Err(err))
+                .unwrap_or_else(discard_libra_error_output)
+        });
         // TODO convert to starcoin type
         TransactionHelper::to_starcoin_TransactionOutput(output)
     }
@@ -175,7 +177,6 @@ impl StarcoinVM {
 
                 let output = match signature_checked_txn {
                     Ok(txn) => {
-
                         let verified_payload =
                             self.verify_transaction(&txn, &state_store, &data_cache, &txn_data);
 
@@ -191,19 +192,18 @@ impl StarcoinVM {
 
                         if let TransactionStatus::Keep(_) = result.status() {
                             //ToDo: when to write back the state changes?
-//                            data_cache.push_write_set(result.write_set())
+                            //                            data_cache.push_write_set(result.write_set())
                         };
                         result
                     }
                     Err(e) => {
                         info!("we are here!!!");
                         discard_error_output(e)
-                    },
+                    }
                 };
                 output
             }
-            _ => TransactionHelper::fake_starcoin_TransactionOutput()
-
+            _ => TransactionHelper::fake_starcoin_TransactionOutput(),
         }
     }
 }
@@ -211,11 +211,7 @@ impl StarcoinVM {
 pub(crate) fn discard_error_output(err: VMStatus) -> TransactionOutput {
     info!("discard error output: {:?}", err);
     // Since this transaction will be discarded, no writeset will be included.
-    TransactionOutput::new(
-        vec![],
-        0,
-        TransactionStatus::Discard(err),
-    )
+    TransactionOutput::new(vec![], 0, TransactionStatus::Discard(err))
 }
 
 pub(crate) fn discard_libra_error_output(err: LibraVMStatus) -> LibraTransactionOutput {
@@ -234,10 +230,13 @@ fn convert_txn_args(args: Vec<TransactionArgument>) -> Vec<Value> {
     args.into_iter()
         .map(|arg| match arg {
             TransactionArgument::U64(i) => Value::u64(i),
-            TransactionArgument::Address(a) => Value::address(TransactionHelper::to_libra_AccountAddress(a)),
+            TransactionArgument::Address(a) => {
+                Value::address(TransactionHelper::to_libra_AccountAddress(a))
+            }
             TransactionArgument::Bool(b) => Value::bool(b),
-            TransactionArgument::ByteArray(b) => Value::byte_array(LibraByteArray::new((b.clone()).into_inner())),
+            TransactionArgument::ByteArray(b) => {
+                Value::byte_array(LibraByteArray::new((b.clone()).into_inner()))
+            }
         })
         .collect()
 }
-
