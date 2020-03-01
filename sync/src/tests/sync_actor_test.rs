@@ -14,9 +14,8 @@ use futures_timer::Delay;
 use miner::MinerActor;
 use network::{
     network::NetworkAsyncService,
-    sync_messages::{ProcessMessage, SyncMessage, GetHashByNumberMsg},
-    NetworkActor,
-    RPCRequest,
+    sync_messages::{GetHashByNumberMsg, ProcessMessage, SyncMessage},
+    NetworkActor, RPCRequest, RPCResponse,
 };
 use std::{sync::Arc, time::Duration};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
@@ -190,20 +189,30 @@ async fn test_network_actor() {
         storage_1.clone(),
         Some(network_1.clone()),
     )
-        .unwrap();
+    .unwrap();
     let second_chain = ChainActor::launch(
         node_config_2.clone(),
         storage_2.clone(),
         Some(network_2.clone()),
     )
-        .unwrap();
+    .unwrap();
 
     //sync
     let first_p = Arc::new(PeerInfo::new(addr_1));
-    let first_p_actor =
-        ProcessActor::launch(Arc::clone(&first_p), first_chain.clone(), network_1.clone(), bus_1.clone()).unwrap();
-    let first_d_actor =
-        DownloadActor::launch(first_p, first_chain.clone(), network_1.clone(), bus_1.clone()).unwrap();
+    let first_p_actor = ProcessActor::launch(
+        Arc::clone(&first_p),
+        first_chain.clone(),
+        network_1.clone(),
+        bus_1.clone(),
+    )
+    .unwrap();
+    let first_d_actor = DownloadActor::launch(
+        first_p,
+        first_chain.clone(),
+        network_1.clone(),
+        bus_1.clone(),
+    )
+    .unwrap();
     let _first_sync_actor =
         SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
 
@@ -214,9 +223,14 @@ async fn test_network_actor() {
         network_2.clone(),
         bus_2.clone(),
     )
-        .unwrap();
-    let second_d_actor =
-        DownloadActor::launch(second_p, second_chain.clone(), network_2.clone(), bus_2.clone()).unwrap();
+    .unwrap();
+    let second_d_actor = DownloadActor::launch(
+        second_p,
+        second_chain.clone(),
+        network_2.clone(),
+        bus_2.clone(),
+    )
+    .unwrap();
     let _second_sync_actor =
         SyncActor::launch(bus_2.clone(), second_p_actor, second_d_actor.clone()).unwrap();
 
@@ -264,13 +278,23 @@ async fn test_network_actor_rpc() {
         storage_1.clone(),
         Some(network_1.clone()),
     )
-        .unwrap();
+    .unwrap();
     //sync
     let first_p = Arc::new(PeerInfo::new(addr_1));
-    let first_p_actor =
-        ProcessActor::launch(Arc::clone(&first_p), first_chain.clone(), network_1.clone(), bus_1.clone()).unwrap();
-    let first_d_actor =
-        DownloadActor::launch(first_p, first_chain.clone(), network_1.clone(), bus_1.clone()).unwrap();
+    let first_p_actor = ProcessActor::launch(
+        Arc::clone(&first_p),
+        first_chain.clone(),
+        network_1.clone(),
+        bus_1.clone(),
+    )
+    .unwrap();
+    let first_d_actor = DownloadActor::launch(
+        first_p,
+        first_chain.clone(),
+        network_1.clone(),
+        bus_1.clone(),
+    )
+    .unwrap();
     let _first_sync_actor =
         SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
     //miner
@@ -306,13 +330,14 @@ async fn test_network_actor_rpc() {
     //network
     let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
     println!("addr_2 : {:?}", addr_2);
+    Delay::new(Duration::from_secs(1)).await;
     //chain
     let second_chain = ChainActor::launch(
         node_config_2.clone(),
         storage_2.clone(),
         Some(network_2.clone()),
     )
-        .unwrap();
+    .unwrap();
     //sync
     let second_p = Arc::new(PeerInfo::new(addr_2));
     let second_p_actor = ProcessActor::launch(
@@ -321,13 +346,31 @@ async fn test_network_actor_rpc() {
         network_2.clone(),
         bus_2.clone(),
     )
-        .unwrap();
-    let second_d_actor =
-        DownloadActor::launch(second_p, second_chain.clone(), network_2.clone(), bus_2.clone()).unwrap();
+    .unwrap();
+    let second_d_actor = DownloadActor::launch(
+        second_p,
+        second_chain.clone(),
+        network_2.clone(),
+        bus_2.clone(),
+    )
+    .unwrap();
     let _second_sync_actor =
         SyncActor::launch(bus_2, second_p_actor, second_d_actor.clone()).unwrap();
 
-    Delay::new(Duration::from_secs(5)).await;
+    Delay::new(Duration::from_secs(2)).await;
+
+    for i in 0..5 as usize {
+        let block_1 = first_chain.clone().head_block().await.unwrap();
+        let number_1 = block_1.header().number();
+        println!("index : {}, first chain number is {}", i, number_1);
+
+        let block_2 = second_chain.clone().head_block().await.unwrap();
+        let number_2 = block_2.header().number();
+        println!("index : {}, second chain number is {}", i, number_2);
+
+        assert!(number_2 > 0);
+        Delay::new(Duration::from_secs(2)).await;
+    }
 }
 
 #[actix_rt::test]
@@ -352,13 +395,23 @@ async fn test_network_actor_rpc_2() {
         storage_1.clone(),
         Some(network_1.clone()),
     )
-        .unwrap();
+    .unwrap();
     //sync
     let first_p = Arc::new(PeerInfo::new(addr_1.clone()));
-    let first_p_actor =
-        ProcessActor::launch(Arc::clone(&first_p), first_chain.clone(), network_1.clone(), bus_1.clone()).unwrap();
-    let first_d_actor =
-        DownloadActor::launch(first_p, first_chain.clone(), network_1.clone(), bus_1.clone()).unwrap();
+    let first_p_actor = ProcessActor::launch(
+        Arc::clone(&first_p),
+        first_chain.clone(),
+        network_1.clone(),
+        bus_1.clone(),
+    )
+    .unwrap();
+    let first_d_actor = DownloadActor::launch(
+        first_p,
+        first_chain.clone(),
+        network_1.clone(),
+        bus_1.clone(),
+    )
+    .unwrap();
     let _first_sync_actor =
         SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
     let block_1 = first_chain.clone().head_block().await.unwrap();
@@ -383,6 +436,7 @@ async fn test_network_actor_rpc_2() {
     let mut node_config_2 = Arc::new(config_2);
     //network
     let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
+    Delay::new(Duration::from_secs(1)).await;
     println!("addr_2 : {:?}", addr_2);
     //chain
     let second_chain = ChainActor::launch(
@@ -390,7 +444,7 @@ async fn test_network_actor_rpc_2() {
         storage_2.clone(),
         Some(network_2.clone()),
     )
-        .unwrap();
+    .unwrap();
     //sync
     let second_p = Arc::new(PeerInfo::new(addr_2.clone()));
     let second_p_actor = ProcessActor::launch(
@@ -399,9 +453,14 @@ async fn test_network_actor_rpc_2() {
         network_2.clone(),
         bus_2.clone(),
     )
-        .unwrap();
-    let second_d_actor =
-        DownloadActor::launch(second_p, second_chain.clone(), network_2.clone(), bus_2.clone()).unwrap();
+    .unwrap();
+    let second_d_actor = DownloadActor::launch(
+        second_p,
+        second_chain.clone(),
+        network_2.clone(),
+        bus_2.clone(),
+    )
+    .unwrap();
     let _second_sync_actor =
         SyncActor::launch(bus_2, second_p_actor, second_d_actor.clone()).unwrap();
 
@@ -412,15 +471,18 @@ async fn test_network_actor_rpc_2() {
     let mut numbers = Vec::new();
     numbers.push(0);
     let get_hash_by_number_msg = GetHashByNumberMsg { numbers };
-    let req = RPCRequest::GetHashByNumberMsg(
-        ProcessMessage::GetHashByNumberMsg(addr_1.clone(), get_hash_by_number_msg),
-    );
-    Delay::new(Duration::from_secs(1)).await;
+    let req =
+        RPCRequest::GetHashByNumberMsg(ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg));
     let resp = network_1
         .clone()
         .send_request(addr_2.clone(), req.clone(), Duration::from_secs(1))
         .await
         .unwrap();
 
-    Delay::new(Duration::from_secs(1)).await;
+    assert!(match resp {
+        RPCResponse::BatchHashByNumberMsg(_) => true,
+        _ => false,
+    });
+
+    Delay::new(Duration::from_secs(2)).await;
 }

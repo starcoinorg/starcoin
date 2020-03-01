@@ -43,6 +43,7 @@ pub struct TestRequest {
 pub enum RPCRequest {
     TestRequest(TestRequest),
     GetHashByNumberMsg(ProcessMessage),
+    GetDataByHashMsg(ProcessMessage),
 }
 
 #[rtype(result = "Result<()>")]
@@ -57,6 +58,7 @@ impl RPCMessage for RPCRequest {
         return match self {
             RPCRequest::TestRequest(request) => request.data,
             RPCRequest::GetHashByNumberMsg(request) => request.crypto_hash(),
+            RPCRequest::GetDataByHashMsg(request) => request.crypto_hash(),
         };
     }
 }
@@ -73,6 +75,7 @@ pub struct TestResponse {
 pub enum RPCResponse {
     TestResponse(TestResponse),
     BatchHashByNumberMsg(BatchHashByNumberMsg),
+    BatchHeaderAndBodyMsg(HashValue, BatchHeaderMsg, BatchBodyMsg),
 }
 
 impl RPCMessage for RPCResponse {
@@ -80,6 +83,7 @@ impl RPCMessage for RPCResponse {
         match self {
             RPCResponse::TestResponse(r) => r.id,
             RPCResponse::BatchHashByNumberMsg(resp) => resp.id,
+            RPCResponse::BatchHeaderAndBodyMsg(req_id, headers, bodies) => req_id.clone(),
         }
     }
 }
@@ -89,6 +93,7 @@ impl RPCResponse {
         match self {
             RPCResponse::TestResponse(r) => r.id = id,
             RPCResponse::BatchHashByNumberMsg(resp) => resp.id = id,
+            RPCResponse::BatchHeaderAndBodyMsg(mut req_id, headers, bodies) => req_id = id,
         };
     }
 }

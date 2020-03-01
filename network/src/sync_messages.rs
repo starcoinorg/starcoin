@@ -35,7 +35,7 @@ impl Message for DownloadMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ProcessMessage {
     NewPeerMsg(PeerInfo),
-    GetHashByNumberMsg(AccountAddress, GetHashByNumberMsg),
+    GetHashByNumberMsg(GetHashByNumberMsg),
     GetDataByHashMsg(GetDataByHashMsg),
 }
 
@@ -124,7 +124,7 @@ pub struct GetDataByHashMsg {
     pub data_type: DataType,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Eq, Serialize, Deserialize, PartialEq, Debug)]
 pub struct BatchHeaderMsg {
     pub headers: Vec<HashWithBlockHeader>,
 }
@@ -147,7 +147,7 @@ impl Ord for BlockBody {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Eq, Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct BatchBodyMsg {
     pub bodies: Vec<BlockBody>,
 }
