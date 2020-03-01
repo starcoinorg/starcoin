@@ -29,6 +29,8 @@ use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
 };
+use futures_timer::Delay;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct DownloadActor {
@@ -76,7 +78,7 @@ impl Handler<DownloadMessage> for DownloadActor {
 
     fn handle(&mut self, msg: DownloadMessage, ctx: &mut Self::Context) -> Self::Result {
         let downloader = self.downloader.clone();
-        let my_peer = self.peer_info.id.clone();
+        let my_peer_info = self.peer_info.id.clone();
         let network = self.network.clone();
         let fut = async move {
             match msg {
@@ -90,15 +92,16 @@ impl Handler<DownloadMessage> for DownloadActor {
                         peer_info.clone(),
                         latest_state_msg,
                     )
-                    .await;
+                        .await;
                     let send_get_hash_by_number_msg =
                         Downloader::send_get_hash_by_number_msg(downloader.clone()).await;
                     match send_get_hash_by_number_msg {
                         Some((best_peer, get_hash_by_number_msg)) => {
                             let req = RPCRequest::GetHashByNumberMsg(
-                                ProcessMessage::GetHashByNumberMsg(my_peer, get_hash_by_number_msg),
+                                ProcessMessage::GetHashByNumberMsg(my_peer_info.clone(), get_hash_by_number_msg),
                             );
-                            println!("best peer: {:?}", best_peer.id.clone());
+                            println!("best peer: {:?} : {:?} : {:?}", best_peer.id.clone(), my_peer_info, peer_info.clone());
+                            Delay::new(Duration::from_secs(1)).await;
                             let resp = network
                                 .clone()
                                 .send_request(

@@ -23,6 +23,8 @@ use std::sync::Arc;
 use traits::{AsyncChain, Chain, ChainAsyncService, ChainReader, ChainService};
 use txpool::TxPoolRef;
 use types::{block::Block, peer_info::PeerInfo};
+use futures_timer::Delay;
+use std::time::Duration;
 
 pub struct ProcessActor {
     processor: Arc<RwLock<Processor>>,
@@ -70,15 +72,16 @@ impl Handler<ProcessMessage> for ProcessActor {
     fn handle(&mut self, msg: ProcessMessage, ctx: &mut Self::Context) -> Self::Result {
         let processor = self.processor.clone();
         let my_addr = ctx.address();
-        let peer_info = self.peer_info.as_ref().clone();
+        let my_peer_info = self.peer_info.as_ref().clone();
         let network = self.network.clone();
         let fut = async move {
             let id = msg.crypto_hash();
             match msg {
                 ProcessMessage::NewPeerMsg(peer_info) => {
-                    println!("send latest_state_msg to peer : {:?}", peer_info.id);
+                    println!("send latest_state_msg to peer : {:?}:{:?}", peer_info.id, my_peer_info.id);
                     let latest_state_msg =
                         Processor::send_latest_state_msg(processor.clone()).await;
+                    Delay::new(Duration::from_secs(1)).await;
                     network
                         .clone()
                         .send_peer_message(
@@ -202,7 +205,7 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                             processor.clone(),
                             get_hash_by_number_msg,
                         )
-                        .await;
+                            .await;
 
                         let resp = RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg);
                         network.clone().response_for(peer, id, resp).await;

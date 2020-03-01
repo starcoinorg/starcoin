@@ -257,6 +257,7 @@ async fn test_network_actor_rpc() {
     let node_config_1 = Arc::new(config_1);
     //network
     let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), txpool_1.clone());
+    println!("addr_1 : {:?}", addr_1);
     //chain
     let first_chain = ChainActor::launch(
         node_config_1.clone(),
@@ -304,6 +305,7 @@ async fn test_network_actor_rpc() {
     let mut node_config_2 = Arc::new(config_2);
     //network
     let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
+    println!("addr_2 : {:?}", addr_2);
     //chain
     let second_chain = ChainActor::launch(
         node_config_2.clone(),
@@ -324,7 +326,8 @@ async fn test_network_actor_rpc() {
         DownloadActor::launch(second_p, second_chain.clone(), network_2.clone(), bus_2.clone()).unwrap();
     let _second_sync_actor =
         SyncActor::launch(bus_2, second_p_actor, second_d_actor.clone()).unwrap();
-    Delay::new(Duration::from_secs(2)).await;
+
+    Delay::new(Duration::from_secs(5)).await;
 }
 
 #[actix_rt::test]
@@ -342,6 +345,7 @@ async fn test_network_actor_rpc_2() {
     let node_config_1 = Arc::new(config_1);
     //network
     let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), txpool_1.clone());
+    println!("addr_1 : {:?}", addr_1);
     //chain
     let first_chain = ChainActor::launch(
         node_config_1.clone(),
@@ -379,6 +383,7 @@ async fn test_network_actor_rpc_2() {
     let mut node_config_2 = Arc::new(config_2);
     //network
     let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
+    println!("addr_2 : {:?}", addr_2);
     //chain
     let second_chain = ChainActor::launch(
         node_config_2.clone(),
@@ -408,13 +413,14 @@ async fn test_network_actor_rpc_2() {
     numbers.push(0);
     let get_hash_by_number_msg = GetHashByNumberMsg { numbers };
     let req = RPCRequest::GetHashByNumberMsg(
-        ProcessMessage::GetHashByNumberMsg(addr_2.clone(), get_hash_by_number_msg),
+        ProcessMessage::GetHashByNumberMsg(addr_1.clone(), get_hash_by_number_msg),
     );
+    Delay::new(Duration::from_secs(1)).await;
     let resp = network_1
         .clone()
-        .send_request(addr_1.clone(), req.clone(), Duration::from_secs(1))
+        .send_request(addr_2.clone(), req.clone(), Duration::from_secs(1))
         .await
         .unwrap();
 
-    Delay::new(Duration::from_secs(5)).await;
+    Delay::new(Duration::from_secs(1)).await;
 }
