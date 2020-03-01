@@ -39,7 +39,7 @@ async fn main() {
     logger::init();
     let args = Args::from_args();
 
-    let config = Arc::new(NodeConfig::load_or_default(
+    let node_config = Arc::new(NodeConfig::load_or_default(
         args.config.as_ref().map(PathBuf::as_path),
     ));
 
@@ -49,20 +49,32 @@ async fn main() {
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
     let seq_number_client = CachedSeqNumberClient::new(storage.clone());
     let txpool = TxPool::start(seq_number_client);
-    let chain = ChainActor::launch(config.clone(), storage.clone(), None).unwrap();
-    let _network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), keypair);
-    let _json_rpc = JSONRpcActor::launch(config.clone(), txpool.clone());
+    //node config
+    // let mut config = NodeConfig::default();
+    // config.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+    // let node_config = Arc::new(config);
+    let network = NetworkActor::launch(node_config.clone(), bus.clone(), txpool.clone(), keypair);
+    let chain =
+        ChainActor::launch(node_config.clone(), storage.clone(), Some(network.clone())).unwrap();
+    let _json_rpc = JSONRpcActor::launch(node_config.clone(), txpool.clone());
     let _miner =
         MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
-            config.clone(),
+            node_config.clone(),
             bus.clone(),
             storage.clone(),
             txpool.clone(),
             chain.clone(),
         );
     let peer_info = Arc::new(PeerInfo::random());
-    let process_actor = ProcessActor::launch(Arc::clone(&peer_info), chain.clone()).unwrap();
-    let download_actor = DownloadActor::launch(peer_info, chain).unwrap();
+    let process_actor = ProcessActor::launch(
+        Arc::clone(&peer_info),
+        chain.clone(),
+        network.clone(),
+        bus.clone(),
+    )
+    .unwrap();
+    let download_actor =
+        DownloadActor::launch(peer_info, chain, network.clone(), bus.clone()).unwrap();
     let _sync = SyncActor::launch(bus, process_actor, download_actor).unwrap();
     let _logger = args.no_logging;
     tokio::signal::ctrl_c().await.unwrap();

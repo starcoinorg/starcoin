@@ -1,14 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use libra_types::access_path::AccessPath as LibraAccessPath;
 use types::{
     access_path::AccessPath,
-    account_address::{
-        AccountAddress, ADDRESS_LENGTH
-    },
-};
-use libra_types::{
-    access_path::AccessPath as LibraAccessPath,
+    account_address::{AccountAddress, ADDRESS_LENGTH},
 };
 
 pub struct AccessPathHelper {}
@@ -23,4 +19,3 @@ impl AccessPathHelper {
         //types::access_path::AccessPath::new(access_path.address, access_path.path )
     }
 }
-
