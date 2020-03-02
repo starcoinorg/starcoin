@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    executor::Executor,
+    executor::{ Executor, mock_txn, },
     mock_executor::{
         encode_mint_transaction, encode_transfer_program, encode_transfer_transaction,
         get_signed_txn, MockChainState, MockExecutor, DISCARD_STATUS, KEEP_STATUS,
@@ -15,6 +15,9 @@ use logger::prelude::*;
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
+    transaction::{
+        SignedUserTransaction, Transaction,
+    },
 };
 
 fn gen_address(index: u8) -> AccountAddress {
@@ -52,7 +55,8 @@ fn test_validate_txn() {
 #[stest::test]
 fn test_execute_txn_with_starcoin_vm() {
     let chain_state = MockChainState::new();
-    let txn = encode_mint_transaction(gen_address(0), 100);
+    //let txn = encode_mint_transaction(gen_address(0), 100);
+    let txn = mock_txn();
     let config = VMConfig::default();
     info!("invoke Executor::execute_transaction");
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();

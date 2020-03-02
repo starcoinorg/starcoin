@@ -10,6 +10,7 @@ use types::{
     vm_error::VMStatus,
 };
 use vm_runtime::starcoin_vm::StarcoinVM;
+use compiler::compile::StarcoinCompiler;
 
 pub struct Executor {
     config: VMConfig,
@@ -42,4 +43,9 @@ impl TransactionExecutor for Executor {
     ) -> Option<VMStatus> {
         None
     }
+}
+
+pub fn mock_txn() -> Transaction {
+    let empty_script = StarcoinCompiler::compile_script("main() {return;}");
+    Transaction::UserTransaction(SignedUserTransaction::mock_from(empty_script))
 }
