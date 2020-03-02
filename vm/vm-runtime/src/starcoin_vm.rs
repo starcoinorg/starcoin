@@ -71,7 +71,8 @@ impl StarcoinVM {
     fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
         info!("load gas schedule");
         let mut ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
-        self.gas_schedule = self.move_vm.load_gas_schedule(&mut ctx, data_cache).ok();
+//        self.gas_schedule = self.move_vm.load_gas_schedule(&mut ctx, data_cache).ok();
+        self.gas_schedule = Some(CostTable::zero());
     }
 
     fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
@@ -180,15 +181,17 @@ impl StarcoinVM {
                         let verified_payload =
                             self.verify_transaction(&txn, &state_store, &data_cache, &txn_data);
 
-                        let result = verified_payload
-                            .and_then(|verified_payload| {
-                                Ok(self.execute_verified_payload(
-                                    &mut data_cache,
-                                    &txn_data,
-                                    verified_payload,
-                                ))
-                            })
-                            .unwrap_or_else(discard_error_output);
+                        let result = match verified_payload {
+                            Ok(payload) => self.execute_verified_payload(
+                                &mut data_cache,
+                                &txn_data,
+                                payload,
+                            ),
+                            Err(e) => {
+                                info!("we are here!!!");
+                                discard_error_output(e)
+                            },
+                        };
 
                         if let TransactionStatus::Keep(_) = result.status() {
                             //ToDo: when to write back the state changes?
