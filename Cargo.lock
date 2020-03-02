@@ -3584,6 +3584,7 @@ dependencies = [
  "nohash-hasher 0.2.0",
  "parity-scale-codec",
  "parking_lot 0.10.0",
+ "peerset",
  "pin-project",
  "prost",
  "quickcheck",

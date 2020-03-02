@@ -39,6 +39,7 @@ unsigned-varint = { version = "0.3.1", features = ["futures", "futures-codec"] }
 void = "1.0.2"
 zeroize = "1.0.0"
 hex="0.4.2"
+peerset = {  path = "peerset" }
 
 [dev-dependencies]
 async-std = "1.5"
