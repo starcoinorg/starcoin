@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,8 +9,7 @@ use crate::{
     NodeBatch, StaleNodeIndex, TreeReader, TreeUpdateBatch, TreeWriter,
 };
 use anyhow::{bail, ensure, Result};
-use libra_crypto::HashValue;
-use libra_types::transaction::Version;
+use starcoin_crypto::HashValue;
 use std::{
     collections::{hash_map::Entry, BTreeSet, HashMap},
     sync::RwLock,

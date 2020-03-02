@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -34,12 +37,12 @@
 //!  ╱                                                                                          ╲
 //! ;                                                                                            :
 //! ;                                                                                            :
-//!;                                                                                              :
-//!│                                                                                              │
-//!+──────────────────────────────────────────────────────────────────────────────────────────────+
+//! ;                                                                                              :
+//! │                                                                                              │
+//! +──────────────────────────────────────────────────────────────────────────────────────────────+
 //! .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.  .''.
-//!/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \
-//!+----++----++----++----++----++----++----++----++----++----++----++----++----++----++----++----+
+//! /    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \/    \
+//! +----++----++----++----++----++----++----++----++----++----++----++----++----++----++----++----+
 //! (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (
 //!  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )  )
 //! (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (  (
@@ -68,31 +71,41 @@
 //! [`InternalNode`]: node_type/struct.InternalNode.html
 //! [`LeafNode`]: node_type/struct.LeafNode.html
 
+mod blob;
 pub mod iterator;
 #[cfg(test)]
 mod jellyfish_merkle_test;
 #[cfg(test)]
 mod mock_tree_store;
+mod nibble;
 mod nibble_path;
 pub mod node_type;
+mod proof;
 pub mod restore;
 #[cfg(test)]
 mod test_helper;
 mod tree_cache;
 
 use anyhow::{bail, ensure, format_err, Result};
-use libra_crypto::{hash::CryptoHash, hash::SPARSE_MERKLE_PLACEHOLDER_HASH, HashValue};
-use libra_types::{
-    account_state_blob::AccountStateBlob,
-    proof::{SparseMerkleProof, SparseMerkleRangeProof},
-    transaction::Version,
-};
+use blob::Blob;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest_derive::Arbitrary;
+use once_cell::sync::Lazy;
+use proof::{SparseMerkleProof, SparseMerkleRangeProof};
+use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::collections::{BTreeMap, BTreeSet};
 use tree_cache::TreeCache;
+
+fn create_literal_hash(word: &str) -> HashValue {
+    let mut s = word.as_bytes().to_vec();
+    assert!(s.len() <= HashValue::LENGTH);
+    s.resize(HashValue::LENGTH, 0);
+    HashValue::from_slice(&s).expect("Cannot fail")
+}
+
+/// Placeholder hash of `SparseMerkleTree`.
+pub static SPARSE_MERKLE_PLACEHOLDER_HASH: Lazy<HashValue> =
+    Lazy::new(|| create_literal_hash("SPARSE_MERKLE_PLACEHOLDER_HASH"));
 
 /// The hardcoded maximum height of a [`JellyfishMerkleTree`] in nibbles.
 pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;
@@ -128,7 +141,6 @@ pub type StaleNodeIndexBatch = BTreeSet<StaleNodeIndex>;
 
 /// Indicates a node becomes stale since `stale_since_version`.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct StaleNodeIndex {
     /// The version since when the node is overwritten and becomes stale.
     pub stale_since_version: HashValue,
@@ -170,7 +182,7 @@ where
     pub fn put_blob_set(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_set: Vec<(HashValue, AccountStateBlob)>,
+        blob_set: Vec<(HashValue, Blob)>,
     ) -> Result<(HashValue, TreeUpdateBatch)> {
         let (root_hashes, tree_update_batch) =
             self.put_blob_sets(state_root_hash, vec![blob_set])?;
@@ -226,10 +238,10 @@ where
     pub fn put_blob_sets(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_sets: Vec<Vec<(HashValue, AccountStateBlob)>>,
+        blob_sets: Vec<Vec<(HashValue, Blob)>>,
     ) -> Result<(Vec<HashValue>, TreeUpdateBatch)> {
         let mut tree_cache = TreeCache::new(self.reader, state_root_hash);
-        for (idx, blob_set) in blob_sets.into_iter().enumerate() {
+        for (_idx, blob_set) in blob_sets.into_iter().enumerate() {
             assert!(
                 !blob_set.is_empty(),
                 "Transactions that output empty write set should not be included.",
@@ -247,7 +259,7 @@ where
 
     fn put(
         key: HashValue,
-        blob: AccountStateBlob,
+        blob: Blob,
         // version: Version,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<()> {
@@ -279,7 +291,7 @@ where
         node_key: NodeKey,
         // version: Version,
         nibble_iter: &mut NibbleIterator,
-        blob: AccountStateBlob,
+        blob: Blob,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<(NodeKey, Node)> {
         let node = tree_cache.get_node(&node_key)?;
@@ -325,11 +337,11 @@ where
     /// `internal_node`. Returns the newly inserted node with its
     /// [`NodeKey`](node_type/struct.NodeKey.html).
     fn insert_at_internal_node(
-        mut node_key: NodeKey,
+        node_key: NodeKey,
         internal_node: InternalNode,
         // version: Version,
         nibble_iter: &mut NibbleIterator,
-        blob: AccountStateBlob,
+        blob: Blob,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<(NodeKey, Node)> {
         // Find the next node to visit following the next nibble as index.
@@ -379,7 +391,7 @@ where
         existing_leaf_node: LeafNode,
         // version: Version,
         nibble_iter: &mut NibbleIterator,
-        blob: AccountStateBlob,
+        blob: Blob,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<(NodeKey, Node)> {
         // We are on a leaf node but trying to insert another node, so we may diverge.
@@ -417,8 +429,11 @@ where
             // node_key.set_version(version);
             // Create the new leaf node with the same address but new blob content.
             // TODO: what if the blob are same.
-            if blob.hash() == existing_leaf_node.blob_hash() {
-                return Ok((existing_leaf_node.hash(), Node::Leaf(existing_leaf_node)));
+            if blob.crypto_hash() == existing_leaf_node.blob_hash() {
+                return Ok((
+                    existing_leaf_node.blob_hash(),
+                    Node::Leaf(existing_leaf_node),
+                ));
             } else {
                 tree_cache.delete_node(&node_key, true /* is_leaf */);
                 return Ok(Self::create_leaf_node(
@@ -448,7 +463,7 @@ where
         let mut children = Children::new();
         children.insert(
             existing_leaf_index,
-            Child::new(existing_leaf_node.hash(), true /* is_leaf */),
+            Child::new(existing_leaf_node.crypto_hash(), true /* is_leaf */),
         );
 
         let (_, new_leaf_node) = Self::create_leaf_node(
@@ -474,7 +489,7 @@ where
             let mut children = Children::new();
             children.insert(
                 nibble,
-                Child::new(next_internal_node.hash(), false /* is_leaf */),
+                Child::new(next_internal_node.crypto_hash(), false /* is_leaf */),
             );
             let internal_node = InternalNode::new(children);
             next_internal_node = internal_node.clone();
@@ -490,7 +505,7 @@ where
     fn create_leaf_node(
         // node_key: NodeKey,
         nibble_iter: &NibbleIterator,
-        blob: AccountStateBlob,
+        blob: Blob,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<(NodeKey, Node)> {
         // Get the underlying bytes of nibble_iter which must be a key, i.e., hashed account address
@@ -510,7 +525,7 @@ where
         &self,
         state_root_hash: HashValue,
         key: HashValue,
-    ) -> Result<(Option<AccountStateBlob>, SparseMerkleProof)> {
+    ) -> Result<(Option<Blob>, SparseMerkleProof)> {
         // Empty tree just returns proof with no sibling hash.
         // let mut next_node_key = NodeKey::new_empty_path(version);
         let mut next_node_key = state_root_hash;
@@ -601,14 +616,9 @@ where
     }
 
     #[cfg(test)]
-    pub fn get(
-        &self,
-        state_root_hash: HashValue,
-        key: HashValue,
-    ) -> Result<Option<AccountStateBlob>> {
+    pub fn get(&self, state_root_hash: HashValue, key: HashValue) -> Result<Option<Blob>> {
         Ok(self.get_with_proof(state_root_hash, key)?.0)
     }
-    //
     // #[cfg(any(test, feature = "fuzzing"))]
     // pub fn get_root_hash(&self, version: Version) -> Result<HashValue> {
     //     let root_node_key = NodeKey::new_empty_path(version);

@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,11 +10,8 @@
 #[cfg(test)]
 mod nibble_path_test;
 
-use crate::ROOT_NIBBLE_HEIGHT;
-use libra_nibble::Nibble;
+use crate::{nibble::Nibble, ROOT_NIBBLE_HEIGHT};
 use mirai_annotations::*;
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest::{collection::vec, prelude::*};
 use serde::{Deserialize, Serialize};
 use std::{fmt, iter::FromIterator};
 
@@ -44,43 +44,6 @@ impl FromIterator<Nibble> for NibblePath {
         for nibble in iter {
             nibble_path.push(nibble);
         }
-        nibble_path
-    }
-}
-
-#[cfg(any(test, feature = "fuzzing"))]
-impl Arbitrary for NibblePath {
-    type Parameters = ();
-    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-        arb_nibble_path().boxed()
-    }
-    type Strategy = BoxedStrategy<Self>;
-}
-
-#[cfg(any(test, feature = "fuzzing"))]
-prop_compose! {
-    fn arb_nibble_path()(
-        mut bytes in vec(any::<u8>(), 0..=ROOT_NIBBLE_HEIGHT/2),
-        is_odd in any::<bool>()
-    ) -> NibblePath {
-        if let Some(last_byte) = bytes.last_mut() {
-            if is_odd {
-                *last_byte &= 0xf0;
-                return NibblePath::new_odd(bytes);
-            }
-        }
-        NibblePath::new(bytes)
-    }
-}
-
-#[cfg(any(test, feature = "fuzzing"))]
-prop_compose! {
-    fn arb_internal_nibble_path()(
-        nibble_path in arb_nibble_path().prop_filter(
-            "Filter out leaf paths.",
-            |p| p.num_nibbles() < ROOT_NIBBLE_HEIGHT,
-        )
-    ) -> NibblePath {
         nibble_path
     }
 }
@@ -209,6 +172,7 @@ impl<'a> Peekable for BitIterator<'a> {
 /// BitIterator spits out a boolean each time. True/false denotes 1/0.
 impl<'a> Iterator for BitIterator<'a> {
     type Item = bool;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.pos.next().map(|i| self.nibble_path.get_bit(i))
     }
@@ -235,14 +199,15 @@ pub struct NibbleIterator<'a> {
     /// defines the range of `nibble_path` this iterator iterates over. `nibble_path` refers to
     /// the entire underlying buffer but the range may only be partial.
     start: usize,
-    // invariant self.start <= self.pos.start;
-    // invariant self.pos.start <= self.pos.end;
-    // invariant self.pos.end <= ROOT_NIBBLE_HEIGHT;
+    /* invariant self.start <= self.pos.start;
+     * invariant self.pos.start <= self.pos.end;
+     * invariant self.pos.end <= ROOT_NIBBLE_HEIGHT; */
 }
 
 /// NibbleIterator spits out a byte each time. Each byte must be in range [0, 16).
 impl<'a> Iterator for NibbleIterator<'a> {
     type Item = Nibble;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.pos.next().map(|i| self.nibble_path.get_nibble(i))
     }

@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,35 +15,21 @@
 
 #[cfg(test)]
 mod node_type_test;
-
-use crate::nibble_path::NibblePath;
+use crate::{blob::Blob, nibble::Nibble, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use anyhow::{ensure, Context, Result};
 use bincode::{deserialize, serialize};
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use libra_crypto::{
-    hash::{CryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH},
-    HashValue,
-};
-use libra_crypto_derive::CryptoHasher;
-use libra_nibble::Nibble;
-use libra_types::{
-    account_state_blob::AccountStateBlob,
-    proof::{SparseMerkleInternalNode, SparseMerkleLeafNode},
-    transaction::Version,
-};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::cast::FromPrimitive;
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest::{collection::hash_map, prelude::*};
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::*;
 use std::{
     collections::hash_map::HashMap,
     io::{prelude::*, Cursor, Read, SeekFrom, Write},
     mem::size_of,
 };
 use thiserror::Error;
+use tiny_keccak::Keccak;
 
 pub type NodeKey = HashValue;
 
@@ -133,7 +122,6 @@ pub type NodeKey = HashValue;
 
 /// Each child of [`InternalNode`] encapsulates a nibble forking at this node.
 #[derive(Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct Child {
     // The hash value of this child node.
     pub hash: HashValue,
@@ -160,7 +148,7 @@ pub(crate) type Children = HashMap<Nibble, Child>;
 /// Though we choose the same internal node structure as that of Patricia Merkle tree, the root hash
 /// computation logic is similar to a 4-level sparse Merkle tree except for some customizations. See
 /// the `CryptoHash` trait implementation below for details.
-#[derive(Clone, Debug, Eq, PartialEq, CryptoHasher)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InternalNode {
     // Up to 16 children.
     children: Children,
@@ -213,32 +201,12 @@ pub struct InternalNode {
 /// Note: @ denotes placeholder hash.
 /// ```
 impl CryptoHash for InternalNode {
-    type Hasher = InternalNodeHasher;
-
-    fn hash(&self) -> HashValue {
+    fn crypto_hash(&self) -> HashValue {
         self.merkle_hash(
-            0,  /* start index */
-            16, /* the number of leaves in the subtree of which we want the hash of root */
+            0,  // start index
+            16, // the number of leaves in the subtree of which we want the hash of root
             self.generate_bitmaps(),
         )
-    }
-}
-
-#[cfg(any(test, feature = "fuzzing"))]
-impl Arbitrary for InternalNode {
-    type Parameters = ();
-    type Strategy = BoxedStrategy<Self>;
-
-    fn arbitrary_with(_args: ()) -> Self::Strategy {
-        hash_map(any::<Nibble>(), any::<Child>(), 1..=16)
-            .prop_filter(
-                "InternalNode constructor panics when its only child is a leaf.",
-                |children| {
-                    !(children.len() == 1 && children.values().next().expect("Must exist.").is_leaf)
-                },
-            )
-            .prop_map(InternalNode::new)
-            .boxed()
     }
 }
 
@@ -394,7 +362,7 @@ impl InternalNode {
                 width / 2,
                 (existence_bitmap, leaf_bitmap),
             );
-            SparseMerkleInternalNode::new(left_child, right_child).hash()
+            SparseMerkleInternalNode::new(left_child, right_child).crypto_hash()
         }
     }
 
@@ -420,7 +388,7 @@ impl InternalNode {
     /// ```
     pub fn get_child_with_siblings(
         &self,
-        node_key: &NodeKey,
+        _node_key: &NodeKey,
         n: Nibble,
     ) -> (Option<NodeKey>, Vec<HashValue>) {
         let mut siblings = vec![];
@@ -492,20 +460,20 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
 }
 
 /// Represents an account.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct LeafNode {
     // The hashed account address associated with this leaf node.
     account_key: HashValue,
     // The hash of the account state blob.
     blob_hash: HashValue,
     // The account blob associated with `account_key`.
-    blob: AccountStateBlob,
+    blob: Blob,
 }
 
 impl LeafNode {
     /// Creates a new leaf node.
-    pub fn new(account_key: HashValue, blob: AccountStateBlob) -> Self {
-        let blob_hash = blob.hash();
+    pub fn new(account_key: HashValue, blob: Blob) -> Self {
+        let blob_hash = blob.crypto_hash();
         Self {
             account_key,
             blob_hash,
@@ -524,18 +492,15 @@ impl LeafNode {
     }
 
     /// Gets the associated blob itself.
-    pub fn blob(&self) -> &AccountStateBlob {
+    pub fn blob(&self) -> &Blob {
         &self.blob
     }
 }
 
 /// Computes the hash of a [`LeafNode`].
 impl CryptoHash for LeafNode {
-    // Unused hasher.
-    type Hasher = LeafNodeHasher;
-
-    fn hash(&self) -> HashValue {
-        SparseMerkleLeafNode::new(self.account_key, self.blob_hash).hash()
+    fn crypto_hash(&self) -> HashValue {
+        SparseMerkleLeafNode::new(self.account_key, self.blob_hash).crypto_hash()
     }
 }
 
@@ -588,7 +553,7 @@ impl Node {
     }
 
     /// Creates the [`Leaf`](Node::Leaf) variant.
-    pub fn new_leaf(account_key: HashValue, blob: AccountStateBlob) -> Self {
+    pub fn new_leaf(account_key: HashValue, blob: Blob) -> Self {
         Node::Leaf(LeafNode::new(account_key, blob))
     }
 
@@ -623,8 +588,8 @@ impl Node {
     pub fn hash(&self) -> HashValue {
         match self {
             Node::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
-            Node::Internal(internal_node) => internal_node.hash(),
-            Node::Leaf(leaf_node) => leaf_node.hash(),
+            Node::Internal(internal_node) => internal_node.crypto_hash(),
+            Node::Leaf(leaf_node) => leaf_node.crypto_hash(),
         }
     }
 
@@ -641,6 +606,49 @@ impl Node {
             Some(NodeTag::Leaf) => Ok(Node::Leaf(deserialize(&val[1..])?)),
             None => Err(NodeDecodeError::UnknownTag { unknown_tag: tag }.into()),
         }
+    }
+}
+
+pub struct SparseMerkleInternalNode {
+    left_child: HashValue,
+    right_child: HashValue,
+}
+
+impl SparseMerkleInternalNode {
+    pub fn new(left_child: HashValue, right_child: HashValue) -> Self {
+        Self {
+            left_child,
+            right_child,
+        }
+    }
+}
+
+impl CryptoHash for SparseMerkleInternalNode {
+    fn crypto_hash(&self) -> HashValue {
+        from_iter_sha3(vec![
+            self.left_child.as_ref().as_ref(),
+            self.right_child.as_ref().as_ref(),
+        ])
+    }
+}
+
+pub struct SparseMerkleLeafNode {
+    key: HashValue,
+    value_hash: HashValue,
+}
+
+impl SparseMerkleLeafNode {
+    pub fn new(key: HashValue, value_hash: HashValue) -> Self {
+        SparseMerkleLeafNode { key, value_hash }
+    }
+}
+
+impl CryptoHash for SparseMerkleLeafNode {
+    fn crypto_hash(&self) -> HashValue {
+        from_iter_sha3(vec![
+            self.key.as_ref().as_ref(),
+            self.value_hash.as_ref().as_ref(),
+        ])
     }
 }
 
@@ -705,4 +713,17 @@ where
     let byte = reader.read_u8()?;
     num |= u64::from(byte) << 56;
     Ok(num)
+}
+
+pub fn from_iter_sha3<'a, I>(buffers: I) -> HashValue
+where
+    I: IntoIterator<Item = &'a [u8]>,
+{
+    let mut sha3 = Keccak::new_sha3_256();
+    for buffer in buffers {
+        sha3.update(buffer);
+    }
+    let mut hash = [0; HashValue::LENGTH];
+    sha3.finalize(&mut hash);
+    HashValue::new(hash)
 }

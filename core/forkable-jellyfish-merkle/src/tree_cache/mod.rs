@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -71,12 +74,10 @@ mod tree_cache_test;
 
 use crate::{
     node_type::{Node, NodeKey},
-    StaleNodeIndex, TreeReader, TreeUpdateBatch,
+    StaleNodeIndex, TreeReader, TreeUpdateBatch, SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
 use anyhow::{bail, Result};
-use libra_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
-use libra_crypto::HashValue;
-use libra_types::transaction::Version;
+use starcoin_crypto::HashValue;
 use std::{
     collections::{hash_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
     convert::Into,
@@ -135,7 +136,7 @@ where
 {
     /// Constructs a new `TreeCache` instance.
     pub fn new(reader: &'a R, state_root_hash: Option<HashValue>) -> Self {
-        let mut node_cache = HashMap::new();
+        let node_cache = HashMap::new();
         let root_node_key = match state_root_hash {
             None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
             Some(root) => root,

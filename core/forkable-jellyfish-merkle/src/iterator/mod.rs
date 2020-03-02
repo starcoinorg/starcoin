@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,14 +13,14 @@
 mod iterator_test;
 
 use crate::{
+    blob::Blob,
+    nibble::Nibble,
     nibble_path::NibblePath,
     node_type::{InternalNode, Node, NodeKey},
     TreeReader,
 };
 use anyhow::{format_err, Result};
-use libra_crypto::HashValue;
-use libra_nibble::Nibble;
-use libra_types::account_state_blob::AccountStateBlob;
+use starcoin_crypto::HashValue;
 use std::sync::Arc;
 
 type Version = HashValue;
@@ -198,7 +201,7 @@ impl<R> Iterator for JellyfishMerkleIterator<R>
 where
     R: TreeReader,
 {
-    type Item = Result<(HashValue, AccountStateBlob)>;
+    type Item = Result<(HashValue, Blob)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {

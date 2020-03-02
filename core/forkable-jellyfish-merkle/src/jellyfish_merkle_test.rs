@@ -1,18 +1,16 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use libra_crypto::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, HashValue};
-use libra_nibble::Nibble;
-use libra_types::proof::SparseMerkleInternalNode;
+use crate::nibble::Nibble;
 use mock_tree_store::MockTreeStore;
-use proptest::{
-    collection::{btree_map, hash_map, vec},
-    prelude::*,
-};
+
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::{collections::HashMap, ops::Bound};
-use test_helper::{init_mock_db, plus_one};
+use starcoin_crypto::hash::*;
+use std::collections::HashMap;
 
 fn update_nibble(original_key: &HashValue, n: usize, nibble: u8) -> HashValue {
     assert!(nibble < 16);
@@ -33,7 +31,7 @@ fn test_insert_to_empty_tree() {
     // Tree is initially empty. Root is a null node. We'll insert a key-value pair which creates a
     // leaf node.
     let key = HashValue::random();
-    let value = AccountStateBlob::from(vec![1u8, 2u8, 3u8, 4u8]);
+    let value = Blob::from(vec![1u8, 2u8, 3u8, 4u8]);
 
     let (_new_root_hash, batch) = tree.put_blob_set(None, vec![(key, value.clone())]).unwrap();
     assert!(batch.stale_node_index_batch.is_empty());
@@ -48,7 +46,7 @@ fn test_insert_at_leaf_with_internal_created() {
     let tree = JellyfishMerkleTree::new(&db);
 
     let key1 = HashValue::new([0x00u8; HashValue::LENGTH]);
-    let value1 = AccountStateBlob::from(vec![1u8, 2u8]);
+    let value1 = Blob::from(vec![1u8, 2u8]);
 
     let (_root0_hash, batch) = tree
         .put_blob_set(None, vec![(key1, value1.clone())])
@@ -61,7 +59,7 @@ fn test_insert_at_leaf_with_internal_created() {
     // Insert at the previous leaf node. Should generate an internal node at the root.
     // Change the 1st nibble to 15.
     let key2 = update_nibble(&key1, 0, 15);
-    let value2 = AccountStateBlob::from(vec![3u8, 4u8]);
+    let value2 = Blob::from(vec![3u8, 4u8]);
 
     let (_root1_hash, batch) = tree
         .put_blob_set(Some(_root0_hash), vec![(key2, value2.clone())])
@@ -100,7 +98,7 @@ fn test_insert_at_leaf_with_multiple_internals_created() {
 
     // 1. Insert the first leaf into empty tree
     let key1 = HashValue::new([0x00u8; HashValue::LENGTH]);
-    let value1 = AccountStateBlob::from(vec![1u8, 2u8]);
+    let value1 = Blob::from(vec![1u8, 2u8]);
 
     let (_root0_hash, batch) = tree
         .put_blob_set(None, vec![(key1, value1.clone())])
@@ -111,7 +109,7 @@ fn test_insert_at_leaf_with_multiple_internals_created() {
     // 2. Insert at the previous leaf node. Should generate a branch node at root.
     // Change the 2nd nibble to 1.
     let key2 = update_nibble(&key1, 1 /* nibble_index */, 1 /* nibble */);
-    let value2 = AccountStateBlob::from(vec![3u8, 4u8]);
+    let value2 = Blob::from(vec![3u8, 4u8]);
 
     let (_root1_hash, batch) = tree
         .put_blob_set(Some(_root0_hash), vec![(key2, value2.clone())])
@@ -148,7 +146,7 @@ fn test_insert_at_leaf_with_multiple_internals_created() {
     assert_eq!(db.get_node(&root_internal.hash()).unwrap(), root_internal,);
 
     // 3. Update leaf2 with new value
-    let value2_update = AccountStateBlob::from(vec![5u8, 6u8]);
+    let value2_update = Blob::from(vec![5u8, 6u8]);
     let (_root2_hash, batch) = tree
         .put_blob_set(Some(_root1_hash), vec![(key2, value2_update.clone())])
         .unwrap();
@@ -473,7 +471,7 @@ fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
     let mut kvs = vec![];
     for _i in 0..num_keys {
         let key = HashValue::random_with_rng(&mut rng);
-        let value = AccountStateBlob::from(HashValue::random_with_rng(&mut rng).to_vec());
+        let value = Blob::from(HashValue::random_with_rng(&mut rng).to_vec());
         kvs.push((key, value));
     }
 
@@ -506,14 +504,14 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
 
     for _i in 0..num_versions {
         let key = HashValue::random_with_rng(&mut rng);
-        let value = AccountStateBlob::from(HashValue::random_with_rng(&mut rng).to_vec());
-        let new_value = AccountStateBlob::from(HashValue::random_with_rng(&mut rng).to_vec());
+        let value = Blob::from(HashValue::random_with_rng(&mut rng).to_vec());
+        let new_value = Blob::from(HashValue::random_with_rng(&mut rng).to_vec());
         kvs.push((key, value.clone(), new_value.clone()));
     }
 
     let mut roots = vec![];
     let mut current_root = None;
-    for (idx, kvs) in kvs.iter().enumerate() {
+    for (_idx, kvs) in kvs.iter().enumerate() {
         let (root, batch) = tree
             .put_blob_set(current_root, vec![(kvs.0, kvs.1.clone())])
             .unwrap();
@@ -523,8 +521,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
     }
 
     // Update value of all keys
-    for (idx, kvs) in kvs.iter().enumerate() {
-        let version = (num_versions + idx) as Version;
+    for (_idx, kvs) in kvs.iter().enumerate() {
         let (root, batch) = tree
             .put_blob_set(current_root, vec![(kvs.0, kvs.2.clone())])
             .unwrap();
