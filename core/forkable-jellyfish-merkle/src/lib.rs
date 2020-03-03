@@ -326,6 +326,7 @@ where
                 // if node_key.version() == version {
                 //     tree_cache.delete_node(&node_key, false /* is_leaf */);
                 // }
+                tree_cache.delete_node(&node_key, false);
                 Self::create_leaf_node(
                     // NodeKey::new_empty_path(version),
                     &nibble_iter,

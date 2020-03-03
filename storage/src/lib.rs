@@ -17,7 +17,7 @@ pub mod memory_storage;
 pub mod persistence_storage;
 pub mod state_node_store;
 pub mod statedb;
-#[test]
+#[cfg(test)]
 mod statedb_test;
 pub mod storage;
 pub mod transaction_info_store;

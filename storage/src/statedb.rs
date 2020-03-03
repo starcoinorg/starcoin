@@ -17,6 +17,18 @@ use std::sync::{Mutex, RwLock};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StateNode(Node);
 
+impl StateNode {
+    pub fn inner(&self) -> &Node {
+        &self.0
+    }
+}
+
+impl From<Node> for StateNode {
+    fn from(n: Node) -> Self {
+        StateNode(n)
+    }
+}
+
 impl ValueCodec for StateNode {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.0.encode()
@@ -135,6 +147,11 @@ impl StateDB {
         Ok(())
     }
 
+    #[cfg(test)]
+    pub fn change_sets(&self) -> (HashValue, TreeUpdateBatch) {
+        self.get_change_sets()
+    }
+
     /// get all changes so far based on initial root_hash.
     fn get_change_sets(&self) -> (HashValue, TreeUpdateBatch) {
         let root_hash = self.root_hash();
@@ -173,7 +190,7 @@ impl StateDB {
         let cs = TreeUpdateBatch {
             node_batch,
             stale_node_index_batch: stale_nodes,
-            num_new_leaves: num_stale_leaves,
+            num_new_leaves,
             num_stale_leaves,
         };
         (root_hash, cs)

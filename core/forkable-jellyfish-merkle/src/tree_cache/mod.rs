@@ -136,9 +136,12 @@ where
 {
     /// Constructs a new `TreeCache` instance.
     pub fn new(reader: &'a R, state_root_hash: Option<HashValue>) -> Self {
-        let node_cache = HashMap::new();
+        let mut node_cache = HashMap::new();
         let root_node_key = match state_root_hash {
-            None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            None => {
+                node_cache.insert(*SPARSE_MERKLE_PLACEHOLDER_HASH, Node::new_null());
+                *SPARSE_MERKLE_PLACEHOLDER_HASH
+            }
             Some(root) => root,
         };
         Self {
