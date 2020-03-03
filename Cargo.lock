@@ -4946,6 +4946,7 @@ dependencies = [
  "anyhow",
  "byteorder 1.3.4",
  "chrono",
+ "forkable-jellyfish-merkle",
  "rocksdb",
  "serde",
  "starcoin-accumulator",

@@ -71,7 +71,7 @@
 //! [`InternalNode`]: node_type/struct.InternalNode.html
 //! [`LeafNode`]: node_type/struct.LeafNode.html
 
-mod blob;
+pub mod blob;
 pub mod iterator;
 #[cfg(test)]
 mod jellyfish_merkle_test;
@@ -80,11 +80,11 @@ mod mock_tree_store;
 mod nibble;
 mod nibble_path;
 pub mod node_type;
-mod proof;
+pub mod proof;
 pub mod restore;
 #[cfg(test)]
 mod test_helper;
-mod tree_cache;
+pub mod tree_cache;
 
 use anyhow::{bail, ensure, format_err, Result};
 use blob::Blob;
@@ -125,7 +125,9 @@ pub trait TreeReader {
 
     /// Gets the rightmost leaf. Note that this assumes we are in the process of restoring the tree
     /// and all nodes are at the same version.
-    fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode)>>;
+    fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode)>> {
+        Ok(None)
+    }
 }
 
 pub trait TreeWriter {
@@ -251,6 +253,7 @@ where
                 .map(|(key, blob)| Self::put(key, blob, &mut tree_cache))
                 .collect::<Result<_>>()?;
             // Freezes the current cache to make all contents in the current cache immutable.
+            // TODO: maybe we should not freeze, check here again.
             tree_cache.freeze();
         }
 
