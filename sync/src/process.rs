@@ -11,7 +11,7 @@ use futures_timer::Delay;
 /// Sync message which inbound
 use network::sync_messages::{
     BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithBlockHeader, HashWithNumber, LatestStateMsg,
+    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg,
     ProcessMessage,
 };
 use network::{
@@ -120,7 +120,7 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                             processor.clone(),
                             get_hash_by_number_msg,
                         )
-                        .await;
+                            .await;
 
                         let resp = RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg);
                         network.clone().response_for(peer_id, id, resp).await;
@@ -134,12 +134,12 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                                     processor.clone(),
                                     get_data_by_hash_msg.clone(),
                                 )
-                                .await;
+                                    .await;
                                 let batch_body_msg = Processor::handle_get_body_by_hash_msg(
                                     processor.clone(),
                                     get_data_by_hash_msg,
                                 )
-                                .await;
+                                    .await;
                                 debug!(
                                     "batch block size: {} : {}",
                                     batch_header_msg.headers.len(),
@@ -182,11 +182,7 @@ impl Processor {
     pub async fn send_latest_state_msg(processor: Arc<Processor>) -> LatestStateMsg {
         let head_block = Self::head_block(processor.clone()).await;
         //todo:send to network
-        let hash_header = HashWithBlockHeader {
-            hash: head_block.crypto_hash(),
-            header: head_block.header().clone(),
-        };
-        LatestStateMsg { hash_header }
+        LatestStateMsg { header: head_block.header().clone() }
     }
 
     pub async fn handle_get_hash_by_number_msg(
@@ -215,7 +211,7 @@ impl Processor {
             hashs.push(hash_with_number);
         }
 
-        BatchHashByNumberMsg { id: req_id, hashs }
+        BatchHashByNumberMsg { req_id, hashs }
     }
 
     pub async fn handle_get_header_by_hash_msg(
@@ -230,8 +226,6 @@ impl Processor {
                 .get_header_by_hash(&hash)
                 .await
                 .unwrap();
-            let header = HashWithBlockHeader { header, hash };
-
             headers.push(header);
         }
         BatchHeaderMsg { headers }

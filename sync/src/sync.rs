@@ -14,6 +14,7 @@ use network::sync_messages::{
 use network::{PeerEvent, RPCMessage, RPCRequest, RpcRequestMessage};
 use std::sync::Arc;
 use types::{block::BlockHeader, peer_info::PeerInfo, system_events::SystemEvents};
+use std::time::Duration;
 
 pub struct SyncActor {
     process_address: Addr<ProcessActor>,
@@ -101,9 +102,9 @@ impl Handler<SystemEvents> for SyncActor {
     fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
         debug!("mined block.");
         match msg {
-            SystemEvents::MinedBlock(new_block) | SystemEvents::NewHeadBlock(new_block) => {
+            SystemEvents::MinedBlock(new_block) => {
                 self.download_address
-                    .send(DownloadMessage::NewBlock(new_block))
+                    .send(DownloadMessage::MinedBlock(new_block))
                     .into_actor(self)
                     .then(|_result, act, _ctx| async {}.into_actor(act))
                     .wait(ctx);

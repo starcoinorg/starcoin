@@ -40,9 +40,9 @@ use std::time::Duration;
 
 #[derive(Clone)]
 pub struct NetworkAsyncService<P>
-where
-    P: TxPoolAsyncService,
-    P: 'static,
+    where
+        P: TxPoolAsyncService,
+        P: 'static,
 {
     addr: Addr<NetworkActor<P>>,
     message_processor: MessageProcessor<RPCResponse>,
@@ -50,9 +50,9 @@ where
 }
 
 impl<P> NetworkAsyncService<P>
-where
-    P: TxPoolAsyncService,
-    P: 'static,
+    where
+        P: TxPoolAsyncService,
+        P: 'static,
 {
     pub async fn send_peer_message(&self, peer_id: AccountAddress, msg: PeerMessage) -> Result<()> {
         let data = msg.encode().unwrap();
@@ -101,9 +101,9 @@ where
 }
 
 pub struct NetworkActor<P>
-where
-    P: TxPoolAsyncService,
-    P: 'static,
+    where
+        P: TxPoolAsyncService,
+        P: 'static,
 {
     network_service: NetworkService,
     tx: mpsc::UnboundedSender<NetworkMessage>,
@@ -114,8 +114,8 @@ where
 }
 
 impl<P> NetworkActor<P>
-where
-    P: TxPoolAsyncService,
+    where
+        P: TxPoolAsyncService,
 {
     pub fn launch(
         node_config: Arc<NodeConfig>,
@@ -159,19 +159,19 @@ where
 }
 
 impl<P> Actor for NetworkActor<P>
-where
-    P: TxPoolAsyncService,
+    where
+        P: TxPoolAsyncService,
 {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        info!("Network actor started ",);
+        info!("Network actor started ", );
     }
 }
 
 impl<P> StreamHandler<Result<NetworkMessage, ()>> for NetworkActor<P>
-where
-    P: TxPoolAsyncService,
+    where
+        P: TxPoolAsyncService,
 {
     fn handle(&mut self, item: Result<NetworkMessage, ()>, ctx: &mut Self::Context) {
         match item {
@@ -195,8 +195,8 @@ where
 }
 
 impl<P> StreamHandler<Result<PeerEvent, ()>> for NetworkActor<P>
-where
-    P: TxPoolAsyncService,
+    where
+        P: TxPoolAsyncService,
 {
     fn handle(&mut self, item: Result<PeerEvent, ()>, ctx: &mut Self::Context) {
         info!("event is {:?}", item);
@@ -212,8 +212,8 @@ where
 }
 
 impl<P> NetworkActor<P>
-where
-    P: TxPoolAsyncService,
+    where
+        P: TxPoolAsyncService,
 {
     fn handle_network_message(
         &self,
@@ -233,11 +233,13 @@ where
             }
             PeerMessage::Block(block) => {
                 let bus = self.bus.clone();
+                let peer_info = PeerInfo::new(peer_id);
                 let f = async move {
                     bus.send(Broadcast {
-                        msg: SystemEvents::NewHeadBlock(block),
+                        msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
+                            peer_info, block)),
                     })
-                    .await;
+                        .await;
                 };
                 let f = actix::fut::wrap_future(f);
                 ctx.spawn(Box::new(f));
@@ -245,15 +247,15 @@ where
             PeerMessage::LatestStateMsg(state) => {
                 info!("broadcast LatestStateMsg.");
                 let bus = self.bus.clone();
-                let account_address = PeerInfo::new(peer_id);
+                let peer_info = PeerInfo::new(peer_id);
                 let f = async move {
                     bus.send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
-                            account_address,
+                            peer_info,
                             state,
                         )),
                     })
-                    .await;
+                        .await;
                 };
                 let f = actix::fut::wrap_future(f);
                 ctx.spawn(Box::new(f));
@@ -265,7 +267,7 @@ where
                     bus.send(Broadcast {
                         msg: RpcRequestMessage { peer_id, request },
                     })
-                    .await;
+                        .await;
                     info!("receive rpc request");
                 };
                 let f = actix::fut::wrap_future(f);
@@ -287,8 +289,8 @@ where
 
 /// handler system events.
 impl<P> Handler<SystemEvents> for NetworkActor<P>
-where
-    P: TxPoolAsyncService,
+    where
+        P: TxPoolAsyncService,
 {
     type Result = ();
 
@@ -489,7 +491,7 @@ mod tests {
         type Context = Context<Self>;
 
         fn started(&mut self, _ctx: &mut Self::Context) {
-            info!("Test actor started ",);
+            info!("Test actor started ", );
         }
     }
 

@@ -24,8 +24,9 @@ pub enum DownloadMessage {
     BatchHeaderMsg(PeerInfo, BatchHeaderMsg),
     BatchBodyMsg(BatchBodyMsg),
     BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
+    NewHeadBlock(PeerInfo, Block),
     // just fo test
-    NewBlock(Block),
+    MinedBlock(Block),
 }
 
 impl Message for DownloadMessage {
@@ -55,25 +56,7 @@ impl Message for ProcessMessage {
 
 #[derive(Eq, Serialize, Deserialize, PartialEq, Hash, Clone, Debug)]
 pub struct LatestStateMsg {
-    pub hash_header: HashWithBlockHeader,
-}
-
-#[derive(Eq, Serialize, Deserialize, PartialEq, Hash, Clone, Debug)]
-pub struct HashWithBlockHeader {
-    pub hash: HashValue,
     pub header: BlockHeader,
-}
-
-impl PartialOrd for HashWithBlockHeader {
-    fn partial_cmp(&self, other: &HashWithBlockHeader) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for HashWithBlockHeader {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.header.cmp(&other.header)
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -100,7 +83,7 @@ impl Ord for HashWithNumber {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct BatchHashByNumberMsg {
-    pub id: HashValue,
+    pub req_id: HashValue,
     pub hashs: Vec<HashWithNumber>,
 }
 
@@ -126,7 +109,7 @@ pub struct GetDataByHashMsg {
 
 #[derive(Clone, Eq, Serialize, Deserialize, PartialEq, Debug)]
 pub struct BatchHeaderMsg {
-    pub headers: Vec<HashWithBlockHeader>,
+    pub headers: Vec<BlockHeader>,
 }
 
 #[derive(Eq, Serialize, Deserialize, PartialEq, Clone, Debug)]
