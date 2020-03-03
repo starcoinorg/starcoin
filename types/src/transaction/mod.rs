@@ -237,7 +237,7 @@ impl RawUserTransaction {
             AccountAddress::default(),
             0,
             TransactionPayload::Script(Script::new(compiled_script, vec![])),
-            0,
+            600,
             0,
             Duration::new(0, 0),
         )

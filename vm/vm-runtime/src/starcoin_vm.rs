@@ -152,6 +152,7 @@ impl StarcoinVM {
                 .unwrap_or_else(discard_libra_error_output)
         });
         // TODO convert to starcoin type
+        info!("{:?}", output);
         TransactionHelper::to_starcoin_TransactionOutput(output)
     }
 
