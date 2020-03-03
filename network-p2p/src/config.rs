@@ -20,6 +20,22 @@ use std::{
 };
 use zeroize::Zeroize;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ProtocolId(smallvec::SmallVec<[u8; 6]>);
+
+impl<'a> From<&'a [u8]> for ProtocolId {
+    fn from(bytes: &'a [u8]) -> ProtocolId {
+        ProtocolId(bytes.into())
+    }
+}
+
+impl ProtocolId {
+    /// Exposes the `ProtocolId` as bytes.
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
 /// Network service configuration.
 #[derive(Clone)]
 pub struct NetworkConfiguration {

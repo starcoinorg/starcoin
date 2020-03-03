@@ -3599,6 +3599,7 @@ dependencies = [
  "thiserror",
  "unsigned-varint 0.3.1",
  "void",
+ "wasm-timer 0.2.4",
  "zeroize",
 ]
 
