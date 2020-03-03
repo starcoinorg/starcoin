@@ -34,7 +34,7 @@ use types::{
 
 #[derive(Clone)]
 pub struct DownloadActor {
-    downloader: Arc<RwLock<Downloader>>,
+    downloader: Arc<Downloader>,
     peer_info: Arc<PeerInfo>,
     network: NetworkAsyncService<TxPoolRef>,
     bus: Addr<BusActor>,
@@ -48,7 +48,7 @@ impl DownloadActor {
         bus: Addr<BusActor>,
     ) -> Result<Addr<DownloadActor>> {
         let download_actor = DownloadActor {
-            downloader: Arc::new(RwLock::new(Downloader::new(chain_reader))),
+            downloader: Arc::new(Downloader::new(chain_reader)),
             peer_info,
             network,
             bus,
@@ -185,7 +185,7 @@ pub struct Downloader {
     header_pool: TTLPool<HashWithBlockHeader>,
     body_pool: TTLPool<BlockBody>,
     //    _network: Addr<NetworkActor>,
-    peers: HashMap<PeerInfo, LatestStateMsg>,
+    peers: RwLock<HashMap<PeerInfo, LatestStateMsg>>,
     chain_reader: ChainActorRef<ChainActor>,
 }
 
@@ -198,13 +198,13 @@ impl Downloader {
             header_pool: TTLPool::new(),
             body_pool: TTLPool::new(),
             //            _network: network,
-            peers: HashMap::new(),
+            peers: RwLock::new(HashMap::new()),
             chain_reader,
         }
     }
 
     pub async fn handle_latest_state_msg(
-        downloader: Arc<RwLock<Downloader>>,
+        downloader: Arc<Downloader>,
         peer: PeerInfo,
         latest_state_msg: LatestStateMsg,
     ) {
@@ -215,39 +215,47 @@ impl Downloader {
         //        self.hash_pool
         //            .insert(peer.clone(), latest_state_msg.header.number(), hash_num);
         downloader
+            .peers
             .write()
             .compat()
             .await
             .unwrap()
-            .peers
             .insert(peer, latest_state_msg.clone());
     }
 
-    async fn best_peer(downloader: Arc<RwLock<Downloader>>) -> PeerInfo {
-        let lock = downloader.read().compat().await.unwrap();
-        assert!(lock.peers.len() > 0);
+    async fn best_peer(downloader: Arc<Downloader>) -> PeerInfo {
         let mut peer = None;
-        lock.peers.keys().for_each(|p| peer = Some(p.clone()));
+        downloader
+            .peers
+            .read()
+            .compat()
+            .await
+            .unwrap()
+            .keys()
+            .for_each(|p| peer = Some(p.clone()));
 
         peer.take().expect("best peer is none.")
     }
 
     pub async fn send_get_hash_by_number_msg(
-        downloader: Arc<RwLock<Downloader>>,
+        downloader: Arc<Downloader>,
     ) -> Option<(PeerInfo, GetHashByNumberMsg)> {
         let best_peer = Self::best_peer(downloader.clone()).await;
-        let lock = downloader.read().compat().await.unwrap();
         //todo：binary search
 
-        let latest_number = lock
+        let latest_number = downloader
             .chain_reader
             .clone()
             .current_header()
             .await
             .unwrap()
             .number();
-        let number = lock
+        let number = downloader
             .peers
+            .read()
+            .compat()
+            .await
+            .unwrap()
             .get(&best_peer)
             .expect("Latest state is none.")
             .hash_header
@@ -272,18 +280,17 @@ impl Downloader {
     }
 
     pub async fn find_ancestor(
-        downloader: Arc<RwLock<Downloader>>,
+        downloader: Arc<Downloader>,
         peer: PeerInfo,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) -> Option<HashWithNumber> {
-        let mut lock = downloader.write().compat().await.unwrap();
         //TODO
         let mut exist_ancestor = false;
         let mut ancestor = None;
         let mut hashs = batch_hash_by_number_msg.hashs.clone();
         let mut not_exist_hash = Vec::new();
         hashs.reverse();
-        let id = lock
+        let id = downloader
             .chain_reader
             .clone()
             .current_header()
@@ -291,7 +298,7 @@ impl Downloader {
             .unwrap()
             .id();
         for hash in hashs {
-            if lock
+            if downloader
                 .chain_reader
                 .clone()
                 .get_block_by_hash(&hash.hash)
@@ -309,7 +316,7 @@ impl Downloader {
 
         if exist_ancestor {
             for hash in not_exist_hash {
-                lock.borrow_mut()
+                downloader
                     .hash_pool
                     .insert(peer.clone(), hash.number.clone(), hash);
             }
@@ -318,10 +325,9 @@ impl Downloader {
     }
 
     pub async fn send_get_header_by_hash_msg(
-        downloader: Arc<RwLock<Downloader>>,
+        downloader: Arc<Downloader>,
     ) -> Option<GetDataByHashMsg> {
-        let mut lock = downloader.write().compat().await.unwrap();
-        let hash_vec = lock.borrow_mut().hash_pool.take(100);
+        let hash_vec = downloader.hash_pool.take(100);
         if !hash_vec.is_empty() {
             let mut hashs = hash_vec.iter().map(|hash| hash.hash).collect();
             Some(GetDataByHashMsg {
@@ -334,25 +340,23 @@ impl Downloader {
     }
 
     pub async fn handle_batch_header_msg(
-        downloader: Arc<RwLock<Downloader>>,
+        downloader: Arc<Downloader>,
         peer: PeerInfo,
         batch_header_msg: BatchHeaderMsg,
     ) {
-        let mut lock = downloader.write().compat().await.unwrap();
         if !batch_header_msg.headers.is_empty() {
             for header in batch_header_msg.headers {
-                lock.header_pool
-                    .borrow_mut()
+                downloader
+                    .header_pool
                     .insert(peer.clone(), header.header.number(), header);
             }
         }
     }
 
     pub async fn send_get_body_by_hash_msg(
-        downloader: Arc<RwLock<Downloader>>,
+        downloader: Arc<Downloader>,
     ) -> Option<GetDataByHashMsg> {
-        let mut lock = downloader.write().compat().await.unwrap();
-        let header_vec = lock.borrow_mut().header_pool.take(100);
+        let header_vec = downloader.header_pool.take(100);
         if !header_vec.is_empty() {
             let mut hashs = header_vec.iter().map(|header| header.hash).collect();
             Some(GetDataByHashMsg {
@@ -365,7 +369,7 @@ impl Downloader {
     }
 
     pub async fn do_blocks(
-        downloader: Arc<RwLock<Downloader>>,
+        downloader: Arc<Downloader>,
         headers: Vec<HashWithBlockHeader>,
         bodies: Vec<BlockBody>,
     ) {
@@ -376,10 +380,9 @@ impl Downloader {
         }
     }
 
-    pub async fn do_block(downloader: Arc<RwLock<Downloader>>, block: Block) {
+    pub async fn do_block(downloader: Arc<Downloader>, block: Block) {
         info!("do block {:?}", block.header().id());
-        let lock = downloader.write().compat().await.unwrap();
         //todo:verify block
-        let _ = lock.chain_reader.clone().try_connect(block).await;
+        let _ = downloader.chain_reader.clone().try_connect(block).await;
     }
 }

@@ -7,8 +7,6 @@ use anyhow::Result;
 use bus::{Bus, BusActor, Subscription};
 use chain::{ChainActor, ChainActorRef};
 use crypto::{hash::CryptoHash, HashValue};
-use futures::compat::Future01CompatExt;
-use futures_locks::{Mutex, RwLock};
 use futures_timer::Delay;
 /// Sync message which inbound
 use network::sync_messages::{
@@ -27,7 +25,7 @@ use txpool::TxPoolRef;
 use types::{block::Block, peer_info::PeerInfo};
 
 pub struct ProcessActor {
-    processor: Arc<RwLock<Processor>>,
+    processor: Arc<Processor>,
     peer_info: Arc<PeerInfo>,
     network: NetworkAsyncService<TxPoolRef>,
     bus: Addr<BusActor>,
@@ -41,7 +39,7 @@ impl ProcessActor {
         bus: Addr<BusActor>,
     ) -> Result<Addr<ProcessActor>> {
         let process_actor = ProcessActor {
-            processor: Arc::new(RwLock::new(Processor::new(chain_reader))),
+            processor: Arc::new(Processor::new(chain_reader)),
             peer_info,
             network,
             bus,
@@ -70,7 +68,7 @@ impl Handler<ProcessMessage> for ProcessActor {
     type Result = ResponseActFuture<Self, Result<()>>;
 
     fn handle(&mut self, msg: ProcessMessage, ctx: &mut Self::Context) -> Self::Result {
-        let processor = self.processor.clone();
+        let mut processor = self.processor.clone();
         let my_peer_info = self.peer_info.as_ref().clone();
         let network = self.network.clone();
         let fut = async move {
@@ -122,7 +120,7 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                             processor.clone(),
                             get_hash_by_number_msg,
                         )
-                            .await;
+                        .await;
 
                         let resp = RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg);
                         network.clone().response_for(peer_id, id, resp).await;
@@ -136,12 +134,12 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                                     processor.clone(),
                                     get_data_by_hash_msg.clone(),
                                 )
-                                    .await;
+                                .await;
                                 let batch_body_msg = Processor::handle_get_body_by_hash_msg(
                                     processor.clone(),
                                     get_data_by_hash_msg,
                                 )
-                                    .await;
+                                .await;
                                 debug!(
                                     "batch block size: {} : {}",
                                     batch_header_msg.headers.len(),
@@ -174,19 +172,15 @@ pub struct Processor {
 
 impl Processor {
     pub fn new(chain_reader: ChainActorRef<ChainActor>) -> Self {
-        Processor {
-            chain_reader,
-        }
+        Processor { chain_reader }
     }
 
-    pub async fn head_block(processor: Arc<RwLock<Processor>>) -> Block {
-        let lock = processor.read().compat().await.unwrap();
-        lock.chain_reader.clone().head_block().await.unwrap()
+    pub async fn head_block(processor: Arc<Processor>) -> Block {
+        processor.chain_reader.clone().head_block().await.unwrap()
     }
 
-    pub async fn send_latest_state_msg(processor: Arc<RwLock<Processor>>) -> LatestStateMsg {
+    pub async fn send_latest_state_msg(processor: Arc<Processor>) -> LatestStateMsg {
         let head_block = Self::head_block(processor.clone()).await;
-        let lock = processor.read().compat().await.unwrap();
         //todo:send to network
         let hash_header = HashWithBlockHeader {
             hash: head_block.crypto_hash(),
@@ -197,13 +191,12 @@ impl Processor {
 
     pub async fn handle_get_hash_by_number_msg(
         req_id: HashValue,
-        processor: Arc<RwLock<Processor>>,
+        processor: Arc<Processor>,
         get_hash_by_number_msg: GetHashByNumberMsg,
     ) -> BatchHashByNumberMsg {
-        let lock = processor.read().compat().await.unwrap();
         let mut hashs = Vec::new();
         for number in get_hash_by_number_msg.numbers {
-            let block = lock
+            let block = processor
                 .chain_reader
                 .clone()
                 .get_block_by_number(number)
@@ -226,14 +219,12 @@ impl Processor {
     }
 
     pub async fn handle_get_header_by_hash_msg(
-        processor: Arc<RwLock<Processor>>,
+        processor: Arc<Processor>,
         get_header_by_hash_msg: GetDataByHashMsg,
     ) -> BatchHeaderMsg {
-        let lock = processor.read().compat().await.unwrap();
-
         let mut headers = Vec::new();
         for hash in get_header_by_hash_msg.hashs {
-            let header = lock
+            let header = processor
                 .chain_reader
                 .clone()
                 .get_header_by_hash(&hash)
@@ -247,14 +238,17 @@ impl Processor {
     }
 
     pub async fn handle_get_body_by_hash_msg(
-        processor: Arc<RwLock<Processor>>,
+        processor: Arc<Processor>,
         get_body_by_hash_msg: GetDataByHashMsg,
     ) -> BatchBodyMsg {
-        let lock = processor.read().compat().await.unwrap();
-
         let mut bodies = Vec::new();
         for hash in get_body_by_hash_msg.hashs {
-            let transactions = match lock.chain_reader.clone().get_block_by_hash(&hash).await {
+            let transactions = match processor
+                .chain_reader
+                .clone()
+                .get_block_by_hash(&hash)
+                .await
+            {
                 Some(block) => block.transactions().clone().to_vec(),
                 _ => Vec::new(),
             };
