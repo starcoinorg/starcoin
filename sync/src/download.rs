@@ -11,14 +11,14 @@ use atomic_refcell::AtomicRefCell;
 use bus::{Bus, BusActor, Subscription};
 use chain::{ChainActor, ChainActorRef};
 use crypto::hash::CryptoHash;
+use futures::channel::mpsc;
 use futures::compat::Future01CompatExt;
 use futures_locks::{Mutex, RwLock};
 use futures_timer::Delay;
 use itertools;
 use network::sync_messages::{
     BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg,
-    ProcessMessage,
+    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
 use network::{NetworkAsyncService, RPCMessage, RPCRequest, RPCResponse};
 use std::borrow::BorrowMut;
@@ -31,7 +31,6 @@ use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
 };
-use futures::channel::mpsc;
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
@@ -108,18 +107,24 @@ impl Handler<DownloadMessage> for DownloadActor {
                         peer_info.clone(),
                         latest_state_msg,
                     )
-                        .await;
+                    .await;
                 }
                 DownloadMessage::NewHeadBlock(peer_info, block) => {
-                    info!("receive new block: {:?} from {:?}", block.header().id(), peer_info.id);
+                    info!(
+                        "receive new block: {:?} from {:?}",
+                        block.header().id(),
+                        peer_info.id
+                    );
                     //1. update latest block
-                    let latest_state_msg = LatestStateMsg { header: block.header().clone() };
+                    let latest_state_msg = LatestStateMsg {
+                        header: block.header().clone(),
+                    };
                     Downloader::handle_latest_state_msg(
                         downloader.clone(),
                         peer_info.clone(),
                         latest_state_msg,
                     )
-                        .await;
+                    .await;
 
                     //2. connect block
                     Downloader::do_block(downloader.clone(), block).await;
@@ -153,7 +158,12 @@ impl DownloadActor {
 
                 let mut hash_with_number = None;
                 loop {
-                    let send_get_hash_by_number_msg = Downloader::send_get_hash_by_number_msg(downloader.clone(), best_peer.clone(), begin_number).await;
+                    let send_get_hash_by_number_msg = Downloader::send_get_hash_by_number_msg(
+                        downloader.clone(),
+                        best_peer.clone(),
+                        begin_number,
+                    )
+                    .await;
 
                     match send_get_hash_by_number_msg {
                         Some((get_hash_by_number_msg, end, next_number)) => {
@@ -167,15 +177,16 @@ impl DownloadActor {
                                 ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg),
                             );
 
-                            if let RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) = network
-                                .clone()
-                                .send_request(
-                                    best_peer.id.clone(),
-                                    get_hash_by_number_req.clone(),
-                                    do_duration(DELAY_TIME),
-                                )
-                                .await
-                                .unwrap()
+                            if let RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) =
+                                network
+                                    .clone()
+                                    .send_request(
+                                        best_peer.id.clone(),
+                                        get_hash_by_number_req.clone(),
+                                        do_duration(DELAY_TIME),
+                                    )
+                                    .await
+                                    .unwrap()
                             {
                                 debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
                                 hash_with_number = Downloader::find_ancestor(
@@ -183,7 +194,7 @@ impl DownloadActor {
                                     best_peer.clone(),
                                     batch_hash_by_number_msg,
                                 )
-                                    .await;
+                                .await;
                             }
 
                             if end || hash_with_number.is_some() {
@@ -194,7 +205,7 @@ impl DownloadActor {
                             break;
                         }
                     }
-                };
+                }
 
                 debug!("hash_with_number:{:?}", hash_with_number);
                 match hash_with_number {
@@ -202,7 +213,13 @@ impl DownloadActor {
                         loop {
                             //1. sync hash
                             begin_number = hash_number.number + 1;
-                            let send_get_hash_by_number_msg = Downloader::send_get_hash_by_number_msg_2(downloader.clone(), best_peer.clone(), begin_number).await;
+                            let send_get_hash_by_number_msg =
+                                Downloader::send_get_hash_by_number_msg_2(
+                                    downloader.clone(),
+                                    best_peer.clone(),
+                                    begin_number,
+                                )
+                                .await;
 
                             match send_get_hash_by_number_msg {
                                 Some((get_hash_by_number_msg, end, next_number)) => {
@@ -212,7 +229,9 @@ impl DownloadActor {
                                         ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg),
                                     );
 
-                                    if let RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) = network
+                                    if let RPCResponse::BatchHashByNumberMsg(
+                                        batch_hash_by_number_msg,
+                                    ) = network
                                         .clone()
                                         .send_request(
                                             best_peer.id.clone(),
@@ -230,16 +249,12 @@ impl DownloadActor {
                                     }
 
                                     if let Some(get_data_by_hash_msg) =
-                                    Downloader::send_get_header_by_hash_msg(
-                                        downloader.clone(),
-                                    )
-                                        .await {
-                                        let get_data_by_hash_req =
-                                            RPCRequest::GetDataByHashMsg(
-                                                ProcessMessage::GetDataByHashMsg(
-                                                    get_data_by_hash_msg,
-                                                ),
-                                            );
+                                        Downloader::send_get_header_by_hash_msg(downloader.clone())
+                                            .await
+                                    {
+                                        let get_data_by_hash_req = RPCRequest::GetDataByHashMsg(
+                                            ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
+                                        );
 
                                         if let RPCResponse::BatchHeaderAndBodyMsg(
                                             _,
@@ -260,7 +275,7 @@ impl DownloadActor {
                                                 headers.headers,
                                                 bodies.bodies,
                                             )
-                                                .await;
+                                            .await;
                                         }
                                     }
 
@@ -301,7 +316,7 @@ impl Downloader {
             hash_pool: TTLPool::new(),
             header_pool: TTLPool::new(),
             body_pool: TTLPool::new(),
-//            _network: network,
+            //            _network: network,
             peers: Arc::new(RwLock::new(HashMap::new())),
             chain_reader,
         }
@@ -312,33 +327,24 @@ impl Downloader {
         peer: PeerInfo,
         latest_state_msg: LatestStateMsg,
     ) {
-// let hash_num = HashWithNumber {
-//     hash: latest_state_msg.hash_header.hash.clone(),
-//     number: latest_state_msg.hash_header.header.number(),
-// };
-//        self.hash_pool
-//            .insert(peer.clone(), latest_state_msg.header.number(), hash_num);
-        let mut lock = downloader
-            .peers
-            .write()
-            .compat()
-            .await
-            .unwrap();
-        if lock.get(&peer).is_none() || (lock.get(&peer).unwrap().header.number() < latest_state_msg.header.number()) {
+        // let hash_num = HashWithNumber {
+        //     hash: latest_state_msg.hash_header.hash.clone(),
+        //     number: latest_state_msg.hash_header.header.number(),
+        // };
+        //        self.hash_pool
+        //            .insert(peer.clone(), latest_state_msg.header.number(), hash_num);
+        let mut lock = downloader.peers.write().compat().await.unwrap();
+        if lock.get(&peer).is_none()
+            || (lock.get(&peer).unwrap().header.number() < latest_state_msg.header.number())
+        {
             lock.insert(peer, latest_state_msg.clone());
         }
     }
 
     async fn best_peer(downloader: Arc<Downloader>) -> Option<PeerInfo> {
-        let lock = downloader
-            .peers
-            .read()
-            .compat()
-            .await
-            .unwrap();
+        let lock = downloader.peers.read().compat().await.unwrap();
         println!("size : {}", lock.len());
-        for p in lock.keys()
-        {
+        for p in lock.keys() {
             return Some(p.clone());
         }
 
@@ -351,7 +357,7 @@ impl Downloader {
         peer: PeerInfo,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
-//todo：binary search
+        //todo：binary search
 
         let number = downloader
             .peers
@@ -429,7 +435,7 @@ impl Downloader {
         peer: PeerInfo,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) -> Option<HashWithNumber> {
-//TODO
+        //TODO
         let mut exist_ancestor = false;
         let mut ancestor = None;
         let mut hashs = batch_hash_by_number_msg.hashs.clone();
@@ -469,8 +475,11 @@ impl Downloader {
         ancestor
     }
 
-    fn handle_batch_hash_by_number_msg(downloader: Arc<Downloader>, peer: PeerInfo,
-                                       batch_hash_by_number_msg: BatchHashByNumberMsg, ) {
+    fn handle_batch_hash_by_number_msg(
+        downloader: Arc<Downloader>,
+        peer: PeerInfo,
+        batch_hash_by_number_msg: BatchHashByNumberMsg,
+    ) {
         for hash in batch_hash_by_number_msg.hashs {
             downloader
                 .hash_pool
@@ -529,14 +538,14 @@ impl Downloader {
     ) {
         for (header, body) in itertools::zip_eq(headers, bodies) {
             let block = Block::new(header, body.transactions);
-//todo:verify block
+            //todo:verify block
             let _ = Self::do_block(downloader.clone(), block).await;
         }
     }
 
     pub async fn do_block(downloader: Arc<Downloader>, block: Block) {
         info!("do block {:?}", block.header().id());
-//todo:verify block
+        //todo:verify block
         let _ = downloader.chain_reader.clone().try_connect(block).await;
     }
 }

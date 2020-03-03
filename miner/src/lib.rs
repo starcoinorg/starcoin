@@ -1,13 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::headblock_pacemaker::HeadBlockPacemaker;
 use crate::ondemand_pacemaker::OndemandPacemaker;
 use crate::schedule_pacemaker::SchedulePacemaker;
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
 use chain::{BlockChain, ChainActor, ChainActorRef};
-use config::NodeConfig;
+use config::{NodeConfig, PacemakerStrategy};
 use consensus::{Consensus, ConsensusHeader};
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
@@ -61,10 +62,18 @@ where
     ) -> Result<Addr<Self>> {
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
-            ///TODO create pacemaker by config.
-            let pacemaker = SchedulePacemaker::new(Duration::from_millis(1000), sender);
             ctx.add_message_stream(receiver);
-            pacemaker.start();
+            match &config.miner.pacemaker_strategy {
+                PacemakerStrategy::HeadBlock => {
+                    HeadBlockPacemaker::new(bus.clone(), sender).start();
+                }
+                PacemakerStrategy::Ondemand => {
+                    OndemandPacemaker::new(bus.clone(), sender).start();
+                }
+                PacemakerStrategy::Schedule => {
+                    SchedulePacemaker::new(Duration::from_millis(1000), sender).start();
+                }
+            };
             MinerActor {
                 config,
                 bus,

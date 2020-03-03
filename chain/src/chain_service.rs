@@ -27,10 +27,10 @@ use types::{
 };
 
 pub struct ChainServiceImpl<E, C, P>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        P: TxPoolAsyncService + 'static,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService + 'static,
 {
     config: Arc<NodeConfig>,
     head: BlockChain<E, C>,
@@ -40,10 +40,10 @@ pub struct ChainServiceImpl<E, C, P>
 }
 
 impl<E, C, P> ChainServiceImpl<E, C, P>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        P: TxPoolAsyncService,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -77,7 +77,7 @@ impl<E, C, P> ChainServiceImpl<E, C, P>
                         self.storage.clone(),
                         Some(header.parent_hash()),
                     )
-                        .unwrap(),
+                    .unwrap(),
                 );
             }
             None => {
@@ -89,7 +89,7 @@ impl<E, C, P> ChainServiceImpl<E, C, P>
                                 self.storage.clone(),
                                 Some(header.parent_hash()),
                             )
-                                .unwrap(),
+                            .unwrap(),
                         );
                     }
                 }
@@ -111,7 +111,7 @@ impl<E, C, P> ChainServiceImpl<E, C, P>
             //1. update head branch
             self.head = new_branch;
             need_broadcast = true;
-            //todo:delete txpool
+        //todo:delete txpool
         } else {
             //2. update branches
             let mut update_branch_flag = false;
@@ -126,7 +126,7 @@ impl<E, C, P> ChainServiceImpl<E, C, P>
                             self.storage.clone(),
                             Some(new_branch.current_header().id()),
                         )
-                            .unwrap();
+                        .unwrap();
                         need_broadcast = true;
                     } else {
                         branch = &new_branch;
@@ -156,10 +156,10 @@ impl<E, C, P> ChainServiceImpl<E, C, P>
 }
 
 impl<E, C, P> ChainService for ChainServiceImpl<E, C, P>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        P: TxPoolAsyncService,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
@@ -169,10 +169,10 @@ impl<E, C, P> ChainService for ChainServiceImpl<E, C, P>
             .get_block_by_hash(block.header().id())?
             .is_none()
             && self
-            .storage
-            .block_store
-            .get_block_by_hash(block.header().parent_hash())?
-            .is_some()
+                .storage
+                .block_store
+                .get_block_by_hash(block.header().parent_hash())?
+                .is_some()
         {
             let header = block.header();
             let mut branch = self.find_or_fork(&header).unwrap();
@@ -188,10 +188,10 @@ impl<E, C, P> ChainService for ChainServiceImpl<E, C, P>
 }
 
 impl<E, C, P> ChainReader for ChainServiceImpl<E, C, P>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        P: TxPoolAsyncService,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
         self.head.head_block()

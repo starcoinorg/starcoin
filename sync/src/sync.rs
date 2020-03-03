@@ -13,8 +13,8 @@ use network::sync_messages::{
 };
 use network::{PeerEvent, RPCMessage, RPCRequest, RpcRequestMessage};
 use std::sync::Arc;
-use types::{block::BlockHeader, peer_info::PeerInfo, system_events::SystemEvents};
 use std::time::Duration;
+use types::{block::BlockHeader, peer_info::PeerInfo, system_events::SystemEvents};
 
 pub struct SyncActor {
     process_address: Addr<ProcessActor>,

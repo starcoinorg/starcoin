@@ -40,9 +40,9 @@ use std::time::Duration;
 
 #[derive(Clone)]
 pub struct NetworkAsyncService<P>
-    where
-        P: TxPoolAsyncService,
-        P: 'static,
+where
+    P: TxPoolAsyncService,
+    P: 'static,
 {
     addr: Addr<NetworkActor<P>>,
     message_processor: MessageProcessor<RPCResponse>,
@@ -50,9 +50,9 @@ pub struct NetworkAsyncService<P>
 }
 
 impl<P> NetworkAsyncService<P>
-    where
-        P: TxPoolAsyncService,
-        P: 'static,
+where
+    P: TxPoolAsyncService,
+    P: 'static,
 {
     pub async fn send_peer_message(&self, peer_id: AccountAddress, msg: PeerMessage) -> Result<()> {
         let data = msg.encode().unwrap();
@@ -101,9 +101,9 @@ impl<P> NetworkAsyncService<P>
 }
 
 pub struct NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
-        P: 'static,
+where
+    P: TxPoolAsyncService,
+    P: 'static,
 {
     network_service: NetworkService,
     tx: mpsc::UnboundedSender<NetworkMessage>,
@@ -114,8 +114,8 @@ pub struct NetworkActor<P>
 }
 
 impl<P> NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
+where
+    P: TxPoolAsyncService,
 {
     pub fn launch(
         node_config: Arc<NodeConfig>,
@@ -159,19 +159,19 @@ impl<P> NetworkActor<P>
 }
 
 impl<P> Actor for NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
+where
+    P: TxPoolAsyncService,
 {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        info!("Network actor started ", );
+        info!("Network actor started ",);
     }
 }
 
 impl<P> StreamHandler<Result<NetworkMessage, ()>> for NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
+where
+    P: TxPoolAsyncService,
 {
     fn handle(&mut self, item: Result<NetworkMessage, ()>, ctx: &mut Self::Context) {
         match item {
@@ -195,8 +195,8 @@ impl<P> StreamHandler<Result<NetworkMessage, ()>> for NetworkActor<P>
 }
 
 impl<P> StreamHandler<Result<PeerEvent, ()>> for NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
+where
+    P: TxPoolAsyncService,
 {
     fn handle(&mut self, item: Result<PeerEvent, ()>, ctx: &mut Self::Context) {
         info!("event is {:?}", item);
@@ -212,8 +212,8 @@ impl<P> StreamHandler<Result<PeerEvent, ()>> for NetworkActor<P>
 }
 
 impl<P> NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
+where
+    P: TxPoolAsyncService,
 {
     fn handle_network_message(
         &self,
@@ -237,9 +237,10 @@ impl<P> NetworkActor<P>
                 let f = async move {
                     bus.send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
-                            peer_info, block)),
+                            peer_info, block,
+                        )),
                     })
-                        .await;
+                    .await;
                 };
                 let f = actix::fut::wrap_future(f);
                 ctx.spawn(Box::new(f));
@@ -251,11 +252,10 @@ impl<P> NetworkActor<P>
                 let f = async move {
                     bus.send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
-                            peer_info,
-                            state,
+                            peer_info, state,
                         )),
                     })
-                        .await;
+                    .await;
                 };
                 let f = actix::fut::wrap_future(f);
                 ctx.spawn(Box::new(f));
@@ -267,7 +267,7 @@ impl<P> NetworkActor<P>
                     bus.send(Broadcast {
                         msg: RpcRequestMessage { peer_id, request },
                     })
-                        .await;
+                    .await;
                     info!("receive rpc request");
                 };
                 let f = actix::fut::wrap_future(f);
@@ -289,8 +289,8 @@ impl<P> NetworkActor<P>
 
 /// handler system events.
 impl<P> Handler<SystemEvents> for NetworkActor<P>
-    where
-        P: TxPoolAsyncService,
+where
+    P: TxPoolAsyncService,
 {
     type Result = ();
 
@@ -491,7 +491,7 @@ mod tests {
         type Context = Context<Self>;
 
         fn started(&mut self, _ctx: &mut Self::Context) {
-            info!("Test actor started ", );
+            info!("Test actor started ",);
         }
     }
 

@@ -4,10 +4,12 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+mod miner_config;
 mod network_config;
 mod rpc_config;
 mod vm_config;
 
+pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use vm_config::VMConfig;
@@ -29,6 +31,8 @@ pub struct NodeConfig {
     pub rpc: RpcConfig,
     #[serde(default)]
     pub vm: VMConfig,
+    #[serde(default)]
+    pub miner: MinerConfig,
 }
 
 impl NodeConfig {

@@ -117,16 +117,16 @@ pub struct PayloadMsg {
 }
 
 impl Message
-    where
-        Self: Decode + Encode,
+where
+    Self: Decode + Encode,
 {
     pub fn into_bytes(self) -> Vec<u8> {
         self.encode()
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ()>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         Decode::decode(&mut &bytes[..]).ok_or(())
     }
