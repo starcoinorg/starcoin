@@ -90,9 +90,9 @@ impl AccumulatorProof {
 /// accumulator method define
 pub trait Accumulator {
     /// From leaves constructed accumulator
-    fn from_leaves(&self, leaves: &[HashValue]) -> Self;
+    fn from_leaves(&mut self, leaves: &[HashValue]) -> Self;
     /// Append leaves and return new root
-    fn append(&self, leaves: &[HashValue]) -> Result<HashValue>;
+    fn append(&mut self, leaves: &[HashValue]) -> Result<HashValue>;
     /// Get leaf hash by leaf index.
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>>;
     /// Get proof by leaf index.
@@ -355,22 +355,30 @@ impl<'a, S> Accumulator for MerkleAccumulator<'a, S>
 where
     S: AccumulatorNodeStore,
 {
-    fn from_leaves(&self, leaves: &[HashValue]) -> Self {
+    fn from_leaves(&mut self, leaves: &[HashValue]) -> Self {
         let mut frozen_subtree_roots = self.frozen_subtree_roots.clone();
         let mut num_leaves = self.num_leaves;
-        let mut num_nodes = self.num_notes;
+        let mut internal_notes = self.num_notes;
         for leaf in leaves {
-            let internal_notes = Self::append_one(&mut frozen_subtree_roots, num_leaves, *leaf);
+            let temp_internal_notes =
+                Self::append_one(&mut frozen_subtree_roots, num_leaves, *leaf);
             num_leaves += 1;
-            num_nodes = num_nodes + internal_notes;
+            internal_notes = internal_notes + temp_internal_notes;
         }
-
-        Self::new(frozen_subtree_roots, num_leaves, num_nodes, self.node_store).expect(
-            "Appending leaves to a valid accumulator should create another valid accumulator.",
+        self.num_leaves = num_leaves;
+        self.num_notes = internal_notes + num_leaves;
+        let accumulator = Self::new(
+            frozen_subtree_roots,
+            num_leaves,
+            self.num_notes,
+            self.node_store,
         )
+        .expect("Appending leaves to a valid accumulator should create another valid accumulator.");
+        self.root_hash = accumulator.root_hash;
+        accumulator
     }
 
-    fn append(&self, leaves: &[HashValue]) -> Result<HashValue, Error> {
+    fn append(&mut self, leaves: &[HashValue]) -> Result<HashValue, Error> {
         Ok(self.from_leaves(leaves).root_hash)
     }
 

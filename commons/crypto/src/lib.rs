@@ -11,5 +11,7 @@ pub mod hash;
 pub mod test_utils;
 pub mod traits;
 
+pub use libra_crypto::hash::TestOnlyHash;
+pub use libra_crypto::hash::TestOnlyHasher;
 pub use libra_crypto::traits::*;
 pub use libra_crypto::HashValue;
