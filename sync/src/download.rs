@@ -61,7 +61,7 @@ impl Actor for DownloadActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        println!("download actor started.")
+        info!("download actor started.")
     }
 }
 
@@ -75,7 +75,7 @@ impl Handler<DownloadMessage> for DownloadActor {
         let fut = async move {
             match msg {
                 DownloadMessage::LatestStateMsg(peer_info, latest_state_msg) => {
-                    println!(
+                    debug!(
                         "latest_state_msg: {:?}",
                         &latest_state_msg.hash_header.header.number()
                     );
@@ -92,7 +92,7 @@ impl Handler<DownloadMessage> for DownloadActor {
                             let get_hash_by_number_req = RPCRequest::GetHashByNumberMsg(
                                 ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg),
                             );
-                            println!(
+                            info!(
                                 "best peer: {:?} : {:?} : {:?}",
                                 best_peer.id.clone(),
                                 my_peer_info,
@@ -109,14 +109,14 @@ impl Handler<DownloadMessage> for DownloadActor {
                                     .await
                                     .unwrap()
                             {
-                                println!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
+                                debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
                                 let hash_with_number = Downloader::find_ancestor(
                                     downloader.clone(),
                                     best_peer.clone(),
                                     batch_hash_by_number_msg,
                                 )
                                 .await;
-                                println!("hash_with_number:{:?}", hash_with_number);
+                                debug!("hash_with_number:{:?}", hash_with_number);
                                 match hash_with_number {
                                     Some(_) => {
                                         let send_get_header_by_hash_msg =
@@ -166,7 +166,7 @@ impl Handler<DownloadMessage> for DownloadActor {
                     }
                 }
                 DownloadMessage::NewBlock(block) => {
-                    println!("new block: {:?}", block.header().id());
+                    info!("new block: {:?}", block.header().id());
                     Downloader::do_block(downloader.clone(), block).await;
                 }
                 _ => {}
@@ -290,7 +290,6 @@ impl Downloader {
             .await
             .unwrap()
             .id();
-        println!("find_ancestor header hash : {:?}", id);
         for hash in hashs {
             if lock
                 .chain_reader
@@ -300,11 +299,10 @@ impl Downloader {
                 .is_some()
             {
                 exist_ancestor = true;
-                println!("find_ancestor is hash : {:?}", hash);
+                info!("find ancestor hash : {:?}", hash);
                 ancestor = Some(hash);
                 break;
             } else {
-                println!("find_ancestor not hash : {:?}", hash);
                 not_exist_hash.push(hash);
             }
         }
@@ -379,7 +377,7 @@ impl Downloader {
     }
 
     pub async fn do_block(downloader: Arc<RwLock<Downloader>>, block: Block) {
-        println!("do block {:?}", block.header().id());
+        info!("do block {:?}", block.header().id());
         let lock = downloader.write().compat().await.unwrap();
         //todo:verify block
         let _ = lock.chain_reader.clone().try_connect(block).await;

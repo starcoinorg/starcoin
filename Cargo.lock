@@ -4891,6 +4891,7 @@ dependencies = [
  "futures-timer 3.0.2",
  "hex 0.4.2",
  "itertools",
+ "log",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",

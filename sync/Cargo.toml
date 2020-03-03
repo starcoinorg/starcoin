@@ -22,6 +22,7 @@ futures_locks = { version = "0.5.0", package = "futures-locks"}
 bus = { path = "../bus", package = "starcoin-bus"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 futures-timer = "3.0.1"
+log = "0.4"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

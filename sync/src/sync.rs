@@ -68,7 +68,7 @@ impl Actor for SyncActor {
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-        println!("Sync actor started");
+        info!("Sync actor started");
     }
 }
 
@@ -99,7 +99,7 @@ impl Handler<SystemEvents> for SyncActor {
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
-        println!("mined block.");
+        debug!("mined block.");
         match msg {
             SystemEvents::MinedBlock(new_block) | SystemEvents::NewHeadBlock(new_block) => {
                 self.download_address
@@ -119,7 +119,7 @@ impl Handler<PeerEvent> for SyncActor {
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             PeerEvent::Open(open_peer) => {
-                println!("connect new peer:{:?}", open_peer);
+                debug!("connect new peer:{:?}", open_peer);
                 let peer_info = PeerInfo::new(open_peer);
                 let process_msg = ProcessMessage::NewPeerMsg(peer_info);
                 self.process_address
