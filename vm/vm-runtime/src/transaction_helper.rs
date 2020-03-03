@@ -9,7 +9,10 @@ use libra_types::{
         SignedTransaction as LibraSignedTransaction,
         TransactionArgument as LibraTransactionArgument,
         TransactionOutput as LibraTransactionOutput, TransactionPayload as LibraTransactionPayload,
+        TransactionStatus as LibraTransactionStatus,
     },
+    contract_event::ContractEvent as LibraContractEvent,
+    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus },
 };
 use types::{
     account_address::{AccountAddress, ADDRESS_LENGTH},
@@ -18,9 +21,12 @@ use types::{
         Module, RawUserTransaction, Script, SignedUserTransaction, TransactionArgument,
         TransactionOutput, TransactionPayload, TransactionStatus,
     },
-    vm_error::{StatusCode, VMStatus},
+    vm_error::{StatusCode, VMStatus },
     write_set::WriteSet,
+    contract_event::ContractEvent,
 };
+use num_enum::TryFromPrimitive;
+use std::convert::TryFrom;
 
 pub struct TransactionHelper {}
 impl TransactionHelper {
@@ -72,11 +78,29 @@ impl TransactionHelper {
             }
         }
     }
+    pub fn to_starcoin_Events(events: Vec<LibraContractEvent>) -> Vec<ContractEvent> {
+        // ToDo: support ContractEvent
+        vec![]
+    }
+    pub fn to_starcoin_VMStatus(status: LibraVMStatus) -> VMStatus {
+        let major: u64 = status.major_status.into();
+        VMStatus {
+            major_status: StatusCode::try_from(major).unwrap(),
+            sub_status: status.sub_status,
+            message: status.message,
+        }
+    }
+    pub fn to_starcoin_TransactionStatus(status: &LibraTransactionStatus) -> TransactionStatus {
+        match status {
+            LibraTransactionStatus::Discard(vm_status) => TransactionStatus::Discard(Self::to_starcoin_VMStatus(vm_status.clone())),
+            LibraTransactionStatus::Keep(vm_status) => TransactionStatus::Keep(Self::to_starcoin_VMStatus(vm_status.clone())),
+        }
+    }
     pub fn to_starcoin_TransactionOutput(output: LibraTransactionOutput) -> TransactionOutput {
         TransactionOutput::new(
-            vec![],
-            0,
-            TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)),
+            Self::to_starcoin_Events(output.events().to_vec()),
+            output.gas_used(),
+            Self::to_starcoin_TransactionStatus(output.status()),
         )
     }
     pub fn fake_starcoin_TransactionOutput() -> TransactionOutput {
