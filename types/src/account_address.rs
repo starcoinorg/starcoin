@@ -21,7 +21,7 @@ const STARCOIN_NETWORK_ID_SHORT: &str = "stc";
 
 /// A struct that represents an account address.
 /// Currently Public Key is used.
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Default, Clone, Copy, CryptoHash)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Default, Clone, Copy)]
 pub struct AccountAddress([u8; ADDRESS_LENGTH]);
 
 impl AccountAddress {
@@ -71,6 +71,12 @@ impl AccountAddress {
 
     pub fn into_inner(self) -> [u8; ADDRESS_LENGTH] {
         self.0
+    }
+}
+
+impl CryptoHash for AccountAddress {
+    fn crypto_hash(&self) -> HashValue {
+        HashValue::from_sha3_256(self.as_ref())
     }
 }
 

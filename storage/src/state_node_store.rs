@@ -33,8 +33,9 @@ impl ValueCodec for StateNode {
 }
 
 impl StateNodeStore for StateNodeStorage {
-    fn get_node(&self, hash: HashValue) -> Result<Option<StateNode>> {
-        self.storage.get(hash)
+    fn get_node(&self, hash: &HashValue) -> Result<Option<StateNode>> {
+        //TODO use ref as key
+        self.storage.get(hash.clone())
     }
 
     fn save_node(&self, node: StateNode) -> Result<()> {

@@ -60,7 +60,7 @@ impl ChainStateReader for ChainStateStore {
         resource_key: HashValue,
     ) -> Result<Option<Vec<u8>>> {
         let storage_tree = self.get_account_storage_tree(storage_root);
-        storage_tree.get(resource_key)
+        storage_tree.get(&resource_key)
     }
 
     fn get_code(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>> {
@@ -68,7 +68,7 @@ impl ChainStateReader for ChainStateStore {
             .and_then(|account_state| match account_state {
                 Some(account_state) => {
                     let storage_tree = self.get_account_storage_tree(account_state.storage_root());
-                    storage_tree.get(module_id.name_hash())
+                    storage_tree.get(&module_id.name_hash())
                 }
                 None => Ok(None),
             })
@@ -76,7 +76,7 @@ impl ChainStateReader for ChainStateStore {
 
     fn get_account_state(&self, address: AccountAddress) -> Result<Option<AccountState>> {
         self.state_tree
-            .get(address.crypto_hash())
+            .get(&address.crypto_hash())
             .and_then(|value| match value {
                 Some(v) => Ok(Some(AccountState::decode(v.as_slice())?)),
                 None => Ok(None),

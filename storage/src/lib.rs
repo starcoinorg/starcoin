@@ -44,7 +44,7 @@ impl StarcoinStorage {
 }
 
 impl StateNodeStore for StarcoinStorage {
-    fn get_node(&self, hash: HashValue) -> Result<Option<StateNode>> {
+    fn get_node(&self, hash: &HashValue) -> Result<Option<StateNode>> {
         self.state_node_store.get_node(hash)
     }
 
