@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::protocol::{self, CustomMessageOutcome};
+use crate::protocol::{self, CustomMessageOutcome, Protocol};
 use crate::{
     debug_info, discovery::DiscoveryBehaviour, discovery::DiscoveryOut, protocol::event::DhtEvent,
     protocol::event::Event, DiscoveryNetBehaviour,
@@ -31,6 +31,7 @@ use void;
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "BehaviourOut", poll_method = "poll")]
 pub struct Behaviour {
+    protocol: Protocol,
     /// Periodically pings and identifies the nodes we are connected to, and store information in a
     /// cache.
     debug_info: debug_info::DebugInfoBehaviour,
@@ -49,6 +50,7 @@ pub enum BehaviourOut {
 impl Behaviour {
     /// Builds a new `Behaviour`.
     pub async fn new(
+        protocol: Protocol,
         user_agent: String,
         local_public_key: PublicKey,
         known_addresses: Vec<(PeerId, Multiaddr)>,
@@ -57,6 +59,7 @@ impl Behaviour {
         discovery_only_if_under_num: u64,
     ) -> Self {
         Behaviour {
+            protocol,
             debug_info: debug_info::DebugInfoBehaviour::new(user_agent, local_public_key.clone()),
             discovery: DiscoveryBehaviour::new(
                 local_public_key,
@@ -97,6 +100,16 @@ impl Behaviour {
     /// Starts putting a record into DHT. Will later produce either a `ValuePut` or a `ValuePutFailed` event.
     pub fn put_value(&mut self, key: record::Key, value: Vec<u8>) {
         self.discovery.put_value(key, value);
+    }
+
+    /// Returns a shared reference to the user protocol.
+    pub fn user_protocol(&self) -> &Protocol {
+        &self.protocol
+    }
+
+    /// Returns a mutable reference to the user protocol.
+    pub fn user_protocol_mut(&mut self) -> &mut Protocol {
+        &mut self.protocol
     }
 }
 
@@ -144,6 +157,8 @@ impl NetworkBehaviourEventProcess<debug_info::DebugInfoEvent> for Behaviour {
             self.discovery
                 .add_self_reported_address(&peer_id, addr.clone());
         }
+        self.protocol
+            .add_discovered_nodes(iter::once(peer_id.clone()));
     }
 }
 
@@ -157,7 +172,7 @@ impl NetworkBehaviourEventProcess<DiscoveryOut> for Behaviour {
                 // implementation for `DebugInfoEvent`.
             }
             DiscoveryOut::Discovered(peer_id) => {
-                //self.substrate.add_discovered_nodes(iter::once(peer_id));
+                self.protocol.add_discovered_nodes(iter::once(peer_id));
             }
             DiscoveryOut::ValueFound(results) => {
                 self.events

@@ -16,8 +16,10 @@ mod behaviour;
 mod config;
 mod debug_info;
 mod discovery;
+mod net_error;
 mod network_state;
 mod protocol;
+mod service;
 mod transport;
 mod utils;
 
@@ -59,6 +61,18 @@ impl ProtocolId {
 pub fn parse_str_addr(addr_str: &str) -> Result<(PeerId, Multiaddr), ParseErr> {
     let mut addr: Multiaddr = addr_str.parse()?;
 
+    let who = match addr.pop() {
+        Some(multiaddr::Protocol::P2p(key)) => {
+            PeerId::from_multihash(key).map_err(|_| ParseErr::InvalidPeerId)?
+        }
+        _ => return Err(ParseErr::PeerIdMissing),
+    };
+
+    Ok((who, addr))
+}
+
+/// Splits a Multiaddress into a Multiaddress and PeerId.
+pub fn parse_addr(mut addr: Multiaddr) -> Result<(PeerId, Multiaddr), ParseErr> {
     let who = match addr.pop() {
         Some(multiaddr::Protocol::P2p(key)) => {
             PeerId::from_multihash(key).map_err(|_| ParseErr::InvalidPeerId)?

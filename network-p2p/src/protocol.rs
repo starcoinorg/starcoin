@@ -89,6 +89,13 @@ struct HandshakingPeer {
     timestamp: Instant,
 }
 
+/// Info about a peer's known state.
+#[derive(Clone, Debug)]
+pub struct PeerInfo {
+    /// Protocol version
+    pub protocol_version: u32,
+}
+
 pub struct Protocol {
     /// Interval at which we call `tick`.
     tick_timeout: Pin<Box<dyn Stream<Item = ()> + Send>>,
@@ -253,7 +260,7 @@ impl Protocol {
     pub fn new(
         peerset_config: peerset::PeersetConfig,
         protocol_id: ProtocolId,
-    ) -> error::Result<(Protocol, peerset::PeersetHandle)> {
+    ) -> crate::net_error::Result<(Protocol, peerset::PeersetHandle)> {
         let important_peers = {
             let mut imp_p = HashSet::new();
             for reserved in &peerset_config.reserved_nodes {
