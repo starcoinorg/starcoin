@@ -4,6 +4,7 @@
 use libra_types::{
     account_address::AccountAddress as LibraAccountAddress,
     byte_array::ByteArray as LibraByteArray,
+    contract_event::ContractEvent as LibraContractEvent,
     transaction::{
         Module as LibraModule, RawTransaction as LibraRawTransaction, Script as LibraScript,
         SignedTransaction as LibraSignedTransaction,
@@ -11,22 +12,21 @@ use libra_types::{
         TransactionOutput as LibraTransactionOutput, TransactionPayload as LibraTransactionPayload,
         TransactionStatus as LibraTransactionStatus,
     },
-    contract_event::ContractEvent as LibraContractEvent,
-    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus },
+    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
 };
+use num_enum::TryFromPrimitive;
+use std::convert::TryFrom;
 use types::{
     account_address::{AccountAddress, ADDRESS_LENGTH},
     byte_array::ByteArray,
+    contract_event::ContractEvent,
     transaction::{
         Module, RawUserTransaction, Script, SignedUserTransaction, TransactionArgument,
         TransactionOutput, TransactionPayload, TransactionStatus,
     },
-    vm_error::{StatusCode, VMStatus },
+    vm_error::{StatusCode, VMStatus},
     write_set::WriteSet,
-    contract_event::ContractEvent,
 };
-use num_enum::TryFromPrimitive;
-use std::convert::TryFrom;
 
 pub struct TransactionHelper {}
 impl TransactionHelper {
@@ -92,8 +92,12 @@ impl TransactionHelper {
     }
     pub fn to_starcoin_TransactionStatus(status: &LibraTransactionStatus) -> TransactionStatus {
         match status {
-            LibraTransactionStatus::Discard(vm_status) => TransactionStatus::Discard(Self::to_starcoin_VMStatus(vm_status.clone())),
-            LibraTransactionStatus::Keep(vm_status) => TransactionStatus::Keep(Self::to_starcoin_VMStatus(vm_status.clone())),
+            LibraTransactionStatus::Discard(vm_status) => {
+                TransactionStatus::Discard(Self::to_starcoin_VMStatus(vm_status.clone()))
+            }
+            LibraTransactionStatus::Keep(vm_status) => {
+                TransactionStatus::Keep(Self::to_starcoin_VMStatus(vm_status.clone()))
+            }
         }
     }
     pub fn to_starcoin_TransactionOutput(output: LibraTransactionOutput) -> TransactionOutput {

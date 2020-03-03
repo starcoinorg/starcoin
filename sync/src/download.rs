@@ -158,12 +158,13 @@ impl DownloadActor {
 
                 let mut hash_with_number = None;
                 loop {
-                    let send_get_hash_by_number_msg = Downloader::send_get_hash_by_number_msg(
-                        downloader.clone(),
-                        best_peer.clone(),
-                        begin_number,
-                    )
-                    .await;
+                    let send_get_hash_by_number_msg =
+                        Downloader::send_get_hash_by_number_msg_backward(
+                            downloader.clone(),
+                            best_peer.clone(),
+                            begin_number,
+                        )
+                        .await;
 
                     match send_get_hash_by_number_msg {
                         Some((get_hash_by_number_msg, end, next_number)) => {
@@ -214,7 +215,7 @@ impl DownloadActor {
                             //1. sync hash
                             begin_number = hash_number.number + 1;
                             let send_get_hash_by_number_msg =
-                                Downloader::send_get_hash_by_number_msg_2(
+                                Downloader::send_get_hash_by_number_msg_forward(
                                     downloader.clone(),
                                     best_peer.clone(),
                                     begin_number,
@@ -352,7 +353,7 @@ impl Downloader {
         None
     }
 
-    pub async fn send_get_hash_by_number_msg(
+    pub async fn send_get_hash_by_number_msg_backward(
         downloader: Arc<Downloader>,
         peer: PeerInfo,
         begin_number: u64,
@@ -392,7 +393,7 @@ impl Downloader {
         }
     }
 
-    pub async fn send_get_hash_by_number_msg_2(
+    pub async fn send_get_hash_by_number_msg_forward(
         downloader: Arc<Downloader>,
         peer: PeerInfo,
         begin_number: u64,
