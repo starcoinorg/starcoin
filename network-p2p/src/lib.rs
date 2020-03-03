@@ -12,6 +12,7 @@ pub use libp2p::{
     multiaddr as build_multiaddr,
 };
 
+mod behaviour;
 mod config;
 mod debug_info;
 mod discovery;
