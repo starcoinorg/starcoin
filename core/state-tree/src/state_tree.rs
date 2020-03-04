@@ -91,21 +91,30 @@ pub struct StateTree {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
     cache: Mutex<StateCache>,
+    is_empty: bool,
 }
 
 impl StateTree {
     /// Construct a new state_db from provided `state_root_hash` with underline `state_storage`
-    pub fn new(state_storage: Arc<dyn StateNodeStore>, state_root_hash: HashValue) -> Self {
+    pub fn new(state_storage: Arc<dyn StateNodeStore>, state_root_hash: Option<HashValue>) -> Self {
+        let is_empty = state_root_hash.is_none();
+        //TODO should use a placeholder hash value?
+        let state_root_hash = state_root_hash.unwrap_or(HashValue::zero());
         Self {
             storage: state_storage,
             storage_root_hash: RwLock::new(state_root_hash),
             cache: Mutex::new(StateCache::new(state_root_hash)),
+            is_empty,
         }
     }
 
     /// get current root hash
     pub fn root_hash(&self) -> HashValue {
         self.cache.lock().unwrap().root_hash
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.is_empty
     }
 
     /// put a kv pair into tree.
