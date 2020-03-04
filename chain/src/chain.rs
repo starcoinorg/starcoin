@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::chain_state_db::ChainStateDB;
 use crate::message::{ChainRequest, ChainResponse};
 use actix::prelude::*;
 use anyhow::{format_err, Error, Result};
@@ -10,6 +9,7 @@ use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
+use starcoin_statedb::ChainStateDB;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;

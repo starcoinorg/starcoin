@@ -2,17 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Error, Result};
-use crypto::hash::CryptoHash;
-use crypto::HashValue;
-use logger::prelude::*;
 use scs::SCSCodec;
-use state_tree::{StateNodeStore, StateTree};
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::convert::TryInto;
-use std::sync::Arc;
-use traits::{ChainState, ChainStateReader, ChainStateWriter};
-use types::{
+use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_logger::prelude::*;
+use starcoin_state_tree::{StateNodeStore, StateTree};
+use starcoin_traits::{ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{account_struct_tag, AccountResource},
@@ -20,6 +15,10 @@ use types::{
     byte_array::ByteArray,
     language_storage::{ModuleId, StructTag},
 };
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::convert::TryInto;
+use std::sync::Arc;
 
 use core::num::FpCategory::Nan;
 use thiserror::Error;
@@ -215,7 +214,7 @@ impl ChainStateWriter for ChainStateDB {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use state_tree::mock::MockStateNodeStore;
+    use starcoin_state_tree::mock::MockStateNodeStore;
 
     #[test]
     fn test_state_db() -> Result<()> {
