@@ -4931,6 +4931,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
+ "forkable-jellyfish-merkle",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",

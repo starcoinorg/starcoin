@@ -528,7 +528,7 @@ where
     pub fn get_with_proof(
         &self,
         state_root_hash: HashValue,
-        key: HashValue,
+        key: HashValue, //TODO should use &HashValue at here?
     ) -> Result<(Option<Blob>, SparseMerkleProof)> {
         // Empty tree just returns proof with no sibling hash.
         // let mut next_node_key = NodeKey::new_empty_path(version);

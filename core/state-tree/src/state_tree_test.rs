@@ -1,15 +1,15 @@
-use crate::memory_storage::MemoryStorage;
-use crate::statedb::{StateDB, StateNode, StateStorage};
+use super::*;
+use crate::mock::MockStateNodeStore;
 use anyhow::Result;
-use crypto::hash::*;
 use forkable_jellyfish_merkle::node_type::Node;
+use starcoin_crypto::hash::*;
 use std::sync::Arc;
+
 #[test]
 pub fn test_put_blob() -> Result<()> {
-    let s = MemoryStorage::new();
-    let s = StateStorage::new(Arc::new(s), "state");
+    let s = MockStateNodeStore::new();
     s.put(HashValue::zero(), Node::new_null().into());
-    let state = StateDB::new(s, HashValue::zero());
+    let state = StateTree::new(Arc::new(s), HashValue::zero());
     assert_eq!(state.root_hash(), HashValue::zero());
 
     let hash_value = HashValue::random();
@@ -68,10 +68,9 @@ pub fn test_put_blob() -> Result<()> {
 #[test]
 pub fn test_state_commit() -> Result<()> {
     // TODO: once storage support batch put, finish this.
-    let s = MemoryStorage::new();
-    let s = StateStorage::new(Arc::new(s), "state");
+    let s = MockStateNodeStore::new();
     s.put(HashValue::zero(), Node::new_null().into());
-    let state = StateDB::new(s, HashValue::zero());
+    let state = StateTree::new(Arc::new(s), HashValue::zero());
     assert_eq!(state.root_hash(), HashValue::zero());
 
     let hash_value = HashValue::random();

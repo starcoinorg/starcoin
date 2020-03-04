@@ -3,7 +3,7 @@
 
 use crate::block_store::BlockStore;
 use crate::memory_storage::MemoryStorage;
-use crate::state_node_store::StateNodeStorage;
+use crate::state_node_storage::StateNodeStorage;
 use crate::storage::Repository;
 use crate::transaction_info_store::TransactionInfoStore;
 use anyhow::{ensure, Error, Result};
@@ -15,10 +15,7 @@ pub mod accumulator_store;
 pub mod block_store;
 pub mod memory_storage;
 pub mod persistence_storage;
-pub mod state_node_store;
-pub mod statedb;
-#[cfg(test)]
-mod statedb_test;
+pub mod state_node_storage;
 pub mod storage;
 pub mod transaction_info_store;
 pub type KeyPrefixName = &'static str;
@@ -46,12 +43,12 @@ impl StarcoinStorage {
 }
 
 impl StateNodeStore for StarcoinStorage {
-    fn get_node(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        self.state_node_store.get_node(hash)
+    fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
+        self.state_node_store.get(hash)
     }
 
-    fn save_node(&self, node: StateNode) -> Result<()> {
-        self.state_node_store.save_node(node)
+    fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
+        self.state_node_store.put(key, node)
     }
 }
 ///ensure slice length

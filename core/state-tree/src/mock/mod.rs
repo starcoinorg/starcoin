@@ -21,13 +21,12 @@ impl MockStateNodeStore {
 }
 
 impl StateNodeStore for MockStateNodeStore {
-    fn get_node(&self, hash: &HashValue) -> Result<Option<StateNode>> {
+    fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
         Ok(self.nodes.borrow().get(hash).cloned())
     }
 
-    fn save_node(&self, node: StateNode) -> Result<()> {
-        let hash = node.crypto_hash();
-        self.nodes.borrow_mut().insert(hash, node);
+    fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
+        self.nodes.borrow_mut().insert(key, node);
         Ok(())
     }
 }

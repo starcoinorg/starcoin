@@ -26,7 +26,7 @@ impl ChainStateStore {
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
         Self {
             store: store.clone(),
-            state_tree: StateTree::new(store, root_hash),
+            state_tree: StateTree::new(store, root_hash.unwrap_or(HashValue::zero())),
         }
     }
 
@@ -43,11 +43,11 @@ impl ChainStateStore {
     }
 
     fn get_account_storage_tree(&self, storage_root: HashValue) -> StateTree {
-        StateTree::new(self.store.clone(), Some(storage_root))
+        StateTree::new(self.store.clone(), storage_root)
     }
 
     fn get_code_storage_tree(&self, code_root: HashValue) -> StateTree {
-        StateTree::new(self.store.clone(), Some(code_root))
+        StateTree::new(self.store.clone(), code_root)
     }
 }
 
