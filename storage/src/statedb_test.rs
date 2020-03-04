@@ -18,6 +18,8 @@ pub fn test_put_blob() -> Result<()> {
     let account1 = update_nibble(&account1, 2, 2);
     let new_root_hash = state.put_blob_set(vec![(account1, vec![0, 0, 0])])?;
     assert_eq!(state.root_hash(), new_root_hash);
+    assert_eq!(state.get(account1)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(update_nibble(&hash_value, 0, 8))?, None);
     let (root, updates) = state.change_sets();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
@@ -28,6 +30,7 @@ pub fn test_put_blob() -> Result<()> {
     let account2 = update_nibble(&account1, 0, 2);
     let new_root_hash = state.put_blob_set(vec![(account2, vec![0, 0, 0])])?;
     assert_eq!(state.root_hash(), new_root_hash);
+    assert_eq!(state.get(account2)?, Some(vec![0, 0, 0]));
     let (root, updates) = state.change_sets();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
@@ -35,9 +38,10 @@ pub fn test_put_blob() -> Result<()> {
     assert_eq!(updates.node_batch.len(), 3);
     assert_eq!(updates.stale_node_index_batch.len(), 1);
 
-    /// modify existed account
+    // modify existed account
     let new_root_hash = state.put_blob_set(vec![(account1, vec![1, 1, 1])])?;
     assert_eq!(state.root_hash(), new_root_hash);
+    assert_eq!(state.get(account1)?, Some(vec![1, 1, 1]));
     let (root, updates) = state.change_sets();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
@@ -48,8 +52,12 @@ pub fn test_put_blob() -> Result<()> {
     let account3 = update_nibble(&account1, 2, 3);
     let new_root_hash =
         state.put_blob_set(vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])])?;
-    let (_, updates) = state.change_sets();
+    assert_eq!(state.root_hash(), new_root_hash);
+    assert_eq!(state.get(account1)?, Some(vec![1, 1, 0]));
+    assert_eq!(state.get(account2)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(account3)?, Some(vec![0, 0, 0]));
 
+    let (_, updates) = state.change_sets();
     assert_eq!(updates.num_stale_leaves, 0);
     assert_eq!(updates.num_new_leaves, 3);
     assert_eq!(updates.node_batch.len(), 6);
@@ -60,6 +68,27 @@ pub fn test_put_blob() -> Result<()> {
 #[test]
 pub fn test_state_commit() -> Result<()> {
     // TODO: once storage support batch put, finish this.
+    let s = MemoryStorage::new();
+    let s = StateStorage::new(Arc::new(s), "state");
+    s.put(HashValue::zero(), Node::new_null().into());
+    let state = StateDB::new(s, HashValue::zero());
+    assert_eq!(state.root_hash(), HashValue::zero());
+
+    let hash_value = HashValue::random();
+
+    let account1 = update_nibble(&hash_value, 0, 1);
+    let account1 = update_nibble(&account1, 2, 2);
+    let new_root_hash = state.put_blob_set(vec![(account1, vec![0, 0, 0])])?;
+
+    let account3 = update_nibble(&account1, 2, 3);
+    let new_root_hash =
+        state.put_blob_set(vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])])?;
+
+    state.commit()?;
+    assert_eq!(state.root_hash(), new_root_hash);
+    assert_eq!(state.get(account1)?, Some(vec![1, 1, 0]));
+    assert_eq!(state.get(account3)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(update_nibble(&account1, 2, 10))?, None);
     Ok(())
 }
 
