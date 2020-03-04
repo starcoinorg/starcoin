@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain::BlockChain;
-use crate::chain_state_store::ChainStateStore;
+use crate::chain_state_db::ChainStateDB;
 use crate::message::{ChainRequest, ChainResponse};
 use actix::prelude::*;
 use anyhow::{Error, Result};
@@ -99,7 +99,7 @@ where
         None
     }
 
-    pub fn state_at(&self, root: HashValue) -> ChainStateStore {
+    pub fn state_at(&self, root: HashValue) -> ChainStateDB {
         unimplemented!()
     }
 

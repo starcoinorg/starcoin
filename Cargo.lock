@@ -4723,6 +4723,7 @@ dependencies = [
  "starcoin-txpool",
  "starcoin-types",
  "stest",
+ "thiserror",
  "tokio 0.2.11",
 ]
 

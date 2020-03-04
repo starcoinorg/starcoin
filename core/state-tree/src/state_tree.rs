@@ -91,20 +91,17 @@ pub struct StateTree {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
     cache: Mutex<StateCache>,
-    is_empty: bool,
 }
 
 impl StateTree {
     /// Construct a new state_db from provided `state_root_hash` with underline `state_storage`
     pub fn new(state_storage: Arc<dyn StateNodeStore>, state_root_hash: Option<HashValue>) -> Self {
-        let is_empty = state_root_hash.is_none();
         //TODO should use a placeholder hash value?
         let state_root_hash = state_root_hash.unwrap_or(HashValue::zero());
         Self {
             storage: state_storage,
             storage_root_hash: RwLock::new(state_root_hash),
             cache: Mutex::new(StateCache::new(state_root_hash)),
-            is_empty,
         }
     }
 
@@ -114,7 +111,7 @@ impl StateTree {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.is_empty
+        self.root_hash() == HashValue::zero()
     }
 
     /// put a kv pair into tree.
@@ -139,6 +136,15 @@ impl StateTree {
             Some(b) => Ok(Some(b.into())),
             None => Ok(None),
         }
+    }
+
+    /// Remove key_hash's data and return new root.
+    pub fn remove(&self, key_hash: &HashValue) -> Result<HashValue> {
+        todo!()
+    }
+
+    pub fn contains(&self, key_hash: &HashValue) -> Result<bool> {
+        self.get(key_hash).map(|result| result.is_some())
     }
 
     /// write a new states into local cache, return new root hash

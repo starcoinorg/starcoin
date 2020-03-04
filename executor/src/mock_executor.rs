@@ -75,11 +75,7 @@ impl MockChainState {
 impl ChainState for MockChainState {}
 
 impl ChainStateReader for MockChainState {
-    fn get_by_hash(
-        &self,
-        storage_root: HashValue,
-        resource_key: HashValue,
-    ) -> Result<Option<Vec<u8>>> {
+    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>, Error> {
         unimplemented!()
     }
 
@@ -87,7 +83,7 @@ impl ChainStateReader for MockChainState {
         unimplemented!()
     }
 
-    fn get_account_state(&self, address: AccountAddress) -> Result<Option<AccountState>> {
+    fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
         Ok(None)
     }
 
@@ -105,15 +101,6 @@ impl ChainStateWriter for MockChainState {
         unimplemented!()
     }
 
-    fn set_at(
-        &self,
-        account_state: &AccountState,
-        struct_tag: &StructTag,
-        value: Vec<u8>,
-    ) -> Result<()> {
-        unimplemented!()
-    }
-
     fn delete(&self, access_path: &AccessPath) -> Result<()> {
         unimplemented!()
     }
@@ -122,7 +109,11 @@ impl ChainStateWriter for MockChainState {
         unimplemented!()
     }
 
-    fn set_code(&self, module_id: &ModuleId) -> Result<()> {
+    fn set_code(&self, module_id: &ModuleId, code: Vec<u8>) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn create_account(&self, account_address: AccountAddress) -> Result<(), Error> {
         unimplemented!()
     }
 }
