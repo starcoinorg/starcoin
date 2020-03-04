@@ -81,4 +81,8 @@ impl ModuleId {
     pub fn address(&self) -> AccountAddress {
         self.address
     }
+
+    pub fn into_inner(&self) -> (AccountAddress, Identifier) {
+        (self.address, self.name.clone())
+    }
 }
