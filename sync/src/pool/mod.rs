@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashSet};
+use std::sync::RwLock;
 use std::time::Duration;
 use types::{block::BlockNumber, peer_info::PeerInfo};
 
@@ -57,11 +58,12 @@ where
     }
 }
 
+/// thread safe
 pub struct TTLPool<E>
 where
     E: Ord + Clone,
 {
-    data: BTreeSet<TTLEntry<E>>,
+    data: RwLock<BTreeSet<TTLEntry<E>>>,
 }
 
 impl<E> TTLPool<E>
@@ -70,24 +72,26 @@ where
 {
     pub(crate) fn new() -> Self {
         Self {
-            data: BTreeSet::new(),
+            data: RwLock::new(BTreeSet::new()),
         }
     }
 
     /// add entry to pool
-    pub(crate) fn insert(&mut self, peer: PeerInfo, number: BlockNumber, entry: E) {
+    pub(crate) fn insert(&self, peer: PeerInfo, number: BlockNumber, entry: E) {
         let mut ttl_entry = TTLEntry::new(peer.clone(), number, entry);
-        if self.data.contains(&ttl_entry) {
-            ttl_entry = self.data.take(&ttl_entry).expect("entry not exist.")
+        let mut lock = self.data.write().unwrap();
+        if lock.contains(&ttl_entry) {
+            ttl_entry = lock.take(&ttl_entry).expect("entry not exist.")
         };
 
         ttl_entry.peers.insert(peer);
-        self.data.insert(ttl_entry);
+        lock.insert(ttl_entry);
     }
 
     /// take entry from pool
-    pub(crate) fn take(&mut self, size: usize) -> Vec<E> {
-        let mut set_iter = self.data.iter();
+    pub(crate) fn take(&self, size: usize) -> Vec<E> {
+        let mut lock = self.data.write().unwrap();
+        let mut set_iter = lock.iter();
         let mut entries = Vec::new();
         loop {
             if entries.len() >= size {
@@ -108,19 +112,19 @@ where
 
         if !entries.is_empty() {
             entries.iter().for_each(|e| {
-                self.data.remove(e);
+                lock.remove(e);
             });
         }
 
         entries.iter().map(|e| e.data.clone()).collect()
     }
 
-    pub(crate) fn gc(&mut self, now: Duration) -> Vec<E> {
+    pub(crate) fn gc(&self, now: Duration) -> Vec<E> {
         //todo
         unimplemented!()
     }
 
     pub(crate) fn size(&self) -> usize {
-        self.data.len()
+        self.data.read().unwrap().len()
     }
 }

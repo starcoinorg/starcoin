@@ -3,6 +3,7 @@
 
 use crate::TransactionExecutor;
 use anyhow::{Error, Result};
+use compiler::compile::StarcoinCompiler;
 use config::VMConfig;
 use traits::ChainState;
 use types::{
@@ -10,7 +11,6 @@ use types::{
     vm_error::VMStatus,
 };
 use vm_runtime::starcoin_vm::StarcoinVM;
-use compiler::compile::StarcoinCompiler;
 
 pub struct Executor {
     config: VMConfig,

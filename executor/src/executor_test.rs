@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    executor::{ Executor, mock_txn, },
+    executor::{mock_txn, Executor},
     mock_executor::{
         encode_mint_transaction, encode_transfer_program, encode_transfer_transaction,
         get_signed_txn, MockChainState, MockExecutor, DISCARD_STATUS, KEEP_STATUS,
@@ -15,9 +15,7 @@ use logger::prelude::*;
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
-    transaction::{
-        SignedUserTransaction, Transaction,
-    },
+    transaction::{SignedUserTransaction, Transaction},
 };
 
 fn gen_address(index: u8) -> AccountAddress {

@@ -71,7 +71,7 @@ impl StarcoinVM {
     fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
         info!("load gas schedule");
         let mut ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
-//        self.gas_schedule = self.move_vm.load_gas_schedule(&mut ctx, data_cache).ok();
+        //        self.gas_schedule = self.move_vm.load_gas_schedule(&mut ctx, data_cache).ok();
         self.gas_schedule = Some(CostTable::zero());
     }
 
@@ -183,15 +183,13 @@ impl StarcoinVM {
                             self.verify_transaction(&txn, &state_store, &data_cache, &txn_data);
 
                         let result = match verified_payload {
-                            Ok(payload) => self.execute_verified_payload(
-                                &mut data_cache,
-                                &txn_data,
-                                payload,
-                            ),
+                            Ok(payload) => {
+                                self.execute_verified_payload(&mut data_cache, &txn_data, payload)
+                            }
                             Err(e) => {
                                 info!("we are here!!!");
                                 discard_error_output(e)
-                            },
+                            }
                         };
 
                         if let TransactionStatus::Keep(_) = result.status() {

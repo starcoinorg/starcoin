@@ -16,9 +16,11 @@ pub mod block_store;
 pub mod memory_storage;
 pub mod persistence_storage;
 pub mod state_node_store;
+pub mod statedb;
+#[cfg(test)]
+mod statedb_test;
 pub mod storage;
 pub mod transaction_info_store;
-
 pub type KeyPrefixName = &'static str;
 
 pub struct StarcoinStorage {

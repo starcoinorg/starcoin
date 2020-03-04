@@ -69,7 +69,7 @@ impl Handler<ChainRequest> for ChainActor {
                 let head_block = self.service.head_block();
                 let mut parent_block_hash = head_block.crypto_hash();
                 for i in 0..times {
-                    info!("parent_block_hash: {:?}", parent_block_hash);
+                    debug!("parent_block_hash: {:?}", parent_block_hash);
                     let current_block_header =
                         BlockHeader::new_block_header_for_test(parent_block_hash, i);
                     let current_block = Block::new_nil_block_for_test(current_block_header);
@@ -242,7 +242,7 @@ where
     }
 
     async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block> {
-        info!("hash: {:?}", hash);
+        debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlock(block) = self
             .address
             .send(ChainRequest::GetBlockByHash(hash.clone()))
