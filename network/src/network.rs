@@ -233,9 +233,12 @@ where
             }
             PeerMessage::Block(block) => {
                 let bus = self.bus.clone();
+                let peer_info = PeerInfo::new(peer_id);
                 let f = async move {
                     bus.send(Broadcast {
-                        msg: SystemEvents::NewHeadBlock(block),
+                        msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
+                            peer_info, block,
+                        )),
                     })
                     .await;
                 };
@@ -245,12 +248,11 @@ where
             PeerMessage::LatestStateMsg(state) => {
                 info!("broadcast LatestStateMsg.");
                 let bus = self.bus.clone();
-                let account_address = PeerInfo::new(peer_id);
+                let peer_info = PeerInfo::new(peer_id);
                 let f = async move {
                     bus.send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
-                            account_address,
-                            state,
+                            peer_info, state,
                         )),
                     })
                     .await;

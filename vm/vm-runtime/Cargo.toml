@@ -18,6 +18,7 @@ config = { package="starcoin-config", path = "../../config"}
 libra_types = { package="libra-types", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
 logger = {path = "../../commons/logger", package="starcoin-logger"}
 stest = {path = "../../commons/stest"}
+num_enum = "0.4.1"
 
 [dev-dependencies]
 env_logger = "0.7.1"

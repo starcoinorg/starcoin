@@ -17,6 +17,7 @@ crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 state-tree = {path = "../core/state-tree", package="starcoin-state-tree"}
 vm-runtime = { package="starcoin-vm-runtime", path = "../vm/vm-runtime"}
+compiler = { package="starcoin-compiler", path = "../vm/compiler"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
 

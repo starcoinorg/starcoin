@@ -437,6 +437,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58946044516aa9dc922182e0d6e9d124a31aafe6b421614654eb27cf90cec09c"
 
 [[package]]
+name = "bincode"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5753e2a71534719bf3f4e57006c3a4f0d2c672a4b676eec84161f763eca87dbf"
+dependencies = [
+ "byteorder 1.3.4",
+ "serde",
+]
+
+[[package]]
+name = "bit-set"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e84c238982c4b1e1ee668d136c510c67a13465279c0cb367ea6baf6310620a80"
+dependencies = [
+ "bit-vec 0.5.1",
+]
+
+[[package]]
+name = "bit-vec"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f59bbe95d4e52a6398ec21238d31577f2b28a9d86807f06ca59d191d8440d0bb"
+
+[[package]]
 name = "bit-vec"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -555,6 +580,23 @@ name = "byte-tools"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
+
+[[package]]
+name = "bytecode-source-map"
+version = "0.1.0"
+source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
+dependencies = [
+ "anyhow",
+ "bytecode-verifier",
+ "codespan",
+ "codespan-reporting",
+ "ir-to-bytecode-syntax",
+ "libra-types",
+ "serde",
+ "serde_json",
+ "structopt",
+ "vm",
+]
 
 [[package]]
 name = "bytecode-verifier"
@@ -707,6 +749,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81fb25b677f8bf1eb325017cb6bb8452f87969db0fedb4f757b297bee78a7c62"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "codespan"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "004def512a9848b23a68ed110927d102b0e6d9f3dc732e28570879afde051f8c"
+dependencies = [
+ "failure",
+ "itertools",
+ "serde",
+ "serde_derive",
+]
+
+[[package]]
+name = "codespan-reporting"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab081a14ab8f9598ce826890fe896d0addee68c7a58ab49008369ccbb51510a8"
+dependencies = [
+ "codespan",
+ "termcolor",
+]
+
+[[package]]
+name = "compiler"
+version = "0.1.0"
+source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
+dependencies = [
+ "anyhow",
+ "bytecode-source-map",
+ "bytecode-verifier",
+ "ir-to-bytecode",
+ "libra-types",
+ "serde_json",
+ "stdlib",
+ "structopt",
+ "vm",
 ]
 
 [[package]]
@@ -1159,6 +1239,29 @@ name = "fnv"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fad85553e09a6f881f739c29f0b00b0f01357c743266d478b68951ce23285f3"
+
+[[package]]
+name = "forkable-jellyfish-merkle"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "byteorder 1.3.4",
+ "hex 0.4.2",
+ "mirai-annotations",
+ "num-derive",
+ "num-traits",
+ "once_cell",
+ "proptest",
+ "proptest-derive",
+ "rand 0.6.5",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-types",
+ "thiserror",
+ "tiny-keccak",
+]
 
 [[package]]
 name = "fuchsia-cprng"
@@ -1704,6 +1807,35 @@ name = "ipnet"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a859057dc563d1388c1e816f98a1892629075fc046ed06e845b883bb8b2916fb"
+
+[[package]]
+name = "ir-to-bytecode"
+version = "0.1.0"
+source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
+dependencies = [
+ "anyhow",
+ "bytecode-source-map",
+ "codespan",
+ "codespan-reporting",
+ "ir-to-bytecode-syntax",
+ "libra-types",
+ "log",
+ "thiserror",
+ "vm",
+]
+
+[[package]]
+name = "ir-to-bytecode-syntax"
+version = "0.1.0"
+source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
+dependencies = [
+ "anyhow",
+ "codespan",
+ "hex 0.3.2",
+ "libra-types",
+ "once_cell",
+ "regex",
+]
 
 [[package]]
 name = "itertools"
@@ -3638,6 +3770,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-derive"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c8b15b261814f992e33760b1fca9fe8b693d8a65299f20c9901688636cfb746"
+dependencies = [
+ "proc-macro2 1.0.8",
+ "quote 1.0.2",
+ "syn 1.0.15",
+]
+
+[[package]]
 name = "num-integer"
 version = "0.1.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4166,12 +4309,18 @@ version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf6147d103a7c9d7598f4105cf049b15c99e2ecd93179bf024f0fd349be5ada4"
 dependencies = [
+ "bit-set",
  "bitflags",
  "byteorder 1.3.4",
+ "lazy_static",
  "num-traits",
+ "quick-error",
  "rand 0.6.5",
  "rand_chacha 0.1.1",
  "rand_xorshift",
+ "regex-syntax",
+ "rusty-fork",
+ "tempfile",
 ]
 
 [[package]]
@@ -4699,6 +4848,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusty-fork"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3dd93264e10c577503e926bd1430193eeb5d21b059148910082245309b424fae"
+dependencies = [
+ "fnv",
+ "quick-error",
+ "tempfile",
+ "wait-timeout",
+]
+
+[[package]]
 name = "rw-stream-sink"
 version = "0.1.2"
 source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin#ecf79d4183c70b24d1c8b31b467bfed7fc37e012"
@@ -5155,12 +5316,25 @@ dependencies = [
  "starcoin-logger",
  "starcoin-network",
  "starcoin-state-tree",
+ "starcoin-statedb",
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",
  "stest",
+ "thiserror",
  "tokio 0.2.11",
+]
+
+[[package]]
+name = "starcoin-compiler"
+version = "0.1.0"
+dependencies = [
+ "compiler",
+ "env_logger",
+ "starcoin-logger",
+ "starcoin-types",
+ "stest",
 ]
 
 [[package]]
@@ -5217,6 +5391,7 @@ dependencies = [
  "env_logger",
  "once_cell",
  "starcoin-canonical-serialization",
+ "starcoin-compiler",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
@@ -5356,6 +5531,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
+ "forkable-jellyfish-merkle",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -5365,12 +5541,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-statedb"
+version = "0.1.0"
+dependencies = [
+ "actix-rt",
+ "anyhow",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-state-tree",
+ "starcoin-traits",
+ "starcoin-types",
+ "thiserror",
+]
+
+[[package]]
 name = "starcoin-storage"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "byteorder 1.3.4",
  "chrono",
+ "forkable-jellyfish-merkle",
  "rocksdb",
  "serde",
  "starcoin-accumulator",
@@ -5393,6 +5586,7 @@ dependencies = [
  "futures-timer 3.0.2",
  "hex 0.4.2",
  "itertools",
+ "log",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",
@@ -5483,6 +5677,7 @@ dependencies = [
  "env_logger",
  "libra-state-view",
  "libra-types",
+ "num_enum",
  "starcoin-config",
  "starcoin-logger",
  "starcoin-traits",
@@ -5498,6 +5693,18 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "stdlib"
+version = "0.1.0"
+source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
+dependencies = [
+ "bytecode-source-map",
+ "bytecode-verifier",
+ "ir-to-bytecode",
+ "libra-types",
+ "once_cell",
+]
 
 [[package]]
 name = "stest"
@@ -6334,7 +6541,7 @@ name = "vm-runtime-types"
 version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
 dependencies = [
- "bit-vec",
+ "bit-vec 0.6.1",
  "libra-canonical-serialization",
  "libra-crypto",
  "libra-types",
@@ -6349,6 +6556,15 @@ name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
+
+[[package]]
+name = "wait-timeout"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "want"

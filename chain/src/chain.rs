@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::chain_state_store::ChainStateStore;
 use crate::message::{ChainRequest, ChainResponse};
 use actix::prelude::*;
 use anyhow::{format_err, Error, Result};
@@ -10,6 +9,7 @@ use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
+use starcoin_statedb::ChainStateDB;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -30,7 +30,7 @@ where
     //TODO
     //accumulator: Accumulator,
     head: Block,
-    chain_state: ChainStateStore,
+    chain_state: ChainStateDB,
     phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
     storage: Arc<StarcoinStorage>,
@@ -72,7 +72,7 @@ where
         Ok(Self {
             config,
             head,
-            chain_state: ChainStateStore::new(storage.clone(), Some(state_root)),
+            chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
             phantom_e: PhantomData,
             phantom_c: PhantomData,
             storage,

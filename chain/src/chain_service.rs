@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain::BlockChain;
-use crate::chain_state_store::ChainStateStore;
 use crate::message::{ChainRequest, ChainResponse};
 use actix::prelude::*;
 use anyhow::{Error, Result};
@@ -12,6 +11,7 @@ use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use network::network::NetworkAsyncService;
+use starcoin_statedb::ChainStateDB;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -99,15 +99,18 @@ where
         None
     }
 
-    pub fn state_at(&self, root: HashValue) -> ChainStateStore {
+    pub fn state_at(&self, root: HashValue) -> ChainStateDB {
         unimplemented!()
     }
 
     fn select_head(&mut self, new_branch: BlockChain<E, C>) {
         let new_branch_parent_hash = new_branch.current_header().parent_hash();
+        let mut need_broadcast = false;
+        let block = new_branch.head_block();
         if new_branch_parent_hash == self.head.current_header().id() {
             //1. update head branch
             self.head = new_branch;
+            need_broadcast = true;
         //todo:delete txpool
         } else {
             //2. update branches
@@ -124,6 +127,7 @@ where
                             Some(new_branch.current_header().id()),
                         )
                         .unwrap();
+                        need_broadcast = true;
                     } else {
                         branch = &new_branch;
                     }
@@ -135,6 +139,18 @@ where
             if !update_branch_flag {
                 self.branches.push(new_branch);
             }
+        }
+
+        if need_broadcast {
+            if let Some(network) = self.network.clone() {
+                Arbiter::spawn(async move {
+                    println!("broadcast system event : {:?}", block.header().id());
+                    network
+                        .clone()
+                        .broadcast_system_event(SystemEvents::NewHeadBlock(block))
+                        .await;
+                });
+            };
         }
     }
 }
@@ -162,15 +178,6 @@ where
             let mut branch = self.find_or_fork(&header).unwrap();
             branch.apply(block.clone())?;
             self.select_head(branch);
-            if let Some(network) = self.network.clone() {
-                Arbiter::spawn(async move {
-                    println!("broadcast systemevent : {:?}", block.header().id());
-                    network
-                        .clone()
-                        .broadcast_system_event(SystemEvents::NewHeadBlock(block))
-                        .await;
-                });
-            };
         }
         Ok(())
     }

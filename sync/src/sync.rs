@@ -13,6 +13,7 @@ use network::sync_messages::{
 };
 use network::{PeerEvent, RPCMessage, RPCRequest, RpcRequestMessage};
 use std::sync::Arc;
+use std::time::Duration;
 use types::{block::BlockHeader, peer_info::PeerInfo, system_events::SystemEvents};
 
 pub struct SyncActor {
@@ -68,7 +69,7 @@ impl Actor for SyncActor {
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-        println!("Sync actor started");
+        info!("Sync actor started");
     }
 }
 
@@ -99,11 +100,11 @@ impl Handler<SystemEvents> for SyncActor {
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
-        println!("mined block.");
+        debug!("mined block.");
         match msg {
-            SystemEvents::MinedBlock(new_block) | SystemEvents::NewHeadBlock(new_block) => {
+            SystemEvents::MinedBlock(new_block) => {
                 self.download_address
-                    .send(DownloadMessage::NewBlock(new_block))
+                    .send(DownloadMessage::MinedBlock(new_block))
                     .into_actor(self)
                     .then(|_result, act, _ctx| async {}.into_actor(act))
                     .wait(ctx);
@@ -119,7 +120,7 @@ impl Handler<PeerEvent> for SyncActor {
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             PeerEvent::Open(open_peer) => {
-                println!("connect new peer:{:?}", open_peer);
+                debug!("connect new peer:{:?}", open_peer);
                 let peer_info = PeerInfo::new(open_peer);
                 let process_msg = ProcessMessage::NewPeerMsg(peer_info);
                 self.process_address

@@ -246,6 +246,7 @@ async fn test_network_actor() {
 
     Delay::new(Duration::from_secs(5)).await;
 
+    let block_1 = first_chain.head_block().await.unwrap();
     let block_2 = second_chain.head_block().await.unwrap();
 
     println!(
@@ -357,9 +358,10 @@ async fn test_network_actor_rpc() {
     let _second_sync_actor =
         SyncActor::launch(bus_2, second_p_actor, second_d_actor.clone()).unwrap();
 
-    Delay::new(Duration::from_secs(2)).await;
+    Delay::new(Duration::from_secs(10)).await;
 
     for i in 0..5 as usize {
+        Delay::new(Duration::from_secs(5)).await;
         let block_1 = first_chain.clone().head_block().await.unwrap();
         let number_1 = block_1.header().number();
         println!("index : {}, first chain number is {}", i, number_1);
@@ -417,7 +419,6 @@ async fn test_network_actor_rpc_2() {
     let block_1 = first_chain.clone().head_block().await.unwrap();
     let number = block_1.header().number();
     println!("first chain :{:?} : {:?}", number, block_1.header().id());
-    // assert!(number > 0);
 
     ////////////////////////
     //second chain

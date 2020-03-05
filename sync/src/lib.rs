@@ -5,6 +5,9 @@ mod sync;
 #[cfg(test)]
 mod tests;
 
+#[macro_use]
+extern crate log;
+
 pub use download::DownloadActor;
 pub use process::ProcessActor;
 use std::time::Duration;

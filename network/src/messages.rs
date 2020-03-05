@@ -82,7 +82,7 @@ impl RPCMessage for RPCResponse {
     fn get_id(&self) -> HashValue {
         match self {
             RPCResponse::TestResponse(r) => r.id,
-            RPCResponse::BatchHashByNumberMsg(resp) => resp.id,
+            RPCResponse::BatchHashByNumberMsg(resp) => resp.req_id,
             RPCResponse::BatchHeaderAndBodyMsg(req_id, headers, bodies) => req_id.clone(),
         }
     }
@@ -92,7 +92,7 @@ impl RPCResponse {
     pub fn set_request_id(&mut self, id: HashValue) {
         match self {
             RPCResponse::TestResponse(r) => r.id = id,
-            RPCResponse::BatchHashByNumberMsg(resp) => resp.id = id,
+            RPCResponse::BatchHashByNumberMsg(resp) => resp.req_id = id,
             RPCResponse::BatchHeaderAndBodyMsg(mut req_id, headers, bodies) => req_id = id,
         };
     }

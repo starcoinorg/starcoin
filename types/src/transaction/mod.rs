@@ -231,6 +231,17 @@ impl RawUserTransaction {
             Duration::new(0, 0),
         )
     }
+
+    pub fn mock_from(compiled_script: Vec<u8>) -> Self {
+        Self::new(
+            AccountAddress::default(),
+            0,
+            TransactionPayload::Script(Script::new(compiled_script, vec![])),
+            600,
+            0,
+            Duration::new(0, 0),
+        )
+    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -411,6 +422,17 @@ impl SignedUserTransaction {
         let mut rng = StdRng::from_seed(seed);
         let key_pair = starcoin_crypto::test_utils::KeyPair::generate_for_testing(&mut rng);
         let raw_txn = RawUserTransaction::mock();
+        raw_txn
+            .sign(&key_pair.private_key, key_pair.public_key)
+            .unwrap()
+            .into_inner()
+    }
+
+    pub fn mock_from(compiled_script: Vec<u8>) -> Self {
+        let seed: [u8; 32] = EntropyRng::new().gen();
+        let mut rng = StdRng::from_seed(seed);
+        let key_pair = starcoin_crypto::test_utils::KeyPair::generate_for_testing(&mut rng);
+        let raw_txn = RawUserTransaction::mock_from(compiled_script);
         raw_txn
             .sign(&key_pair.private_key, key_pair.public_key)
             .unwrap()

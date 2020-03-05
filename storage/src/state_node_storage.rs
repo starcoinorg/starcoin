@@ -4,6 +4,7 @@
 use crate::storage::{CodecStorage, Repository, ValueCodec};
 use anyhow::Result;
 use crypto::{hash::CryptoHash, HashValue};
+use forkable_jellyfish_merkle::node_type::Node;
 use scs::SCSCodec;
 use state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
@@ -24,21 +25,21 @@ impl StateNodeStorage {
 
 impl ValueCodec for StateNode {
     fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
+        self.0.encode()
     }
 
     fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
+        Node::decode(data).map(|n| StateNode(n))
     }
 }
 
 impl StateNodeStore for StateNodeStorage {
-    fn get_node(&self, hash: HashValue) -> Result<Option<StateNode>> {
-        self.storage.get(hash)
+    fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
+        //TODO use ref as key
+        self.storage.get(hash.clone())
     }
 
-    fn save_node(&self, node: StateNode) -> Result<()> {
-        let key = node.crypto_hash();
+    fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
         self.storage.put(key, node)
     }
 }

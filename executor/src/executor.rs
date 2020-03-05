@@ -3,6 +3,7 @@
 
 use crate::TransactionExecutor;
 use anyhow::{Error, Result};
+use compiler::compile::StarcoinCompiler;
 use config::VMConfig;
 use traits::ChainState;
 use types::{
@@ -42,4 +43,9 @@ impl TransactionExecutor for Executor {
     ) -> Option<VMStatus> {
         None
     }
+}
+
+pub fn mock_txn() -> Transaction {
+    let empty_script = StarcoinCompiler::compile_script("main() {return;}");
+    Transaction::UserTransaction(SignedUserTransaction::mock_from(empty_script))
 }

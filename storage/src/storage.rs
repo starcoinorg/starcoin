@@ -1,14 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::KeyPrefixName;
 use crate::memory_storage::MemoryStorage;
 use crate::persistence_storage::PersistenceStorage;
+use crate::KeyPrefixName;
 use anyhow::{Error, Result};
 use crypto::HashValue;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
+
+/// Use for batch commit
+pub trait WriteBatch {
+    fn put(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn delete(&mut self, key: Vec<u8>) -> Result<()>;
+}
 
 pub trait Repository {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;

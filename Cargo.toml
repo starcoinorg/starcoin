@@ -10,6 +10,8 @@ members = [
     "core/traits",
     "core/accumulator",
     "core/state-tree",
+    "core/forkable-jellyfish-merkle",
+    "core/statedb",
     "config",
     "bus",
     "storage",

@@ -10,6 +10,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+thiserror = "1.0"
 actix = "0.9"
 types = {path = "../types", package="starcoin-types"}
 config = {path = "../config", package="starcoin-config"}
@@ -29,6 +30,7 @@ logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
 network = {path = "../network", package="starcoin-network"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
+starcoin-statedb = {path = "../core/statedb"}
 
 [dev-dependencies]
 env_logger = "0.7.1"
