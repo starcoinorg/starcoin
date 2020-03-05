@@ -4718,11 +4718,13 @@ dependencies = [
  "starcoin-logger",
  "starcoin-network",
  "starcoin-state-tree",
+ "starcoin-statedb",
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",
  "stest",
+ "thiserror",
  "tokio 0.2.11",
 ]
 
@@ -4931,12 +4933,29 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
+ "forkable-jellyfish-merkle",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-types",
  "stest",
+]
+
+[[package]]
+name = "starcoin-statedb"
+version = "0.1.0"
+dependencies = [
+ "actix-rt",
+ "anyhow",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-state-tree",
+ "starcoin-traits",
+ "starcoin-types",
+ "thiserror",
 ]
 
 [[package]]

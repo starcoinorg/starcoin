@@ -6,7 +6,6 @@ mod chain;
 pub use chain::BlockChain;
 
 pub mod chain_service;
-pub mod chain_state_store;
 pub mod mem_chain;
 pub mod message;
 

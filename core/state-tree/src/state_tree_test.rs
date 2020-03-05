@@ -1,15 +1,14 @@
-use crate::memory_storage::MemoryStorage;
-use crate::statedb::{StateDB, StateNode, StateStorage};
+use super::*;
+use crate::mock::MockStateNodeStore;
 use anyhow::Result;
-use crypto::hash::*;
 use forkable_jellyfish_merkle::node_type::Node;
+use starcoin_crypto::hash::*;
 use std::sync::Arc;
+
 #[test]
 pub fn test_put_blob() -> Result<()> {
-    let s = MemoryStorage::new();
-    let s = StateStorage::new(Arc::new(s), "state");
-    s.put(HashValue::zero(), Node::new_null().into());
-    let state = StateDB::new(s, HashValue::zero());
+    let s = MockStateNodeStore::new();
+    let state = StateTree::new(Arc::new(s), None);
     assert_eq!(state.root_hash(), HashValue::zero());
 
     let hash_value = HashValue::random();
@@ -18,8 +17,8 @@ pub fn test_put_blob() -> Result<()> {
     let account1 = update_nibble(&account1, 2, 2);
     let new_root_hash = state.put_blob_set(vec![(account1, vec![0, 0, 0])])?;
     assert_eq!(state.root_hash(), new_root_hash);
-    assert_eq!(state.get(account1)?, Some(vec![0, 0, 0]));
-    assert_eq!(state.get(update_nibble(&hash_value, 0, 8))?, None);
+    assert_eq!(state.get(&account1)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(&update_nibble(&hash_value, 0, 8))?, None);
     let (root, updates) = state.change_sets();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
@@ -30,7 +29,7 @@ pub fn test_put_blob() -> Result<()> {
     let account2 = update_nibble(&account1, 0, 2);
     let new_root_hash = state.put_blob_set(vec![(account2, vec![0, 0, 0])])?;
     assert_eq!(state.root_hash(), new_root_hash);
-    assert_eq!(state.get(account2)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(&account2)?, Some(vec![0, 0, 0]));
     let (root, updates) = state.change_sets();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
@@ -41,7 +40,7 @@ pub fn test_put_blob() -> Result<()> {
     // modify existed account
     let new_root_hash = state.put_blob_set(vec![(account1, vec![1, 1, 1])])?;
     assert_eq!(state.root_hash(), new_root_hash);
-    assert_eq!(state.get(account1)?, Some(vec![1, 1, 1]));
+    assert_eq!(state.get(&account1)?, Some(vec![1, 1, 1]));
     let (root, updates) = state.change_sets();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
@@ -53,9 +52,9 @@ pub fn test_put_blob() -> Result<()> {
     let new_root_hash =
         state.put_blob_set(vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])])?;
     assert_eq!(state.root_hash(), new_root_hash);
-    assert_eq!(state.get(account1)?, Some(vec![1, 1, 0]));
-    assert_eq!(state.get(account2)?, Some(vec![0, 0, 0]));
-    assert_eq!(state.get(account3)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(&account1)?, Some(vec![1, 1, 0]));
+    assert_eq!(state.get(&account2)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(&account3)?, Some(vec![0, 0, 0]));
 
     let (_, updates) = state.change_sets();
     assert_eq!(updates.num_stale_leaves, 0);
@@ -68,10 +67,8 @@ pub fn test_put_blob() -> Result<()> {
 #[test]
 pub fn test_state_commit() -> Result<()> {
     // TODO: once storage support batch put, finish this.
-    let s = MemoryStorage::new();
-    let s = StateStorage::new(Arc::new(s), "state");
-    s.put(HashValue::zero(), Node::new_null().into());
-    let state = StateDB::new(s, HashValue::zero());
+    let s = MockStateNodeStore::new();
+    let state = StateTree::new(Arc::new(s), None);
     assert_eq!(state.root_hash(), HashValue::zero());
 
     let hash_value = HashValue::random();
@@ -86,9 +83,9 @@ pub fn test_state_commit() -> Result<()> {
 
     state.commit()?;
     assert_eq!(state.root_hash(), new_root_hash);
-    assert_eq!(state.get(account1)?, Some(vec![1, 1, 0]));
-    assert_eq!(state.get(account3)?, Some(vec![0, 0, 0]));
-    assert_eq!(state.get(update_nibble(&account1, 2, 10))?, None);
+    assert_eq!(state.get(&account1)?, Some(vec![1, 1, 0]));
+    assert_eq!(state.get(&account3)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(&update_nibble(&account1, 2, 10))?, None);
     Ok(())
 }
 

@@ -226,6 +226,14 @@ impl AccessPath {
     }
 }
 
+impl Into<(AccountAddress, HashValue)> for AccessPath {
+    fn into(self) -> (AccountAddress, HashValue) {
+        let hash = HashValue::from_slice(&self.path[0..HashValue::LENGTH])
+            .expect("extract hash from path must success.");
+        (self.address, hash)
+    }
+}
+
 impl fmt::Debug for AccessPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(

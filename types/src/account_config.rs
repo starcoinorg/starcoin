@@ -113,9 +113,9 @@ impl AccountResource {
     /// Constructs an Account resource.
     pub fn new(balance: u64, sequence_number: u64, authentication_key: ByteArray) -> Self {
         AccountResource {
+            authentication_key,
             balance,
             sequence_number,
-            authentication_key,
         }
     }
 
@@ -144,4 +144,20 @@ impl AccountResource {
 /// Account resource.
 pub fn account_resource_path() -> Vec<u8> {
     AccessPath::resource_access_vec(&account_struct_tag(), &Accesses::empty())
+}
+
+impl TryInto<Vec<u8>> for AccountResource {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+}
+
+impl TryFrom<Vec<u8>> for AccountResource {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self> {
+        AccountResource::make_from(value.as_slice())
+    }
 }

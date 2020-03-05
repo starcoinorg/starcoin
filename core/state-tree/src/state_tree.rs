@@ -1,22 +1,18 @@
-use crate::storage::CodecStorage;
-use crate::storage::Repository;
-use crate::storage::WriteBatch;
-use crate::storage::{KeyCodec, ValueCodec};
-use anyhow::bail;
-use anyhow::Result;
-use crypto::hash::*;
+use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::node_type::{LeafNode, Node, NodeKey};
 use forkable_jellyfish_merkle::{
     tree_cache::TreeCache, JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
 };
+use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::AtomicBool;
-use std::sync::{Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct StateNode(Node);
+pub struct StateNode(pub Node);
 
 impl StateNode {
     pub fn inner(&self) -> &Node {
@@ -30,17 +26,13 @@ impl From<Node> for StateNode {
     }
 }
 
-impl ValueCodec for StateNode {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.0.encode()
-    }
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+pub struct StateProof {}
 
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Node::decode(data).map(|n| StateNode(n))
-    }
+pub trait StateNodeStore {
+    fn get(&self, hash: &HashValue) -> Result<Option<StateNode>>;
+    fn put(&self, key: HashValue, node: StateNode) -> Result<()>;
 }
-
-pub type StateStorage = CodecStorage<HashValue, StateNode>;
 
 pub struct StateCache {
     root_hash: HashValue,
@@ -95,15 +87,17 @@ impl StateCache {
     }
 }
 
-pub struct StateDB {
-    storage: StateStorage,
+pub struct StateTree {
+    storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
     cache: Mutex<StateCache>,
 }
 
-impl StateDB {
+impl StateTree {
     /// Construct a new state_db from provided `state_root_hash` with underline `state_storage`
-    pub fn new(state_storage: StateStorage, state_root_hash: HashValue) -> Self {
+    pub fn new(state_storage: Arc<dyn StateNodeStore>, state_root_hash: Option<HashValue>) -> Self {
+        //TODO should use a placeholder hash value?
+        let state_root_hash = state_root_hash.unwrap_or(HashValue::zero());
         Self {
             storage: state_storage,
             storage_root_hash: RwLock::new(state_root_hash),
@@ -116,6 +110,10 @@ impl StateDB {
         self.cache.lock().unwrap().root_hash
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.root_hash() == HashValue::zero()
+    }
+
     /// put a kv pair into tree.
     /// Users need to hash the origin key into a fixed-length(here is 256bit) HashValue,
     /// and use it as the `key_hash`.
@@ -124,20 +122,29 @@ impl StateDB {
     }
 
     /// use a key's hash `key_hash` to read a value.
-    pub fn get(&self, key_hash: HashValue) -> Result<Option<Vec<u8>>> {
+    pub fn get(&self, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
         let mut cache_guard = self.cache.lock().unwrap();
         let cache = cache_guard.deref_mut();
         let cur_root_hash = cache.root_hash;
         let reader = CachedTreeReader {
-            store: &self.storage,
+            store: self.storage.as_ref(),
             cache,
         };
         let tree = JellyfishMerkleTree::new(&reader);
-        let (data, proof) = tree.get_with_proof(cur_root_hash, key_hash)?;
+        let (data, proof) = tree.get_with_proof(cur_root_hash, key_hash.clone())?;
         match data {
             Some(b) => Ok(Some(b.into())),
             None => Ok(None),
         }
+    }
+
+    /// Remove key_hash's data and return new root.
+    pub fn remove(&self, key_hash: &HashValue) -> Result<HashValue> {
+        todo!()
+    }
+
+    pub fn contains(&self, key_hash: &HashValue) -> Result<bool> {
+        self.get(key_hash).map(|result| result.is_some())
     }
 
     /// write a new states into local cache, return new root hash
@@ -146,7 +153,7 @@ impl StateDB {
         let mut cache_guard = self.cache.lock().unwrap();
         let mut cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
-            store: &self.storage,
+            store: self.storage.as_ref(),
             cache,
         };
         let tree = JellyfishMerkleTree::new(&reader);
@@ -221,17 +228,18 @@ impl StateDB {
         Ok(())
     }
 
-    /// TODO: to keep atomic with other commit.
-    pub fn save<T>(&self, batch: &mut T) -> Result<()>
-    where
-        T: WriteBatch,
-    {
-        todo!()
-    }
+    // TODO: to keep atomic with other commit.
+    // TODO: think about the WriteBatch trait position.
+    // pub fn save<T>(&self, batch: &mut T) -> Result<()>
+    // where
+    //     T: WriteBatch,
+    // {
+    //     todo!()
+    // }
 }
 
 struct CachedTreeReader<'a> {
-    store: &'a StateStorage,
+    store: &'a dyn StateNodeStore,
     cache: &'a StateCache,
 }
 
@@ -240,7 +248,7 @@ impl<'a> TreeReader for CachedTreeReader<'a> {
         if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
             return Ok(Some(n));
         }
-        match self.store.get(node_key.clone()) {
+        match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.0)),
             Ok(None) => Ok(None),
             Err(e) => Err(e),

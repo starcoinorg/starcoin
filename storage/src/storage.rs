@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::KeyPrefixName;
 use crate::memory_storage::MemoryStorage;
 use crate::persistence_storage::PersistenceStorage;
+use crate::KeyPrefixName;
 use anyhow::{Error, Result};
 use crypto::HashValue;
 use std::fmt::Debug;
