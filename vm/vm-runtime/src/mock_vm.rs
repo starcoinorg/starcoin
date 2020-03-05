@@ -80,49 +80,69 @@ impl MockVM {
         let mut state_store = StateStore::new(chain_state);
         let mut output;
 
-        match decode_transaction(&txn.as_signed_user_txn().unwrap()) {
-            MockTransaction::Mint { sender, amount } => {
-                let access_path = AccessPath::new_for_account(sender);
+        match txn {
+            Transaction::UserTransaction(txn) => {
+                match decode_transaction(&txn) {
+                    MockTransaction::Mint { sender, amount } => {
+                        let access_path = AccessPath::new_for_account(sender);
+                        let account_resource: AccountResource =
+                            state_store.get_from_statedb(&access_path)?.unwrap().try_into()?;
+                        assert_eq!(0, account_resource.balance(), "balance error");
+                        let new_account_resource =
+                            AccountResource::new(amount, 1, account_resource.authentication_key().clone());
+                        state_store.set(access_path, new_account_resource.try_into()?);
+                        output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
+                    }
+                    MockTransaction::Payment {
+                        sender,
+                        recipient,
+                        amount,
+                    } => {
+                        let access_path_sender = AccessPath::new_for_account(sender);
+                        let access_path_receiver = AccessPath::new_for_account(recipient);
+
+                        let account_resource_sender: AccountResource =
+                            state_store.get_from_statedb(&access_path_sender)?.unwrap().try_into()?;
+                        let account_resource_receiver: AccountResource =
+                            state_store.get_from_statedb(&access_path_receiver)?.unwrap().try_into()?;
+
+                        let balance_sender = account_resource_sender.balance();
+                        let balance_receiver = account_resource_receiver.balance();
+
+                        if balance_sender < amount {
+                            output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
+                        } else {
+                            let new_account_resource_sender =
+                                AccountResource::new(balance_sender - amount, account_resource_sender.sequence_number() + 1, account_resource_sender.authentication_key().clone());
+                            let new_account_resource_receiver =
+                                AccountResource::new(balance_receiver + amount, account_resource_sender.sequence_number(), account_resource_receiver.authentication_key().clone());
+                            state_store.set(access_path_sender, new_account_resource_sender.try_into()?);
+                            state_store.set(access_path_receiver, new_account_resource_receiver.try_into()?);
+                            output = TransactionOutput::new(
+                                vec![],
+                                0,
+                                TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)),
+                            );
+                        }
+                    }
+                }
+            },
+            Transaction::BlockMetadata(block_metadata) => {
+                let (id, timestamp, author) = block_metadata.into_inner().unwrap();
+                let access_path = AccessPath::new_for_account(author);
                 let account_resource: AccountResource =
                     state_store.get_from_statedb(&access_path)?.unwrap().try_into()?;
-                assert_eq!(0, account_resource.balance(), "balance error");
                 let new_account_resource =
-                    AccountResource::new(amount, 1, account_resource.authentication_key().clone());
+                    AccountResource::new(1000, account_resource.sequence_number(), account_resource.authentication_key().clone());
                 state_store.set(access_path, new_account_resource.try_into()?);
                 output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
-            }
-            MockTransaction::Payment {
-                sender,
-                recipient,
-                amount,
-            } => {
-                let access_path_sender = AccessPath::new_for_account(sender);
-                let access_path_receiver = AccessPath::new_for_account(recipient);
 
-                let account_resource_sender: AccountResource =
-                    state_store.get_from_statedb(&access_path_sender)?.unwrap().try_into()?;
-                let account_resource_receiver: AccountResource =
-                    state_store.get_from_statedb(&access_path_receiver)?.unwrap().try_into()?;
+            },
+            _ => {
+                output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
 
-                let balance_sender = account_resource_sender.balance();
-                let balance_receiver = account_resource_receiver.balance();
+            },
 
-                if balance_sender < amount {
-                    output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
-                } else {
-                    let new_account_resource_sender =
-                        AccountResource::new(balance_sender - amount, account_resource_sender.sequence_number() + 1, account_resource_sender.authentication_key().clone());
-                    let new_account_resource_receiver =
-                        AccountResource::new(balance_receiver + amount, account_resource_sender.sequence_number(), account_resource_receiver.authentication_key().clone());
-                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?);
-                    state_store.set(access_path_receiver, new_account_resource_receiver.try_into()?);
-                    output = TransactionOutput::new(
-                        vec![],
-                        0,
-                        TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)),
-                    );
-                }
-            }
         }
         Ok(output)
     }
