@@ -1,8 +1,10 @@
 use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::node_type::{LeafNode, Node, NodeKey};
+use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
     tree_cache::TreeCache, JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
+    SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
@@ -96,8 +98,7 @@ pub struct StateTree {
 impl StateTree {
     /// Construct a new state_db from provided `state_root_hash` with underline `state_storage`
     pub fn new(state_storage: Arc<dyn StateNodeStore>, state_root_hash: Option<HashValue>) -> Self {
-        //TODO should use a placeholder hash value?
-        let state_root_hash = state_root_hash.unwrap_or(HashValue::zero());
+        let state_root_hash = state_root_hash.unwrap_or(*SPARSE_MERKLE_PLACEHOLDER_HASH);
         Self {
             storage: state_storage,
             storage_root_hash: RwLock::new(state_root_hash),
@@ -111,7 +112,7 @@ impl StateTree {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.root_hash() == HashValue::zero()
+        self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
     }
 
     /// put a kv pair into tree.
@@ -123,6 +124,14 @@ impl StateTree {
 
     /// use a key's hash `key_hash` to read a value.
     pub fn get(&self, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
+        Ok(self.get_with_proof(key_hash)?.0)
+    }
+
+    /// return value with it proof
+    pub fn get_with_proof(
+        &self,
+        key_hash: &HashValue,
+    ) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
         let mut cache_guard = self.cache.lock().unwrap();
         let cache = cache_guard.deref_mut();
         let cur_root_hash = cache.root_hash;
@@ -133,8 +142,8 @@ impl StateTree {
         let tree = JellyfishMerkleTree::new(&reader);
         let (data, proof) = tree.get_with_proof(cur_root_hash, key_hash.clone())?;
         match data {
-            Some(b) => Ok(Some(b.into())),
-            None => Ok(None),
+            Some(b) => Ok((Some(b.into()), proof)),
+            None => Ok((None, proof)),
         }
     }
 

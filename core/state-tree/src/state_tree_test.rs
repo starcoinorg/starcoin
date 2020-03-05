@@ -2,6 +2,7 @@ use super::*;
 use crate::mock::MockStateNodeStore;
 use anyhow::Result;
 use forkable_jellyfish_merkle::node_type::Node;
+use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::hash::*;
 use std::sync::Arc;
 
@@ -9,7 +10,7 @@ use std::sync::Arc;
 pub fn test_put_blob() -> Result<()> {
     let s = MockStateNodeStore::new();
     let state = StateTree::new(Arc::new(s), None);
-    assert_eq!(state.root_hash(), HashValue::zero());
+    assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
     let hash_value = HashValue::random();
 
@@ -65,11 +66,38 @@ pub fn test_put_blob() -> Result<()> {
 }
 
 #[test]
+pub fn test_state_proof() -> Result<()> {
+    let s = MockStateNodeStore::new();
+    let state = StateTree::new(Arc::new(s), None);
+    assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
+
+    let hash_value = HashValue::random();
+
+    let account1 = update_nibble(&hash_value, 0, 1);
+    let account2 = update_nibble(&account1, 2, 2);
+    let new_root_hash =
+        state.put_blob_set(vec![(account1, vec![0, 0, 0]), (account2, vec![1, 1, 1])])?;
+    let (value, proof) = state.get_with_proof(&account1)?;
+
+    assert!(value.is_some());
+    assert_eq!(value.unwrap(), vec![0, 0, 0]);
+    let expected_value = Some(vec![0, 0, 0].into());
+    proof.verify(new_root_hash, account1, expected_value.as_ref())?;
+
+    let new_root_hash = state.remove(&account1)?;
+    let (value, proof) = state.get_with_proof(&account1)?;
+    assert!(value.is_none());
+    proof.verify(new_root_hash, account1, None)?;
+
+    Ok(())
+}
+
+#[test]
 pub fn test_state_commit() -> Result<()> {
     // TODO: once storage support batch put, finish this.
     let s = MockStateNodeStore::new();
     let state = StateTree::new(Arc::new(s), None);
-    assert_eq!(state.root_hash(), HashValue::zero());
+    assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
     let hash_value = HashValue::random();
 
