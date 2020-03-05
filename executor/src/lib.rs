@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use config::VMConfig;
+use crypto::HashValue;
 use traits::ChainState;
 use types::{
     state_set::ChainStateSet,
@@ -15,8 +16,8 @@ pub mod executor_test;
 pub mod mock_executor;
 
 pub trait TransactionExecutor: std::marker::Unpin {
-    /// Create genesis transaction
-    fn init_genesis(config: &VMConfig) -> Result<ChainStateSet>;
+    /// Create genesis state, return state root and state set.
+    fn init_genesis(config: &VMConfig) -> Result<(HashValue, ChainStateSet)>;
 
     /// Execute transaction, update state to state_store, and return events and TransactionStatus.
     fn execute_transaction(

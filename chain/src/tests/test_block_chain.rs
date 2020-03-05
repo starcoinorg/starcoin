@@ -2,10 +2,15 @@ use super::random_block;
 use crate::chain::load_genesis_block;
 use crate::{AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use actix::Addr;
+use anyhow::Result;
 use config::NodeConfig;
-use crypto::hash::CryptoHash;
+use consensus::{dummy::DummyConsensus, Consensus};
+use crypto::{hash::CryptoHash, HashValue};
+use executor::{mock_executor::MockExecutor, TransactionExecutor};
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use traits::ChainWriter;
+use types::block::Block;
 
 #[test]
 fn it_works() {
@@ -63,4 +68,18 @@ async fn test_block_chain_forks() {
 #[actix_rt::test]
 async fn test_block_chain_rollback() {
     //todo
+}
+
+#[test]
+fn test_chain_apply() -> Result<()> {
+    let node_config = NodeConfig::default();
+    let config = Arc::new(node_config);
+    let repo = Arc::new(MemoryStorage::new());
+    let storage = Arc::new(StarcoinStorage::new(repo)?);
+
+    let (state_root, chain_state_set) = MockExecutor::init_genesis(&config.vm)?;
+    let genesis_block = Block::genesis_block(HashValue::zero(), state_root, chain_state_set);
+    let mut block_chain = BlockChain::<MockExecutor, DummyConsensus>::new(config, storage, None)?;
+    block_chain.apply(genesis_block)?;
+    Ok(())
 }

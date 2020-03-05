@@ -133,12 +133,12 @@ impl MockExecutor {
 }
 
 impl TransactionExecutor for MockExecutor {
-    fn init_genesis(_config: &VMConfig) -> Result<ChainStateSet> {
+    fn init_genesis(_config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
         let chain_state = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
         chain_state.create_account(AccountAddress::default())?;
         chain_state.create_account(association_address())?;
         chain_state.commit();
-        chain_state.dump()
+        Ok((chain_state.state_root(), chain_state.dump()?))
     }
 
     fn execute_transaction(

@@ -5,6 +5,7 @@ use crate::TransactionExecutor;
 use anyhow::{Error, Result};
 use compiler::compile::StarcoinCompiler;
 use config::VMConfig;
+use crypto::HashValue;
 use traits::ChainState;
 use types::{
     state_set::ChainStateSet,
@@ -27,7 +28,7 @@ impl Executor {
 }
 
 impl TransactionExecutor for Executor {
-    fn init_genesis(config: &VMConfig) -> Result<ChainStateSet> {
+    fn init_genesis(config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
         unimplemented!()
     }
 
