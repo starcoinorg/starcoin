@@ -15,6 +15,7 @@ use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
+    account_config::{account_struct_tag, AccountResource},
     account_state::AccountState,
     contract_event::ContractEvent,
     language_storage::{ModuleId, StructTag, TypeTag},
@@ -26,6 +27,8 @@ use types::{
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use logger::prelude::*;
+use std::convert::TryInto;
+
 
 enum MockTransaction {
     Mint {
@@ -64,27 +67,28 @@ impl MockVM {
         state_store.add_account_data(account_data)
     }
 
+    pub fn create_account(&self, account_address: AccountAddress, chain_state: &dyn ChainState) -> Result<()> {
+        let mut state_store = StateStore::new(chain_state);
+        state_store.create_account(account_address)
+    }
+
     pub fn execute_transaction(
         &mut self,
         chain_state: &dyn ChainState,
         txn: Transaction,
-    ) -> TransactionOutput {
+    ) -> Result<TransactionOutput> {
         let mut state_store = StateStore::new(chain_state);
-        let mut output_cache = HashMap::new();
         let mut output;
 
         match decode_transaction(&txn.as_signed_user_txn().unwrap()) {
             MockTransaction::Mint { sender, amount } => {
-                let old_balance = read_balance(&output_cache, chain_state, sender);
-                let new_balance = old_balance + amount;
-                let old_seqnum = read_seqnum(&output_cache, chain_state, sender);
-                let new_seqnum = old_seqnum + 1;
-
-                output_cache.insert(balance_ap(sender), new_balance);
-                output_cache.insert(seqnum_ap(sender), new_seqnum);
-
-                let write_set = gen_mint_writeset(sender, new_balance, new_seqnum);
-                state_store.add_write_set(&write_set);
+                let access_path = AccessPath::new_for_account(sender);
+                let account_resource: AccountResource =
+                    state_store.get_from_statedb(&access_path)?.unwrap().try_into()?;
+                assert_eq!(0, account_resource.balance(), "balance error");
+                let new_account_resource =
+                    AccountResource::new(amount, 1, account_resource.authentication_key().clone());
+                state_store.set(access_path, new_account_resource.try_into()?);
                 output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
             }
             MockTransaction::Payment {
@@ -92,28 +96,26 @@ impl MockVM {
                 recipient,
                 amount,
             } => {
-                let sender_old_balance = read_balance(&output_cache, chain_state, sender);
-                let recipient_old_balance = read_balance(&output_cache, chain_state, recipient);
-                if sender_old_balance < amount {
+                let access_path_sender = AccessPath::new_for_account(sender);
+                let access_path_receiver = AccessPath::new_for_account(recipient);
+
+                let account_resource_sender: AccountResource =
+                    state_store.get_from_statedb(&access_path_sender)?.unwrap().try_into()?;
+                let account_resource_receiver: AccountResource =
+                    state_store.get_from_statedb(&access_path_receiver)?.unwrap().try_into()?;
+
+                let balance_sender = account_resource_sender.balance();
+                let balance_receiver = account_resource_receiver.balance();
+
+                if balance_sender < amount {
                     output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
                 } else {
-                    let sender_old_seqnum = read_seqnum(&output_cache, chain_state, sender);
-                    let sender_new_seqnum = sender_old_seqnum + 1;
-                    let sender_new_balance = sender_old_balance - amount;
-                    let recipient_new_balance = recipient_old_balance + amount;
-
-                    output_cache.insert(balance_ap(sender), sender_new_balance);
-                    output_cache.insert(seqnum_ap(sender), sender_new_seqnum);
-                    output_cache.insert(balance_ap(recipient), recipient_new_balance);
-
-                    let write_set = gen_payment_writeset(
-                        sender,
-                        sender_new_balance,
-                        sender_new_seqnum,
-                        recipient,
-                        recipient_new_balance,
-                    );
-                    state_store.add_write_set(&write_set);
+                    let new_account_resource_sender =
+                        AccountResource::new(balance_sender - amount, account_resource_sender.sequence_number() + 1, account_resource_sender.authentication_key().clone());
+                    let new_account_resource_receiver =
+                        AccountResource::new(balance_receiver + amount, account_resource_sender.sequence_number(), account_resource_receiver.authentication_key().clone());
+                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?);
+                    state_store.set(access_path_receiver, new_account_resource_receiver.try_into()?);
                     output = TransactionOutput::new(
                         vec![],
                         0,
@@ -122,7 +124,7 @@ impl MockVM {
                 }
             }
         }
-        output
+        Ok(output)
     }
 }
 

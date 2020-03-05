@@ -112,6 +112,10 @@ impl MockExecutor {
         let mut vm = MockVM::new(&self.config);
         vm.add_account_data(account_data, chain_state)
     }
+    pub fn create_account(&self, account_address: AccountAddress, chain_state: &dyn ChainState) -> Result<()> {
+        let mut vm = MockVM::new(&self.config);
+        vm.create_account(account_address, chain_state)
+    }
 }
 
 impl TransactionExecutor for MockExecutor {
@@ -122,7 +126,7 @@ impl TransactionExecutor for MockExecutor {
     ) -> Result<TransactionOutput> {
         let mut vm = MockVM::new(config);
         let output = vm.execute_transaction(chain_state, txn);
-        Ok(output)
+        output
     }
 
     fn validate_transaction(

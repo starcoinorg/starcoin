@@ -16,10 +16,12 @@ traits = {package="starcoin-traits", path = "../core/traits"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 state-tree = {path = "../core/state-tree", package="starcoin-state-tree"}
+statedb = {path = "../core/statedb", package="starcoin-statedb"}
 vm-runtime = { package="starcoin-vm-runtime", path = "../vm/vm-runtime"}
 compiler = { package="starcoin-compiler", path = "../vm/compiler"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
+
 
 [dev-dependencies]
 env_logger = "0.7.1"

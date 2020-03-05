@@ -9,6 +9,7 @@ use anyhow::{Error, Result};
 use types::{
     access_path::AccessPath,
     write_set::{WriteOp, WriteSet},
+    account_address::{AccountAddress},
 };
 use libra_state_view::StateView;
 use libra_types::access_path::AccessPath as LibraAccessPath;
@@ -26,6 +27,13 @@ pub struct StateStore<'txn> {
 impl<'txn> StateStore<'txn> {
     pub fn new(chain_state: &'txn dyn ChainState) -> Self {
         StateStore { chain_state }
+    }
+
+    pub fn get_from_statedb(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+        ChainState::get(
+            self.chain_state,
+            access_path
+        )
     }
 
     /// Adds a [`WriteSet`] to state store.
@@ -62,6 +70,10 @@ impl<'txn> StateStore<'txn> {
             }
             None => panic!("can't create Account data"),
         }
+    }
+
+    pub fn create_account(&self, account_address: AccountAddress) -> Result<()> {
+        self.chain_state.create_account(account_address)
     }
 
 }
