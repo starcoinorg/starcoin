@@ -53,6 +53,9 @@ pub trait ChainStateWriter {
     fn set_code(&self, module_id: &ModuleId, code: Vec<u8>) -> Result<()>;
 
     fn create_account(&self, account_address: AccountAddress) -> Result<()>;
+
+    /// Apply dump result to ChainState
+    fn apply(&self, state_set: GlobalStateSet) -> Result<()>;
 }
 
 /// `ChainState` is a trait that defines chain's global state.

@@ -47,22 +47,28 @@ impl<'a> IntoIterator for &'a StateSet {
     }
 }
 
+impl Into<Vec<(HashValue, Vec<u8>)>> for StateSet {
+    fn into(self) -> Vec<(HashValue, Vec<u8>)> {
+        self.0
+    }
+}
+
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct AccountStateSet {
     code_set: Option<StateSet>,
-    resource_set: StateSet,
+    resource_set: Option<StateSet>,
 }
 
 impl AccountStateSet {
-    pub fn new(code_set: Option<StateSet>, resource_set: StateSet) -> Self {
+    pub fn new(code_set: Option<StateSet>, resource_set: Option<StateSet>) -> Self {
         Self {
             code_set,
             resource_set,
         }
     }
 
-    pub fn resource_set(&self) -> &StateSet {
-        &self.resource_set
+    pub fn resource_set(&self) -> Option<&StateSet> {
+        self.resource_set.as_ref()
     }
 
     pub fn code_set(&self) -> Option<&StateSet> {

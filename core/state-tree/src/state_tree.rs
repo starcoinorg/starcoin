@@ -262,6 +262,11 @@ impl StateTree {
         Ok(StateSet::new(states))
     }
 
+    pub fn apply(&self, state_set: StateSet) -> Result<()> {
+        self.put_blob_set(state_set.into());
+        Ok(())
+    }
+
     // TODO: to keep atomic with other commit.
     // TODO: think about the WriteBatch trait position.
     // pub fn save<T>(&self, batch: &mut T) -> Result<()>
