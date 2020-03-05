@@ -21,6 +21,7 @@ pub mod transaction;
 pub mod vm_error;
 pub mod with_proof;
 pub mod write_set;
+pub mod event;
 #[cfg(test)]
 mod tests {
     #[test]

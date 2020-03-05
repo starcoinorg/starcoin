@@ -4,8 +4,7 @@
 use crate::{
     executor::{mock_txn, Executor},
     mock_executor::{
-        encode_mint_transaction, encode_transfer_program, encode_transfer_transaction,
-        get_signed_txn, MockChainState, MockExecutor, DISCARD_STATUS, KEEP_STATUS,
+        get_signed_txn, MockChainState, MockExecutor,
     },
     TransactionExecutor,
 };
@@ -17,20 +16,51 @@ use types::{
     account_address::{AccountAddress, ADDRESS_LENGTH},
     transaction::{SignedUserTransaction, Transaction},
 };
+use vm_runtime::{
+    account::AccountData,
+    mock_vm::{encode_mint_transaction, encode_transfer_program, encode_transfer_transaction,
+              DISCARD_STATUS, KEEP_STATUS,
+    }
+
+};
+use std::time::Duration;
 
 fn gen_address(index: u8) -> AccountAddress {
     AccountAddress::new([index; ADDRESS_LENGTH])
 }
 
-#[test]
-fn test_execute_txn() {
-    let chain_state = MockChainState::new();
-    let txn = encode_mint_transaction(gen_address(0), 100);
-    let config = VMConfig::default();
 
+
+#[test]
+fn test_execute_mint_txn() {
+    let chain_state = MockChainState::new();
+    let mut executor = MockExecutor::new();
+    let sender = AccountData::new(1_000_000, 10);
+    executor.add_account_data(&sender, &chain_state);
+    info!("create account: {:?}", sender.account().address());
+    let txn = encode_mint_transaction(sender.account().address().clone(), 100);
+    let config = VMConfig::default();
+    info!("invoke Executor::execute_transaction");
     let output = MockExecutor::execute_transaction(&config, &chain_state, txn).unwrap();
 
     assert_eq!(KEEP_STATUS.clone(), *output.status());
+}
+
+#[test]
+fn test_execute_multiple_mint_txns() {
+    for i in 0..10 {
+        let chain_state = MockChainState::new();
+        let mut executor = MockExecutor::new();
+        let sender = AccountData::new(1_000_000, 10);
+        executor.add_account_data(&sender, &chain_state);
+        info!("create account: {:?}", sender.account().address());
+        let txn = encode_mint_transaction(sender.account().address().clone(), 100);
+        let config = VMConfig::default();
+        info!("invoke Executor::execute_transaction");
+        let output = MockExecutor::execute_transaction(&config, &chain_state, txn).unwrap();
+
+        assert_eq!(KEEP_STATUS.clone(), *output.status());
+    }
 }
 
 #[test]
@@ -61,3 +91,4 @@ fn test_execute_txn_with_starcoin_vm() {
 
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 }
+

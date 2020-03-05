@@ -10,7 +10,7 @@ use types::{
 };
 
 pub mod executor;
-mod executor_test;
+pub mod executor_test;
 pub mod mock_executor;
 
 pub trait TransactionExecutor: std::marker::Unpin {
