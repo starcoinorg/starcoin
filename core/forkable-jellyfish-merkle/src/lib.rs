@@ -186,8 +186,29 @@ where
         state_root_hash: Option<HashValue>,
         blob_set: Vec<(HashValue, Blob)>,
     ) -> Result<(HashValue, TreeUpdateBatch)> {
-        let (root_hashes, tree_update_batch) =
-            self.put_blob_sets(state_root_hash, vec![blob_set])?;
+        let blob_set = blob_set
+            .into_iter()
+            .map(|(k, v)| (k, Some(v)))
+            .collect::<Vec<_>>();
+        self.updates(state_root_hash, blob_set)
+    }
+
+    /// Delete a key from the tree. If the key is not found in the tree, nothing happens.
+    #[cfg(test)]
+    pub fn delete(
+        &self,
+        state_root_hash: Option<HashValue>,
+        key: HashValue,
+    ) -> Result<(HashValue, TreeUpdateBatch)> {
+        self.updates(state_root_hash, vec![(key, None)])
+    }
+
+    pub fn updates(
+        &self,
+        state_root_hash: Option<HashValue>,
+        blob_set: Vec<(HashValue, Option<Blob>)>,
+    ) -> Result<(HashValue, TreeUpdateBatch)> {
+        let (root_hashes, tree_update_batch) = self.puts(state_root_hash, vec![blob_set])?;
         assert_eq!(
             root_hashes.len(),
             1,
@@ -237,10 +258,10 @@ where
     /// the returned batch, the state `S_{i+1}` is ready to be read from the tree by calling
     /// [`get_with_proof`](struct.JellyfishMerkleTree.html#method.get_with_proof). Anything inside
     /// the batch is not reachable from public interfaces before being committed.
-    pub fn put_blob_sets(
+    fn puts(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_sets: Vec<Vec<(HashValue, Blob)>>,
+        blob_sets: Vec<Vec<(HashValue, Option<Blob>)>>,
     ) -> Result<(Vec<HashValue>, TreeUpdateBatch)> {
         let mut tree_cache = TreeCache::new(self.reader, state_root_hash);
         for (_idx, blob_set) in blob_sets.into_iter().enumerate() {
@@ -262,7 +283,7 @@ where
 
     fn put(
         key: HashValue,
-        blob: Blob,
+        blob: Option<Blob>,
         // version: Version,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<()> {
@@ -294,7 +315,7 @@ where
         node_key: NodeKey,
         // version: Version,
         nibble_iter: &mut NibbleIterator,
-        blob: Blob,
+        blob: Option<Blob>,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<(NodeKey, Node)> {
         let node = tree_cache.get_node(&node_key)?;
@@ -316,23 +337,13 @@ where
                 tree_cache,
             ),
             Node::Null => {
-                // if node_key.nibble_path().num_nibbles() != 0 {
-                //     bail!(
-                //         "Null node exists for non-root node with node_key {:?}",
-                //         node_key
-                //     );
-                // }
-                // // delete the old null node if the at the same version.
-                // if node_key.version() == version {
-                //     tree_cache.delete_node(&node_key, false /* is_leaf */);
-                // }
+                if blob.is_none() {
+                    return Ok((node_key, node));
+                }
+
+                let blob = blob.unwrap();
                 tree_cache.delete_node(&node_key, false);
-                Self::create_leaf_node(
-                    // NodeKey::new_empty_path(version),
-                    &nibble_iter,
-                    blob,
-                    tree_cache,
-                )
+                Self::create_leaf_node(&nibble_iter, blob, tree_cache)
             }
         }
     }
@@ -345,7 +356,7 @@ where
         internal_node: InternalNode,
         // version: Version,
         nibble_iter: &mut NibbleIterator,
-        blob: Blob,
+        blob: Option<Blob>,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<(NodeKey, Node)> {
         // Find the next node to visit following the next nibble as index.
@@ -353,38 +364,61 @@ where
 
         // Traverse downwards from this internal node recursively to get the `node_key` of the child
         // node at `child_index`.
-        let (_, new_child_node) = match internal_node.child(child_index) {
+        let (new_child_key, new_child_node) = match internal_node.child(child_index) {
             Some(child) => {
                 // let child_node_key = node_key.gen_child_node_key(child.version, child_index);
                 let child_node_key = child.hash.clone();
                 Self::insert_at(child_node_key, nibble_iter, blob, tree_cache)?
             }
-            None => {
+            None if blob.is_some() => {
+                let blob = blob.unwrap();
                 // let new_child_node_key = node_key.gen_child_node_key(version, child_index);
                 Self::create_leaf_node(nibble_iter, blob, tree_cache)?
             }
+            _ => return Ok((node_key, Node::from(internal_node))),
         };
+
+        // we can use node_key without recompute node hash
+        let child_not_changed = internal_node
+            .child(child_index)
+            .filter(|old| &old.hash == &new_child_key && old.is_leaf == new_child_node.is_leaf())
+            .is_some();
+
+        // don't need to prune it if no change happens.
+        if child_not_changed {
+            return Ok((node_key, Node::from(internal_node)));
+        }
+
+        // now, we need to reconstruct internal node.
+        tree_cache.delete_node(&node_key, false);
 
         // Reuse the current `InternalNode` in memory to create a new internal node.
         let mut children: Children = internal_node.into();
+        children.remove(&child_index);
 
-        match children.insert(
-            child_index,
-            Child::new(new_child_node.hash(), new_child_node.is_leaf()),
-        ) {
-            // don't need to prune it if no change happens.
-            Some(ref old_child)
-                if &old_child.hash == &new_child_node.hash()
-                    && old_child.is_leaf == new_child_node.is_leaf() => {}
+        match &new_child_node {
+            Node::Null => {}
             _ => {
-                tree_cache.delete_node(&node_key, false /* is_leaf */);
+                children.insert(
+                    child_index,
+                    Child::new(new_child_key, new_child_node.is_leaf()),
+                );
             }
         }
 
-        let new_internal_node: Node = InternalNode::new(children).into();
-        // Cache this new internal node.
-        tree_cache.put_node(new_internal_node.hash(), new_internal_node.clone())?;
-        Ok((new_internal_node.hash(), new_internal_node))
+        if children.is_empty() {
+            let empty_node = Node::new_null();
+            Ok((empty_node.hash(), empty_node))
+        } else if children.len() == 1 && children.values().next().unwrap().is_leaf {
+            let (_, leaf) = children.into_iter().next().unwrap();
+            let leaf_node = tree_cache.get_node(&leaf.hash)?;
+            Ok((leaf.hash, leaf_node))
+        } else {
+            let new_internal_node: Node = InternalNode::new(children).into();
+            // Cache this new internal node.
+            tree_cache.put_node(new_internal_node.hash(), new_internal_node.clone())?;
+            Ok((new_internal_node.hash(), new_internal_node))
+        }
     }
 
     /// Helper function for recursive insertion into the subtree that starts from the
@@ -395,7 +429,7 @@ where
         existing_leaf_node: LeafNode,
         // version: Version,
         nibble_iter: &mut NibbleIterator,
-        blob: Blob,
+        blob: Option<Blob>,
         tree_cache: &mut TreeCache<R>,
     ) -> Result<(NodeKey, Node)> {
         // We are on a leaf node but trying to insert another node, so we may diverge.
@@ -429,6 +463,12 @@ where
         // just need to update its value.
         if nibble_iter.is_finished() {
             assert!(existing_leaf_nibble_iter_below_internal.is_finished());
+            if blob.is_none() {
+                tree_cache.delete_node(&node_key, true);
+                let empty_node = Node::new_null();
+                return Ok((empty_node.hash(), empty_node));
+            }
+            let blob = blob.unwrap();
             // The new leaf node will have the same nibble_path with a new version as node_key.
             // node_key.set_version(version);
             // Create the new leaf node with the same address but new blob content.
@@ -448,8 +488,6 @@ where
                 )?);
             }
         }
-        // TODO: revisit it.
-        // tree_cache.delete_node(&node_key, true /* is_leaf */);
 
         // 2.2. both are unfinished(They have keys with same length so it's impossible to have one
         // finished and ther other not). This means the incoming key forks at some point between the
@@ -463,6 +501,12 @@ where
             .expect("Ran out of nibbles");
         let new_leaf_index = nibble_iter.next().expect("Ran out of nibbles");
         assert_ne!(existing_leaf_index, new_leaf_index);
+
+        // if this is a delete, the key is not found in tree, so we just return the origin node
+        if blob.is_none() {
+            return Ok((node_key, Node::from(existing_leaf_node)));
+        }
+        let blob = blob.unwrap();
 
         let mut children = Children::new();
         children.insert(
@@ -528,7 +572,7 @@ where
     pub fn get_with_proof(
         &self,
         state_root_hash: HashValue,
-        key: HashValue, //TODO should use &HashValue at here?
+        key: HashValue, // TODO should use &HashValue at here?
     ) -> Result<(Option<Blob>, SparseMerkleProof)> {
         // Empty tree just returns proof with no sibling hash.
         // let mut next_node_key = NodeKey::new_empty_path(version);

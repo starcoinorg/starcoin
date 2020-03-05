@@ -140,7 +140,7 @@ impl StateTree {
 
     /// Remove key_hash's data and return new root.
     pub fn remove(&self, key_hash: &HashValue) -> Result<HashValue> {
-        todo!()
+        self.updates(vec![(key_hash.clone(), None)])
     }
 
     pub fn contains(&self, key_hash: &HashValue) -> Result<bool> {
@@ -149,6 +149,15 @@ impl StateTree {
 
     /// write a new states into local cache, return new root hash
     pub fn put_blob_set(&self, blob_set: Vec<(HashValue, Vec<u8>)>) -> Result<HashValue> {
+        let blob_set = blob_set
+            .into_iter()
+            .map(|(k, v)| (k, Some(v)))
+            .collect::<Vec<_>>();
+        self.updates(blob_set)
+    }
+
+    /// passing None value with a key means delete the key
+    fn updates(&self, updates: Vec<(HashValue, Option<Vec<u8>>)>) -> Result<HashValue> {
         let cur_root_hash = self.root_hash();
         let mut cache_guard = self.cache.lock().unwrap();
         let mut cache = cache_guard.deref_mut();
@@ -157,16 +166,11 @@ impl StateTree {
             cache,
         };
         let tree = JellyfishMerkleTree::new(&reader);
-        let blob_set = blob_set
+        let blob_set = updates
             .into_iter()
-            .map(|(k, v)| (k, v.into()))
+            .map(|(k, v)| (k, v.map(|d| d.into())))
             .collect::<Vec<_>>();
-        let (new_state_root, change_set) =
-            tree.put_blob_sets(Some(cur_root_hash), vec![blob_set])?;
-        let new_state_root = new_state_root
-            .into_iter()
-            .next()
-            .expect("put blob sets should return a root hash");
+        let (new_state_root, change_set) = tree.updates(Some(cur_root_hash), blob_set)?;
         // cache.root_hashes.push(new_state_root);
         // cache.change_sets.push(change_set);
         // cache.root_hash = new_state_root;
