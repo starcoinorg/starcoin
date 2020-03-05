@@ -4,6 +4,10 @@
 use anyhow::{Error, Result};
 use types::transaction;
 use types::transaction::SignedUserTransaction;
+use std::sync::Arc;
+use futures_channel::mpsc;
+use crypto::hash::HashValue;
+
 #[async_trait::async_trait]
 pub trait TxPoolAsyncService: Clone + std::marker::Unpin {
     /// TODO: should be deprecated, use add_txns instead.
@@ -15,4 +19,9 @@ pub trait TxPoolAsyncService: Clone + std::marker::Unpin {
     ) -> Result<Vec<Result<(), transaction::TransactionError>>>;
     /// Get all pending txns which is ok to be packaged to mining.
     async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>>;
+
+    /// subscribe
+    async fn subscribe_txns(
+        self,
+    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>>;
 }

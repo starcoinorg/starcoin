@@ -32,6 +32,8 @@ impl Actor for SchedulePacemaker {
         ctx.run_interval(self.duration, move |act, _ctx| {
             act.send_event();
         });
+
+        info!("schedule pacemaker started.");
     }
 }
 

@@ -9,6 +9,8 @@ use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
 use types::transaction;
 use types::transaction::SignedUserTransaction;
+use crypto::hash::HashValue;
+use futures_channel::mpsc;
 #[derive(Clone)]
 pub struct MockTxPoolService {
     pool: Arc<Mutex<Vec<SignedUserTransaction>>>,
@@ -55,6 +57,12 @@ impl TxPoolAsyncService for MockTxPoolService {
                 .collect::<Vec<_>>()),
             None => Ok(self.pool.lock().unwrap().clone()),
         }
+    }
+
+    async fn subscribe_txns(
+        self,
+    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>> {
+        unimplemented!()
     }
 }
 

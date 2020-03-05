@@ -642,3 +642,21 @@ impl TryFrom<Transaction> for SignedUserTransaction {
         }
     }
 }
+
+/// Pool transactions status
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TxStatus {
+    /// Added transaction
+    Added,
+    /// Rejected transaction
+    Rejected,
+    /// Dropped transaction
+    Dropped,
+    /// Invalid transaction
+    Invalid,
+    /// Canceled transaction
+    Canceled,
+    /// Culled transaction
+    Culled,
+}

@@ -1,6 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#[macro_use]
+extern crate log;
+
 use crate::headblock_pacemaker::HeadBlockPacemaker;
 use crate::ondemand_pacemaker::OndemandPacemaker;
 use crate::schedule_pacemaker::SchedulePacemaker;
@@ -31,11 +34,11 @@ mod tests;
 pub struct GenerateBlockEvent {}
 
 pub struct MinerActor<C, E, P, CS>
-where
-    C: Consensus + 'static,
-    E: TransactionExecutor + 'static,
-    P: TxPoolAsyncService + 'static,
-    CS: ChainAsyncService + 'static,
+    where
+        C: Consensus + 'static,
+        E: TransactionExecutor + 'static,
+        P: TxPoolAsyncService + 'static,
+        CS: ChainAsyncService + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -47,19 +50,26 @@ where
 }
 
 impl<C, E, P, CS> MinerActor<C, E, P, CS>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         storage: Arc<StarcoinStorage>,
-        txpool: P,
+        mut txpool: P,
         chain: CS,
     ) -> Result<Addr<Self>> {
+        // let tmp = txpool.clone();
+        // let fut = async move {
+        //     tmp.subscribe_txns().await.unwrap()
+        // };
+
+        // let tx = System::builder().build().block_on(fut);
+
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
             ctx.add_message_stream(receiver);
@@ -68,7 +78,10 @@ where
                     HeadBlockPacemaker::new(bus.clone(), sender).start();
                 }
                 PacemakerStrategy::Ondemand => {
-                    OndemandPacemaker::new(bus.clone(), sender).start();
+                    let bus = bus.clone();
+                    let sender = sender.clone();
+                    let txpool = txpool.clone();
+                    OndemandPacemaker::new(bus, sender, txpool);
                 }
                 PacemakerStrategy::Schedule => {
                     SchedulePacemaker::new(Duration::from_millis(1000), sender).start();
@@ -89,11 +102,11 @@ where
 }
 
 impl<C, E, P, CS> Actor for MinerActor<C, E, P, CS>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
 {
     type Context = Context<Self>;
 
@@ -103,11 +116,11 @@ where
 }
 
 impl<C, E, P, CS> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
 {
     type Result = Result<()>;
 
@@ -127,7 +140,7 @@ where
             let block_chain = BlockChain::<E, C>::new(config, storage, head_branch).unwrap();
             miner::mint::<C>(txns, &block_chain, bus);
         }
-        .into_actor(self);
+            .into_actor(self);
         ctx.spawn(f);
         Ok(())
     }

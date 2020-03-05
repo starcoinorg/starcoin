@@ -43,16 +43,16 @@ impl AccountSeqNumberClient for CachedSeqNumberClient {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TxPool<C>
-where
-    C: AccountSeqNumberClient,
+    where
+        C: AccountSeqNumberClient,
 {
     addr: Addr<TxPoolActor<C>>,
 }
 
 #[async_trait]
 impl<C> TxPoolAsyncService for TxPool<C>
-where
-    C: AccountSeqNumberClient + Send,
+    where
+        C: AccountSeqNumberClient + Send,
 {
     async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
         match self.import_txns(vec![txn]).await {
@@ -80,15 +80,23 @@ where
             Err(e) => Err(e.into()),
         }
     }
+
+    async fn subscribe_txns(
+        self,
+    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>> {
+        self
+            .subscribe_txns()
+            .await
+    }
 }
 
 impl<C> TxPool<C>
-where
-    C: AccountSeqNumberClient,
-{
-    pub fn start(client: C) -> TxPool<C>
     where
         C: AccountSeqNumberClient,
+{
+    pub fn start(client: C) -> TxPool<C>
+        where
+            C: AccountSeqNumberClient,
     {
         let addr = TxPoolActor::new(client).start();
         TxPool { addr }
@@ -135,18 +143,19 @@ impl Message for ImportTxns {
 }
 
 type TxnQueue = pool::TransactionQueue;
+
 #[derive(Debug)]
 struct TxPoolActor<C>
-where
-    C: AccountSeqNumberClient,
+    where
+        C: AccountSeqNumberClient,
 {
     queue: TxnQueue,
     seq_number_client: C,
 }
 
 impl<C> TxPoolActor<C>
-where
-    C: AccountSeqNumberClient,
+    where
+        C: AccountSeqNumberClient,
 {
     pub fn new(client: C) -> Self {
         let verifier_options = pool::VerifierOptions {
@@ -169,15 +178,15 @@ where
 }
 
 impl<C> Actor for TxPoolActor<C>
-where
-    C: AccountSeqNumberClient,
+    where
+        C: AccountSeqNumberClient,
 {
     type Context = Context<Self>;
 }
 
 impl<C> Handler<ImportTxns> for TxPoolActor<C>
-where
-    C: AccountSeqNumberClient,
+    where
+        C: AccountSeqNumberClient,
 {
     type Result = MessageResult<ImportTxns>;
 
@@ -202,8 +211,8 @@ impl Message for GetPendingTxns {
 }
 
 impl<C> Handler<GetPendingTxns> for TxPoolActor<C>
-where
-    C: AccountSeqNumberClient,
+    where
+        C: AccountSeqNumberClient,
 {
     type Result = MessageResult<GetPendingTxns>;
 
@@ -224,15 +233,15 @@ where
     }
 }
 
-struct SubscribeTxns;
+pub struct SubscribeTxns;
 
 impl Message for SubscribeTxns {
     type Result = mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>;
 }
 
 impl<C> Handler<SubscribeTxns> for TxPoolActor<C>
-where
-    C: AccountSeqNumberClient,
+    where
+        C: AccountSeqNumberClient,
 {
     type Result = MessageResult<SubscribeTxns>;
 
