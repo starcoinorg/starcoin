@@ -1,15 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    chain_state::StateStore,
-    account::AccountData,
-};
+use crate::{account::AccountData, chain_state::StateStore};
 use anyhow::{Error, Result};
 use config::VMConfig;
 use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
+use logger::prelude::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
@@ -26,9 +25,6 @@ use types::{
     vm_error::{StatusCode, VMStatus},
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use logger::prelude::*;
-use std::convert::TryInto;
-
 
 enum MockTransaction {
     Mint {
@@ -67,7 +63,11 @@ impl MockVM {
         state_store.add_account_data(account_data)
     }
 
-    pub fn create_account(&self, account_address: AccountAddress, chain_state: &dyn ChainState) -> Result<()> {
+    pub fn create_account(
+        &self,
+        account_address: AccountAddress,
+        chain_state: &dyn ChainState,
+    ) -> Result<()> {
         let mut state_store = StateStore::new(chain_state);
         state_store.create_account(account_address)
     }
@@ -81,68 +81,95 @@ impl MockVM {
         let mut output;
 
         match txn {
-            Transaction::UserTransaction(txn) => {
-                match decode_transaction(&txn) {
-                    MockTransaction::Mint { sender, amount } => {
-                        let access_path = AccessPath::new_for_account(sender);
-                        let account_resource: AccountResource =
-                            state_store.get_from_statedb(&access_path)?.unwrap().try_into()?;
-                        assert_eq!(0, account_resource.balance(), "balance error");
-                        let new_account_resource =
-                            AccountResource::new(amount, 1, account_resource.authentication_key().clone());
-                        state_store.set(access_path, new_account_resource.try_into()?);
-                        output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
-                    }
-                    MockTransaction::Payment {
-                        sender,
-                        recipient,
+            Transaction::UserTransaction(txn) => match decode_transaction(&txn) {
+                MockTransaction::Mint { sender, amount } => {
+                    let access_path = AccessPath::new_for_account(sender);
+                    let account_resource: AccountResource = state_store
+                        .get_from_statedb(&access_path)?
+                        .unwrap()
+                        .try_into()?;
+                    assert_eq!(0, account_resource.balance(), "balance error");
+                    let new_account_resource = AccountResource::new(
                         amount,
-                    } => {
-                        let access_path_sender = AccessPath::new_for_account(sender);
-                        let access_path_receiver = AccessPath::new_for_account(recipient);
+                        1,
+                        account_resource.authentication_key().clone(),
+                    );
+                    state_store.set(access_path, new_account_resource.try_into()?);
+                    output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
+                }
+                MockTransaction::Payment {
+                    sender,
+                    recipient,
+                    amount,
+                } => {
+                    let access_path_sender = AccessPath::new_for_account(sender);
+                    let access_path_receiver = AccessPath::new_for_account(recipient);
 
-                        let account_resource_sender: AccountResource =
-                            state_store.get_from_statedb(&access_path_sender)?.unwrap().try_into()?;
-                        let account_resource_receiver: AccountResource =
-                            state_store.get_from_statedb(&access_path_receiver)?.unwrap().try_into()?;
+                    let account_resource_sender: AccountResource = state_store
+                        .get_from_statedb(&access_path_sender)?
+                        .unwrap()
+                        .try_into()?;
+                    let account_resource_receiver: AccountResource = state_store
+                        .get_from_statedb(&access_path_receiver)?
+                        .unwrap()
+                        .try_into()?;
 
-                        let balance_sender = account_resource_sender.balance();
-                        let balance_receiver = account_resource_receiver.balance();
+                    let balance_sender = account_resource_sender.balance();
+                    let balance_receiver = account_resource_receiver.balance();
 
-                        if balance_sender < amount {
-                            output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
-                        } else {
-                            let new_account_resource_sender =
-                                AccountResource::new(balance_sender - amount, account_resource_sender.sequence_number() + 1, account_resource_sender.authentication_key().clone());
-                            let new_account_resource_receiver =
-                                AccountResource::new(balance_receiver + amount, account_resource_sender.sequence_number(), account_resource_receiver.authentication_key().clone());
-                            state_store.set(access_path_sender, new_account_resource_sender.try_into()?);
-                            state_store.set(access_path_receiver, new_account_resource_receiver.try_into()?);
-                            output = TransactionOutput::new(
-                                vec![],
-                                0,
-                                TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)),
-                            );
-                        }
+                    if balance_sender < amount {
+                        output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
+                    } else {
+                        let new_account_resource_sender = AccountResource::new(
+                            balance_sender - amount,
+                            account_resource_sender.sequence_number() + 1,
+                            account_resource_sender.authentication_key().clone(),
+                        );
+                        let new_account_resource_receiver = AccountResource::new(
+                            balance_receiver + amount,
+                            account_resource_sender.sequence_number(),
+                            account_resource_receiver.authentication_key().clone(),
+                        );
+                        state_store
+                            .set(access_path_sender, new_account_resource_sender.try_into()?);
+                        state_store.set(
+                            access_path_receiver,
+                            new_account_resource_receiver.try_into()?,
+                        );
+                        output = TransactionOutput::new(
+                            vec![],
+                            0,
+                            TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)),
+                        );
                     }
                 }
             },
             Transaction::BlockMetadata(block_metadata) => {
                 let (id, timestamp, author) = block_metadata.into_inner().unwrap();
                 let access_path = AccessPath::new_for_account(author);
-                let account_resource: AccountResource =
-                    state_store.get_from_statedb(&access_path)?.unwrap().try_into()?;
-                let new_account_resource =
-                    AccountResource::new(1000, account_resource.sequence_number(), account_resource.authentication_key().clone());
+                let account_resource: AccountResource = state_store
+                    .get_from_statedb(&access_path)
+                    .and_then(|blob| match blob {
+                        Some(blob) => Ok(Some(blob.try_into()?)),
+                        None => Ok(None),
+                    })?
+                    .unwrap_or(AccountResource::new_by_address(0, 0, author));
+
+                let new_account_resource = AccountResource::new(
+                    account_resource.balance() + 50_00000000,
+                    account_resource.sequence_number(),
+                    account_resource.authentication_key().clone(),
+                );
                 state_store.set(access_path, new_account_resource.try_into()?);
                 output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
-
-            },
-            _ => {
-                output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
-
-            },
-
+            }
+            Transaction::StateSet(state_set) => {
+                let result_status = match chain_state.apply(state_set) {
+                    Ok(_) => KEEP_STATUS.clone(),
+                    Err(_) => DISCARD_STATUS.clone(),
+                };
+                output = TransactionOutput::new(vec![], 0, result_status)
+            }
         }
         Ok(output)
     }

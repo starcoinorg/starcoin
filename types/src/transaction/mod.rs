@@ -5,7 +5,7 @@ use crate::{
     account_address::AccountAddress,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
-    state_set::GlobalStateSet,
+    state_set::ChainStateSet,
     vm_error::{StatusCode, StatusType, VMStatus},
 };
 use anyhow::{ensure, format_err, Error, Result};
@@ -603,7 +603,7 @@ pub enum Transaction {
 
     /// Transaction that applies a StateSet to the current ChainState. This should be used for ONLY for
     /// genesis right now.
-    StateSet(GlobalStateSet),
+    StateSet(ChainStateSet),
 
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),

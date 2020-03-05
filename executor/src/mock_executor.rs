@@ -6,25 +6,27 @@ use anyhow::{Error, Result};
 use config::VMConfig;
 use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
 use once_cell::sync::Lazy;
+use state_tree::mock::MockStateNodeStore;
+use statedb::ChainStateDB;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
+    account_config::{account_struct_tag, association_address, AccountResource},
     account_state::AccountState,
     contract_event::ContractEvent,
     language_storage::{ModuleId, StructTag, TypeTag},
+    state_set::ChainStateSet,
     transaction::{
         RawUserTransaction, Script, SignedUserTransaction, Transaction, TransactionArgument,
         TransactionOutput, TransactionPayload, TransactionStatus,
     },
     vm_error::{StatusCode, VMStatus},
-    write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use vm_runtime::{mock_vm::MockVM, account::AccountData};
-
-
+use vm_runtime::{account::AccountData, mock_vm::MockVM};
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
@@ -73,6 +75,10 @@ impl ChainStateReader for MockChainState {
     fn state_root(&self) -> HashValue {
         unimplemented!()
     }
+
+    fn dump(&self) -> Result<ChainStateSet> {
+        unimplemented!()
+    }
 }
 
 impl ChainStateWriter for MockChainState {
@@ -95,6 +101,10 @@ impl ChainStateWriter for MockChainState {
     fn create_account(&self, account_address: AccountAddress) -> Result<(), Error> {
         unimplemented!()
     }
+
+    fn apply(&self, state_set: ChainStateSet) -> Result<(), Error> {
+        unimplemented!()
+    }
 }
 
 pub struct MockExecutor {
@@ -112,13 +122,25 @@ impl MockExecutor {
         let mut vm = MockVM::new(&self.config);
         vm.add_account_data(account_data, chain_state)
     }
-    pub fn create_account(&self, account_address: AccountAddress, chain_state: &dyn ChainState) -> Result<()> {
+    pub fn create_account(
+        &self,
+        account_address: AccountAddress,
+        chain_state: &dyn ChainState,
+    ) -> Result<()> {
         let mut vm = MockVM::new(&self.config);
         vm.create_account(account_address, chain_state)
     }
 }
 
 impl TransactionExecutor for MockExecutor {
+    fn init_genesis(_config: &VMConfig) -> Result<ChainStateSet> {
+        let chain_state = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
+        chain_state.create_account(AccountAddress::default())?;
+        chain_state.create_account(association_address())?;
+        chain_state.commit();
+        chain_state.dump()
+    }
+
     fn execute_transaction(
         config: &VMConfig,
         chain_state: &dyn ChainState,
@@ -137,7 +159,6 @@ impl TransactionExecutor for MockExecutor {
         None
     }
 }
-
 
 pub fn get_signed_txn(
     sender: AccountAddress,

@@ -76,16 +76,16 @@ impl AccountStateSet {
     }
 }
 
-/// GlobalStateSet is represent global state db dump result.
+/// ChainStateSet is represent ChainState dump result.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct GlobalStateSet {
+pub struct ChainStateSet {
     /// AccountAddress hash to StateSet
     state_sets: Vec<(HashValue, AccountStateSet)>,
     //TODO should include events?
     //events: Vec<ContractEvent>,
 }
 
-impl GlobalStateSet {
+impl ChainStateSet {
     pub fn new(state_sets: Vec<(HashValue, AccountStateSet)>) -> Self {
         Self { state_sets }
     }
@@ -99,7 +99,7 @@ impl GlobalStateSet {
     }
 }
 
-impl<'a> IntoIterator for &'a GlobalStateSet {
+impl<'a> IntoIterator for &'a ChainStateSet {
     type Item = &'a (HashValue, AccountStateSet);
     type IntoIter = ::std::slice::Iter<'a, (HashValue, AccountStateSet)>;
 

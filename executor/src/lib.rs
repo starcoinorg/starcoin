@@ -5,6 +5,7 @@ use anyhow::Result;
 use config::VMConfig;
 use traits::ChainState;
 use types::{
+    state_set::ChainStateSet,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
@@ -14,6 +15,9 @@ pub mod executor_test;
 pub mod mock_executor;
 
 pub trait TransactionExecutor: std::marker::Unpin {
+    /// Create genesis transaction
+    fn init_genesis(config: &VMConfig) -> Result<ChainStateSet>;
+
     /// Execute transaction, update state to state_store, and return events and TransactionStatus.
     fn execute_transaction(
         config: &VMConfig,

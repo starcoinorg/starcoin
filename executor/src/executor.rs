@@ -7,6 +7,7 @@ use compiler::compile::StarcoinCompiler;
 use config::VMConfig;
 use traits::ChainState;
 use types::{
+    state_set::ChainStateSet,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
@@ -26,6 +27,10 @@ impl Executor {
 }
 
 impl TransactionExecutor for Executor {
+    fn init_genesis(config: &VMConfig) -> Result<ChainStateSet> {
+        unimplemented!()
+    }
+
     fn execute_transaction(
         config: &VMConfig,
         chain_state: &dyn ChainState,

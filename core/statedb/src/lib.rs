@@ -21,7 +21,7 @@ use std::convert::TryInto;
 use std::sync::Arc;
 
 use core::num::FpCategory::Nan;
-use starcoin_types::state_set::{AccountStateSet, GlobalStateSet};
+use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -155,7 +155,7 @@ impl ChainStateReader for ChainStateDB {
         self.state_tree.root_hash()
     }
 
-    fn dump(&self) -> Result<GlobalStateSet> {
+    fn dump(&self) -> Result<ChainStateSet> {
         //TODO performance optimize.
         let global_states = self.state_tree.dump()?;
         let mut states = vec![];
@@ -169,7 +169,7 @@ impl ChainStateReader for ChainStateDB {
             let account_state_set = AccountStateSet::new(code_set, Some(resource_set));
             states.push((address_hash.clone(), account_state_set));
         }
-        Ok(GlobalStateSet::new(states))
+        Ok(ChainStateSet::new(states))
     }
 }
 
@@ -234,7 +234,7 @@ impl ChainStateWriter for ChainStateDB {
         Ok(())
     }
 
-    fn apply(&self, state_set: GlobalStateSet) -> Result<()> {
+    fn apply(&self, state_set: ChainStateSet) -> Result<()> {
         for (address_hash, account_state_set) in state_set.state_sets() {
             let account_state = self.get_account_state_by_hash(address_hash)?;
 
