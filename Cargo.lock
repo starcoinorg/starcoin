@@ -4798,6 +4798,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-state-tree",
+ "starcoin-statedb",
  "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-runtime",

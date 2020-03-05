@@ -128,3 +128,15 @@ fn update_nibble(original_key: &HashValue, n: usize, nibble: u8) -> HashValue {
     };
     HashValue::from_slice(&key).unwrap()
 }
+
+#[test]
+pub fn test_state_dump() -> Result<()> {
+    let s = MockStateNodeStore::new();
+    let state = StateTree::new(Arc::new(s), None);
+    let hash_value = HashValue::random();
+    let value = vec![1u8, 2u8];
+    state.put(hash_value, value)?;
+    let state_set = state.dump()?;
+    assert_eq!(1, state_set.len());
+    Ok(())
+}

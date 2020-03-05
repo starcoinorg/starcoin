@@ -1,5 +1,6 @@
 use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::blob::Blob;
+use forkable_jellyfish_merkle::iterator::JellyfishMerkleIterator;
 use forkable_jellyfish_merkle::node_type::{LeafNode, Node, NodeKey};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
@@ -8,6 +9,7 @@ use forkable_jellyfish_merkle::{
 };
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
+use starcoin_types::state_set::StateSet;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::AtomicBool;
@@ -239,6 +241,25 @@ impl StateTree {
         *self.storage_root_hash.write().unwrap() = root_hash;
         self.cache.lock().unwrap().reset(root_hash);
         Ok(())
+    }
+
+    /// Dump tree to state set.
+    pub fn dump(&self) -> Result<StateSet> {
+        let cur_root_hash = self.root_hash();
+        let mut cache_guard = self.cache.lock().unwrap();
+        let mut cache = cache_guard.deref_mut();
+        let reader = CachedTreeReader {
+            store: self.storage.as_ref(),
+            cache,
+        };
+        let iterator =
+            JellyfishMerkleIterator::new(Arc::new(reader), cur_root_hash, HashValue::zero())?;
+        let mut states = vec![];
+        for item in iterator {
+            let item = item?;
+            states.push((item.0, item.1.into()));
+        }
+        Ok(StateSet::new(states))
     }
 
     // TODO: to keep atomic with other commit.

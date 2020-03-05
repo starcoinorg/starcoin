@@ -21,6 +21,7 @@ use std::convert::TryInto;
 use std::sync::Arc;
 
 use core::num::FpCategory::Nan;
+use starcoin_types::state_set::{AccountStateSet, GlobalStateSet};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -147,6 +148,23 @@ impl ChainStateReader for ChainStateDB {
     fn state_root(&self) -> HashValue {
         self.state_tree.root_hash()
     }
+
+    fn dump(&self) -> Result<GlobalStateSet> {
+        //TODO performance optimize.
+        let global_states = self.state_tree.dump()?;
+        let mut states = vec![];
+        for (address_hash, account_state_bytes) in global_states.iter() {
+            let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
+            let code_set = match account_state.code_root() {
+                Some(root) => Some(self.new_state_tree(root).dump()?),
+                None => None,
+            };
+            let resource_set = self.new_state_tree(account_state.resource_root()).dump()?;
+            let account_state_set = AccountStateSet::new(code_set, resource_set);
+            states.push((address_hash.clone(), account_state_set));
+        }
+        Ok(GlobalStateSet::new(states))
+    }
 }
 
 impl ChainStateWriter for ChainStateDB {
@@ -233,6 +251,17 @@ mod tests {
         let account_resource2: AccountResource =
             chain_state_db.get(&access_path)?.unwrap().try_into()?;
         assert_eq!(10, account_resource2.balance());
+        Ok(())
+    }
+
+    #[test]
+    fn test_state_db_dump() -> Result<()> {
+        let storage = MockStateNodeStore::new();
+        let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
+        let account_address = AccountAddress::random();
+        chain_state_db.create_account(account_address);
+        let global_state = chain_state_db.dump()?;
+        assert_eq!(1, global_state.state_sets().len());
         Ok(())
     }
 }

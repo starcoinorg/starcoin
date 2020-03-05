@@ -10,6 +10,7 @@ use types::{
     account_address::AccountAddress,
     account_state::AccountState,
     language_storage::{ModuleId, StructTag},
+    state_set::GlobalStateSet,
     transaction::{Transaction, TransactionInfo},
 };
 
@@ -36,6 +37,8 @@ pub trait ChainStateReader {
 
     /// Gets current state root.
     fn state_root(&self) -> HashValue;
+
+    fn dump(&self) -> Result<GlobalStateSet>;
 }
 
 pub trait ChainStateWriter {
