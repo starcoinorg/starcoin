@@ -22,7 +22,7 @@ storage = {path = "../storage", package="starcoin-storage" }
 executor = {path = "../executor", package="starcoin-executor" }
 txpool = {path = "../txpool", package="starcoin-txpool"}
 tokio = { version = "0.2", features = ["full"] }
-log = "0.4"
+logger = {path = "../commons/logger", package="starcoin-logger"}
 futures-channel = "0.3"
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 

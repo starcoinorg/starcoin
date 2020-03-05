@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
+use crypto::hash::HashValue;
+use futures_channel::mpsc;
+use std::sync::Arc;
 use types::transaction;
 use types::transaction::SignedUserTransaction;
-use std::sync::Arc;
-use futures_channel::mpsc;
-use crypto::hash::HashValue;
 
 #[async_trait::async_trait]
 pub trait TxPoolAsyncService: Clone + std::marker::Unpin {

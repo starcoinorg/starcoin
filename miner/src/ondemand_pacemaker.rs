@@ -6,62 +6,35 @@ use actix::prelude::*;
 
 use futures::channel::mpsc;
 
+use super::TransactionStatusEvent;
 use bus::{BusActor, Subscription};
-use std::time::Duration;
-use types::system_events::SystemEvents;
-use txpool::{SubscribeTxns, TxStatus};
-use std::sync::Arc;
 use crypto::hash::HashValue;
 use futures::stream::StreamExt;
+use logger::prelude::*;
+use std::sync::Arc;
+use std::time::Duration;
 use traits::TxPoolAsyncService;
-use futures::{
-    compat::{Future01CompatExt, Stream01CompatExt},
-};
+use txpool::{SubscribeTxns, TxStatus};
+use types::system_events::SystemEvents;
 
 /// On-demand generate block, only generate block when new transaction add to tx-pool.
-pub(crate) struct OndemandPacemaker<P>
-    where P: TxPoolAsyncService + 'static {
+pub(crate) struct OndemandPacemaker {
     bus: Addr<BusActor>,
     sender: mpsc::Sender<GenerateBlockEvent>,
-    txpool: P, //Option<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>>,
-    tx: Option<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>>,
+    transaction_receiver: Option<mpsc::UnboundedReceiver<TransactionStatusEvent>>,
 }
 
-impl<P> OndemandPacemaker<P>
-    where P: TxPoolAsyncService, {
-    pub fn new(bus: Addr<BusActor>, sender: mpsc::Sender<GenerateBlockEvent>, txpool: P) -> Self {
-        //ctx.add_stream(rx.fuse().compat());
-
-        // let tmp = txpool.clone();
-        // let fut = async move {
-        //     tmp.subscribe_txns().await.unwrap()
-        // };
-        //
-        // let tx = System::builder().build().block_on(fut);
-
-        // let f = actix::fut::wrap_future(fut);
-        // ctx.spawn(Box::new(f));
-
-        // OndemandPacemaker::create(move |ctx: &mut Context<OndemandPacemaker<P>>| {
-        //     // let mut rx = txpool.clone().subscribe_txns().await.unwrap();
-        //     // ctx.add_stream(rx);
-        //
-        //     let tmp = txpool.clone();
-        //     let fut = async move {
-        //         tmp.subscribe_txns().await.unwrap()
-        //     };
-        //
-        //     let tx = System::builder().build().block_on(fut);
-        //     ctx.add_stream(tx);
-        //
-        //
-        //     // let f = actix::fut::wrap_future(fut);
-        //     // ctx.spawn(Box::new(f));
-        //
-        //     Self { bus, sender, txpool }
-        // })
-
-        Self { bus, sender, txpool, tx: None }
+impl OndemandPacemaker {
+    pub fn new(
+        bus: Addr<BusActor>,
+        sender: mpsc::Sender<GenerateBlockEvent>,
+        transaction_receiver: mpsc::UnboundedReceiver<TransactionStatusEvent>,
+    ) -> Self {
+        Self {
+            bus,
+            sender,
+            transaction_receiver: Some(transaction_receiver),
+        }
     }
 
     pub fn send_event(&mut self) {
@@ -70,8 +43,7 @@ impl<P> OndemandPacemaker<P>
     }
 }
 
-impl<P> Actor for OndemandPacemaker<P>
-    where P: TxPoolAsyncService, {
+impl Actor for OndemandPacemaker {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -81,34 +53,13 @@ impl<P> Actor for OndemandPacemaker<P>
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-        let txpool = self.txpool.clone();
 
-
-        // let fut = async move {
-        //     let mut rx = txpool.subscribe_txns().await.unwrap();
-        //     ctx.clone().add_stream(rx);
-        //     // loop {
-        //     //     println!("receive tx in future.");
-        //     //
-        //     //     ::futures::select! {
-        //     //         event = tx_receiver.select_next_some() => {
-        //     //             println!("receive tx in future.");
-        //     //         }
-        //     //         complete => {
-        //     //             break;
-        //     //         }
-        //     //     }
-        //     // }
-        // };
-        //
-        // let f = actix::fut::wrap_future(fut);
-        // ctx.spawn(Box::new(f));
-        println!("ondemand pacemaker started.");
+        ctx.add_stream(self.transaction_receiver.take().unwrap());
+        info!("ondemand pacemaker started.");
     }
 }
 
-impl<P> Handler<SystemEvents> for OndemandPacemaker<P>
-    where P: TxPoolAsyncService, {
+impl Handler<SystemEvents> for OndemandPacemaker {
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
@@ -119,9 +70,12 @@ impl<P> Handler<SystemEvents> for OndemandPacemaker<P>
     }
 }
 
-impl<P> StreamHandler<Arc<Vec<(HashValue, TxStatus)>>> for OndemandPacemaker<P>
-    where P: TxPoolAsyncService, {
-    fn handle(&mut self, item: Arc<Vec<(HashValue, TxStatus)>>, ctx: &mut Self::Context) {
-        unimplemented!()
+impl StreamHandler<TransactionStatusEvent> for OndemandPacemaker {
+    fn handle(&mut self, tx_item: Arc<Vec<(HashValue, TxStatus)>>, ctx: &mut Self::Context) {
+        tx_item.iter().for_each(|(tx, tx_status)| {
+            if tx_status.clone() == TxStatus::Added {
+                self.send_event();
+            }
+        });
     }
 }

@@ -7,6 +7,7 @@ use bus::{Broadcast, BusActor};
 use chain::ChainActor;
 use consensus::{Consensus, ConsensusHeader};
 use futures::channel::oneshot;
+use logger::prelude::*;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use traits::ChainReader;
@@ -27,7 +28,7 @@ where
     //println!("miner new block: {:?}", block);
     ///fire SystemEvents::MinedBlock.
     //TODO handle result.
-    println!("broadcast new block: {:?}.", block.header().id());
+    info!("broadcast new block: {:?}.", block.header().id());
     bus.do_send(Broadcast {
         msg: SystemEvents::MinedBlock(block),
     });

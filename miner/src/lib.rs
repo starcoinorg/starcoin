@@ -1,9 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#[macro_use]
-extern crate log;
-
 use crate::headblock_pacemaker::HeadBlockPacemaker;
 use crate::ondemand_pacemaker::OndemandPacemaker;
 use crate::schedule_pacemaker::SchedulePacemaker;
@@ -13,14 +10,17 @@ use bus::BusActor;
 use chain::{BlockChain, ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::{Consensus, ConsensusHeader};
+use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use futures::{Future, TryFutureExt};
+use logger::prelude::*;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::StarcoinStorage;
 use traits::{ChainAsyncService, ChainReader, TxPoolAsyncService};
+use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
 mod miner;
@@ -29,16 +29,18 @@ mod schedule_pacemaker;
 #[cfg(test)]
 mod tests;
 
+pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
+
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
 pub struct GenerateBlockEvent {}
 
 pub struct MinerActor<C, E, P, CS>
-    where
-        C: Consensus + 'static,
-        E: TransactionExecutor + 'static,
-        P: TxPoolAsyncService + 'static,
-        CS: ChainAsyncService + 'static,
+where
+    C: Consensus + 'static,
+    E: TransactionExecutor + 'static,
+    P: TxPoolAsyncService + 'static,
+    CS: ChainAsyncService + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -50,11 +52,11 @@ pub struct MinerActor<C, E, P, CS>
 }
 
 impl<C, E, P, CS> MinerActor<C, E, P, CS>
-    where
-        C: Consensus,
-        E: TransactionExecutor,
-        P: TxPoolAsyncService,
-        CS: ChainAsyncService,
+where
+    C: Consensus,
+    E: TransactionExecutor,
+    P: TxPoolAsyncService,
+    CS: ChainAsyncService,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -62,14 +64,8 @@ impl<C, E, P, CS> MinerActor<C, E, P, CS>
         storage: Arc<StarcoinStorage>,
         mut txpool: P,
         chain: CS,
+        mut transaction_receiver: Option<mpsc::UnboundedReceiver<TransactionStatusEvent>>,
     ) -> Result<Addr<Self>> {
-        // let tmp = txpool.clone();
-        // let fut = async move {
-        //     tmp.subscribe_txns().await.unwrap()
-        // };
-
-        // let tx = System::builder().build().block_on(fut);
-
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
             ctx.add_message_stream(receiver);
@@ -78,10 +74,12 @@ impl<C, E, P, CS> MinerActor<C, E, P, CS>
                     HeadBlockPacemaker::new(bus.clone(), sender).start();
                 }
                 PacemakerStrategy::Ondemand => {
-                    let bus = bus.clone();
-                    let sender = sender.clone();
-                    let txpool = txpool.clone();
-                    OndemandPacemaker::new(bus, sender, txpool);
+                    OndemandPacemaker::new(
+                        bus.clone(),
+                        sender.clone(),
+                        transaction_receiver.take().unwrap(),
+                    )
+                    .start();
                 }
                 PacemakerStrategy::Schedule => {
                     SchedulePacemaker::new(Duration::from_millis(1000), sender).start();
@@ -102,25 +100,25 @@ impl<C, E, P, CS> MinerActor<C, E, P, CS>
 }
 
 impl<C, E, P, CS> Actor for MinerActor<C, E, P, CS>
-    where
-        C: Consensus,
-        E: TransactionExecutor,
-        P: TxPoolAsyncService,
-        CS: ChainAsyncService,
+where
+    C: Consensus,
+    E: TransactionExecutor,
+    P: TxPoolAsyncService,
+    CS: ChainAsyncService,
 {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("Miner actor started");
+        info!("Miner actor started");
     }
 }
 
 impl<C, E, P, CS> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS>
-    where
-        C: Consensus,
-        E: TransactionExecutor,
-        P: TxPoolAsyncService,
-        CS: ChainAsyncService,
+where
+    C: Consensus,
+    E: TransactionExecutor,
+    P: TxPoolAsyncService,
+    CS: ChainAsyncService,
 {
     type Result = Result<()>;
 
@@ -134,13 +132,16 @@ impl<C, E, P, CS> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS>
         let f = async {
             //TODO handle error.
             let txns = txpool.get_pending_txns(None).await.unwrap_or(vec![]);
-            //TODO load latest head block.
-            let head_branch = chain.get_head_branch().await;
-            println!("head block : {:?}", head_branch);
-            let block_chain = BlockChain::<E, C>::new(config, storage, head_branch).unwrap();
-            miner::mint::<C>(txns, &block_chain, bus);
+            if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
+            {
+                //TODO load latest head block.
+                let head_branch = chain.get_head_branch().await;
+                debug!("head block : {:?}", head_branch);
+                let block_chain = BlockChain::<E, C>::new(config, storage, head_branch).unwrap();
+                miner::mint::<C>(txns, &block_chain, bus);
+            }
         }
-            .into_actor(self);
+        .into_actor(self);
         ctx.spawn(f);
         Ok(())
     }

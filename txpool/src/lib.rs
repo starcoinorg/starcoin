@@ -23,8 +23,8 @@ mod pool;
 mod tx_pool_service_impl;
 mod txpool;
 
-pub use tx_pool_service_impl::{CachedSeqNumberClient, TxPool, TxPoolRef, SubscribeTxns};
 pub use pool::TxStatus;
+pub use tx_pool_service_impl::{CachedSeqNumberClient, SubscribeTxns, TxPool, TxPoolRef};
 
 #[cfg(test)]
 mod test;

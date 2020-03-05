@@ -1,19 +1,22 @@
 use crate::MinerActor;
+use actix_rt::{Runtime, System};
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::{dummy::DummyConsensus, Consensus};
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
+use logger::prelude::*;
+use network::network::NetworkActor;
 use std::sync::Arc;
+use std::{fmt, thread};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
 use traits::{AsyncChain, TxPoolAsyncService};
-use txpool::{CachedSeqNumberClient, TxPool, TxPoolActor, TxPoolRef, SubscribeTxns};
-use types::{peer_info::PeerInfo, transaction::SignedUserTransaction, account_address::AccountAddress};
-use network::network::NetworkActor;
-use actix_rt::{System, Runtime};
-use std::{fmt, thread};
+use txpool::{CachedSeqNumberClient, SubscribeTxns, TxPool, TxPoolActor, TxPoolRef};
+use types::{
+    account_address::AccountAddress, peer_info::PeerInfo, transaction::SignedUserTransaction,
+};
 
 #[test]
 fn it_works() {
@@ -22,6 +25,8 @@ fn it_works() {
 
 #[actix_rt::test]
 async fn test_miner_with_schedule_pacemaker() {
+    ::logger::init_for_test();
+
     let peer_info = Arc::new(PeerInfo::random());
     let config = Arc::new(NodeConfig::default());
     let bus = BusActor::launch();
@@ -40,11 +45,19 @@ async fn test_miner_with_schedule_pacemaker() {
             storage.clone(),
             txpool.clone(),
             chain.clone(),
+            None,
         );
 
-    let process_actor = ProcessActor::launch(Arc::clone(&peer_info), chain.clone(), network.clone(), bus.clone()).unwrap();
+    let process_actor = ProcessActor::launch(
+        Arc::clone(&peer_info),
+        chain.clone(),
+        network.clone(),
+        bus.clone(),
+    )
+    .unwrap();
     let download_actor =
-        DownloadActor::launch(peer_info, chain.clone(), network.clone(), bus.clone()).expect("launch DownloadActor failed.");
+        DownloadActor::launch(peer_info, chain.clone(), network.clone(), bus.clone())
+            .expect("launch DownloadActor failed.");
     let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
     for _i in 0..5 as usize {
@@ -62,6 +75,8 @@ async fn test_miner_with_schedule_pacemaker() {
 
 #[actix_rt::test]
 async fn test_miner_with_ondemand_pacemaker() {
+    ::logger::init_for_test();
+
     let peer_info = Arc::new(PeerInfo::random());
     let mut conf = NodeConfig::default();
     conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
@@ -75,25 +90,7 @@ async fn test_miner_with_ondemand_pacemaker() {
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
     let chain = ChainActor::launch(config.clone(), storage.clone(), Some(network.clone())).unwrap();
-
-    let tmp = txpool.clone();
-    let handle = thread::Builder::new()
-        .spawn(move || {
-            println!("begin subscribe_txns");
-            let fut = async move {
-                println!("do subscribe_txns");
-                let t = tmp.subscribe_txns().await.unwrap();
-                println!("done subscribe_txns");
-                t
-            };
-            //let tx = System::builder().build().block_on(fut);
-
-            let mut rt = Runtime::new().expect("Can not create Runtime");
-            let tx = rt.block_on(fut);
-            println!("end subscribe_txns");
-            tx
-        });
-    let a = handle.unwrap().join().unwrap();
+    let receiver = txpool.clone().subscribe_txns().await.unwrap();
 
     let _miner =
         MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
@@ -102,22 +99,33 @@ async fn test_miner_with_ondemand_pacemaker() {
             storage.clone(),
             txpool.clone(),
             chain.clone(),
+            Some(receiver),
         );
 
-    // let process_actor = ProcessActor::launch(Arc::clone(&peer_info), chain.clone(), network.clone(), bus.clone()).unwrap();
-    // let download_actor =
-    //     DownloadActor::launch(peer_info, chain.clone(), network.clone(), bus.clone()).expect("launch DownloadActor failed.");
-    // let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
-    //
-    // for _i in 0..1 as usize {
-    //     txpool
-    //         .clone()
-    //         .add(SignedUserTransaction::mock())
-    //         .await
-    //         .unwrap();
-    //     delay_for(Duration::from_millis(1000)).await;
-    // }
-    //
-    // let number = chain.clone().current_header().await.unwrap().number();
-    // println!("{}", number);
+    let process_actor = ProcessActor::launch(
+        Arc::clone(&peer_info),
+        chain.clone(),
+        network.clone(),
+        bus.clone(),
+    )
+    .unwrap();
+    let download_actor =
+        DownloadActor::launch(peer_info, chain.clone(), network.clone(), bus.clone())
+            .expect("launch DownloadActor failed.");
+    let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
+
+    for _i in 0..5 as usize {
+        txpool
+            .clone()
+            .add(SignedUserTransaction::mock())
+            .await
+            .unwrap();
+        delay_for(Duration::from_millis(1000)).await;
+    }
+
+    let number = chain.clone().current_header().await.unwrap().number();
+    println!("{}", number);
+    assert!(number > 0);
+
+    delay_for(Duration::from_millis(1000)).await;
 }

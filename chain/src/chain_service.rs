@@ -10,6 +10,7 @@ use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
+use logger::prelude::*;
 use network::network::NetworkAsyncService;
 use starcoin_statedb::ChainStateDB;
 use std::cell::RefCell;
@@ -67,7 +68,7 @@ where
     }
 
     pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C>> {
-        println!("{:?}:{:?}", header.parent_hash(), header.id());
+        debug!("{:?}:{:?}", header.parent_hash(), header.id());
         let block_in_head = self.head.get_block(header.parent_hash()).unwrap();
         match block_in_head {
             Some(block) => {
@@ -144,7 +145,7 @@ where
         if need_broadcast {
             if let Some(network) = self.network.clone() {
                 Arbiter::spawn(async move {
-                    println!("broadcast system event : {:?}", block.header().id());
+                    info!("broadcast system event : {:?}", block.header().id());
                     network
                         .clone()
                         .broadcast_system_event(SystemEvents::NewHeadBlock(block))

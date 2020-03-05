@@ -242,6 +242,7 @@ async fn test_network_actor() {
             storage_1.clone(),
             txpool_1.clone(),
             first_chain.clone(),
+            None,
         );
 
     Delay::new(Duration::from_secs(5)).await;
@@ -306,6 +307,7 @@ async fn test_network_actor_rpc() {
             storage_1.clone(),
             txpool_1.clone(),
             first_chain.clone(),
+            None,
         );
     Delay::new(Duration::from_secs(5)).await;
     let block_1 = first_chain.clone().head_block().await.unwrap();

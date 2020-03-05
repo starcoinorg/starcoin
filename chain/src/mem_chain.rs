@@ -6,6 +6,7 @@ use config::NodeConfig;
 use crypto::{hash::CryptoHash, HashValue};
 use futures::compat::Future01CompatExt;
 use futures_locks::RwLock;
+use logger::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter};
@@ -34,7 +35,7 @@ impl Actor for MemChainActor {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("ChainActor actor started");
+        info!("ChainActor actor started");
     }
 }
 
@@ -50,7 +51,7 @@ impl Handler<ChainRequest> for MemChainActor {
                     let head_block = lock.head_block().clone();
                     let mut parent_block_hash = head_block.header().id();
                     for i in 0..times {
-                        println!("parent_block_hash: {:?}", parent_block_hash);
+                        debug!("parent_block_hash: {:?}", parent_block_hash);
                         let current_block_header =
                             BlockHeader::new_block_header_for_test(parent_block_hash, i);
                         let current_block = Block::new_nil_block_for_test(current_block_header);
@@ -96,7 +97,7 @@ impl Handler<ChainRequest> for MemChainActor {
                     Ok(ChainResponse::OptionBlock(lock.get_block(hash).unwrap()))
                 }
                 ChainRequest::ConnectBlock(block) => {
-                    println!("{:?}:{:?}", "connect block", block.header().id());
+                    debug!("{:?}:{:?}", "connect block", block.header().id());
                     let mut lock = mem_chain.clone().write().compat().await.unwrap();
                     lock.try_connect(block).unwrap();
                     Ok(ChainResponse::None)

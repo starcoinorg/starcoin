@@ -3,6 +3,7 @@
 
 use crate::GenerateBlockEvent;
 use actix::prelude::*;
+use logger::prelude::*;
 
 use futures::channel::mpsc;
 

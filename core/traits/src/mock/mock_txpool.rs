@@ -3,14 +3,14 @@
 
 use crate::TxPoolAsyncService;
 use anyhow::Result;
+use crypto::hash::HashValue;
+use futures_channel::mpsc;
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
 use types::transaction;
 use types::transaction::SignedUserTransaction;
-use crypto::hash::HashValue;
-use futures_channel::mpsc;
 #[derive(Clone)]
 pub struct MockTxPoolService {
     pool: Arc<Mutex<Vec<SignedUserTransaction>>>,

@@ -10,6 +10,7 @@ use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use starcoin_statedb::ChainStateDB;
+use logger::prelude::*;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -81,7 +82,7 @@ where
 
     fn save_block(&self, block: &Block) {
         self.storage.block_store.commit_block(block.clone());
-        //todo
+        info!("commit block : {:?}", block);
     }
 }
 
