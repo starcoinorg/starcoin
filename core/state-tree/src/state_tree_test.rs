@@ -16,10 +16,16 @@ pub fn test_put_blob() -> Result<()> {
 
     let account1 = update_nibble(&hash_value, 0, 1);
     let account1 = update_nibble(&account1, 2, 2);
-    let new_root_hash = state.put_blob_set(vec![(account1, vec![0, 0, 0])])?;
+    state.put(account1, vec![0, 0, 0]);
+
+    assert_eq!(state.get(&account1)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(&update_nibble(&hash_value, 0, 8))?, None);
+
+    let new_root_hash = state.commit()?;
     assert_eq!(state.root_hash(), new_root_hash);
     assert_eq!(state.get(&account1)?, Some(vec![0, 0, 0]));
     assert_eq!(state.get(&update_nibble(&hash_value, 0, 8))?, None);
+
     let (root, updates) = state.change_sets();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
@@ -28,7 +34,9 @@ pub fn test_put_blob() -> Result<()> {
     assert_eq!(updates.stale_node_index_batch.len(), 1);
 
     let account2 = update_nibble(&account1, 0, 2);
-    let new_root_hash = state.put_blob_set(vec![(account2, vec![0, 0, 0])])?;
+    state.put(account2, vec![0, 0, 0]);
+    assert_eq!(state.get(&account2)?, Some(vec![0, 0, 0]));
+    let new_root_hash = state.commit()?;
     assert_eq!(state.root_hash(), new_root_hash);
     assert_eq!(state.get(&account2)?, Some(vec![0, 0, 0]));
     let (root, updates) = state.change_sets();
@@ -39,7 +47,9 @@ pub fn test_put_blob() -> Result<()> {
     assert_eq!(updates.stale_node_index_batch.len(), 1);
 
     // modify existed account
-    let new_root_hash = state.put_blob_set(vec![(account1, vec![1, 1, 1])])?;
+    state.put(account1, vec![1, 1, 1]);
+    assert_eq!(state.get(&account1)?, Some(vec![1, 1, 1]));
+    let new_root_hash = state.commit()?;
     assert_eq!(state.root_hash(), new_root_hash);
     assert_eq!(state.get(&account1)?, Some(vec![1, 1, 1]));
     let (root, updates) = state.change_sets();
@@ -50,8 +60,14 @@ pub fn test_put_blob() -> Result<()> {
     assert_eq!(updates.stale_node_index_batch.len(), 1);
 
     let account3 = update_nibble(&account1, 2, 3);
-    let new_root_hash =
-        state.put_blob_set(vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])])?;
+    for (k, v) in vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])] {
+        state.put(k, v);
+    }
+    assert_eq!(state.get(&account1)?, Some(vec![1, 1, 0]));
+    assert_eq!(state.get(&account2)?, Some(vec![0, 0, 0]));
+    assert_eq!(state.get(&account3)?, Some(vec![0, 0, 0]));
+
+    let new_root_hash = state.commit()?;
     assert_eq!(state.root_hash(), new_root_hash);
     assert_eq!(state.get(&account1)?, Some(vec![1, 1, 0]));
     assert_eq!(state.get(&account2)?, Some(vec![0, 0, 0]));
@@ -75,16 +91,20 @@ pub fn test_state_proof() -> Result<()> {
 
     let account1 = update_nibble(&hash_value, 0, 1);
     let account2 = update_nibble(&account1, 2, 2);
-    let new_root_hash =
-        state.put_blob_set(vec![(account1, vec![0, 0, 0]), (account2, vec![1, 1, 1])])?;
+    for (k, v) in vec![(account1, vec![0, 0, 0]), (account2, vec![1, 1, 1])] {
+        state.put(k, v);
+    }
+    let (value, _) = state.get_with_proof(&account1)?;
+    assert!(value.is_none());
+    let new_root_hash = state.commit()?;
     let (value, proof) = state.get_with_proof(&account1)?;
-
     assert!(value.is_some());
     assert_eq!(value.unwrap(), vec![0, 0, 0]);
     let expected_value = Some(vec![0, 0, 0].into());
     proof.verify(new_root_hash, account1, expected_value.as_ref())?;
 
-    let new_root_hash = state.remove(&account1)?;
+    let _ = state.remove(&account1);
+    let new_root_hash = state.commit()?;
     let (value, proof) = state.get_with_proof(&account1)?;
     assert!(value.is_none());
     proof.verify(new_root_hash, account1, None)?;
@@ -103,17 +123,33 @@ pub fn test_state_commit() -> Result<()> {
 
     let account1 = update_nibble(&hash_value, 0, 1);
     let account1 = update_nibble(&account1, 2, 2);
-    let new_root_hash = state.put_blob_set(vec![(account1, vec![0, 0, 0])])?;
+    state.put(account1, vec![0, 0, 0]);
+    let new_root_hash = state.commit()?;
 
     let account3 = update_nibble(&account1, 2, 3);
-    let new_root_hash =
-        state.put_blob_set(vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])])?;
+    for (k, v) in vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])] {
+        state.put(k, v);
+    }
+    let new_root_hash = state.commit()?;
 
-    state.commit()?;
+    state.flush()?;
     assert_eq!(state.root_hash(), new_root_hash);
     assert_eq!(state.get(&account1)?, Some(vec![1, 1, 0]));
     assert_eq!(state.get(&account3)?, Some(vec![0, 0, 0]));
     assert_eq!(state.get(&update_nibble(&account1, 2, 10))?, None);
+    Ok(())
+}
+
+#[test]
+pub fn test_state_dump() -> Result<()> {
+    let s = MockStateNodeStore::new();
+    let state = StateTree::new(Arc::new(s), None);
+    let hash_value = HashValue::random();
+    let value = vec![1u8, 2u8];
+    state.put(hash_value, value);
+    state.commit()?;
+    let state_set = state.dump()?;
+    assert_eq!(1, state_set.len());
     Ok(())
 }
 
@@ -127,16 +163,4 @@ fn update_nibble(original_key: &HashValue, n: usize, nibble: u8) -> HashValue {
         key[n / 2] & 0xf0 | nibble
     };
     HashValue::from_slice(&key).unwrap()
-}
-
-#[test]
-pub fn test_state_dump() -> Result<()> {
-    let s = MockStateNodeStore::new();
-    let state = StateTree::new(Arc::new(s), None);
-    let hash_value = HashValue::random();
-    let value = vec![1u8, 2u8];
-    state.put(hash_value, value)?;
-    let state_set = state.dump()?;
-    assert_eq!(1, state_set.len());
-    Ok(())
 }
