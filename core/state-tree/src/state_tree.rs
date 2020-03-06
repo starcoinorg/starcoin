@@ -1,11 +1,15 @@
 use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::blob::Blob;
+use forkable_jellyfish_merkle::iterator::JellyfishMerkleIterator;
 use forkable_jellyfish_merkle::node_type::{LeafNode, Node, NodeKey};
+use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
     tree_cache::TreeCache, JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
+    SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
+use starcoin_types::state_set::StateSet;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::AtomicBool;
@@ -96,8 +100,7 @@ pub struct StateTree {
 impl StateTree {
     /// Construct a new state_db from provided `state_root_hash` with underline `state_storage`
     pub fn new(state_storage: Arc<dyn StateNodeStore>, state_root_hash: Option<HashValue>) -> Self {
-        //TODO should use a placeholder hash value?
-        let state_root_hash = state_root_hash.unwrap_or(HashValue::zero());
+        let state_root_hash = state_root_hash.unwrap_or(*SPARSE_MERKLE_PLACEHOLDER_HASH);
         Self {
             storage: state_storage,
             storage_root_hash: RwLock::new(state_root_hash),
@@ -111,7 +114,7 @@ impl StateTree {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.root_hash() == HashValue::zero()
+        self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
     }
 
     /// put a kv pair into tree.
@@ -123,6 +126,14 @@ impl StateTree {
 
     /// use a key's hash `key_hash` to read a value.
     pub fn get(&self, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
+        Ok(self.get_with_proof(key_hash)?.0)
+    }
+
+    /// return value with it proof
+    pub fn get_with_proof(
+        &self,
+        key_hash: &HashValue,
+    ) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
         let mut cache_guard = self.cache.lock().unwrap();
         let cache = cache_guard.deref_mut();
         let cur_root_hash = cache.root_hash;
@@ -133,14 +144,14 @@ impl StateTree {
         let tree = JellyfishMerkleTree::new(&reader);
         let (data, proof) = tree.get_with_proof(cur_root_hash, key_hash.clone())?;
         match data {
-            Some(b) => Ok(Some(b.into())),
-            None => Ok(None),
+            Some(b) => Ok((Some(b.into()), proof)),
+            None => Ok((None, proof)),
         }
     }
 
     /// Remove key_hash's data and return new root.
     pub fn remove(&self, key_hash: &HashValue) -> Result<HashValue> {
-        todo!()
+        self.updates(vec![(key_hash.clone(), None)])
     }
 
     pub fn contains(&self, key_hash: &HashValue) -> Result<bool> {
@@ -149,6 +160,15 @@ impl StateTree {
 
     /// write a new states into local cache, return new root hash
     pub fn put_blob_set(&self, blob_set: Vec<(HashValue, Vec<u8>)>) -> Result<HashValue> {
+        let blob_set = blob_set
+            .into_iter()
+            .map(|(k, v)| (k, Some(v)))
+            .collect::<Vec<_>>();
+        self.updates(blob_set)
+    }
+
+    /// passing None value with a key means delete the key
+    fn updates(&self, updates: Vec<(HashValue, Option<Vec<u8>>)>) -> Result<HashValue> {
         let cur_root_hash = self.root_hash();
         let mut cache_guard = self.cache.lock().unwrap();
         let mut cache = cache_guard.deref_mut();
@@ -157,16 +177,11 @@ impl StateTree {
             cache,
         };
         let tree = JellyfishMerkleTree::new(&reader);
-        let blob_set = blob_set
+        let blob_set = updates
             .into_iter()
-            .map(|(k, v)| (k, v.into()))
+            .map(|(k, v)| (k, v.map(|d| d.into())))
             .collect::<Vec<_>>();
-        let (new_state_root, change_set) =
-            tree.put_blob_sets(Some(cur_root_hash), vec![blob_set])?;
-        let new_state_root = new_state_root
-            .into_iter()
-            .next()
-            .expect("put blob sets should return a root hash");
+        let (new_state_root, change_set) = tree.updates(Some(cur_root_hash), blob_set)?;
         // cache.root_hashes.push(new_state_root);
         // cache.change_sets.push(change_set);
         // cache.root_hash = new_state_root;
@@ -228,6 +243,30 @@ impl StateTree {
         Ok(())
     }
 
+    /// Dump tree to state set.
+    pub fn dump(&self) -> Result<StateSet> {
+        let cur_root_hash = self.root_hash();
+        let mut cache_guard = self.cache.lock().unwrap();
+        let mut cache = cache_guard.deref_mut();
+        let reader = CachedTreeReader {
+            store: self.storage.as_ref(),
+            cache,
+        };
+        let iterator =
+            JellyfishMerkleIterator::new(Arc::new(reader), cur_root_hash, HashValue::zero())?;
+        let mut states = vec![];
+        for item in iterator {
+            let item = item?;
+            states.push((item.0, item.1.into()));
+        }
+        Ok(StateSet::new(states))
+    }
+
+    pub fn apply(&self, state_set: StateSet) -> Result<()> {
+        self.put_blob_set(state_set.into());
+        Ok(())
+    }
+
     // TODO: to keep atomic with other commit.
     // TODO: think about the WriteBatch trait position.
     // pub fn save<T>(&self, batch: &mut T) -> Result<()>
@@ -245,6 +284,9 @@ struct CachedTreeReader<'a> {
 
 impl<'a> TreeReader for CachedTreeReader<'a> {
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
+        if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
+            return Ok(Some(Node::new_null()));
+        }
         if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
             return Ok(Some(n));
         }

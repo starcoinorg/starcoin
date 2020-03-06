@@ -26,7 +26,6 @@ use message::ChainRequest;
 use network::network::NetworkAsyncService;
 use std::sync::Arc;
 use storage::StarcoinStorage;
-pub use tests::gen_mem_chain_for_test;
 use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService, ChainWriter};
 use txpool::TxPoolRef;
 use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};

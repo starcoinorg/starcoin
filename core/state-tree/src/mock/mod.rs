@@ -4,6 +4,7 @@
 use crate::{StateNode, StateNodeStore};
 use anyhow::Result;
 use forkable_jellyfish_merkle::node_type::Node;
+use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::hash::CryptoHash;
 use starcoin_crypto::HashValue;
 use std::cell::RefCell;
@@ -18,7 +19,7 @@ impl MockStateNodeStore {
         let instance = Self {
             nodes: RefCell::new(HashMap::new()),
         };
-        instance.put(HashValue::zero(), Node::new_null().into());
+        // instance.put(*SPARSE_MERKLE_PLACEHOLDER_HASH, Node::new_null().into());
         instance
     }
 }

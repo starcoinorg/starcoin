@@ -80,6 +80,12 @@ where
             Err(e) => Err(e.into()),
         }
     }
+
+    async fn subscribe_txns(
+        self,
+    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>> {
+        self.subscribe_txns_inner().await
+    }
 }
 
 impl<C> TxPool<C>
@@ -106,7 +112,7 @@ where
         Ok(r.await?)
     }
 
-    pub async fn subscribe_txns(
+    pub async fn subscribe_txns_inner(
         &self,
     ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>> {
         let r = self.addr.send(SubscribeTxns);
@@ -135,6 +141,7 @@ impl Message for ImportTxns {
 }
 
 type TxnQueue = pool::TransactionQueue;
+
 #[derive(Debug)]
 struct TxPoolActor<C>
 where
@@ -224,7 +231,7 @@ where
     }
 }
 
-struct SubscribeTxns;
+pub struct SubscribeTxns;
 
 impl Message for SubscribeTxns {
     type Result = mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>;

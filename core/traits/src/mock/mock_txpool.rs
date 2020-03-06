@@ -3,6 +3,8 @@
 
 use crate::TxPoolAsyncService;
 use anyhow::Result;
+use crypto::hash::HashValue;
+use futures_channel::mpsc;
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
 use std::iter::Iterator;
@@ -55,6 +57,12 @@ impl TxPoolAsyncService for MockTxPoolService {
                 .collect::<Vec<_>>()),
             None => Ok(self.pool.lock().unwrap().clone()),
         }
+    }
+
+    async fn subscribe_txns(
+        self,
+    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>> {
+        unimplemented!()
     }
 }
 

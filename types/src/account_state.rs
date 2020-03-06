@@ -5,7 +5,7 @@ use anyhow::Result;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Default, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHash)]
 pub struct AccountState {
@@ -35,5 +35,13 @@ impl TryInto<Vec<u8>> for AccountState {
 
     fn try_into(self) -> Result<Vec<u8>> {
         self.encode()
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for AccountState {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &'a [u8]) -> Result<Self> {
+        Self::decode(value)
     }
 }

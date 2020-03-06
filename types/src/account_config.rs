@@ -119,6 +119,14 @@ impl AccountResource {
         }
     }
 
+    pub fn new_by_address(balance: u64, sequence_number: u64, address: AccountAddress) -> Self {
+        AccountResource {
+            authentication_key: ByteArray::new(address.to_vec()),
+            balance,
+            sequence_number,
+        }
+    }
+
     /// Given an account map (typically from storage) retrieves the Account resource associated.
     pub fn make_from(bytes: &[u8]) -> Result<Self> {
         Self::decode(bytes)
