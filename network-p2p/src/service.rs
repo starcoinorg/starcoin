@@ -357,6 +357,23 @@ impl NetworkWorker {
     pub fn add_reserved_peer(&self, peer: String) -> Result<(), String> {
         self.service.add_reserved_peer(peer)
     }
+
+    /// Returns the list of all the peers we are connected to.
+    pub fn connected_peers(&self) -> HashSet<PeerId> {
+        unimplemented!()
+    }
+
+    pub fn send_custom_message(&mut self, peer_id: &PeerId, message: Vec<u8>) {
+        unimplemented!()
+    }
+
+    pub fn is_open(&self, peer_id: &PeerId) -> bool {
+        unimplemented!()
+    }
+
+    pub fn peer_id(&self) -> &PeerId {
+        &self.service.local_peer_id
+    }
 }
 
 impl NetworkService {

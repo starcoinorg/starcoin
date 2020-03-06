@@ -1,0 +1,49 @@
+[package]
+name = "sc-network"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+futures = "0.3.4"
+
+actix = "0.9"
+actix-rt = "1.0"
+yamux = "0.4.2"
+futures-timer = "3.0.1"
+log = "0.4.8"
+hex = "0.4.2"
+
+parity-codec = { version = "3.2", features = ["derive"] }
+libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
+
+tokio = { version = "0.2", features = ["full"] }
+config = {path = "../config", package="starcoin-config"}
+types = {path = "../types", package="starcoin-types"}
+bus = {path = "../bus", package="starcoin-bus"}
+traits = { package = "starcoin-traits", path = "../core/traits"}
+txpool = {path = "../txpool", package="starcoin-txpool"}
+network-p2p = {path = "../network-p2p", package="network-p2p"}
+
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+
+fnv = "1.0.6"
+zeroize = "1.0.0"
+bitflags = "1.2.0"
+smallvec = "0.6.10"
+
+tempfile = "3.1.0"
+rand = "0.6.5"
+parking_lot = "0.10.0"
+
+serde = { version = "1.0.101", features = ["derive"] }
+serde_json = "1.0.41"
+slog = { version = "2.5.2", features = ["nested-values"] }
+slog_derive = "0.2.0"
+derive_more = "0.99.2"

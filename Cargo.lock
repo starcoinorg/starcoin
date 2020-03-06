@@ -4907,6 +4907,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "sc-network"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "bitflags",
+ "derive_more",
+ "fnv",
+ "futures 0.3.4",
+ "futures-timer 3.0.2",
+ "hex 0.4.2",
+ "libp2p 0.16.1",
+ "log",
+ "network-p2p",
+ "parity-codec",
+ "parking_lot 0.10.0",
+ "rand 0.6.5",
+ "serde",
+ "serde_json",
+ "slog",
+ "slog_derive",
+ "smallvec 0.6.13",
+ "starcoin-bus",
+ "starcoin-canonical-serialization",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-traits",
+ "starcoin-txpool",
+ "starcoin-types",
+ "tempfile",
+ "tokio 0.2.11",
+ "yamux 0.4.3",
+ "zeroize",
+]
+
+[[package]]
 name = "sc-peerset"
 version = "2.0.0"
 dependencies = [

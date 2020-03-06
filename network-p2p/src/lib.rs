@@ -4,7 +4,9 @@
 #[macro_use]
 extern crate log;
 
-pub use config::{NetworkConfiguration, NodeKeyConfig, Secret};
+pub use crate::protocol::generic_proto::GenericProtoOut;
+pub use crate::service::NetworkWorker;
+pub use config::{NetworkConfiguration, NodeKeyConfig, Params, ProtocolId, Secret};
 pub use libp2p::{
     core::{
         ConnectedPoint, {identity, multiaddr, Multiaddr, PeerId, PublicKey},
@@ -38,23 +40,6 @@ trait DiscoveryNetBehaviour {
     /// Also note that there is no notification for expired nodes. The implementer must add a TTL
     /// system, or remove nodes that will fail to reach.
     fn add_discovered_nodes(&mut self, nodes: impl Iterator<Item = PeerId>);
-}
-
-/// Name of a protocol, transmitted on the wire. Should be unique for each chain.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ProtocolId(smallvec::SmallVec<[u8; 6]>);
-
-impl<'a> From<&'a [u8]> for ProtocolId {
-    fn from(bytes: &'a [u8]) -> ProtocolId {
-        ProtocolId(bytes.into())
-    }
-}
-
-impl ProtocolId {
-    /// Exposes the `ProtocolId` as bytes.
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_ref()
-    }
 }
 
 /// Parses a string address and returns the component, if valid.

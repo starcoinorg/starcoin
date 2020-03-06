@@ -45,6 +45,15 @@ pub struct Params {
     pub protocol_id: ProtocolId,
 }
 
+impl Params {
+    pub fn new(network_config: NetworkConfiguration, protocol_id: ProtocolId) -> Self {
+        Self {
+            network_config,
+            protocol_id,
+        }
+    }
+}
+
 /// Network service configuration.
 #[derive(Clone)]
 pub struct NetworkConfiguration {
