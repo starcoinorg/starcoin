@@ -41,6 +41,43 @@ fn test_insert_to_empty_tree() {
 }
 
 #[test]
+fn test_delete_from_tree() {
+    let db = MockTreeStore::default();
+    let tree = JellyfishMerkleTree::new(&db);
+
+    // Tree is initially empty. Root is a null node. We'll insert a key-value pair which creates a
+    // leaf node.
+    let key = HashValue::new([0x00u8; HashValue::LENGTH]);
+    let value = Blob::from(vec![1u8, 2u8, 3u8, 4u8]);
+
+    let (_new_root_hash, batch) = tree.put_blob_set(None, vec![(key, value.clone())]).unwrap();
+    db.write_tree_update_batch(batch).unwrap();
+
+    let (new_root, batch) = tree.delete(Some(_new_root_hash), key).unwrap();
+    assert_eq!(new_root, *SPARSE_MERKLE_PLACEHOLDER_HASH);
+    assert_eq!(batch.num_stale_leaves, 1);
+    assert_eq!(batch.stale_node_index_batch.len(), 1);
+    assert_eq!(batch.num_new_leaves, 0);
+    assert_eq!(batch.node_batch.len(), 0);
+
+    let key2 = update_nibble(&key, 0, 15);
+    let value2 = Blob::from(vec![3u8, 4u8]);
+
+    let (_root1_hash, batch) = tree
+        .put_blob_set(Some(_new_root_hash), vec![(key2, value2.clone())])
+        .unwrap();
+    assert_eq!(batch.stale_node_index_batch.len(), 0);
+    db.write_tree_update_batch(batch).unwrap();
+
+    let (new_root, batch) = tree.delete(Some(_root1_hash), key2).unwrap();
+    assert_eq!(new_root, _new_root_hash);
+    assert_eq!(batch.num_stale_leaves, 1);
+    assert_eq!(batch.stale_node_index_batch.len(), 2);
+    assert_eq!(batch.num_new_leaves, 0);
+    assert_eq!(batch.node_batch.len(), 0);
+}
+
+#[test]
 fn test_insert_at_leaf_with_internal_created() {
     let db = MockTreeStore::default();
     let tree = JellyfishMerkleTree::new(&db);

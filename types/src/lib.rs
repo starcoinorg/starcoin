@@ -10,21 +10,16 @@ pub mod block_metadata;
 pub mod byte_array;
 pub mod change_set;
 pub mod contract_event;
+pub mod event;
 pub mod identifier;
 pub mod ids;
 pub mod language_storage;
 pub mod peer_info;
 pub mod proof;
+pub mod state_set;
 pub mod storage_root;
 pub mod system_events;
 pub mod transaction;
 pub mod vm_error;
 pub mod with_proof;
 pub mod write_set;
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

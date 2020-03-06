@@ -11,6 +11,8 @@ pub struct AccessPathHelper {}
 impl AccessPathHelper {
     pub fn to_Starcoin_AccessPath(access_path: &LibraAccessPath) -> AccessPath {
         // ToDo: fix me
+        let addr = access_path.address;
+
         AccessPath {
             address: AccountAddress::new([1u8; ADDRESS_LENGTH]),
             path: b"/foo/c".to_vec(),

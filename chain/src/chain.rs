@@ -9,6 +9,7 @@ use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
+use logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use std::cell::RefCell;
 use std::marker::PhantomData;
@@ -18,6 +19,7 @@ use traits::{ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainW
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    block_metadata::BlockMetadata,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
@@ -29,7 +31,7 @@ where
     config: Arc<NodeConfig>,
     //TODO
     //accumulator: Accumulator,
-    head: Block,
+    head: Option<Block>,
     chain_state: ChainStateDB,
     phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
@@ -52,36 +54,45 @@ where
         head_block_hash: Option<HashValue>,
     ) -> Result<Self> {
         let head = match head_block_hash {
-            Some(hash) => storage
-                .block_store
-                .get_block_by_hash(hash)?
-                .ok_or(format_err!("Can not find block by hash {}", hash))?,
-            None => {
-                let genesis_block = load_genesis_block();
-                if storage
+            Some(hash) => Some(
+                storage
                     .block_store
-                    .get_block_by_hash(genesis_block.header().id())?
-                    .is_none()
-                {
-                    storage.block_store.commit_block(genesis_block.clone());
-                }
-                genesis_block
-            }
+                    .get_block_by_hash(hash)?
+                    .ok_or(format_err!("Can not find block by hash {}", hash))?,
+            ),
+            None => None,
         };
-        let state_root = head.header().state_root();
-        Ok(Self {
-            config,
+        let is_genesis = head.is_none();
+        let state_root = head.as_ref().map(|head| head.header().state_root());
+        let mut chain = Self {
+            config: config.clone(),
             head,
-            chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
+            chain_state: ChainStateDB::new(storage.clone(), state_root),
             phantom_e: PhantomData,
             phantom_c: PhantomData,
             storage,
-        })
+        };
+        if is_genesis {
+            ///init genesis block
+            //TODO should process at here ?
+            let (state_root, chain_state_set) = E::init_genesis(&config.vm)?;
+            let genesis_block =
+                Block::genesis_block(HashValue::zero(), state_root, chain_state_set);
+            info!("Init with genesis block: {:?}", genesis_block);
+            chain.apply(genesis_block)?;
+        }
+        Ok(chain)
     }
 
     fn save_block(&self, block: &Block) {
         self.storage.block_store.commit_block(block.clone());
-        //todo
+        info!("commit block : {:?}", block);
+    }
+
+    fn ensure_head(&self) -> &Block {
+        self.head
+            .as_ref()
+            .expect("Must init chain with genesis block first")
     }
 }
 
@@ -91,11 +102,11 @@ where
     C: Consensus,
 {
     fn head_block(&self) -> Block {
-        self.head.clone()
+        self.ensure_head().clone()
     }
 
     fn current_header(&self) -> BlockHeader {
-        self.head.header().clone()
+        self.ensure_head().header().clone()
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -122,19 +133,63 @@ where
         unimplemented!()
     }
 
-    fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
+    fn create_block_template(
+        &self,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
         let previous_header = self.current_header();
+
+        //TODO read address from config
+        let author = AccountAddress::random();
+        //TODO calculate gas limit etc.
+        let mut txns = user_txns
+            .iter()
+            .cloned()
+            .map(|user_txn| Transaction::UserTransaction(user_txn))
+            .collect::<Vec<Transaction>>();
+
+        //TODO refactor BlockMetadata to Coinbase transaction.
+        txns.push(Transaction::BlockMetadata(BlockMetadata::new(
+            HashValue::zero(),
+            0,
+            author,
+        )));
+        let chain_state =
+            ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
+        let mut state_root = HashValue::zero();
+        for txn in txns {
+            let txn_hash = txn.crypto_hash();
+            let output = E::execute_transaction(&self.config.vm, &chain_state, txn)?;
+            match output.status() {
+                TransactionStatus::Discard(status) => return Err(status.clone().into()),
+                TransactionStatus::Keep(status) => {
+                    //continue.
+                }
+            }
+            //TODO should not commit here.
+            state_root = chain_state.commit()?;
+            let transaction_info = TransactionInfo::new(
+                txn_hash,
+                state_root,
+                HashValue::zero(),
+                0,
+                output.status().vm_status().major_status,
+            );
+            //TODO accumulator
+            //let accumulator_root = self.accumulator.append(transaction_info);
+        }
+
         //TODO execute txns and computer state.
         Ok(BlockTemplate::new(
             previous_header.id(),
             previous_header.number() + 1,
             previous_header.number() + 1,
-            AccountAddress::default(),
+            author,
             HashValue::zero(),
-            HashValue::zero(),
+            state_root,
             0,
             0,
-            txns.into(),
+            user_txns.into(),
         ))
     }
 
@@ -150,43 +205,68 @@ where
 {
     fn apply(&mut self, block: Block) -> Result<()> {
         let header = block.header();
-        assert_eq!(self.head.header().id(), block.header().parent_hash());
+        let mut is_genesis = false;
+        match &self.head {
+            Some(head) => {
+                //TODO custom verify macro
+                assert_eq!(head.header().id(), block.header().parent_hash());
+            }
+            None => {
+                // genesis block
+                assert_eq!(block.header().parent_hash(), HashValue::zero());
+                is_genesis = true;
+            }
+        }
 
         C::verify_header(self, header)?;
-        let chain_state = &self.chain_state;
-        // let mut txns = block
-        //     .transactions()
-        //     .iter()
-        //     .cloned()
-        //     .map(|user_txn| Transaction::UserTransaction(user_txn))
-        //     .collect::<Vec<Transaction>>();
-        // let block_metadata = header.clone().into_metadata();
-        // txns.push(Transaction::BlockMetadata(block_metadata));//todo
-        // for txn in txns {
-        //     let txn_hash = txn.crypto_hash();
-        //     let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
-        //     match output.status() {
-        //         TransactionStatus::Discard(status) => return Err(status.clone().into()),
-        //         TransactionStatus::Keep(status) => {
-        //             //continue.
-        //         }
-        //     }
-        //     let state_root = chain_state.commit()?;
-        //     let transaction_info = TransactionInfo::new(
-        //         txn_hash,
-        //         state_root,
-        //         HashValue::zero(),
-        //         0,
-        //         output.status().vm_status().major_status,
-        //     );
-        //     //TODO accumulator
-        //     //let accumulator_root = self.accumulator.append(transaction_info);
-        // }
 
-        //todo verify state_root and accumulator_root;
+        let chain_state = &self.chain_state;
+        let mut txns = block
+            .transactions()
+            .iter()
+            .cloned()
+            .map(|user_txn| Transaction::UserTransaction(user_txn))
+            .collect::<Vec<Transaction>>();
+        let block_metadata = header.clone().into_metadata();
+
+        // remove this after include genesis transaction to genesis block.
+        if is_genesis {
+            let (_, state_set) = E::init_genesis(&self.config.vm)?;
+            txns.push(Transaction::StateSet(state_set));
+        } else {
+            txns.push(Transaction::BlockMetadata(block_metadata));
+        }
+        let mut state_root = HashValue::zero();
+        for txn in txns {
+            let txn_hash = txn.crypto_hash();
+            let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
+            match output.status() {
+                TransactionStatus::Discard(status) => return Err(status.clone().into()),
+                TransactionStatus::Keep(status) => {
+                    //continue.
+                }
+            }
+            state_root = chain_state.commit()?;
+            let transaction_info = TransactionInfo::new(
+                txn_hash,
+                state_root,
+                HashValue::zero(),
+                0,
+                output.status().vm_status().major_status,
+            );
+            //TODO accumulator
+            //let accumulator_root = self.accumulator.append(transaction_info);
+        }
+        assert_eq!(
+            block.header().state_root(),
+            state_root,
+            "verify block:{:?} state_root fail.",
+            block.header().id()
+        );
+        //todo verify  accumulator_root;
         self.save_block(&block);
         chain_state.flush();
-        self.head = block;
+        self.head = Some(block);
         //todo
         Ok(())
     }

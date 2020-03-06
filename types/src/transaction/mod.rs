@@ -5,8 +5,8 @@ use crate::{
     account_address::AccountAddress,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
+    state_set::ChainStateSet,
     vm_error::{StatusCode, StatusType, VMStatus},
-    write_set::WriteSet,
 };
 use anyhow::{ensure, format_err, Error, Result};
 use starcoin_crypto::{ed25519::*, hash::CryptoHash, traits::*, HashValue};
@@ -19,7 +19,6 @@ use std::{
     time::Duration,
 };
 
-mod change_set;
 mod error;
 pub mod helpers;
 mod module;
@@ -27,7 +26,6 @@ mod pending_transaction;
 mod script;
 mod transaction_argument;
 
-pub use change_set::ChangeSet;
 pub use error::Error as TransactionError;
 pub use module::Module;
 pub use pending_transaction::{Condition, PendingTransaction};
@@ -603,9 +601,9 @@ pub enum Transaction {
     /// transaction, etc.
     UserTransaction(SignedUserTransaction),
 
-    /// Transaction that applies a WriteSet to the current storage. This should be used for ONLY for
+    /// Transaction that applies a StateSet to the current ChainState. This should be used for ONLY for
     /// genesis right now.
-    WriteSet(ChangeSet),
+    StateSet(ChainStateSet),
 
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
@@ -625,7 +623,7 @@ impl Transaction {
                 user_txn.format_for_client(get_transaction_name)
             }
             // TODO: display proper information for client
-            Transaction::WriteSet(_write_set) => String::from("genesis"),
+            Transaction::StateSet(_write_set) => String::from("genesis"),
             // TODO: display proper information for client
             Transaction::BlockMetadata(_block_metadata) => String::from("block_metadata"),
         }
@@ -641,4 +639,22 @@ impl TryFrom<Transaction> for SignedUserTransaction {
             _ => Err(format_err!("Not a user transaction.")),
         }
     }
+}
+
+/// Pool transactions status
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TxStatus {
+    /// Added transaction
+    Added,
+    /// Rejected transaction
+    Rejected,
+    /// Dropped transaction
+    Dropped,
+    /// Invalid transaction
+    Invalid,
+    /// Canceled transaction
+    Canceled,
+    /// Culled transaction
+    Culled,
 }

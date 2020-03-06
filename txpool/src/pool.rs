@@ -9,6 +9,7 @@ pub(crate) mod ready;
 pub(crate) mod replace;
 pub(crate) mod scoring;
 pub(crate) mod verifier;
+
 use common_crypto::hash::{CryptoHash, HashValue};
 use transaction_pool as tx_pool;
 use types::{account_address::AccountAddress, transaction};
@@ -16,6 +17,7 @@ use types::{account_address::AccountAddress, transaction};
 pub type SeqNumber = u64;
 pub type GasPrice = u64;
 pub type Gas = u64;
+
 pub use client::{AccountSeqNumberClient, Client};
 pub use queue::{Status, TransactionQueue};
 pub use verifier::Options as VerifierOptions;
@@ -39,6 +41,7 @@ pub enum Priority {
     /// submitted over local RPC connection
     Local,
 }
+
 impl Priority {
     fn is_local(&self) -> bool {
         match *self {
@@ -47,6 +50,7 @@ impl Priority {
         }
     }
 }
+
 /// Verified transaction stored in the pool.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerifiedTransaction {
@@ -183,20 +187,4 @@ impl PendingSettings {
     }
 }
 
-/// Pool transactions status
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum TxStatus {
-    /// Added transaction
-    Added,
-    /// Rejected transaction
-    Rejected,
-    /// Dropped transaction
-    Dropped,
-    /// Invalid transaction
-    Invalid,
-    /// Canceled transaction
-    Canceled,
-    /// Culled transaction
-    Culled,
-}
+pub type TxStatus = types::transaction::TxStatus;

@@ -43,3 +43,9 @@ async fn test_tx_pool() {
     let mut pending_txns = pool.get_pending_txns(Some(10)).await.unwrap();
     assert_eq!(pending_txns.pop().unwrap().crypto_hash(), txn_hash);
 }
+
+#[actix_rt::test]
+async fn test_subscribe_txns() {
+    let pool = TxPool::start(MockNonceClient::default());
+    let _ = pool.subscribe_txns().await.unwrap();
+}

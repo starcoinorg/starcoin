@@ -7,6 +7,7 @@ use actix::prelude::*;
 use futures::channel::mpsc;
 
 use bus::{BusActor, Subscription};
+use logger::prelude::*;
 use std::time::Duration;
 use types::system_events::SystemEvents;
 
@@ -37,6 +38,8 @@ impl Actor for HeadBlockPacemaker {
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
+
+        info!("{}", "head block pacemaker started.");
     }
 }
 

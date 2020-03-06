@@ -7,7 +7,7 @@ use jsonrpc_core::BoxFuture;
 use jsonrpc_core::Error;
 use jsonrpc_derive::rpc;
 use traits::TxPoolAsyncService;
-use txpool::{AddTransaction, TxPoolRef};
+use txpool::TxPoolRef;
 use types::transaction::SignedUserTransaction;
 
 #[rpc(server)]

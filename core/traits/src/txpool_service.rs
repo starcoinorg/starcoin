@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
+use crypto::hash::HashValue;
+use futures_channel::mpsc;
+use std::sync::Arc;
 use types::transaction;
 use types::transaction::SignedUserTransaction;
+
 #[async_trait::async_trait]
 pub trait TxPoolAsyncService: Clone + std::marker::Unpin {
     /// TODO: should be deprecated, use add_txns instead.
@@ -15,4 +19,9 @@ pub trait TxPoolAsyncService: Clone + std::marker::Unpin {
     ) -> Result<Vec<Result<(), transaction::TransactionError>>>;
     /// Get all pending txns which is ok to be packaged to mining.
     async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>>;
+
+    /// subscribe
+    async fn subscribe_txns(
+        self,
+    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>>;
 }

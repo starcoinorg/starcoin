@@ -10,14 +10,17 @@ use bus::BusActor;
 use chain::{BlockChain, ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::{Consensus, ConsensusHeader};
+use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use futures::{Future, TryFutureExt};
+use logger::prelude::*;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::StarcoinStorage;
 use traits::{ChainAsyncService, ChainReader, TxPoolAsyncService};
+use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
 mod miner;
@@ -25,6 +28,8 @@ mod ondemand_pacemaker;
 mod schedule_pacemaker;
 #[cfg(test)]
 mod tests;
+
+pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
@@ -57,8 +62,9 @@ where
         config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         storage: Arc<StarcoinStorage>,
-        txpool: P,
+        mut txpool: P,
         chain: CS,
+        mut transaction_receiver: Option<mpsc::UnboundedReceiver<TransactionStatusEvent>>,
     ) -> Result<Addr<Self>> {
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
@@ -68,7 +74,12 @@ where
                     HeadBlockPacemaker::new(bus.clone(), sender).start();
                 }
                 PacemakerStrategy::Ondemand => {
-                    OndemandPacemaker::new(bus.clone(), sender).start();
+                    OndemandPacemaker::new(
+                        bus.clone(),
+                        sender.clone(),
+                        transaction_receiver.take().unwrap(),
+                    )
+                    .start();
                 }
                 PacemakerStrategy::Schedule => {
                     SchedulePacemaker::new(Duration::from_millis(1000), sender).start();
@@ -98,7 +109,7 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("Miner actor started");
+        info!("Miner actor started");
     }
 }
 
@@ -121,11 +132,14 @@ where
         let f = async {
             //TODO handle error.
             let txns = txpool.get_pending_txns(None).await.unwrap_or(vec![]);
-            //TODO load latest head block.
-            let head_branch = chain.get_head_branch().await;
-            println!("head block : {:?}", head_branch);
-            let block_chain = BlockChain::<E, C>::new(config, storage, head_branch).unwrap();
-            miner::mint::<C>(txns, &block_chain, bus);
+            if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
+            {
+                //TODO load latest head block.
+                let head_branch = chain.get_head_branch().await;
+                debug!("head block : {:?}", head_branch);
+                let block_chain = BlockChain::<E, C>::new(config, storage, head_branch).unwrap();
+                miner::mint::<C>(txns, &block_chain, bus);
+            }
         }
         .into_actor(self);
         ctx.spawn(f);

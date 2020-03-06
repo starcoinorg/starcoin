@@ -4,10 +4,13 @@
 use actix::prelude::*;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
-use config::NodeConfig;
+use config::{NodeConfig, PacemakerStrategy};
 use consensus::{dummy::DummyConsensus, Consensus};
+use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use crypto::{test_utils::KeyPair, Uniform};
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
 use json_rpc::JSONRpcActor;
+use logger::prelude::*;
 use miner::MinerActor;
 use network::NetworkActor;
 use std::path::PathBuf;
@@ -15,13 +18,10 @@ use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use structopt::StructOpt;
 use sync::{DownloadActor, ProcessActor, SyncActor};
+use traits::TxPoolAsyncService;
 use txpool::TxPoolRef;
 use txpool::{CachedSeqNumberClient, TxPool};
 use types::peer_info::PeerInfo;
-
-use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use crypto::{test_utils::KeyPair, Uniform};
-use logger::prelude::*;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Starcoin Node")]
@@ -57,6 +57,11 @@ async fn main() {
     let chain =
         ChainActor::launch(node_config.clone(), storage.clone(), Some(network.clone())).unwrap();
     let _json_rpc = JSONRpcActor::launch(node_config.clone(), txpool.clone());
+    let receiver = if node_config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
+        Some(txpool.clone().subscribe_txns().await.unwrap())
+    } else {
+        None
+    };
     let _miner =
         MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
             node_config.clone(),
@@ -64,6 +69,7 @@ async fn main() {
             storage.clone(),
             txpool.clone(),
             chain.clone(),
+            receiver,
         );
     let peer_info = Arc::new(PeerInfo::random());
     let process_actor = ProcessActor::launch(

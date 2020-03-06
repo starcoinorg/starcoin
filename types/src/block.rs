@@ -6,6 +6,7 @@ use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedUserTransaction;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
+use crate::state_set::ChainStateSet;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
@@ -131,6 +132,24 @@ impl BlockHeader {
         }
     }
 
+    pub fn genesis_block_header(accumulator_root: HashValue, state_root: HashValue) -> Self {
+        Self {
+            //TODO should use a placeholder hash?
+            parent_hash: HashValue::zero(),
+            //TODO hard code a genesis block time.
+            timestamp: 0,
+            number: 0,
+            author: AccountAddress::default(),
+            accumulator_root,
+            state_root,
+            gas_used: 0,
+            //TODO
+            gas_limit: 0,
+            //TODO
+            consensus_header: vec![],
+        }
+    }
+
     //#[cfg(test)]
     pub fn new_block_header_for_test(parent_hash: HashValue, parent_number: BlockNumber) -> Self {
         BlockHeader {
@@ -224,6 +243,19 @@ impl Block {
     //#[cfg(test)]
     pub fn new_nil_block_for_test(header: BlockHeader) -> Self {
         Block {
+            header,
+            body: BlockBody::default(),
+        }
+    }
+
+    pub fn genesis_block(
+        accumulator_root: HashValue,
+        state_root: HashValue,
+        _genesis_state: ChainStateSet,
+    ) -> Self {
+        let header = BlockHeader::genesis_block_header(accumulator_root, state_root);
+        //TODO put Transaction::StateSet txn to block body.
+        Self {
             header,
             body: BlockBody::default(),
         }
