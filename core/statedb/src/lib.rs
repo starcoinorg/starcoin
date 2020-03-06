@@ -63,7 +63,7 @@ impl ChainStateDB {
     /// Commit
     pub fn commit(&self) -> Result<HashValue> {
         //TODO
-        self.state_tree.commit()?;
+        self.state_tree.flush()?;
         Ok(self.state_tree.root_hash())
     }
 
@@ -88,7 +88,8 @@ impl ChainStateDB {
         account_state: AccountState,
     ) -> Result<HashValue> {
         self.state_tree
-            .put(account_address.crypto_hash(), account_state.try_into()?)
+            .put(account_address.crypto_hash(), account_state.try_into()?);
+        self.state_tree.commit()
     }
 
     fn get_account_state_object(
@@ -179,9 +180,10 @@ impl ChainStateWriter for ChainStateDB {
         let account_state_cache = self
             .get_account_state_object(&account_address)?
             .ok_or(StateError::AccountNotExist(account_address))?;
-        account_state_cache.resource_tree.put(hash, value)?;
-        //TODO optimize.
+        account_state_cache.resource_tree.put(hash, value);
         account_state_cache.resource_tree.commit()?;
+        //TODO optimize.
+        account_state_cache.resource_tree.flush()?;
         let account_state = account_state_cache.get_state();
         self.update_account(account_address, account_state)?;
         Ok(())
@@ -210,8 +212,9 @@ impl ChainStateWriter for ChainStateDB {
             .as_ref()
             .unwrap()
             .put(module_id.crypto_hash(), code);
+        account_state_cache.code_tree.as_ref().unwrap().commit()?;
         //TODO optimize.
-        account_state_cache.resource_tree.commit()?;
+        account_state_cache.resource_tree.flush()?;
         let account_state = account_state_cache.get_state();
         self.update_account(account_address, account_state)?;
         Ok(())
@@ -225,9 +228,10 @@ impl ChainStateWriter for ChainStateDB {
             account_resource, account_address
         );
         let struct_tag = account_struct_tag();
-        let resource_root =
-            state_tree.put(struct_tag.crypto_hash(), account_resource.try_into()?)?;
-        state_tree.commit()?;
+
+        state_tree.put(struct_tag.crypto_hash(), account_resource.try_into()?);
+        let resource_root = state_tree.commit()?;
+        state_tree.flush()?;
         let account_state = AccountState::new(None, resource_root);
         let new_root = self.update_account(account_address, account_state);
         debug!("new state root: {:?} after create account.", new_root);
@@ -247,14 +251,14 @@ impl ChainStateWriter for ChainStateDB {
                 (Some(root), Some(state_set)) => {
                     let resource_tree = self.new_state_tree(root);
                     resource_tree.apply(state_set.clone())?;
-                    resource_tree.commit()?;
+                    resource_tree.flush()?;
                     resource_tree.root_hash()
                 }
                 (Some(root), None) => root,
                 (None, Some(state_set)) => {
                     let resource_tree = StateTree::new(self.store.clone(), None);
                     resource_tree.apply(state_set.clone())?;
-                    resource_tree.commit()?;
+                    resource_tree.flush()?;
                     resource_tree.root_hash()
                 }
                 (None, None) => bail!(
@@ -272,14 +276,14 @@ impl ChainStateWriter for ChainStateDB {
                 (Some(root), Some(state_set)) => {
                     let code_tree = self.new_state_tree(root);
                     code_tree.apply(state_set.clone())?;
-                    code_tree.commit()?;
+                    code_tree.flush()?;
                     Some(code_tree.root_hash())
                 }
                 (Some(root), None) => Some(root),
                 (None, Some(state_set)) => {
                     let code_tree = StateTree::new(self.store.clone(), None);
                     code_tree.apply(state_set.clone())?;
-                    code_tree.commit()?;
+                    code_tree.flush()?;
                     Some(code_tree.root_hash())
                 }
                 (None, None) => None,
@@ -290,6 +294,7 @@ impl ChainStateWriter for ChainStateDB {
                 .put(address_hash.clone(), new_account_state.try_into()?);
         }
         self.state_tree.commit()?;
+        self.state_tree.flush()?;
         Ok(())
     }
 }
