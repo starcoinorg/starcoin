@@ -284,6 +284,9 @@ struct CachedTreeReader<'a> {
 
 impl<'a> TreeReader for CachedTreeReader<'a> {
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
+        if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
+            return Ok(Some(Node::new_null()));
+        }
         if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
             return Ok(Some(n));
         }
