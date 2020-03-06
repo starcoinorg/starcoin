@@ -150,10 +150,15 @@ impl MockVM {
                 let account_resource: AccountResource = state_store
                     .get_from_statedb(&access_path)
                     .and_then(|blob| match blob {
-                        Some(blob) => Ok(Some(blob.try_into()?)),
-                        None => Ok(None),
-                    })?
-                    .unwrap_or(AccountResource::new_by_address(0, 0, author));
+                        Some(blob) => Ok(blob),
+                        None => {
+                            state_store.create_account(author)?;
+                            Ok(state_store
+                                .get_from_statedb(&access_path)?
+                                .expect("account resource must exist."))
+                        }
+                    })
+                    .and_then(|blob| blob.try_into())?;
 
                 let new_account_resource = AccountResource::new(
                     account_resource.balance() + 50_00000000,

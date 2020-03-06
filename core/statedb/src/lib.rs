@@ -305,6 +305,9 @@ mod tests {
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
         let account_address = AccountAddress::random();
         chain_state_db.create_account(account_address);
+
+        let state_root = chain_state_db.state_root();
+
         let access_path = AccessPath::new_for_account(account_address);
         let account_resource: AccountResource =
             chain_state_db.get(&access_path)?.unwrap().try_into()?;
@@ -316,6 +319,9 @@ mod tests {
         let account_resource2: AccountResource =
             chain_state_db.get(&access_path)?.unwrap().try_into()?;
         assert_eq!(10, account_resource2.balance());
+
+        let new_state_root = chain_state_db.state_root();
+        assert_ne!(state_root, new_state_root);
         Ok(())
     }
 

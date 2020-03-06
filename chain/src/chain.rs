@@ -19,6 +19,7 @@ use traits::{ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainW
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    block_metadata::BlockMetadata,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
@@ -61,15 +62,26 @@ where
             ),
             None => None,
         };
+        let is_genesis = head.is_none();
         let state_root = head.as_ref().map(|head| head.header().state_root());
-        Ok(Self {
-            config,
+        let mut chain = Self {
+            config: config.clone(),
             head,
             chain_state: ChainStateDB::new(storage.clone(), state_root),
             phantom_e: PhantomData,
             phantom_c: PhantomData,
             storage,
-        })
+        };
+        if is_genesis {
+            ///init genesis block
+            //TODO should process at here ?
+            let (state_root, chain_state_set) = E::init_genesis(&config.vm)?;
+            let genesis_block =
+                Block::genesis_block(HashValue::zero(), state_root, chain_state_set);
+            info!("Init with genesis block: {:?}", genesis_block);
+            chain.apply(genesis_block)?;
+        }
+        Ok(chain)
     }
 
     fn save_block(&self, block: &Block) {
@@ -121,19 +133,63 @@ where
         unimplemented!()
     }
 
-    fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
+    fn create_block_template(
+        &self,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
         let previous_header = self.current_header();
+
+        //TODO read address from config
+        let author = AccountAddress::random();
+        //TODO calculate gas limit etc.
+        let mut txns = user_txns
+            .iter()
+            .cloned()
+            .map(|user_txn| Transaction::UserTransaction(user_txn))
+            .collect::<Vec<Transaction>>();
+
+        //TODO refactor BlockMetadata to Coinbase transaction.
+        txns.push(Transaction::BlockMetadata(BlockMetadata::new(
+            HashValue::zero(),
+            0,
+            author,
+        )));
+        let chain_state =
+            ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
+        let mut state_root = HashValue::zero();
+        for txn in txns {
+            let txn_hash = txn.crypto_hash();
+            let output = E::execute_transaction(&self.config.vm, &chain_state, txn)?;
+            match output.status() {
+                TransactionStatus::Discard(status) => return Err(status.clone().into()),
+                TransactionStatus::Keep(status) => {
+                    //continue.
+                }
+            }
+            //TODO should not commit here.
+            state_root = chain_state.commit()?;
+            let transaction_info = TransactionInfo::new(
+                txn_hash,
+                state_root,
+                HashValue::zero(),
+                0,
+                output.status().vm_status().major_status,
+            );
+            //TODO accumulator
+            //let accumulator_root = self.accumulator.append(transaction_info);
+        }
+
         //TODO execute txns and computer state.
         Ok(BlockTemplate::new(
             previous_header.id(),
             previous_header.number() + 1,
             previous_header.number() + 1,
-            AccountAddress::default(),
+            author,
             HashValue::zero(),
-            HashValue::zero(),
+            state_root,
             0,
             0,
-            txns.into(),
+            user_txns.into(),
         ))
     }
 

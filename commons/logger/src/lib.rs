@@ -10,7 +10,9 @@ pub mod prelude {
 }
 
 pub fn init() {
-    env_logger::init();
+    let env = Env::new().filter_or("RUST_LOG", "info");
+    //env_logger::init();
+    let _ = env_logger::from_env(env).try_init();
 }
 
 pub fn init_for_test() {

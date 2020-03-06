@@ -7,8 +7,10 @@ use config::NodeConfig;
 use consensus::{dummy::DummyConsensus, Consensus};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
+use logger::prelude::*;
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use traits::ChainReader;
 use traits::ChainWriter;
 use types::block::Block;
 
@@ -70,16 +72,22 @@ async fn test_block_chain_rollback() {
     //todo
 }
 
-#[test]
+#[stest::test]
 fn test_chain_apply() -> Result<()> {
     let node_config = NodeConfig::default();
     let config = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo)?);
 
-    let (state_root, chain_state_set) = MockExecutor::init_genesis(&config.vm)?;
-    let genesis_block = Block::genesis_block(HashValue::zero(), state_root, chain_state_set);
     let mut block_chain = BlockChain::<MockExecutor, DummyConsensus>::new(config, storage, None)?;
-    block_chain.apply(genesis_block)?;
+    let header = block_chain.current_header();
+    debug!("genesis header: {:?}", header);
+    let block_template = block_chain.create_block_template(vec![])?;
+    let (sender, receiver) = futures::channel::oneshot::channel();
+    let new_block = DummyConsensus::create_block(&block_chain, block_template, receiver)?;
+    block_chain.apply(new_block);
+    let header1 = block_chain.current_header();
+    debug!("block 1 header: {:?}", header1);
+    assert_ne!(header.state_root(), header1.state_root());
     Ok(())
 }

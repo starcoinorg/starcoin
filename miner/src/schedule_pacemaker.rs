@@ -30,10 +30,12 @@ impl Actor for SchedulePacemaker {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        ctx.run_interval(self.duration, move |act, _ctx| {
-            act.send_event();
+        let duration = self.duration.clone();
+        ctx.run_later(duration * 2, move |act, ctx| {
+            ctx.run_interval(duration, move |act, _ctx| {
+                act.send_event();
+            });
         });
-
         info!("schedule pacemaker started.");
     }
 }
