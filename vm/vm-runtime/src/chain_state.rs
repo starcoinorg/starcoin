@@ -62,16 +62,6 @@ impl<'txn> StateStore<'txn> {
         self.chain_state.delete(access_path)
     }
 
-    /// Adds an [`AccountData`] to state store.
-    pub fn add_account_data(&mut self, account_data: &AccountData) {
-        match account_data.to_resource().simple_serialize() {
-            Some(blob) => {
-                self.set(account_data.make_access_path(), blob);
-            }
-            None => panic!("can't create Account data"),
-        }
-    }
-
     pub fn create_account(&self, account_address: AccountAddress) -> Result<()> {
         self.chain_state.create_account(account_address)
     }

@@ -3,6 +3,7 @@
 
 use crate::TransactionExecutor;
 use anyhow::{Error, Result};
+use compiler::compile::StarcoinCompiler;
 use config::VMConfig;
 use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
 use once_cell::sync::Lazy;
@@ -26,7 +27,7 @@ use types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
-use vm_runtime::{account::AccountData, mock_vm::MockVM};
+use vm_runtime::mock_vm::{encode_mint_transaction, encode_transfer_transaction, MockVM};
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
@@ -118,18 +119,6 @@ impl MockExecutor {
             config: VMConfig::default(),
         }
     }
-    pub fn add_account_data(&mut self, account_data: &AccountData, chain_state: &dyn ChainState) {
-        let mut vm = MockVM::new(&self.config);
-        vm.add_account_data(account_data, chain_state)
-    }
-    pub fn create_account(
-        &self,
-        account_address: AccountAddress,
-        chain_state: &dyn ChainState,
-    ) -> Result<()> {
-        let mut vm = MockVM::new(&self.config);
-        vm.create_account(account_address, chain_state)
-    }
 }
 
 impl TransactionExecutor for MockExecutor {
@@ -184,4 +173,19 @@ pub fn get_signed_txn(
     let signature = private_key.sign_message(&raw_txn.crypto_hash());
 
     SignedUserTransaction::new(raw_txn, public_key, signature)
+}
+
+pub fn mock_txn() -> Transaction {
+    let empty_script = StarcoinCompiler::compile_script("main() {return;}");
+    Transaction::UserTransaction(SignedUserTransaction::mock_from(empty_script))
+}
+
+pub fn mock_mint_txn(chain_state: &dyn ChainState) -> Transaction {
+    let account_address = AccountAddress::random();
+    chain_state.create_account(account_address);
+    encode_mint_transaction(account_address, 100)
+}
+
+pub fn mock_transfer_txn(account_address: AccountAddress, amount: u64) -> Transaction {
+    encode_mint_transaction(account_address, amount)
 }

@@ -57,11 +57,6 @@ impl MockVM {
             config: config.clone(),
         }
     }
-    /// Adds an account to this executor's data store.
-    pub fn add_account_data(&mut self, account_data: &AccountData, chain_state: &dyn ChainState) {
-        let mut state_store = StateStore::new(chain_state);
-        state_store.add_account_data(account_data)
-    }
 
     pub fn create_account(
         &self,
