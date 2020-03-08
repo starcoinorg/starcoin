@@ -31,6 +31,7 @@ stest = {path = "../commons/stest"}
 network = {path = "../network", package="starcoin-network"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-statedb = {path = "../core/statedb"}
+bus = {path = "../bus", package="starcoin-bus" }
 
 [dev-dependencies]
 env_logger = "0.7.1"

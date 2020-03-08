@@ -15,6 +15,7 @@ use actix::dev::ToEnvelope;
 use actix::fut::wrap_future;
 use actix::prelude::*;
 use anyhow::{Error, Result};
+use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use consensus::dummy::DummyConsensus;
 use crypto::{hash::CryptoHash, HashValue};
@@ -28,12 +29,16 @@ use std::sync::Arc;
 use storage::StarcoinStorage;
 use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService, ChainWriter};
 use txpool::TxPoolRef;
-use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
+use types::{
+    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    system_events::SystemEvents,
+};
 
 /// actor for block chain.
 pub struct ChainActor {
     //TODO use Generic Parameter for Executor and Consensus.
     service: ChainServiceImpl<MockExecutor, DummyConsensus, TxPoolRef, StarcoinStorage>,
+    bus: Addr<BusActor>,
 }
 
 impl ChainActor {
@@ -41,10 +46,12 @@ impl ChainActor {
         config: Arc<NodeConfig>,
         storage: Arc<StarcoinStorage>,
         network: Option<NetworkAsyncService<TxPoolRef>>,
+        bus: Addr<BusActor>,
         txpool: TxPoolRef,
     ) -> Result<ChainActorRef<ChainActor>> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(config, storage, network, txpool)?,
+            bus,
         }
         .start();
         Ok(actor.into())
@@ -54,7 +61,13 @@ impl ChainActor {
 impl Actor for ChainActor {
     type Context = Context<Self>;
 
-    fn started(&mut self, _ctx: &mut Self::Context) {
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let recipient = ctx.address().recipient::<SystemEvents>();
+        self.bus
+            .send(Subscription { recipient })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
         info!("ChainActor actor started");
     }
 }
@@ -109,6 +122,23 @@ impl Handler<ChainRequest> for ChainActor {
                 self.service.gen_tx().unwrap();
                 Ok(ChainResponse::None)
             }
+        }
+    }
+}
+
+impl Handler<SystemEvents> for ChainActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
+        debug!("try connect mined block.");
+        match msg {
+            SystemEvents::MinedBlock(new_block) => match self.service.try_connect(new_block) {
+                Ok(_) => debug!("Process mined block success."),
+                Err(e) => {
+                    warn!("Process mined block fail, error: {:?}", e);
+                }
+            },
+            _ => {}
         }
     }
 }

@@ -102,12 +102,20 @@ impl MockVM {
 
                     let account_resource_sender: AccountResource = state_store
                         .get_from_statedb(&access_path_sender)?
-                        .unwrap()
+                        .expect("txn sender must exist.")
                         .try_into()?;
                     let account_resource_receiver: AccountResource = state_store
-                        .get_from_statedb(&access_path_receiver)?
-                        .unwrap()
-                        .try_into()?;
+                        .get_from_statedb(&access_path_receiver)
+                        .and_then(|blob| match blob {
+                            Some(blob) => Ok(blob),
+                            None => {
+                                state_store.create_account(recipient)?;
+                                Ok(state_store
+                                    .get_from_statedb(&access_path_receiver)?
+                                    .expect("account resource must exist."))
+                            }
+                        })
+                        .and_then(|blob| blob.try_into())?;
 
                     let balance_sender = account_resource_sender.balance();
                     let balance_receiver = account_resource_receiver.balance();
@@ -330,7 +338,7 @@ fn decode_transaction(txn: &SignedUserTransaction) -> MockTransaction {
                          and the second argument must be amount."
                     ),
                 },
-                _ => unimplemented!("Transaction must have one or two arguments."),
+                _ => unimplemented!("Transaction must have one or two arguments.{:?}", txn),
             }
         }
         TransactionPayload::Module(_) => {

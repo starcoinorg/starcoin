@@ -58,6 +58,7 @@ async fn main() {
         node_config.clone(),
         storage.clone(),
         Some(network.clone()),
+        bus.clone(),
         txpool.clone(),
     )
     .unwrap();

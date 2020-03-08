@@ -4715,6 +4715,7 @@ dependencies = [
  "env_logger",
  "futures 0.3.4",
  "futures-locks",
+ "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-consensus",

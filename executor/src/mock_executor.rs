@@ -10,6 +10,7 @@ use once_cell::sync::Lazy;
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
@@ -119,12 +120,35 @@ impl MockExecutor {
             config: VMConfig::default(),
         }
     }
+
+    fn mint_for(chain_state: &dyn ChainState, account: AccountAddress, amount: u64) -> Result<()> {
+        let access_path = AccessPath::new_for_account(account);
+        let account_resource: AccountResource = chain_state
+            .get(&access_path)
+            .and_then(|blob| match blob {
+                Some(blob) => Ok(blob),
+                None => {
+                    chain_state.create_account(account)?;
+                    Ok(chain_state
+                        .get(&access_path)?
+                        .expect("account resource must exist."))
+                }
+            })?
+            .try_into()?;
+        let new_account_resource = AccountResource::new(
+            account_resource.balance() + amount,
+            account_resource.sequence_number(),
+            account_resource.authentication_key().clone(),
+        );
+        chain_state.set(&access_path, new_account_resource.try_into()?);
+        Ok(())
+    }
 }
 
 impl TransactionExecutor for MockExecutor {
     fn init_genesis(_config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
         let chain_state = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
-        chain_state.create_account(AccountAddress::default())?;
+        Self::mint_for(&chain_state, AccountAddress::default(), 10_0000_0000_0000)?;
         chain_state.create_account(association_address())?;
         chain_state.commit();
         Ok((chain_state.state_root(), chain_state.dump()?))
@@ -180,12 +204,12 @@ pub fn mock_txn() -> Transaction {
     Transaction::UserTransaction(SignedUserTransaction::mock_from(empty_script))
 }
 
-pub fn mock_mint_txn(chain_state: &dyn ChainState) -> Transaction {
+pub fn mock_mint_txn(chain_state: &ChainStateDB) -> Transaction {
     let account_address = AccountAddress::random();
     chain_state.create_account(account_address);
     encode_mint_transaction(account_address, 100)
 }
 
 pub fn mock_transfer_txn(account_address: AccountAddress, amount: u64) -> Transaction {
-    encode_mint_transaction(account_address, amount)
+    encode_transfer_transaction(AccountAddress::default(), account_address, amount)
 }

@@ -163,7 +163,14 @@ where
                 info!("head block : {:?}, txn len: {}", head_branch, txns.len());
                 let block_chain =
                     BlockChain::<E, C, S, P>::new(config, storage, head_branch, txpool_2).unwrap();
-                miner::mint::<C>(txns, &block_chain, bus);
+                match miner::mint::<C>(txns, &block_chain, bus) {
+                    Err(e) => {
+                        error!("mint block err: {:?}", e);
+                    }
+                    Ok(_) => {
+                        info!("mint block success.");
+                    }
+                }
             }
         }
         .into_actor(self);

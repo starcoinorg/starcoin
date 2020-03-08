@@ -41,6 +41,7 @@ async fn test_miner_with_schedule_pacemaker() {
         config.clone(),
         storage.clone(),
         Some(network.clone()),
+        bus.clone(),
         txpool.clone(),
     )
     .unwrap();
@@ -80,9 +81,9 @@ async fn test_miner_with_schedule_pacemaker() {
     //     delay_for(Duration::from_millis(1000)).await;
     // }
 
-    delay_for(Duration::from_millis(5 * 1000)).await;
+    delay_for(Duration::from_millis(10 * 1000)).await;
     let number = chain.clone().current_header().await.unwrap().number();
-    info!("{}", number);
+    info!("current block number: {}", number);
     assert!(number > 4);
 }
 
@@ -106,6 +107,7 @@ async fn test_miner_with_ondemand_pacemaker() {
         config.clone(),
         storage.clone(),
         Some(network.clone()),
+        bus.clone(),
         txpool.clone(),
     )
     .unwrap();

@@ -136,7 +136,8 @@ where
         _enacted: Vec<HashValue>,
         _retracted: Vec<HashValue>,
     ) -> Result<()> {
-        todo!()
+        //TODO
+        Ok(())
     }
 }
 
