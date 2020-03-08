@@ -33,7 +33,7 @@ use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
 /// actor for block chain.
 pub struct ChainActor {
     //TODO use Generic Parameter for Executor and Consensus.
-    service: ChainServiceImpl<MockExecutor, DummyConsensus, TxPoolRef>,
+    service: ChainServiceImpl<MockExecutor, DummyConsensus, TxPoolRef, StarcoinStorage>,
 }
 
 impl ChainActor {

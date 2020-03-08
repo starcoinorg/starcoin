@@ -13,10 +13,11 @@ use futures_locks::RwLock;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
 use starcoin_statedb::ChainStateDB;
+use state_tree::StateNodeStore;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage, StarcoinStorageOp};
 use traits::{
     ChainAsyncService, ChainReader, ChainService, ChainStateReader, ChainWriter, TxPoolAsyncService,
 };
@@ -27,31 +28,33 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
-pub struct ChainServiceImpl<E, C, P>
+pub struct ChainServiceImpl<E, C, P, S>
 where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
+    S: StateNodeStore + BlockStorageOp + 'static,
 {
     config: Arc<NodeConfig>,
-    head: BlockChain<E, C>,
-    branches: Vec<BlockChain<E, C>>,
-    storage: Arc<StarcoinStorage>,
+    head: BlockChain<E, C, S>,
+    branches: Vec<BlockChain<E, C, S>>,
+    storage: Arc<S>,
     network: Option<NetworkAsyncService<P>>,
 }
 
-impl<E, C, P> ChainServiceImpl<E, C, P>
+impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
 where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
+    S: StateNodeStore + BlockStorageOp,
 {
     pub fn new(
         config: Arc<NodeConfig>,
-        storage: Arc<StarcoinStorage>,
+        storage: Arc<S>,
         network: Option<NetworkAsyncService<P>>,
     ) -> Result<Self> {
-        let latest_header = storage.block_store.get_latest_block_header()?;
+        let latest_header = storage.get_latest_block_header()?;
         let head = BlockChain::new(
             config.clone(),
             storage.clone(),
@@ -67,7 +70,7 @@ where
         })
     }
 
-    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C>> {
+    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
         let block_in_head = self.head.get_block(header.parent_hash()).unwrap();
         match block_in_head {
@@ -104,7 +107,7 @@ where
         unimplemented!()
     }
 
-    fn select_head(&mut self, new_branch: BlockChain<E, C>) {
+    fn select_head(&mut self, new_branch: BlockChain<E, C, S>) {
         let new_branch_parent_hash = new_branch.current_header().parent_hash();
         let mut need_broadcast = false;
         let block = new_branch.head_block();
@@ -156,22 +159,21 @@ where
     }
 }
 
-impl<E, C, P> ChainService for ChainServiceImpl<E, C, P>
+impl<E, C, P, S> ChainService for ChainServiceImpl<E, C, P, S>
 where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
+    S: StateNodeStore + BlockStorageOp,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
         if self
             .storage
-            .block_store
             .get_block_by_hash(block.header().id())?
             .is_none()
             && self
                 .storage
-                .block_store
                 .get_block_by_hash(block.header().parent_hash())?
                 .is_some()
         {
@@ -188,11 +190,12 @@ where
     }
 }
 
-impl<E, C, P> ChainReader for ChainServiceImpl<E, C, P>
+impl<E, C, P, S> ChainReader for ChainServiceImpl<E, C, P, S>
 where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
+    S: StateNodeStore + BlockStorageOp,
 {
     fn head_block(&self) -> Block {
         self.head.head_block()

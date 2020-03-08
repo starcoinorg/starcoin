@@ -10,6 +10,7 @@ use config::VMConfig;
 use crypto::ed25519::compat;
 use logger::prelude::*;
 use state_tree::mock::MockStateNodeStore;
+use state_tree::StateNodeStore;
 use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -27,8 +28,9 @@ use vm_runtime::mock_vm::{
 
 #[stest::test]
 fn test_execute_mint_txn() {
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
+    let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
+    let chain_state =
+        ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
     let txn = mock_mint_txn(&chain_state);
     let config = VMConfig::default();
     info!("invoke Executor::execute_transaction");

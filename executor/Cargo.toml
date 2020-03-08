@@ -21,7 +21,7 @@ vm-runtime = { package="starcoin-vm-runtime", path = "../vm/vm-runtime"}
 compiler = { package="starcoin-compiler", path = "../vm/compiler"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
-
+storage = {path = "../storage", package="starcoin-storage" }
 
 [dev-dependencies]
 env_logger = "0.7.1"

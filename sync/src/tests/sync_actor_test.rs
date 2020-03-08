@@ -235,15 +235,20 @@ async fn test_network_actor() {
         SyncActor::launch(bus_2.clone(), second_p_actor, second_d_actor.clone()).unwrap();
 
     //miner
-    let _miner_1 =
-        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            storage_1.clone(),
-            txpool_1.clone(),
-            first_chain.clone(),
-            None,
-        );
+    let _miner_1 = MinerActor::<
+        DummyConsensus,
+        MockExecutor,
+        TxPoolRef,
+        ChainActorRef<ChainActor>,
+        StarcoinStorage,
+    >::launch(
+        node_config_1.clone(),
+        bus_1.clone(),
+        storage_1.clone(),
+        txpool_1.clone(),
+        first_chain.clone(),
+        None,
+    );
 
     Delay::new(Duration::from_secs(5)).await;
 
@@ -300,15 +305,20 @@ async fn test_network_actor_rpc() {
     let _first_sync_actor =
         SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
     //miner
-    let _miner_1 =
-        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            storage_1.clone(),
-            txpool_1.clone(),
-            first_chain.clone(),
-            None,
-        );
+    let _miner_1 = MinerActor::<
+        DummyConsensus,
+        MockExecutor,
+        TxPoolRef,
+        ChainActorRef<ChainActor>,
+        StarcoinStorage,
+    >::launch(
+        node_config_1.clone(),
+        bus_1.clone(),
+        storage_1.clone(),
+        txpool_1.clone(),
+        first_chain.clone(),
+        None,
+    );
     Delay::new(Duration::from_secs(5)).await;
     let block_1 = first_chain.clone().head_block().await.unwrap();
     let number = block_1.header().number();

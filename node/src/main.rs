@@ -62,15 +62,20 @@ async fn main() {
     } else {
         None
     };
-    let _miner =
-        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
-            node_config.clone(),
-            bus.clone(),
-            storage.clone(),
-            txpool.clone(),
-            chain.clone(),
-            receiver,
-        );
+    let _miner = MinerActor::<
+        DummyConsensus,
+        MockExecutor,
+        TxPoolRef,
+        ChainActorRef<ChainActor>,
+        StarcoinStorage,
+    >::launch(
+        node_config.clone(),
+        bus.clone(),
+        storage.clone(),
+        txpool.clone(),
+        chain.clone(),
+        receiver,
+    );
     let peer_info = Arc::new(PeerInfo::random());
     let process_actor = ProcessActor::launch(
         Arc::clone(&peer_info),

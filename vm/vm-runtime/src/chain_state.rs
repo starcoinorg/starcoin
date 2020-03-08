@@ -1,23 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    access_path_helper::AccessPathHelper,
-    account::AccountData,
-};
+use crate::{access_path_helper::AccessPathHelper, account::AccountData};
 use anyhow::{Error, Result};
-use types::{
-    access_path::AccessPath,
-    write_set::{WriteOp, WriteSet},
-    account_address::{AccountAddress},
-};
 use libra_state_view::StateView;
 use libra_types::access_path::AccessPath as LibraAccessPath;
+use logger::prelude::*;
 use std::sync::Arc;
 use traits::ChainState;
+use types::{
+    access_path::AccessPath,
+    account_address::AccountAddress,
+    write_set::{WriteOp, WriteSet},
+};
 use vm::errors::VMResult;
 use vm_runtime::data_cache::{BlockDataCache, RemoteCache};
-use logger::prelude::*;
 
 /// Adaptor for chain state
 pub struct StateStore<'txn> {
@@ -30,10 +27,7 @@ impl<'txn> StateStore<'txn> {
     }
 
     pub fn get_from_statedb(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        ChainState::get(
-            self.chain_state,
-            access_path
-        )
+        ChainState::get(self.chain_state, access_path)
     }
 
     /// Adds a [`WriteSet`] to state store.
@@ -52,7 +46,10 @@ impl<'txn> StateStore<'txn> {
 
     /// Sets a (key, value) pair within state store.
     pub fn set(&mut self, access_path: AccessPath, data_blob: Vec<u8>) -> Result<()> {
-        info!("set access_path: {:?}, data_blob: {:?}", access_path, data_blob);
+        info!(
+            "set access_path: {:?}, data_blob: {:?}",
+            access_path, data_blob
+        );
         self.chain_state.set(&access_path, data_blob)
     }
 
@@ -65,7 +62,6 @@ impl<'txn> StateStore<'txn> {
     pub fn create_account(&self, account_address: AccountAddress) -> Result<()> {
         self.chain_state.create_account(account_address)
     }
-
 }
 
 impl<'txn> StateView for StateStore<'txn> {

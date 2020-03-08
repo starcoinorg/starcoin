@@ -11,10 +11,11 @@ use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
+use state_tree::StateNodeStore;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage, StarcoinStorageOp};
 use traits::{ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter};
 use types::{
     account_address::AccountAddress,
@@ -23,10 +24,11 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
-pub struct BlockChain<E, C>
+pub struct BlockChain<E, C, S>
 where
     E: TransactionExecutor,
     C: Consensus,
+    S: StateNodeStore + BlockStorageOp + 'static,
 {
     config: Arc<NodeConfig>,
     //TODO
@@ -35,7 +37,7 @@ where
     chain_state: ChainStateDB,
     phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
-    storage: Arc<StarcoinStorage>,
+    storage: Arc<S>,
 }
 
 pub fn load_genesis_block() -> Block {
@@ -43,20 +45,20 @@ pub fn load_genesis_block() -> Block {
     Block::new_nil_block_for_test(header)
 }
 
-impl<E, C> BlockChain<E, C>
+impl<E, C, S> BlockChain<E, C, S>
 where
     E: TransactionExecutor,
     C: Consensus,
+    S: StateNodeStore + BlockStorageOp,
 {
     pub fn new(
         config: Arc<NodeConfig>,
-        storage: Arc<StarcoinStorage>,
+        storage: Arc<S>,
         head_block_hash: Option<HashValue>,
     ) -> Result<Self> {
         let head = match head_block_hash {
             Some(hash) => Some(
                 storage
-                    .block_store
                     .get_block_by_hash(hash)?
                     .ok_or(format_err!("Can not find block by hash {}", hash))?,
             ),
@@ -85,7 +87,7 @@ where
     }
 
     fn save_block(&self, block: &Block) {
-        self.storage.block_store.commit_block(block.clone());
+        self.storage.commit_block(block.clone());
         info!("commit block : {:?}", block);
     }
 
@@ -96,10 +98,11 @@ where
     }
 }
 
-impl<E, C> ChainReader for BlockChain<E, C>
+impl<E, C, S> ChainReader for BlockChain<E, C, S>
 where
     E: TransactionExecutor,
     C: Consensus,
+    S: StateNodeStore + BlockStorageOp,
 {
     fn head_block(&self) -> Block {
         self.ensure_head().clone()
@@ -110,19 +113,19 @@ where
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
-        self.storage.block_store.get_block_header_by_hash(hash)
+        self.storage.get_block_header_by_hash(hash)
     }
 
     fn get_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        self.storage.block_store.get_block_header_by_number(number)
+        self.storage.get_block_header_by_number(number)
     }
 
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        self.storage.block_store.get_block_by_number(number)
+        self.storage.get_block_by_number(number)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        self.storage.block_store.get_block_by_hash(hash)
+        self.storage.get_block_by_hash(hash)
     }
 
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>, Error> {
@@ -198,10 +201,11 @@ where
     }
 }
 
-impl<E, C> ChainWriter for BlockChain<E, C>
+impl<E, C, S> ChainWriter for BlockChain<E, C, S>
 where
     E: TransactionExecutor,
     C: Consensus,
+    S: StateNodeStore + BlockStorageOp,
 {
     fn apply(&mut self, block: Block) -> Result<()> {
         let header = block.header();
