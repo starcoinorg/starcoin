@@ -47,11 +47,43 @@ fn test_one_leaf() {
     let mut accumulator = MockAccumulator::new(vec![], 0, 0, &mock_store).unwrap();
     let root_hash = accumulator.append(&[hash]).unwrap();
     assert_eq!(hash, root_hash);
+    proof_verify(&accumulator, root_hash, &[hash], 0);
+    let new_hash = HashValue::random();
+    let new_root_hash = accumulator.append(&[new_hash]).unwrap();
+    proof_verify(&accumulator, new_root_hash, &[new_hash], 1);
+    let vec = vec![hash, new_hash];
+    proof_verify(&accumulator, new_root_hash, &vec, 0);
+}
+
+#[test]
+fn test_multiple_leaves() {
+    let mut batch1 = create_leaves(0..8);
+    let mock_store = MockAccumulatorStore::new();
+    let mut accumulator = MockAccumulator::new(vec![], 0, 0, &mock_store).unwrap();
+    let root_hash1 = accumulator.append(&batch1).unwrap();
+    proof_verify(&accumulator, root_hash1, &batch1, 0);
+    let batch2 = create_leaves(0..4);
+    let root_hash2 = accumulator.append(&batch2).unwrap();
+    batch1.extend_from_slice(&batch2);
+    proof_verify(&accumulator, root_hash2, &batch1, 0);
+}
+
+#[test]
+fn test_update_leaf() {
+    //construct a accumulator
+    let mut leaves = create_leaves(0..8);
+    let mock_store = MockAccumulatorStore::new();
+    let mut accumulator = MockAccumulator::new(vec![], 0, 0, &mock_store).unwrap();
+    let roo_hash = accumulator.append(&leaves).unwrap();
+    proof_verify(&accumulator, roo_hash, &leaves, 0);
+    //update index from 6
+    let new_leaves = create_leaves(0..4);
+    let new_root_hash = accumulator.update(6, &new_leaves).unwrap();
 }
 
 //batch test
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(5))]
+    #![proptest_config(ProptestConfig::with_cases(1))]
 
     #[test]
     fn test_proof(
@@ -64,10 +96,11 @@ proptest! {
 
         // insert all leaves in two batches
         let root_hash1 = accumulator.append(&batch1).unwrap();
-        let root_hash2 = accumulator.append(&batch2).unwrap();
+        proof_verify(&accumulator, root_hash1, &batch1, 0);
 
+        let root_hash2 = accumulator.append(&batch2).unwrap();
         // verify proofs for all leaves towards current root
-        proof_verify(&accumulator, root_hash2, &batch1, 0);
+
         proof_verify(&accumulator, root_hash2, &batch2, batch1.len() as u64);
     }
 }

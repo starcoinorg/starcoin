@@ -15,7 +15,6 @@ use byteorder::{BigEndian, ReadBytesExt};
 use crypto::hash::HashValue;
 use scs::SCSCodec;
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::marker::PhantomData;
 use std::mem::size_of;
 use std::sync::Arc;

@@ -3,6 +3,7 @@
 
 use anyhow::bail;
 use anyhow::{ensure, Error, Result};
+use mirai_annotations::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
@@ -15,6 +16,7 @@ pub mod node_index;
 use crate::node::{InternalNode, ACCUMULATOR_PLACEHOLDER_HASH};
 use crate::node_index::NodeIndex;
 pub use node::AccumulatorNode;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 pub type LeafCount = u64;
@@ -127,11 +129,11 @@ pub trait AccumulatorNodeStore: AccumulatorNodeReader + AccumulatorNodeWriter {}
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
 pub struct MerkleAccumulator<'a, S> {
-    frozen_subtree_roots: Vec<HashValue>,
+    frozen_subtree_roots: RefCell<Vec<HashValue>>,
     /// The total number of leaves in this accumulator.
     num_leaves: LeafCount,
     /// The total number of nodes in this accumulator.
-    num_notes: NodeCount,
+    num_nodes: NodeCount,
     /// The root hash of this accumulator.
     root_hash: HashValue,
     node_store: &'a S,
@@ -158,23 +160,123 @@ where
         let root_hash = Self::compute_root_hash(&frozen_subtree_roots, num_leaves);
 
         Ok(Self {
-            frozen_subtree_roots,
+            frozen_subtree_roots: RefCell::new(frozen_subtree_roots),
             num_leaves,
-            num_notes,
+            num_nodes: num_notes,
             root_hash,
             node_store,
         })
     }
+
+    ///append from multiple leaves
+    fn append_leaves(
+        &mut self,
+        new_leaves: &[HashValue],
+    ) -> Result<(HashValue, Vec<AccumulatorNode>)> {
+        // Deal with the case where new_leaves is empty
+        if new_leaves.is_empty() {
+            if self.num_leaves == 0 {
+                return Ok((*ACCUMULATOR_PLACEHOLDER_HASH, Vec::new()));
+            } else {
+                return Ok((self.root_hash, Vec::new()));
+            }
+        }
+
+        let num_new_leaves = new_leaves.len();
+        let last_new_leaf_count = self.num_leaves + num_new_leaves as LeafCount;
+        let mut new_num_nodes = self.num_nodes;
+        let root_level = NodeIndex::root_level_from_leaf_count(last_new_leaf_count);
+        let mut to_freeze = Vec::with_capacity(Self::max_to_freeze(num_new_leaves, root_level));
+
+        // Iterate over the new leaves, adding them to to_freeze and then adding any frozen parents
+        // when right children are encountered.  This has the effect of creating frozen nodes in
+        // perfect post-order, which can be used as a strictly increasing append only index for
+        // the underlying storage.
+        //
+        // We will track newly created left siblings while iterating so we can pair them with their
+        // right sibling, if and when it becomes frozen.  If the frozen left sibling is not created
+        // in this iteration, it must already exist in storage.
+        let mut left_siblings: Vec<(_, _)> = Vec::new();
+        for (leaf_offset, leaf) in new_leaves.iter().enumerate() {
+            let leaf_pos = NodeIndex::from_leaf_index(self.num_leaves + leaf_offset as LeafCount);
+            let mut hash = *leaf;
+            to_freeze.push(AccumulatorNode::new_leaf(leaf_pos, hash));
+            new_num_nodes += 1;
+            let mut pos = leaf_pos;
+            let mut internal_node = AccumulatorNode::Empty;
+            while pos.is_right_child() {
+                let sibling = pos.sibling();
+
+                hash = match left_siblings.pop() {
+                    Some((x, left_hash)) => {
+                        assert_eq!(x, sibling);
+                        internal_node =
+                            AccumulatorNode::new_internal(pos.parent(), left_hash, hash);
+                        internal_node.hash()
+                        // Self::hash_internal_node(left_hash, hash)
+                    }
+                    None => {
+                        internal_node = AccumulatorNode::new_internal(
+                            pos.parent(),
+                            self.node_store.get(sibling).unwrap().unwrap().hash(),
+                            hash,
+                        );
+                        internal_node.hash()
+                    }
+                };
+                pos = pos.parent();
+                to_freeze.push(internal_node);
+                new_num_nodes += 1;
+            }
+            // The node remaining must be a left child, possibly the root of a complete binary tree.
+            left_siblings.push((pos, hash));
+        }
+
+        // Now reconstruct the final root hash by walking up to root level and adding
+        // placeholder hash nodes as needed on the right, and left siblings that have either
+        // been newly created or read from storage.
+        let (mut pos, mut hash) = left_siblings.pop().expect("Must have at least one node");
+        for _ in pos.level()..root_level as u32 {
+            hash = if pos.is_left_child() {
+                AccumulatorNode::new_internal(pos.parent(), hash, *ACCUMULATOR_PLACEHOLDER_HASH)
+                    .hash()
+            } else {
+                let sibling = pos.sibling();
+                match left_siblings.pop() {
+                    Some((x, left_hash)) => {
+                        assert_eq!(x, sibling);
+                        AccumulatorNode::new_internal(pos.parent(), left_hash, hash).hash()
+                    }
+                    None => AccumulatorNode::new_internal(
+                        pos.parent(),
+                        self.node_store.get(sibling).unwrap().unwrap().hash(),
+                        hash,
+                    )
+                    .hash(),
+                }
+            };
+            pos = pos.parent();
+        }
+        assert!(left_siblings.is_empty());
+
+        self.root_hash = hash;
+        // self.frozen_subtree_roots =
+        self.num_leaves = last_new_leaf_count;
+        self.num_nodes = new_num_nodes;
+        Ok((hash, to_freeze))
+    }
+
     /// Appends one leaf. This will update `frozen_subtree_roots` to store new frozen root nodes
     /// and remove old nodes if they are now part of a larger frozen subtree.
     fn append_one(
+        &self,
         frozen_subtree_roots: &mut Vec<HashValue>,
         num_existing_leaves: LeafCount,
+        num_nodes: u64,
         leaf: HashValue,
     ) -> u64 {
         // First just append the leaf.
         frozen_subtree_roots.push(leaf);
-
         // Next, merge the last two subtrees into one. If `num_existing_leaves` has N trailing
         // ones, the carry will happen N times.
         let num_trailing_ones = (!num_existing_leaves).trailing_zeros();
@@ -182,11 +284,17 @@ where
         for i in 0..num_trailing_ones {
             let right_hash = frozen_subtree_roots.pop().expect("Invalid accumulator.");
             let left_hash = frozen_subtree_roots.pop().expect("Invalid accumulator.");
-            let parent_hash =
-                InternalNode::new(NodeIndex::new(i as u64), left_hash, right_hash).hash();
-            frozen_subtree_roots.push(parent_hash);
+            let parent_index = NodeIndex::new(num_nodes + i as u64);
+            let parent_node = AccumulatorNode::new_internal(parent_index, left_hash, right_hash);
+            frozen_subtree_roots.push(parent_node.hash());
+            self.save_index_and_node(parent_index, parent_node.hash(), parent_node);
             num_internal_nodes += 1;
         }
+        //save current leaf node
+        let leaf_index = NodeIndex::new(num_nodes + num_trailing_ones as u64);
+        let leaf_node = AccumulatorNode::new_leaf(leaf_index, leaf);
+        self.save_index_and_node(leaf_index, leaf, leaf_node);
+
         num_internal_nodes
     }
 
@@ -239,28 +347,30 @@ where
         //delete node and index
         self.node_store.delete_nodes(larger_nodes.clone());
         self.node_store
-            .delete_larger_index(leaf_index, self.num_notes);
+            .delete_larger_index(leaf_index, self.num_nodes);
 
         // update self frozen_subtree_roots
-        for hash in larger_nodes {
-            let pos = self
-                .frozen_subtree_roots
-                .iter()
-                .position(|x| *x == hash)
-                .unwrap();
-            self.frozen_subtree_roots.remove(pos);
-        }
+        // for hash in larger_nodes {
+        //     let mut frozen_subtree_roots = self.frozen_subtree_roots.borrow_mut().to_vec();
+        //     let pos = frozen_subtree_roots
+        //         .iter()
+        //         .position(|x| *x == hash)
+        //         .unwrap();
+        //     frozen_subtree_roots.remove(pos);
+        // }
         //update self leaves number
-        self.num_leaves = leaf_index - 1;
+        self.num_leaves = NodeIndex::leaves_count_end_from_index(leaf_index);
 
         //update root hash
         let node_index = NodeIndex::new(leaf_index);
+        let new_root_index = NodeIndex::root_from_leaf_count(self.num_leaves + 1);
         if node_index.is_left_child() {
             //if index is left, update root hash
-            let new_root_index = NodeIndex::root_from_leaf_count(leaf_index);
             self.root_hash = self.node_store.get(new_root_index).unwrap().unwrap().hash();
         } else {
-            self.root_hash = self.get_new_root_and_update_right_node(node_index).unwrap();
+            self.root_hash = self
+                .get_new_root_and_update_right_node(node_index, new_root_index)
+                .unwrap();
         };
 
         Ok(())
@@ -290,23 +400,47 @@ where
     ///get all nodes larger than index of leaf_node
     fn get_larger_nodes_from_index(&self, leaf_index: u64) -> Result<Vec<HashValue>> {
         let mut node_vec = vec![];
-        for index in leaf_index..self.num_leaves {
+        for index in leaf_index..self.num_nodes {
             match self.node_store.get(NodeIndex::new(index)).unwrap() {
                 Some(node) => node_vec.push(node.hash()),
-                _ => {}
+                _ => bail!("get larger nodes from index: {:?}", leaf_index),
             }
         }
         Ok(node_vec)
     }
 
+    /// save frozen nodes
+    fn save_frozen_nodes(&self, frozen_nodes: Vec<AccumulatorNode>) -> Result<()> {
+        ensure!(frozen_nodes.len() > 0, "invalid frozen nodes length");
+        for node in frozen_nodes {
+            self.save_index_and_node(node.index(), node.hash(), node);
+        }
+        Ok(())
+    }
+
+    /// save node index and node object
+    fn save_index_and_node(
+        &self,
+        index: NodeIndex,
+        node_hash: HashValue,
+        node: AccumulatorNode,
+    ) -> Result<()> {
+        self.node_store.save(index, node_hash);
+        self.node_store.save_node(node)
+    }
+
     ///get new root by right leaf index
-    fn get_new_root_and_update_right_node(&self, leaf_index: NodeIndex) -> Result<HashValue> {
+    fn get_new_root_and_update_right_node(
+        &self,
+        leaf_index: NodeIndex,
+        root_index: NodeIndex,
+    ) -> Result<HashValue> {
         let mut right_hash = *ACCUMULATOR_PLACEHOLDER_HASH;
-        let mut right_index = leaf_index;
+        let mut right_index = leaf_index.clone();
         //save current node
-        self.node_store.save(leaf_index, right_hash);
-        self.node_store
-            .save_node(AccumulatorNode::new_leaf(leaf_index, right_hash));
+        // self.node_store.save(leaf_index, right_hash);
+        // self.node_store
+        //     .save_node(AccumulatorNode::new_leaf(leaf_index, right_hash));
         let mut new_root = right_hash;
         loop {
             //get sibling
@@ -322,13 +456,15 @@ where
                     self.node_store.save_node(parent_node.clone());
                     new_root = parent_node.hash();
                     self.node_store.save(parent_index, new_root);
+                    if parent_index == root_index {
+                        //get root node
+                        break;
+                    }
                     //for next loop
                     right_index = parent_node.index();
                     right_hash = new_root;
                 }
-                _ => {
-                    break;
-                }
+                _ => bail!("get leaf node error: {:?}", left_node_index),
             }
         }
         Ok(new_root)
@@ -339,15 +475,36 @@ where
     }
 
     fn get_node_hash(&self, node_index: NodeIndex) -> Result<HashValue> {
-        let node = self.node_store.get(node_index).unwrap();
-        match node {
-            Some(acc_node) => match acc_node {
-                AccumulatorNode::Internal(inter) => Ok(inter.hash()),
-                AccumulatorNode::Leaf(leaf) => Ok(leaf.value()),
-                AccumulatorNode::Empty => Ok(*ACCUMULATOR_PLACEHOLDER_HASH),
-            },
-            None => bail!("node is null: {:?}", node_index),
+        let idx = self.rightmost_leaf_index();
+        if node_index.is_placeholder(idx) {
+            Ok(*ACCUMULATOR_PLACEHOLDER_HASH)
+        } else if node_index.is_freezable(idx) {
+            let node = self.node_store.get(node_index).unwrap();
+            match node {
+                Some(acc_node) => Ok(acc_node.hash()),
+                None => bail!("node is null: {:?}", node_index),
+            }
+        } else {
+            // non-frozen non-placeholder node
+            Ok(AccumulatorNode::new_internal(
+                node_index,
+                self.get_node_hash(node_index.left_child())?,
+                self.get_node_hash(node_index.right_child())?,
+            )
+            .hash())
         }
+    }
+
+    /// upper bound of num of frozen nodes:
+    ///     new leaves and resulting frozen internal nodes forming a complete binary subtree
+    ///         num_new_leaves * 2 - 1 < num_new_leaves * 2
+    ///     and the full route from root of that subtree to the accumulator root turns frozen
+    ///         height - (log2(num_new_leaves) + 1) < height - 1 = root_level
+    fn max_to_freeze(num_new_leaves: usize, root_level: u32) -> usize {
+        precondition!(root_level as usize <= MAX_ACCUMULATOR_PROOF_DEPTH);
+        precondition!(num_new_leaves < (usize::max_value() / 2));
+        precondition!(num_new_leaves * 2 <= usize::max_value() - root_level as usize);
+        num_new_leaves * 2 + root_level as usize
     }
 }
 
@@ -356,30 +513,35 @@ where
     S: AccumulatorNodeStore,
 {
     fn from_leaves(&mut self, leaves: &[HashValue]) -> Self {
-        let mut frozen_subtree_roots = self.frozen_subtree_roots.clone();
+        let mut frozen_subtree_roots = self.frozen_subtree_roots.borrow_mut().to_vec();
         let mut num_leaves = self.num_leaves;
-        let mut internal_notes = self.num_notes;
+        let mut num_nodes = self.num_nodes;
         for leaf in leaves {
             let temp_internal_notes =
-                Self::append_one(&mut frozen_subtree_roots, num_leaves, *leaf);
+                self.append_one(&mut frozen_subtree_roots, num_leaves, num_nodes, *leaf);
             num_leaves += 1;
-            internal_notes = internal_notes + temp_internal_notes;
+            num_nodes = num_nodes + temp_internal_notes + 1;
         }
         self.num_leaves = num_leaves;
-        self.num_notes = internal_notes + num_leaves;
+        self.num_nodes = num_nodes;
         let accumulator = Self::new(
-            frozen_subtree_roots,
+            frozen_subtree_roots.clone(),
             num_leaves,
-            self.num_notes,
+            self.num_nodes,
             self.node_store,
         )
         .expect("Appending leaves to a valid accumulator should create another valid accumulator.");
         self.root_hash = accumulator.root_hash;
+        self.frozen_subtree_roots
+            .borrow_mut()
+            .extend_from_slice(&frozen_subtree_roots);
         accumulator
     }
 
-    fn append(&mut self, leaves: &[HashValue]) -> Result<HashValue, Error> {
-        Ok(self.from_leaves(leaves).root_hash)
+    fn append(&mut self, new_leaves: &[HashValue]) -> Result<HashValue, Error> {
+        let (root_hash, frozen_nodes) = self.append_leaves(new_leaves).unwrap();
+        self.save_frozen_nodes(frozen_nodes);
+        Ok(root_hash)
     }
 
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error> {
@@ -425,15 +587,15 @@ where
 }
 
 pub struct MockAccumulatorStore {
-    index_store: HashMap<NodeIndex, HashValue>,
-    node_store: HashMap<HashValue, AccumulatorNode>,
+    index_store: RefCell<HashMap<NodeIndex, HashValue>>,
+    node_store: RefCell<HashMap<HashValue, AccumulatorNode>>,
 }
 
 impl MockAccumulatorStore {
     pub fn new() -> Self {
         Self {
-            index_store: HashMap::new(),
-            node_store: HashMap::new(),
+            index_store: RefCell::new(HashMap::new()),
+            node_store: RefCell::new(HashMap::new()),
         }
     }
 }
@@ -441,34 +603,36 @@ impl MockAccumulatorStore {
 impl AccumulatorNodeStore for MockAccumulatorStore {}
 impl AccumulatorNodeReader for MockAccumulatorStore {
     fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>, Error> {
-        let node_hash = self.index_store.get(&index).unwrap();
-        match self.node_store.get(&node_hash) {
-            Some(node) => Ok(Some(node.clone())),
-            None => bail!("get node is null"),
+        match self.index_store.borrow().get(&index) {
+            Some(node_index) => match self.node_store.borrow().get(node_index) {
+                Some(node) => Ok(Some(node.clone())),
+                None => bail!("get node is null:{:?}", index),
+            },
+            None => bail!("get node index is null:{:?}", index),
         }
     }
 
     fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
-        match self.node_store.get(&hash) {
+        match self.node_store.borrow().get(&hash) {
             Some(node) => Ok(Some(node.clone())),
-            None => bail!("get node is null"),
+            None => bail!("get node is null: {}", hash),
         }
     }
 }
 impl AccumulatorNodeWriter for MockAccumulatorStore {
     fn save(&self, index: NodeIndex, hash: HashValue) -> Result<(), Error> {
-        self.index_store.clone().insert(index, hash);
+        self.index_store.borrow_mut().insert(index, hash);
         Ok(())
     }
 
     fn save_node(&self, node: AccumulatorNode) -> Result<()> {
-        self.node_store.clone().insert(node.hash(), node);
+        self.node_store.borrow_mut().insert(node.hash(), node);
         Ok(())
     }
 
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
         for hash in node_hash_vec {
-            self.node_store.clone().remove(&hash);
+            self.node_store.borrow_mut().remove(&hash);
         }
         Ok(())
     }
@@ -481,7 +645,7 @@ impl AccumulatorNodeWriter for MockAccumulatorStore {
             max_notes
         );
         for index in from_index..max_notes {
-            self.index_store.clone().remove(&NodeIndex::new(index));
+            self.index_store.borrow_mut().remove(&NodeIndex::new(index));
         }
         Ok(())
     }

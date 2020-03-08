@@ -8,10 +8,28 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeIndex(u64);
+pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 pub static NODE_ERROR_INDEX: Lazy<NodeIndex> = Lazy::new(|| NodeIndex::new(u64::max_value()));
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum NodeDirection {
+    Left,
+    Right,
+}
+
 impl NodeIndex {
     pub fn new(index: u64) -> Self {
         NodeIndex(index)
+    }
+
+    pub fn is_freezable(self, leaf_index: u64) -> bool {
+        let leaf = Self::from_leaf_index(leaf_index);
+        let right_most_child = self.right_most_child();
+        right_most_child.0 <= leaf.0
+    }
+
+    fn is_leaf(self) -> bool {
+        self.0 & 1 == 0
     }
 
     pub fn to_inorder_index(self) -> u64 {
@@ -55,9 +73,27 @@ impl NodeIndex {
         Self::root_from_leaf_index((leaf_count - 1) as u64)
     }
 
+    pub fn root_level_from_leaf_count(leaf_count: LeafCount) -> u32 {
+        assert!(leaf_count > 0);
+        let index = (leaf_count - 1) as u64;
+        MAX_ACCUMULATOR_PROOF_DEPTH as u32 + 1 - index.leading_zeros()
+    }
+
+    /// Get leaves count end from index
+    pub fn leaves_count_end_from_index(leaf_index: u64) -> u64 {
+        let mut count = 0u64;
+        for index in 0..leaf_index {
+            let leaf = Self::new(index);
+            if leaf.is_leaf() {
+                count += 1;
+            }
+        }
+        count
+    }
+
     /// Creates an `AncestorSiblingIterator` using this node_index.
     pub fn iter_ancestor_sibling(self) -> AncestorSiblingIterator {
-        AncestorSiblingIterator { nodeIndex: self }
+        AncestorSiblingIterator { node_index: self }
     }
 
     /// Given a node, find its left most child in its subtree
@@ -66,6 +102,13 @@ impl NodeIndex {
         // Turn off its right most x bits. while x=level of node
         let level = self.level();
         Self(turn_off_right_most_n_bits(self.0, level))
+    }
+
+    /// Given a node, find its right most child in its subtree.
+    /// Right most child is a Position, could be itself, at level 0
+    pub fn right_most_child(self) -> Self {
+        let level = self.level();
+        Self(self.0 + (1_u64 << level) - 1)
     }
 
     pub fn is_placeholder(self, leaf_index: u64) -> bool {
@@ -86,6 +129,29 @@ impl NodeIndex {
             (self.0 | isolate_rightmost_zero_bit(self.0))
                 & !(isolate_rightmost_zero_bit(self.0) << 1),
         )
+    }
+
+    /// What is the left node of this node? Will overflow if the node is a leaf
+    pub fn left_child(self) -> Self {
+        checked_precondition!(!self.is_leaf());
+        Self::child(self, NodeDirection::Left)
+    }
+
+    /// What is the right node of this node? Will overflow if the node is a leaf
+    pub fn right_child(self) -> Self {
+        checked_precondition!(!self.is_leaf());
+        Self::child(self, NodeDirection::Right)
+    }
+
+    fn child(self, dir: NodeDirection) -> Self {
+        checked_precondition!(!self.is_leaf());
+        assume!(self.0 < u64::max_value() - 1); // invariant
+
+        let direction_bit = match dir {
+            NodeDirection::Left => 0,
+            NodeDirection::Right => isolate_rightmost_zero_bit(self.0),
+        };
+        Self((self.0 | direction_bit) & !(isolate_rightmost_zero_bit(self.0) >> 1))
     }
 
     /// This method takes in a node position and return its sibling position
@@ -136,15 +202,15 @@ fn turn_off_right_most_n_bits(v: u64, n: u32) -> u64 {
 
 #[derive(Debug)]
 pub struct AncestorSiblingIterator {
-    nodeIndex: NodeIndex,
+    node_index: NodeIndex,
 }
 
 impl Iterator for AncestorSiblingIterator {
     type Item = NodeIndex;
 
     fn next(&mut self) -> Option<NodeIndex> {
-        let current_sibling_index = self.nodeIndex.sibling();
-        self.nodeIndex = self.nodeIndex.parent();
+        let current_sibling_index = self.node_index.sibling();
+        self.node_index = self.node_index.parent();
         Some(current_sibling_index)
     }
 }

@@ -5,7 +5,6 @@ use crate::storage::{CodecStorage, Repository, ValueCodec};
 use anyhow::Result;
 use crypto::{hash::CryptoHash, HashValue};
 use forkable_jellyfish_merkle::node_type::Node;
-use scs::SCSCodec;
 use state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
 
