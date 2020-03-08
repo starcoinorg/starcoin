@@ -37,7 +37,13 @@ async fn test_miner_with_schedule_pacemaker() {
     let key_pair = config::gen_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
-    let chain = ChainActor::launch(config.clone(), storage.clone(), Some(network.clone())).unwrap();
+    let chain = ChainActor::launch(
+        config.clone(),
+        storage.clone(),
+        Some(network.clone()),
+        txpool.clone(),
+    )
+    .unwrap();
     let _miner = MinerActor::<
         DummyConsensus,
         MockExecutor,
@@ -96,7 +102,13 @@ async fn test_miner_with_ondemand_pacemaker() {
     let key_pair = config::gen_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
-    let chain = ChainActor::launch(config.clone(), storage.clone(), Some(network.clone())).unwrap();
+    let chain = ChainActor::launch(
+        config.clone(),
+        storage.clone(),
+        Some(network.clone()),
+        txpool.clone(),
+    )
+    .unwrap();
     let receiver = txpool.clone().subscribe_txns().await.unwrap();
 
     let _miner = MinerActor::<
