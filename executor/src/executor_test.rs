@@ -31,7 +31,7 @@ fn test_execute_mint_txn() {
     let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
     let chain_state =
         ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
-    let txn = mock_mint_txn(&chain_state);
+    let txn = mock_mint_txn(AccountAddress::random(), &chain_state);
     let config = VMConfig::default();
     info!("invoke Executor::execute_transaction");
     let output = MockExecutor::execute_transaction(&config, &chain_state, txn).unwrap();

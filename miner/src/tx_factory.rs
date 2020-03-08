@@ -9,6 +9,7 @@ use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
+use types::account_address::AccountAddress;
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
@@ -58,7 +59,7 @@ where
         let txpool = self.txpool.clone();
         let f = async {
             let chain_state = ChainStateDB::new(state_node_store, None);
-            let tx = mock_mint_txn(&chain_state);
+            let tx = mock_mint_txn(AccountAddress::random(), 100);
             txpool.add(tx.try_into().unwrap()).await.unwrap();
         }
         .into_actor(self);

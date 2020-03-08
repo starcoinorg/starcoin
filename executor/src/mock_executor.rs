@@ -204,12 +204,11 @@ pub fn mock_txn() -> Transaction {
     Transaction::UserTransaction(SignedUserTransaction::mock_from(empty_script))
 }
 
-pub fn mock_mint_txn(chain_state: &ChainStateDB) -> Transaction {
-    let account_address = AccountAddress::random();
-    chain_state.create_account(account_address);
-    encode_mint_transaction(account_address, 100)
+pub fn mock_mint_txn(to: AccountAddress, amount: u64) -> Transaction {
+    let from = AccountAddress::default();
+    encode_transfer_transaction(from, to, amount)
 }
 
-pub fn mock_transfer_txn(account_address: AccountAddress, amount: u64) -> Transaction {
-    encode_transfer_transaction(AccountAddress::default(), account_address, amount)
+pub fn mock_transfer_txn(from: AccountAddress, to: AccountAddress, amount: u64) -> Transaction {
+    encode_transfer_transaction(from, to, amount)
 }

@@ -83,7 +83,6 @@ impl MockVM {
                         .get_from_statedb(&access_path)?
                         .unwrap()
                         .try_into()?;
-                    assert_eq!(0, account_resource.balance(), "balance error");
                     let new_account_resource = AccountResource::new(
                         amount,
                         1,

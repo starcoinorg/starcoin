@@ -7,7 +7,7 @@ use anyhow::{format_err, Error, Result};
 use config::{NodeConfig, VMConfig};
 use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
-use executor::mock_executor::mock_transfer_txn;
+use executor::mock_executor::mock_mint_txn;
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use logger::prelude::*;
@@ -107,7 +107,7 @@ where
     }
 
     fn gen_tx_for_test(&self) {
-        let tx = mock_transfer_txn(AccountAddress::random(), 100);
+        let tx = mock_mint_txn(AccountAddress::random(), 100);
         info!("gen test txn: {:?}", tx);
         let txpool = self.txpool.clone();
         Arbiter::spawn(async move {
