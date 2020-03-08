@@ -54,8 +54,13 @@ async fn main() {
     // config.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
     // let node_config = Arc::new(config);
     let network = NetworkActor::launch(node_config.clone(), bus.clone(), txpool.clone(), keypair);
-    let chain =
-        ChainActor::launch(node_config.clone(), storage.clone(), Some(network.clone())).unwrap();
+    let chain = ChainActor::launch(
+        node_config.clone(),
+        storage.clone(),
+        Some(network.clone()),
+        txpool.clone(),
+    )
+    .unwrap();
     let _json_rpc = JSONRpcActor::launch(node_config.clone(), txpool.clone());
     let receiver = if node_config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
         Some(txpool.clone().subscribe_txns().await.unwrap())

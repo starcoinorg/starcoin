@@ -15,4 +15,5 @@ pub trait ChainAsyncService: Clone + std::marker::Unpin {
     /// connect to head chain or a fork chain.
     async fn try_connect(self, block: Block) -> Result<()>;
     async fn get_head_branch(self) -> Option<HashValue>;
+    async fn gen_tx(&self) -> Result<()>;
 }

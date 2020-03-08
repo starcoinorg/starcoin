@@ -7,16 +7,20 @@ use anyhow::{format_err, Error, Result};
 use config::{NodeConfig, VMConfig};
 use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
+use executor::mock_executor::mock_mint_txn;
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use state_tree::StateNodeStore;
 use std::cell::RefCell;
+use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage, StarcoinStorageOp};
-use traits::{ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter};
+use traits::{
+    ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter, TxPoolAsyncService,
+};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
@@ -24,11 +28,12 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
-pub struct BlockChain<E, C, S>
+pub struct BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
     S: StateNodeStore + BlockStorageOp + 'static,
+    P: TxPoolAsyncService + 'static,
 {
     config: Arc<NodeConfig>,
     //TODO
@@ -38,6 +43,7 @@ where
     phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
     storage: Arc<S>,
+    txpool: P,
 }
 
 pub fn load_genesis_block() -> Block {
@@ -45,16 +51,18 @@ pub fn load_genesis_block() -> Block {
     Block::new_nil_block_for_test(header)
 }
 
-impl<E, C, S> BlockChain<E, C, S>
+impl<E, C, S, P> BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
     S: StateNodeStore + BlockStorageOp,
+    P: TxPoolAsyncService,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         storage: Arc<S>,
         head_block_hash: Option<HashValue>,
+        txpool: P,
     ) -> Result<Self> {
         let head = match head_block_hash {
             Some(hash) => Some(
@@ -73,6 +81,7 @@ where
             phantom_e: PhantomData,
             phantom_c: PhantomData,
             storage,
+            txpool,
         };
         if is_genesis {
             ///init genesis block
@@ -96,13 +105,23 @@ where
             .as_ref()
             .expect("Must init chain with genesis block first")
     }
+
+    fn gen_tx_for_test(&self) {
+        let tx = mock_mint_txn(&self.chain_state);
+        let txpool = self.txpool.clone();
+        Arbiter::spawn(async move {
+            info!("gen_tx_for_test call txpool.");
+            txpool.add(tx.try_into().unwrap()).await.unwrap();
+        });
+    }
 }
 
-impl<E, C, S> ChainReader for BlockChain<E, C, S>
+impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
     S: StateNodeStore + BlockStorageOp,
+    P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
         self.ensure_head().clone()
@@ -199,13 +218,19 @@ where
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
         &self.chain_state
     }
+
+    fn gen_tx(&self) -> Result<()> {
+        self.gen_tx_for_test();
+        Ok(())
+    }
 }
 
-impl<E, C, S> ChainWriter for BlockChain<E, C, S>
+impl<E, C, S, P> ChainWriter for BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
     S: StateNodeStore + BlockStorageOp,
+    P: TxPoolAsyncService,
 {
     fn apply(&mut self, block: Block) -> Result<()> {
         let header = block.header();

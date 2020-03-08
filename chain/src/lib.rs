@@ -41,9 +41,10 @@ impl ChainActor {
         config: Arc<NodeConfig>,
         storage: Arc<StarcoinStorage>,
         network: Option<NetworkAsyncService<TxPoolRef>>,
+        txpool: TxPoolRef,
     ) -> Result<ChainActorRef<ChainActor>> {
         let actor = ChainActor {
-            service: ChainServiceImpl::new(config, storage, network)?,
+            service: ChainServiceImpl::new(config, storage, network, txpool)?,
         }
         .start();
         Ok(actor.into())
@@ -103,6 +104,10 @@ impl Handler<ChainRequest> for ChainActor {
             ChainRequest::GetHeadBranch() => {
                 let hash = self.service.get_head_branch();
                 Ok(ChainResponse::HashValue(hash))
+            }
+            ChainRequest::GenTx() => {
+                self.service.gen_tx().unwrap();
+                Ok(ChainResponse::None)
             }
         }
     }
@@ -284,6 +289,14 @@ where
         } else {
             None
         }
+    }
+
+    async fn gen_tx(&self) -> Result<()> {
+        self.address
+            .send(ChainRequest::GenTx())
+            .await
+            .map_err(|e| Into::<Error>::into(e))?;
+        Ok(())
     }
 }
 

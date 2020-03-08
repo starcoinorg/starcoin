@@ -107,6 +107,7 @@ impl Handler<ChainRequest> for MemChainActor {
                     let hash = lock.get_head_branch();
                     Ok(ChainResponse::HashValue(hash))
                 }
+                ChainRequest::GenTx() => Ok(ChainResponse::None),
             }
         };
 
@@ -263,6 +264,10 @@ impl ChainReader for MemChain {
     }
 
     fn chain_state_reader(&self) -> &ChainStateReader {
+        unimplemented!()
+    }
+
+    fn gen_tx(&self) -> Result<()> {
         unimplemented!()
     }
 }

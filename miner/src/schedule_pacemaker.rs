@@ -33,6 +33,7 @@ impl Actor for SchedulePacemaker {
         let duration = self.duration.clone();
         ctx.run_later(duration * 2, move |act, ctx| {
             ctx.run_interval(duration, move |act, _ctx| {
+                info!("send GenerateBlockEvent.");
                 act.send_event();
             });
         });

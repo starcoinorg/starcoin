@@ -91,11 +91,19 @@ where
                 }
             };
 
-            let tx_factory = TxFactoryActor::launch(txpool.clone(), Arc::clone(&storage)).unwrap();
+            // let tx_factory = TxFactoryActor::launch(txpool.clone(), Arc::clone(&storage)).unwrap();
+            //
+            // ctx.run_interval(Duration::from_millis(1000), move |act, _ctx| {
+            //     tx_factory.do_send(GenTxEvent {});
+            // });
 
+            let gen_tx_chain = chain.clone();
             ctx.run_interval(Duration::from_millis(1000), move |act, _ctx| {
-                println!("gen tx.");
-                tx_factory.do_send(GenTxEvent {});
+                info!("miner call gen_tx.");
+                let tmp_chain = gen_tx_chain.clone();
+                Arbiter::spawn(async move {
+                    tmp_chain.clone().gen_tx().await;
+                });
             });
 
             MinerActor {
@@ -138,7 +146,8 @@ where
     type Result = Result<()>;
 
     fn handle(&mut self, _event: GenerateBlockEvent, ctx: &mut Self::Context) -> Self::Result {
-        let txpool = self.txpool.clone();
+        let txpool_1 = self.txpool.clone();
+        let txpool_2 = self.txpool.clone();
         let bus = self.bus.clone();
         let config = self.config.clone();
         let storage = self.storage.clone();
@@ -146,13 +155,14 @@ where
 
         let f = async {
             //TODO handle error.
-            let txns = txpool.get_pending_txns(None).await.unwrap_or(vec![]);
+            let txns = txpool_1.get_pending_txns(None).await.unwrap_or(vec![]);
             if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
             {
                 //TODO load latest head block.
                 let head_branch = chain.get_head_branch().await;
-                debug!("head block : {:?}, txn len: {}", head_branch, txns.len());
-                let block_chain = BlockChain::<E, C, S>::new(config, storage, head_branch).unwrap();
+                info!("head block : {:?}, txn len: {}", head_branch, txns.len());
+                let block_chain =
+                    BlockChain::<E, C, S, P>::new(config, storage, head_branch, txpool_2).unwrap();
                 miner::mint::<C>(txns, &block_chain, bus);
             }
         }

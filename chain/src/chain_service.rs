@@ -36,10 +36,11 @@ where
     S: StateNodeStore + BlockStorageOp + 'static,
 {
     config: Arc<NodeConfig>,
-    head: BlockChain<E, C, S>,
-    branches: Vec<BlockChain<E, C, S>>,
+    head: BlockChain<E, C, S, P>,
+    branches: Vec<BlockChain<E, C, S, P>>,
     storage: Arc<S>,
     network: Option<NetworkAsyncService<P>>,
+    txpool: P,
 }
 
 impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
@@ -53,12 +54,14 @@ where
         config: Arc<NodeConfig>,
         storage: Arc<S>,
         network: Option<NetworkAsyncService<P>>,
+        txpool: P,
     ) -> Result<Self> {
         let latest_header = storage.get_latest_block_header()?;
         let head = BlockChain::new(
             config.clone(),
             storage.clone(),
             latest_header.map(|header| header.id()),
+            txpool.clone(),
         )?;
         let branches = Vec::new();
         Ok(Self {
@@ -67,10 +70,11 @@ where
             branches,
             storage,
             network,
+            txpool,
         })
     }
 
-    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S>> {
+    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
         let block_in_head = self.head.get_block(header.parent_hash()).unwrap();
         match block_in_head {
@@ -80,6 +84,7 @@ where
                         self.config.clone(),
                         self.storage.clone(),
                         Some(header.parent_hash()),
+                        self.txpool.clone(),
                     )
                     .unwrap(),
                 );
@@ -92,6 +97,7 @@ where
                                 self.config.clone(),
                                 self.storage.clone(),
                                 Some(header.parent_hash()),
+                                self.txpool.clone(),
                             )
                             .unwrap(),
                         );
@@ -107,7 +113,7 @@ where
         unimplemented!()
     }
 
-    fn select_head(&mut self, new_branch: BlockChain<E, C, S>) {
+    fn select_head(&mut self, new_branch: BlockChain<E, C, S, P>) {
         let new_branch_parent_hash = new_branch.current_header().parent_hash();
         let mut need_broadcast = false;
         let block = new_branch.head_block();
@@ -115,7 +121,12 @@ where
             //1. update head branch
             self.head = new_branch;
             need_broadcast = true;
-        //todo:delete txpool
+
+            //delete txpool
+            let mut enacted = Vec::new();
+            enacted.push(block.header().id());
+            let mut retracted = Vec::new();
+            self.commit_2_txpool(enacted, retracted);
         } else {
             //2. update branches
             let mut update_branch_flag = false;
@@ -123,14 +134,20 @@ where
                 if new_branch_parent_hash == branch.current_header().id() {
                     if new_branch.current_header().number() > self.head.current_header().number() {
                         //3. change head
-                        //todo: rollback txpool
+                        //rollback txpool
+                        let (enacted, retracted) = Self::find_ancestors(&new_branch, &self.head);
+
                         branch = &self.head;
                         self.head = BlockChain::new(
                             self.config.clone(),
                             self.storage.clone(),
                             Some(new_branch.current_header().id()),
+                            self.txpool.clone(),
                         )
                         .unwrap();
+
+                        self.commit_2_txpool(enacted, retracted);
+
                         need_broadcast = true;
                     } else {
                         branch = &new_branch;
@@ -156,6 +173,23 @@ where
                 });
             };
         }
+    }
+
+    fn commit_2_txpool(&self, enacted: Vec<HashValue>, retracted: Vec<HashValue>) {
+        let txpool = self.txpool.clone();
+        Arbiter::spawn(async move {
+            txpool.chain_new_blocks(enacted, retracted).await.unwrap();
+        });
+    }
+
+    fn find_ancestors(
+        block_chain: &BlockChain<E, C, S, P>,
+        head_chain: &BlockChain<E, C, S, P>,
+    ) -> (Vec<HashValue>, Vec<HashValue>) {
+        let mut enacted: Vec<HashValue> = Vec::new();
+        let mut retracted: Vec<HashValue> = Vec::new();
+        //todo:from db
+        (enacted, retracted)
     }
 }
 
@@ -235,5 +269,9 @@ where
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
         self.head.chain_state_reader()
+    }
+
+    fn gen_tx(&self) -> Result<()> {
+        self.head.gen_tx()
     }
 }

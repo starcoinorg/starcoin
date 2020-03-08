@@ -24,4 +24,11 @@ pub trait TxPoolAsyncService: Clone + std::marker::Unpin {
     async fn subscribe_txns(
         self,
     ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>>;
+
+    /// commit block
+    async fn chain_new_blocks(
+        self,
+        enacted: Vec<HashValue>,
+        retracted: Vec<HashValue>,
+    ) -> Result<()>;
 }
