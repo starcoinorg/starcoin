@@ -50,8 +50,3 @@ impl TransactionExecutor for Executor {
         None
     }
 }
-
-pub fn mock_txn() -> Transaction {
-    let empty_script = StarcoinCompiler::compile_script("main() {return;}");
-    Transaction::UserTransaction(SignedUserTransaction::mock_from(empty_script))
-}
