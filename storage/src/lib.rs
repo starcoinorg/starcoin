@@ -22,8 +22,6 @@ pub mod transaction_info_store;
 
 pub type KeyPrefixName = &'static str;
 
-pub trait StarcoinStorageOp: StateNodeStore + BlockStorageOp {}
-
 pub trait BlockStorageOp {
     fn save(&self, block: Block) -> Result<()>;
 
@@ -155,8 +153,6 @@ impl BlockStorageOp for StarcoinStorage {
         self.block_store.get_block_by_number(number)
     }
 }
-
-impl StarcoinStorageOp for StarcoinStorage {}
 
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {

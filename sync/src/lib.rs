@@ -1,4 +1,6 @@
 mod download;
+mod download_body;
+mod download_header;
 mod pool;
 mod process;
 mod sync;
