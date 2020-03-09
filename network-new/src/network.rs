@@ -30,7 +30,6 @@ use libp2p::{
 use scs::SCSCodec;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
-use txpool::{AddTransaction, TxPoolActor};
 use types::{account_address::AccountAddress, peer_info::PeerInfo};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
@@ -330,7 +329,6 @@ mod tests {
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::Instant;
     use traits::mock::MockTxPoolService;
-    use txpool::TxPoolActor;
     use types::account_address::AccountAddress;
 
     struct SimpleLogger;

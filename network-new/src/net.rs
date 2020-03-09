@@ -16,8 +16,11 @@ use futures::{
         mpsc,
         oneshot::{self, Canceled, Sender},
     },
+    future,
+    future::{Future, FutureExt},
     prelude::*,
-    task::AtomicWaker,
+    stream::{Stream, StreamExt},
+    task::{AtomicWaker, Context, Poll},
 };
 
 use anyhow::*;
@@ -30,7 +33,6 @@ use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
 use scs::SCSCodec;
 use slog::Drain;
-use std::task::{Context, Poll};
 use std::{collections::HashMap, io, sync::Arc, thread};
 use types::account_address::AccountAddress;
 
@@ -91,27 +93,95 @@ fn run_network(
     let notify = task_notify.clone();
     let network_fut = stream::poll_fn(move |ctx| {
         notify.register(ctx.waker());
-        match net_srv_2.lock().poll(ctx) {
-            Poll::Ready(Ok(t)) => Poll::Ready(Some(t)),
-            Poll::Ready(Err(e)) => {
-                warn!("sth wrong?");
-                Poll::Pending
-            }
-            Poll::Pending => Poll::Pending,
-        }
+        net_srv_2.lock().poll()
     })
-    .for_each(|event| handle_event(acks_sener, _tx, event_tx, ack_sender, event))
+    .for_each(move |event| {
+        match event {
+            ServiceEvent::CustomMessage { peer_id, message } => {
+                //todo: Error handle
+                let message = Message::from_bytes(message.as_ref()).unwrap();
+                match message {
+                    Message::Payload(payload) => {
+                        //receive message
+                        info!("Receive message with peer_id:{:?}", &peer_id);
+                        let address = convert_peer_id_to_account_address(&peer_id).unwrap();
+                        let user_msg = NetworkMessage {
+                            peer_id: address,
+                            data: payload.data,
+                        };
+                        let _ = _tx.unbounded_send(user_msg);
+                        if payload.id != 0 {
+                            ack_sender.lock().send_custom_message(
+                                &peer_id,
+                                Message::ACK(payload.id).into_bytes(),
+                            );
+                        }
+                    }
+                    Message::ACK(message_id) => {
+                        info!("Receive message ack");
+                        if let Some(mut tx) = acks.lock().remove(&message_id) {
+                            let _ = tx.send(());
+                        } else {
+                            error!(
+                                "Receive a invalid ack, message id:{}, peer id:{}",
+                                message_id, peer_id
+                            );
+                        }
+                    }
+                }
+            }
+            ServiceEvent::CustomProtocolOpen {
+                peer_id,
+                endpoint: _,
+            } => {
+                let addr = convert_peer_id_to_account_address(&peer_id).unwrap();
+                info!("Connected peer {:?}", addr);
+                let open_msg = PeerEvent::Open(addr);
+                let _ = event_tx.unbounded_send(open_msg);
+            }
+            ServiceEvent::CustomProtocolClosed { peer_id, reason: _ } => {
+                let addr = convert_peer_id_to_account_address(&peer_id).unwrap();
+                info!("Close peer {:?}", addr);
+                let open_msg = PeerEvent::Close(addr);
+                let _ = event_tx.unbounded_send(open_msg);
+            }
+            ServiceEvent::Clogged {
+                peer_id: _,
+                messages: _,
+            } => debug!("Network clogged"),
+        };
+        Ok(())
+    })
     .and_then(|_| {
         debug!("Finish network poll");
         Ok(())
     });
 
-    let protocol_fut = async move {
-        while let message = _rx.await {
-            send_network_message(message, net_srv.clone()).await?;
-        }
-        Ok(())
-    };
+    let protocol_fut = stream::poll_fn(move |ctx| _rx.poll_next(ctx))
+        .for_each(move |message| {
+            let peer_id = convert_account_address_to_peer_id(message.peer_id).unwrap();
+            net_srv
+                .lock()
+                .send_custom_message(&peer_id, Message::new_message(message.data).into_bytes());
+            task_notify.wake();
+            if net_srv.lock().is_open(&peer_id) == false {
+                error!(
+                    "Message send to peer :{} is not connected",
+                    convert_peer_id_to_account_address(&peer_id).unwrap()
+                );
+            }
+            info!("Already send message {:?}", &peer_id);
+            Ok(())
+        })
+        .then(|res| {
+            match res {
+                Ok(()) => {
+                    debug!("Finish prototol poll");
+                }
+                Err(_) => error!("protocol disconnected"),
+            };
+            Ok(())
+        });
     let futures: Vec<Box<dyn Future<Output = Result<(), io::Error>> + Send + Unpin>> = vec![
         Box::new(network_fut) as Box<_>,
         Box::new(protocol_fut) as Box<_>,
@@ -127,88 +197,6 @@ fn run_network(
     (net_tx, net_rx, event_rx, futs)
 }
 
-fn handle_event(
-    acks: Arc<Mutex<Libp2pService>>,
-    mut _tx: UnboundedSender<NetworkMessage>,
-    event_tx: UnboundedSender<PeerEvent>,
-    ack_sender: Arc<Mutex<Libp2pService>>,
-    event: ServiceEvent,
-) -> Result<()> {
-    match event {
-        ServiceEvent::CustomMessage { peer_id, message } => {
-            //todo: Error handle
-            let message = Message::from_bytes(message.as_ref()).unwrap();
-            match message {
-                Message::Payload(payload) => {
-                    //receive message
-                    info!("Receive message with peer_id:{:?}", &peer_id);
-                    let address = convert_peer_id_to_account_address(&peer_id).unwrap();
-                    let user_msg = NetworkMessage {
-                        peer_id: address,
-                        data: payload.data,
-                    };
-                    let _ = _tx.unbounded_send(user_msg);
-                    if payload.id != 0 {
-                        ack_sender
-                            .lock()
-                            .send_custom_message(&peer_id, Message::ACK(payload.id).into_bytes());
-                    }
-                }
-                Message::ACK(message_id) => {
-                    info!("Receive message ack");
-                    if let Some(mut tx) = acks.lock().remove(&message_id) {
-                        let _ = tx.send(());
-                    } else {
-                        error!(
-                            "Receive a invalid ack, message id:{}, peer id:{}",
-                            message_id, peer_id
-                        );
-                    }
-                }
-            }
-        }
-        ServiceEvent::CustomProtocolOpen {
-            peer_id,
-            endpoint: _,
-        } => {
-            let addr = convert_peer_id_to_account_address(&peer_id).unwrap();
-            info!("Connected peer {:?}", addr);
-            let open_msg = PeerEvent::Open(addr);
-            let _ = event_tx.unbounded_send(open_msg);
-        }
-        ServiceEvent::CustomProtocolClosed { peer_id, reason: _ } => {
-            let addr = convert_peer_id_to_account_address(&peer_id).unwrap();
-            info!("Close peer {:?}", addr);
-            let open_msg = PeerEvent::Close(addr);
-            let _ = event_tx.unbounded_send(open_msg);
-        }
-        ServiceEvent::Clogged {
-            peer_id: _,
-            messages: _,
-        } => debug!("Network clogged"),
-    };
-    Ok(())
-}
-
-async fn send_network_message(
-    message: NetworkMessage,
-    net_srv: Arc<Mutex<Libp2pService>>,
-) -> Result<()> {
-    let peer_id = convert_account_address_to_peer_id(message.peer_id).unwrap();
-    net_srv
-        .lock()
-        .send_custom_message(&peer_id, Message::new_message(message.data).into_bytes());
-    task_notify.wake();
-    if net_srv.lock().is_open(&peer_id) == false {
-        error!(
-            "Message send to peer :{} is not connected",
-            convert_peer_id_to_account_address(&peer_id).unwrap()
-        );
-    }
-    info!("Already send message {:?}", &peer_id);
-    Ok(())
-}
-
 fn spawn_network(
     libp2p_service: Arc<Mutex<Libp2pService>>,
     acks: Arc<Mutex<HashMap<u128, Sender<()>>>>,
@@ -221,7 +209,10 @@ fn spawn_network(
     let (network_sender, network_receiver, event_rx, network_future) =
         run_network(libp2p_service, acks);
 
-    let futures = vec![Box::new(network_future), Box::new(close_rx)];
+    let futures = vec![
+        Box::new(network_future) as Box<_>,
+        Box::new(close_rx) as Box<_>,
+    ];
 
     let future = futures::future::select_all(futures)
         .and_then(move |_| {
