@@ -3,7 +3,7 @@
 
 use crate::{
     executor::Executor,
-    mock_executor::{get_signed_txn, mock_mint_txn, mock_txn, MockChainState, MockExecutor},
+    mock_executor::{get_signed_txn, mock_mint_txn, mock_transfer_txn, mock_txn, MockChainState, MockExecutor},
     TransactionExecutor,
 };
 use config::VMConfig;
@@ -31,7 +31,9 @@ fn test_execute_mint_txn() {
     let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
     let chain_state =
         ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
-    let txn = mock_mint_txn(AccountAddress::random(), &chain_state);
+    let receiver_account_address = AccountAddress::random();
+    chain_state.create_account(receiver_account_address);
+    let txn = encode_mint_transaction(receiver_account_address, 100);
     let config = VMConfig::default();
     info!("invoke Executor::execute_transaction");
     let output = MockExecutor::execute_transaction(&config, &chain_state, txn).unwrap();
