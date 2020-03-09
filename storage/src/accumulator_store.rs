@@ -19,21 +19,19 @@ use std::marker::PhantomData;
 use std::mem::size_of;
 use std::sync::Arc;
 
-pub type MockAccumulator<'a> = MerkleAccumulator<'a, AccumulatorStore>;
-
 pub struct AccumulatorStore {
     index_storage: CodecStorage<NodeIndex, HashValue>,
     node_store: CodecStorage<HashValue, AccumulatorNode>,
 }
 
-const MOCK_ACCUMULATOR_INDEX_KEY_PREFIX: &str = "NockAccumulatorIndex";
-const MOCK_ACCUMULATOR_NODE_KEY_PREFIX: &str = "NockAccumulatorNode";
+const ACCUMULATOR_INDEX_KEY_PREFIX: &str = "AccumulatorIndex";
+const ACCUMULATOR_NODE_KEY_PREFIX: &str = "AccumulatorNode";
 
 impl AccumulatorStore {
     pub fn new(storage: Arc<dyn Repository>) -> Self {
         Self {
-            index_storage: CodecStorage::new(storage.clone(), MOCK_ACCUMULATOR_INDEX_KEY_PREFIX),
-            node_store: CodecStorage::new(storage.clone(), MOCK_ACCUMULATOR_NODE_KEY_PREFIX),
+            index_storage: CodecStorage::new(storage.clone(), ACCUMULATOR_INDEX_KEY_PREFIX),
+            node_store: CodecStorage::new(storage.clone(), ACCUMULATOR_NODE_KEY_PREFIX),
         }
     }
 }

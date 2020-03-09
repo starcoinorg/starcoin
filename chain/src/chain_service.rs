@@ -12,6 +12,7 @@ use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
+use starcoin_accumulator::{Accumulator, AccumulatorNodeStore};
 use starcoin_statedb::ChainStateDB;
 use state_tree::StateNodeStore;
 use std::cell::RefCell;
@@ -33,7 +34,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
 {
     config: Arc<NodeConfig>,
     head: BlockChain<E, C, S, P>,
@@ -48,7 +49,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -198,7 +199,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
@@ -229,7 +230,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
 {
     fn head_block(&self) -> Block {
         self.head.head_block()

@@ -1,11 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::accumulator_store::AccumulatorStore;
 use crate::block_store::BlockStore;
 use crate::memory_storage::MemoryStorage;
 use crate::state_node_storage::StateNodeStorage;
 use crate::storage::Repository;
 use crate::transaction_info_store::TransactionInfoStore;
+use accumulator::{
+    node_index::NodeIndex, AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore,
+    AccumulatorNodeWriter,
+};
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use state_tree::{StateNode, StateNodeStore};
@@ -62,6 +67,7 @@ pub struct StarcoinStorage {
     transaction_info_store: TransactionInfoStore,
     pub block_store: BlockStore,
     state_node_store: StateNodeStorage,
+    accumulator_store: AccumulatorStore,
 }
 
 impl StarcoinStorage {
@@ -76,6 +82,7 @@ impl StarcoinStorage {
                 storage.clone(),
             ),
             state_node_store: StateNodeStorage::new(storage.clone()),
+            accumulator_store: AccumulatorStore::new(storage.clone()),
         })
     }
 }
@@ -153,6 +160,37 @@ impl BlockStorageOp for StarcoinStorage {
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.block_store.get_block_by_number(number)
+    }
+}
+
+impl AccumulatorNodeStore for StarcoinStorage {}
+impl AccumulatorNodeReader for StarcoinStorage {
+    ///get node by node_index
+    fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>> {
+        self.accumulator_store.get(index)
+    }
+    ///get node by node hash
+    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
+        self.get_node(hash)
+    }
+}
+
+impl AccumulatorNodeWriter for StarcoinStorage {
+    /// save node index
+    fn save(&self, index: NodeIndex, hash: HashValue) -> Result<()> {
+        self.accumulator_store.save(index, hash)
+    }
+    /// save node
+    fn save_node(&self, node: AccumulatorNode) -> Result<()> {
+        self.accumulator_store.save_node(node)
+    }
+    ///delete node
+    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()> {
+        self.accumulator_store.delete_nodes(node_hash_vec)
+    }
+    ///delete larger index than one
+    fn delete_larger_index(&self, index: u64, max_notes: u64) -> Result<()> {
+        self.accumulator_store.delete_larger_index(index, max_notes)
     }
 }
 

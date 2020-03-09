@@ -16,6 +16,7 @@ use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use futures::{Future, TryFutureExt};
 use logger::prelude::*;
+use starcoin_accumulator::AccumulatorNodeStore;
 use state_tree::StateNodeStore;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -44,7 +45,7 @@ where
     E: TransactionExecutor + 'static,
     P: TxPoolAsyncService + 'static,
     CS: ChainAsyncService + 'static,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -61,7 +62,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -126,7 +127,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
 {
     type Context = Context<Self>;
 
@@ -141,7 +142,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
 {
     type Result = Result<()>;
 

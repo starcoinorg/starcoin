@@ -3,7 +3,7 @@
 
 use crate::message::{ChainRequest, ChainResponse};
 use actix::prelude::*;
-use anyhow::{format_err, Error, Result};
+use anyhow::{ensure, format_err, Error, Result};
 use config::{NodeConfig, VMConfig};
 use consensus::{Consensus, ConsensusHeader};
 use crypto::{hash::CryptoHash, HashValue};
@@ -11,6 +11,8 @@ use executor::mock_executor::mock_mint_txn;
 use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use logger::prelude::*;
+use starcoin_accumulator::node_index::NodeIndex;
+use starcoin_accumulator::{Accumulator, AccumulatorNodeStore, MerkleAccumulator};
 use starcoin_statedb::ChainStateDB;
 use state_tree::StateNodeStore;
 use std::cell::RefCell;
@@ -32,12 +34,12 @@ pub struct BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
     P: TxPoolAsyncService + 'static,
 {
     config: Arc<NodeConfig>,
     //TODO
-    //accumulator: Accumulator,
+    accumulator: MerkleAccumulator,
     head: Option<Block>,
     chain_state: ChainStateDB,
     phantom_e: PhantomData<E>,
@@ -55,7 +57,7 @@ impl<E, C, S, P> BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: StateNodeStore + BlockStorageOp,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
     P: TxPoolAsyncService,
 {
     pub fn new(
@@ -76,6 +78,7 @@ where
         let state_root = head.as_ref().map(|head| head.header().state_root());
         let mut chain = Self {
             config: config.clone(),
+            accumulator: MerkleAccumulator::new(vec![], 0, 0, storage.clone()).unwrap(),
             head,
             chain_state: ChainStateDB::new(storage.clone(), state_root),
             phantom_e: PhantomData,
@@ -93,6 +96,21 @@ where
             chain.apply(genesis_block)?;
         }
         Ok(chain)
+    }
+
+    fn verify_proof(
+        &self,
+        expect_root: HashValue,
+        leaves: &[HashValue],
+        first_leaf_idx: u64,
+    ) -> Result<()> {
+        ensure!(leaves.len() > 0, "invalid leaves.");
+        leaves.iter().enumerate().for_each(|(i, hash)| {
+            let leaf_index = first_leaf_idx + i as u64;
+            let proof = self.accumulator.get_proof(leaf_index).unwrap().unwrap();
+            proof.verify(expect_root, *hash, leaf_index).unwrap();
+        });
+        Ok(())
     }
 
     fn save_block(&self, block: &Block) {
@@ -121,7 +139,7 @@ impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: StateNodeStore + BlockStorageOp,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
     P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
@@ -180,6 +198,7 @@ where
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
         let mut state_root = HashValue::zero();
+        let mut transaction_hash = vec![];
         for txn in txns {
             let txn_hash = txn.crypto_hash();
             let output = E::execute_transaction(&self.config.vm, &chain_state, txn)?;
@@ -198,9 +217,11 @@ where
                 0,
                 output.status().vm_status().major_status,
             );
-            //TODO accumulator
-            //let accumulator_root = self.accumulator.append(transaction_info);
+            transaction_hash.push(txn_hash);
         }
+
+        //TODO accumulator
+        let (accumulator_root, _) = self.accumulator.append(&transaction_hash).unwrap();
 
         //TODO execute txns and computer state.
         Ok(BlockTemplate::new(
@@ -208,7 +229,7 @@ where
             previous_header.number() + 1,
             previous_header.number() + 1,
             author,
-            HashValue::zero(),
+            accumulator_root,
             state_root,
             0,
             0,
@@ -230,7 +251,7 @@ impl<E, C, S, P> ChainWriter for BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: StateNodeStore + BlockStorageOp,
+    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
     P: TxPoolAsyncService,
 {
     fn apply(&mut self, block: Block) -> Result<()> {
@@ -268,6 +289,7 @@ where
             txns.push(Transaction::BlockMetadata(block_metadata));
         }
         let mut state_root = HashValue::zero();
+        let mut transaction_hash = vec![];
         for txn in txns {
             let txn_hash = txn.crypto_hash();
             let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
@@ -285,9 +307,11 @@ where
                 0,
                 output.status().vm_status().major_status,
             );
-            //TODO accumulator
-            //let accumulator_root = self.accumulator.append(transaction_info);
+            transaction_hash.push(txn_hash);
         }
+
+        let (accumulator_root, first_leaf_idx) =
+            self.accumulator.append(&transaction_hash).unwrap();
         assert_eq!(
             block.header().state_root(),
             state_root,
@@ -295,6 +319,7 @@ where
             block.header().id()
         );
         //todo verify  accumulator_root;
+        self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx);
         self.save_block(&block);
         chain_state.flush();
         self.head = Some(block);

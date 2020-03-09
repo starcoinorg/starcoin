@@ -25,6 +25,7 @@ use futures_locks::RwLock;
 use logger::prelude::*;
 use message::ChainRequest;
 use network::network::NetworkAsyncService;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use std::sync::Arc;
 use storage::StarcoinStorage;
 use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService, ChainWriter};
