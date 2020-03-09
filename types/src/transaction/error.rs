@@ -67,12 +67,13 @@ pub enum Error {
     TooBig,
     /// Invalid RLP encoding
     InvalidRlp(String),
+    CallErr(CallError),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Error::*;
-        let msg = match *self {
+        let msg = match self {
             AlreadyImported => "Already imported".into(),
             Old => "No longer valid".into(),
             TooCheapToReplace { prev, new } => format!(
@@ -103,7 +104,8 @@ impl fmt::Display for Error {
                 "Sender does not have permissions to execute this type of transaction".into()
             }
             TooBig => "Transaction too big".into(),
-            InvalidRlp(ref err) => format!("Transaction has invalid RLP structure: {}.", err),
+            InvalidRlp(err) => format!("Transaction has invalid RLP structure: {}.", err),
+            CallErr(call_err) => format!("Call txn err: {}.", call_err),
         };
 
         f.write_fmt(format_args!("Transaction error ({})", msg))

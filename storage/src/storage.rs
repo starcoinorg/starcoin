@@ -15,7 +15,7 @@ pub trait WriteBatch {
     fn delete(&mut self, key: Vec<u8>) -> Result<()>;
 }
 
-pub trait Repository {
+pub trait Repository: Send + Sync {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, key: Vec<u8>) -> Result<bool>;

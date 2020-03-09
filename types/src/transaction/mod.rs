@@ -26,6 +26,7 @@ mod pending_transaction;
 mod script;
 mod transaction_argument;
 
+pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
 pub use pending_transaction::{Condition, PendingTransaction};
@@ -293,29 +294,6 @@ impl Deref for SignatureCheckedTransaction {
 
     fn deref(&self) -> &Self::Target {
         &self.0
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct UnverifiedUserTransaction(SignedUserTransaction);
-
-impl UnverifiedUserTransaction {
-    /// Returns the `SignedUserTransaction` within.
-    pub fn into_inner(self) -> SignedUserTransaction {
-        self.0
-    }
-}
-
-impl Deref for UnverifiedUserTransaction {
-    type Target = SignedUserTransaction;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl From<SignedUserTransaction> for UnverifiedUserTransaction {
-    fn from(tx: SignedUserTransaction) -> Self {
-        UnverifiedUserTransaction(tx)
     }
 }
 

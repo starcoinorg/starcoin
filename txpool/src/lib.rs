@@ -11,20 +11,148 @@ extern crate log;
 extern crate trace_time;
 extern crate transaction_pool as tx_pool;
 
-use crate::txpool::TxPoolImpl;
+pub use crate::pool::TxStatus;
+use crate::tx_pool_service_impl::{
+    ChainNewBlock,
+    GetPendingTxns,
+    ImportTxns,
+    SubscribeTxns,
+    TxPoolActor,
+};
 use actix::prelude::*;
 use anyhow::Result;
-use bus::{Broadcast, BusActor, Subscription};
-
+use common_crypto::hash::HashValue;
+use futures_channel::mpsc;
+use starcoin_bus::{Broadcast, Bus, BusActor, Subscription};
+use std::{fmt::Debug, sync::Arc};
+use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
-use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
+use types::{
+    block::{Block, BlockHeader},
+    transaction,
+    transaction::SignedUserTransaction,
+};
 
 mod pool;
-mod tx_pool_service_impl;
-mod txpool;
-
-pub use pool::TxStatus;
-pub use tx_pool_service_impl::{CachedSeqNumberClient, SubscribeTxns, TxPool, TxPoolRef};
-
+mod pool_client;
 #[cfg(test)]
 mod test;
+mod tx_pool_service_impl;
+trait BlockReader {
+    fn get_block_by_hash(&self, block_hash: HashValue) -> Result<Option<Block>>;
+}
+
+#[derive(Clone, Debug)]
+pub struct TxPoolRef {
+    addr: actix::Addr<TxPoolActor>,
+}
+
+impl TxPoolRef {
+    pub fn start(
+        storage: Arc<StarcoinStorage>,
+        chain_header: BlockHeader,
+        bus: actix::Addr<BusActor>,
+    ) -> TxPoolRef {
+        let pool = TxPoolActor::new(storage, chain_header, bus);
+        let pool_addr = pool.start();
+        TxPoolRef { addr: pool_addr }
+    }
+}
+
+#[async_trait]
+impl TxPoolAsyncService for TxPoolRef {
+    async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
+        let mut result = self.add_txns(vec![txn]).await?;
+        Ok(result.pop().unwrap().is_ok())
+    }
+
+    async fn add_txns(
+        self,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Result<Vec<Result<(), transaction::TransactionError>>> {
+        let request = self.addr.send(ImportTxns { txns });
+
+        match request.await {
+            Err(e) => Err(e.into()),
+            Ok(r) => Ok(r),
+        }
+    }
+
+    async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>> {
+        match self
+            .addr
+            .send(GetPendingTxns {
+                max_len: max_len.unwrap_or_else(|| u64::max_value()),
+            })
+            .await
+        {
+            Ok(r) => Ok(r.into_iter().map(|t| t.signed().clone()).collect()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    async fn subscribe_txns(
+        self,
+    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>> {
+        match self.addr.send(SubscribeTxns).await {
+            Err(e) => Err(e.into()),
+            Ok(r) => Ok(r),
+        }
+    }
+
+    /// when new block happened in chain, use this to notify txn pool
+    /// the `HashValue` of `enacted`/`retracted` is the hash of blocks.
+    /// enacted: the blocks which enter into main chain.
+    /// retracted: the blocks which is rollbacked.
+    async fn chain_new_blocks(
+        self,
+        _enacted: Vec<HashValue>,
+        _retracted: Vec<HashValue>,
+    ) -> Result<()> {
+        todo!()
+    }
+
+    async fn rollback(
+        self,
+        enacted: Vec<SignedUserTransaction>,
+        retracted: Vec<SignedUserTransaction>,
+    ) -> Result<()> {
+        match self.addr.send(ChainNewBlock { enacted, retracted }).await {
+            Err(e) => Err(e.into()),
+            Ok(r) => Ok(r?),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct NoneBlockReader;
+impl BlockReader for NoneBlockReader {
+    fn get_block_by_hash(&self, _block_hash: HashValue) -> Result<Option<Block>> {
+        Ok(None)
+    }
+}
+
+struct StorageBlockReader {
+    storage: Arc<StarcoinStorage>,
+}
+
+/// TODO: enhance me when storage impl Debug
+impl Debug for StorageBlockReader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "storage block reader")
+    }
+}
+
+impl Clone for StorageBlockReader {
+    fn clone(&self) -> Self {
+        StorageBlockReader {
+            storage: self.storage.clone(),
+        }
+    }
+}
+
+impl BlockReader for StorageBlockReader {
+    fn get_block_by_hash(&self, block_hash: HashValue) -> Result<Option<Block>> {
+        self.storage.block_store.get_block_by_hash(block_hash)
+    }
+}

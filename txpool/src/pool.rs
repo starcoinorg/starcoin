@@ -10,20 +10,57 @@ pub(crate) mod replace;
 pub(crate) mod scoring;
 pub(crate) mod verifier;
 
+pub use client::{AccountSeqNumberClient, Client};
 use common_crypto::hash::{CryptoHash, HashValue};
+pub use queue::{Status, TransactionQueue};
+use std::ops::Deref;
 use transaction_pool as tx_pool;
 use types::{account_address::AccountAddress, transaction};
+pub use verifier::Options as VerifierOptions;
 
 pub type SeqNumber = u64;
 pub type GasPrice = u64;
 pub type Gas = u64;
 
-pub use client::{AccountSeqNumberClient, Client};
-pub use queue::{Status, TransactionQueue};
-pub use verifier::Options as VerifierOptions;
-
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct UnverifiedUserTransaction(transaction::SignedUserTransaction);
+pub struct UnverifiedUserTransaction {
+    txn: transaction::SignedUserTransaction,
+    hash: HashValue,
+}
+
+impl UnverifiedUserTransaction {
+    pub fn txn(&self) -> &transaction::SignedUserTransaction {
+        &self.txn
+    }
+
+    pub fn hash(&self) -> &HashValue {
+        &self.hash
+    }
+}
+
+impl From<UnverifiedUserTransaction> for transaction::SignedUserTransaction {
+    fn from(txn: UnverifiedUserTransaction) -> transaction::SignedUserTransaction {
+        txn.txn
+    }
+}
+
+impl From<transaction::SignedUserTransaction> for UnverifiedUserTransaction {
+    fn from(user_txn: transaction::SignedUserTransaction) -> Self {
+        let hash = CryptoHash::crypto_hash(&user_txn);
+        UnverifiedUserTransaction {
+            txn: user_txn,
+            hash,
+        }
+    }
+}
+
+impl Deref for UnverifiedUserTransaction {
+    type Target = transaction::SignedUserTransaction;
+
+    fn deref(&self) -> &Self::Target {
+        &self.txn
+    }
+}
 
 /// Transaction priority.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Clone, Copy)]
@@ -46,6 +83,82 @@ impl Priority {
     fn is_local(&self) -> bool {
         match *self {
             Priority::Local => true,
+            _ => false,
+        }
+    }
+}
+/// Transaction to verify.
+#[cfg_attr(test, derive(Clone))]
+pub enum PoolTransaction {
+    /// Fresh, never verified transaction.
+    ///
+    /// We need to do full verification of such transactions
+    Unverified(UnverifiedUserTransaction),
+
+    /// Transaction from retracted block.
+    ///
+    /// We could skip some parts of verification of such transactions
+    Retracted(UnverifiedUserTransaction),
+
+    /// Locally signed or retracted transaction.
+    ///
+    /// We can skip consistency verifications and just verify readiness.
+    Local(transaction::PendingTransaction),
+}
+
+impl PoolTransaction {
+    /// Return transaction hash
+    pub fn hash(&self) -> HashValue {
+        match *self {
+            PoolTransaction::Unverified(ref tx) => tx.hash().clone(),
+            PoolTransaction::Retracted(ref tx) => tx.hash().clone(),
+            PoolTransaction::Local(ref tx) => CryptoHash::crypto_hash(tx.deref()),
+        }
+    }
+
+    pub fn signed(&self) -> &transaction::SignedUserTransaction {
+        match self {
+            PoolTransaction::Unverified(t) => t.txn(),
+            PoolTransaction::Retracted(t) => t.txn(),
+            PoolTransaction::Local(t) => &t.transaction,
+        }
+    }
+
+    /// Return transaction gas price
+    pub fn gas_price(&self) -> GasPrice {
+        match self {
+            PoolTransaction::Unverified(ref tx) => tx.gas_unit_price(),
+            PoolTransaction::Retracted(ref tx) => tx.gas_unit_price(),
+            PoolTransaction::Local(ref tx) => tx.gas_unit_price(),
+        }
+    }
+
+    fn gas(&self) -> Gas {
+        match self {
+            PoolTransaction::Unverified(ref tx) => tx.max_gas_amount(),
+            PoolTransaction::Retracted(ref tx) => tx.max_gas_amount(),
+            PoolTransaction::Local(ref tx) => tx.max_gas_amount(),
+        }
+    }
+
+    fn transaction(&self) -> &transaction::RawUserTransaction {
+        match self {
+            PoolTransaction::Unverified(ref tx) => tx.raw_txn(),
+            PoolTransaction::Retracted(ref tx) => tx.raw_txn(),
+            PoolTransaction::Local(ref tx) => tx.raw_txn(),
+        }
+    }
+
+    fn is_local(&self) -> bool {
+        match self {
+            PoolTransaction::Local(..) => true,
+            _ => false,
+        }
+    }
+
+    fn is_retracted(&self) -> bool {
+        match self {
+            PoolTransaction::Retracted(..) => true,
             _ => false,
         }
     }
