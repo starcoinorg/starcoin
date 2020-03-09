@@ -8,6 +8,7 @@ mod helper;
 mod message_processor;
 mod messages;
 mod net;
+mod net_test;
 mod sync_messages;
 
 pub use messages::*;
