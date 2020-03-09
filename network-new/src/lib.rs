@@ -7,6 +7,7 @@ extern crate log;
 mod helper;
 mod message_processor;
 mod messages;
+mod net;
 mod sync_messages;
 
 pub use messages::*;

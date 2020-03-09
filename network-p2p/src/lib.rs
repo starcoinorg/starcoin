@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate log;
 
+pub use crate::protocol::event::Event;
 pub use crate::protocol::generic_proto::GenericProtoOut;
 pub use crate::service::NetworkWorker;
 pub use config::{NetworkConfiguration, NodeKeyConfig, Params, ProtocolId, Secret};

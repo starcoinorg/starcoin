@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //use anyhow::Result;
-use anyhow::Result;
+use anyhow::*;
+use libp2p::identity::error::DecodingError;
 use network_p2p::PeerId;
 use std::{
     convert::TryFrom,
@@ -16,13 +17,11 @@ pub fn convert_peer_id_to_account_address(peer_id: &PeerId) -> Result<AccountAdd
     AccountAddress::try_from(peer_id_bytes)
 }
 
-pub fn convert_account_address_to_peer_id(
-    address: AccountAddress,
-) -> std::result::Result<PeerId, Vec<u8>> {
+pub fn convert_account_address_to_peer_id(address: AccountAddress) -> Result<PeerId> {
     let mut peer_id_vec = address.to_vec();
     peer_id_vec.insert(0, 32);
     peer_id_vec.insert(0, 22);
-    PeerId::from_bytes(peer_id_vec)
+    PeerId::from_bytes(peer_id_vec).map_err(|data| anyhow!("parse address failed"))
 }
 
 pub fn convert_boot_nodes(boot_nodes: Vec<String>) -> Vec<String> {

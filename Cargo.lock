@@ -4916,6 +4916,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "bitflags",
+ "bytes 0.5.4",
  "derive_more",
  "fnv",
  "futures 0.3.4",

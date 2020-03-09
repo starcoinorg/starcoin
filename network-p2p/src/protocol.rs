@@ -9,7 +9,7 @@ use crate::{DiscoveryNetBehaviour, Multiaddr};
 
 use crate::network_state::Peer;
 use crate::protocol::util::LruHashSet;
-use bytes::{Bytes, BytesMut};
+use bytes::{Buf, Bytes, BytesMut};
 use futures::prelude::*;
 use libp2p::core::{nodes::listeners::ListenerId, ConnectedPoint};
 use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler};
@@ -170,7 +170,7 @@ impl NetworkBehaviour for Protocol {
         let outcome = match event {
             GenericProtoOut::CustomProtocolOpen { peer_id, .. } => {
                 self.on_peer_connected(peer_id.clone());
-                CustomMessageOutcome::None
+                CustomMessageOutcome::NotificationStreamOpened { remote: peer_id }
             }
             GenericProtoOut::CustomProtocolClosed { peer_id, .. } => {
                 self.on_peer_disconnected(peer_id.clone());
@@ -311,7 +311,10 @@ impl Protocol {
     }
 
     pub fn on_custom_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
-        CustomMessageOutcome::None
+        CustomMessageOutcome::NotificationsReceived {
+            remote: who,
+            messages: vec![data.freeze()],
+        }
     }
 
     // fn send_request(&mut self, who: &PeerId, message: Message<B>) {
