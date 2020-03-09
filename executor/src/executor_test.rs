@@ -3,7 +3,9 @@
 
 use crate::{
     executor::Executor,
-    mock_executor::{get_signed_txn, mock_mint_txn, mock_transfer_txn, mock_txn, MockChainState, MockExecutor},
+    mock_executor::{
+        get_signed_txn, mock_mint_txn, mock_transfer_txn, mock_txn, MockChainState, MockExecutor,
+    },
     TransactionExecutor,
 };
 use config::VMConfig;

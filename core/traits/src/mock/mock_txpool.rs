@@ -72,6 +72,14 @@ impl TxPoolAsyncService for MockTxPoolService {
     ) -> Result<()> {
         unimplemented!()
     }
+
+    async fn rollback(
+        self,
+        enacted: Vec<SignedUserTransaction>,
+        retracted: Vec<SignedUserTransaction>,
+    ) -> Result<()> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]

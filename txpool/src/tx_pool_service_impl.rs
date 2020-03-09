@@ -94,6 +94,14 @@ where
     ) -> Result<()> {
         self.chain_new_blocks_inner(enacted, retracted).await
     }
+
+    async fn rollback(
+        self,
+        enacted: Vec<SignedUserTransaction>,
+        retracted: Vec<SignedUserTransaction>,
+    ) -> Result<()> {
+        self.rollback_inner(enacted, retracted).await
+    }
 }
 
 impl<C> TxPool<C>
@@ -135,6 +143,15 @@ where
         &self,
         _enacted: Vec<HashValue>,
         _retracted: Vec<HashValue>,
+    ) -> Result<()> {
+        //TODO
+        Ok(())
+    }
+
+    pub async fn rollback_inner(
+        &self,
+        _enacted: Vec<SignedUserTransaction>,
+        _retracted: Vec<SignedUserTransaction>,
     ) -> Result<()> {
         //TODO
         Ok(())

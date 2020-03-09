@@ -123,8 +123,8 @@ where
             need_broadcast = true;
 
             //delete txpool
-            let mut enacted = Vec::new();
-            enacted.push(block.header().id());
+            let mut enacted: Vec<SignedUserTransaction> = Vec::new();
+            enacted.append(&mut block.transactions().clone().to_vec());
             let mut retracted = Vec::new();
             self.commit_2_txpool(enacted, retracted);
         } else {
@@ -175,21 +175,33 @@ where
         }
     }
 
-    fn commit_2_txpool(&self, enacted: Vec<HashValue>, retracted: Vec<HashValue>) {
+    fn commit_2_txpool(
+        &self,
+        enacted: Vec<SignedUserTransaction>,
+        retracted: Vec<SignedUserTransaction>,
+    ) {
         let txpool = self.txpool.clone();
         Arbiter::spawn(async move {
-            txpool.chain_new_blocks(enacted, retracted).await.unwrap();
+            txpool.rollback(enacted, retracted).await.unwrap();
         });
     }
 
     fn find_ancestors(
         block_chain: &BlockChain<E, C, S, P>,
         head_chain: &BlockChain<E, C, S, P>,
-    ) -> (Vec<HashValue>, Vec<HashValue>) {
-        let mut enacted: Vec<HashValue> = Vec::new();
-        let mut retracted: Vec<HashValue> = Vec::new();
+    ) -> (Vec<SignedUserTransaction>, Vec<SignedUserTransaction>) {
+        let mut enacted: Vec<Block> = Vec::new();
+        let mut retracted: Vec<Block> = Vec::new();
         //todo:from db
-        (enacted, retracted)
+        let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
+        let mut tx_retracted: Vec<SignedUserTransaction> = Vec::new();
+        enacted.iter().for_each(|b| {
+            tx_enacted.append(&mut b.transactions().clone().to_vec());
+        });
+        retracted.iter().for_each(|b| {
+            tx_retracted.append(&mut b.transactions().clone().to_vec());
+        });
+        (tx_enacted, tx_retracted)
     }
 }
 
