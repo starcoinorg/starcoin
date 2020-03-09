@@ -83,6 +83,11 @@ impl Behaviour {
         self.discovery.add_known_address(peer_id, addr)
     }
 
+    /// Returns true if we have a channel open with this node.
+    pub fn is_open(&self, peer_id: &PeerId) -> bool {
+        self.protocol.is_open(peer_id)
+    }
+
     /// Borrows `self` and returns a struct giving access to the information about a node.
     ///
     /// Returns `None` if we don't know anything about this node. Always returns `Some` for nodes

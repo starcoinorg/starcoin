@@ -26,47 +26,60 @@ use bytes::Bytes;
 use config::NetworkConfig;
 use libp2p::PeerId;
 use network_p2p::{
-    identity, Event, GenericProtoOut as ServiceEvent, NetworkConfiguration, NetworkWorker,
-    NodeKeyConfig, Params, Secret,
+    identity, Event, GenericProtoOut as ServiceEvent, NetworkConfiguration, NetworkService,
+    NetworkWorker, NodeKeyConfig, Params, Secret,
 };
 use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
 use scs::SCSCodec;
 use slog::Drain;
+use std::cell::{Cell, RefCell};
 use std::task::{Context, Poll};
 use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::runtime::Handle;
 use types::account_address::AccountAddress;
 
 #[derive(Clone)]
-pub struct NetworkService {
+pub struct SNetworkService {
     handle: Handle,
     inner: NetworkInner,
+    service: Arc<NetworkService>,
+    net_tx: Option<mpsc::UnboundedSender<NetworkMessage>>,
+    worker: Arc<RefCell<NetworkWorker>>,
 }
 
 #[derive(Clone)]
 pub struct NetworkInner {
-    worker: Arc<Mutex<NetworkWorker>>,
+    service: Arc<NetworkService>,
     acks: Arc<Mutex<HashMap<u128, Sender<()>>>>,
 }
 
-impl NetworkService {
-    fn new(cfg: NetworkConfiguration, handle: Handle) -> NetworkService {
+impl SNetworkService {
+    fn new(cfg: NetworkConfiguration, handle: Handle) -> Self {
         let protocol = network_p2p::ProtocolId::from("stargate".as_bytes());
 
-        let worker = Arc::new(Mutex::new(
-            NetworkWorker::new(Params::new(cfg, protocol)).unwrap(),
-        ));
+        let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
+        let service = worker.service().clone();
+        let worker = worker;
 
         let acks = Arc::new(Mutex::new(HashMap::new()));
 
-        let inner = NetworkInner { worker, acks };
+        let inner = NetworkInner {
+            service: service.clone(),
+            acks,
+        };
 
-        Self { inner, handle }
+        Self {
+            inner,
+            handle,
+            service,
+            net_tx: None,
+            worker: Arc::new(RefCell::new(worker)),
+        }
     }
 
     fn run(
-        &self,
+        &mut self,
     ) -> (
         mpsc::UnboundedSender<NetworkMessage>,
         mpsc::UnboundedReceiver<NetworkMessage>,
@@ -79,6 +92,7 @@ impl NetworkService {
         let (event_tx, mut event_rx) = mpsc::unbounded::<PeerEvent>();
         let inner = self.inner.clone();
 
+        self.net_tx = Some(net_tx.clone());
         self.handle
             .spawn(Self::start_network(inner, tx, rx, event_tx, close_rx));
         (net_tx, net_rx, event_rx, close_tx)
@@ -91,7 +105,7 @@ impl NetworkService {
         event_tx: mpsc::UnboundedSender<PeerEvent>,
         mut close_rx: mpsc::UnboundedReceiver<()>,
     ) {
-        let mut event_stream = inner.worker.lock().service().event_stream().fuse();
+        let mut event_stream = inner.service.event_stream().fuse();
         let mut net_rx = net_rx.fuse();
         let mut close_rx = close_rx.fuse();
 
@@ -115,6 +129,54 @@ impl NetworkService {
                 }
             }
         }
+    }
+
+    pub fn is_connected(&self, address: AccountAddress) -> Result<bool> {
+        let peer_id = convert_account_address_to_peer_id(address)?;
+        Ok(self.worker.borrow().is_open(&peer_id))
+    }
+
+    pub fn identify(&self) -> AccountAddress {
+        convert_peer_id_to_account_address(self.service.peer_id()).unwrap()
+    }
+
+    pub async fn send_message(
+        &mut self,
+        account_address: AccountAddress,
+        message: Vec<u8>,
+    ) -> Result<()> {
+        let (tx, rx) = oneshot::channel::<()>();
+        let (protocol_msg, message_id) = Message::new_payload(message);
+        let peer_id =
+            convert_account_address_to_peer_id(account_address).expect("Invalid account address");
+
+        self.service
+            .write_notification(peer_id, protocol_msg.into_bytes());
+        debug!("Send message with ack");
+        self.inner.acks.lock().insert(message_id, tx);
+        rx.await?;
+
+        Ok(())
+    }
+
+    pub fn broadcast_message(&mut self, message: Vec<u8>) {
+        debug!("start send broadcast message");
+        let (protocol_msg, message_id) = Message::new_payload(message);
+
+        let message_bytes = protocol_msg.into_bytes();
+
+        let mut peers = HashSet::new();
+
+        for p in self.worker.borrow_mut().connected_peers() {
+            // debug!("will send message to {}", p);
+            peers.insert(p.clone());
+        }
+
+        for peer_id in peers {
+            self.service
+                .write_notification(peer_id, message_bytes.clone());
+        }
+        debug!("finish send broadcast message");
     }
 }
 
@@ -167,7 +229,7 @@ impl NetworkInner {
                     };
                     net_tx.unbounded_send(user_msg)?;
                     if payload.id != 0 {
-                        self.worker.lock().service().write_notification(
+                        self.service.write_notification(
                             peer_id.clone(),
                             Message::ACK(payload.id).into_bytes(),
                         );
@@ -188,9 +250,10 @@ impl NetworkInner {
         }
         Ok(())
     }
+
     async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
         let account_addr = message.peer_id.clone();
-        self.worker.lock().service().write_notification(
+        self.service.write_notification(
             convert_account_address_to_peer_id(account_addr)?,
             message.data,
         );

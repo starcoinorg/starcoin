@@ -359,20 +359,12 @@ impl NetworkWorker {
     }
 
     /// Returns the list of all the peers we are connected to.
-    pub fn connected_peers(&self) -> HashSet<PeerId> {
-        unimplemented!()
-    }
-
-    pub fn send_custom_message(&mut self, peer_id: &PeerId, message: Vec<u8>) {
-        unimplemented!()
+    pub fn connected_peers(&mut self) -> impl Iterator<Item = &PeerId> {
+        self.network_service.known_peers()
     }
 
     pub fn is_open(&self, peer_id: &PeerId) -> bool {
-        unimplemented!()
-    }
-
-    pub fn peer_id(&self) -> &PeerId {
-        &self.service.local_peer_id
+        self.network_service.is_open(peer_id)
     }
 }
 
@@ -520,6 +512,10 @@ impl NetworkService {
     /// Returns the number of peers we're connected to.
     pub fn num_connected(&self) -> usize {
         self.num_connected.load(Ordering::Relaxed)
+    }
+
+    pub fn peer_id(&self) -> &PeerId {
+        &self.local_peer_id
     }
 }
 

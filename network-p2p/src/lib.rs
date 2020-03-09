@@ -6,7 +6,7 @@ extern crate log;
 
 pub use crate::protocol::event::Event;
 pub use crate::protocol::generic_proto::GenericProtoOut;
-pub use crate::service::NetworkWorker;
+pub use crate::service::{NetworkService, NetworkWorker};
 pub use config::{NetworkConfiguration, NodeKeyConfig, Params, ProtocolId, Secret};
 pub use libp2p::{
     core::{
