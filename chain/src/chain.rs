@@ -17,7 +17,7 @@ use std::cell::RefCell;
 use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage, StarcoinStorageOp};
+use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage};
 use traits::{
     ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter, TxPoolAsyncService,
 };
@@ -108,7 +108,7 @@ where
 
     fn gen_tx_for_test(&self) {
         let tx = mock_mint_txn(AccountAddress::random(), 100);
-        info!("gen test txn: {:?}", tx);
+        // info!("gen test txn: {:?}", tx);
         let txpool = self.txpool.clone();
         Arbiter::spawn(async move {
             info!("gen_tx_for_test call txpool.");

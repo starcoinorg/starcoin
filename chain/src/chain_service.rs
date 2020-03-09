@@ -17,7 +17,7 @@ use state_tree::StateNodeStore;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage, StarcoinStorageOp};
+use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage};
 use traits::{
     ChainAsyncService, ChainReader, ChainService, ChainStateReader, ChainWriter, TxPoolAsyncService,
 };

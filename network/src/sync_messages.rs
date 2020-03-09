@@ -25,8 +25,6 @@ pub enum DownloadMessage {
     BatchBodyMsg(BatchBodyMsg),
     BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
     NewHeadBlock(PeerInfo, Block),
-    // just fo test
-    MinedBlock(Block),
 }
 
 impl Message for DownloadMessage {
