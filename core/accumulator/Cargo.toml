@@ -18,3 +18,12 @@ types = {path = "../../types", package="starcoin-types"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0" }
+
+[dev-dependencies]
+rand = "0.6.5"
+proptest = "0.9.5"
+proptest-derive = "0.1.2"
+
+[features]
+default = []
+fuzzing = ["starcoin-crypto/fuzzing"]

@@ -23,6 +23,7 @@ use network::sync_messages::{
 use network::{NetworkAsyncService, RPCMessage, RPCRequest, RPCResponse};
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::{AsyncChain, ChainAsyncService};
@@ -44,6 +45,7 @@ pub struct DownloadActor {
     bus: Addr<BusActor>,
     sync_event_sender: mpsc::Sender<SyncEvent>,
     sync_duration: Duration,
+    syncing: Arc<AtomicBool>,
 }
 
 impl DownloadActor {
@@ -63,6 +65,7 @@ impl DownloadActor {
                 bus,
                 sync_event_sender,
                 sync_duration: Duration::from_secs(5),
+                syncing: Arc::new(AtomicBool::new(false)),
             }
         });
         Ok(download_actor)
@@ -74,7 +77,9 @@ impl Actor for DownloadActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
-            act.sync_event_sender.try_send(SyncEvent {});
+            if act.syncing.load(Ordering::Relaxed) {
+                act.sync_event_sender.try_send(SyncEvent {});
+            }
         });
         info!("download actor started.")
     }
@@ -83,7 +88,11 @@ impl Actor for DownloadActor {
 impl Handler<SyncEvent> for DownloadActor {
     type Result = Result<()>;
     fn handle(&mut self, _item: SyncEvent, _ctx: &mut Self::Context) -> Self::Result {
-        Self::sync_from_best_peer(self.downloader.clone(), self.network.clone());
+        if !self.syncing.load(Ordering::Relaxed) {
+            self.syncing.store(true, Ordering::Relaxed);
+            Self::sync_from_best_peer(self.downloader.clone(), self.network.clone());
+            self.syncing.store(false, Ordering::Relaxed);
+        }
         Ok(())
     }
 }

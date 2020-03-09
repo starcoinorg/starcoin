@@ -44,10 +44,10 @@ impl TransactionHelper {
     pub fn to_libra_AccountAddress(address: AccountAddress) -> LibraAccountAddress {
         LibraAccountAddress::new(address.into_inner())
     }
-//    pub fn to_starcoin_AccountAddress(address: LibraAccountAddress) -> AccountAddress {
-//        let inner: [u8; ADDRESS_LENGTH] = *address.to_vec().as_bytes().try_into().unwrap();
-//        AccountAddress::new(inner)
-//    }
+    //    pub fn to_starcoin_AccountAddress(address: LibraAccountAddress) -> AccountAddress {
+    //        let inner: [u8; ADDRESS_LENGTH] = *address.to_vec().as_bytes().try_into().unwrap();
+    //        AccountAddress::new(inner)
+    //    }
 
     pub fn to_libra_TransactionArgument(arg: &TransactionArgument) -> LibraTransactionArgument {
         match arg {

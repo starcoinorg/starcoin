@@ -94,6 +94,7 @@ impl StateCache {
 pub struct StateTree {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
+    updates: RwLock<BTreeMap<HashValue, Option<Blob>>>,
     cache: Mutex<StateCache>,
 }
 
@@ -104,32 +105,59 @@ impl StateTree {
         Self {
             storage: state_storage,
             storage_root_hash: RwLock::new(state_root_hash),
+            updates: RwLock::new(BTreeMap::new()),
             cache: Mutex::new(StateCache::new(state_root_hash)),
         }
     }
 
     /// get current root hash
+    /// if any modification is not committed into state tree, the root hash is not changed.
+    /// You can use `commit` to make current modification committed into local state tree.
     pub fn root_hash(&self) -> HashValue {
         self.cache.lock().unwrap().root_hash
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
-    }
+    // // TODO: comment out for now. Need to recheck the meaning of tree'empty means.
+    // pub fn is_empty(&self) -> bool {
+    //     self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
+    // }
 
     /// put a kv pair into tree.
     /// Users need to hash the origin key into a fixed-length(here is 256bit) HashValue,
     /// and use it as the `key_hash`.
-    pub fn put(&self, key_hash: HashValue, value: Vec<u8>) -> Result<HashValue> {
-        self.put_blob_set(vec![(key_hash, value)])
+    /// this will not compute new root hash,
+    /// Use `commit` to recompute the root hash.
+    pub fn put(&self, key_hash: HashValue, value: Vec<u8>) {
+        self.updates
+            .write()
+            .unwrap()
+            .insert(key_hash, Some(value.into()));
+    }
+
+    /// Remove key_hash's data.
+    /// this will not compute new root hash,
+    /// Use `commit` to recompute the root hash.
+    pub fn remove(&self, key_hash: &HashValue) {
+        self.updates.write().unwrap().insert(key_hash.clone(), None);
     }
 
     /// use a key's hash `key_hash` to read a value.
+    /// This will also read un-committed modification.
     pub fn get(&self, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
+        let updates_guard = self.updates.read().unwrap();
+        if let Some(uncomputed) = updates_guard.get(key_hash).cloned() {
+            return Ok(uncomputed.map(|b| b.into()));
+        }
         Ok(self.get_with_proof(key_hash)?.0)
     }
 
-    /// return value with it proof
+    pub fn contains(&self, key_hash: &HashValue) -> Result<bool> {
+        self.get(key_hash).map(|result| result.is_some())
+    }
+
+    /// return value with it proof.
+    /// NOTICE: this will only read from state tree.
+    /// Any un-committed modification will not visible to the method.
     pub fn get_with_proof(
         &self,
         key_hash: &HashValue,
@@ -149,26 +177,66 @@ impl StateTree {
         }
     }
 
-    /// Remove key_hash's data and return new root.
-    pub fn remove(&self, key_hash: &HashValue) -> Result<HashValue> {
-        self.updates(vec![(key_hash.clone(), None)])
-    }
-
-    pub fn contains(&self, key_hash: &HashValue) -> Result<bool> {
-        self.get(key_hash).map(|result| result.is_some())
-    }
-
-    /// write a new states into local cache, return new root hash
-    pub fn put_blob_set(&self, blob_set: Vec<(HashValue, Vec<u8>)>) -> Result<HashValue> {
-        let blob_set = blob_set
-            .into_iter()
-            .map(|(k, v)| (k, Some(v)))
+    /// Commit current modification into state tree's local cache,
+    /// and return new root hash.
+    /// NOTICE: this method will not flush the changes into disk.
+    /// It'just commit the changes into local state-tree, and cache it there.
+    pub fn commit(&self) -> Result<HashValue> {
+        let mut guard = self.updates.write().unwrap();
+        let updates = guard
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
             .collect::<Vec<_>>();
-        self.updates(blob_set)
+        let new_root_hash = self.updates(updates)?;
+        guard.clear();
+        Ok(new_root_hash)
+    }
+
+    pub fn apply(&self, state_set: StateSet) -> Result<()> {
+        let inner: Vec<(HashValue, Vec<u8>)> = state_set.into();
+        let updates = inner
+            .into_iter()
+            .map(|(k, v)| (k, Some(v.into())))
+            .collect::<Vec<_>>();
+        self.updates(updates)?;
+        Ok(())
+    }
+
+    /// commit the state change into underline storage.
+    pub fn flush(&self) -> Result<()> {
+        let (root_hash, change_sets) = self.get_change_sets();
+
+        // TODO: save in batch to preserve atomic.
+        for (nk, n) in change_sets.node_batch.into_iter() {
+            self.storage.put(nk, StateNode(n))?;
+        }
+        // and then advance the storage root hash
+        *self.storage_root_hash.write().unwrap() = root_hash;
+        self.cache.lock().unwrap().reset(root_hash);
+        Ok(())
+    }
+
+    /// Dump tree to state set.
+    pub fn dump(&self) -> Result<StateSet> {
+        let cur_root_hash = self.root_hash();
+        let mut cache_guard = self.cache.lock().unwrap();
+        let mut cache = cache_guard.deref_mut();
+        let reader = CachedTreeReader {
+            store: self.storage.as_ref(),
+            cache,
+        };
+        let iterator =
+            JellyfishMerkleIterator::new(Arc::new(reader), cur_root_hash, HashValue::zero())?;
+        let mut states = vec![];
+        for item in iterator {
+            let item = item?;
+            states.push((item.0, item.1.into()));
+        }
+        Ok(StateSet::new(states))
     }
 
     /// passing None value with a key means delete the key
-    fn updates(&self, updates: Vec<(HashValue, Option<Vec<u8>>)>) -> Result<HashValue> {
+    fn updates(&self, updates: Vec<(HashValue, Option<Blob>)>) -> Result<HashValue> {
         let cur_root_hash = self.root_hash();
         let mut cache_guard = self.cache.lock().unwrap();
         let mut cache = cache_guard.deref_mut();
@@ -177,11 +245,7 @@ impl StateTree {
             cache,
         };
         let tree = JellyfishMerkleTree::new(&reader);
-        let blob_set = updates
-            .into_iter()
-            .map(|(k, v)| (k, v.map(|d| d.into())))
-            .collect::<Vec<_>>();
-        let (new_state_root, change_set) = tree.updates(Some(cur_root_hash), blob_set)?;
+        let (new_state_root, change_set) = tree.updates(Some(cur_root_hash), updates)?;
         // cache.root_hashes.push(new_state_root);
         // cache.change_sets.push(change_set);
         // cache.root_hash = new_state_root;
@@ -228,45 +292,6 @@ impl StateTree {
         let mut cache_guard = self.cache.lock().unwrap();
         (cache_guard.root_hash, cache_guard.change_set.clone())
     }
-
-    /// commit the state change into underline storage.
-    pub fn commit(&self) -> Result<()> {
-        let (root_hash, change_sets) = self.get_change_sets();
-
-        // TODO: save in batch to preserve atomic.
-        for (nk, n) in change_sets.node_batch.into_iter() {
-            self.storage.put(nk, StateNode(n))?;
-        }
-        // and then advance the storage root hash
-        *self.storage_root_hash.write().unwrap() = root_hash;
-        self.cache.lock().unwrap().reset(root_hash);
-        Ok(())
-    }
-
-    /// Dump tree to state set.
-    pub fn dump(&self) -> Result<StateSet> {
-        let cur_root_hash = self.root_hash();
-        let mut cache_guard = self.cache.lock().unwrap();
-        let mut cache = cache_guard.deref_mut();
-        let reader = CachedTreeReader {
-            store: self.storage.as_ref(),
-            cache,
-        };
-        let iterator =
-            JellyfishMerkleIterator::new(Arc::new(reader), cur_root_hash, HashValue::zero())?;
-        let mut states = vec![];
-        for item in iterator {
-            let item = item?;
-            states.push((item.0, item.1.into()));
-        }
-        Ok(StateSet::new(states))
-    }
-
-    pub fn apply(&self, state_set: StateSet) -> Result<()> {
-        self.put_blob_set(state_set.into());
-        Ok(())
-    }
-
     // TODO: to keep atomic with other commit.
     // TODO: think about the WriteBatch trait position.
     // pub fn save<T>(&self, batch: &mut T) -> Result<()>

@@ -64,6 +64,14 @@ impl TxPoolAsyncService for MockTxPoolService {
     ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>> {
         unimplemented!()
     }
+
+    async fn chain_new_blocks(
+        self,
+        enacted: Vec<HashValue>,
+        retracted: Vec<HashValue>,
+    ) -> Result<()> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]

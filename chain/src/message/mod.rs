@@ -17,6 +17,7 @@ pub enum ChainRequest {
     GetBlockByHash(HashValue),
     ConnectBlock(Block),
     GetHeadBranch(),
+    GenTx(), // just for test
 }
 
 impl Message for ChainRequest {

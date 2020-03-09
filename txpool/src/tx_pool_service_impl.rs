@@ -86,6 +86,14 @@ where
     ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>> {
         self.subscribe_txns_inner().await
     }
+
+    async fn chain_new_blocks(
+        self,
+        enacted: Vec<HashValue>,
+        retracted: Vec<HashValue>,
+    ) -> Result<()> {
+        self.chain_new_blocks_inner(enacted, retracted).await
+    }
 }
 
 impl<C> TxPool<C>
@@ -123,12 +131,13 @@ where
     /// the `HashValue` of `enacted`/`retracted` is the hash of blocks.
     /// enacted: the blocks which enter into main chain.
     /// retracted: the blocks which is rollbacked.
-    pub async fn chain_new_blocks(
+    pub async fn chain_new_blocks_inner(
         &self,
         _enacted: Vec<HashValue>,
         _retracted: Vec<HashValue>,
     ) -> Result<()> {
-        todo!()
+        //TODO
+        Ok(())
     }
 }
 

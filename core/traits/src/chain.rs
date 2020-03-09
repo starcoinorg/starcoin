@@ -32,6 +32,7 @@ pub trait ChainReader {
     fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
+    fn gen_tx(&self) -> Result<()>;
 }
 
 pub trait ChainWriter {

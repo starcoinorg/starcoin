@@ -34,34 +34,34 @@ fn genesis_block_for_test() -> Block {
     Block::new_nil_block_for_test(BlockHeader::genesis_block_header_for_test())
 }
 
-fn gen_chain_actor(times: u64) -> (PeerInfo, ChainActorRef<ChainActor>) {
-    let peer = PeerInfo::random();
-    let config = Arc::new(NodeConfig::default());
-    let repo = Arc::new(MemoryStorage::new());
-    let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-
-    let mut chain = ChainActor::launch(config, storage, None).unwrap();
-    if times > 0 {
-        chain
-            .clone()
-            .address
-            .do_send(ChainRequest::CreateBlock(times));
-    }
-    (peer, chain)
-}
-
-pub fn gen_chain_actors(
-    times: u64,
-) -> (
-    PeerInfo,
-    ChainActorRef<ChainActor>,
-    PeerInfo,
-    ChainActorRef<ChainActor>,
-) {
-    let (first_peer, first_chain) = gen_chain_actor(times);
-    let (second_peer, second_chain) = gen_chain_actor(0);
-    (first_peer, first_chain, second_peer, second_chain)
-}
+// fn gen_chain_actor(times: u64) -> (PeerInfo, ChainActorRef<ChainActor>) {
+//     let peer = PeerInfo::random();
+//     let config = Arc::new(NodeConfig::default());
+//     let repo = Arc::new(MemoryStorage::new());
+//     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
+//
+//     let mut chain = ChainActor::launch(config, storage, None).unwrap();
+//     if times > 0 {
+//         chain
+//             .clone()
+//             .address
+//             .do_send(ChainRequest::CreateBlock(times));
+//     }
+//     (peer, chain)
+// }
+//
+// pub fn gen_chain_actors(
+//     times: u64,
+// ) -> (
+//     PeerInfo,
+//     ChainActorRef<ChainActor>,
+//     PeerInfo,
+//     ChainActorRef<ChainActor>,
+// ) {
+//     let (first_peer, first_chain) = gen_chain_actor(times);
+//     let (second_peer, second_chain) = gen_chain_actor(0);
+//     (first_peer, first_chain, second_peer, second_chain)
+// }
 
 // #[actix_rt::test]
 // async fn test_process_actor_new_peer() {
@@ -188,12 +188,14 @@ async fn test_network_actor() {
         node_config_1.clone(),
         storage_1.clone(),
         Some(network_1.clone()),
+        txpool_1.clone(),
     )
     .unwrap();
     let second_chain = ChainActor::launch(
         node_config_2.clone(),
         storage_2.clone(),
         Some(network_2.clone()),
+        txpool_2.clone(),
     )
     .unwrap();
 
@@ -235,15 +237,20 @@ async fn test_network_actor() {
         SyncActor::launch(bus_2.clone(), second_p_actor, second_d_actor.clone()).unwrap();
 
     //miner
-    let _miner_1 =
-        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            storage_1.clone(),
-            txpool_1.clone(),
-            first_chain.clone(),
-            None,
-        );
+    let _miner_1 = MinerActor::<
+        DummyConsensus,
+        MockExecutor,
+        TxPoolRef,
+        ChainActorRef<ChainActor>,
+        StarcoinStorage,
+    >::launch(
+        node_config_1.clone(),
+        bus_1.clone(),
+        storage_1.clone(),
+        txpool_1.clone(),
+        first_chain.clone(),
+        None,
+    );
 
     Delay::new(Duration::from_secs(5)).await;
 
@@ -279,6 +286,7 @@ async fn test_network_actor_rpc() {
         node_config_1.clone(),
         storage_1.clone(),
         Some(network_1.clone()),
+        txpool_1.clone(),
     )
     .unwrap();
     //sync
@@ -300,15 +308,20 @@ async fn test_network_actor_rpc() {
     let _first_sync_actor =
         SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
     //miner
-    let _miner_1 =
-        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            storage_1.clone(),
-            txpool_1.clone(),
-            first_chain.clone(),
-            None,
-        );
+    let _miner_1 = MinerActor::<
+        DummyConsensus,
+        MockExecutor,
+        TxPoolRef,
+        ChainActorRef<ChainActor>,
+        StarcoinStorage,
+    >::launch(
+        node_config_1.clone(),
+        bus_1.clone(),
+        storage_1.clone(),
+        txpool_1.clone(),
+        first_chain.clone(),
+        None,
+    );
     Delay::new(Duration::from_secs(5)).await;
     let block_1 = first_chain.clone().head_block().await.unwrap();
     let number = block_1.header().number();
@@ -339,6 +352,7 @@ async fn test_network_actor_rpc() {
         node_config_2.clone(),
         storage_2.clone(),
         Some(network_2.clone()),
+        txpool_2.clone(),
     )
     .unwrap();
     //sync
@@ -398,6 +412,7 @@ async fn test_network_actor_rpc_2() {
         node_config_1.clone(),
         storage_1.clone(),
         Some(network_1.clone()),
+        txpool_1.clone(),
     )
     .unwrap();
     //sync
@@ -446,6 +461,7 @@ async fn test_network_actor_rpc_2() {
         node_config_2.clone(),
         storage_2.clone(),
         Some(network_2.clone()),
+        txpool_2.clone(),
     )
     .unwrap();
     //sync

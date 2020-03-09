@@ -4,7 +4,8 @@
 use crate::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use crate::node_index::NodeIndex;
 use crate::{Accumulator, AccumulatorNode, LeafCount, MerkleAccumulator, MockAccumulatorStore};
-use starcoin_crypto::HashValue;
+use proptest::{collection::vec, prelude::*};
+use starcoin_crypto::{HashValue, TestOnlyHash};
 use std::collections::HashMap;
 
 pub type MockAccumulator<'a> = MerkleAccumulator<'a, MockAccumulatorStore>;
@@ -26,20 +27,100 @@ fn test_accumulator_append() {
     for (i, (leaf, expected_root_hash)) in
         itertools::zip_eq(leaves.into_iter(), expected_root_hashes.into_iter()).enumerate()
     {
-        //fixme
-        // assert_eq!(accumulator.root_hash(), expected_root_hash);
+        assert_eq!(accumulator.root_hash(), expected_root_hash);
         assert_eq!(accumulator.num_leaves(), i as LeafCount);
         accumulator = accumulator.from_leaves(&[leaf]);
     }
 }
 
+#[test]
+fn test_error_on_bad_parameters() {
+    let mock_store = MockAccumulatorStore::new();
+    let accumulator = MockAccumulator::new(vec![], 0, 0, &mock_store).unwrap();
+    assert!(accumulator.get_proof(10).is_err());
+}
+
+#[test]
+fn test_one_leaf() {
+    let hash = HashValue::random();
+    let mock_store = MockAccumulatorStore::new();
+    let mut accumulator = MockAccumulator::new(vec![], 0, 0, &mock_store).unwrap();
+    let root_hash = accumulator.append(&[hash]).unwrap();
+    assert_eq!(hash, root_hash);
+    proof_verify(&accumulator, root_hash, &[hash], 0);
+    let new_hash = HashValue::random();
+    let new_root_hash = accumulator.append(&[new_hash]).unwrap();
+    proof_verify(&accumulator, new_root_hash, &[new_hash], 1);
+    let vec = vec![hash, new_hash];
+    proof_verify(&accumulator, new_root_hash, &vec, 0);
+}
+
+#[test]
+fn test_multiple_leaves() {
+    let mut batch1 = create_leaves(0..8);
+    let mock_store = MockAccumulatorStore::new();
+    let mut accumulator = MockAccumulator::new(vec![], 0, 0, &mock_store).unwrap();
+    let root_hash1 = accumulator.append(&batch1).unwrap();
+    proof_verify(&accumulator, root_hash1, &batch1, 0);
+    let batch2 = create_leaves(0..4);
+    let root_hash2 = accumulator.append(&batch2).unwrap();
+    batch1.extend_from_slice(&batch2);
+    proof_verify(&accumulator, root_hash2, &batch1, 0);
+}
+
+#[test]
+fn test_update_leaf() {
+    //construct a accumulator
+    let mut leaves = create_leaves(0..8);
+    let mock_store = MockAccumulatorStore::new();
+    let mut accumulator = MockAccumulator::new(vec![], 0, 0, &mock_store).unwrap();
+    let roo_hash = accumulator.append(&leaves).unwrap();
+    proof_verify(&accumulator, roo_hash, &leaves, 0);
+    //update index from 6
+    let new_leaves = create_leaves(0..4);
+    let new_root_hash = accumulator.update(6, &new_leaves).unwrap();
+}
+
+//batch test
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(1))]
+
+    #[test]
+    fn test_proof(
+        batch1 in vec(any::<HashValue>(), 1..10),
+        batch2 in vec(any::<HashValue>(), 1..10),
+    ) {
+        let total_leaves = batch1.len() + batch2.len();
+        let mock_store = MockAccumulatorStore::new();
+        let mut accumulator = MockAccumulator::new(vec![], 0, 0, &mock_store).unwrap();
+
+        // insert all leaves in two batches
+        let root_hash1 = accumulator.append(&batch1).unwrap();
+        proof_verify(&accumulator, root_hash1, &batch1, 0);
+
+        let root_hash2 = accumulator.append(&batch2).unwrap();
+        // verify proofs for all leaves towards current root
+
+        proof_verify(&accumulator, root_hash2, &batch2, batch1.len() as u64);
+    }
+}
+
+fn proof_verify(
+    accumulator: &MockAccumulator,
+    root_hash: HashValue,
+    leaves: &[HashValue],
+    first_leaf_idx: u64,
+) {
+    leaves.iter().enumerate().for_each(|(i, hash)| {
+        let leaf_index = first_leaf_idx + i as u64;
+        let proof = accumulator.get_proof(leaf_index).unwrap().unwrap();
+        proof.verify(root_hash, *hash, leaf_index).unwrap();
+    });
+}
+
 // Helper function to create a list of leaves.
 fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
-    let mut hash_vec = vec![];
-    for i in nums {
-        hash_vec.push(HashValue::random());
-    }
-    hash_vec
+    nums.map(|x| x.to_be_bytes().test_only_hash()).collect()
 }
 
 // Computes the root hash of an accumulator with given leaves.

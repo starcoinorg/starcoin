@@ -57,11 +57,6 @@ impl MockVM {
             config: config.clone(),
         }
     }
-    /// Adds an account to this executor's data store.
-    pub fn add_account_data(&mut self, account_data: &AccountData, chain_state: &dyn ChainState) {
-        let mut state_store = StateStore::new(chain_state);
-        state_store.add_account_data(account_data)
-    }
 
     pub fn create_account(
         &self,
@@ -88,7 +83,6 @@ impl MockVM {
                         .get_from_statedb(&access_path)?
                         .unwrap()
                         .try_into()?;
-                    assert_eq!(0, account_resource.balance(), "balance error");
                     let new_account_resource = AccountResource::new(
                         amount,
                         1,
@@ -107,12 +101,20 @@ impl MockVM {
 
                     let account_resource_sender: AccountResource = state_store
                         .get_from_statedb(&access_path_sender)?
-                        .unwrap()
+                        .expect("txn sender must exist.")
                         .try_into()?;
                     let account_resource_receiver: AccountResource = state_store
-                        .get_from_statedb(&access_path_receiver)?
-                        .unwrap()
-                        .try_into()?;
+                        .get_from_statedb(&access_path_receiver)
+                        .and_then(|blob| match blob {
+                            Some(blob) => Ok(blob),
+                            None => {
+                                state_store.create_account(recipient)?;
+                                Ok(state_store
+                                    .get_from_statedb(&access_path_receiver)?
+                                    .expect("account resource must exist."))
+                            }
+                        })
+                        .and_then(|blob| blob.try_into())?;
 
                     let balance_sender = account_resource_sender.balance();
                     let balance_receiver = account_resource_receiver.balance();
@@ -335,7 +337,7 @@ fn decode_transaction(txn: &SignedUserTransaction) -> MockTransaction {
                          and the second argument must be amount."
                     ),
                 },
-                _ => unimplemented!("Transaction must have one or two arguments."),
+                _ => unimplemented!("Transaction must have one or two arguments.{:?}", txn),
             }
         }
         TransactionPayload::Module(_) => {

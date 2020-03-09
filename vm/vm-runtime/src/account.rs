@@ -4,11 +4,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    transaction_helper::TransactionHelper,
-    access_path_helper::AccessPathHelper,
-};
+use crate::{access_path_helper::AccessPathHelper, transaction_helper::TransactionHelper};
 use crypto::ed25519::*;
+use libra_types::{
+    account_config as libra_account_config, byte_array::ByteArray as LibraByteArray,
+};
+use logger::prelude::*;
+use rand::{Rng, SeedableRng};
+use std::time::Duration;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -18,16 +21,8 @@ use types::{
         RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
     },
 };
-use rand::{Rng, SeedableRng};
-use std::time::Duration;
 use vm_runtime::identifier::create_access_path;
 use vm_runtime_types::value::{Struct, Value};
-use libra_types::{
-    account_config as libra_account_config,
-    byte_array::ByteArray as LibraByteArray,
-};
-use logger::prelude::*;
-
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Account {
@@ -37,7 +32,6 @@ pub struct Account {
 }
 
 impl Account {
-
     pub fn new() -> Self {
         let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
         let seed_buf: [u8; 32] = seed_rng.gen();
@@ -62,7 +56,10 @@ impl Account {
 
     pub fn make_access_path(&self) -> AccessPath {
         let addr = self.address().clone();
-        let access_path = create_access_path(&TransactionHelper::to_libra_AccountAddress(addr), libra_account_config::account_struct_tag());
+        let access_path = create_access_path(
+            &TransactionHelper::to_libra_AccountAddress(addr),
+            libra_account_config::account_struct_tag(),
+        );
         info!("libra access_path: {:?}", access_path);
         let ap = AccessPathHelper::to_Starcoin_AccessPath(&access_path);
         info!("starcoin access_path: {:?}", ap);

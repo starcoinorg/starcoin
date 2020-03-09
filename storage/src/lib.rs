@@ -10,6 +10,7 @@ use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
+use types::block::{Block, BlockBody, BlockHeader, BlockNumber};
 
 pub mod accumulator_store;
 pub mod block_store;
@@ -18,7 +19,44 @@ pub mod persistence_storage;
 pub mod state_node_storage;
 pub mod storage;
 pub mod transaction_info_store;
+
 pub type KeyPrefixName = &'static str;
+
+pub trait StarcoinStorageOp: StateNodeStore + BlockStorageOp {}
+
+pub trait BlockStorageOp {
+    fn save(&self, block: Block) -> Result<()>;
+
+    fn save_header(&self, header: BlockHeader) -> Result<()>;
+
+    fn get_headers(&self) -> Result<Vec<HashValue>>;
+
+    fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()>;
+
+    fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()>;
+
+    fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
+
+    fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
+
+    fn get_number(&self, number: u64) -> Result<Option<HashValue>>;
+
+    fn commit_block(&self, block: Block) -> Result<()>;
+
+    fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
+
+    fn get_latest_block_header(&self) -> Result<Option<BlockHeader>>;
+
+    fn get_latest_block(&self) -> Result<Block>;
+
+    fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
+
+    fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>>;
+
+    fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>>;
+
+    fn get_block_by_number(&self, number: u64) -> Result<Option<Block>>;
+}
 
 pub struct StarcoinStorage {
     transaction_info_store: TransactionInfoStore,
@@ -51,6 +89,75 @@ impl StateNodeStore for StarcoinStorage {
         self.state_node_store.put(key, node)
     }
 }
+
+impl BlockStorageOp for StarcoinStorage {
+    fn save(&self, block: Block) -> Result<()> {
+        self.block_store.save(block)
+    }
+
+    fn save_header(&self, header: BlockHeader) -> Result<()> {
+        self.block_store.save_header(header)
+    }
+
+    fn get_headers(&self) -> Result<Vec<HashValue>> {
+        self.block_store.get_headers()
+    }
+
+    fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()> {
+        self.block_store.save_body(block_id, body)
+    }
+
+    fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()> {
+        self.block_store.save_number(number, block_id)
+    }
+
+    fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
+        self.block_store.get(block_id)
+    }
+
+    fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
+        self.block_store.get_body(block_id)
+    }
+
+    fn get_number(&self, number: u64) -> Result<Option<HashValue>> {
+        self.block_store.get_number(number)
+    }
+
+    fn commit_block(&self, block: Block) -> Result<()> {
+        self.block_store.commit_block(block)
+    }
+
+    fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
+        self.block_store.get_branch_hashes(block_id)
+    }
+
+    fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
+        self.block_store.get_latest_block_header()
+    }
+
+    fn get_latest_block(&self) -> Result<Block> {
+        self.block_store.get_latest_block()
+    }
+
+    fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
+        self.block_store.get_block_header_by_hash(block_id)
+    }
+
+    fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
+        self.block_store.get_block_by_hash(block_id)
+    }
+
+    fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
+        self.block_store.get_block_header_by_number(number)
+    }
+
+    fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
+        self.block_store.get_block_by_number(number)
+    }
+}
+
+impl StarcoinStorageOp for StarcoinStorage {}
+
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {
     ensure!(
@@ -97,6 +204,7 @@ mod tests {
         assert!(transaction_info2.is_some());
         assert_eq!(transaction_info1, transaction_info2.unwrap());
     }
+
     #[test]
     fn test_block() {
         let store = Arc::new(MemoryStorage::new());
@@ -212,6 +320,7 @@ mod tests {
         // let block5 = storage.block_store.get_latest_block().unwrap();
         // assert_eq!(block1, block5);
     }
+
     #[test]
     fn test_block_branch_hashes() {
         let store = Arc::new(MemoryStorage::new());

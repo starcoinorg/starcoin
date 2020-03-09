@@ -3,12 +3,14 @@
 
 use crate::TransactionExecutor;
 use anyhow::{Error, Result};
+use compiler::compile::StarcoinCompiler;
 use config::VMConfig;
 use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
 use once_cell::sync::Lazy;
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
@@ -26,7 +28,7 @@ use types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
-use vm_runtime::{account::AccountData, mock_vm::MockVM};
+use vm_runtime::mock_vm::{encode_mint_transaction, encode_transfer_transaction, MockVM};
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
@@ -118,24 +120,35 @@ impl MockExecutor {
             config: VMConfig::default(),
         }
     }
-    pub fn add_account_data(&mut self, account_data: &AccountData, chain_state: &dyn ChainState) {
-        let mut vm = MockVM::new(&self.config);
-        vm.add_account_data(account_data, chain_state)
-    }
-    pub fn create_account(
-        &self,
-        account_address: AccountAddress,
-        chain_state: &dyn ChainState,
-    ) -> Result<()> {
-        let mut vm = MockVM::new(&self.config);
-        vm.create_account(account_address, chain_state)
+
+    fn mint_for(chain_state: &dyn ChainState, account: AccountAddress, amount: u64) -> Result<()> {
+        let access_path = AccessPath::new_for_account(account);
+        let account_resource: AccountResource = chain_state
+            .get(&access_path)
+            .and_then(|blob| match blob {
+                Some(blob) => Ok(blob),
+                None => {
+                    chain_state.create_account(account)?;
+                    Ok(chain_state
+                        .get(&access_path)?
+                        .expect("account resource must exist."))
+                }
+            })?
+            .try_into()?;
+        let new_account_resource = AccountResource::new(
+            account_resource.balance() + amount,
+            account_resource.sequence_number(),
+            account_resource.authentication_key().clone(),
+        );
+        chain_state.set(&access_path, new_account_resource.try_into()?);
+        Ok(())
     }
 }
 
 impl TransactionExecutor for MockExecutor {
     fn init_genesis(_config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
         let chain_state = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
-        chain_state.create_account(AccountAddress::default())?;
+        Self::mint_for(&chain_state, AccountAddress::default(), 10_0000_0000_0000)?;
         chain_state.create_account(association_address())?;
         chain_state.commit();
         Ok((chain_state.state_root(), chain_state.dump()?))
@@ -184,4 +197,18 @@ pub fn get_signed_txn(
     let signature = private_key.sign_message(&raw_txn.crypto_hash());
 
     SignedUserTransaction::new(raw_txn, public_key, signature)
+}
+
+pub fn mock_txn() -> Transaction {
+    let empty_script = StarcoinCompiler::compile_script("main() {return;}");
+    Transaction::UserTransaction(SignedUserTransaction::mock_from(empty_script))
+}
+
+pub fn mock_mint_txn(to: AccountAddress, amount: u64) -> Transaction {
+    let from = AccountAddress::default();
+    encode_transfer_transaction(from, to, amount)
+}
+
+pub fn mock_transfer_txn(from: AccountAddress, to: AccountAddress, amount: u64) -> Transaction {
+    encode_transfer_transaction(from, to, amount)
 }

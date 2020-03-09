@@ -37,16 +37,28 @@ async fn test_miner_with_schedule_pacemaker() {
     let key_pair = config::gen_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
-    let chain = ChainActor::launch(config.clone(), storage.clone(), Some(network.clone())).unwrap();
-    let _miner =
-        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
-            config.clone(),
-            bus.clone(),
-            storage.clone(),
-            txpool.clone(),
-            chain.clone(),
-            None,
-        );
+    let chain = ChainActor::launch(
+        config.clone(),
+        storage.clone(),
+        Some(network.clone()),
+        bus.clone(),
+        txpool.clone(),
+    )
+    .unwrap();
+    let _miner = MinerActor::<
+        DummyConsensus,
+        MockExecutor,
+        TxPoolRef,
+        ChainActorRef<ChainActor>,
+        StarcoinStorage,
+    >::launch(
+        config.clone(),
+        bus.clone(),
+        storage.clone(),
+        txpool.clone(),
+        chain.clone(),
+        None,
+    );
 
     let process_actor = ProcessActor::launch(
         Arc::clone(&peer_info),
@@ -60,16 +72,9 @@ async fn test_miner_with_schedule_pacemaker() {
             .expect("launch DownloadActor failed.");
     let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
-    for _i in 0..5 as usize {
-        txpool
-            .clone()
-            .add(SignedUserTransaction::mock())
-            .await
-            .unwrap();
-        delay_for(Duration::from_millis(1000)).await;
-    }
+    delay_for(Duration::from_millis(10 * 1000)).await;
     let number = chain.clone().current_header().await.unwrap().number();
-    println!("{}", number);
+    info!("current block number: {}", number);
     assert!(number > 4);
 }
 
@@ -89,18 +94,30 @@ async fn test_miner_with_ondemand_pacemaker() {
     let key_pair = config::gen_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
-    let chain = ChainActor::launch(config.clone(), storage.clone(), Some(network.clone())).unwrap();
+    let chain = ChainActor::launch(
+        config.clone(),
+        storage.clone(),
+        Some(network.clone()),
+        bus.clone(),
+        txpool.clone(),
+    )
+    .unwrap();
     let receiver = txpool.clone().subscribe_txns().await.unwrap();
 
-    let _miner =
-        MinerActor::<DummyConsensus, MockExecutor, TxPoolRef, ChainActorRef<ChainActor>>::launch(
-            config.clone(),
-            bus.clone(),
-            storage.clone(),
-            txpool.clone(),
-            chain.clone(),
-            Some(receiver),
-        );
+    let _miner = MinerActor::<
+        DummyConsensus,
+        MockExecutor,
+        TxPoolRef,
+        ChainActorRef<ChainActor>,
+        StarcoinStorage,
+    >::launch(
+        config.clone(),
+        bus.clone(),
+        storage.clone(),
+        txpool.clone(),
+        chain.clone(),
+        Some(receiver),
+    );
 
     let process_actor = ProcessActor::launch(
         Arc::clone(&peer_info),
@@ -114,17 +131,10 @@ async fn test_miner_with_ondemand_pacemaker() {
             .expect("launch DownloadActor failed.");
     let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
-    for _i in 0..5 as usize {
-        txpool
-            .clone()
-            .add(SignedUserTransaction::mock())
-            .await
-            .unwrap();
-        delay_for(Duration::from_millis(1000)).await;
-    }
+    delay_for(Duration::from_millis(5 * 1000)).await;
 
     let number = chain.clone().current_header().await.unwrap().number();
-    println!("{}", number);
+    info!("{}", number);
     assert!(number > 0);
 
     delay_for(Duration::from_millis(1000)).await;
