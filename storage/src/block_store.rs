@@ -202,6 +202,44 @@ impl BlockStore {
         }
         Ok(vev_hash)
     }
+    /// Get common ancestor
+    pub fn get_common_ancestor(
+        &self,
+        block_id1: HashValue,
+        block_id2: HashValue,
+    ) -> Result<Option<HashValue>> {
+        let mut temp_block_id = block_id1;
+        let mut found = false;
+        loop {
+            println!("block_id: {}", temp_block_id.to_hex());
+            //get header by block_id
+            match self.get_block_header_by_hash(temp_block_id)? {
+                Some(header) => {
+                    temp_block_id = header.parent_hash();
+                    match self.get_sons(temp_block_id) {
+                        Ok(sons) => {
+                            println!("  sons:{:?}", sons);
+                            if sons.len() > 1 {
+                                if sons.contains(&block_id2) {
+                                    //find ancestor
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        Err(err) => bail!("get sons Error: {:?}", err),
+                    }
+                }
+                None => bail!("Error: can not find block {:?}", temp_block_id),
+            }
+        }
+        if found {
+            Ok(Some(temp_block_id))
+        } else {
+            bail!("not find common ancestor");
+            Ok(None)
+        }
+    }
 
     pub fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
         let max_number = self.number_store.get_len()?;

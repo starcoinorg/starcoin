@@ -59,6 +59,12 @@ pub trait BlockStorageOp {
     fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>>;
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>>;
+
+    fn get_common_ancestor(
+        &self,
+        block_id1: HashValue,
+        block_id2: HashValue,
+    ) -> Result<Option<HashValue>>;
 }
 
 pub struct StarcoinStorage {
@@ -158,6 +164,13 @@ impl BlockStorageOp for StarcoinStorage {
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.block_store.get_block_by_number(number)
+    }
+    fn get_common_ancestor(
+        &self,
+        block_id1: HashValue,
+        block_id2: HashValue,
+    ) -> Result<Option<HashValue>> {
+        self.block_store.get_common_ancestor(block_id1, block_id2)
     }
 }
 
