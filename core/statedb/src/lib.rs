@@ -16,11 +16,12 @@ use starcoin_types::{
     language_storage::{ModuleId, StructTag},
 };
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
 use std::sync::Arc;
 
 use core::num::FpCategory::Nan;
+use starcoin_types::identifier::{IdentStr, Identifier};
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use thiserror::Error;
 
@@ -32,14 +33,60 @@ pub enum StateError {
 
 /// represent AccountState in runtime memory.
 struct AccountStateObject {
-    pub resource_tree: StateTree,
-    pub code_tree: Option<StateTree>,
+    address: AccountAddress,
+    resource_tree: StateTree,
+    code_tree: RefCell<Option<StateTree>>,
+    store: Arc<dyn StateNodeStore>,
 }
 
 impl AccountStateObject {
-    pub fn get_state(&self) -> AccountState {
+    pub fn new(
+        address: AccountAddress,
+        resource_tree: StateTree,
+        code_tree: Option<StateTree>,
+        store: Arc<dyn StateNodeStore>,
+    ) -> Self {
+        Self {
+            address,
+            resource_tree,
+            code_tree: RefCell::new(code_tree),
+            store,
+        }
+    }
+
+    pub fn get_code(&self, module_name: &IdentStr) -> Result<Option<Vec<u8>>> {
+        match &*self.code_tree.borrow() {
+            Some(code_tree) => code_tree.get(&module_name.to_owned().crypto_hash()),
+            None => Ok(None),
+        }
+    }
+
+    pub fn get(&self, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
+        self.resource_tree.get(key_hash)
+    }
+
+    pub fn set_code_tree(&self, code_tree: StateTree) {
+        *self.code_tree.borrow_mut() = Some(code_tree);
+    }
+
+    pub fn set_code(&self, module_name: &IdentStr, code: Vec<u8>) -> Result<()> {
+        let code_tree = self.code_tree.borrow();
+        if code_tree.is_none() {
+            self.code_tree
+                .replace(Some(StateTree::new(self.store.clone(), None)));
+        }
+        let code_tree = self.code_tree.borrow();
+        let code_tree = code_tree.as_ref().expect("code tree must exist.");
+        code_tree.put(module_name.to_owned().crypto_hash(), code);
+        Ok(())
+    }
+
+    pub fn to_state(&self) -> AccountState {
         AccountState::new(
-            self.code_tree.as_ref().map(|tree| tree.root_hash()),
+            self.code_tree
+                .borrow()
+                .as_ref()
+                .map(|tree| tree.root_hash()),
             self.resource_tree.root_hash(),
         )
     }
@@ -49,6 +96,7 @@ pub struct ChainStateDB {
     store: Arc<dyn StateNodeStore>,
     ///global state tree.
     state_tree: StateTree,
+    cache: RefCell<HashMap<HashValue, Option<Arc<AccountStateObject>>>>,
 }
 
 impl ChainStateDB {
@@ -57,6 +105,7 @@ impl ChainStateDB {
         Self {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
+            cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -95,18 +144,30 @@ impl ChainStateDB {
     fn get_account_state_object(
         &self,
         account_address: &AccountAddress,
-    ) -> Result<Option<AccountStateObject>> {
-        //TODO cache
-        Ok(self
-            .get_account_state(account_address)?
-            .and_then(|account_state| {
-                Some(AccountStateObject {
-                    resource_tree: self.new_state_tree(account_state.resource_root()),
-                    code_tree: account_state
-                        .code_root()
-                        .map(|code_root| self.new_state_tree(code_root)),
-                })
-            }))
+    ) -> Result<Option<Arc<AccountStateObject>>> {
+        let address_hash = account_address.crypto_hash();
+        let mut cache = self.cache.borrow_mut();
+        let entry = cache.entry(address_hash);
+        let object = match entry {
+            Entry::Occupied(entry) => entry.get().clone(),
+            Entry::Vacant(entry) => {
+                let account_state_object =
+                    self.get_account_state_by_hash(&address_hash)?
+                        .and_then(|account_state| {
+                            Some(Arc::new(AccountStateObject::new(
+                                *account_address,
+                                self.new_state_tree(account_state.resource_root()),
+                                account_state
+                                    .code_root()
+                                    .map(|code_root| self.new_state_tree(code_root)),
+                                self.store.clone(),
+                            )))
+                        });
+                entry.insert(account_state_object.clone());
+                account_state_object
+            }
+        };
+        Ok(object.clone())
     }
 
     fn get_account_state_by_hash(&self, address_hash: &HashValue) -> Result<Option<AccountState>> {
@@ -126,7 +187,7 @@ impl ChainStateReader for ChainStateDB {
         let (account_address, hash) = access_path.clone().into();
         self.get_account_state_object(&account_address).and_then(
             |account_state| match account_state {
-                Some(account_state) => account_state.resource_tree.get(&hash),
+                Some(account_state) => account_state.get(&hash),
                 None => Ok(None),
             },
         )
@@ -135,16 +196,15 @@ impl ChainStateReader for ChainStateDB {
     fn get_code(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>> {
         self.get_account_state_object(&module_id.address())
             .and_then(|account_state| match account_state {
-                Some(account_state) => match account_state.code_tree {
-                    Some(code_tree) => code_tree.get(&module_id.name_hash()),
-                    None => Ok(None),
-                },
+                Some(account_state) => account_state.get_code(module_id.name()),
                 None => Ok(None),
             })
     }
 
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
-        self.get_account_state_by_hash(&address.crypto_hash())
+        Ok(self
+            .get_account_state_object(address)?
+            .and_then(|state_object| Some(state_object.to_state())))
     }
 
     fn is_genesis(&self) -> bool {
@@ -184,7 +244,7 @@ impl ChainStateWriter for ChainStateDB {
         account_state_cache.resource_tree.commit()?;
         //TODO optimize.
         account_state_cache.resource_tree.flush()?;
-        let account_state = account_state_cache.get_state();
+        let account_state = account_state_cache.to_state();
         self.update_account(account_address, account_state)?;
         Ok(())
     }
@@ -202,22 +262,8 @@ impl ChainStateWriter for ChainStateDB {
         let mut account_state_cache = self
             .get_account_state_object(&account_address)?
             .ok_or(StateError::AccountNotExist(account_address))?;
-
-        if account_state_cache.code_tree.is_none() {
-            let code_tree = self.new_empty_state_tree();
-            account_state_cache.code_tree = Some(code_tree);
-        }
-        account_state_cache
-            .code_tree
-            .as_ref()
-            .unwrap()
-            .put(module_id.crypto_hash(), code);
-        account_state_cache.code_tree.as_ref().unwrap().commit()?;
-        //TODO optimize.
-        account_state_cache.resource_tree.flush()?;
-        let account_state = account_state_cache.get_state();
-        self.update_account(account_address, account_state)?;
-        Ok(())
+        account_state_cache.set_code(module_id.name(), code)
+        //self.update_account(account_address, account_state)?;
     }
 
     fn create_account(&self, account_address: AccountAddress) -> Result<()> {
