@@ -31,4 +31,11 @@ pub trait TxPoolAsyncService: Clone + std::marker::Unpin {
         enacted: Vec<HashValue>,
         retracted: Vec<HashValue>,
     ) -> Result<()>;
+
+    /// rollback
+    async fn rollback(
+        self,
+        enacted: Vec<SignedUserTransaction>,
+        retracted: Vec<SignedUserTransaction>,
+    ) -> Result<()>;
 }

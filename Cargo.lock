@@ -4715,6 +4715,7 @@ dependencies = [
  "env_logger",
  "futures 0.3.4",
  "futures-locks",
+ "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-config",
@@ -4731,7 +4732,6 @@ dependencies = [
  "starcoin-types",
  "stest",
  "thiserror",
- "tokio 0.2.11",
 ]
 
 [[package]]
@@ -4857,6 +4857,7 @@ dependencies = [
  "anyhow",
  "futures 0.3.4",
  "futures-channel",
+ "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",

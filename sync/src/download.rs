@@ -138,10 +138,6 @@ impl Handler<DownloadMessage> for DownloadActor {
                     //2. connect block
                     Downloader::do_block(downloader.clone(), block).await;
                 }
-                DownloadMessage::MinedBlock(block) => {
-                    info!("new block: {:?}", block.header().id());
-                    Downloader::do_block(downloader.clone(), block).await;
-                }
                 _ => {}
             }
 

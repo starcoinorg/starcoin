@@ -36,5 +36,3 @@ bus = {path = "../bus", package="starcoin-bus" }
 
 [dev-dependencies]
 env_logger = "0.7.1"
-tokio = { version = "0.2", features = ["full"] }
-actix-rt = "1.0"

@@ -27,8 +27,6 @@ pub mod transaction_info_store;
 
 pub type KeyPrefixName = &'static str;
 
-pub trait StarcoinStorageOp: StateNodeStore + BlockStorageOp {}
-
 pub trait BlockStorageOp {
     fn save(&self, block: Block) -> Result<()>;
 

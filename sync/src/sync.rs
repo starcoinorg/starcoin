@@ -43,15 +43,6 @@ impl Actor for SyncActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let sys_recipient = ctx.address().recipient::<SystemEvents>();
-        self.bus
-            .send(Subscription {
-                recipient: sys_recipient,
-            })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-
         let peer_recipient = ctx.address().recipient::<PeerEvent>();
         self.bus
             .send(Subscription {
@@ -92,24 +83,6 @@ impl Handler<SyncMessage> for SyncActor {
                     .then(|_result, act, _ctx| async {}.into_actor(act))
                     .wait(ctx);
             }
-        }
-    }
-}
-
-impl Handler<SystemEvents> for SyncActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
-        debug!("mined block.");
-        match msg {
-            SystemEvents::MinedBlock(new_block) => {
-                self.download_address
-                    .send(DownloadMessage::MinedBlock(new_block))
-                    .into_actor(self)
-                    .then(|_result, act, _ctx| async {}.into_actor(act))
-                    .wait(ctx);
-            }
-            _ => {}
         }
     }
 }
