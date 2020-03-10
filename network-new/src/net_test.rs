@@ -152,7 +152,7 @@ mod tests {
         let _tx11 = tx1.clone();
         let mut count = 0;
         //wait the network started.
-        //thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(1));
         let sender_fut = async move {
             let mut continue_loop = true;
             let mut count: i32 = 0;
@@ -238,7 +238,6 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
 
         for _x in 0..1000 {
-            service2.is_connected(msg_peer_id);
             let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
             let service2_clone = service2.clone();
 
@@ -256,18 +255,6 @@ mod tests {
             executor.spawn(fut);
         }
         thread::sleep(Duration::from_secs(3));
-    }
-
-    #[test]
-    fn test_spawn() {
-        let mut rt = Runtime::new().unwrap();
-        let task = async move {
-            Delay::new(Duration::from_millis(1000)).await;
-            println!("hello spawn");
-        };
-        rt.block_on(task);
-        //thread::sleep(Duration::from_secs(2));
-        //rt.shutdown_on_idle().wait().unwrap();
     }
 
     #[test]
