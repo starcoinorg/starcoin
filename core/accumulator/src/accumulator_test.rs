@@ -68,6 +68,22 @@ fn test_multiple_leaves() {
 }
 
 #[test]
+fn test_multiple_tree() {
+    let mut batch1 = create_leaves(0..8);
+    let mock_store = MockAccumulatorStore::new();
+    let arc_store = Arc::new(mock_store);
+    let mut accumulator = MerkleAccumulator::new(vec![], 0, 0, arc_store.clone()).unwrap();
+    let (root_hash1, _) = accumulator.append(&batch1).unwrap();
+    proof_verify(&accumulator, root_hash1, &batch1, 0);
+    let frozen_hash = accumulator.get_frozen_subtree_roots().unwrap();
+    let accumulator2 =
+        MerkleAccumulator::new(frozen_hash.clone(), 8, 15, arc_store.clone()).unwrap();
+    let root_hash2 = accumulator2.root_hash();
+    assert_eq!(root_hash1, root_hash2);
+    proof_verify(&accumulator2, root_hash2, &batch1, 0);
+}
+
+#[test]
 fn test_update_leaf() {
     //construct a accumulator
     let mut leaves = create_leaves(0..8);
@@ -77,7 +93,8 @@ fn test_update_leaf() {
     proof_verify(&accumulator, root_hash, &leaves, 0);
     //update index from 6
     let new_leaves = create_leaves(0..4);
-    let new_root_hash = accumulator.update(6, &new_leaves).unwrap();
+    let (new_root_hash, first_idx) = accumulator.update(6, &new_leaves).unwrap();
+    proof_verify(&accumulator, new_root_hash, &leaves, first_idx);
 }
 
 //batch test
@@ -101,6 +118,9 @@ proptest! {
         // verify proofs for all leaves towards current root
 
         proof_verify(&accumulator, root_hash2, &batch2, batch1.len() as u64);
+        let mut total_vec = batch1.clone();
+        total_vec.extend_from_slice(&batch2);
+        proof_verify(&accumulator, root_hash2, &total_vec, 0);
     }
 }
 

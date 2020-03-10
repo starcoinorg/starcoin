@@ -14,7 +14,7 @@ pub mod node;
 pub mod node_index;
 
 use crate::node::{InternalNode, ACCUMULATOR_PLACEHOLDER_HASH};
-use crate::node_index::NodeIndex;
+use crate::node_index::{FrozenSubTreeIterator, NodeIndex};
 pub use node::AccumulatorNode;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -107,6 +107,8 @@ pub trait Accumulator {
     fn num_leaves(&self) -> u64;
     /// Update current accumulator tree for rollback
     fn update(&self, leaf_index: u64, leaves: &[HashValue]) -> Result<(HashValue, u64), Error>;
+
+    fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>>;
 }
 
 pub trait AccumulatorNodeReader {
@@ -257,10 +259,14 @@ impl AccumulatorCache {
         assert!(left_siblings.is_empty());
 
         self.root_hash = hash;
-        // self.frozen_subtree_roots =
+        self.frozen_subtree_roots = RefCell::new(Self::get_vec_hash(to_freeze.clone()).unwrap());
         self.num_leaves = last_new_leaf_count;
         self.num_nodes = new_num_nodes;
         Ok((hash, to_freeze))
+    }
+
+    fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>> {
+        Ok(self.frozen_subtree_roots.borrow().to_vec())
     }
 
     ///delete node from leaf_index
@@ -435,6 +441,14 @@ impl AccumulatorCache {
         precondition!(num_new_leaves * 2 <= usize::max_value() - root_level as usize);
         num_new_leaves * 2 + root_level as usize
     }
+
+    fn get_vec_hash(node_vec: Vec<AccumulatorNode>) -> Result<Vec<HashValue>> {
+        let mut hash_vec = vec![];
+        for node in node_vec {
+            hash_vec.push(node.hash());
+        }
+        Ok(hash_vec)
+    }
 }
 
 impl MerkleAccumulator {
@@ -444,22 +458,14 @@ impl MerkleAccumulator {
         num_notes: NodeCount,
         node_store: Arc<dyn AccumulatorNodeStore>,
     ) -> Result<Self> {
-        ensure!(
-            frozen_subtree_roots.len() == num_leaves.count_ones() as usize,
-            "The number of frozen subtrees does not match the number of leaves. \
-             frozen_subtree_roots.len(): {}. num_leaves: {}.",
-            frozen_subtree_roots.len(),
-            num_leaves,
-        );
-
-        // let root_hash = Self::compute_root_hash(&frozen_subtree_roots, num_leaves);
+        let root_hash = Self::compute_root_hash(&frozen_subtree_roots, num_leaves);
 
         Ok(Self {
             cache: Mutex::new(AccumulatorCache::new(
                 frozen_subtree_roots,
                 num_leaves,
                 num_notes,
-                *ACCUMULATOR_PLACEHOLDER_HASH,
+                root_hash,
                 node_store.clone(),
             )),
             node_store: node_store.clone(),
@@ -501,7 +507,10 @@ impl MerkleAccumulator {
 
     /// Computes the root hash of an accumulator given the frozen subtree roots and the number of
     /// leaves in this accumulator.
-    fn compute_root_hash(frozen_subtree_roots: &[HashValue], num_leaves: LeafCount) -> HashValue {
+    pub fn compute_root_hash(
+        frozen_subtree_roots: &[HashValue],
+        num_leaves: LeafCount,
+    ) -> HashValue {
         match frozen_subtree_roots.len() {
             0 => return *ACCUMULATOR_PLACEHOLDER_HASH,
             1 => return frozen_subtree_roots[0],
@@ -619,6 +628,15 @@ impl Accumulator for MerkleAccumulator {
         cache.delete(leaf_index);
         // append new notes
         self.append(leaves)
+    }
+
+    fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>, Error> {
+        let cache = self.cache.lock().unwrap();
+        let result = FrozenSubTreeIterator::new(cache.num_leaves)
+            .map(|p| self.node_store.get(p).unwrap().unwrap().hash())
+            .collect::<Vec<_>>();
+
+        Ok(result)
     }
 }
 

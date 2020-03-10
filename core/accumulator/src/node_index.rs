@@ -52,6 +52,10 @@ impl NodeIndex {
         Self::from_level_and_pos(0, leaf_index)
     }
 
+    pub fn from_inorder_index(index: u64) -> Self {
+        NodeIndex(index)
+    }
+
     // Given a leaf index, calculate the position of a minimum root which contains this leaf
     /// This method calculates the index of the smallest root which contains this leaf.
     /// Observe that, the root position is composed by a "height" number of ones
@@ -174,6 +178,70 @@ impl NodeIndex {
 
     pub fn is_right_child(self) -> bool {
         !self.is_left_child()
+    }
+}
+
+/// Traverse leaves from left to right in groups that forms full subtrees, yielding root positions
+/// of such subtrees.
+/// Note that each 1-bit in num_leaves corresponds to a full subtree.
+/// For example, in the below tree of 5=0b101 leaves, the two 1-bits corresponds to Fzn2 and L4
+/// accordingly.
+///
+/// ```text
+///            Non-fzn
+///           /       \
+///          /         \
+///         /           \
+///       Fzn2         Non-fzn
+///      /   \           /   \
+///     /     \         /     \
+///    Fzn1    Fzn3  Non-fzn  [Placeholder]
+///   /  \    /  \    /    \
+///  L0  L1  L2  L3 L4   [Placeholder]
+/// ```
+pub struct FrozenSubTreeIterator {
+    bitmap: u64,
+    seen_leaves: u64,
+    // invariant seen_leaves < u64::max_value() - bitmap
+}
+
+impl FrozenSubTreeIterator {
+    pub fn new(num_leaves: LeafCount) -> Self {
+        Self {
+            bitmap: num_leaves,
+            seen_leaves: 0,
+        }
+    }
+}
+
+impl Iterator for FrozenSubTreeIterator {
+    type Item = NodeIndex;
+
+    fn next(&mut self) -> Option<NodeIndex> {
+        assume!(self.seen_leaves < u64::max_value() - self.bitmap); // invariant
+
+        if self.bitmap == 0 {
+            return None;
+        }
+
+        // Find the remaining biggest full subtree.
+        // The MSB of the bitmap represents it. For example for a tree of 0b1010=10 leaves, the
+        // biggest and leftmost full subtree has 0b1000=8 leaves, which can be got by smearing all
+        // bits after MSB with 1-bits (got 0b1111), right shift once (got 0b0111) and add 1 (got
+        // 0b1000=8). At the same time, we also observe that the in-order numbering of a full
+        // subtree root is (num_leaves - 1) greater than that of the leftmost leaf, and also
+        // (num_leaves - 1) less than that of the rightmost leaf.
+        let root_offset = smear_ones_for_u64(self.bitmap) >> 1;
+        assume!(root_offset < self.bitmap); // relate bit logic to integer logic
+        let num_leaves = root_offset + 1;
+        let leftmost_leaf = NodeIndex::from_leaf_index(self.seen_leaves);
+        let root = NodeIndex::from_inorder_index(leftmost_leaf.to_inorder_index() + root_offset);
+
+        // Mark it consumed.
+        self.bitmap &= !num_leaves;
+        self.seen_leaves += num_leaves;
+
+        Some(root)
     }
 }
 
