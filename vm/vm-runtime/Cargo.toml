@@ -23,6 +23,9 @@ stest = {path = "../../commons/stest"}
 num_enum = "0.4.1"
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 rand = "0.6.5"
+scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+stdlib = { package="stdlib", path = "../stdlib"}
+bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
 
 
 [dev-dependencies]
