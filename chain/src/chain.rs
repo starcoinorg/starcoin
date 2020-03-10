@@ -49,11 +49,6 @@ where
     txpool: P,
 }
 
-pub fn load_genesis_block() -> Block {
-    let header = BlockHeader::genesis_block_header_for_test();
-    Block::new_nil_block_for_test(header)
-}
-
 impl<E, C, S, P> BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
