@@ -6,7 +6,7 @@ mod tests {
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
         future::Future,
-        stream::Stream,
+        stream::{Stream, StreamExt},
     };
     use hex;
     use libp2p::multihash;
@@ -25,38 +25,77 @@ mod tests {
     };
     use futures_timer::Delay;
 
-    use network_p2p::{identity, NodeKeyConfig, PeerId, PublicKey, Secret};
+    use network_p2p::{identity, NetworkConfiguration, NodeKeyConfig, PeerId, PublicKey, Secret};
     use types::account_address::AccountAddress;
 
-    use crate::{convert_account_address_to_peer_id, helper::convert_boot_nodes};
+    use crate::{convert_account_address_to_peer_id, helper::convert_boot_nodes, PeerEvent};
 
     use crate::net::SNetworkService;
 
     use crate::messages::NetworkMessage;
+    use config::NetworkConfig;
     use futures::channel::oneshot;
     use std::sync::Arc;
 
-    fn build_test_network_pair() -> (NetworkComponent, NetworkComponent) {
-        let mut l = build_test_network_services(2, 50400).into_iter();
+    pub type NetworkComponent = (
+        SNetworkService,
+        UnboundedSender<NetworkMessage>,
+        UnboundedReceiver<NetworkMessage>,
+        UnboundedReceiver<PeerEvent>,
+        UnboundedSender<()>,
+    );
+
+    fn build_test_network_pair(handle: Handle) -> (NetworkComponent, NetworkComponent) {
+        let mut l = build_test_network_services(2, 50400, handle).into_iter();
         let a = l.next().unwrap();
         let b = l.next().unwrap();
         (a, b)
     }
 
+    pub fn build_network_service(
+        cfg: &NetworkConfig,
+        key_pair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
+        handle: Handle,
+    ) -> (
+        SNetworkService,
+        UnboundedSender<NetworkMessage>,
+        UnboundedReceiver<NetworkMessage>,
+        UnboundedReceiver<PeerEvent>,
+        UnboundedSender<()>,
+    ) {
+        let config = NetworkConfiguration {
+            listen_addresses: vec![cfg.listen.parse().expect("Failed to parse network config")],
+            boot_nodes: convert_boot_nodes(cfg.seeds.clone()),
+            node_key: {
+                let secret =
+                    identity::ed25519::SecretKey::from_bytes(&mut key_pair.private_key.to_bytes())
+                        .unwrap();
+                NodeKeyConfig::Ed25519(Secret::Input(secret))
+            },
+            ..NetworkConfiguration::default()
+        };
+        let mut service = SNetworkService::new(config, handle);
+        let (net_tx, net_rx, event_rx, control_tx) = service.run();
+        (service, net_tx, net_rx, event_rx, control_tx)
+    }
+
     fn build_test_network_services(
         num: usize,
         base_port: u16,
+        handle: Handle,
     ) -> Vec<(
         SNetworkService,
         UnboundedSender<NetworkMessage>,
         UnboundedReceiver<NetworkMessage>,
-        oneshot::Sender<()>,
+        UnboundedReceiver<PeerEvent>,
+        UnboundedSender<()>,
     )> {
         let mut result: Vec<(
             SNetworkService,
             UnboundedSender<NetworkMessage>,
             UnboundedReceiver<NetworkMessage>,
-            oneshot::Sender<()>,
+            UnboundedReceiver<PeerEvent>,
+            UnboundedSender<()>,
         )> = Vec::with_capacity(num);
         let mut first_addr = None::<String>;
         for index in 0..num {
@@ -84,7 +123,7 @@ mod tests {
                 first_addr = Some(config.listen.clone().parse().unwrap());
             }
 
-            let server = build_network_service(&config, key_pair);
+            let server = build_network_service(&config, key_pair, handle.clone());
             result.push({
                 let c: NetworkComponent = server;
                 c
@@ -97,8 +136,10 @@ mod tests {
     fn test_send_receive_1() {
         let mut rt = Builder::new().core_threads(1).build().unwrap();
         let executor = rt.handle();
-        let ((service1, tx1, rx1, close_tx1), (service2, tx2, _rx2, close_tx2)) =
-            build_test_network_pair();
+        let (
+            (service1, tx1, rx1, event_rx1, close_tx1),
+            (service2, tx2, _rx2, event_rx2, close_tx2),
+        ) = build_test_network_pair(executor.clone());
         let msg_peer_id_1 = service1.identify();
         let msg_peer_id_2 = service2.identify();
         // Once sender has been droped, the select_all will return directly. clone it to prevent it.
@@ -135,15 +176,23 @@ mod tests {
                 }
             }
         };
-        let receive_fut = rx1.for_each(|_| Ok(()));
+        let receive_fut = async move {
+            let mut rx1 = rx1.fuse();
+            loop {
+                futures::select! {
+                    message = rx1.select_next_some()=>{
+                        info!("recevie message {:?}",message);
+                    },
+                }
+            }
+        };
         executor.spawn(receive_fut);
         rt.handle().spawn(sender_fut);
 
         let task = async move {
             Delay::new(Duration::from_secs(6)).await;
-            let _ = close_tx1.send(());
-            let _ = close_tx2.send(());
-            Ok(())
+            let _ = close_tx1.unbounded_send(());
+            let _ = close_tx2.unbounded_send(());
         };
         rt.block_on(task);
     }
@@ -152,10 +201,22 @@ mod tests {
     fn test_send_receive_2() {
         let rt = Runtime::new().unwrap();
         let executor = rt.handle();
-        let ((service1, _tx1, rx1, _close_tx1), (mut service2, _tx2, _rx2, _close_tx2)) =
-            build_test_network_pair();
+        let (
+            (service1, _tx1, rx1, event_rx1, _close_tx1),
+            (mut service2, _tx2, _rx2, event_rx2, _close_tx2),
+        ) = build_test_network_pair(executor.clone());
         let msg_peer_id = service1.identify();
-        let receive_fut = rx1.for_each(|_| Ok(()));
+        let receive_fut = async move {
+            let mut rx1 = rx1.fuse();
+            loop {
+                futures::select! {
+                    message = rx1.select_next_some()=>{
+                        info!("recevie message {:?}",message);
+                    },
+                }
+            }
+        };
+
         executor.clone().spawn(receive_fut);
 
         //wait the network started.
@@ -164,9 +225,13 @@ mod tests {
         for _x in 0..1000 {
             service2.is_connected(msg_peer_id);
             let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
-            let fut = service2
-                .send_message(msg_peer_id, random_bytes)
-                .map_err(|_| ());
+            let service2_clone = service2.clone();
+            let fut = async move {
+                service2_clone
+                    .send_message(msg_peer_id, random_bytes)
+                    .await
+                    .unwrap();
+            };
             executor.spawn(fut);
         }
         thread::sleep(Duration::from_secs(3));
@@ -211,11 +276,11 @@ mod tests {
     #[test]
     fn test_connected_nodes() {
         let _rt = Runtime::new().unwrap();
-        let (service1, _service2) = build_test_network_pair();
+        let (service1, _service2) = build_test_network_pair(_rt.handle().clone());
         thread::sleep(Duration::new(1, 0));
-        for (peer_id, peer) in service1.0.libp2p_service.lock().state().connected_peers {
-            println!("id: {:?}, peer: {:?}", peer_id, peer);
-            assert_eq!(peer.open, true);
+        for (peer_id) in service1.0.connected_peers() {
+            println!("id: {:?}", peer_id);
+            //assert_eq!(peer.open, true);
         }
         assert_eq!(
             AccountAddress::from_str(&hex::encode(service1.0.identify())).unwrap(),

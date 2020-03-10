@@ -45,7 +45,7 @@ pub struct SNetworkService {
     inner: NetworkInner,
     service: Arc<NetworkService>,
     net_tx: Option<mpsc::UnboundedSender<NetworkMessage>>,
-    worker: Arc<RefCell<NetworkWorker>>,
+    worker: Arc<Mutex<NetworkWorker>>,
 }
 
 #[derive(Clone)]
@@ -55,7 +55,7 @@ pub struct NetworkInner {
 }
 
 impl SNetworkService {
-    fn new(cfg: NetworkConfiguration, handle: Handle) -> Self {
+    pub fn new(cfg: NetworkConfiguration, handle: Handle) -> Self {
         let protocol = network_p2p::ProtocolId::from("stargate".as_bytes());
 
         let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
@@ -74,11 +74,11 @@ impl SNetworkService {
             handle,
             service,
             net_tx: None,
-            worker: Arc::new(RefCell::new(worker)),
+            worker: Arc::new(Mutex::new(worker)),
         }
     }
 
-    fn run(
+    pub fn run(
         &mut self,
     ) -> (
         mpsc::UnboundedSender<NetworkMessage>,
@@ -133,7 +133,7 @@ impl SNetworkService {
 
     pub fn is_connected(&self, address: AccountAddress) -> Result<bool> {
         let peer_id = convert_account_address_to_peer_id(address)?;
-        Ok(self.worker.borrow().is_open(&peer_id))
+        Ok(self.worker.lock().is_open(&peer_id))
     }
 
     pub fn identify(&self) -> AccountAddress {
@@ -141,7 +141,7 @@ impl SNetworkService {
     }
 
     pub async fn send_message(
-        &mut self,
+        &self,
         account_address: AccountAddress,
         message: Vec<u8>,
     ) -> Result<()> {
@@ -167,7 +167,7 @@ impl SNetworkService {
 
         let mut peers = HashSet::new();
 
-        for p in self.worker.borrow_mut().connected_peers() {
+        for p in self.worker.lock().connected_peers() {
             // debug!("will send message to {}", p);
             peers.insert(p.clone());
         }
@@ -177,6 +177,16 @@ impl SNetworkService {
                 .write_notification(peer_id, message_bytes.clone());
         }
         debug!("finish send broadcast message");
+    }
+
+    pub fn connected_peers(&self) -> HashSet<PeerId> {
+        let mut peers = HashSet::new();
+
+        for p in self.worker.lock().connected_peers() {
+            // debug!("will send message to {}", p);
+            peers.insert(p.clone());
+        }
+        peers
     }
 }
 
