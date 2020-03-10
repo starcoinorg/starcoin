@@ -45,10 +45,8 @@ pub trait ChainStateWriter {
     /// Sets state at access_path.
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()>;
 
-    /// Delete state at access_path
-    fn delete(&self, access_path: &AccessPath) -> Result<()>;
-
-    fn delete_at(&self, account_state: &AccountState, struct_tag: &StructTag) -> Result<()>;
+    /// Remove state at access_path
+    fn remove(&self, access_path: &AccessPath) -> Result<()>;
 
     fn set_code(&self, module_id: &ModuleId, code: Vec<u8>) -> Result<()>;
 
