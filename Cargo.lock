@@ -4937,6 +4937,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",

@@ -39,7 +39,10 @@ use std::{
     path::Path,
 };
 
-use futures::{channel::mpsc, prelude::*};
+use futures::{
+    channel::{mpsc, oneshot},
+    prelude::*,
+};
 use libp2p::swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent};
 use libp2p::{kad::record, Multiaddr, PeerId};
 use log::{error, info, trace, warn};
@@ -386,6 +389,26 @@ impl NetworkService {
             .unbounded_send(ServiceToWorkerMsg::WriteNotification { target, message });
     }
 
+    pub fn broadcast_message(&self, message: Vec<u8>) {}
+
+    pub async fn is_connected(&self, address: PeerId) -> bool {
+        let (tx, rx) = oneshot::channel();
+        let _ = self
+            .to_worker
+            .unbounded_send(ServiceToWorkerMsg::IsConnected(address, tx));
+        match rx.await {
+            Ok(t) => t,
+            Err(e) => {
+                warn!("sth wrong {}", e);
+                false
+            }
+        }
+    }
+
+    pub fn connected_peers(&self) -> HashSet<PeerId> {
+        unimplemented!()
+    }
+
     /// Returns a stream containing the events that happen on the network.
     ///
     /// If this method is called multiple times, the events are duplicated.
@@ -551,6 +574,7 @@ enum ServiceToWorkerMsg {
     WriteNotification { message: Vec<u8>, target: PeerId },
     RegisterNotifProtocol { protocol_name: Cow<'static, [u8]> },
     DisconnectPeer(PeerId),
+    IsConnected(PeerId, oneshot::Sender<bool>),
 }
 
 /// Main network worker. Must be polled in order for the network to advance.
@@ -615,6 +639,9 @@ impl Future for NetworkWorker {
                     .network_service
                     .user_protocol_mut()
                     .disconnect_peer(&who),
+                ServiceToWorkerMsg::IsConnected(who, mut tx) => {
+                    tx.send(this.is_open(&who));
+                }
             }
         }
 

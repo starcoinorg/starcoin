@@ -35,6 +35,8 @@ mod tests {
     use crate::messages::NetworkMessage;
     use config::NetworkConfig;
     use futures::channel::oneshot;
+    use log::logger;
+    use logger::*;
     use std::sync::Arc;
 
     pub type NetworkComponent = (
@@ -134,7 +136,10 @@ mod tests {
 
     #[test]
     fn test_send_receive_1() {
-        let mut rt = Builder::new().core_threads(1).build().unwrap();
+        ::logger::init_for_test();
+        //let mut rt = Builder::new().core_threads(1).build().unwrap();
+        let mut rt = Runtime::new().unwrap();
+
         let executor = rt.handle();
         let (
             (service1, tx1, rx1, event_rx1, close_tx1),
@@ -148,7 +153,6 @@ mod tests {
         let mut count = 0;
         //wait the network started.
         //thread::sleep(Duration::from_secs(1));
-        let mut interval = tokio::time::interval(Duration::from_millis(1));
         let sender_fut = async move {
             let mut continue_loop = true;
             let mut count: i32 = 0;
@@ -156,8 +160,9 @@ mod tests {
                 if count == 1000 {
                     continue_loop = false;
                 }
+                info!("count is {}", count);
                 count = count + 1;
-                interval.tick().await;
+                Delay::new(Duration::from_millis(1)).await;
                 let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
 
                 match if count % 2 == 0 {
@@ -183,6 +188,10 @@ mod tests {
                     message = rx1.select_next_some()=>{
                         info!("recevie message {:?}",message);
                     },
+                    complete => {
+                        info!("complete");
+                        break;
+                    }
                 }
             }
         };
@@ -199,6 +208,8 @@ mod tests {
 
     #[test]
     fn test_send_receive_2() {
+        ::logger::init_for_test();
+
         let rt = Runtime::new().unwrap();
         let executor = rt.handle();
         let (
@@ -213,6 +224,10 @@ mod tests {
                     message = rx1.select_next_some()=>{
                         info!("recevie message {:?}",message);
                     },
+                    complete => {
+                        info!("complete");
+                        break;
+                    }
                 }
             }
         };
@@ -226,7 +241,13 @@ mod tests {
             service2.is_connected(msg_peer_id);
             let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
             let service2_clone = service2.clone();
+
             let fut = async move {
+                assert_eq!(
+                    service2_clone.is_connected(msg_peer_id).await.unwrap(),
+                    true
+                );
+
                 service2_clone
                     .send_message(msg_peer_id, random_bytes)
                     .await
@@ -275,17 +296,26 @@ mod tests {
 
     #[test]
     fn test_connected_nodes() {
-        let _rt = Runtime::new().unwrap();
+        ::logger::init_for_test();
+
+        let mut _rt = Runtime::new().unwrap();
         let (service1, _service2) = build_test_network_pair(_rt.handle().clone());
-        thread::sleep(Duration::new(1, 0));
-        for (peer_id) in service1.0.connected_peers() {
-            println!("id: {:?}", peer_id);
-            //assert_eq!(peer.open, true);
-        }
-        assert_eq!(
-            AccountAddress::from_str(&hex::encode(service1.0.identify())).unwrap(),
-            service1.0.identify()
-        );
+        thread::sleep(Duration::from_secs(1));
+        let fut = async move {
+            assert_eq!(
+                service1
+                    .0
+                    .is_connected(_service2.0.identify())
+                    .await
+                    .unwrap(),
+                true
+            );
+            assert_eq!(
+                AccountAddress::from_str(&hex::encode(service1.0.identify())).unwrap(),
+                service1.0.identify()
+            );
+        };
+        _rt.block_on(fut);
     }
 
     #[test]
