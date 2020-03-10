@@ -14,7 +14,8 @@ use consensus::{Consensus, ConsensusHeader};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
-use futures::{Future, TryFutureExt};
+use futures::{Future, TryFutureExt,};
+use futures::prelude::*;
 use logger::prelude::*;
 use state_tree::StateNodeStore;
 use std::marker::PhantomData;
@@ -23,9 +24,11 @@ use std::time::Duration;
 use storage::{BlockStorageOp, StarcoinStorage};
 use traits::{ChainAsyncService, ChainReader, TxPoolAsyncService};
 use types::transaction::TxStatus;
+use crate::miner::Miner;
 
 mod headblock_pacemaker;
 mod miner;
+mod stratum;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 #[cfg(test)]
@@ -39,12 +42,12 @@ pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 pub struct GenerateBlockEvent {}
 
 pub struct MinerActor<C, E, P, CS, S>
-where
-    C: Consensus + 'static,
-    E: TransactionExecutor + 'static,
-    P: TxPoolAsyncService + 'static,
-    CS: ChainAsyncService + 'static,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    where
+        C: Consensus + 'static,
+        E: TransactionExecutor + 'static,
+        P: TxPoolAsyncService + 'static,
+        CS: ChainAsyncService + 'static,
+        S: StateNodeStore + BlockStorageOp + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -53,15 +56,17 @@ where
     phantom_c: PhantomData<C>,
     phantom_e: PhantomData<E>,
     chain: CS,
+    miner_tx: mpsc::UnboundedSender<types::block::BlockTemplate>,
+    miner: Arc<Miner>,
 }
 
 impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
+        S: StateNodeStore + BlockStorageOp + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -73,6 +78,7 @@ where
     ) -> Result<Addr<Self>> {
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
+
             ctx.add_message_stream(receiver);
             match &config.miner.pacemaker_strategy {
                 PacemakerStrategy::HeadBlock => {
@@ -84,7 +90,7 @@ where
                         sender.clone(),
                         transaction_receiver.take().unwrap(),
                     )
-                    .start();
+                        .start();
                 }
                 PacemakerStrategy::Schedule => {
                     SchedulePacemaker::new(Duration::from_millis(1000), sender).start();
@@ -105,7 +111,8 @@ where
                     tmp_chain.clone().gen_tx().await;
                 });
             });
-
+            let (miner_tx, miner_rx) = mpsc::unbounded::<types::block::BlockTemplate>();
+            let miner = Arc::new(Miner::new(miner_rx));
             MinerActor {
                 config,
                 bus,
@@ -114,6 +121,8 @@ where
                 phantom_c: PhantomData,
                 phantom_e: PhantomData,
                 chain,
+                miner,
+                miner_tx
             }
         });
         Ok(actor)
@@ -121,12 +130,12 @@ where
 }
 
 impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
+        S: StateNodeStore + BlockStorageOp + 'static,
 {
     type Context = Context<Self>;
 
@@ -136,12 +145,12 @@ where
 }
 
 impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
+        S: StateNodeStore + BlockStorageOp + 'static,
 {
     type Result = Result<()>;
 
@@ -152,8 +161,10 @@ where
         let config = self.config.clone();
         let storage = self.storage.clone();
         let chain = self.chain.clone();
+        let miner = self.miner.clone();
+        let mut miner_tx = self.miner_tx.clone();
 
-        let f = async {
+        let f = async move {
             //TODO handle error.
             let txns = txpool_1.get_pending_txns(None).await.unwrap_or(vec![]);
             if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
@@ -163,17 +174,13 @@ where
                 info!("head block : {:?}, txn len: {}", head_branch, txns.len());
                 let block_chain =
                     BlockChain::<E, C, S, P>::new(config, storage, head_branch, txpool_2).unwrap();
-                match miner::mint::<C>(txns, &block_chain, bus) {
-                    Err(e) => {
-                        error!("mint block err: {:?}", e);
-                    }
-                    Ok(_) => {
-                        info!("mint block success.");
-                    }
-                }
+                let block_template = block_chain.create_block_template(txns).unwrap();
+                miner_tx.send(block_template).await;
+                miner.get_mint_job();
+                // stratum.update_all_worker()
             }
         }
-        .into_actor(self);
+            .into_actor(self);
         ctx.spawn(f);
         Ok(())
     }

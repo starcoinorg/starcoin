@@ -9,17 +9,43 @@ use consensus::{Consensus, ConsensusHeader};
 use futures::channel::oneshot;
 use logger::prelude::*;
 use std::marker::PhantomData;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use traits::ChainReader;
-use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
+use types::{system_events::SystemEvents, transaction::SignedUserTransaction, block::BlockTemplate};
+use futures::channel::mpsc;
+use futures::StreamExt;
+
+pub struct Miner {
+    state_rx: mpsc::UnboundedReceiver<BlockTemplate>,
+
+}
+
+impl Miner {
+    pub fn new(rx: mpsc::UnboundedReceiver<BlockTemplate>) -> Miner {
+        Self {
+            state_rx:rx,
+        }
+    }
+    pub fn get_mint_job(&self) {
+        println!("hello");
+        // get the mint job
+    }
+
+    pub fn submit(&self, payload: Vec<u8>) {
+        // verify payload
+        // create block
+        // notify chain mined block
+    }
+}
+
 
 pub fn mint<C>(
     txns: Vec<SignedUserTransaction>,
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
 ) -> Result<()>
-where
-    C: Consensus,
+    where
+        C: Consensus,
 {
     let block_template = chain.create_block_template(txns)?;
     let (_sender, receiver) = oneshot::channel();

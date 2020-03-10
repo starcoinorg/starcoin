@@ -27,6 +27,8 @@ tokio = { version = "0.2", features = ["full"] }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 futures-channel = "0.3"
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+sc_stratum = {path = "./stratum", package ="starcoin-stratum"}
+async-std = { version = "1.0.1", features = ["unstable"]}
 
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
