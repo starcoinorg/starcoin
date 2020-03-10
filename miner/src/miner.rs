@@ -9,17 +9,52 @@ use consensus::{Consensus, ConsensusHeader};
 use futures::channel::oneshot;
 use logger::prelude::*;
 use std::marker::PhantomData;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use traits::ChainReader;
-use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
+use types::{system_events::SystemEvents, transaction::SignedUserTransaction, block::BlockTemplate};
+use futures::channel::mpsc;
+use futures::AsyncReadExt;
+use futures::{Future, TryFutureExt};
+use futures::prelude::*;
+
+#[derive(Clone)]
+pub struct Miner {
+    state: Arc<Mutex<Option<BlockTemplate>>>,
+}
+
+impl Miner {
+    pub fn new() -> Miner {
+        Self {
+            state: Arc::new(Mutex::new(None))
+        }
+    }
+    pub fn set_mint_job(&mut self, t: BlockTemplate) {
+        let mut state = self.state.lock().unwrap();
+        *state = Some(t)
+    }
+
+    pub fn get_mint_job(&mut self) ->BlockTemplate {
+        println!("hello");
+        let mut state = self.state.lock().unwrap();
+        let x = state.as_ref().unwrap().to_owned();
+        x
+    }
+
+    pub fn submit(&self, payload: Vec<u8>) {
+        // verify payload
+        // create block
+        // notify chain mined block
+    }
+}
+
 
 pub fn mint<C>(
     txns: Vec<SignedUserTransaction>,
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
 ) -> Result<()>
-where
-    C: Consensus,
+    where
+        C: Consensus,
 {
     let block_template = chain.create_block_template(txns)?;
     let (_sender, receiver) = oneshot::channel();

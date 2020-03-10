@@ -14,7 +14,8 @@ use consensus::{Consensus, ConsensusHeader};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
-use futures::{Future, TryFutureExt};
+use futures::{Future, TryFutureExt,};
+use futures::prelude::*;
 use logger::prelude::*;
 use starcoin_accumulator::AccumulatorNodeStore;
 use state_tree::StateNodeStore;
@@ -24,9 +25,11 @@ use std::time::Duration;
 use storage::{BlockStorageOp, StarcoinStorage};
 use traits::{ChainAsyncService, ChainReader, TxPoolAsyncService};
 use types::transaction::TxStatus;
+use crate::miner::Miner;
 
 mod headblock_pacemaker;
 mod miner;
+mod stratum;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 #[cfg(test)]
@@ -54,6 +57,7 @@ where
     phantom_c: PhantomData<C>,
     phantom_e: PhantomData<E>,
     chain: CS,
+    miner: Miner,
 }
 
 impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
@@ -106,7 +110,7 @@ where
                     tmp_chain.clone().gen_tx().await;
                 });
             });
-
+            let miner = Miner::new();
             MinerActor {
                 config,
                 bus,
@@ -115,6 +119,7 @@ where
                 phantom_c: PhantomData,
                 phantom_e: PhantomData,
                 chain,
+                miner,
             }
         });
         Ok(actor)
@@ -153,8 +158,9 @@ where
         let config = self.config.clone();
         let storage = self.storage.clone();
         let chain = self.chain.clone();
+        let mut miner = self.miner.clone();
 
-        let f = async {
+        let f = async move{
             //TODO handle error.
             let txns = txpool_1.get_pending_txns(None).await.unwrap_or(vec![]);
             if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
@@ -164,14 +170,10 @@ where
                 info!("head block : {:?}, txn len: {}", head_branch, txns.len());
                 let block_chain =
                     BlockChain::<E, C, S, P>::new(config, storage, head_branch, txpool_2).unwrap();
-                match miner::mint::<C>(txns, &block_chain, bus) {
-                    Err(e) => {
-                        error!("mint block err: {:?}", e);
-                    }
-                    Ok(_) => {
-                        info!("mint block success.");
-                    }
-                }
+                let block_template = block_chain.create_block_template(txns).unwrap();
+                miner.set_mint_job(block_template);
+                miner.get_mint_job();
+                // stratum.update_all_worker()
             }
         }
         .into_actor(self);
