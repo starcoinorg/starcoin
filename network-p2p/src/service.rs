@@ -389,7 +389,15 @@ impl NetworkService {
             .unbounded_send(ServiceToWorkerMsg::WriteNotification { target, message });
     }
 
-    pub fn broadcast_message(&self, message: Vec<u8>) {}
+    pub async fn broadcast_message(&self, message: Vec<u8>) {
+        debug!("start send broadcast message");
+
+        let peers = self.connected_peers().await;
+        for peer_id in peers {
+            self.write_notification(peer_id, message.clone());
+        }
+        debug!("finish send broadcast message");
+    }
 
     pub async fn is_connected(&self, address: PeerId) -> bool {
         let (tx, rx) = oneshot::channel();
@@ -405,8 +413,18 @@ impl NetworkService {
         }
     }
 
-    pub fn connected_peers(&self) -> HashSet<PeerId> {
-        unimplemented!()
+    pub async fn connected_peers(&self) -> HashSet<PeerId> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self
+            .to_worker
+            .unbounded_send(ServiceToWorkerMsg::ConnectedPeers(tx));
+        match rx.await {
+            Ok(t) => t,
+            Err(e) => {
+                warn!("sth wrong {}", e);
+                HashSet::new()
+            }
+        }
     }
 
     /// Returns a stream containing the events that happen on the network.
@@ -575,6 +593,7 @@ enum ServiceToWorkerMsg {
     RegisterNotifProtocol { protocol_name: Cow<'static, [u8]> },
     DisconnectPeer(PeerId),
     IsConnected(PeerId, oneshot::Sender<bool>),
+    ConnectedPeers(oneshot::Sender<HashSet<PeerId>>),
 }
 
 /// Main network worker. Must be polled in order for the network to advance.
@@ -641,6 +660,14 @@ impl Future for NetworkWorker {
                     .disconnect_peer(&who),
                 ServiceToWorkerMsg::IsConnected(who, mut tx) => {
                     tx.send(this.is_open(&who));
+                }
+                ServiceToWorkerMsg::ConnectedPeers(mut tx) => {
+                    let peers = this.connected_peers();
+                    let mut result = HashSet::new();
+                    for peer in peers {
+                        result.insert(peer.clone());
+                    }
+                    tx.send(result);
                 }
             }
         }

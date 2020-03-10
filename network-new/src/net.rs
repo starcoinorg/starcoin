@@ -161,35 +161,15 @@ impl SNetworkService {
     }
 
     pub fn broadcast_message(&mut self, message: Vec<u8>) {
-        self.service.broadcast_message(message);
-        // debug!("start send broadcast message");
-        // let (protocol_msg, message_id) = Message::new_payload(message);
-        //
-        // let message_bytes = protocol_msg.into_bytes();
-        //
-        // let mut peers = HashSet::new();
-        //
-        // for p in self.worker.lock().connected_peers() {
-        //     // debug!("will send message to {}", p);
-        //     peers.insert(p.clone());
-        // }
-        //
-        // for peer_id in peers {
-        //     self.service
-        //         .write_notification(peer_id, message_bytes.clone());
-        // }
-        // debug!("finish send broadcast message");
+        let (protocol_msg, message_id) = Message::new_payload(message);
+
+        let message_bytes = protocol_msg.into_bytes();
+
+        self.service.broadcast_message(message_bytes);
     }
 
-    pub fn connected_peers(&self) -> HashSet<PeerId> {
-        // let mut peers = HashSet::new();
-        //
-        // for p in self.worker.lock().connected_peers() {
-        //     // debug!("will send message to {}", p);
-        //     peers.insert(p.clone());
-        // }
-        // peers
-        unimplemented!()
+    pub async fn connected_peers(&self) -> HashSet<PeerId> {
+        self.service.connected_peers().await
     }
 }
 
