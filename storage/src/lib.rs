@@ -192,8 +192,6 @@ impl AccumulatorNodeWriter for StarcoinStorage {
     }
 }
 
-impl StarcoinStorageOp for StarcoinStorage {}
-
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {
     ensure!(

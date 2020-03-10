@@ -8,7 +8,7 @@ use crate::tx_factory::{GenTxEvent, TxFactoryActor};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
-use chain::{BlockChain, ChainActor, ChainActorRef};
+use chain::{BlockChain, BlockChainStore, ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::{Consensus, ConsensusHeader};
 use crypto::hash::HashValue;
@@ -45,7 +45,7 @@ where
     E: TransactionExecutor + 'static,
     P: TxPoolAsyncService + 'static,
     CS: ChainAsyncService + 'static,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
+    S: BlockChainStore + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -62,7 +62,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
+    S: BlockChainStore + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -127,7 +127,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
+    S: BlockChainStore + 'static,
 {
     type Context = Context<Self>;
 
@@ -142,7 +142,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
+    S: BlockChainStore + 'static,
 {
     type Result = Result<()>;
 

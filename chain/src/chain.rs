@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::message::{ChainRequest, ChainResponse};
+use crate::BlockChainStore;
 use actix::prelude::*;
 use anyhow::{ensure, format_err, Error, Result};
 use config::{NodeConfig, VMConfig};
@@ -34,7 +35,7 @@ pub struct BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
+    S: BlockChainStore + 'static,
     P: TxPoolAsyncService + 'static,
 {
     config: Arc<NodeConfig>,
@@ -57,7 +58,7 @@ impl<E, C, S, P> BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
+    S: BlockChainStore,
     P: TxPoolAsyncService,
 {
     pub fn new(
@@ -139,7 +140,7 @@ impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
+    S: BlockChainStore,
     P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
@@ -251,7 +252,7 @@ impl<E, C, S, P> ChainWriter for BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
+    S: BlockChainStore,
     P: TxPoolAsyncService,
 {
     fn apply(&mut self, block: Block) -> Result<()> {

@@ -3,6 +3,7 @@
 
 use crate::chain::BlockChain;
 use crate::message::{ChainRequest, ChainResponse};
+use crate::BlockChainStore;
 use actix::prelude::*;
 use anyhow::{Error, Result};
 use config::NodeConfig;
@@ -34,7 +35,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore + 'static,
+    S: BlockChainStore + 'static,
 {
     config: Arc<NodeConfig>,
     head: BlockChain<E, C, S, P>,
@@ -49,7 +50,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
+    S: BlockChainStore,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -211,7 +212,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
+    S: BlockChainStore,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
@@ -242,7 +243,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp + AccumulatorNodeStore,
+    S: BlockChainStore,
 {
     fn head_block(&self) -> Block {
         self.head.head_block()

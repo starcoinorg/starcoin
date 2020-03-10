@@ -25,15 +25,21 @@ use futures_locks::RwLock;
 use logger::prelude::*;
 use message::ChainRequest;
 use network::network::NetworkAsyncService;
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_accumulator::{Accumulator, AccumulatorNodeStore, MerkleAccumulator};
+use state_tree::StateNodeStore;
 use std::sync::Arc;
-use storage::StarcoinStorage;
+use storage::{BlockStorageOp, StarcoinStorage};
 use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService, ChainWriter};
 use txpool::TxPoolRef;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     system_events::SystemEvents,
 };
+
+/// Chain storage define
+pub trait BlockChainStore: StateNodeStore + BlockStorageOp + AccumulatorNodeStore {}
+
+impl BlockChainStore for StarcoinStorage {}
 
 /// actor for block chain.
 pub struct ChainActor {
