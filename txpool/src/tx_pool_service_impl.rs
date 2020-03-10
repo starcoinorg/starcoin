@@ -12,7 +12,7 @@ use actix::{
     prelude::*,
 };
 use anyhow::{Error, Result};
-use common_crypto::hash::HashValue;
+use common_crypto::hash::*;
 
 use futures_channel::mpsc;
 use pool::{Gas, SeqNumber, TxStatus};
@@ -150,11 +150,10 @@ where
 
     pub async fn rollback_inner(
         &self,
-        _enacted: Vec<SignedUserTransaction>,
-        _retracted: Vec<SignedUserTransaction>,
+        enacted: Vec<SignedUserTransaction>,
+        retracted: Vec<SignedUserTransaction>,
     ) -> Result<()> {
-        //TODO
-        Ok(())
+        self.addr.send(ChainNewBlock { enacted, retracted }).await?
     }
 }
 
@@ -276,5 +275,36 @@ where
             rx
         };
         MessageResult(result)
+    }
+}
+
+pub struct ChainNewBlock {
+    enacted: Vec<SignedUserTransaction>,
+    retracted: Vec<SignedUserTransaction>,
+}
+impl Message for ChainNewBlock {
+    type Result = Result<()>;
+}
+
+impl<C> Handler<ChainNewBlock> for TxPoolActor<C>
+where
+    C: AccountSeqNumberClient,
+{
+    type Result = <ChainNewBlock as Message>::Result;
+
+    fn handle(&mut self, msg: ChainNewBlock, _ctx: &mut Self::Context) -> Self::Result {
+        let ChainNewBlock { enacted, retracted } = msg;
+        let hashes: Vec<_> = enacted.iter().map(|t| CryptoHash::crypto_hash(t)).collect();
+        self.queue.remove(hashes.iter(), false);
+
+        let txns = retracted
+            .into_iter()
+            .map(|t| verifier::Transaction::Unverified(t));
+
+        let import_result = self.queue.import(self.seq_number_client.clone(), txns);
+        for r in import_result {
+            r?;
+        }
+        Ok(())
     }
 }
