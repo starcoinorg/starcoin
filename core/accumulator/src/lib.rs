@@ -483,6 +483,23 @@ impl AccumulatorCache {
         precondition!(num_new_leaves * 2 <= usize::max_value() - root_level as usize);
         num_new_leaves * 2 + root_level as usize
     }
+
+    fn get_vec_hash(node_vec: Vec<AccumulatorNode>) -> Result<Vec<HashValue>> {
+        let mut hash_vec = vec![];
+        for node in node_vec {
+            hash_vec.push(node.hash());
+        }
+        Ok(hash_vec)
+    }
+
+    pub fn get_info(&self) -> AccumulatorInfo {
+        AccumulatorInfo::new(
+            self.frozen_subtree_roots.borrow().clone(),
+            self.num_leaves,
+            self.num_nodes,
+            self.root_hash,
+        )
+    }
 }
 
 impl MerkleAccumulator {
