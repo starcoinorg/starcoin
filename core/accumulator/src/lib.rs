@@ -91,6 +91,48 @@ impl AccumulatorProof {
         Ok(())
     }
 }
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct AccumulatorInfo {
+    pub frozen_subtree_roots: Vec<HashValue>,
+    /// The total number of leaves in this accumulator.
+    pub num_leaves: u64,
+    /// The total number of nodes in this accumulator.
+    pub num_nodes: u64,
+    /// The root hash of this accumulator.
+    pub root_hash: HashValue,
+}
+
+impl AccumulatorInfo {
+    pub fn new(
+        frozen_subtree_roots: Vec<HashValue>,
+        num_leaves: u64,
+        num_nodes: u64,
+        root_hash: HashValue,
+    ) -> Self {
+        Self {
+            frozen_subtree_roots,
+            num_leaves,
+            num_nodes,
+            root_hash,
+        }
+    }
+    pub fn into_inner(self) -> (Vec<HashValue>, u64, u64, HashValue) {
+        self.into()
+    }
+}
+
+impl Into<(Vec<HashValue>, u64, u64, HashValue)> for AccumulatorInfo {
+    fn into(self) -> (Vec<HashValue>, u64, u64, HashValue) {
+        (
+            self.frozen_subtree_roots,
+            self.num_leaves,
+            self.num_nodes,
+            self.root_hash,
+        )
+    }
+}
+
 /// accumulator method define
 pub trait Accumulator {
     // From leaves constructed accumulator
@@ -435,6 +477,15 @@ impl AccumulatorCache {
         precondition!(num_new_leaves * 2 <= usize::max_value() - root_level as usize);
         num_new_leaves * 2 + root_level as usize
     }
+
+    pub fn get_info(&self) -> AccumulatorInfo {
+        AccumulatorInfo::new(
+            self.frozen_subtree_roots.borrow().clone(),
+            self.num_leaves,
+            self.num_nodes,
+            self.root_hash,
+        )
+    }
 }
 
 impl MerkleAccumulator {
@@ -534,6 +585,10 @@ impl MerkleAccumulator {
         }
 
         current_hash
+    }
+
+    pub fn get_info(&self) -> AccumulatorInfo {
+        self.cache.lock().unwrap().get_info()
     }
 }
 
