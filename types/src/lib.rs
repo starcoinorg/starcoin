@@ -16,6 +16,7 @@ pub mod ids;
 pub mod language_storage;
 pub mod peer_info;
 pub mod proof;
+pub mod startup_info;
 pub mod state_set;
 pub mod storage_root;
 pub mod system_events;

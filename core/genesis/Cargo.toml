@@ -1,0 +1,21 @@
+[package]
+name = "starcoin-genesis"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+
+[dependencies]
+anyhow = "1.0"
+starcoin-types = {path = "../../types"}
+starcoin-crypto = { path = "../../commons/crypto"}
+serde = { version = "1.0" }
+starcoin-config = { path = "../../config"}
+starcoin-executor = { path = "../../executor"}
+starcoin-storage = { path = "../../storage"}
+starcoin-statedb = { path = "../statedb"}
+starcoin-accumulator = { path = "../accumulator"}
+stest = { path = "../../commons/stest"}
+starcoin-logger = { path = "../../commons/logger"}

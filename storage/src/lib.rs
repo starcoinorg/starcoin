@@ -5,7 +5,7 @@ use crate::accumulator_store::AccumulatorStore;
 use crate::block_store::BlockStore;
 use crate::memory_storage::MemoryStorage;
 use crate::state_node_storage::StateNodeStorage;
-use crate::storage::Repository;
+use crate::storage::{CodecStorage, Repository};
 use crate::transaction_info_store::TransactionInfoStore;
 use accumulator::{
     node_index::NodeIndex, AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore,
@@ -14,8 +14,12 @@ use accumulator::{
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use state_tree::{StateNode, StateNodeStore};
+use std::convert::TryInto;
 use std::sync::Arc;
-use types::block::{Block, BlockBody, BlockHeader, BlockNumber};
+use types::{
+    block::{Block, BlockBody, BlockHeader, BlockNumber},
+    startup_info::StartupInfo,
+};
 
 pub mod accumulator_store;
 pub mod block_store;
@@ -28,6 +32,9 @@ pub mod transaction_info_store;
 pub type KeyPrefixName = &'static str;
 
 pub trait BlockStorageOp {
+    fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
+    fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
+
     fn save(&self, block: Block) -> Result<()>;
 
     fn save_header(&self, header: BlockHeader) -> Result<()>;
@@ -72,6 +79,8 @@ pub struct StarcoinStorage {
     pub block_store: BlockStore,
     state_node_store: StateNodeStorage,
     accumulator_store: AccumulatorStore,
+    //TODO implement storage.
+    startup_info_store: Arc<dyn Repository>,
 }
 
 impl StarcoinStorage {
@@ -87,6 +96,7 @@ impl StarcoinStorage {
             ),
             state_node_store: StateNodeStorage::new(storage.clone()),
             accumulator_store: AccumulatorStore::new(storage.clone()),
+            startup_info_store: storage.clone(),
         })
     }
 }
@@ -102,6 +112,20 @@ impl StateNodeStore for StarcoinStorage {
 }
 
 impl BlockStorageOp for StarcoinStorage {
+    fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
+        self.startup_info_store
+            .get("startup_info".as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(bytes.try_into()?)),
+                None => Ok(None),
+            })
+    }
+
+    fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
+        self.startup_info_store
+            .put("starup_info".as_bytes().to_vec(), startup_info.try_into()?)
+    }
+
     fn save(&self, block: Block) -> Result<()> {
         self.block_store.save(block)
     }
@@ -204,6 +228,12 @@ impl AccumulatorNodeWriter for StarcoinStorage {
         self.accumulator_store.delete_larger_index(index, max_notes)
     }
 }
+
+//TODO should move this traits to traits crate?
+/// Chain storage define
+pub trait BlockChainStore: StateNodeStore + BlockStorageOp + AccumulatorNodeStore {}
+
+impl BlockChainStore for StarcoinStorage {}
 
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {

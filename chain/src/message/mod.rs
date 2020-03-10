@@ -2,7 +2,10 @@
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
-use types::block::{Block, BlockHeader, BlockTemplate};
+use types::{
+    block::{Block, BlockHeader, BlockTemplate},
+    startup_info::ChainInfo,
+};
 
 #[derive(Clone)]
 pub enum ChainRequest {
@@ -17,6 +20,7 @@ pub enum ChainRequest {
     GetBlockByHash(HashValue),
     ConnectBlock(Block),
     GetHeadBranch(),
+    GetChainInfo(),
     GenTx(), // just for test
 }
 
@@ -31,5 +35,6 @@ pub enum ChainResponse {
     OptionBlock(Option<Block>),
     BlockHeader(BlockHeader),
     HashValue(HashValue),
+    ChainInfo(ChainInfo),
     None,
 }

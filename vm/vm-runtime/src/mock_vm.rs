@@ -136,8 +136,7 @@ impl MockVM {
                         account_resource_sender.sequence_number(),
                         account_resource_receiver.authentication_key().clone(),
                     );
-                    state_store
-                        .set(access_path_sender, new_account_resource_sender.try_into()?);
+                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?);
                     state_store.set(
                         access_path_receiver,
                         new_account_resource_receiver.try_into()?,

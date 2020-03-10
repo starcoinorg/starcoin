@@ -91,6 +91,48 @@ impl AccumulatorProof {
         Ok(())
     }
 }
+
+#[derive(Default, Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct AccumulatorInfo {
+    pub frozen_subtree_roots: Vec<HashValue>,
+    /// The total number of leaves in this accumulator.
+    pub num_leaves: u64,
+    /// The total number of nodes in this accumulator.
+    pub num_nodes: u64,
+    /// The root hash of this accumulator.
+    pub root_hash: HashValue,
+}
+
+impl AccumulatorInfo {
+    pub fn new(
+        frozen_subtree_roots: Vec<HashValue>,
+        num_leaves: u64,
+        num_nodes: u64,
+        root_hash: HashValue,
+    ) -> Self {
+        Self {
+            frozen_subtree_roots,
+            num_leaves,
+            num_nodes,
+            root_hash,
+        }
+    }
+    pub fn into_inner(self) -> (Vec<HashValue>, u64, u64, HashValue) {
+        self.into()
+    }
+}
+
+impl Into<(Vec<HashValue>, u64, u64, HashValue)> for AccumulatorInfo {
+    fn into(self) -> (Vec<HashValue>, u64, u64, HashValue) {
+        (
+            self.frozen_subtree_roots,
+            self.num_leaves,
+            self.num_nodes,
+            self.root_hash,
+        )
+    }
+}
+
 /// accumulator method define
 pub trait Accumulator {
     // From leaves constructed accumulator
@@ -441,14 +483,6 @@ impl AccumulatorCache {
         precondition!(num_new_leaves * 2 <= usize::max_value() - root_level as usize);
         num_new_leaves * 2 + root_level as usize
     }
-
-    fn get_vec_hash(node_vec: Vec<AccumulatorNode>) -> Result<Vec<HashValue>> {
-        let mut hash_vec = vec![];
-        for node in node_vec {
-            hash_vec.push(node.hash());
-        }
-        Ok(hash_vec)
-    }
 }
 
 impl MerkleAccumulator {
@@ -507,10 +541,7 @@ impl MerkleAccumulator {
 
     /// Computes the root hash of an accumulator given the frozen subtree roots and the number of
     /// leaves in this accumulator.
-    pub fn compute_root_hash(
-        frozen_subtree_roots: &[HashValue],
-        num_leaves: LeafCount,
-    ) -> HashValue {
+    fn compute_root_hash(frozen_subtree_roots: &[HashValue], num_leaves: LeafCount) -> HashValue {
         match frozen_subtree_roots.len() {
             0 => return *ACCUMULATOR_PLACEHOLDER_HASH,
             1 => return frozen_subtree_roots[0],
@@ -543,6 +574,10 @@ impl MerkleAccumulator {
         }
 
         current_hash
+    }
+
+    pub fn get_info(&self) -> AccumulatorInfo {
+        self.cache.lock().unwrap().get_info()
     }
 }
 
