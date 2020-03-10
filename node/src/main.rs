@@ -13,9 +13,10 @@ use json_rpc::JSONRpcActor;
 use logger::prelude::*;
 use miner::MinerActor;
 use network::NetworkActor;
+use starcoin_genesis::Genesis;
 use std::path::PathBuf;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
 use structopt::StructOpt;
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use traits::TxPoolAsyncService;
@@ -47,6 +48,16 @@ async fn main() {
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
+    let startup_info = match storage.get_startup_info().unwrap() {
+        Some(startup_info) => startup_info,
+        None => {
+            let genesis =
+                Genesis::new::<MockExecutor, StarcoinStorage>(node_config.clone(), storage.clone())
+                    .expect("init genesis fail.");
+            genesis.startup_info().clone()
+        }
+    };
+    info!("Start chain with startup info: {:?}", startup_info);
     let seq_number_client = CachedSeqNumberClient::new(storage.clone());
     let txpool = TxPool::start(seq_number_client);
     //node config
@@ -56,6 +67,7 @@ async fn main() {
     let network = NetworkActor::launch(node_config.clone(), bus.clone(), txpool.clone(), keypair);
     let chain = ChainActor::launch(
         node_config.clone(),
+        startup_info,
         storage.clone(),
         Some(network.clone()),
         bus.clone(),

@@ -248,11 +248,7 @@ impl Block {
         }
     }
 
-    pub fn genesis_block(
-        accumulator_root: HashValue,
-        state_root: HashValue,
-        _genesis_state: ChainStateSet,
-    ) -> Self {
+    pub fn genesis_block(accumulator_root: HashValue, state_root: HashValue) -> Self {
         let header = BlockHeader::genesis_block_header(accumulator_root, state_root);
         //TODO put Transaction::StateSet txn to block body.
         Self {

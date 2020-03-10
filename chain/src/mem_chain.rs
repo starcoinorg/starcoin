@@ -12,6 +12,7 @@ use std::sync::Arc;
 use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter};
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
@@ -107,6 +108,7 @@ impl Handler<ChainRequest> for MemChainActor {
                     let hash = lock.get_head_branch();
                     Ok(ChainResponse::HashValue(hash))
                 }
+                ChainRequest::GetChainInfo() => unimplemented!(),
                 ChainRequest::GenTx() => Ok(ChainResponse::None),
             }
         };
@@ -268,6 +270,10 @@ impl ChainReader for MemChain {
     }
 
     fn gen_tx(&self) -> Result<()> {
+        unimplemented!()
+    }
+
+    fn get_chain_info(&self) -> ChainInfo {
         unimplemented!()
     }
 }

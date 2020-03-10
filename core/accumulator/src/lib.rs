@@ -92,7 +92,7 @@ impl AccumulatorProof {
     }
 }
 
-#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+#[derive(Default, Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct AccumulatorInfo {
     pub frozen_subtree_roots: Vec<HashValue>,
     /// The total number of leaves in this accumulator.

@@ -229,6 +229,12 @@ impl AccumulatorNodeWriter for StarcoinStorage {
     }
 }
 
+//TODO should move this traits to traits crate?
+/// Chain storage define
+pub trait BlockChainStore: StateNodeStore + BlockStorageOp + AccumulatorNodeStore {}
+
+impl BlockChainStore for StarcoinStorage {}
+
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {
     ensure!(

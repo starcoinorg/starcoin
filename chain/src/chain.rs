@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::BlockChainStore;
 use actix::prelude::*;
 use anyhow::{ensure, format_err, Error, Result};
 use config::{NodeConfig, VMConfig};
@@ -20,7 +19,7 @@ use std::cell::RefCell;
 use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage};
+use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
 use traits::{
     ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter, TxPoolAsyncService,
 };
@@ -28,6 +27,7 @@ use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     block_metadata::BlockMetadata,
+    startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
 
@@ -41,7 +41,7 @@ where
     config: Arc<NodeConfig>,
     //TODO
     accumulator: MerkleAccumulator,
-    head: Option<Block>,
+    head: Block,
     chain_state: ChainStateDB,
     phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
@@ -63,39 +63,30 @@ where
 {
     pub fn new(
         config: Arc<NodeConfig>,
+        chain_info: ChainInfo,
         storage: Arc<S>,
-        head_block_hash: Option<HashValue>,
         txpool: P,
     ) -> Result<Self> {
-        let head = match head_block_hash {
-            Some(hash) => Some(
-                storage
-                    .get_block_by_hash(hash)?
-                    .ok_or(format_err!("Can not find block by hash {}", hash))?,
-            ),
-            None => None,
-        };
-        let is_genesis = head.is_none();
-        let state_root = head.as_ref().map(|head| head.header().state_root());
+        let head_block_hash = chain_info.head_block;
+        let head = storage
+            .get_block_by_hash(head_block_hash)?
+            .ok_or(format_err!(
+                "Can not find block by hash {}",
+                head_block_hash
+            ))?;
+
+        let state_root = head.header().state_root();
         let mut chain = Self {
             config: config.clone(),
+            //TODO fix me
             accumulator: MerkleAccumulator::new(vec![], 0, 0, storage.clone()).unwrap(),
             head,
-            chain_state: ChainStateDB::new(storage.clone(), state_root),
+            chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
             phantom_e: PhantomData,
             phantom_c: PhantomData,
             storage,
             txpool,
         };
-        if is_genesis {
-            ///init genesis block
-            //TODO should process at here ?
-            let (state_root, chain_state_set) = E::init_genesis(&config.vm)?;
-            let genesis_block =
-                Block::genesis_block(HashValue::zero(), state_root, chain_state_set);
-            info!("Init with genesis block: {:?}", genesis_block);
-            chain.apply(genesis_block)?;
-        }
         Ok(chain)
     }
 
@@ -119,12 +110,6 @@ where
         info!("commit block : {:?}", block);
     }
 
-    fn ensure_head(&self) -> &Block {
-        self.head
-            .as_ref()
-            .expect("Must init chain with genesis block first")
-    }
-
     fn gen_tx_for_test(&self) {
         let tx = mock_mint_txn(AccountAddress::random(), 100);
         // info!("gen test txn: {:?}", tx);
@@ -144,11 +129,11 @@ where
     P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
-        self.ensure_head().clone()
+        self.head.clone()
     }
 
     fn current_header(&self) -> BlockHeader {
-        self.ensure_head().header().clone()
+        self.head.header().clone()
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -246,6 +231,10 @@ where
         self.gen_tx_for_test();
         Ok(())
     }
+
+    fn get_chain_info(&self) -> ChainInfo {
+        ChainInfo::new(self.head.header().id())
+    }
 }
 
 impl<E, C, S, P> ChainWriter for BlockChain<E, C, S, P>
@@ -257,19 +246,13 @@ where
 {
     fn apply(&mut self, block: Block) -> Result<()> {
         let header = block.header();
-        let mut is_genesis = false;
-        match &self.head {
-            Some(head) => {
-                info!("Apply block {:?} to {:?}", block.header(), head.header());
-                //TODO custom verify macro
-                assert_eq!(head.header().id(), block.header().parent_hash());
-            }
-            None => {
-                // genesis block
-                assert_eq!(block.header().parent_hash(), HashValue::zero());
-                is_genesis = true;
-            }
-        }
+        info!(
+            "Apply block {:?} to {:?}",
+            block.header(),
+            self.head.header()
+        );
+        //TODO custom verify macro
+        assert_eq!(self.head.header().id(), block.header().parent_hash());
 
         C::verify_header(self, header)?;
 
@@ -282,13 +265,7 @@ where
             .collect::<Vec<Transaction>>();
         let block_metadata = header.clone().into_metadata();
 
-        // remove this after include genesis transaction to genesis block.
-        if is_genesis {
-            let (_, state_set) = E::init_genesis(&self.config.vm)?;
-            txns.push(Transaction::StateSet(state_set));
-        } else {
-            txns.push(Transaction::BlockMetadata(block_metadata));
-        }
+        txns.push(Transaction::BlockMetadata(block_metadata));
         let mut state_root = HashValue::zero();
         let mut transaction_hash = vec![];
         for txn in txns {
@@ -323,7 +300,7 @@ where
         self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx);
         self.save_block(&block);
         chain_state.flush();
-        self.head = Some(block);
+        self.head = block;
         //todo
         Ok(())
     }
