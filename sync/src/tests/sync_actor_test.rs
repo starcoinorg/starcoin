@@ -149,9 +149,9 @@ fn gen_network(
     txpool: TxPoolRef,
     handle: Handle,
 ) -> (NetworkAsyncService<TxPoolRef>, AccountAddress) {
-    let key_pair = gen_keypair();
+    let key_pair = node_config.network.network_keypair();
     let addr = AccountAddress::from_public_key(&key_pair.public_key);
-    let network = NetworkActor::launch(node_config.clone(), bus, txpool, key_pair, handle);
+    let network = NetworkActor::launch(node_config.clone(), bus, txpool, handle);
     (network, addr)
 }
 
@@ -165,7 +165,7 @@ async fn test_network_actor() {
     let storage_1 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
     let storage_2 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
     // network actor
-    let mut config_1 = NodeConfig::default();
+    let mut config_1 = NodeConfig::random_for_test();
     config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
     let node_config_1 = Arc::new(config_1);
     // genesis
@@ -185,7 +185,7 @@ async fn test_network_actor() {
         rt.handle().clone(),
     );
 
-    let mut config_2 = NodeConfig::default();
+    let mut config_2 = NodeConfig::random_for_test();
     let addr_1_hex = hex::encode(addr_1);
     let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
     config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
@@ -301,7 +301,7 @@ async fn test_network_actor_rpc() {
     // storage
     let storage_1 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
     // node config
-    let mut config_1 = NodeConfig::default();
+    let mut config_1 = NodeConfig::random_for_test();
     config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
     let node_config_1 = Arc::new(config_1);
 
@@ -381,7 +381,7 @@ async fn test_network_actor_rpc() {
     let storage_2 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
 
     // node config
-    let mut config_2 = NodeConfig::default();
+    let mut config_2 = NodeConfig::random_for_test();
     let addr_1_hex = hex::encode(addr_1);
     let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
     config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
@@ -466,7 +466,7 @@ fn test_network_actor_rpc_2() {
         // storage
         let storage_1 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
         // node config
-        let mut config_1 = NodeConfig::default();
+        let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
         let node_config_1 = Arc::new(config_1);
         let genesis_1 =
@@ -527,7 +527,7 @@ fn test_network_actor_rpc_2() {
         // storage
         let storage_2 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
         // node config
-        let mut config_2 = NodeConfig::default();
+        let mut config_2 = NodeConfig::random_for_test();
         let addr_1_hex = hex::encode(addr_1.clone());
         let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
         config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());

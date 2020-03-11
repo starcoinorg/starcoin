@@ -1,7 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::convert::TryFrom;
 use anyhow::Result;
+use anyhow::ensure;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 mod miner_config;
@@ -20,17 +22,43 @@ use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::{test_utils::KeyPair, Uniform};
 use rand::prelude::*;
 use std::fs::File;
+use std::fs::create_dir;
 use std::io::Read;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use dirs;
+use once_cell::sync::Lazy;
 
+/// Default data dir
+pub static DEFAULT_DATA_DIR: Lazy<PathBuf> =
+    Lazy::new(|| dirs::home_dir().expect("read home dir should ok").join(".starcoin"));
+pub static CONFIG_FILE_PATH: &str = "config.toml";
+
+pub fn load_config_from_dir<P>(data_dir: P) -> Result<NodeConfig>  where P: AsRef<Path> {
+    if !data_dir.as_ref().exists() {
+        create_dir(data_dir.as_ref())?;
+    }
+    ensure!(data_dir.as_ref().is_dir(), "pelase pass in a dir as data_dir");
+
+    let base_dir = PathBuf::from(data_dir.as_ref());
+    let config_file_path = base_dir.join(CONFIG_FILE_PATH);
+
+    let mut node_config: NodeConfig = if config_file_path.exists() {
+        load_config(&config_file_path)?
+    } else {
+        let default_config = NodeConfig::default();
+        save_config(&default_config, &config_file_path)?;
+        default_config
+    };
+    node_config.network.load(&base_dir)?;
+    // NOTICE: if there is more load case, make it here.
+    // such as: node_config.storage.load(&base_dir)?;
+    Ok(node_config)
+}
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
-    #[serde(default)]
-    pub base: BaseConfig,
     #[serde(default)]
     pub network: NetworkConfig,
     #[serde(default)]
@@ -44,6 +72,12 @@ pub struct NodeConfig {
 }
 
 impl NodeConfig {
+    pub fn random_for_test() -> Self {
+        let mut config = NodeConfig::default();
+        config.network = NetworkConfig::random_for_test();
+        config
+    }
+
     pub fn load<P: AsRef<Path>>(input_path: P) -> Result<Self> {
         let mut file = File::open(&input_path)?;
         let mut contents = String::new();
@@ -78,20 +112,6 @@ impl NodeConfig {
         node_config
     }
 }
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct BaseConfig {
-    #[serde(default)]
-    pub data_dir: PathBuf,
-}
-impl Default for BaseConfig {
-    fn default() -> BaseConfig {
-        let home_dir: PathBuf = dirs::home_dir().expect("should get home dir");
-        let default_data_dir = home_dir.join(".starcoin/starcoin");
-        BaseConfig {
-            data_dir: default_data_dir,
-        }
-    }
-}
 
 pub fn save_config<T, P>(c: &T, output_file: P) -> Result<()>  where T: Serialize + DeserializeOwned, P: AsRef<Path> {
     let contents = toml::to_vec(c)?;
@@ -99,6 +119,31 @@ pub fn save_config<T, P>(c: &T, output_file: P) -> Result<()>  where T: Serializ
     file.write_all(&contents)?;
     Ok(())
 }
+pub fn load_config<T, P>(path: P) -> Result<T>   where T: Serialize + DeserializeOwned, P: AsRef<Path> {
+    let mut file = File::open(&path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    parse(&contents)
+}
+
+fn parse<T>(serialized: &str) -> Result<T> where T: Serialize + DeserializeOwned {
+    Ok(toml::from_str(&serialized)?)
+}
+
+pub fn save_key<P>(key: &[u8], output_file: P) -> Result<()>  where P: AsRef<Path> {
+    let contents: String = hex::encode(key);
+    let mut file = File::create(output_file)?;
+    file.write_all(contents.as_bytes())?;
+    Ok(())
+}
+
+pub fn load_key<P: AsRef<Path>>(path: P) -> Result<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
+    let content = std::fs::read_to_string(path)?;
+    let bytes_out: Vec<u8> = hex::decode(&content)?;
+    let pri_key = Ed25519PrivateKey::try_from(bytes_out.as_slice())?;
+    Ok(KeyPair::from(pri_key))
+}
+
 
 pub fn gen_keypair() -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
     let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");

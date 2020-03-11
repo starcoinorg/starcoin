@@ -28,11 +28,11 @@ async fn test_miner_with_schedule_pacemaker() {
     ::logger::init_for_test();
 
     let peer_info = Arc::new(PeerInfo::random());
-    let config = Arc::new(NodeConfig::default());
+    let config = Arc::new(NodeConfig::random_for_test());
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-    let key_pair = config::gen_keypair();
+    let key_pair = config.network.network_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let genesis =
         Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
@@ -45,7 +45,6 @@ async fn test_miner_with_schedule_pacemaker() {
         config.clone(),
         bus.clone(),
         txpool.clone(),
-        key_pair,
         rt.handle().clone(),
     );
     let chain = ChainActor::launch(
@@ -95,14 +94,14 @@ async fn test_miner_with_ondemand_pacemaker() {
     ::logger::init_for_test();
 
     let peer_info = Arc::new(PeerInfo::random());
-    let mut conf = NodeConfig::default();
+    let mut conf = NodeConfig::random_for_test();
     conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
     let config = Arc::new(conf);
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
 
-    let key_pair = config::gen_keypair();
+    let key_pair = config.network.network_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let genesis =
         Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
@@ -116,7 +115,6 @@ async fn test_miner_with_ondemand_pacemaker() {
         config.clone(),
         bus.clone(),
         txpool.clone(),
-        key_pair,
         rt.handle().clone(),
     );
     let chain = ChainActor::launch(

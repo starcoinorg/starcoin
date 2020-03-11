@@ -25,7 +25,7 @@ fn it_works() {
 }
 
 async fn gen_head_chain(times: u64) -> ChainActorRef<ChainActor> {
-    let node_config = NodeConfig::default();
+    let node_config = NodeConfig::random_for_test();
     let conf = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
@@ -99,7 +99,7 @@ async fn test_block_chain_rollback() {
 
 #[stest::test]
 async fn test_chain_apply() -> Result<()> {
-    let node_config = NodeConfig::default();
+    let node_config = NodeConfig::random_for_test();
     let config = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo)?);

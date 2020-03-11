@@ -4,7 +4,7 @@
 use actix::prelude::*;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
-use config::{NodeConfig, PacemakerStrategy};
+use config::{NodeConfig, PacemakerStrategy, load_config_from_dir};
 use consensus::{dummy::DummyConsensus, Consensus};
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
@@ -28,10 +28,10 @@ use types::peer_info::PeerInfo;
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Starcoin Node")]
 struct Args {
-    #[structopt(short = "f", long, parse(from_os_str))]
-    /// Path to NodeConfig
-    config: Option<PathBuf>,
-    #[structopt(short = "d", long)]
+    #[structopt(short = "d", long, parse(from_os_str))]
+    /// Path to data dir
+    data_dir: Option<PathBuf>,
+    #[structopt(short = "L", long)]
     /// Disable logging
     no_logging: bool,
 }
@@ -40,12 +40,18 @@ struct Args {
 async fn main() {
     logger::init();
     let args = Args::from_args();
+    let data_dir: PathBuf = match args.data_dir.clone() {
+        Some(p) => p,
+        None => todo!(),
+    };
 
-    let node_config = Arc::new(NodeConfig::load_or_default(
-        args.config.as_ref().map(PathBuf::as_path),
-    ));
+    let node_config = config::load_config_from_dir(&data_dir);
+    if let Err(e) = node_config {
+        panic!("fail to load config, err: {:?}", e);
+    }
 
-    let keypair = gen_keypair();
+    let node_config = Arc::new(node_config.unwrap());
+
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
@@ -74,7 +80,6 @@ async fn main() {
         node_config.clone(),
         bus.clone(),
         txpool.clone(),
-        keypair,
         rt.handle().clone(),
     );
     let chain = ChainActor::launch(

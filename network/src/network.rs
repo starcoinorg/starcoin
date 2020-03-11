@@ -118,11 +118,10 @@ where
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         txpool: P,
-        key_pair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
         handle: Handle,
     ) -> NetworkAsyncService<P> {
         let (service, tx, rx, event_rx, tx_command) =
-            build_network_service(&node_config.network, key_pair, handle);
+            build_network_service(&node_config.network, handle);
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -355,14 +354,14 @@ mod tests {
         let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
 
-        let mut node_config1 = NodeConfig::default();
+        let mut node_config1 = NodeConfig::random_for_test();
         node_config1.network.listen =
             format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         let node_config1 = Arc::new(node_config1);
 
         let (txpool1, network1, addr1, bus1) = build_network(node_config1.clone(), handle.clone());
 
-        let mut node_config2 = NodeConfig::default();
+        let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = hex::encode(addr1);
         let seed = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex);
         node_config2.network.listen =
@@ -440,14 +439,12 @@ mod tests {
         Addr<BusActor>,
     ) {
         let bus = BusActor::launch();
-        let key_pair = config::gen_keypair();
-        let addr = AccountAddress::from_public_key(&key_pair.public_key);
+        let addr = AccountAddress::from_public_key(&node_config.network.network_keypair().public_key);
         let txpool = traits::mock::MockTxPoolService::new();
         let network = NetworkActor::launch(
             node_config.clone(),
             bus.clone(),
             txpool.clone(),
-            key_pair,
             handle,
         );
         (txpool, network, addr, bus)

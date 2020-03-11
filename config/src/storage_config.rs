@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use crate::BaseConfig;
+use crate::DEFAULT_DATA_DIR;
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct StorageConfig {
@@ -16,7 +16,7 @@ impl Default for StorageConfig {
     fn default() -> Self {
         Self {
           dir: PathBuf::from("starcoindb/db"),
-          data_dir: BaseConfig::default().data_dir,
+          data_dir: (&*DEFAULT_DATA_DIR).clone()
         }
     }
 }

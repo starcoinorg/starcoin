@@ -261,7 +261,6 @@ impl NetworkInner {
 
 pub fn build_network_service(
     cfg: &NetworkConfig,
-    key_pair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
     handle: Handle,
 ) -> (
     SNetworkService,
@@ -275,7 +274,7 @@ pub fn build_network_service(
         boot_nodes: convert_boot_nodes(cfg.seeds.clone()),
         node_key: {
             let secret =
-                identity::ed25519::SecretKey::from_bytes(&mut key_pair.private_key.to_bytes())
+                identity::ed25519::SecretKey::from_bytes(&mut cfg.network_keypair().private_key.to_bytes())
                     .unwrap();
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },

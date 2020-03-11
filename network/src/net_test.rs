@@ -75,12 +75,7 @@ mod tests {
         let mut first_addr = None::<String>;
         for index in 0..num {
             let mut boot_nodes = Vec::new();
-            let key_pair = {
-                let mut rng: StdRng = SeedableRng::seed_from_u64(index as u64);
-                Arc::new(
-                    KeyPair::<Ed25519PrivateKey, Ed25519PublicKey>::generate_for_testing(&mut rng),
-                )
-            };
+
 
             if let Some(first_addr) = first_addr.as_ref() {
                 boot_nodes.push(format!(
@@ -89,16 +84,17 @@ mod tests {
                     hex::encode(result[0].0.identify())
                 ));
             }
-            let config = config::NetworkConfig {
-                listen: format!("/ip4/127.0.0.1/tcp/{}", base_port + index as u16),
-                seeds: boot_nodes,
-            };
+            let mut config = config::NetworkConfig::random_for_test();
+
+            config.listen= format!("/ip4/127.0.0.1/tcp/{}", base_port + index as u16);
+            config.seeds= boot_nodes;
+
             println!("listen:{:?},boots {:?}", config.listen, config.seeds);
             if first_addr.is_none() {
                 first_addr = Some(config.listen.clone().parse().unwrap());
             }
 
-            let server = build_network_service(&config, key_pair, handle.clone());
+            let server = build_network_service(&config,  handle.clone());
             result.push({
                 let c: NetworkComponent = server;
                 c
