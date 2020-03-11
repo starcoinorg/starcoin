@@ -8,11 +8,13 @@ mod miner_config;
 mod network_config;
 mod rpc_config;
 mod vm_config;
+mod storage_config;
 
 pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use vm_config::VMConfig;
+pub use storage_config::StorageConfig;
 
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::{test_utils::KeyPair, Uniform};
@@ -20,12 +22,15 @@ use rand::prelude::*;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use dirs;
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    #[serde(default)]
+    pub base: BaseConfig,
     #[serde(default)]
     pub network: NetworkConfig,
     #[serde(default)]
@@ -34,6 +39,8 @@ pub struct NodeConfig {
     pub vm: VMConfig,
     #[serde(default)]
     pub miner: MinerConfig,
+    #[serde(default)]
+    pub storage: StorageConfig,
 }
 
 impl NodeConfig {
@@ -69,6 +76,20 @@ impl NodeConfig {
         println!("Using node config {:?}", &node_config);
 
         node_config
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct BaseConfig {
+    #[serde(default)]
+    pub data_dir: PathBuf,
+}
+impl Default for BaseConfig {
+    fn default() -> BaseConfig {
+        let home_dir: PathBuf = dirs::home_dir().expect("should get home dir");
+        let default_data_dir = home_dir.join(".starcoin/starcoin");
+        BaseConfig {
+            data_dir: default_data_dir,
+        }
     }
 }
 

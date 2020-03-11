@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 starcoin-config = {path="../../config"}
+# TODO: replace with versioned crate, once clap release 3.0.
+clap = { git = "https://github.com/clap-rs/clap/" }
