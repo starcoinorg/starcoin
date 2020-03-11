@@ -157,6 +157,23 @@ impl RawUserTransaction {
         }
     }
 
+    pub fn new_state_set(
+        sender: AccountAddress,
+        sequence_number: u64,
+        state_set: ChainStateSet,
+    ) -> Self {
+        RawUserTransaction {
+            sender,
+            sequence_number,
+            payload: TransactionPayload::StateSet(state_set),
+            // Since write-set transactions bypass the VM, these fields aren't relevant.
+            max_gas_amount: 0,
+            gas_unit_price: 0,
+            // Write-set transactions are special and important and shouldn't expire.
+            expiration_time: Duration::new(u64::max_value(), 0),
+        }
+    }
+
     /// Signs the given `RawUserTransaction`. Note that this consumes the `RawUserTransaction` and turns it
     /// into a `SignatureCheckedTransaction`.
     ///
@@ -183,6 +200,8 @@ impl RawUserTransaction {
                 (get_transaction_name(script.code()), script.args())
             }
             TransactionPayload::Module(_) => ("module publishing".to_string(), &empty_vec[..]),
+            TransactionPayload::StateSet(_) => ("genesis".to_string(), &empty_vec[..]),
+
         };
         let mut f_args: String = "".to_string();
         for arg in args {
@@ -244,6 +263,8 @@ pub enum TransactionPayload {
     Script(Script),
     /// A transaction that publishes code.
     Module(Module),
+    /// A transaction used for genesis.
+    StateSet(ChainStateSet),
 }
 
 /// A transaction that has been signed.

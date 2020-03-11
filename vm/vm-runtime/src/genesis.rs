@@ -13,11 +13,15 @@ use types::{
 };
 use libra_types::{
     access_path::AccessPath,
-    transaction::{ChangeSet, RawTransaction, SignatureCheckedTransaction,},
+    transaction::{ChangeSet, RawTransaction,},
     byte_array::ByteArray,
     account_address::AccountAddress,
     identifier::Identifier,
 
+};
+use types::{
+    transaction::{RawUserTransaction, SignatureCheckedTransaction},
+    state_set::ChainStateSet,
 };
 use vm::{
     access::ModuleAccess,
@@ -32,9 +36,19 @@ use vm_runtime::{
 };
 use libra_state_view::StateView;
 use vm_runtime_types::value::Value;
+use rand::{rngs::StdRng, SeedableRng};
+
 //use std::str::FromStr;
 
+const GENESIS_SEED: [u8; 32] = [42; 32];
+
+/// The initial balance of the association account.
 pub const ASSOCIATION_INIT_BALANCE: u64 = 1_000_000_000_000_000;
+
+pub static GENESIS_KEYPAIR: Lazy<(Ed25519PrivateKey, Ed25519PublicKey)> = Lazy::new(|| {
+    let mut rng = StdRng::from_seed(GENESIS_SEED);
+    compat::generate_keypair(&mut rng)
+});
 
 static INITIALIZE: Lazy<Identifier> = Lazy::new(|| Identifier::new("initialize").unwrap());
 static INITIALIZE_BLOCK: Lazy<Identifier> =
@@ -74,7 +88,7 @@ pub fn generate_genesis_transaction(
     }
 
     // generate the genesis WriteSet
-    let genesis_write_set = {
+    let genesis_state_set = {
         {
             create_and_initialize_main_accounts(
                 &move_vm,
@@ -85,16 +99,13 @@ pub fn generate_genesis_transaction(
             );
             publish_stdlib(&mut interpreter_context, modules);
 
-            ChangeSet::new(
-                interpreter_context
-                    .make_write_set()
-                    .expect("Genesis WriteSet failure"),
-                interpreter_context.events().to_vec(),
+            ChainStateSet::new(
+               vec![],
             )
         }
     };
     let transaction =
-        RawTransaction::new_change_set(TransactionHelper::to_libra_AccountAddress(account_config::association_address()), 0, genesis_write_set);
+        RawUserTransaction::new_state_set(account_config::association_address(), 0, genesis_state_set);
     transaction.sign(private_key, public_key).unwrap()
 }
 

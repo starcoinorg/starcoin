@@ -264,5 +264,9 @@ fn decode_transaction(txn: &SignedUserTransaction) -> MockTransaction {
         TransactionPayload::Module(_) => {
             unimplemented!("MockExecutor does not support Module transaction payload.")
         }
+        TransactionPayload::StateSet(_) => {
+            unimplemented!("MockExecutor does not support StateSet transaction payload.")
+        }
+
     }
 }

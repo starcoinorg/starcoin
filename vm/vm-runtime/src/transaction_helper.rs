@@ -77,6 +77,9 @@ impl TransactionHelper {
             TransactionPayload::Module(m) => {
                 LibraTransactionPayload::Module(Self::to_libra_Module(m))
             }
+            TransactionPayload::StateSet(_) => {
+                unimplemented!("MockExecutor does not support StateSet transaction payload.")
+            }
         }
     }
     pub fn to_starcoin_Events(_events: Vec<LibraContractEvent>) -> Vec<ContractEvent> {
