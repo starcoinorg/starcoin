@@ -29,5 +29,3 @@ types = { package="starcoin-types", path = "../../types"}
 traits = { package="starcoin-traits", path = "../../core/traits"}
 config = {path = "../../config", package="starcoin-config"}
 txpool = {path = "../../txpool", package="starcoin-txpool"}
-libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }

@@ -10,6 +10,10 @@ use libra_types::{
     account_config as libra_account_config, byte_array::ByteArray as LibraByteArray,
 };
 use logger::prelude::*;
+use move_vm_types::{
+    identifier::create_access_path,
+    values::{Struct, Value},
+};
 use rand::{Rng, SeedableRng};
 use std::time::Duration;
 use types::{
@@ -21,8 +25,6 @@ use types::{
         RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
     },
 };
-use vm_runtime::identifier::create_access_path;
-use vm_runtime_types::value::{Struct, Value};
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Account {

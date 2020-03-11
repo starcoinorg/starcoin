@@ -6,6 +6,7 @@ use anyhow::{Error, Result};
 use libra_state_view::StateView;
 use libra_types::access_path::AccessPath as LibraAccessPath;
 use logger::prelude::*;
+use move_vm_state::data_cache::{BlockDataCache, RemoteCache};
 use std::sync::Arc;
 use traits::ChainState;
 use types::{
@@ -14,7 +15,6 @@ use types::{
     write_set::{WriteOp, WriteSet},
 };
 use vm::errors::VMResult;
-use vm_runtime::data_cache::{BlockDataCache, RemoteCache};
 
 /// Adaptor for chain state
 pub struct StateStore<'txn> {

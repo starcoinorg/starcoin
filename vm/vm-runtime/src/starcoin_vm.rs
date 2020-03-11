@@ -23,6 +23,13 @@ use libra_types::{
     },
 };
 use logger::prelude::*;
+use move_vm_runtime::MoveVM;
+use move_vm_state::{
+    data_cache::{BlockDataCache, RemoteCache},
+    execution_context::{SystemExecutionContext, TransactionExecutionContext},
+};
+use move_vm_types::chain_state::ChainState as LibraChainState;
+use move_vm_types::values::Value;
 use std::sync::Arc;
 use traits::ChainState;
 use types::{
@@ -41,14 +48,6 @@ use vm::{
     gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
-use vm_runtime::{
-    chain_state::{
-        ChainState as LibraChainState, SystemExecutionContext, TransactionExecutionContext,
-    },
-    data_cache::{BlockDataCache, RemoteCache},
-    move_vm::MoveVM,
-};
-use vm_runtime_types::value::Value;
 
 #[derive(Clone)]
 /// Wrapper of MoveVM
