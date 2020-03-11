@@ -4882,6 +4882,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-genesis",
  "starcoin-logger",
  "starcoin-network",
  "starcoin-state-tree",

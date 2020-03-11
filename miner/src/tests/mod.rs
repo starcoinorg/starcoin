@@ -7,6 +7,7 @@ use consensus::{dummy::DummyConsensus, Consensus};
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
 use logger::prelude::*;
 use network::network::NetworkActor;
+use starcoin_genesis::Genesis;
 use std::sync::Arc;
 use std::{fmt, thread};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
@@ -37,8 +38,11 @@ async fn test_miner_with_schedule_pacemaker() {
     let key_pair = config::gen_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
+    let genesis =
+        Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
     let chain = ChainActor::launch(
         config.clone(),
+        genesis.startup_info().clone(),
         storage.clone(),
         Some(network.clone()),
         bus.clone(),
@@ -94,8 +98,11 @@ async fn test_miner_with_ondemand_pacemaker() {
     let key_pair = config::gen_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
     let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
+    let genesis =
+        Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
     let chain = ChainActor::launch(
         config.clone(),
+        genesis.startup_info().clone(),
         storage.clone(),
         Some(network.clone()),
         bus.clone(),
