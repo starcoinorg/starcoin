@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{chain_state::StateStore};
+use crate::chain_state::StateStore;
 use anyhow::{Error, Result};
 use config::VMConfig;
 use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};

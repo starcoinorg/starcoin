@@ -10,7 +10,7 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait(? Send)]
 pub trait AsyncChain: Clone + std::marker::Unpin {
     async fn current_header(self) -> Option<BlockHeader>;
     async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader>;
@@ -18,6 +18,10 @@ pub trait AsyncChain: Clone + std::marker::Unpin {
     async fn get_header_by_number(self, number: BlockNumber) -> Option<BlockHeader>;
     async fn get_block_by_number(self, number: BlockNumber) -> Option<Block>;
     async fn create_block_template(self) -> Option<BlockTemplate>;
+    async fn create_block_template_with_parent(
+        self,
+        parent_hash: HashValue,
+    ) -> Option<BlockTemplate>;
     async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block>;
 }
 
@@ -32,6 +36,11 @@ pub trait ChainReader {
     /// get transaction info by transaction info hash.
     fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate>;
+    fn create_block_template_with_parent(
+        &self,
+        parent_hash: HashValue,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn gen_tx(&self) -> Result<()>;
     fn get_chain_info(&self) -> ChainInfo;

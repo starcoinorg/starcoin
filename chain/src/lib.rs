@@ -81,19 +81,6 @@ impl Handler<ChainRequest> for ChainActor {
 
     fn handle(&mut self, msg: ChainRequest, ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            ChainRequest::CreateBlock(times) => {
-                let head_block = self.service.head_block();
-                let mut parent_block_hash = head_block.crypto_hash();
-                for i in 0..times {
-                    debug!("parent_block_hash: {:?}", parent_block_hash);
-                    let current_block_header =
-                        BlockHeader::new_block_header_for_test(parent_block_hash, i);
-                    let current_block = Block::new_nil_block_for_test(current_block_header);
-                    parent_block_hash = current_block.crypto_hash();
-                    self.service.try_connect(current_block)?;
-                }
-                Ok(ChainResponse::None)
-            }
             ChainRequest::CurrentHeader() => {
                 Ok(ChainResponse::BlockHeader(self.service.current_header()))
             }
@@ -111,6 +98,14 @@ impl Handler<ChainRequest> for ChainActor {
                 //TODO get txn from txpool.
                 self.service.create_block_template(vec![]).unwrap(),
             )),
+            ChainRequest::CreateBlockTemplateWithParent(parent_hash) => {
+                Ok(ChainResponse::BlockTemplate(
+                    //TODO get txn from txpool.
+                    self.service
+                        .create_block_template_with_parent(parent_hash, vec![])
+                        .unwrap(),
+                ))
+            }
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
                 self.service.get_block(hash).unwrap(),
             )),
@@ -271,6 +266,24 @@ where
         drop(self);
         if let ChainResponse::BlockTemplate(block_template) = address
             .send(ChainRequest::CreateBlockTemplate())
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(block_template)
+        } else {
+            None
+        }
+    }
+
+    async fn create_block_template_with_parent(
+        self,
+        parent_hash: HashValue,
+    ) -> Option<BlockTemplate> {
+        let address = self.address.clone();
+        drop(self);
+        if let ChainResponse::BlockTemplate(block_template) = address
+            .send(ChainRequest::CreateBlockTemplateWithParent(parent_hash))
             .await
             .unwrap()
             .unwrap()

@@ -50,7 +50,7 @@ impl Genesis {
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
         let block = Block::genesis_block(accumulator_root, state_root);
         assert_eq!(block.header().number(), 0);
-        BlockStorageOp::save(storage.as_ref(), block.clone())?;
+        BlockStorageOp::commit_block(storage.as_ref(), block.clone())?;
         let mut hash_number = Vec::new();
         hash_number.push(block.header().id());
         assert_eq!((block.header().number() + 1), hash_number.len() as u64);

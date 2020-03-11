@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{access_path_helper::AccessPathHelper};
+use crate::access_path_helper::AccessPathHelper;
 use anyhow::{Error, Result};
 use libra_state_view::StateView;
 use libra_types::access_path::AccessPath as LibraAccessPath;

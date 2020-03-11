@@ -1,6 +1,4 @@
-use starcoin_config::{
-    NodeConfig,save_config,
-};
+use starcoin_config::{save_config, NodeConfig};
 
 use clap::Clap;
 #[derive(Clap)]

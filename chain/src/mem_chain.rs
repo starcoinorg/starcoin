@@ -47,20 +47,6 @@ impl Handler<ChainRequest> for MemChainActor {
         let mem_chain = self.mem_chain.clone();
         let fut = async move {
             match msg {
-                ChainRequest::CreateBlock(times) => {
-                    let mut lock = mem_chain.clone().write().compat().await.unwrap();
-                    let head_block = lock.head_block().clone();
-                    let mut parent_block_hash = head_block.header().id();
-                    for i in 0..times {
-                        debug!("parent_block_hash: {:?}", parent_block_hash);
-                        let current_block_header =
-                            BlockHeader::new_block_header_for_test(parent_block_hash, i);
-                        let current_block = Block::new_nil_block_for_test(current_block_header);
-                        parent_block_hash = current_block.header().id();
-                        lock.try_connect(current_block);
-                    }
-                    Ok(ChainResponse::None)
-                }
                 ChainRequest::CurrentHeader() => {
                     let lock = mem_chain.clone().read().compat().await.unwrap();
                     Ok(ChainResponse::BlockHeader(lock.current_header()))
@@ -110,6 +96,7 @@ impl Handler<ChainRequest> for MemChainActor {
                 }
                 ChainRequest::GetChainInfo() => unimplemented!(),
                 ChainRequest::GenTx() => Ok(ChainResponse::None),
+                _ => unimplemented!(),
             }
         };
 
@@ -244,6 +231,14 @@ impl ChainReader for MemChain {
             BlockHeader::new_block_header_for_test(head_block_hash, head_block.header().number());
         let current_block = Block::new_nil_block_for_test(block_template_header);
         Ok(BlockTemplate::from_block(current_block))
+    }
+
+    fn create_block_template_with_parent(
+        &self,
+        parent_hash: HashValue,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
+        unimplemented!()
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {

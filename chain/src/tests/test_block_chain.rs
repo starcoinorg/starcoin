@@ -6,6 +6,7 @@ use actix::Addr;
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
+use consensus::dummy::DummyHeader;
 use consensus::{dummy::DummyConsensus, Consensus};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
@@ -79,11 +80,22 @@ async fn test_block_chain_head() {
 async fn test_block_chain_forks() {
     let times = 5;
     let chain = gen_head_chain(times).await;
-    let mut parent_hash = chain.clone().get_chain_info().await.unwrap().get_head();
+    let mut parent_hash = chain.clone().get_chain_info().await.unwrap().get_begin();
     if times > 0 {
         for i in 0..(times + 1) {
-            println!("{}", i);
-            let block = random_block(Some((parent_hash, i)));
+            let block = chain
+                .clone()
+                .create_block_template_with_parent(parent_hash)
+                .await
+                .unwrap()
+                .into_block(DummyHeader {});
+            println!(
+                "{}:{:?}:{:?}:{:?}",
+                i,
+                parent_hash,
+                block.header().id(),
+                block.header().parent_hash()
+            );
             parent_hash = block.header().id();
             chain.clone().try_connect(block).await.unwrap();
         }

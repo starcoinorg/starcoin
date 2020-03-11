@@ -126,6 +126,7 @@ where
         let mut need_broadcast = false;
         let block = new_branch.head_block();
         if new_branch_parent_hash == self.head.current_header().id() {
+            println!("head branch.");
             //1. update head branch
             self.head = new_branch;
             need_broadcast = true;
@@ -138,9 +139,12 @@ where
         } else {
             //2. update branches
             let mut update_branch_flag = false;
+            let mut index = 0;
             for mut branch in &self.branches {
+                index = index + 1;
                 if new_branch_parent_hash == branch.current_header().id() {
                     if new_branch.current_header().number() > self.head.current_header().number() {
+                        println!("rollback branch.");
                         //3. change head
                         //rollback txpool
                         let (enacted, retracted) = self.find_ancestors(
@@ -148,12 +152,21 @@ where
                             &self.head.current_header().parent_hash(),
                         );
 
-                        branch = &self.head;
+                        self.branches.insert(
+                            (index - 1),
+                            BlockChain::new(
+                                self.config.clone(),
+                                self.head.get_chain_info(),
+                                self.storage.clone(),
+                                self.txpool.clone(),
+                            )
+                            .unwrap(),
+                        );
                         self.head = BlockChain::new(
-                            self.config.clone(),
+                            new_branch.config.clone(),
                             new_branch.get_chain_info(),
-                            self.storage.clone(),
-                            self.txpool.clone(),
+                            new_branch.storage.clone(),
+                            new_branch.txpool.clone(),
                         )
                         .unwrap();
 
@@ -161,7 +174,17 @@ where
 
                         need_broadcast = true;
                     } else {
-                        branch = &new_branch;
+                        println!("replace branch.");
+                        self.branches.insert(
+                            (index - 1),
+                            BlockChain::new(
+                                new_branch.config.clone(),
+                                new_branch.get_chain_info(),
+                                new_branch.storage.clone(),
+                                new_branch.txpool.clone(),
+                            )
+                            .unwrap(),
+                        );
                     }
                     update_branch_flag = true;
                     break;
@@ -169,6 +192,7 @@ where
             }
 
             if !update_branch_flag {
+                println!("update branch.");
                 self.branches.push(new_branch);
             }
         }
@@ -211,49 +235,39 @@ where
         if let Some(ancestor) = self
             .storage
             .get_common_ancestor(block_enacted.clone(), block_retracted.clone())
-            .unwrap()
+            .expect("common ancestor is none.")
         {
             let mut block_enacted_tmp = block_enacted.clone();
+
             loop {
                 let block_tmp = self
                     .storage
-                    .get_block_by_hash(block_enacted_tmp.clone())
+                    .get_block(block_enacted_tmp.clone())
+                    .unwrap()
                     .unwrap();
-                match block_tmp {
-                    Some(tmp) => {
-                        block_enacted_tmp = tmp.header().parent_hash();
-                        enacted.push(tmp);
-                        if block_enacted_tmp == ancestor {
-                            break;
-                        };
-                    }
-                    None => {
-                        warn!("enacted block is none.");
-                        enacted.clear();
-                        break;
-                    }
-                }
+                block_enacted_tmp = block_tmp.header().parent_hash();
+                enacted.push(block_tmp);
+                if block_enacted_tmp == ancestor {
+                    break;
+                };
             }
 
             let mut block_retracted_tmp = block_retracted.clone();
             loop {
-                let block_tmp = self.storage.get_block_by_hash(block_retracted_tmp).unwrap();
-                match block_tmp {
-                    Some(tmp) => {
-                        block_retracted_tmp = tmp.header().parent_hash();
-                        retracted.push(tmp);
-                        if block_retracted_tmp == ancestor {
-                            break;
-                        };
-                    }
-                    None => {
-                        warn!("retracted block is none.");
-                        retracted.clear();
-                        break;
-                    }
-                }
+                let block_tmp = self
+                    .storage
+                    .get_block_by_hash(block_retracted_tmp)
+                    .unwrap()
+                    .unwrap();
+                block_retracted_tmp = block_tmp.header().parent_hash();
+                retracted.push(block_tmp);
+                if block_retracted_tmp == ancestor {
+                    break;
+                };
             }
         };
+        retracted.reverse();
+        enacted.reverse();
         let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
         let mut tx_retracted: Vec<SignedUserTransaction> = Vec::new();
         enacted.iter().for_each(|b| {
@@ -338,6 +352,15 @@ where
 
     fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
         self.head.create_block_template(txns)
+    }
+
+    fn create_block_template_with_parent(
+        &self,
+        parent_hash: HashValue,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
+        self.head
+            .create_block_template_with_parent(parent_hash, user_txns)
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

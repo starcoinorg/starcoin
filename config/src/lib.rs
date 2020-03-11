@@ -5,18 +5,17 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use anyhow::ensure;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-
 mod miner_config;
 mod network_config;
 mod rpc_config;
-mod vm_config;
 mod storage_config;
+mod vm_config;
 
 pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
-pub use vm_config::VMConfig;
 pub use storage_config::StorageConfig;
+pub use vm_config::VMConfig;
 
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::{test_utils::KeyPair, Uniform};
@@ -113,7 +112,11 @@ impl NodeConfig {
     }
 }
 
-pub fn save_config<T, P>(c: &T, output_file: P) -> Result<()>  where T: Serialize + DeserializeOwned, P: AsRef<Path> {
+pub fn save_config<T, P>(c: &T, output_file: P) -> Result<()>
+where
+    T: Serialize + DeserializeOwned,
+    P: AsRef<Path>,
+{
     let contents = toml::to_vec(c)?;
     let mut file = File::create(output_file)?;
     file.write_all(&contents)?;

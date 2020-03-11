@@ -39,14 +39,15 @@ where
     S: BlockChainStore + 'static,
     P: TxPoolAsyncService + 'static,
 {
-    config: Arc<NodeConfig>,
+    pub config: Arc<NodeConfig>,
+    //TODO
     accumulator: MerkleAccumulator,
     head: Block,
     chain_state: ChainStateDB,
     phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
-    storage: Arc<S>,
-    txpool: P,
+    pub storage: Arc<S>,
+    pub txpool: P,
     chain_info: ChainInfo,
 }
 
@@ -146,54 +147,12 @@ where
     pub fn exist_block(&self, block_id: &HashValue) -> bool {
         self.chain_info.contains(block_id)
     }
-}
 
-impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
-where
-    E: TransactionExecutor,
-    C: Consensus,
-    S: BlockChainStore,
-    P: TxPoolAsyncService,
-{
-    fn head_block(&self) -> Block {
-        self.head.clone()
-    }
-
-    fn current_header(&self) -> BlockHeader {
-        self.head.header().clone()
-    }
-
-    fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
-        self.storage.get_block_header_by_hash(hash)
-    }
-
-    fn get_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        self.storage.get_block_header_by_number(number)
-    }
-
-    fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        let block_id = self.chain_info.get_hash_by_number(number);
-        self.storage.get_block_by_hash(block_id)
-    }
-
-    fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        self.storage.get_block_by_hash(hash)
-    }
-
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>, Error> {
-        unimplemented!()
-    }
-
-    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        unimplemented!()
-    }
-
-    fn create_block_template(
+    pub fn create_block_template_inner(
         &self,
+        previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        let previous_header = self.current_header();
-
         //TODO read address from config
         let author = AccountAddress::random();
         //TODO calculate gas limit etc.
@@ -257,6 +216,70 @@ where
             0,
             user_txns.into(),
         ))
+    }
+}
+
+impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    S: BlockChainStore,
+    P: TxPoolAsyncService,
+{
+    fn head_block(&self) -> Block {
+        self.head.clone()
+    }
+
+    fn current_header(&self) -> BlockHeader {
+        self.head.header().clone()
+    }
+
+    fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
+        self.storage.get_block_header_by_hash(hash)
+    }
+
+    fn get_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
+        self.storage.get_block_header_by_number(number)
+    }
+
+    fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
+        let block_id = self.chain_info.get_hash_by_number(number);
+        self.storage.get_block_by_hash(block_id)
+    }
+
+    fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
+        self.storage.get_block_by_hash(hash)
+    }
+
+    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>, Error> {
+        unimplemented!()
+    }
+
+    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
+        unimplemented!()
+    }
+
+    fn create_block_template(
+        &self,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
+        self.create_block_template_inner(self.current_header(), user_txns)
+    }
+
+    /// just for test
+    fn create_block_template_with_parent(
+        &self,
+        parent_hash: HashValue,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
+        let previous_header = self
+            .storage
+            .get_block(parent_hash)
+            .unwrap()
+            .unwrap()
+            .header()
+            .clone();
+        self.create_block_template_inner(previous_header, user_txns)
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

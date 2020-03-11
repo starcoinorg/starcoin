@@ -54,6 +54,10 @@ impl ChainInfo {
         self.head_block
     }
 
+    pub fn get_begin(&self) -> HashValue {
+        self.hash_number.first().unwrap().clone()
+    }
+
     pub fn contains(&self, block_id: &HashValue) -> bool {
         self.hash_number.contains(block_id)
     }
@@ -72,7 +76,8 @@ impl ChainInfo {
                 }
 
                 assert!(self.hash_number.len() > index);
-                let hash_number = self.hash_number.clone().split_off(index);
+                let mut hash_number = self.hash_number.clone();
+                hash_number.split_off(index);
                 Some(ChainInfo {
                     head_block: hash_number.last().unwrap().clone(),
                     hash_number,

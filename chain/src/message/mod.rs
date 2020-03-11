@@ -9,14 +9,13 @@ use types::{
 
 #[derive(Clone)]
 pub enum ChainRequest {
-    // just for test
-    CreateBlock(u64),
     CurrentHeader(),
     GetHeaderByHash(HashValue),
     HeadBlock(),
     GetHeaderByNumber(u64),
     GetBlockByNumber(u64),
     CreateBlockTemplate(),
+    CreateBlockTemplateWithParent(HashValue), // just fot test
     GetBlockByHash(HashValue),
     ConnectBlock(Block),
     GetHeadBranch(),
