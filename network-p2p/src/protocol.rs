@@ -444,4 +444,8 @@ impl Protocol {
         self.behaviour
             .write_notification(&target, protocol_name, message);
     }
+
+    pub fn send_notification(&mut self, target: PeerId, message: impl Into<Vec<u8>>) {
+        self.behaviour.send_packet(&target, message.into());
+    }
 }

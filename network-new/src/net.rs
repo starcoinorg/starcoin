@@ -18,7 +18,6 @@ use futures::{
         oneshot::{self, Canceled, Sender},
     },
     prelude::*,
-    task::AtomicWaker,
 };
 
 use anyhow::*;
@@ -39,30 +38,25 @@ use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::runtime::Handle;
 use types::account_address::AccountAddress;
 
-pub const PROTOCOL_NAME: &[u8] = b"/starcoin/testnet/1";
-
 #[derive(Clone)]
 pub struct SNetworkService {
     handle: Handle,
     inner: NetworkInner,
     service: Arc<NetworkService>,
     net_tx: Option<mpsc::UnboundedSender<NetworkMessage>>,
-    waker: Arc<AtomicWaker>,
 }
 
 #[derive(Clone)]
 pub struct NetworkInner {
     service: Arc<NetworkService>,
     acks: Arc<Mutex<HashMap<u128, Sender<()>>>>,
-    waker: Arc<AtomicWaker>,
 }
 
 impl SNetworkService {
     pub fn new(cfg: NetworkConfiguration, handle: Handle) -> Self {
         let protocol = network_p2p::ProtocolId::from("stargate".as_bytes());
 
-        let waker = Arc::new(AtomicWaker::new());
-        let worker = NetworkWorker::new(Params::new(cfg, protocol), waker.clone()).unwrap();
+        let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
         let service = worker.service().clone();
         let worker = worker;
 
@@ -73,7 +67,6 @@ impl SNetworkService {
         let inner = NetworkInner {
             service: service.clone(),
             acks,
-            waker: waker.clone(),
         };
 
         Self {
@@ -81,7 +74,6 @@ impl SNetworkService {
             handle,
             service,
             net_tx: None,
-            waker,
         }
     }
 
@@ -158,10 +150,11 @@ impl SNetworkService {
         let peer_id =
             convert_account_address_to_peer_id(account_address).expect("Invalid account address");
 
+        info!("send message is  {:?}", protocol_msg);
         self.service
-            .write_notification(peer_id, PROTOCOL_NAME.into(), protocol_msg.into_bytes());
-        debug!("Send message with ack");
-        self.waker.wake();
+            .send_notification(peer_id, protocol_msg.into_bytes());
+        info!("Send message with ack");
+        //self.waker.wake();
         self.inner.acks.lock().insert(message_id, tx);
         rx.await?;
 
@@ -174,9 +167,7 @@ impl SNetworkService {
 
         let message_bytes = protocol_msg.into_bytes();
 
-        self.service
-            .broadcast_message(PROTOCOL_NAME.into(), message_bytes)
-            .await;
+        self.service.broadcast_message(message_bytes).await;
     }
 
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
@@ -223,8 +214,10 @@ impl NetworkInner {
     ) -> Result<()> {
         info!("Receive message with peer_id:{:?}", &peer_id);
         let address = convert_peer_id_to_account_address(&peer_id)?;
+        info!("addr is {:?}", address);
         for message in messages {
             let message = Message::from_bytes(message.as_ref())?;
+            info!("message is {:?}", message);
             match message {
                 Message::Payload(payload) => {
                     //receive message
@@ -234,9 +227,8 @@ impl NetworkInner {
                     };
                     net_tx.unbounded_send(user_msg)?;
                     if payload.id != 0 {
-                        self.service.write_notification(
+                        self.service.send_notification(
                             peer_id.clone(),
-                            PROTOCOL_NAME.into(),
                             Message::ACK(payload.id).into_bytes(),
                         );
                     }
@@ -259,12 +251,10 @@ impl NetworkInner {
 
     async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
         let account_addr = message.peer_id.clone();
-        self.service.write_notification(
+        self.service.send_notification(
             convert_account_address_to_peer_id(account_addr)?,
-            PROTOCOL_NAME.into(),
-            message.data,
+            Message::new_payload(message.data).0.into_bytes(),
         );
-        self.waker.wake();
         Ok(())
     }
 }

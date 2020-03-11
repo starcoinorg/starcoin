@@ -426,13 +426,13 @@ impl GenericProto {
             return;
         }
 
-        info!(
+        debug!(
             target: "sub-libp2p",
             "External API => Notification for {:?} with protocol {:?}",
             target,
             str::from_utf8(&protocol_name)
         );
-        info!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
+        debug!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
 
         self.events.push(NetworkBehaviourAction::SendEvent {
             peer_id: target.clone(),
@@ -454,8 +454,8 @@ impl GenericProto {
             return;
         }
 
-        trace!(target: "sub-libp2p", "External API => Packet for {:?}", target);
-        trace!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
+        debug!(target: "sub-libp2p", "External API => Packet for {:?}", target);
+        debug!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
         self.events.push(NetworkBehaviourAction::SendEvent {
             peer_id: target.clone(),
             event: NotifsHandlerIn::SendLegacy { message },
@@ -1268,7 +1268,7 @@ impl NetworkBehaviour for GenericProto {
                         continue;
                     }
 
-                    debug!(target: "sub-libp2p", "Handler({:?}) <= Enable now that ban has expired", peer_id);
+                    info!(target: "sub-libp2p", "Handler({:?}) <= Enable now that ban has expired", peer_id);
                     self.events.push(NetworkBehaviourAction::SendEvent {
                         peer_id: peer_id.clone(),
                         event: NotifsHandlerIn::Enable,
@@ -1284,7 +1284,6 @@ impl NetworkBehaviour for GenericProto {
         }
 
         if !self.events.is_empty() {
-            info!("here");
             return Poll::Ready(self.events.remove(0));
         }
 
