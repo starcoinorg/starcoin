@@ -4,8 +4,10 @@
 use crate::node_index::{NodeIndex, NODE_ERROR_INDEX};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::create_literal_hash;
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{
+    hash::{create_literal_hash, CryptoHash},
+    HashValue,
+};
 use std::cell::Cell;
 
 /// Placeholder hash of `Accumulator`.
@@ -64,9 +66,9 @@ impl AccumulatorNode {
 /// An internal node.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
 pub struct InternalNode {
-    /// The hash of this internal node which is the root hash of the subtree.
-    #[serde(skip)]
-    hash: Cell<Option<HashValue>>,
+    // /// The hash of this internal node which is the root hash of the subtree.
+    // #[serde(skip)]
+    // hash: Cell<Option<HashValue>>,
     index: NodeIndex,
     left: HashValue,
     right: HashValue,
@@ -75,12 +77,13 @@ pub struct InternalNode {
 impl InternalNode {
     pub fn new(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
         InternalNode {
-            hash: Cell::new(None),
+            // hash: Cell::new(None),
             index,
             left,
             right,
         }
     }
+
     pub fn hash(&self) -> HashValue {
         // match self.hash.get() {
         //     Some(hash) => hash,
@@ -93,6 +96,7 @@ impl InternalNode {
         //     }
         // }
     }
+
     pub fn index(&self) -> NodeIndex {
         self.index
     }
@@ -112,6 +116,7 @@ impl LeafNode {
     pub fn value(&self) -> HashValue {
         self.hash
     }
+
     pub fn index(&self) -> NodeIndex {
         self.index
     }
