@@ -15,9 +15,7 @@ pub mod sync_messages;
 pub use messages::*;
 pub use network::NetworkActor;
 
-pub use helper::{
-    convert_account_address_to_peer_id, convert_peer_id_to_account_address, get_unix_ts,
-};
+pub use helper::get_unix_ts;
 
 use anyhow::{Error, Result};
 pub use messages::{

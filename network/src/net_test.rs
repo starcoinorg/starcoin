@@ -28,7 +28,7 @@ mod tests {
     use network_p2p::{identity, NetworkConfiguration, NodeKeyConfig, PeerId, PublicKey, Secret};
     use types::account_address::AccountAddress;
 
-    use crate::{convert_account_address_to_peer_id, helper::convert_boot_nodes, PeerEvent};
+    use crate::{helper::convert_boot_nodes, PeerEvent};
 
     use crate::net::{build_network_service, SNetworkService};
 
@@ -76,7 +76,6 @@ mod tests {
         for index in 0..num {
             let mut boot_nodes = Vec::new();
 
-
             if let Some(first_addr) = first_addr.as_ref() {
                 boot_nodes.push(format!(
                     "{}/p2p/{}",
@@ -86,15 +85,15 @@ mod tests {
             }
             let mut config = config::NetworkConfig::random_for_test();
 
-            config.listen= format!("/ip4/127.0.0.1/tcp/{}", base_port + index as u16);
-            config.seeds= boot_nodes;
+            config.listen = format!("/ip4/127.0.0.1/tcp/{}", base_port + index as u16);
+            config.seeds = boot_nodes;
 
             println!("listen:{:?},boots {:?}", config.listen, config.seeds);
             if first_addr.is_none() {
                 first_addr = Some(config.listen.clone().parse().unwrap());
             }
 
-            let server = build_network_service(&config,  handle.clone());
+            let server = build_network_service(&config, handle.clone());
             result.push({
                 let c: NetworkComponent = server;
                 c
@@ -272,27 +271,6 @@ mod tests {
             );
         };
         _rt.block_on(fut);
-    }
-
-    #[test]
-    fn test_convert_address_peer_id() {
-        let (private_key, public_key) = compat::generate_keypair(Option::None);
-        let seckey = identity::ed25519::SecretKey::from_bytes(&mut private_key.to_bytes()).unwrap();
-        let node_public_key = NodeKeyConfig::Ed25519(Secret::Input(seckey))
-            .into_keypair()
-            .unwrap()
-            .public();
-        let account_address = AccountAddress::from_public_key(&public_key);
-        let peer_id = PeerId::from_public_key(node_public_key.clone());
-
-        if let PublicKey::Ed25519(key) = node_public_key.clone() {
-            assert_eq!(key.encode(), public_key.to_bytes());
-        };
-        assert_eq!(node_public_key.clone().into_peer_id(), peer_id.clone());
-        assert_eq!(
-            convert_account_address_to_peer_id(account_address).unwrap(),
-            peer_id
-        );
     }
 
     fn generate_account_address() -> String {

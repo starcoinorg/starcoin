@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::BaseConfig;
+use crate::DEFAULT_DATA_DIR;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use crate::DEFAULT_DATA_DIR;
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct StorageConfig {
@@ -16,8 +15,8 @@ pub struct StorageConfig {
 impl Default for StorageConfig {
     fn default() -> Self {
         Self {
-          dir: PathBuf::from("starcoindb/db"),
-          data_dir: (&*DEFAULT_DATA_DIR).clone()
+            dir: PathBuf::from("starcoindb/db"),
+            data_dir: (&*DEFAULT_DATA_DIR).clone(),
         }
     }
 }

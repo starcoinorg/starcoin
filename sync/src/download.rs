@@ -187,7 +187,7 @@ impl DownloadActor {
                                 network
                                     .clone()
                                     .send_request(
-                                        best_peer.id.clone(),
+                                        best_peer.id.clone().into(),
                                         get_hash_by_number_req.clone(),
                                         do_duration(DELAY_TIME),
                                     )
@@ -240,7 +240,7 @@ impl DownloadActor {
                                     ) = network
                                         .clone()
                                         .send_request(
-                                            best_peer.id.clone(),
+                                            best_peer.id.clone().into(),
                                             get_hash_by_number_req.clone(),
                                             do_duration(DELAY_TIME),
                                         )
@@ -269,7 +269,7 @@ impl DownloadActor {
                                         ) = network
                                             .clone()
                                             .send_request(
-                                                best_peer.id.clone(),
+                                                best_peer.id.clone().into(),
                                                 get_data_by_hash_req.clone(),
                                                 do_duration(DELAY_TIME),
                                             )

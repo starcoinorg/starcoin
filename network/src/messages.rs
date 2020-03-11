@@ -10,7 +10,10 @@ use parity_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use types::account_address::AccountAddress;
 use types::transaction::SignedUserTransaction;
-use types::{block::Block, peer_info::PeerInfo};
+use types::{
+    block::Block,
+    peer_info::{PeerId, PeerInfo},
+};
 
 pub trait RPCMessage {
     fn get_id(&self) -> HashValue;
@@ -50,7 +53,7 @@ pub enum RPCRequest {
 #[derive(Debug, Serialize, Deserialize, Message, Clone)]
 pub struct RpcRequestMessage {
     pub request: RPCRequest,
-    pub peer_id: AccountAddress,
+    pub peer_id: PeerId,
 }
 
 impl RPCMessage for RPCRequest {
@@ -161,13 +164,13 @@ impl Message {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct NetworkMessage {
-    pub peer_id: AccountAddress,
+    pub peer_id: PeerId,
     pub data: Vec<u8>,
 }
 
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
+#[derive(Debug, Eq, PartialEq, Message, Clone)]
 pub enum PeerEvent {
-    Open(AccountAddress),
-    Close(AccountAddress),
+    Open(PeerId),
+    Close(PeerId),
 }

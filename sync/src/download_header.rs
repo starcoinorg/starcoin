@@ -69,7 +69,7 @@ impl Handler<SyncHeaderEvent> for DownloadHeaderActor {
                 if let RPCResponse::BatchHeaderAndBodyMsg(_, headers, bodies) = network
                     .clone()
                     .send_request(
-                        peer.id.clone(),
+                        peer.id.clone().into(),
                         get_data_by_hash_req.clone(),
                         do_duration(DELAY_TIME),
                     )

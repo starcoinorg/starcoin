@@ -51,9 +51,12 @@ where
     P: TxPoolAsyncService,
     P: 'static,
 {
-    pub async fn send_peer_message(&self, peer_id: AccountAddress, msg: PeerMessage) -> Result<()> {
+    pub async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         let data = msg.encode().unwrap();
-        let network_message = NetworkMessage { peer_id, data };
+        let network_message = NetworkMessage {
+            peer_id: peer_id.into(),
+            data,
+        };
         self.tx.unbounded_send(network_message)?;
 
         Ok(())
@@ -66,14 +69,17 @@ where
 
     pub async fn send_request(
         &self,
-        peer_id: AccountAddress,
+        peer_id: PeerId,
         message: RPCRequest,
         _time_out: Duration,
     ) -> Result<RPCResponse> {
         let request_id = message.get_id();
         let peer_msg = PeerMessage::RPCRequest(message);
         let data = peer_msg.encode().unwrap();
-        let network_message = NetworkMessage { peer_id, data };
+        let network_message = NetworkMessage {
+            peer_id: peer_id.clone().into(),
+            data,
+        };
         self.tx.unbounded_send(network_message)?;
         let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
@@ -84,14 +90,17 @@ where
 
     pub async fn response_for(
         &self,
-        peer_id: AccountAddress,
+        peer_id: PeerId,
         id: HashValue,
         mut response: RPCResponse,
     ) -> Result<()> {
         response.set_request_id(id);
         let peer_msg = PeerMessage::RPCResponse(response);
         let data = peer_msg.encode().unwrap();
-        let network_message = NetworkMessage { peer_id, data };
+        let network_message = NetworkMessage {
+            peer_id: peer_id.into(),
+            data,
+        };
         self.tx.unbounded_send(network_message)?;
         Ok(())
     }
@@ -175,7 +184,7 @@ where
         let message = PeerMessage::decode(&network_msg.data);
         match message {
             Ok(msg) => {
-                self.handle_network_message(network_msg.peer_id, msg, ctx);
+                self.handle_network_message(network_msg.peer_id.into(), msg, ctx);
             }
             Err(e) => {
                 warn!("get error {:?}", e);
@@ -204,12 +213,7 @@ impl<P> NetworkActor<P>
 where
     P: TxPoolAsyncService,
 {
-    fn handle_network_message(
-        &self,
-        peer_id: AccountAddress,
-        msg: PeerMessage,
-        ctx: &mut Context<Self>,
-    ) {
+    fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage, ctx: &mut Context<Self>) {
         match msg {
             PeerMessage::UserTransaction(txn) => {
                 let txpool = self.txpool.clone();
@@ -222,7 +226,7 @@ where
             }
             PeerMessage::Block(block) => {
                 let bus = self.bus.clone();
-                let peer_info = PeerInfo::new(peer_id);
+                let peer_info = PeerInfo::new(peer_id.into());
                 let f = async move {
                     bus.send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
@@ -237,7 +241,7 @@ where
             PeerMessage::LatestStateMsg(state) => {
                 info!("broadcast LatestStateMsg.");
                 let bus = self.bus.clone();
-                let peer_info = PeerInfo::new(peer_id);
+                let peer_info = PeerInfo::new(peer_id.into());
                 let f = async move {
                     bus.send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
@@ -254,7 +258,10 @@ where
                 let bus = self.bus.clone();
                 let f = async move {
                     bus.send(Broadcast {
-                        msg: RpcRequestMessage { peer_id, request },
+                        msg: RpcRequestMessage {
+                            peer_id: peer_id.into(),
+                            request,
+                        },
                     })
                     .await;
                     info!("receive rpc request");
@@ -439,14 +446,11 @@ mod tests {
         Addr<BusActor>,
     ) {
         let bus = BusActor::launch();
-        let addr = AccountAddress::from_public_key(&node_config.network.network_keypair().public_key);
+        let addr =
+            AccountAddress::from_public_key(&node_config.network.network_keypair().public_key);
         let txpool = traits::mock::MockTxPoolService::new();
-        let network = NetworkActor::launch(
-            node_config.clone(),
-            bus.clone(),
-            txpool.clone(),
-            handle,
-        );
+        let network =
+            NetworkActor::launch(node_config.clone(), bus.clone(), txpool.clone(), handle);
         (txpool, network, addr, bus)
     }
 
