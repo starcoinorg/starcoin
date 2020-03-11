@@ -95,6 +95,14 @@ impl ChainInfo {
     pub fn size(&self) -> usize {
         self.hash_number.len()
     }
+
+    pub fn get_hash_by_number(&self, number: u64) -> HashValue {
+        assert!(number < (self.hash_number.len() as u64));
+        self.hash_number
+            .get::<usize>((number as usize))
+            .unwrap()
+            .clone()
+    }
 }
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]

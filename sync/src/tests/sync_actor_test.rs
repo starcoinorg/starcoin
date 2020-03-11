@@ -594,4 +594,5 @@ async fn test_network_actor_rpc_2() {
     });
 
     Delay::new(Duration::from_secs(2)).await;
+    drop(rt)
 }

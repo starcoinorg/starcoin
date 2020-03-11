@@ -151,7 +151,8 @@ where
     }
 
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        self.storage.get_block_by_number(number)
+        let block_id = self.chain_info.get_hash_by_number(number);
+        self.storage.get_block_by_hash(block_id)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
