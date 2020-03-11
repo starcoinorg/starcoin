@@ -17,6 +17,7 @@ use network::{
 use starcoin_genesis::Genesis;
 use std::{sync::Arc, time::Duration};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use tokio::runtime::Handle;
 use traits::{mock::MockTxPoolService, AsyncChain};
 use txpool::TxPoolRef;
 use types::{
@@ -145,10 +146,11 @@ fn gen_network(
     node_config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
     txpool: TxPoolRef,
+    handle: Handle,
 ) -> (NetworkAsyncService<TxPoolRef>, AccountAddress) {
     let key_pair = gen_keypair();
     let addr = AccountAddress::from_public_key(&key_pair.public_key);
-    let network = NetworkActor::launch(node_config.clone(), bus, txpool, key_pair);
+    let network = NetworkActor::launch(node_config.clone(), bus, txpool, key_pair, handle);
     (network, addr)
 }
 
@@ -174,7 +176,13 @@ async fn test_network_actor() {
         let best_block_id = genesis_1.startup_info().head.head_block;
         TxPoolRef::start(storage_1.clone(), best_block_id, bus_1.clone())
     };
-    let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), txpool_1.clone());
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let (network_1, addr_1) = gen_network(
+        node_config_1.clone(),
+        bus_1.clone(),
+        txpool_1.clone(),
+        rt.handle().clone(),
+    );
 
     let mut config_2 = NodeConfig::default();
     let addr_1_hex = hex::encode(addr_1);
@@ -190,7 +198,12 @@ async fn test_network_actor() {
         TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
     };
 
-    let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
+    let (network_2, addr_2) = gen_network(
+        node_config_2.clone(),
+        bus_2.clone(),
+        txpool_2.clone(),
+        rt.handle().clone(),
+    );
 
     // chain actor
     let first_chain = ChainActor::launch(
@@ -280,6 +293,7 @@ async fn test_network_actor() {
 
 #[actix_rt::test]
 async fn test_network_actor_rpc() {
+    ::logger::init_for_test();
     // first chain
     // bus
     let bus_1 = BusActor::launch();
@@ -300,7 +314,13 @@ async fn test_network_actor_rpc() {
     };
 
     // network
-    let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), txpool_1.clone());
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let (network_1, addr_1) = gen_network(
+        node_config_1.clone(),
+        bus_1.clone(),
+        txpool_1.clone(),
+        rt.handle().clone(),
+    );
     println!("addr_1 : {:?}", addr_1);
 
     // chain
@@ -376,7 +396,12 @@ async fn test_network_actor_rpc() {
         TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
     };
     // network
-    let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
+    let (network_2, addr_2) = gen_network(
+        node_config_2.clone(),
+        bus_2.clone(),
+        txpool_2.clone(),
+        rt.handle().clone(),
+    );
     println!("addr_2 : {:?}", addr_2);
     Delay::new(Duration::from_secs(1)).await;
 
@@ -428,6 +453,7 @@ async fn test_network_actor_rpc() {
 
 #[actix_rt::test]
 async fn test_network_actor_rpc_2() {
+    ::logger::init_for_test();
     // first chain
     // bus
     let bus_1 = BusActor::launch();
@@ -446,7 +472,13 @@ async fn test_network_actor_rpc_2() {
     };
 
     // network
-    let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), txpool_1.clone());
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let (network_1, addr_1) = gen_network(
+        node_config_1.clone(),
+        bus_1.clone(),
+        txpool_1.clone(),
+        rt.handle().clone(),
+    );
     println!("addr_1 : {:?}", addr_1);
 
     // chain
@@ -503,7 +535,12 @@ async fn test_network_actor_rpc_2() {
         TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
     };
     // network
-    let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
+    let (network_2, addr_2) = gen_network(
+        node_config_2.clone(),
+        bus_2.clone(),
+        txpool_2.clone(),
+        rt.handle().clone(),
+    );
     Delay::new(Duration::from_secs(1)).await;
     println!("addr_2 : {:?}", addr_2);
 

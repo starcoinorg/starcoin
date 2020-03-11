@@ -1,19 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use futures::{
-    sink::Sink,
-    sync::mpsc::{Receiver, Sender},
-    Async, Future, Poll, Stream,
+    channel::mpsc::{Receiver, Sender},
+    sink::SinkExt,
+    task::{Context, Poll},
+    Future, Stream,
 };
 
-use anyhow::{Error, Result};
-use crypto::hash::HashValue;
+use anyhow::*;
+use crypto::HashValue;
+use futures::lock::Mutex;
+
+use std::pin::Pin;
 
 pub struct MessageFuture<T> {
     rx: Receiver<Result<T>>,
@@ -26,27 +27,26 @@ impl<T> MessageFuture<T> {
 }
 
 impl<T> Future for MessageFuture<T> {
-    type Item = T;
-    type Error = Error;
+    type Output = Result<T>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        while let Async::Ready(v) = self.rx.poll().unwrap() {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        while let Poll::Ready(v) = Pin::new(&mut self.rx).poll_next(cx) {
             match v {
                 Some(v) => match v {
                     Ok(v) => {
-                        return Ok(Async::Ready(v));
+                        return Poll::Ready(Ok(v));
                     }
                     Err(e) => {
-                        return Err(e);
+                        return Poll::Ready(Err(e));
                     }
                 },
                 None => {
                     warn!("no data,return timeout");
-                    return Err(std::io::Error::from(std::io::ErrorKind::TimedOut).into());
+                    return Poll::Ready(Err(anyhow!("future time out")));
                 }
             }
         }
-        return Ok(Async::NotReady);
+        return Poll::Pending;
     }
 }
 
@@ -65,19 +65,19 @@ where
         }
     }
 
-    pub fn add_future(&self, hash: HashValue, sender: Sender<Result<T>>) {
+    pub async fn add_future(&self, hash: HashValue, sender: Sender<Result<T>>) {
         self.tx_map
             .lock()
-            .unwrap()
+            .await
             .entry(hash)
             .or_insert(sender.clone());
     }
 
-    pub fn send_response(&self, hash: HashValue, value: T) -> Result<()> {
-        let mut tx_map = self.tx_map.lock().unwrap();
+    pub async fn send_response(&self, hash: HashValue, value: T) -> Result<()> {
+        let mut tx_map = self.tx_map.lock().await;
         match tx_map.get(&hash) {
             Some(tx) => {
-                match tx.clone().send(Ok(value)).wait() {
+                match tx.clone().send(Ok(value)).await {
                     Ok(_new_tx) => {
                         info!("send message succ");
                         tx_map.remove(&hash);
@@ -90,29 +90,18 @@ where
         Ok(())
     }
 
-    pub fn remove_future(&self, hash: HashValue) {
-        let mut tx_map = self.tx_map.lock().unwrap();
+    pub async fn remove_future(&self, hash: HashValue) {
+        let mut tx_map = self.tx_map.lock().await;
         match tx_map.get(&hash) {
-            Some(_tx) => {
+            Some(tx) => {
                 info!("future time out,hash is {:?}", hash);
+                tx.clone()
+                    .send(Err(anyhow!("future time out")))
+                    .await
+                    .unwrap();
                 tx_map.remove(&hash);
             }
             _ => info!("tx hash {} not in map,timeout is not necessary", hash),
         }
     }
-
-    // pub fn future_error(&self, error_msg: ErrorMessage) -> Result<()> {
-    //     let mut tx_map = self.tx_map.lock().unwrap();
-    //     match tx_map.get(&error_msg.raw_transaction_hash) {
-    //         Some(tx) => {
-    //             tx.clone().send(Err(error_msg.error.into())).wait()?;
-    //             tx_map.remove(&error_msg.raw_transaction_hash);
-    //         }
-    //         _ => info!(
-    //             "tx hash {} not in map,error is not necessary",
-    //             error_msg.raw_transaction_hash
-    //         ),
-    //     }
-    //     Ok(())
-    // }
 }

@@ -10,26 +10,27 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-futures = "0.1"
-futures_03 = { version = "0.3.0" , package = "futures"}
+futures = "0.3.4"
 
-libp2p = "0.15.0"
 actix = "0.9"
 actix-rt = "1.0"
 yamux = "0.4.2"
 futures-timer = "3.0.1"
 log = "0.4.8"
 hex = "0.4.2"
+bytes = "0.5.0"
 
 parity-codec = { version = "3.2", features = ["derive"] }
+libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
 
-tokio = { version = "0.1"}
+tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
 bus = {path = "../bus", package="starcoin-bus"}
 traits = { package = "starcoin-traits", path = "../core/traits"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
-network-libp2p = {path = "../network-libp2p", package="network-libp2p"}
+network-p2p = {path = "../network-p2p", package="network-p2p"}
+logger = {path = "../commons/logger",package="starcoin-logger"}
 
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
