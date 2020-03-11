@@ -10,9 +10,8 @@
 //! Here we decide based on the sender, the nonce and gas price, and finally
 //! on the `Readiness` of the transactions when comparing them
 
+use crate::pool::{client, ScoredTransaction};
 use std::cmp;
-
-use super::{client, ScoredTransaction};
 use tx_pool::{
     self,
     scoring::{Choice, Scoring},

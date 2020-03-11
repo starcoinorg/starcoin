@@ -24,6 +24,7 @@ txpool = {path = "../txpool", package="starcoin-txpool"}
 futures-timer = "3.0.1"
 log = "0.4"
 starcoin-genesis = {path = "../core/genesis"}
+logger = {path = "../commons/logger",package="starcoin-logger"}
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

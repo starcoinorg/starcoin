@@ -1,10 +1,15 @@
-use super::TxPool;
-use crate::pool::AccountSeqNumberClient;
-use common_crypto::hash::CryptoHash;
+use crate::{pool::AccountSeqNumberClient, TxPoolRef};
+use common_crypto::hash::{CryptoHash, HashValue};
+use forkable_jellyfish_merkle::node_type::Node;
 use parking_lot::RwLock;
+use starcoin_bus::BusActor;
+use starcoin_state_tree::StateNodeStore;
 use std::{collections::HashMap, sync::Arc};
+use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use traits::TxPoolAsyncService;
-use types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+use types::{
+    account_address::AccountAddress, block::BlockHeader, transaction::SignedUserTransaction,
+};
 
 #[derive(Clone, Debug)]
 struct MockNonceClient {
@@ -34,28 +39,27 @@ impl AccountSeqNumberClient for MockNonceClient {
 
 #[actix_rt::test]
 async fn test_tx_pool() {
-    let pool = TxPool::start(MockNonceClient::default());
-
+    let pool = gen_pool_for_test();
     let txn = SignedUserTransaction::mock();
     let txn_hash = txn.crypto_hash();
-    let mut result = pool.import_txns(vec![txn]).await.unwrap();
+    let mut result = pool.clone().add_txns(vec![txn]).await.unwrap();
     assert!(result.pop().unwrap().is_ok());
-    let mut pending_txns = pool.get_pending_txns(Some(10)).await.unwrap();
+    let mut pending_txns = pool.clone().get_pending_txns(Some(10)).await.unwrap();
     assert_eq!(pending_txns.pop().unwrap().crypto_hash(), txn_hash);
 }
 
 #[actix_rt::test]
 async fn test_subscribe_txns() {
-    let pool = TxPool::start(MockNonceClient::default());
+    let pool = gen_pool_for_test();
     let _ = pool.subscribe_txns().await.unwrap();
 }
 
 #[actix_rt::test]
 async fn test_rollback() {
-    let pool = TxPool::start(MockNonceClient::default());
+    let pool = gen_pool_for_test();
     let txn = SignedUserTransaction::mock();
     let txn_hash = txn.crypto_hash();
-    let mut result = pool.import_txns(vec![txn.clone()]).await.unwrap();
+    let mut result = pool.clone().add_txns(vec![txn.clone()]).await.unwrap();
     let new_txn = SignedUserTransaction::mock();
     pool.clone()
         .rollback(vec![txn], vec![new_txn.clone()])
@@ -68,4 +72,13 @@ async fn test_rollback() {
         CryptoHash::crypto_hash(&pending),
         CryptoHash::crypto_hash(&new_txn)
     );
+}
+
+fn gen_pool_for_test() -> TxPoolRef {
+    let storage = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
+    storage.put(HashValue::zero(), Node::new_null().into());
+    let header = BlockHeader::genesis_block_header(HashValue::random(), HashValue::zero());
+    let bus = BusActor::launch();
+    let pool = TxPoolRef::start_with_best_block_header(storage, header, bus);
+    pool
 }

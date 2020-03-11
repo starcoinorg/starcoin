@@ -14,6 +14,7 @@ use starcoin_storage::{
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, state_set::ChainStateSet, transaction::Transaction};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -48,8 +49,12 @@ impl Genesis {
         let txn_info_hash = transaction_info.crypto_hash();
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
         let block = Block::genesis_block(accumulator_root, state_root);
+        assert_eq!(block.header().number(), 0);
         BlockStorageOp::save(storage.as_ref(), block.clone())?;
-        let head = ChainInfo::new(block.header().id());
+        let mut hash_number = Vec::new();
+        hash_number.push(block.header().id());
+        assert_eq!((block.header().number() + 1), hash_number.len() as u64);
+        let head = ChainInfo::new(block.header(), block.header(), hash_number);
         let startup_info = StartupInfo::new(head, vec![]);
         Ok(Self {
             transaction,

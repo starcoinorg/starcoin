@@ -16,6 +16,7 @@ use starcoin_accumulator::{Accumulator, AccumulatorNodeStore, MerkleAccumulator}
 use starcoin_statedb::ChainStateDB;
 use state_tree::StateNodeStore;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -46,6 +47,7 @@ where
     phantom_c: PhantomData<C>,
     storage: Arc<S>,
     txpool: P,
+    chain_info: ChainInfo,
 }
 
 impl<E, C, S, P> BlockChain<E, C, S, P>
@@ -61,7 +63,7 @@ where
         storage: Arc<S>,
         txpool: P,
     ) -> Result<Self> {
-        let head_block_hash = chain_info.head_block;
+        let head_block_hash = chain_info.get_head();
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or(format_err!(
@@ -90,6 +92,7 @@ where
             phantom_c: PhantomData,
             storage,
             txpool,
+            chain_info,
         };
         Ok(chain)
     }
@@ -135,6 +138,14 @@ where
             txpool.add(tx.try_into().unwrap()).await.unwrap();
         });
     }
+
+    pub fn fork_chain_info(&self, block_id: &HashValue) -> ChainInfo {
+        self.chain_info.fork(block_id).unwrap()
+    }
+
+    pub fn exist_block(&self, block_id: &HashValue) -> bool {
+        self.chain_info.contains(block_id)
+    }
 }
 
 impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
@@ -161,7 +172,8 @@ where
     }
 
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        self.storage.get_block_by_number(number)
+        let block_id = self.chain_info.get_hash_by_number(number);
+        self.storage.get_block_by_hash(block_id)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
@@ -257,7 +269,7 @@ where
     }
 
     fn get_chain_info(&self) -> ChainInfo {
-        ChainInfo::new(self.head.header().id())
+        self.chain_info.clone()
     }
 
     fn get_block_info(&self) -> BlockInfo {
@@ -330,6 +342,7 @@ where
         self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx);
         self.save_block(&block);
         chain_state.flush();
+        self.chain_info.append(&block.header());
         self.head = block;
         self.save_block_info(BlockInfo::new(
             self.accumulator.get_frozen_subtree_roots().unwrap(),

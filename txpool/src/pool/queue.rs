@@ -3,6 +3,14 @@
 
 //! Transaction Queue
 
+use super::{
+    client, listener, local_transactions::LocalTransactionsList, ready, replace, scoring, verifier,
+    GasPrice, PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
+};
+use crate::{pool, pool::PoolTransaction};
+use common_crypto::hash::HashValue;
+use futures_channel::mpsc;
+use parking_lot::RwLock;
 use std::{
     cmp,
     collections::{BTreeMap, HashMap},
@@ -12,16 +20,7 @@ use std::{
         Arc,
     },
 };
-
-use super::{
-    client, listener, local_transactions::LocalTransactionsList, ready, replace, scoring, verifier,
-    GasPrice, PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
-};
-use crate::{pool, pool::VerifiedTransaction};
-use common_crypto::hash::HashValue;
-use futures_channel::mpsc;
-use parking_lot::RwLock;
-use tx_pool::{self};
+use tx_pool::{self, Verifier};
 use types::{account_address::AccountAddress as Address, transaction};
 
 type Listener = (
@@ -249,33 +248,33 @@ impl TransactionQueue {
         transactions: T,
     ) -> Vec<Result<(), transaction::TransactionError>>
     where
-        T: IntoIterator<Item = verifier::Transaction>,
-        C: client::AccountSeqNumberClient,
+        T: IntoIterator<Item = PoolTransaction>,
+        C: client::AccountSeqNumberClient + client::Client,
     {
         // Run verification
         trace_time!("pool::verify_and_import");
-        let _options = self.options.read().clone();
+        let options = self.options.read().clone();
 
-        // let transaction_to_replace = {
-        //     if options.no_early_reject {
-        //         None
-        //     } else {
-        //         let pool = &mut self.pool;
-        //         if pool.is_full() {
-        //             pool.worst_transaction()
-        //                 .map(|worst| (pool.scoring().clone(), worst))
-        //         } else {
-        //             None
-        //         }
-        //     }
-        // };
-        //
-        // let verifier = verifier::Verifier::new(
-        //     client.clone(),
-        //     options,
-        //     self.insertion_id.clone(),
-        //     transaction_to_replace,
-        // );
+        let transaction_to_replace = {
+            if options.no_early_reject {
+                None
+            } else {
+                let pool = self.pool.write();
+                if pool.is_full() {
+                    pool.worst_transaction()
+                        .map(|worst| (pool.scoring().clone(), worst))
+                } else {
+                    None
+                }
+            }
+        };
+
+        let verifier = verifier::Verifier::new(
+            client.clone(),
+            options,
+            self.insertion_id.clone(),
+            transaction_to_replace,
+        );
 
         let mut replace =
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
@@ -289,18 +288,18 @@ impl TransactionQueue {
             }
 
             if let Some(err) = self.recently_rejected.get(&hash) {
-                trace!(target: "txqueue", "[{:?}] Rejecting recently rejected: {:?}", hash, err);
+                trace!(target: "txqueue", "[{:?}] Rejecting recently rejected: {:?}", &hash, err);
                 results.push(Err(err));
             }
 
-            // TODO: add verification
-            let verified =
-                VerifiedTransaction::from_pending_block_transaction(transaction.signed().clone());
-            let imported = self
-                .pool
-                .write()
-                .import(verified, &mut replace)
-                .map_err(convert_error);
+            let imported = verifier
+                .verify_transaction(transaction)
+                .and_then(|verified| {
+                    self.pool
+                        .write()
+                        .import(verified, &mut replace)
+                        .map_err(convert_error)
+                });
 
             results.push(match imported {
                 Ok(_) => Ok(()),

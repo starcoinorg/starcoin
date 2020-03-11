@@ -11,10 +11,9 @@ use bus::{BusActor, Subscription};
 use crypto::hash::HashValue;
 use futures::stream::StreamExt;
 use logger::prelude::*;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 use traits::TxPoolAsyncService;
-use txpool::{SubscribeTxns, TxStatus};
+use txpool::TxStatus;
 use types::system_events::SystemEvents;
 
 /// On-demand generate block, only generate block when new transaction add to tx-pool.
@@ -38,7 +37,7 @@ impl OndemandPacemaker {
     }
 
     pub fn send_event(&mut self) {
-        //TODO handle result.
+        // TODO handle result.
         self.sender.try_send(GenerateBlockEvent {});
     }
 }

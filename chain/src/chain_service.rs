@@ -17,6 +17,7 @@ use starcoin_statedb::ChainStateDB;
 use state_tree::StateNodeStore;
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::process::exit;
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
 use traits::{
@@ -86,32 +87,29 @@ where
 
     pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
-        let block_in_head = self.head.get_block(header.parent_hash()).unwrap();
-        match block_in_head {
-            Some(block) => {
-                return Some(
-                    BlockChain::new(
-                        self.config.clone(),
-                        ChainInfo::new(header.parent_hash()),
-                        self.storage.clone(),
-                        self.txpool.clone(),
-                    )
-                    .unwrap(),
-                );
-            }
-            None => {
-                for branch in &self.branches {
-                    if let Ok(Some(block)) = branch.get_block(header.parent_hash()) {
-                        return Some(
-                            BlockChain::new(
-                                self.config.clone(),
-                                ChainInfo::new(header.parent_hash()),
-                                self.storage.clone(),
-                                self.txpool.clone(),
-                            )
-                            .unwrap(),
-                        );
-                    }
+        let exist_in_head = self.head.exist_block(&header.parent_hash());
+        if exist_in_head {
+            return Some(
+                BlockChain::new(
+                    self.config.clone(),
+                    self.head.fork_chain_info(&header.parent_hash()),
+                    self.storage.clone(),
+                    self.txpool.clone(),
+                )
+                .unwrap(),
+            );
+        } else {
+            for branch in &self.branches {
+                if branch.exist_block(&header.parent_hash()) {
+                    return Some(
+                        BlockChain::new(
+                            self.config.clone(),
+                            branch.fork_chain_info(&header.parent_hash()),
+                            self.storage.clone(),
+                            self.txpool.clone(),
+                        )
+                        .unwrap(),
+                    );
                 }
             }
         }

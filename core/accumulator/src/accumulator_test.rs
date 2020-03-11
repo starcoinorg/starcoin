@@ -6,7 +6,7 @@ use crate::{
     LeafCount, MerkleAccumulator, MockAccumulatorStore,
 };
 use proptest::{collection::vec, prelude::*};
-use starcoin_crypto::{HashValue, TestOnlyHash};
+use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::{collections::HashMap, sync::Arc};
 
 #[test]
@@ -142,7 +142,8 @@ fn proof_verify(
 
 // Helper function to create a list of leaves.
 fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
-    nums.map(|x| x.to_be_bytes().test_only_hash()).collect()
+    nums.map(|x| x.to_be_bytes().as_ref().crypto_hash())
+        .collect()
 }
 
 // Computes the root hash of an accumulator with given leaves.
