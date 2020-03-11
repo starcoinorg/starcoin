@@ -50,12 +50,7 @@ async fn test_tx_pool() {
 
 #[actix_rt::test]
 async fn test_subscribe_txns() {
-    let storage = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
-    storage.put(HashValue::zero(), Node::new_null().into());
-    let header = BlockHeader::genesis_block_header(HashValue::random(), HashValue::zero());
-    let bus = BusActor::launch();
-    let pool = TxPoolRef::start(storage, header, bus);
-
+    let pool = gen_pool_for_test();
     let _ = pool.subscribe_txns().await.unwrap();
 }
 
@@ -84,6 +79,6 @@ fn gen_pool_for_test() -> TxPoolRef {
     storage.put(HashValue::zero(), Node::new_null().into());
     let header = BlockHeader::genesis_block_header(HashValue::random(), HashValue::zero());
     let bus = BusActor::launch();
-    let pool = TxPoolRef::start(storage, header, bus);
+    let pool = TxPoolRef::start_with_best_block_header(storage, header, bus);
     pool
 }

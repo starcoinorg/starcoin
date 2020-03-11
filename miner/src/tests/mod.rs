@@ -8,13 +8,12 @@ use executor::{mock_executor::MockExecutor, TransactionExecutor};
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
-use std::sync::Arc;
-use std::{fmt, thread};
+use std::{fmt, sync::Arc, thread};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
 use traits::{AsyncChain, TxPoolAsyncService};
-use txpool::{CachedSeqNumberClient, SubscribeTxns, TxPool, TxPoolRef};
+use txpool::TxPoolRef;
 use types::{
     account_address::AccountAddress, peer_info::PeerInfo, transaction::SignedUserTransaction,
 };
@@ -33,13 +32,15 @@ async fn test_miner_with_schedule_pacemaker() {
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
-    let txpool = TxPool::start(seq_number_client);
     let key_pair = config::gen_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
-    let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
     let genesis =
         Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
+    let txpool = {
+        let best_block_id = genesis.startup_info().head.head_block;
+        TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
+    };
+    let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
     let chain = ChainActor::launch(
         config.clone(),
         genesis.startup_info().clone(),
@@ -93,13 +94,17 @@ async fn test_miner_with_ondemand_pacemaker() {
     let bus = BusActor::launch();
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
-    let txpool = TxPool::start(seq_number_client);
+
     let key_pair = config::gen_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
-    let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
     let genesis =
         Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
+    let txpool = {
+        let best_block_id = genesis.startup_info().head.head_block;
+        TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
+    };
+
+    let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
     let chain = ChainActor::launch(
         config.clone(),
         genesis.startup_info().clone(),

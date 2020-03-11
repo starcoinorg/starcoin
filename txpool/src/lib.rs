@@ -13,11 +13,7 @@ extern crate transaction_pool as tx_pool;
 
 pub use crate::pool::TxStatus;
 use crate::tx_pool_service_impl::{
-    ChainNewBlock,
-    GetPendingTxns,
-    ImportTxns,
-    SubscribeTxns,
-    TxPoolActor,
+    ChainNewBlock, GetPendingTxns, ImportTxns, SubscribeTxns, TxPoolActor,
 };
 use actix::prelude::*;
 use anyhow::Result;
@@ -50,10 +46,30 @@ pub struct TxPoolRef {
 impl TxPoolRef {
     pub fn start(
         storage: Arc<StarcoinStorage>,
-        chain_header: BlockHeader,
+        best_block_hash: HashValue,
         bus: actix::Addr<BusActor>,
     ) -> TxPoolRef {
-        let pool = TxPoolActor::new(storage, chain_header, bus);
+        let best_block = match storage.block_store.get_block_by_hash(best_block_hash) {
+            Err(e) => panic!("fail to read storage, {}", e),
+            Ok(None) => panic!(
+                "best block id {} should exists in storage",
+                &best_block_hash
+            ),
+            Ok(Some(block)) => block,
+        };
+        let best_block_header = best_block.into_inner().0;
+        let pool = TxPoolActor::new(storage, best_block_header, bus);
+        let pool_addr = pool.start();
+        TxPoolRef { addr: pool_addr }
+    }
+
+    #[cfg(test)]
+    pub fn start_with_best_block_header(
+        storage: Arc<StarcoinStorage>,
+        best_block_header: BlockHeader,
+        bus: actix::Addr<BusActor>,
+    ) -> TxPoolRef {
+        let pool = TxPoolActor::new(storage, best_block_header, bus);
         let pool_addr = pool.start();
         TxPoolRef { addr: pool_addr }
     }

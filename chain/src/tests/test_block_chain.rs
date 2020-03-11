@@ -1,6 +1,7 @@
 use super::random_block;
-use crate::message::ChainRequest;
-use crate::{AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
+use crate::{
+    message::ChainRequest, AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService,
+};
 use actix::Addr;
 use anyhow::Result;
 use bus::BusActor;
@@ -12,12 +13,10 @@ use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
-use traits::ChainReader;
-use traits::ChainWriter;
-use txpool::{CachedSeqNumberClient, SubscribeTxns, TxPool, TxPoolRef};
+use traits::{ChainReader, ChainWriter};
+use txpool::TxPoolRef;
 use types::block::Block;
 
 #[test]
@@ -34,8 +33,10 @@ async fn gen_head_chain(times: u64) -> ChainActorRef<ChainActor> {
     let genesis =
         Genesis::new::<MockExecutor, StarcoinStorage>(conf.clone(), storage.clone()).unwrap();
     let bus = BusActor::launch();
-    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
-    let txpool = TxPool::start(seq_number_client);
+    let txpool = {
+        let best_block_id = genesis.startup_info().head.head_block;
+        TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
+    };
     let chain = ChainActor::launch(
         conf.clone(),
         genesis.startup_info().clone(),
@@ -95,7 +96,7 @@ async fn test_block_chain_forks() {
 
 #[actix_rt::test]
 async fn test_block_chain_rollback() {
-    //todo
+    // todo
 }
 
 #[stest::test]
@@ -104,10 +105,12 @@ async fn test_chain_apply() -> Result<()> {
     let config = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo)?);
-    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
-    let txpool = TxPool::start(seq_number_client);
     let genesis = Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone())?;
-
+    let bus = BusActor::launch();
+    let txpool = {
+        let best_block_id = genesis.startup_info().head.head_block;
+        TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
+    };
     let mut block_chain =
         BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
             config,
