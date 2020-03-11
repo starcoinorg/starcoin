@@ -135,10 +135,10 @@ impl Into<(Vec<HashValue>, u64, u64, HashValue)> for AccumulatorInfo {
 
 /// accumulator method define
 pub trait Accumulator {
-    // From leaves constructed accumulator
-    // fn from_leaves(&mut self, leaves: &[HashValue]) -> Self;
     /// Append leaves and return new root
     fn append(&self, leaves: &[HashValue]) -> Result<(HashValue, u64), Error>;
+    /// Append leaves and return new root, but not persistence
+    fn append_only_cache(&self, leaves: &[HashValue]) -> Result<(HashValue, u64), Error>;
     /// Get leaf hash by leaf index.
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>>;
     /// Get proof by leaf index.
@@ -147,6 +147,8 @@ pub trait Accumulator {
     fn root_hash(&self) -> HashValue;
     /// Get current accumulator tree number of leaves.
     fn num_leaves(&self) -> u64;
+    /// Get current accumulator tree number of nodes.
+    fn num_nodes(&self) -> u64;
     /// Update current accumulator tree for rollback
     fn update(&self, leaf_index: u64, leaves: &[HashValue]) -> Result<(HashValue, u64), Error>;
 
@@ -523,6 +525,20 @@ impl MerkleAccumulator {
         })
     }
 
+    /// Reconstruct from accumulator_info
+    pub fn form_accumulator_info(
+        info: AccumulatorInfo,
+        node_store: Arc<dyn AccumulatorNodeStore>,
+    ) -> Self {
+        Self::new(
+            info.frozen_subtree_roots,
+            info.num_leaves,
+            info.num_nodes,
+            node_store.clone(),
+        )
+        .unwrap()
+    }
+
     /// Appends one leaf. This will update `frozen_subtree_roots` to store new frozen root nodes
     /// and remove old nodes if they are now part of a larger frozen subtree.
     fn append_one(
@@ -599,38 +615,20 @@ impl MerkleAccumulator {
 }
 
 impl Accumulator for MerkleAccumulator {
-    // fn from_leaves(&mut self, leaves: &[HashValue]) -> Self {
-    //     let mut frozen_subtree_roots = self.frozen_subtree_roots.borrow_mut().to_vec();
-    //     let mut num_leaves = self.num_leaves;
-    //     let mut num_nodes = self.num_nodes;
-    //     for leaf in leaves {
-    //         let temp_internal_notes =
-    //             self.append_one(&mut frozen_subtree_roots, num_leaves, num_nodes, *leaf);
-    //         num_leaves += 1;
-    //         num_nodes = num_nodes + temp_internal_notes + 1;
-    //     }
-    //     self.num_leaves = num_leaves;
-    //     self.num_nodes = num_nodes;
-    //     let accumulator = Self::new(
-    //         frozen_subtree_roots.clone(),
-    //         num_leaves,
-    //         self.num_nodes,
-    //         self.node_store.clone(),
-    //     )
-    //     .expect("Appending leaves to a valid accumulator should create another valid accumulator.");
-    //     self.root_hash = accumulator.root_hash;
-    //     self.frozen_subtree_roots
-    //         .borrow_mut()
-    //         .extend_from_slice(&frozen_subtree_roots);
-    //     accumulator
-    // }
-
     fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
         let mut cache_guard = self.cache.lock().unwrap();
         let mut cache = cache_guard.deref_mut();
         let first_index_leaf = cache.num_leaves;
         let (root_hash, frozen_nodes) = cache.append_leaves(new_leaves).unwrap();
         cache.save_frozen_nodes(frozen_nodes);
+        Ok((root_hash, first_index_leaf))
+    }
+
+    fn append_only_cache(&self, leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
+        let mut cache_guard = self.cache.lock().unwrap();
+        let mut cache = cache_guard.deref_mut();
+        let first_index_leaf = cache.num_leaves;
+        let (root_hash, frozen_nodes) = cache.append_leaves(leaves).unwrap();
         Ok((root_hash, first_index_leaf))
     }
 
@@ -663,6 +661,10 @@ impl Accumulator for MerkleAccumulator {
 
     fn num_leaves(&self) -> u64 {
         self.cache.lock().unwrap().num_leaves
+    }
+
+    fn num_nodes(&self) -> u64 {
+        self.cache.lock().unwrap().num_nodes
     }
 
     fn update(&self, leaf_index: u64, leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {

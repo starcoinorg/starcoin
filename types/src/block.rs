@@ -258,6 +258,41 @@ impl Block {
     }
 }
 
+/// `BlockInfo` is the object we store in the storage. It consists of the
+/// block as well as the execution result of this block.
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+pub struct BlockInfo {
+    /// Frozen subtree roots of this accumulator.
+    pub frozen_subtree_roots: Vec<HashValue>,
+    /// The total number of leaves in this accumulator.
+    pub num_leaves: u64,
+    /// The total number of nodes in this accumulator.
+    pub num_nodes: u64,
+}
+
+impl BlockInfo {
+    pub fn new(frozen_subtree_roots: Vec<HashValue>, num_leaves: u64, num_nodes: u64) -> Self {
+        Self {
+            frozen_subtree_roots,
+            num_leaves,
+            num_nodes,
+        }
+    }
+    pub fn into_inner(self) -> (Vec<HashValue>, u64, u64) {
+        self.into()
+    }
+
+    pub fn id(&self) -> HashValue {
+        self.crypto_hash()
+    }
+}
+
+impl Into<(Vec<HashValue>, u64, u64)> for BlockInfo {
+    fn into(self) -> (Vec<HashValue>, u64, u64) {
+        (self.frozen_subtree_roots, self.num_leaves, self.num_nodes)
+    }
+}
+
 #[derive(Clone)]
 pub struct BlockTemplate {
     /// Parent hash.

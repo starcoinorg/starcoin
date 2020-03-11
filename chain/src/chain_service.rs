@@ -24,7 +24,7 @@ use traits::{
 };
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
@@ -352,5 +352,9 @@ where
 
     fn get_chain_info(&self) -> ChainInfo {
         self.head.get_chain_info()
+    }
+
+    fn get_block_info(&self) -> BlockInfo {
+        self.head.get_block_info()
     }
 }

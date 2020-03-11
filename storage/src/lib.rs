@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::accumulator_store::AccumulatorStore;
+use crate::block_info_store::{BlockInfoStorage, BlockInfoStore};
 use crate::block_store::BlockStore;
 use crate::memory_storage::MemoryStorage;
 use crate::state_node_storage::StateNodeStorage;
@@ -17,11 +18,12 @@ use state_tree::{StateNode, StateNodeStore};
 use std::convert::TryInto;
 use std::sync::Arc;
 use types::{
-    block::{Block, BlockBody, BlockHeader, BlockNumber},
+    block::{Block, BlockBody, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
 
 pub mod accumulator_store;
+pub mod block_info_store;
 pub mod block_store;
 pub mod memory_storage;
 pub mod persistence_storage;
@@ -79,6 +81,7 @@ pub struct StarcoinStorage {
     pub block_store: BlockStore,
     state_node_store: StateNodeStorage,
     accumulator_store: AccumulatorStore,
+    block_info_store: BlockInfoStore,
     //TODO implement storage.
     startup_info_store: Arc<dyn Repository>,
 }
@@ -96,6 +99,7 @@ impl StarcoinStorage {
             ),
             state_node_store: StateNodeStorage::new(storage.clone()),
             accumulator_store: AccumulatorStore::new(storage.clone()),
+            block_info_store: BlockInfoStore::new(storage.clone()),
             startup_info_store: storage.clone(),
         })
     }
@@ -229,9 +233,22 @@ impl AccumulatorNodeWriter for StarcoinStorage {
     }
 }
 
+impl BlockInfoStorage for StarcoinStorage {
+    fn save_block_info(&self, block_info: BlockInfo) -> Result<(), Error> {
+        self.block_info_store.save(block_info)
+    }
+
+    fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>, Error> {
+        self.block_info_store.get(hash_value)
+    }
+}
+
 //TODO should move this traits to traits crate?
 /// Chain storage define
-pub trait BlockChainStore: StateNodeStore + BlockStorageOp + AccumulatorNodeStore {}
+pub trait BlockChainStore:
+    StateNodeStore + BlockStorageOp + AccumulatorNodeStore + BlockInfoStorage
+{
+}
 
 impl BlockChainStore for StarcoinStorage {}
 

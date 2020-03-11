@@ -5,7 +5,7 @@ use crate::chain_state::{ChainState, ChainStateReader};
 use anyhow::Result;
 use crypto::HashValue;
 use types::{
-    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
@@ -35,6 +35,7 @@ pub trait ChainReader {
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn gen_tx(&self) -> Result<()>;
     fn get_chain_info(&self) -> ChainInfo;
+    fn get_block_info(&self) -> BlockInfo;
 }
 
 pub trait ChainWriter {

@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter};
 use types::{
-    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
@@ -274,6 +274,10 @@ impl ChainReader for MemChain {
     }
 
     fn get_chain_info(&self) -> ChainInfo {
+        unimplemented!()
+    }
+
+    fn get_block_info(&self) -> BlockInfo {
         unimplemented!()
     }
 }

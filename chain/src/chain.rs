@@ -25,7 +25,7 @@ use traits::{
 };
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     block_metadata::BlockMetadata,
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
@@ -39,7 +39,6 @@ where
     P: TxPoolAsyncService + 'static,
 {
     config: Arc<NodeConfig>,
-    //TODO
     accumulator: MerkleAccumulator,
     head: Block,
     chain_state: ChainStateDB,
@@ -69,12 +68,22 @@ where
                 "Can not find block by hash {}",
                 head_block_hash
             ))?;
+        let block_info = match storage.clone().get_block_info(head_block_hash) {
+            Ok(Some(block_info_1)) => block_info_1,
+            Err(e) => BlockInfo::new(vec![], 0, 0),
+            _ => BlockInfo::new(vec![], 0, 0),
+        };
 
         let state_root = head.header().state_root();
         let mut chain = Self {
             config: config.clone(),
-            //TODO fix me
-            accumulator: MerkleAccumulator::new(vec![], 0, 0, storage.clone()).unwrap(),
+            accumulator: MerkleAccumulator::new(
+                block_info.frozen_subtree_roots,
+                block_info.num_leaves,
+                block_info.num_nodes,
+                storage.clone(),
+            )
+            .unwrap(),
             head,
             chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
             phantom_e: PhantomData,
@@ -103,6 +112,18 @@ where
     fn save_block(&self, block: &Block) {
         self.storage.commit_block(block.clone());
         info!("commit block : {:?}", block);
+    }
+
+    fn get_block_info(&self, block_id: HashValue) -> BlockInfo {
+        let block_info = match self.storage.get_block_info(block_id) {
+            Ok(Some(block_info_1)) => block_info_1,
+            Err(e) => BlockInfo::new(vec![], 0, 0),
+            _ => BlockInfo::new(vec![], 0, 0),
+        };
+        block_info
+    }
+    fn save_block_info(&self, block_info: BlockInfo) {
+        self.storage.save_block_info(block_info);
     }
 
     fn gen_tx_for_test(&self) {
@@ -201,9 +222,17 @@ where
             transaction_hash.push(txn_hash);
         }
 
-        //TODO accumulator
-        let (accumulator_root, _) = self.accumulator.append(&transaction_hash).unwrap();
-
+        let block_info = self.get_block_info(previous_header.id());
+        let accumulator = MerkleAccumulator::new(
+            block_info.frozen_subtree_roots,
+            block_info.num_leaves,
+            block_info.num_nodes,
+            self.storage.clone(),
+        )
+        .unwrap();
+        let (accumulator_root, first_leaf_idx) =
+            accumulator.append_only_cache(&transaction_hash).unwrap();
+        self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx);
         //TODO execute txns and computer state.
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -229,6 +258,13 @@ where
 
     fn get_chain_info(&self) -> ChainInfo {
         ChainInfo::new(self.head.header().id())
+    }
+
+    fn get_block_info(&self) -> BlockInfo {
+        self.storage
+            .get_block_info(self.head.header().id())
+            .unwrap()
+            .unwrap()
     }
 }
 
@@ -291,11 +327,15 @@ where
             "verify block:{:?} state_root fail.",
             block.header().id()
         );
-        //todo verify  accumulator_root;
         self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx);
         self.save_block(&block);
         chain_state.flush();
         self.head = block;
+        self.save_block_info(BlockInfo::new(
+            self.accumulator.get_frozen_subtree_roots().unwrap(),
+            self.accumulator.num_leaves(),
+            self.accumulator.num_nodes(),
+        ));
         //todo
         Ok(())
     }
