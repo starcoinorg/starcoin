@@ -4,7 +4,7 @@
 use crate::helper::get_unix_ts;
 use crate::sync_messages::*;
 use actix::prelude::*;
-use anyhow::Result;
+use anyhow::*;
 use crypto::{hash::CryptoHash, HashValue};
 use parity_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
@@ -124,11 +124,11 @@ where
         self.encode()
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ()>
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self>
     where
         Self: Sized,
     {
-        Decode::decode(&mut &bytes[..]).ok_or(())
+        Decode::decode(&mut &bytes[..]).ok_or(anyhow!("decode data error"))
     }
 }
 

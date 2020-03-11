@@ -9,7 +9,6 @@ mod message_processor;
 mod messages;
 mod net;
 pub mod network;
-mod peer;
 pub mod sync_messages;
 
 pub use messages::*;
@@ -23,7 +22,7 @@ use anyhow::{Error, Result};
 pub use messages::{
     PeerEvent, PeerMessage, RPCMessage, RPCRequest, RPCResponse, RpcRequestMessage,
 };
-pub use net::{build_network_service, NetworkComponent, NetworkService};
+pub use net::{build_network_service, SNetworkService};
 pub use network::NetworkAsyncService;
-pub use network_libp2p::PeerId;
+pub use network_p2p::PeerId;
 use types::system_events::SystemEvents;

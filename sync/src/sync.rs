@@ -93,7 +93,7 @@ impl Handler<PeerEvent> for SyncActor {
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             PeerEvent::Open(open_peer) => {
-                debug!("connect new peer:{:?}", open_peer);
+                info!("connect new peer:{:?}", open_peer);
                 let peer_info = PeerInfo::new(open_peer);
                 let process_msg = ProcessMessage::NewPeerMsg(peer_info);
                 self.process_address

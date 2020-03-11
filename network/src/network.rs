@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::message_processor::{MessageFuture, MessageProcessor};
-use crate::net::{build_network_service, NetworkService};
+use crate::net::{build_network_service, SNetworkService};
 use crate::sync_messages::{DownloadMessage, SyncMessage};
 use crate::{
     GetCounterMessage, NetworkMessage, PeerEvent, PeerMessage, RPCMessage, RPCRequest, RPCResponse,
@@ -15,8 +15,9 @@ use config::{NetworkConfig, NodeConfig};
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::hash::HashValue;
 use crypto::{test_utils::KeyPair, Uniform};
-use futures_03::{
-    compat::{Future01CompatExt, Stream01CompatExt},
+use futures::{
+    channel::{mpsc, oneshot},
+    stream::StreamExt,
     TryFutureExt,
 };
 use libp2p::{
@@ -31,11 +32,8 @@ use types::{account_address::AccountAddress, peer_info::PeerInfo};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 use actix::fut::wrap_future;
-use futures::{
-    stream::Stream,
-    sync::{mpsc, oneshot},
-};
 use std::time::Duration;
+use tokio::runtime::Handle;
 
 #[derive(Clone)]
 pub struct NetworkAsyncService<P>
@@ -77,11 +75,11 @@ where
         let data = peer_msg.encode().unwrap();
         let network_message = NetworkMessage { peer_id, data };
         self.tx.unbounded_send(network_message)?;
-        let (tx, rx) = futures::sync::mpsc::channel(1);
+        let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
-        self.message_processor.add_future(request_id, tx);
+        self.message_processor.add_future(request_id, tx).await;
         info!("send request to {}", peer_id);
-        message_future.compat().await
+        message_future.await
     }
 
     pub async fn response_for(
@@ -104,9 +102,9 @@ where
     P: TxPoolAsyncService,
     P: 'static,
 {
-    network_service: NetworkService,
+    network_service: SNetworkService,
     tx: mpsc::UnboundedSender<NetworkMessage>,
-    tx_command: oneshot::Sender<()>,
+    tx_command: mpsc::UnboundedSender<()>,
     bus: Addr<BusActor>,
     txpool: P,
     message_processor: MessageProcessor<RPCResponse>,
@@ -121,9 +119,10 @@ where
         bus: Addr<BusActor>,
         txpool: P,
         key_pair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
+        handle: Handle,
     ) -> NetworkAsyncService<P> {
         let (service, tx, rx, event_rx, tx_command) =
-            build_network_service(&node_config.network, key_pair);
+            build_network_service(&node_config.network, key_pair, handle);
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -138,8 +137,8 @@ where
         let message_processor_clone = message_processor.clone();
         let tx_clone = tx.clone();
         let addr = NetworkActor::create(move |ctx: &mut Context<NetworkActor<P>>| {
-            ctx.add_stream(rx.fuse().compat());
-            ctx.add_stream(event_rx.fuse().compat());
+            ctx.add_stream(rx.fuse());
+            ctx.add_stream(event_rx.fuse());
             NetworkActor {
                 network_service: service,
                 tx: tx_clone,
@@ -168,23 +167,16 @@ where
     }
 }
 
-impl<P> StreamHandler<Result<NetworkMessage, ()>> for NetworkActor<P>
+impl<P> StreamHandler<NetworkMessage> for NetworkActor<P>
 where
     P: TxPoolAsyncService,
 {
-    fn handle(&mut self, item: Result<NetworkMessage, ()>, ctx: &mut Self::Context) {
-        match item {
-            Ok(network_msg) => {
-                info!("receive network_message {:?}", network_msg);
-                let message = PeerMessage::decode(&network_msg.data);
-                match message {
-                    Ok(msg) => {
-                        self.handle_network_message(network_msg.peer_id, msg, ctx);
-                    }
-                    Err(e) => {
-                        warn!("get error {:?}", e);
-                    }
-                }
+    fn handle(&mut self, network_msg: NetworkMessage, ctx: &mut Self::Context) {
+        info!("receive network_message {:?}", network_msg);
+        let message = PeerMessage::decode(&network_msg.data);
+        match message {
+            Ok(msg) => {
+                self.handle_network_message(network_msg.peer_id, msg, ctx);
             }
             Err(e) => {
                 warn!("get error {:?}", e);
@@ -193,13 +185,12 @@ where
     }
 }
 
-impl<P> StreamHandler<Result<PeerEvent, ()>> for NetworkActor<P>
+impl<P> StreamHandler<PeerEvent> for NetworkActor<P>
 where
     P: TxPoolAsyncService,
 {
-    fn handle(&mut self, item: Result<PeerEvent, ()>, ctx: &mut Self::Context) {
-        info!("event is {:?}", item);
-        let event = item.unwrap();
+    fn handle(&mut self, event: PeerEvent, ctx: &mut Self::Context) {
+        info!("event is {:?}", event);
         let bus = self.bus.clone();
         let f = async move {
             bus.send(Broadcast { msg: event }).await;
@@ -277,7 +268,7 @@ where
                 let message_processor = self.message_processor.clone();
                 let f = async move {
                     let id = response.get_id();
-                    message_processor.send_response(id, response).unwrap();
+                    message_processor.send_response(id, response).await.unwrap();
                 };
                 let f = actix::fut::wrap_future(f);
                 ctx.spawn(Box::new(f));
@@ -296,11 +287,11 @@ where
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         let peer_msg = match msg {
             SystemEvents::NewUserTransaction(txn) => {
-                debug!("new user transaction {:?}", txn);
+                info!("new user transaction {:?}", txn);
                 Some(PeerMessage::UserTransaction(txn))
             }
             SystemEvents::NewHeadBlock(block) => {
-                debug!("broadcast a new block {:?}", block.header().id());
+                info!("broadcast a new block {:?}", block.header().id());
                 Some(PeerMessage::Block(block))
             }
             _ => None,
@@ -335,32 +326,13 @@ mod tests {
     use futures_timer::Delay;
     use log::{Level, Metadata, Record};
     use log::{LevelFilter, SetLoggerError};
+    use logger::*;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::Instant;
+    use tokio::runtime::{Handle, Runtime};
     use traits::mock::MockTxPoolService;
     use types::account_address::AccountAddress;
 
-    struct SimpleLogger;
-
-    impl log::Log for SimpleLogger {
-        fn enabled(&self, metadata: &Metadata) -> bool {
-            metadata.level() <= Level::Info
-        }
-
-        fn log(&self, record: &Record) {
-            if self.enabled(record.metadata()) {
-                println!("{} - {}", record.level(), record.args());
-            }
-        }
-
-        fn flush(&self) {}
-    }
-
-    static LOGGER: SimpleLogger = SimpleLogger;
-
-    fn init_log() -> Result<(), SetLoggerError> {
-        log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info))
-    }
     // #[actix_rt::test]
     // async fn test_network() {
     //     let node_config = NodeConfig::default();
@@ -378,16 +350,17 @@ mod tests {
 
     #[test]
     fn test_network_with_mock() {
+        ::logger::init_for_test();
         let mut system = System::new("test");
-
-        init_log();
+        let mut rt = Runtime::new().unwrap();
+        let handle = rt.handle().clone();
 
         let mut node_config1 = NodeConfig::default();
         node_config1.network.listen =
             format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         let node_config1 = Arc::new(node_config1);
 
-        let (txpool1, network1, addr1, bus1) = build_network(node_config1.clone());
+        let (txpool1, network1, addr1, bus1) = build_network(node_config1.clone(), handle.clone());
 
         let mut node_config2 = NodeConfig::default();
         let addr1_hex = hex::encode(addr1);
@@ -397,12 +370,12 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (txpool2, network2, addr2, bus2) = build_network(node_config2.clone());
+        let (txpool2, network2, addr2, bus2) = build_network(node_config2.clone(), handle.clone());
 
         use std::thread;
         use std::time::Duration;
 
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_secs(1));
 
         Arbiter::spawn(async move {
             network1
@@ -459,6 +432,7 @@ mod tests {
 
     fn build_network(
         node_config: Arc<NodeConfig>,
+        handle: Handle,
     ) -> (
         MockTxPoolService,
         NetworkAsyncService<MockTxPoolService>,
@@ -469,8 +443,13 @@ mod tests {
         let key_pair = config::gen_keypair();
         let addr = AccountAddress::from_public_key(&key_pair.public_key);
         let txpool = traits::mock::MockTxPoolService::new();
-        let network =
-            NetworkActor::launch(node_config.clone(), bus.clone(), txpool.clone(), key_pair);
+        let network = NetworkActor::launch(
+            node_config.clone(),
+            bus.clone(),
+            txpool.clone(),
+            key_pair,
+            handle,
+        );
         (txpool, network, addr, bus)
     }
 
