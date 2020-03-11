@@ -118,7 +118,7 @@ impl BlockHeader {
             /// Block number.
             number: 0,
             /// Block author.
-            author: AccountAddress::new(*HashValue::zero().as_ref()),
+            author: AccountAddress::random(),
             /// The accumulator root hash after executing this block.
             accumulator_root: HashValue::zero(),
             /// The last transaction state_root of this block after execute.

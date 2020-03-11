@@ -62,10 +62,6 @@ impl ChainStateReader for MockChainState {
         Ok(None)
     }
 
-    fn get_code(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>> {
-        unimplemented!()
-    }
-
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
         Ok(None)
     }
@@ -89,10 +85,6 @@ impl ChainStateWriter for MockChainState {
     }
 
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
-        unimplemented!()
-    }
-
-    fn set_code(&self, module_id: &ModuleId, code: Vec<u8>) -> Result<(), Error> {
         unimplemented!()
     }
 

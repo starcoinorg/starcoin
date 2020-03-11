@@ -40,12 +40,13 @@
 
 use crate::{
     account_address::AccountAddress,
-    account_config::{account_resource_path, association_address},
+    account_config::{association_address, ACCOUNT_RESOURCE_PATH},
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, ResourceKey, StructTag},
 };
 use anyhow::{Error, Result};
 use mirai_annotations::*;
+use num_enum::IntoPrimitive;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, HashValue};
@@ -187,50 +188,88 @@ impl From<Vec<Access>> for Accesses {
 }
 
 #[derive(
-    Clone, Eq, PartialEq, Default, Hash, Serialize, Deserialize, Ord, PartialOrd, CryptoHash,
+    IntoPrimitive, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, Debug,
 )]
-pub struct AccessPath {
-    pub address: AccountAddress,
-    pub path: Vec<u8>,
+#[repr(u8)]
+pub enum DataType {
+    RESOURCE,
+    CODE,
 }
 
-impl AccessPath {
-    pub fn new(address: AccountAddress, path: Vec<u8>) -> Self {
-        AccessPath { address, path }
+impl DataType {
+    pub fn is_code(&self) -> bool {
+        match self {
+            DataType::CODE => true,
+            _ => false,
+        }
     }
-
-    /// Given an address, returns the corresponding access path that stores the Account resource.
-    pub fn new_for_account(address: AccountAddress) -> Self {
-        Self::new(address, account_resource_path())
-    }
-
-    pub fn resource_access_vec(tag: &StructTag, accesses: &Accesses) -> Vec<u8> {
-        let mut key = vec![];
-
-        key.append(&mut tag.crypto_hash().to_vec());
-
-        // We don't need accesses in production right now. Accesses are appended here just for
-        // passing the old tests.
-        key.append(&mut accesses.as_separated_string().into_bytes());
-        key
-    }
-
-    /// Convert Accesses into a byte offset which would be used by the storage layer to resolve
-    /// where fields are stored.
-    pub fn resource_access_path(key: &ResourceKey, accesses: &Accesses) -> AccessPath {
-        let path = AccessPath::resource_access_vec(&key.type_(), accesses);
-        AccessPath {
-            address: key.address().to_owned(),
-            path,
+    pub fn is_resource(&self) -> bool {
+        match self {
+            DataType::RESOURCE => true,
+            _ => false,
         }
     }
 }
 
-impl Into<(AccountAddress, HashValue)> for AccessPath {
-    fn into(self) -> (AccountAddress, HashValue) {
-        let hash = HashValue::from_slice(&self.path[0..HashValue::LENGTH])
-            .expect("extract hash from path must success.");
-        (self.address, hash)
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, CryptoHash)]
+pub struct AccessPath {
+    address: AccountAddress,
+    data_type: DataType,
+    data_hash: HashValue,
+}
+
+impl AccessPath {
+    pub fn new(address: AccountAddress, data_type: DataType, data_hash: HashValue) -> Self {
+        AccessPath {
+            address,
+            data_type,
+            data_hash,
+        }
+    }
+
+    pub fn address(&self) -> AccountAddress {
+        self.address
+    }
+
+    pub fn data_type(&self) -> DataType {
+        self.data_type
+    }
+
+    pub fn data_hash(&self) -> HashValue {
+        self.data_hash
+    }
+
+    /// Given an address, returns the corresponding access path that stores the Account resource.
+    pub fn new_for_account(address: AccountAddress) -> Self {
+        Self::new(address, DataType::RESOURCE, ACCOUNT_RESOURCE_PATH.clone())
+    }
+
+    pub fn resource_access_vec(tag: &StructTag) -> HashValue {
+        tag.crypto_hash()
+    }
+
+    /// Convert Accesses into a byte offset which would be used by the storage layer to resolve
+    /// where fields are stored.
+    pub fn resource_access_path(key: &ResourceKey) -> AccessPath {
+        let path = AccessPath::resource_access_vec(&key.type_());
+        AccessPath {
+            address: key.address().to_owned(),
+            data_type: DataType::RESOURCE,
+            data_hash: path,
+        }
+    }
+
+    fn code_access_path_vec(key: &ModuleId) -> HashValue {
+        key.crypto_hash()
+    }
+
+    pub fn code_access_path(key: &ModuleId) -> AccessPath {
+        let path = AccessPath::code_access_path_vec(key);
+        AccessPath {
+            address: key.address(),
+            data_type: DataType::CODE,
+            data_hash: path,
+        }
     }
 }
 
@@ -238,29 +277,81 @@ impl fmt::Debug for AccessPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "AccessPath {{ address: {:x}, path: {} }}",
+            "AccessPath {{ address: {:x}, type: {:?} path: {} }}",
             self.address,
-            hex::encode(&self.path)
+            self.data_type,
+            self.data_hash.to_hex()
         )
     }
 }
 
 impl fmt::Display for AccessPath {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.path.len() < 1 + HashValue::LENGTH {
-            write!(f, "{:?}", self)
-        } else {
-            write!(f, "AccessPath {{ address: {:x}, ", self.address)?;
-            write!(
-                f,
-                "hash: {:?}, ",
-                hex::encode(&self.path[1..=HashValue::LENGTH])
-            )?;
-            write!(
-                f,
-                "suffix: {:?} }} ",
-                String::from_utf8_lossy(&self.path[1 + HashValue::LENGTH..])
-            )
+        write!(f, "AccessPath {{ address: {:x}, ", self.address)?;
+        match &self.data_type {
+            DataType::RESOURCE => write!(f, "type: Resource, ")?,
+            DataType::CODE => write!(f, "type: Module, ")?,
+            tag => write!(f, "type: {:?}, ", tag)?,
+        };
+        write!(f, "hash: {:?}, ", self.data_hash.to_hex())?;
+        // write!(
+        //     f,
+        //     "suffix: {:?} }} ",
+        //     String::from_utf8_lossy(&self.path[1 + HashValue::LENGTH..])
+        // )
+        Ok(())
+    }
+}
+
+impl Into<(AccountAddress, DataType, HashValue)> for AccessPath {
+    fn into(self) -> (AccountAddress, DataType, HashValue) {
+        (self.address, self.data_type, self.data_hash)
+    }
+}
+
+// libra data tag.
+const CODE_TAG: u8 = 0;
+const RESOURCE_TAG: u8 = 1;
+
+impl Into<libra_types::access_path::AccessPath> for AccessPath {
+    fn into(self) -> libra_types::access_path::AccessPath {
+        let mut path = vec![];
+        match self.data_type {
+            DataType::RESOURCE => path.push(RESOURCE_TAG),
+            DataType::CODE => path.push(CODE_TAG),
         }
+        path.extend(self.data_hash.to_vec());
+        libra_types::access_path::AccessPath::new(self.address.into(), path)
+    }
+}
+
+impl From<libra_types::access_path::AccessPath> for AccessPath {
+    fn from(libra_access_path: libra_types::access_path::AccessPath) -> Self {
+        let path = libra_access_path.path;
+        let data_type = match path[0] {
+            RESOURCE_TAG => DataType::RESOURCE,
+            CODE_TAG => DataType::CODE,
+            _ => panic!("Unsupported access path."),
+        };
+        let hash = HashValue::from_slice(path[1..=HashValue::LENGTH].as_ref())
+            .expect("access_path must contains HashValue");
+        Self::new(libra_access_path.address.into(), data_type, hash)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_convert() {
+        let access_path0 = AccessPath::new(
+            AccountAddress::random(),
+            DataType::RESOURCE,
+            HashValue::random(),
+        );
+        let access_path1: libra_types::access_path::AccessPath = access_path0.clone().into();
+        let access_path2: AccessPath = access_path1.into();
+        assert_eq!(access_path0, access_path2);
     }
 }

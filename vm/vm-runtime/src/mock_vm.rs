@@ -184,41 +184,6 @@ impl MockVM {
     }
 }
 
-fn read_balance(
-    output_cache: &HashMap<AccessPath, u64>,
-    chain_state: &dyn ChainState,
-    account: AccountAddress,
-) -> u64 {
-    let balance_access_path = balance_ap(account);
-    match output_cache.get(&balance_access_path) {
-        Some(balance) => *balance,
-        None => read_balance_from_storage(chain_state, &balance_access_path),
-    }
-}
-
-fn read_seqnum(
-    output_cache: &HashMap<AccessPath, u64>,
-    chain_state: &dyn ChainState,
-    account: AccountAddress,
-) -> u64 {
-    let seqnum_access_path = seqnum_ap(account);
-    match output_cache.get(&seqnum_access_path) {
-        Some(seqnum) => *seqnum,
-        None => read_seqnum_from_storage(chain_state, &seqnum_access_path),
-    }
-}
-
-fn read_balance_from_storage(
-    chain_state: &dyn ChainState,
-    balance_access_path: &AccessPath,
-) -> u64 {
-    read_u64_from_storage(chain_state, &balance_access_path)
-}
-
-fn read_seqnum_from_storage(chain_state: &dyn ChainState, seqnum_access_path: &AccessPath) -> u64 {
-    read_u64_from_storage(chain_state, &seqnum_access_path)
-}
-
 fn read_u64_from_storage(chain_state: &dyn ChainState, access_path: &AccessPath) -> u64 {
     chain_state
         .get(&access_path)
@@ -230,52 +195,6 @@ fn decode_bytes(bytes: &[u8]) -> u64 {
     let mut buf = [0; 8];
     buf.copy_from_slice(bytes);
     u64::from_le_bytes(buf)
-}
-
-fn balance_ap(account: AccountAddress) -> AccessPath {
-    AccessPath::new(account, b"balance".to_vec())
-}
-
-fn seqnum_ap(account: AccountAddress) -> AccessPath {
-    AccessPath::new(account, b"seqnum".to_vec())
-}
-
-fn gen_mint_writeset(sender: AccountAddress, balance: u64, seqnum: u64) -> WriteSet {
-    let mut write_set = WriteSetMut::default();
-    write_set.push((
-        balance_ap(sender),
-        WriteOp::Value(balance.to_le_bytes().to_vec()),
-    ));
-    write_set.push((
-        seqnum_ap(sender),
-        WriteOp::Value(seqnum.to_le_bytes().to_vec()),
-    ));
-    write_set.freeze().expect("mint writeset should be valid")
-}
-
-fn gen_payment_writeset(
-    sender: AccountAddress,
-    sender_balance: u64,
-    sender_seqnum: u64,
-    recipient: AccountAddress,
-    recipient_balance: u64,
-) -> WriteSet {
-    let mut write_set = WriteSetMut::default();
-    write_set.push((
-        balance_ap(sender),
-        WriteOp::Value(sender_balance.to_le_bytes().to_vec()),
-    ));
-    write_set.push((
-        seqnum_ap(sender),
-        WriteOp::Value(sender_seqnum.to_le_bytes().to_vec()),
-    ));
-    write_set.push((
-        balance_ap(recipient),
-        WriteOp::Value(recipient_balance.to_le_bytes().to_vec()),
-    ));
-    write_set
-        .freeze()
-        .expect("payment write set should be valid")
 }
 
 pub fn encode_mint_program(amount: u64) -> Script {

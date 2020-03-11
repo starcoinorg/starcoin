@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
 use actix::prelude::*;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
-use config::{NodeConfig, PacemakerStrategy, load_config_from_dir};
+use config::{load_config_from_dir, NodeConfig, PacemakerStrategy};
 use consensus::{dummy::DummyConsensus, Consensus};
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
@@ -17,6 +16,7 @@ use logger::prelude::*;
 use miner::MinerActor;
 use network::NetworkActor;
 use starcoin_genesis::Genesis;
+use std::env;
 use std::{path::PathBuf, sync::Arc};
 use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
 use structopt::StructOpt;
@@ -42,7 +42,7 @@ async fn main() {
     let args = Args::from_args();
     let data_dir: PathBuf = match args.data_dir.clone() {
         Some(p) => p,
-        None => todo!(),
+        None => env::temp_dir(),
     };
 
     let node_config = config::load_config_from_dir(&data_dir);

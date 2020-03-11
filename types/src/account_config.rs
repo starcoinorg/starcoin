@@ -15,6 +15,7 @@ use anyhow::{bail, Error, Result};
 use once_cell::sync::Lazy;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::HashValue;
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
@@ -34,6 +35,11 @@ static SENT_EVENT_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("SentPaymentEvent").unwrap());
 static RECEIVED_EVENT_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("ReceivedPaymentEvent").unwrap());
+
+/// Path to the Account resource.
+/// It can be used to create an AccessPath for an Account resource.
+pub static ACCOUNT_RESOURCE_PATH: Lazy<HashValue> =
+    Lazy::new(|| AccessPath::resource_access_vec(&account_struct_tag()));
 
 pub fn coin_module_name() -> &'static IdentStr {
     &*COIN_MODULE_NAME
@@ -146,12 +152,6 @@ impl AccountResource {
     pub fn authentication_key(&self) -> &ByteArray {
         &self.authentication_key
     }
-}
-
-/// Return the path to the Account resource. It can be used to create an AccessPath for an
-/// Account resource.
-pub fn account_resource_path() -> Vec<u8> {
-    AccessPath::resource_access_vec(&account_struct_tag(), &Accesses::empty())
 }
 
 impl TryInto<Vec<u8>> for AccountResource {

@@ -5062,6 +5062,8 @@ dependencies = [
  "chrono",
  "hex 0.3.2",
  "itertools 0.8.2",
+ "libp2p 0.16.1",
+ "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
  "mirai-annotations",
  "num_enum",
  "once_cell",

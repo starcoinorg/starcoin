@@ -33,3 +33,5 @@ actix = "0.9"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
 starcoin-accumulator = { path = "../core/accumulator"}
+libra-types = { git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}

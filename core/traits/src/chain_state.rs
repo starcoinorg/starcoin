@@ -15,19 +15,16 @@ use types::{
 };
 
 pub trait ChainStateReader {
-    /// Gets the state for a single access path.
+    /// Gets the state data for a single access path.
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>>;
 
-    /// Gets states for a list of access paths.
+    /// Gets state data for a list of access paths.
     fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
         access_paths
             .iter()
             .map(|access_path| self.get(access_path))
             .collect()
     }
-
-    /// Gets Move module by id.
-    fn get_code(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>>;
 
     /// Gets account state
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>>;
@@ -47,8 +44,6 @@ pub trait ChainStateWriter {
 
     /// Remove state at access_path
     fn remove(&self, access_path: &AccessPath) -> Result<()>;
-
-    fn set_code(&self, module_id: &ModuleId, code: Vec<u8>) -> Result<()>;
 
     fn create_account(&self, account_address: AccountAddress) -> Result<()>;
 

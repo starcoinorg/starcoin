@@ -1,28 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{bail, Result};
 use scs::SCSCodec;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_logger::prelude::*;
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_traits::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_types::{
-    access_path::AccessPath,
+    access_path::{AccessPath, DataType},
     account_address::AccountAddress,
     account_config::{account_struct_tag, AccountResource},
     account_state::AccountState,
     byte_array::ByteArray,
-    language_storage::{ModuleId, StructTag},
+    state_set::{AccountStateSet, ChainStateSet},
 };
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
 use std::sync::Arc;
 
-use core::num::FpCategory::Nan;
-use starcoin_types::identifier::{IdentStr, Identifier};
-use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -63,18 +60,21 @@ impl AccountStateObject {
         }
     }
 
-    pub fn get_code(&self, module_name: &IdentStr) -> Result<Option<Vec<u8>>> {
+    fn get_code(&self, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
         match &*self.code_tree.borrow() {
-            Some(code_tree) => code_tree.get(&module_name.to_owned().crypto_hash()),
+            Some(code_tree) => code_tree.get(key_hash),
             None => Ok(None),
         }
     }
 
-    pub fn get(&self, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
-        self.resource_tree.get(key_hash)
+    pub fn get(&self, data_type: DataType, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
+        match data_type {
+            DataType::RESOURCE => self.resource_tree.get(key_hash),
+            DataType::CODE => self.get_code(key_hash),
+        }
     }
 
-    pub fn set_code(&self, module_name: &IdentStr, code: Vec<u8>) {
+    fn set_code(&self, key_hash: HashValue, code: Vec<u8>) {
         let mut code_tree = self.code_tree.borrow_mut();
         if code_tree.is_none() {
             *code_tree = Some(StateTree::new(self.store.clone(), None));
@@ -82,11 +82,14 @@ impl AccountStateObject {
         code_tree
             .as_ref()
             .expect("code tree must exist.")
-            .put(module_name.to_owned().crypto_hash(), code);
+            .put(key_hash, code);
     }
 
-    pub fn set(&self, key_hash: HashValue, value: Vec<u8>) {
-        self.resource_tree.put(key_hash, value);
+    pub fn set(&self, data_type: DataType, key_hash: HashValue, value: Vec<u8>) {
+        match data_type {
+            DataType::RESOURCE => self.resource_tree.put(key_hash, value),
+            DataType::CODE => self.set_code(key_hash, value),
+        }
     }
 
     pub fn remove(&self, key_hash: &HashValue) {
@@ -242,18 +245,10 @@ impl ChainState for ChainStateDB {}
 
 impl ChainStateReader for ChainStateDB {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        let (account_address, hash) = access_path.clone().into();
+        let (account_address, data_type, hash) = access_path.clone().into();
         self.get_account_state_object_option(&account_address)
             .and_then(|account_state| match account_state {
-                Some(account_state) => account_state.get(&hash),
-                None => Ok(None),
-            })
-    }
-
-    fn get_code(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>> {
-        self.get_account_state_object_option(&module_id.address())
-            .and_then(|account_state| match account_state {
-                Some(account_state) => account_state.get_code(module_id.name()),
+                Some(account_state) => account_state.get(data_type, &hash),
                 None => Ok(None),
             })
     }
@@ -294,25 +289,19 @@ impl ChainStateReader for ChainStateDB {
 
 impl ChainStateWriter for ChainStateDB {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
-        let (account_address, hash) = access_path.clone().into();
+        let (account_address, data_type, key_hash) = access_path.clone().into();
         let account_state_object = self.get_account_state_object(&account_address)?;
-        account_state_object.set(hash, value);
+        account_state_object.set(data_type, key_hash, value);
         Ok(())
     }
 
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
-        let (account_address, hash) = access_path.clone().into();
+        let (account_address, data_type, hash) = access_path.clone().into();
+        if data_type.is_code() {
+            bail!("Can not remove code.");
+        }
         let account_state_object = self.get_account_state_object(&account_address)?;
         account_state_object.remove(&hash);
-        Ok(())
-    }
-
-    fn set_code(&self, module_id: &ModuleId, code: Vec<u8>) -> Result<()> {
-        let (account_address, name) = module_id.into_inner();
-        let mut account_state_object = self
-            .get_account_state_object_option(&account_address)?
-            .ok_or(StateError::AccountNotExist(account_address))?;
-        account_state_object.set_code(module_id.name(), code);
         Ok(())
     }
 
@@ -326,7 +315,11 @@ impl ChainStateWriter for ChainStateDB {
             account_resource, account_address
         );
         let struct_tag = account_struct_tag();
-        account_state_object.set(struct_tag.crypto_hash(), account_resource.try_into()?);
+        account_state_object.set(
+            DataType::RESOURCE,
+            struct_tag.crypto_hash(),
+            account_resource.try_into()?,
+        );
         self.cache.borrow_mut().insert(
             account_address.crypto_hash(),
             Some(Arc::new(account_state_object)),
