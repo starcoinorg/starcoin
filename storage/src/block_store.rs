@@ -121,7 +121,7 @@ impl BlockStore {
         println!(
             "insert block:{:?}, block:{:?}",
             block.header().id(),
-            block.crypto_hash()
+            block.header().parent_hash()
         );
         self.block_store.put(block.header().id(), block)
     }
