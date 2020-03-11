@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 mod miner_config;
 mod network_config;
@@ -19,6 +19,7 @@ use crypto::{test_utils::KeyPair, Uniform};
 use rand::prelude::*;
 use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -69,6 +70,13 @@ impl NodeConfig {
 
         node_config
     }
+}
+
+pub fn save_config<T, P>(c: &T, output_file: P) -> Result<()>  where T: Serialize + DeserializeOwned, P: AsRef<Path> {
+    let contents = toml::to_vec(c)?;
+    let mut file = File::create(output_file)?;
+    file.write_all(&contents)?;
+    Ok(())
 }
 
 pub fn gen_keypair() -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
