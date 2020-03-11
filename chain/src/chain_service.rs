@@ -182,7 +182,8 @@ where
                     network
                         .clone()
                         .broadcast_system_event(SystemEvents::NewHeadBlock(block))
-                        .await;
+                        .await
+                        .expect("broadcast new head block failed.");
                 });
             };
         }
@@ -195,7 +196,10 @@ where
     ) {
         let txpool = self.txpool.clone();
         Arbiter::spawn(async move {
-            txpool.rollback(enacted, retracted).await.unwrap();
+            txpool
+                .rollback(enacted, retracted)
+                .await
+                .expect("rollback failed.");
         });
     }
 
@@ -283,7 +287,7 @@ where
                 .is_some()
         {
             let header = block.header();
-            let mut branch = self.find_or_fork(&header).unwrap();
+            let mut branch = self.find_or_fork(&header).expect("fork branch failed.");
             branch.apply(block.clone())?;
             self.select_head(branch);
         }

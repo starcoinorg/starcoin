@@ -6,22 +6,23 @@ use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::{dummy::DummyConsensus, Consensus};
-use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use crypto::{test_utils::KeyPair, Uniform};
+use crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    test_utils::KeyPair,
+    Uniform,
+};
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
 use json_rpc::JSONRpcActor;
 use logger::prelude::*;
 use miner::MinerActor;
 use network::NetworkActor;
 use starcoin_genesis::Genesis;
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
 use structopt::StructOpt;
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use traits::TxPoolAsyncService;
 use txpool::TxPoolRef;
-use txpool::{CachedSeqNumberClient, TxPool};
 use types::peer_info::PeerInfo;
 
 #[derive(Debug, StructOpt)]
@@ -58,9 +59,13 @@ async fn main() {
         }
     };
     info!("Start chain with startup info: {:?}", startup_info);
-    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
-    let txpool = TxPool::start(seq_number_client);
-    //node config
+
+    let txpool = {
+        let best_block_id = startup_info.head.head_block;
+        TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
+    };
+
+    // node config
     // let mut config = NodeConfig::default();
     // config.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
     // let node_config = Arc::new(config);
