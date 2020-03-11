@@ -435,8 +435,13 @@ impl Protocol {
     ///
     /// Doesn't do anything if we don't have a notifications substream for that protocol with that
     /// peer.
-    pub fn write_notification(&mut self, target: PeerId, message: impl Into<Vec<u8>>) {
-        // self.behaviour
-        //     .write_notification(&target, protocol_name.clone(), message);
+    pub fn write_notification(
+        &mut self,
+        target: PeerId,
+        protocol_name: Cow<'static, [u8]>,
+        message: impl Into<Vec<u8>>,
+    ) {
+        self.behaviour
+            .write_notification(&target, protocol_name, message);
     }
 }

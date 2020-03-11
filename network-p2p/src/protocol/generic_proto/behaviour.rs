@@ -426,13 +426,13 @@ impl GenericProto {
             return;
         }
 
-        trace!(
+        info!(
             target: "sub-libp2p",
             "External API => Notification for {:?} with protocol {:?}",
             target,
             str::from_utf8(&protocol_name)
         );
-        trace!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
+        info!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
 
         self.events.push(NetworkBehaviourAction::SendEvent {
             peer_id: target.clone(),
@@ -1284,6 +1284,7 @@ impl NetworkBehaviour for GenericProto {
         }
 
         if !self.events.is_empty() {
+            info!("here");
             return Poll::Ready(self.events.remove(0));
         }
 

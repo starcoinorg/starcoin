@@ -30,7 +30,7 @@ mod tests {
 
     use crate::{convert_account_address_to_peer_id, helper::convert_boot_nodes, PeerEvent};
 
-    use crate::net::SNetworkService;
+    use crate::net::{build_network_service, SNetworkService};
 
     use crate::messages::NetworkMessage;
     use config::NetworkConfig;
@@ -52,33 +52,6 @@ mod tests {
         let a = l.next().unwrap();
         let b = l.next().unwrap();
         (a, b)
-    }
-
-    pub fn build_network_service(
-        cfg: &NetworkConfig,
-        key_pair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
-        handle: Handle,
-    ) -> (
-        SNetworkService,
-        UnboundedSender<NetworkMessage>,
-        UnboundedReceiver<NetworkMessage>,
-        UnboundedReceiver<PeerEvent>,
-        UnboundedSender<()>,
-    ) {
-        let config = NetworkConfiguration {
-            listen_addresses: vec![cfg.listen.parse().expect("Failed to parse network config")],
-            boot_nodes: convert_boot_nodes(cfg.seeds.clone()),
-            node_key: {
-                let secret =
-                    identity::ed25519::SecretKey::from_bytes(&mut key_pair.private_key.to_bytes())
-                        .unwrap();
-                NodeKeyConfig::Ed25519(Secret::Input(secret))
-            },
-            ..NetworkConfiguration::default()
-        };
-        let mut service = SNetworkService::new(config, handle);
-        let (net_tx, net_rx, event_rx, control_tx) = service.run();
-        (service, net_tx, net_rx, event_rx, control_tx)
     }
 
     fn build_test_network_services(

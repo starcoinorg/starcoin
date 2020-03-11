@@ -42,6 +42,7 @@ use std::{
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
+    task::AtomicWaker,
 };
 use libp2p::swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent};
 use libp2p::{kad::record, Multiaddr, PeerId};
@@ -115,7 +116,7 @@ impl NetworkWorker {
     /// Returns a `NetworkWorker` that implements `Future` and must be regularly polled in order
     /// for the network processing to advance. From it, you can extract a `NetworkService` using
     /// `worker.service()`. The `NetworkService` can be shared through the codebase.
-    pub fn new(params: Params) -> Result<NetworkWorker, Error> {
+    pub fn new(params: Params, waker: Arc<AtomicWaker>) -> Result<NetworkWorker, Error> {
         let (to_worker, from_worker) = mpsc::unbounded();
 
         if let Some(ref path) = params.network_config.net_config_path {
@@ -252,6 +253,7 @@ impl NetworkWorker {
             service,
             from_worker,
             event_streams: Vec::new(),
+            waker,
         })
     }
 
@@ -383,18 +385,27 @@ impl NetworkService {
     ///
     /// The protocol must have been registered with `register_notifications_protocol`.
     ///
-    pub fn write_notification(&self, target: PeerId, message: Vec<u8>) {
+    pub fn write_notification(
+        &self,
+        target: PeerId,
+        protocol_name: Cow<'static, [u8]>,
+        message: Vec<u8>,
+    ) {
         let _ = self
             .to_worker
-            .unbounded_send(ServiceToWorkerMsg::WriteNotification { target, message });
+            .unbounded_send(ServiceToWorkerMsg::WriteNotification {
+                target,
+                protocol_name,
+                message,
+            });
     }
 
-    pub async fn broadcast_message(&self, message: Vec<u8>) {
+    pub async fn broadcast_message(&self, protocol_name: Cow<'static, [u8]>, message: Vec<u8>) {
         debug!("start send broadcast message");
 
         let peers = self.connected_peers().await;
         for peer_id in peers {
-            self.write_notification(peer_id, message.clone());
+            self.write_notification(peer_id, protocol_name.clone(), message.clone());
         }
         debug!("finish send broadcast message");
     }
@@ -589,8 +600,14 @@ enum ServiceToWorkerMsg {
     PutValue(record::Key, Vec<u8>),
     AddKnownAddress(PeerId, Multiaddr),
     EventStream(mpsc::UnboundedSender<Event>),
-    WriteNotification { message: Vec<u8>, target: PeerId },
-    RegisterNotifProtocol { protocol_name: Cow<'static, [u8]> },
+    WriteNotification {
+        message: Vec<u8>,
+        protocol_name: Cow<'static, [u8]>,
+        target: PeerId,
+    },
+    RegisterNotifProtocol {
+        protocol_name: Cow<'static, [u8]>,
+    },
     DisconnectPeer(PeerId),
     IsConnected(PeerId, oneshot::Sender<bool>),
     ConnectedPeers(oneshot::Sender<HashSet<PeerId>>),
@@ -615,6 +632,7 @@ pub struct NetworkWorker {
     from_worker: mpsc::UnboundedReceiver<ServiceToWorkerMsg>,
     /// Senders for events that happen on the network.
     event_streams: Vec<mpsc::UnboundedSender<Event>>,
+    waker: Arc<AtomicWaker>,
 }
 
 impl Future for NetworkWorker {
@@ -622,6 +640,7 @@ impl Future for NetworkWorker {
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         let this = &mut *self;
+        this.waker.register(cx.waker());
 
         loop {
             // Process the next message coming from the `NetworkService`.
@@ -640,10 +659,15 @@ impl Future for NetworkWorker {
                     this.network_service.add_known_address(peer_id, addr)
                 }
                 ServiceToWorkerMsg::EventStream(sender) => this.event_streams.push(sender),
-                ServiceToWorkerMsg::WriteNotification { message, target } => this
-                    .network_service
-                    .user_protocol_mut()
-                    .write_notification(target, message),
+                ServiceToWorkerMsg::WriteNotification {
+                    message,
+                    protocol_name,
+                    target,
+                } => this.network_service.user_protocol_mut().write_notification(
+                    target,
+                    protocol_name,
+                    message,
+                ),
                 ServiceToWorkerMsg::RegisterNotifProtocol { protocol_name } => {
                     // let events = this
                     //     .network_service

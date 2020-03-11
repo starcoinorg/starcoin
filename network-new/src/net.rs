@@ -39,25 +39,30 @@ use std::{collections::HashMap, io, sync::Arc, thread};
 use tokio::runtime::Handle;
 use types::account_address::AccountAddress;
 
+pub const PROTOCOL_NAME: &[u8] = b"/starcoin/testnet/1";
+
 #[derive(Clone)]
 pub struct SNetworkService {
     handle: Handle,
     inner: NetworkInner,
     service: Arc<NetworkService>,
     net_tx: Option<mpsc::UnboundedSender<NetworkMessage>>,
+    waker: Arc<AtomicWaker>,
 }
 
 #[derive(Clone)]
 pub struct NetworkInner {
     service: Arc<NetworkService>,
     acks: Arc<Mutex<HashMap<u128, Sender<()>>>>,
+    waker: Arc<AtomicWaker>,
 }
 
 impl SNetworkService {
     pub fn new(cfg: NetworkConfiguration, handle: Handle) -> Self {
         let protocol = network_p2p::ProtocolId::from("stargate".as_bytes());
 
-        let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
+        let waker = Arc::new(AtomicWaker::new());
+        let worker = NetworkWorker::new(Params::new(cfg, protocol), waker.clone()).unwrap();
         let service = worker.service().clone();
         let worker = worker;
 
@@ -68,6 +73,7 @@ impl SNetworkService {
         let inner = NetworkInner {
             service: service.clone(),
             acks,
+            waker: waker.clone(),
         };
 
         Self {
@@ -75,6 +81,7 @@ impl SNetworkService {
             handle,
             service,
             net_tx: None,
+            waker,
         }
     }
 
@@ -152,20 +159,24 @@ impl SNetworkService {
             convert_account_address_to_peer_id(account_address).expect("Invalid account address");
 
         self.service
-            .write_notification(peer_id, protocol_msg.into_bytes());
+            .write_notification(peer_id, PROTOCOL_NAME.into(), protocol_msg.into_bytes());
         debug!("Send message with ack");
+        self.waker.wake();
         self.inner.acks.lock().insert(message_id, tx);
         rx.await?;
 
         Ok(())
     }
 
-    pub fn broadcast_message(&mut self, message: Vec<u8>) {
+    pub async fn broadcast_message(&mut self, message: Vec<u8>) {
+        info!("broadcast message");
         let (protocol_msg, message_id) = Message::new_payload(message);
 
         let message_bytes = protocol_msg.into_bytes();
 
-        self.service.broadcast_message(message_bytes);
+        self.service
+            .broadcast_message(PROTOCOL_NAME.into(), message_bytes)
+            .await;
     }
 
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
@@ -180,6 +191,7 @@ impl NetworkInner {
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
         event_tx: mpsc::UnboundedSender<PeerEvent>,
     ) -> Result<()> {
+        info!("message is {:?}", event);
         match event {
             Event::Dht(_) => {
                 info!("ignore dht event");
@@ -224,6 +236,7 @@ impl NetworkInner {
                     if payload.id != 0 {
                         self.service.write_notification(
                             peer_id.clone(),
+                            PROTOCOL_NAME.into(),
                             Message::ACK(payload.id).into_bytes(),
                         );
                     }
@@ -248,8 +261,37 @@ impl NetworkInner {
         let account_addr = message.peer_id.clone();
         self.service.write_notification(
             convert_account_address_to_peer_id(account_addr)?,
+            PROTOCOL_NAME.into(),
             message.data,
         );
+        self.waker.wake();
         Ok(())
     }
+}
+
+pub fn build_network_service(
+    cfg: &NetworkConfig,
+    key_pair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
+    handle: Handle,
+) -> (
+    SNetworkService,
+    mpsc::UnboundedSender<NetworkMessage>,
+    mpsc::UnboundedReceiver<NetworkMessage>,
+    mpsc::UnboundedReceiver<PeerEvent>,
+    mpsc::UnboundedSender<()>,
+) {
+    let config = NetworkConfiguration {
+        listen_addresses: vec![cfg.listen.parse().expect("Failed to parse network config")],
+        boot_nodes: convert_boot_nodes(cfg.seeds.clone()),
+        node_key: {
+            let secret =
+                identity::ed25519::SecretKey::from_bytes(&mut key_pair.private_key.to_bytes())
+                    .unwrap();
+            NodeKeyConfig::Ed25519(Secret::Input(secret))
+        },
+        ..NetworkConfiguration::default()
+    };
+    let mut service = SNetworkService::new(config, handle);
+    let (net_tx, net_rx, event_rx, control_tx) = service.run();
+    (service, net_tx, net_rx, event_rx, control_tx)
 }

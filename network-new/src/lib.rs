@@ -9,6 +9,7 @@ mod message_processor;
 mod messages;
 mod net;
 mod net_test;
+mod network;
 mod sync_messages;
 
 pub use messages::*;
