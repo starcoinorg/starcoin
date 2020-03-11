@@ -4,19 +4,8 @@
 //! Transaction Queue
 
 use super::{
-    client,
-    listener,
-    local_transactions::LocalTransactionsList,
-    ready,
-    replace,
-    scoring,
-    verifier,
-    GasPrice,
-    PendingOrdering,
-    PendingSettings,
-    PrioritizationStrategy,
-    SeqNumber,
-    TxStatus,
+    client, listener, local_transactions::LocalTransactionsList, ready, replace, scoring, verifier,
+    GasPrice, PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
 };
 use crate::{pool, pool::PoolTransaction};
 use common_crypto::hash::HashValue;

@@ -37,10 +37,17 @@ async fn test_miner_with_schedule_pacemaker() {
     let genesis =
         Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
     let txpool = {
-        let best_block_id = genesis.startup_info().head.head_block;
+        let best_block_id = genesis.startup_info().head.get_head();
         TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
     };
-    let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let network = NetworkActor::launch(
+        config.clone(),
+        bus.clone(),
+        txpool.clone(),
+        key_pair,
+        rt.handle().clone(),
+    );
     let chain = ChainActor::launch(
         config.clone(),
         genesis.startup_info().clone(),
@@ -100,11 +107,18 @@ async fn test_miner_with_ondemand_pacemaker() {
     let genesis =
         Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
     let txpool = {
-        let best_block_id = genesis.startup_info().head.head_block;
+        let best_block_id = genesis.startup_info().head.get_head();
         TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
     };
 
-    let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), key_pair);
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let network = NetworkActor::launch(
+        config.clone(),
+        bus.clone(),
+        txpool.clone(),
+        key_pair,
+        rt.handle().clone(),
+    );
     let chain = ChainActor::launch(
         config.clone(),
         genesis.startup_info().clone(),

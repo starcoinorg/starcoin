@@ -61,7 +61,7 @@ async fn main() {
     info!("Start chain with startup info: {:?}", startup_info);
 
     let txpool = {
-        let best_block_id = startup_info.head.head_block;
+        let best_block_id = startup_info.head.get_head();
         TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
     };
 

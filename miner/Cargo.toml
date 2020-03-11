@@ -31,3 +31,4 @@ starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumula
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}
+tokio = { version = "0.2", features = ["full"] }

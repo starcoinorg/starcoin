@@ -9,13 +9,7 @@
 //! May have some overlap with `Readiness` since we don't want to keep around
 //! stalled transactions.
 use crate::pool::{
-    client::Client,
-    scoring,
-    Gas,
-    GasPrice,
-    PoolTransaction,
-    Priority,
-    UnverifiedUserTransaction,
+    client::Client, scoring, Gas, GasPrice, PoolTransaction, Priority, UnverifiedUserTransaction,
     VerifiedTransaction,
 };
 use std::sync::{atomic::AtomicUsize, Arc};

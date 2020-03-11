@@ -173,7 +173,7 @@ async fn test_network_actor() {
             .unwrap();
     // txpool
     let txpool_1 = {
-        let best_block_id = genesis_1.startup_info().head.head_block;
+        let best_block_id = genesis_1.startup_info().head.get_head();
         TxPoolRef::start(storage_1.clone(), best_block_id, bus_1.clone())
     };
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -194,7 +194,7 @@ async fn test_network_actor() {
         Genesis::new::<MockExecutor, StarcoinStorage>(node_config_2.clone(), storage_2.clone())
             .unwrap();
     let txpool_2 = {
-        let best_block_id = genesis_2.startup_info().head.head_block;
+        let best_block_id = genesis_2.startup_info().head.get_head();
         TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
     };
 
@@ -309,7 +309,7 @@ async fn test_network_actor_rpc() {
         Genesis::new::<MockExecutor, StarcoinStorage>(node_config_1.clone(), storage_1.clone())
             .unwrap();
     let txpool_1 = {
-        let best_block_id = genesis_1.startup_info().head.head_block;
+        let best_block_id = genesis_1.startup_info().head.get_head();
         TxPoolRef::start(storage_1.clone(), best_block_id, bus_1.clone())
     };
 
@@ -392,7 +392,7 @@ async fn test_network_actor_rpc() {
             .unwrap();
     // txpool
     let txpool_2 = {
-        let best_block_id = genesis_2.startup_info().head.head_block;
+        let best_block_id = genesis_2.startup_info().head.get_head();
         TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
     };
     // network
@@ -467,7 +467,7 @@ async fn test_network_actor_rpc_2() {
         Genesis::new::<MockExecutor, StarcoinStorage>(node_config_1.clone(), storage_1.clone())
             .unwrap();
     let txpool_1 = {
-        let best_block_id = genesis_1.startup_info().head.head_block;
+        let best_block_id = genesis_1.startup_info().head.get_head();
         TxPoolRef::start(storage_1.clone(), best_block_id, bus_1.clone())
     };
 
@@ -531,7 +531,7 @@ async fn test_network_actor_rpc_2() {
             .unwrap();
     // txpool
     let txpool_2 = {
-        let best_block_id = genesis_2.startup_info().head.head_block;
+        let best_block_id = genesis_2.startup_info().head.get_head();
         TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
     };
     // network

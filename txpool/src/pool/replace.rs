@@ -15,8 +15,7 @@ use std::cmp;
 use tx_pool::{
     self,
     scoring::{Choice, Scoring},
-    ReplaceTransaction,
-    VerifiedTransaction,
+    ReplaceTransaction, VerifiedTransaction,
 };
 use types::account_address::AccountAddress as Address;
 
