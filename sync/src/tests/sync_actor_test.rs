@@ -17,6 +17,7 @@ use network::{
     sync_messages::{GetHashByNumberMsg, ProcessMessage, SyncMessage},
     NetworkActor, RPCRequest, RPCResponse,
 };
+use starcoin_genesis::Genesis;
 use std::{sync::Arc, time::Duration};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use traits::mock::MockTxPoolService;
@@ -183,18 +184,30 @@ async fn test_network_actor() {
     let mut node_config_2 = Arc::new(config_2);
     let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
 
+    //genesis
+    let genesis_1 =
+        Genesis::new::<MockExecutor, StarcoinStorage>(node_config_1.clone(), storage_1.clone())
+            .unwrap();
+    let genesis_2 =
+        Genesis::new::<MockExecutor, StarcoinStorage>(node_config_2.clone(), storage_2.clone())
+            .unwrap();
+
     //chain actor
     let first_chain = ChainActor::launch(
         node_config_1.clone(),
+        genesis_1.startup_info().clone(),
         storage_1.clone(),
         Some(network_1.clone()),
+        bus_1.clone(),
         txpool_1.clone(),
     )
     .unwrap();
     let second_chain = ChainActor::launch(
         node_config_2.clone(),
+        genesis_2.startup_info().clone(),
         storage_2.clone(),
         Some(network_2.clone()),
+        bus_2.clone(),
         txpool_2.clone(),
     )
     .unwrap();
@@ -281,11 +294,19 @@ async fn test_network_actor_rpc() {
     //network
     let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), txpool_1.clone());
     println!("addr_1 : {:?}", addr_1);
+
+    //genesis
+    let genesis_1 =
+        Genesis::new::<MockExecutor, StarcoinStorage>(node_config_1.clone(), storage_1.clone())
+            .unwrap();
+
     //chain
     let first_chain = ChainActor::launch(
         node_config_1.clone(),
+        genesis_1.startup_info().clone(),
         storage_1.clone(),
         Some(network_1.clone()),
+        bus_1.clone(),
         txpool_1.clone(),
     )
     .unwrap();
@@ -347,11 +368,18 @@ async fn test_network_actor_rpc() {
     let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
     println!("addr_2 : {:?}", addr_2);
     Delay::new(Duration::from_secs(1)).await;
+
+    let genesis_2 =
+        Genesis::new::<MockExecutor, StarcoinStorage>(node_config_2.clone(), storage_2.clone())
+            .unwrap();
+
     //chain
     let second_chain = ChainActor::launch(
         node_config_2.clone(),
+        genesis_2.startup_info().clone(),
         storage_2.clone(),
         Some(network_2.clone()),
+        bus_2.clone(),
         txpool_2.clone(),
     )
     .unwrap();
@@ -407,11 +435,16 @@ async fn test_network_actor_rpc_2() {
     //network
     let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), txpool_1.clone());
     println!("addr_1 : {:?}", addr_1);
+    let genesis_1 =
+        Genesis::new::<MockExecutor, StarcoinStorage>(node_config_1.clone(), storage_1.clone())
+            .unwrap();
     //chain
     let first_chain = ChainActor::launch(
         node_config_1.clone(),
+        genesis_1.startup_info().clone(),
         storage_1.clone(),
         Some(network_1.clone()),
+        bus_1.clone(),
         txpool_1.clone(),
     )
     .unwrap();
@@ -456,11 +489,16 @@ async fn test_network_actor_rpc_2() {
     let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), txpool_2.clone());
     Delay::new(Duration::from_secs(1)).await;
     println!("addr_2 : {:?}", addr_2);
+    let genesis_2 =
+        Genesis::new::<MockExecutor, StarcoinStorage>(node_config_2.clone(), storage_2.clone())
+            .unwrap();
     //chain
     let second_chain = ChainActor::launch(
         node_config_2.clone(),
+        genesis_2.startup_info().clone(),
         storage_2.clone(),
         Some(network_2.clone()),
+        bus_2.clone(),
         txpool_2.clone(),
     )
     .unwrap();
