@@ -1,16 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::accumulator_store::AccumulatorStore;
 use crate::block_store::BlockStore;
 use crate::memory_storage::MemoryStorage;
 use crate::state_node_storage::StateNodeStorage;
-use crate::storage::Repository;
+use crate::storage::{CodecStorage, Repository};
 use crate::transaction_info_store::TransactionInfoStore;
+use accumulator::{
+    node_index::NodeIndex, AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore,
+    AccumulatorNodeWriter,
+};
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use state_tree::{StateNode, StateNodeStore};
+use std::convert::TryInto;
 use std::sync::Arc;
-use types::block::{Block, BlockBody, BlockHeader, BlockNumber};
+use types::{
+    block::{Block, BlockBody, BlockHeader, BlockNumber},
+    startup_info::StartupInfo,
+};
 
 pub mod accumulator_store;
 pub mod block_store;
@@ -23,6 +32,9 @@ pub mod transaction_info_store;
 pub type KeyPrefixName = &'static str;
 
 pub trait BlockStorageOp {
+    fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
+    fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
+
     fn save(&self, block: Block) -> Result<()>;
 
     fn save_header(&self, header: BlockHeader) -> Result<()>;
@@ -54,12 +66,21 @@ pub trait BlockStorageOp {
     fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>>;
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>>;
+
+    fn get_common_ancestor(
+        &self,
+        block_id1: HashValue,
+        block_id2: HashValue,
+    ) -> Result<Option<HashValue>>;
 }
 
 pub struct StarcoinStorage {
     transaction_info_store: TransactionInfoStore,
     pub block_store: BlockStore,
     state_node_store: StateNodeStorage,
+    accumulator_store: AccumulatorStore,
+    //TODO implement storage.
+    startup_info_store: Arc<dyn Repository>,
 }
 
 impl StarcoinStorage {
@@ -74,6 +95,8 @@ impl StarcoinStorage {
                 storage.clone(),
             ),
             state_node_store: StateNodeStorage::new(storage.clone()),
+            accumulator_store: AccumulatorStore::new(storage.clone()),
+            startup_info_store: storage.clone(),
         })
     }
 }
@@ -89,6 +112,20 @@ impl StateNodeStore for StarcoinStorage {
 }
 
 impl BlockStorageOp for StarcoinStorage {
+    fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
+        self.startup_info_store
+            .get("startup_info".as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(bytes.try_into()?)),
+                None => Ok(None),
+            })
+    }
+
+    fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
+        self.startup_info_store
+            .put("starup_info".as_bytes().to_vec(), startup_info.try_into()?)
+    }
+
     fn save(&self, block: Block) -> Result<()> {
         self.block_store.save(block)
     }
@@ -152,7 +189,51 @@ impl BlockStorageOp for StarcoinStorage {
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.block_store.get_block_by_number(number)
     }
+    fn get_common_ancestor(
+        &self,
+        block_id1: HashValue,
+        block_id2: HashValue,
+    ) -> Result<Option<HashValue>> {
+        self.block_store.get_common_ancestor(block_id1, block_id2)
+    }
 }
+
+impl AccumulatorNodeStore for StarcoinStorage {}
+impl AccumulatorNodeReader for StarcoinStorage {
+    ///get node by node_index
+    fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>> {
+        self.accumulator_store.get(index)
+    }
+    ///get node by node hash
+    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
+        self.get_node(hash)
+    }
+}
+
+impl AccumulatorNodeWriter for StarcoinStorage {
+    /// save node index
+    fn save(&self, index: NodeIndex, hash: HashValue) -> Result<()> {
+        self.accumulator_store.save(index, hash)
+    }
+    /// save node
+    fn save_node(&self, node: AccumulatorNode) -> Result<()> {
+        self.accumulator_store.save_node(node)
+    }
+    ///delete node
+    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()> {
+        self.accumulator_store.delete_nodes(node_hash_vec)
+    }
+    ///delete larger index than one
+    fn delete_larger_index(&self, index: u64, max_notes: u64) -> Result<()> {
+        self.accumulator_store.delete_larger_index(index, max_notes)
+    }
+}
+
+//TODO should move this traits to traits crate?
+/// Chain storage define
+pub trait BlockChainStore: StateNodeStore + BlockStorageOp + AccumulatorNodeStore {}
+
+impl BlockChainStore for StarcoinStorage {}
 
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {

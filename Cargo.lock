@@ -5314,7 +5314,6 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
- "starcoin-types",
 ]
 
 [[package]]
@@ -5352,12 +5351,14 @@ dependencies = [
  "env_logger",
  "futures 0.3.4",
  "futures-locks",
+ "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-genesis",
  "starcoin-logger",
  "starcoin-network",
  "starcoin-state-tree",
@@ -5449,6 +5450,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-genesis"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "starcoin-accumulator",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-executor",
+ "starcoin-logger",
+ "starcoin-statedb",
+ "starcoin-storage",
+ "starcoin-types",
+ "stest",
+]
+
+[[package]]
 name = "starcoin-json-rpc"
 version = "0.1.0"
 dependencies = [
@@ -5493,6 +5511,7 @@ dependencies = [
  "anyhow",
  "futures 0.3.4",
  "futures-channel",
+ "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",
@@ -5564,6 +5583,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-genesis",
  "starcoin-json-rpc",
  "starcoin-logger",
  "starcoin-miner",
@@ -5716,6 +5736,7 @@ dependencies = [
  "rand 0.6.5",
  "ref-cast",
  "serde",
+ "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "thiserror",

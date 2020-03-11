@@ -1,17 +1,19 @@
 use super::random_block;
-use crate::chain::load_genesis_block;
 use crate::{AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use actix::Addr;
 use anyhow::Result;
+use bus::BusActor;
 use config::NodeConfig;
 use consensus::{dummy::DummyConsensus, Consensus};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
 use logger::prelude::*;
+use starcoin_genesis::Genesis;
 use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use traits::ChainReader;
 use traits::ChainWriter;
+use txpool::{CachedSeqNumberClient, SubscribeTxns, TxPool, TxPoolRef};
 use types::block::Block;
 
 #[test]
@@ -19,17 +21,33 @@ fn it_works() {
     assert_eq!(2 + 2, 4);
 }
 
-fn gen_block_chain_actor() -> ChainActorRef<ChainActor> {
+fn gen_block_chain_actor(config: Arc<NodeConfig>) -> ChainActorRef<ChainActor> {
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-    ChainActor::launch(Arc::new(NodeConfig::default()), storage.clone(), None).unwrap()
+    let genesis =
+        Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
+    let bus = BusActor::launch();
+    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
+    let txpool = TxPool::start(seq_number_client);
+    ChainActor::launch(
+        config,
+        genesis.startup_info().clone(),
+        storage.clone(),
+        None,
+        bus,
+        txpool,
+    )
+    .unwrap()
 }
 
 async fn gen_head_chain(times: u64) -> ChainActorRef<ChainActor> {
-    let chain = gen_block_chain_actor();
-    let genesis_block = load_genesis_block();
+    let node_config = NodeConfig::default();
+    let conf = Arc::new(node_config);
+    let chain = gen_block_chain_actor(conf);
+
+    let mut parent_hash = chain.clone().get_chain_info().await.unwrap().head_block;
+
     let times = 5;
-    let mut parent_hash = genesis_block.header().id();
     if times > 0 {
         for i in 0..times {
             println!("{}", i);
@@ -53,8 +71,7 @@ async fn test_block_chain_head() {
 async fn test_block_chain_forks() {
     let times = 5;
     let chain = gen_head_chain(times).await;
-    let genesis_block = load_genesis_block();
-    let mut parent_hash = genesis_block.header().id();
+    let mut parent_hash = chain.clone().get_chain_info().await.unwrap().head_block;
     if times > 0 {
         for i in 0..(times + 1) {
             println!("{}", i);
@@ -73,19 +90,28 @@ async fn test_block_chain_rollback() {
 }
 
 #[stest::test]
-fn test_chain_apply() -> Result<()> {
+async fn test_chain_apply() -> Result<()> {
     let node_config = NodeConfig::default();
     let config = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo)?);
+    let seq_number_client = CachedSeqNumberClient::new(storage.clone());
+    let txpool = TxPool::start(seq_number_client);
+    let genesis = Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone())?;
 
-    let mut block_chain = BlockChain::<MockExecutor, DummyConsensus>::new(config, storage, None)?;
+    let mut block_chain =
+        BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
+            config,
+            genesis.startup_info().head.clone(),
+            storage,
+            txpool,
+        )?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let block_template = block_chain.create_block_template(vec![])?;
     let (sender, receiver) = futures::channel::oneshot::channel();
     let new_block = DummyConsensus::create_block(&block_chain, block_template, receiver)?;
-    block_chain.apply(new_block);
+    block_chain.apply(new_block)?;
     let header1 = block_chain.current_header();
     debug!("block 1 header: {:?}", header1);
     assert_ne!(header.state_root(), header1.state_root());

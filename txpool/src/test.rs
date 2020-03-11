@@ -49,3 +49,23 @@ async fn test_subscribe_txns() {
     let pool = TxPool::start(MockNonceClient::default());
     let _ = pool.subscribe_txns().await.unwrap();
 }
+
+#[actix_rt::test]
+async fn test_rollback() {
+    let pool = TxPool::start(MockNonceClient::default());
+    let txn = SignedUserTransaction::mock();
+    let txn_hash = txn.crypto_hash();
+    let mut result = pool.import_txns(vec![txn.clone()]).await.unwrap();
+    let new_txn = SignedUserTransaction::mock();
+    pool.clone()
+        .rollback(vec![txn], vec![new_txn.clone()])
+        .await
+        .unwrap();
+    let txns = pool.clone().get_pending_txns(Some(100)).await.unwrap();
+    assert_eq!(txns.len(), 1);
+    let pending = txns.into_iter().next().unwrap();
+    assert_eq!(
+        CryptoHash::crypto_hash(&pending),
+        CryptoHash::crypto_hash(&new_txn)
+    );
+}

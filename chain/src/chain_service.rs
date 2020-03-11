@@ -12,18 +12,20 @@ use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
+use starcoin_accumulator::{Accumulator, AccumulatorInfo, AccumulatorNodeStore};
 use starcoin_statedb::ChainStateDB;
 use state_tree::StateNodeStore;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage};
+use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
 use traits::{
     ChainAsyncService, ChainReader, ChainService, ChainStateReader, ChainWriter, TxPoolAsyncService,
 };
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
 };
@@ -33,7 +35,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: BlockChainStore + 'static,
 {
     config: Arc<NodeConfig>,
     head: BlockChain<E, C, S, P>,
@@ -48,22 +50,30 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp,
+    S: BlockChainStore,
 {
     pub fn new(
         config: Arc<NodeConfig>,
+        startup_info: StartupInfo,
         storage: Arc<S>,
         network: Option<NetworkAsyncService<P>>,
         txpool: P,
     ) -> Result<Self> {
-        let latest_header = storage.get_latest_block_header()?;
         let head = BlockChain::new(
             config.clone(),
+            startup_info.head,
             storage.clone(),
-            latest_header.map(|header| header.id()),
             txpool.clone(),
         )?;
-        let branches = Vec::new();
+        let mut branches = Vec::new();
+        for branch_info in startup_info.branches {
+            branches.push(BlockChain::new(
+                config.clone(),
+                branch_info,
+                storage.clone(),
+                txpool.clone(),
+            )?)
+        }
         Ok(Self {
             config,
             head,
@@ -82,8 +92,8 @@ where
                 return Some(
                     BlockChain::new(
                         self.config.clone(),
+                        ChainInfo::new(header.parent_hash()),
                         self.storage.clone(),
-                        Some(header.parent_hash()),
                         self.txpool.clone(),
                     )
                     .unwrap(),
@@ -95,8 +105,8 @@ where
                         return Some(
                             BlockChain::new(
                                 self.config.clone(),
+                                ChainInfo::new(header.parent_hash()),
                                 self.storage.clone(),
-                                Some(header.parent_hash()),
                                 self.txpool.clone(),
                             )
                             .unwrap(),
@@ -135,13 +145,16 @@ where
                     if new_branch.current_header().number() > self.head.current_header().number() {
                         //3. change head
                         //rollback txpool
-                        let (enacted, retracted) = Self::find_ancestors(&new_branch, &self.head);
+                        let (enacted, retracted) = self.find_ancestors(
+                            &new_branch.current_header().parent_hash(),
+                            &self.head.current_header().parent_hash(),
+                        );
 
                         branch = &self.head;
                         self.head = BlockChain::new(
                             self.config.clone(),
+                            new_branch.get_chain_info(),
                             self.storage.clone(),
-                            Some(new_branch.current_header().id()),
                             self.txpool.clone(),
                         )
                         .unwrap();
@@ -187,12 +200,58 @@ where
     }
 
     fn find_ancestors(
-        block_chain: &BlockChain<E, C, S, P>,
-        head_chain: &BlockChain<E, C, S, P>,
+        &self,
+        block_enacted: &HashValue,
+        block_retracted: &HashValue,
     ) -> (Vec<SignedUserTransaction>, Vec<SignedUserTransaction>) {
         let mut enacted: Vec<Block> = Vec::new();
         let mut retracted: Vec<Block> = Vec::new();
-        //todo:from db
+        if let Some(ancestor) = self
+            .storage
+            .get_common_ancestor(block_enacted.clone(), block_retracted.clone())
+            .unwrap()
+        {
+            let mut block_enacted_tmp = block_enacted.clone();
+            loop {
+                let block_tmp = self
+                    .storage
+                    .get_block_by_hash(block_enacted_tmp.clone())
+                    .unwrap();
+                match block_tmp {
+                    Some(tmp) => {
+                        block_enacted_tmp = tmp.header().parent_hash();
+                        enacted.push(tmp);
+                        if block_enacted_tmp == ancestor {
+                            break;
+                        };
+                    }
+                    None => {
+                        warn!("enacted block is none.");
+                        enacted.clear();
+                        break;
+                    }
+                }
+            }
+
+            let mut block_retracted_tmp = block_retracted.clone();
+            loop {
+                let block_tmp = self.storage.get_block_by_hash(block_retracted_tmp).unwrap();
+                match block_tmp {
+                    Some(tmp) => {
+                        block_retracted_tmp = tmp.header().parent_hash();
+                        retracted.push(tmp);
+                        if block_retracted_tmp == ancestor {
+                            break;
+                        };
+                    }
+                    None => {
+                        warn!("retracted block is none.");
+                        retracted.clear();
+                        break;
+                    }
+                }
+            }
+        };
         let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
         let mut tx_retracted: Vec<SignedUserTransaction> = Vec::new();
         enacted.iter().for_each(|b| {
@@ -210,7 +269,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp,
+    S: BlockChainStore,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
@@ -241,7 +300,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: StateNodeStore + BlockStorageOp,
+    S: BlockChainStore,
 {
     fn head_block(&self) -> Block {
         self.head.head_block()
@@ -285,5 +344,9 @@ where
 
     fn gen_tx(&self) -> Result<()> {
         self.head.gen_tx()
+    }
+
+    fn get_chain_info(&self) -> ChainInfo {
+        self.head.get_chain_info()
     }
 }

@@ -16,11 +16,12 @@ use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use futures::{Future, TryFutureExt};
 use logger::prelude::*;
+use starcoin_accumulator::AccumulatorNodeStore;
 use state_tree::StateNodeStore;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
-use storage::{BlockStorageOp, StarcoinStorage};
+use storage::{BlockChainStore, BlockStorageOp, StarcoinStorage};
 use traits::{ChainAsyncService, ChainReader, TxPoolAsyncService};
 use types::transaction::TxStatus;
 
@@ -44,7 +45,7 @@ where
     E: TransactionExecutor + 'static,
     P: TxPoolAsyncService + 'static,
     CS: ChainAsyncService + 'static,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: BlockChainStore + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -61,7 +62,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: BlockChainStore + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -126,7 +127,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: BlockChainStore + 'static,
 {
     type Context = Context<Self>;
 
@@ -141,7 +142,7 @@ where
     E: TransactionExecutor,
     P: TxPoolAsyncService,
     CS: ChainAsyncService,
-    S: StateNodeStore + BlockStorageOp + 'static,
+    S: BlockChainStore + 'static,
 {
     type Result = Result<()>;
 
@@ -158,11 +159,10 @@ where
             let txns = txpool_1.get_pending_txns(None).await.unwrap_or(vec![]);
             if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
             {
-                //TODO load latest head block.
-                let head_branch = chain.get_head_branch().await;
-                info!("head block : {:?}, txn len: {}", head_branch, txns.len());
+                let chain_info = chain.get_chain_info().await.unwrap();
+                info!("head block : {:?}, txn len: {}", chain_info, txns.len());
                 let block_chain =
-                    BlockChain::<E, C, S, P>::new(config, storage, head_branch, txpool_2).unwrap();
+                    BlockChain::<E, C, S, P>::new(config, chain_info, storage, txpool_2).unwrap();
                 match miner::mint::<C>(txns, &block_chain, bus) {
                     Err(e) => {
                         error!("mint block err: {:?}", e);

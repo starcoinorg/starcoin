@@ -14,7 +14,7 @@ use crate::message::ChainResponse;
 use actix::dev::ToEnvelope;
 use actix::fut::wrap_future;
 use actix::prelude::*;
-use anyhow::{Error, Result};
+use anyhow::{bail, Error, Result};
 use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use consensus::dummy::DummyConsensus;
@@ -25,12 +25,15 @@ use futures_locks::RwLock;
 use logger::prelude::*;
 use message::ChainRequest;
 use network::network::NetworkAsyncService;
+use starcoin_accumulator::{Accumulator, AccumulatorNodeStore, MerkleAccumulator};
+use state_tree::StateNodeStore;
 use std::sync::Arc;
-use storage::StarcoinStorage;
+use storage::{BlockStorageOp, StarcoinStorage};
 use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService, ChainWriter};
 use txpool::TxPoolRef;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
 };
 
@@ -44,13 +47,14 @@ pub struct ChainActor {
 impl ChainActor {
     pub fn launch(
         config: Arc<NodeConfig>,
+        startup_info: StartupInfo,
         storage: Arc<StarcoinStorage>,
         network: Option<NetworkAsyncService<TxPoolRef>>,
         bus: Addr<BusActor>,
         txpool: TxPoolRef,
     ) -> Result<ChainActorRef<ChainActor>> {
         let actor = ChainActor {
-            service: ChainServiceImpl::new(config, storage, network, txpool)?,
+            service: ChainServiceImpl::new(config, startup_info, storage, network, txpool)?,
             bus,
         }
         .start();
@@ -117,6 +121,9 @@ impl Handler<ChainRequest> for ChainActor {
             ChainRequest::GetHeadBranch() => {
                 let hash = self.service.get_head_branch();
                 Ok(ChainResponse::HashValue(hash))
+            }
+            ChainRequest::GetChainInfo() => {
+                Ok(ChainResponse::ChainInfo(self.service.get_chain_info()))
             }
             ChainRequest::GenTx() => {
                 self.service.gen_tx().unwrap();
@@ -307,17 +314,26 @@ where
         Ok(())
     }
 
-    async fn get_head_branch(self) -> Option<HashValue> {
-        if let ChainResponse::HashValue(hash) = self
-            .address
-            .send(ChainRequest::GetHeadBranch())
-            .await
-            .unwrap()
-            .unwrap()
+    async fn get_head_branch(self) -> Result<HashValue> {
+        if let ChainResponse::HashValue(hash) =
+            self.address.send(ChainRequest::GetHeadBranch()).await??
         {
-            Some(hash)
+            Ok(hash)
         } else {
-            None
+            panic!("Chain response type error.")
+        }
+    }
+
+    async fn get_chain_info(self) -> Result<ChainInfo> {
+        let response = self
+            .address
+            .send(ChainRequest::GetChainInfo())
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        if let ChainResponse::ChainInfo(chain_info) = response {
+            Ok(chain_info)
+        } else {
+            bail!("Get chain info response error.")
         }
     }
 

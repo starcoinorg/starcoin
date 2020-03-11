@@ -118,32 +118,34 @@ impl MockVM {
 
                     let balance_sender = account_resource_sender.balance();
                     let balance_receiver = account_resource_receiver.balance();
+                    let mut deduction;
 
                     if balance_sender < amount {
-                        output = TransactionOutput::new(vec![], 0, DISCARD_STATUS.clone());
+                        deduction = balance_sender;
                     } else {
-                        let new_account_resource_sender = AccountResource::new(
-                            balance_sender - amount,
-                            account_resource_sender.sequence_number() + 1,
-                            account_resource_sender.authentication_key().clone(),
-                        );
-                        let new_account_resource_receiver = AccountResource::new(
-                            balance_receiver + amount,
-                            account_resource_sender.sequence_number(),
-                            account_resource_receiver.authentication_key().clone(),
-                        );
-                        state_store
-                            .set(access_path_sender, new_account_resource_sender.try_into()?);
-                        state_store.set(
-                            access_path_receiver,
-                            new_account_resource_receiver.try_into()?,
-                        );
-                        output = TransactionOutput::new(
-                            vec![],
-                            0,
-                            TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)),
-                        );
+                        deduction = amount;
                     }
+
+                    let new_account_resource_sender = AccountResource::new(
+                        balance_sender - deduction,
+                        account_resource_sender.sequence_number() + 1,
+                        account_resource_sender.authentication_key().clone(),
+                    );
+                    let new_account_resource_receiver = AccountResource::new(
+                        balance_receiver + deduction,
+                        account_resource_sender.sequence_number(),
+                        account_resource_receiver.authentication_key().clone(),
+                    );
+                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?);
+                    state_store.set(
+                        access_path_receiver,
+                        new_account_resource_receiver.try_into()?,
+                    );
+                    output = TransactionOutput::new(
+                        vec![],
+                        0,
+                        TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)),
+                    );
                 }
             },
             Transaction::BlockMetadata(block_metadata) => {

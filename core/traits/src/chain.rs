@@ -6,6 +6,7 @@ use anyhow::Result;
 use crypto::HashValue;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
@@ -33,6 +34,7 @@ pub trait ChainReader {
     fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn gen_tx(&self) -> Result<()>;
+    fn get_chain_info(&self) -> ChainInfo;
 }
 
 pub trait ChainWriter {

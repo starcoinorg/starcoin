@@ -90,7 +90,7 @@ impl StateCache {
         }
     }
 }
-
+//TODO remove the Lock.
 pub struct StateTree {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
@@ -116,11 +116,6 @@ impl StateTree {
     pub fn root_hash(&self) -> HashValue {
         self.cache.lock().unwrap().root_hash
     }
-
-    // // TODO: comment out for now. Need to recheck the meaning of tree'empty means.
-    // pub fn is_empty(&self) -> bool {
-    //     self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
-    // }
 
     /// put a kv pair into tree.
     /// Users need to hash the origin key into a fixed-length(here is 256bit) HashValue,
@@ -192,6 +187,12 @@ impl StateTree {
         Ok(new_root_hash)
     }
 
+    /// check if there is data that has not been commit.
+    pub fn is_dirty(&self) -> bool {
+        self.updates.read().unwrap().len() > 0
+    }
+
+    /// Write state_set to state tree.
     pub fn apply(&self, state_set: StateSet) -> Result<()> {
         let inner: Vec<(HashValue, Vec<u8>)> = state_set.into();
         let updates = inner
@@ -238,6 +239,10 @@ impl StateTree {
     /// passing None value with a key means delete the key
     fn updates(&self, updates: Vec<(HashValue, Option<Blob>)>) -> Result<HashValue> {
         let cur_root_hash = self.root_hash();
+        //TODO should throw a error?
+        if updates.is_empty() {
+            return Ok(cur_root_hash);
+        }
         let mut cache_guard = self.cache.lock().unwrap();
         let mut cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {

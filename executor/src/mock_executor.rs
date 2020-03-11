@@ -88,11 +88,7 @@ impl ChainStateWriter for MockChainState {
         Ok(())
     }
 
-    fn delete(&self, access_path: &AccessPath) -> Result<()> {
-        unimplemented!()
-    }
-
-    fn delete_at(&self, account_state: &AccountState, struct_tag: &StructTag) -> Result<()> {
+    fn remove(&self, access_path: &AccessPath) -> Result<()> {
         unimplemented!()
     }
 
@@ -150,7 +146,8 @@ impl TransactionExecutor for MockExecutor {
         let chain_state = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
         Self::mint_for(&chain_state, AccountAddress::default(), 10_0000_0000_0000)?;
         chain_state.create_account(association_address())?;
-        chain_state.commit();
+        chain_state.commit()?;
+        chain_state.flush()?;
         Ok((chain_state.state_root(), chain_state.dump()?))
     }
 

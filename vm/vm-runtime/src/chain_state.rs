@@ -56,7 +56,7 @@ impl<'txn> StateStore<'txn> {
     /// Deletes a key from state store.
     pub fn remove(&mut self, access_path: &AccessPath) -> Result<()> {
         info!("remove access_path: {:?}", access_path);
-        self.chain_state.delete(access_path)
+        self.chain_state.remove(access_path)
     }
 
     pub fn create_account(&self, account_address: AccountAddress) -> Result<()> {
