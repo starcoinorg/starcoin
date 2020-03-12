@@ -501,5 +501,11 @@ mod tests {
             .unwrap();
         let desert_vec = vec![block_header3.clone().id(), block_id];
         assert_eq!(hashes, desert_vec);
+        let comm_hash = storage
+            .block_store
+            .get_common_ancestor(block_header1.id(), block_header2.id())
+            .unwrap()
+            .unwrap();
+        assert_eq!(comm_hash, parent_hash);
     }
 }
