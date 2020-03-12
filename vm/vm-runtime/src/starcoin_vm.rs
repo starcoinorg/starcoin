@@ -26,7 +26,7 @@ use logger::prelude::*;
 use move_vm_runtime::MoveVM;
 use move_vm_state::{
     data_cache::{BlockDataCache, RemoteCache},
-    execution_context::{SystemExecutionContext, TransactionExecutionContext},
+    execution_context::{ExecutionContext, SystemExecutionContext, TransactionExecutionContext},
 };
 use move_vm_types::chain_state::ChainState as LibraChainState;
 use move_vm_types::values::Value;
@@ -136,19 +136,25 @@ impl StarcoinVM {
             }
         }
         .map_err(|err| {
-            failed_gas_left = ctx.gas_left();
+            failed_gas_left = ctx.remaining_gas();
             err
         })
         .and_then(|_| {
-            failed_gas_left = ctx.gas_left();
+            failed_gas_left = ctx.remaining_gas();
             let mut gas_free_ctx = SystemExecutionContext::from(ctx);
-            gas_free_ctx.get_transaction_output(txn_data, Ok(()))
+            get_transaction_output(
+                &mut gas_free_ctx,
+                txn_data,
+                LibraVMStatus::new(LibraStatusCode::EXECUTED),
+            )
         })
         .unwrap_or_else(|err| {
             let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
-            gas_free_ctx
-                .get_transaction_output(txn_data, Err(err))
-                .unwrap_or_else(discard_libra_error_output)
+            failed_transaction_output(
+                &mut gas_free_ctx,
+                txn_data,
+                err,
+            )
         });
         // TODO convert to starcoin type
         info!("{:?}", output);
@@ -240,4 +246,37 @@ fn convert_txn_args(args: Vec<TransactionArgument>) -> Vec<Value> {
             }
         })
         .collect()
+}
+
+fn get_transaction_output(
+    ctx: &mut (impl LibraChainState + ExecutionContext),
+    txn_data: &TransactionMetadata,
+    status: LibraVMStatus,
+) -> VMResult<LibraTransactionOutput> {
+    let gas_used: u64 = txn_data
+        .max_gas_amount()
+        .sub(ctx.remaining_gas())
+        .mul(txn_data.gas_unit_price())
+        .get();
+    let write_set = ctx.make_write_set()?;
+    Ok(LibraTransactionOutput::new(
+        write_set,
+        ctx.events().to_vec(),
+        gas_used,
+        LibraTransactionStatus::Keep(status),
+    ))
+}
+
+pub fn failed_transaction_output(
+    ctx: &mut (impl LibraChainState + ExecutionContext),
+    txn_data: &TransactionMetadata,
+    error_code: LibraVMStatus,
+) -> LibraTransactionOutput {
+    match LibraTransactionStatus::from(error_code) {
+        LibraTransactionStatus::Keep(status) =>
+            get_transaction_output(ctx, txn_data, status)
+            .unwrap_or_else(discard_libra_error_output),
+        LibraTransactionStatus::Discard(status) => discard_libra_error_output(status),
+        _ => unreachable!(),
+    }
 }

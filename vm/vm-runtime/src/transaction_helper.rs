@@ -56,8 +56,9 @@ impl TransactionHelper {
             TransactionArgument::Address(address) => {
                 LibraTransactionArgument::Address(Self::to_libra_AccountAddress(*address))
             }
-            TransactionArgument::ByteArray(byte_array) => LibraTransactionArgument::ByteArray(
-                LibraByteArray::new((byte_array.clone()).into_inner()),
+            TransactionArgument::ByteArray(byte_array) => LibraTransactionArgument::U8Vector(
+                //LibraByteArray::new((byte_array.clone()).into_inner()),
+                byte_array.clone().into_inner()
             ),
         }
     }
@@ -102,6 +103,7 @@ impl TransactionHelper {
             LibraTransactionStatus::Keep(vm_status) => {
                 TransactionStatus::Keep(Self::to_starcoin_VMStatus(vm_status.clone()))
             }
+            LibraTransactionStatus::Retry => TransactionStatus::Discard(VMStatus::new(StatusCode::UNKNOWN_VALIDATION_STATUS)),
         }
     }
     pub fn to_starcoin_TransactionOutput(output: LibraTransactionOutput) -> TransactionOutput {

@@ -4,5 +4,5 @@
 pub mod access_path_helper;
 mod chain_state;
 pub mod mock_vm;
-//pub mod starcoin_vm;
-//mod transaction_helper;
+pub mod starcoin_vm;
+mod transaction_helper;
