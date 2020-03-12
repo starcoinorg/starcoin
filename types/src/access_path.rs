@@ -46,7 +46,7 @@ use crate::{
 };
 use anyhow::{Error, Result};
 use mirai_annotations::*;
-use num_enum::IntoPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, HashValue};
@@ -188,7 +188,18 @@ impl From<Vec<Access>> for Accesses {
 }
 
 #[derive(
-    IntoPrimitive, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, Debug,
+    IntoPrimitive,
+    TryFromPrimitive,
+    Clone,
+    Copy,
+    Eq,
+    PartialEq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Ord,
+    PartialOrd,
+    Debug,
 )]
 #[repr(u8)]
 pub enum DataType {
@@ -197,6 +208,8 @@ pub enum DataType {
 }
 
 impl DataType {
+    pub const LENGTH: usize = 2;
+
     pub fn is_code(&self) -> bool {
         match self {
             DataType::CODE => true,
@@ -208,6 +221,17 @@ impl DataType {
             DataType::RESOURCE => true,
             _ => false,
         }
+    }
+
+    #[inline]
+    pub fn type_index(&self) -> u8 {
+        self.clone().into()
+    }
+
+    /// Every DataType has a storage root in AccountState
+    #[inline]
+    pub fn storage_index(&self) -> usize {
+        self.type_index() as usize
     }
 }
 

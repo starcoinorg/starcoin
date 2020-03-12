@@ -90,12 +90,23 @@ impl StateCache {
         }
     }
 }
+
 //TODO remove the Lock.
+//#[derive(Clone)]
 pub struct StateTree {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
     updates: RwLock<BTreeMap<HashValue, Option<Blob>>>,
     cache: Mutex<StateCache>,
+}
+
+impl Clone for StateTree {
+    fn clone(&self) -> Self {
+        StateTree::new(
+            self.storage.clone(),
+            Some(*self.storage_root_hash.read().unwrap()),
+        )
+    }
 }
 
 impl StateTree {
