@@ -82,29 +82,7 @@ fn test_network_actor() {
             txpool_1.clone(),
             handle.clone(),
         );
-
-        let mut config_2 = NodeConfig::random_for_test();
-        let addr_1_str = addr_1.to_base58();
-        let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_str);
-        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
-        config_2.network.seeds = vec![seed];
-        let mut node_config_2 = Arc::new(config_2);
-        let genesis_2 = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
-            node_config_2.clone(),
-            storage_2.clone(),
-        )
-        .unwrap();
-        let txpool_2 = {
-            let best_block_id = genesis_2.startup_info().head.get_head();
-            TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
-        };
-
-        let (network_2, addr_2) = gen_network(
-            node_config_2.clone(),
-            bus_2.clone(),
-            txpool_2.clone(),
-            handle.clone(),
-        );
+        Delay::new(Duration::from_secs(1)).await;
 
         // chain actor
         let first_chain = ChainActor::launch(
@@ -114,15 +92,6 @@ fn test_network_actor() {
             Some(network_1.clone()),
             bus_1.clone(),
             txpool_1.clone(),
-        )
-        .unwrap();
-        let second_chain = ChainActor::launch(
-            node_config_2.clone(),
-            genesis_2.startup_info().clone(),
-            storage_2.clone(),
-            Some(network_2.clone()),
-            bus_2.clone(),
-            txpool_2.clone(),
         )
         .unwrap();
 
@@ -145,6 +114,58 @@ fn test_network_actor() {
         let _first_sync_actor =
             SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
 
+        // miner
+        let _miner_1 = MinerActor::<
+            DummyConsensus,
+            MockExecutor,
+            TxPoolRef,
+            ChainActorRef,
+            StarcoinStorage,
+        >::launch(
+            node_config_1.clone(),
+            bus_1.clone(),
+            storage_1.clone(),
+            txpool_1.clone(),
+            first_chain.clone(),
+            None,
+        );
+
+        Delay::new(Duration::from_secs(10)).await;
+
+        let mut config_2 = NodeConfig::random_for_test();
+        let addr_1_str = network_1.identify().to_base58();
+        let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_str);
+        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+        config_2.network.seeds = vec![seed];
+        let mut node_config_2 = Arc::new(config_2);
+        let genesis_2 = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+            node_config_2.clone(),
+            storage_2.clone(),
+        )
+        .unwrap();
+        let txpool_2 = {
+            let best_block_id = genesis_2.startup_info().head.get_head();
+            TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
+        };
+
+        let (network_2, addr_2) = gen_network(
+            node_config_2.clone(),
+            bus_2.clone(),
+            txpool_2.clone(),
+            handle.clone(),
+        );
+        Delay::new(Duration::from_secs(1)).await;
+
+        let second_chain = ChainActor::launch(
+            node_config_2.clone(),
+            genesis_2.startup_info().clone(),
+            storage_2.clone(),
+            Some(network_2.clone()),
+            bus_2.clone(),
+            txpool_2.clone(),
+        )
+        .unwrap();
+
         let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
         let second_p_actor = ProcessActor::launch(
             Arc::clone(&second_p),
@@ -163,23 +184,7 @@ fn test_network_actor() {
         let _second_sync_actor =
             SyncActor::launch(bus_2.clone(), second_p_actor, second_d_actor.clone()).unwrap();
 
-        // miner
-        let _miner_1 = MinerActor::<
-            DummyConsensus,
-            MockExecutor,
-            TxPoolRef,
-            ChainActorRef,
-            StarcoinStorage,
-        >::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            storage_1.clone(),
-            txpool_1.clone(),
-            first_chain.clone(),
-            None,
-        );
-
-        Delay::new(Duration::from_secs(5)).await;
+        Delay::new(Duration::from_secs(10)).await;
 
         let block_1 = first_chain.head_block().await.unwrap();
         let block_2 = second_chain.head_block().await.unwrap();
@@ -291,7 +296,7 @@ fn test_network_actor_rpc() {
 
         // node config
         let mut config_2 = NodeConfig::random_for_test();
-        let addr_1_hex = hex::encode(addr_1);
+        let addr_1_hex = network_1.identify().to_base58();
         let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
         config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         config_2.network.seeds = vec![seed];

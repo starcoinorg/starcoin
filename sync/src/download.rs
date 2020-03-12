@@ -77,7 +77,7 @@ impl Actor for DownloadActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
-            if act.syncing.load(Ordering::Relaxed) {
+            if !act.syncing.load(Ordering::Relaxed) {
                 act.sync_event_sender.try_send(SyncEvent {});
             }
         });
