@@ -227,7 +227,7 @@ async fn test_network_actor() {
     .unwrap();
 
     // sync
-    let first_p = Arc::new(PeerInfo::new(addr_1));
+    let first_p = Arc::new(PeerInfo::new(network_1.identify().clone().into()));
     let first_p_actor = ProcessActor::launch(
         Arc::clone(&first_p),
         first_chain.clone(),
@@ -245,7 +245,7 @@ async fn test_network_actor() {
     let _first_sync_actor =
         SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
 
-    let second_p = Arc::new(PeerInfo::new(addr_2));
+    let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
     let second_p_actor = ProcessActor::launch(
         Arc::clone(&second_p),
         second_chain.clone(),
@@ -335,7 +335,7 @@ async fn test_network_actor_rpc() {
     )
     .unwrap();
     // sync
-    let first_p = Arc::new(PeerInfo::new(addr_1));
+    let first_p = Arc::new(PeerInfo::new(network_1.identify().clone().into()));
     let first_p_actor = ProcessActor::launch(
         Arc::clone(&first_p),
         first_chain.clone(),
@@ -417,7 +417,7 @@ async fn test_network_actor_rpc() {
     )
     .unwrap();
     // sync
-    let second_p = Arc::new(PeerInfo::new(addr_2));
+    let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
     let second_p_actor = ProcessActor::launch(
         Arc::clone(&second_p),
         second_chain.clone(),
@@ -497,7 +497,7 @@ fn test_network_actor_rpc_2() {
         )
         .unwrap();
         // sync
-        let first_p = Arc::new(PeerInfo::new(addr_1.clone()));
+        let first_p = Arc::new(PeerInfo::new(network_1.identify().clone().into()));
         let first_p_actor = ProcessActor::launch(
             Arc::clone(&first_p),
             first_chain.clone(),
@@ -528,7 +528,7 @@ fn test_network_actor_rpc_2() {
         let storage_2 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
         // node config
         let mut config_2 = NodeConfig::random_for_test();
-        let addr_1_hex = hex::encode(addr_1.clone());
+        let addr_1_hex = network_1.identify().to_base58();
         let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
         config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         config_2.network.seeds = vec![seed];
@@ -562,7 +562,7 @@ fn test_network_actor_rpc_2() {
         )
         .unwrap();
         // sync
-        let second_p = Arc::new(PeerInfo::new(addr_2.clone()));
+        let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
         let second_p_actor = ProcessActor::launch(
             Arc::clone(&second_p),
             second_chain.clone(),
@@ -592,7 +592,11 @@ fn test_network_actor_rpc_2() {
         ));
         let resp = network_1
             .clone()
-            .send_request(addr_2.clone(), req.clone(), Duration::from_secs(1))
+            .send_request(
+                network_2.identify().clone().into(),
+                req.clone(),
+                Duration::from_secs(1),
+            )
             .await
             .unwrap();
 
