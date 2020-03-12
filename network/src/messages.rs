@@ -6,6 +6,7 @@ use crate::sync_messages::*;
 use actix::prelude::*;
 use anyhow::*;
 use crypto::{hash::CryptoHash, HashValue};
+use futures::channel::mpsc::Sender;
 use parity_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use types::account_address::AccountAddress;
@@ -50,10 +51,10 @@ pub enum RPCRequest {
 }
 
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Message, Clone)]
+#[derive(Debug, Message, Clone)]
 pub struct RpcRequestMessage {
     pub request: RPCRequest,
-    pub peer_id: PeerId,
+    pub responder: Sender<RPCResponse>,
 }
 
 impl RPCMessage for RPCRequest {

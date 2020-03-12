@@ -61,6 +61,7 @@ where
     bus: Addr<BusActor>,
     txpool: P,
     message_processor: MessageProcessor<RPCResponse>,
+    handle: Handle,
 }
 
 impl<P> NetworkAsyncService<P>
@@ -112,23 +113,6 @@ where
 
         self.handle.spawn(task);
         message_future.await
-    }
-
-    pub async fn response_for(
-        &self,
-        peer_id: PeerId,
-        id: HashValue,
-        mut response: RPCResponse,
-    ) -> Result<()> {
-        response.set_request_id(id);
-        let peer_msg = PeerMessage::RPCResponse(response);
-        let data = peer_msg.encode().unwrap();
-        let network_message = NetworkMessage {
-            peer_id: peer_id.into(),
-            data,
-        };
-        self.tx.unbounded_send(network_message)?;
-        Ok(())
     }
 
     pub fn identify(&self) -> &PeerId {
@@ -188,6 +172,7 @@ where
             network_service: service,
             bus,
             txpool,
+            handle: handle.clone(),
             message_processor: message_processor_clone,
         };
         handle.spawn(Self::start(inner.clone(), rx, event_rx, tx_command));
@@ -280,14 +265,25 @@ where
             }
             PeerMessage::RPCRequest(request) => {
                 info!("do request.");
+                let (tx, mut rx) = mpsc::channel(1);
+                let id = request.get_id();
                 self.bus
                     .send(Broadcast {
                         msg: RpcRequestMessage {
-                            peer_id: peer_id.into(),
+                            responder: tx,
                             request,
                         },
                     })
                     .await;
+                let network_service = self.network_service.clone();
+                let task = async move {
+                    let mut response = rx.next().await.unwrap();
+                    response.set_request_id(id);
+                    let peer_msg = PeerMessage::RPCResponse(response);
+                    let data = peer_msg.encode().unwrap();
+                    network_service.send_message(peer_id, data).await.unwrap();
+                };
+                self.handle.spawn(task);
                 info!("receive rpc request");
             }
             PeerMessage::RPCResponse(response) => {
@@ -352,7 +348,7 @@ mod tests {
     use super::*;
     use crate::{RpcRequestMessage, TestRequest, TestResponse};
     use bus::Subscription;
-    use futures::future::IntoFuture;
+    use futures::{future::IntoFuture, sink::SinkExt};
     use futures_timer::Delay;
     use log::{Level, Metadata, Record};
     use log::{LevelFilter, SetLoggerError};
@@ -362,21 +358,6 @@ mod tests {
     use tokio::runtime::{Handle, Runtime};
     use traits::mock::MockTxPoolService;
     use types::account_address::AccountAddress;
-
-    // #[actix_rt::test]
-    // async fn test_network() {
-    //     let node_config = NodeConfig::default();
-    //     let bus = BusActor::launch();
-    //     let txpool = TxPoolActor::launch(&node_config, bus.clone()).unwrap();
-    //     let network = NetworkActor::launch(&node_config, bus, txpool.clone()).unwrap();
-    //     network
-    //         .send(PeerMessage::UserTransaction(SignedUserTransaction::mock()))
-    //         .await
-    //         .unwrap();
-    //
-    //     let txns = txpool.get_pending_txns().await.unwrap();
-    //     assert_eq!(1, txns.len());
-    // }
 
     #[test]
     fn test_network_with_mock() {
@@ -502,9 +483,9 @@ mod tests {
     impl Handler<RpcRequestMessage> for TestResponseActor {
         type Result = Result<()>;
 
-        fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, mut msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
             let id = (&msg.request).get_id();
-            let peer_id = (&msg).peer_id.clone();
+            let mut responder = msg.responder.clone();
             match msg.request {
                 RPCRequest::TestRequest(_r) => {
                     info!("request is {:?}", _r);
@@ -512,11 +493,11 @@ mod tests {
                         len: 1,
                         id: id.clone(),
                     };
-                    let network_service = self.network_service.clone();
                     let f = async move {
-                        network_service
-                            .response_for(peer_id.into(), id, RPCResponse::TestResponse(response))
-                            .await;
+                        responder
+                            .send(RPCResponse::TestResponse(response))
+                            .await
+                            .unwrap();
                     };
                     let f = actix::fut::wrap_future(f);
                     ctx.spawn(Box::new(f));

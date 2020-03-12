@@ -7,6 +7,7 @@ use anyhow::Result;
 use bus::{Bus, BusActor, Subscription};
 use chain::{ChainActor, ChainActorRef};
 use crypto::{hash::CryptoHash, HashValue};
+use futures::sink::SinkExt;
 use futures_timer::Delay;
 /// Sync message which inbound
 use network::sync_messages::{
@@ -104,7 +105,7 @@ impl Handler<RpcRequestMessage> for ProcessActor {
 
     fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
         let id = (&msg.request).get_id();
-        let peer_id = msg.peer_id;
+        let mut responder = msg.responder.clone();
         let processor = self.processor.clone();
         let network = self.network.clone();
         match msg.request {
@@ -122,7 +123,8 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                         .await;
 
                         let resp = RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg);
-                        network.clone().response_for(peer_id.into(), id, resp).await;
+
+                        responder.send(resp).await.unwrap();
                     });
                 }
                 ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg) => {
@@ -150,7 +152,7 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                                     batch_header_msg,
                                     batch_body_msg,
                                 );
-                                network.clone().response_for(peer_id.into(), id, resp).await;
+                                responder.send(resp).await.unwrap();
                             }
                             _ => {}
                         }
