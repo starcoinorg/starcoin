@@ -25,7 +25,6 @@ pub struct SyncActor {
 impl SyncActor {
     pub fn launch(
         // _node_config: &NodeConfig,
-        //        chain: Addr<ChainActor>,
         bus: Addr<BusActor>,
         process_address: Addr<ProcessActor>,
         download_address: Addr<DownloadActor>,
@@ -117,7 +116,7 @@ pub struct SyncFlow {
 }
 
 impl SyncFlow {
-    pub fn new(peer_info: PeerInfo, chain_reader: ChainActorRef<ChainActor>) -> Self {
+    pub fn new(peer_info: PeerInfo, chain_reader: ChainActorRef) -> Self {
         let downloader = Arc::new(RwLock::new(Downloader::new(chain_reader.clone())));
         let processor = Arc::new(RwLock::new(Processor::new(chain_reader)));
         SyncFlow {

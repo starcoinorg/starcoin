@@ -33,7 +33,7 @@ pub struct ProcessActor {
 impl ProcessActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: ChainActorRef<ChainActor>,
+        chain_reader: ChainActorRef,
         network: NetworkAsyncService<TxPoolRef>,
         bus: Addr<BusActor>,
     ) -> Result<Addr<ProcessActor>> {
@@ -166,11 +166,11 @@ impl Handler<RpcRequestMessage> for ProcessActor {
 
 /// Process request for syncing block
 pub struct Processor {
-    chain_reader: ChainActorRef<ChainActor>,
+    chain_reader: ChainActorRef,
 }
 
 impl Processor {
-    pub fn new(chain_reader: ChainActorRef<ChainActor>) -> Self {
+    pub fn new(chain_reader: ChainActorRef) -> Self {
         Processor { chain_reader }
     }
 
