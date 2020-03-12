@@ -172,7 +172,6 @@ where
                     BlockChain::<E, C, S, P>::new(config, storage, head_branch, txpool_2).unwrap();
                 let block_template = block_chain.create_block_template(txns).unwrap();
                 miner.set_mint_job(block_template);
-                miner.get_mint_job();
                 // stratum.update_all_worker()
             }
         }

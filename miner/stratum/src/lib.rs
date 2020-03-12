@@ -14,6 +14,9 @@ extern crate parking_lot;
 #[cfg(test)] extern crate tokio_io;
 #[cfg(test)] extern crate env_logger;
 
+use std::net::{SocketAddr, Shutdown};
+use jsonrpc_tcp_server::tokio::{io, runtime::Runtime, timer::timeout::{self, Timeout}, net::TcpStream};
+use jsonrpc_core::futures::{Future, future};
 mod traits;
 
 pub use traits::{
@@ -27,7 +30,6 @@ use jsonrpc_tcp_server::{
 use jsonrpc_core::{MetaIoHandler, Params, to_value, Value, Metadata, Compatibility, IoDelegate};
 use std::sync::Arc;
 
-use std::net::SocketAddr;
 use std::collections::{HashSet, HashMap};
 use hash::keccak;
 use ethereum_types::H256;
@@ -303,16 +305,30 @@ impl MetaExtractor<SocketMetadata> for PeerMetaExtractor {
 		}
 	}
 }
+pub fn dummy_request(addr: &SocketAddr, data: &str) -> Vec<u8> {
+	let mut runtime = Runtime::new().expect("Tokio Runtime should be created with no errors");
 
+	let mut data_vec = data.as_bytes().to_vec();
+	data_vec.extend(b"\n");
+
+	let stream = TcpStream::connect(addr)
+		.and_then(move |stream| {
+			io::write_all(stream, data_vec)
+		})
+		.and_then(|(stream, _)| {
+			stream.shutdown(Shutdown::Write).unwrap();
+			io::read_to_end(stream, Vec::with_capacity(2048))
+		})
+		.and_then(|(_stream, read_buf)| {
+			future::ok(read_buf)
+		});
+	let result = runtime.block_on(stream).expect("Runtime should run with no errors");
+
+	result
+}
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::net::{SocketAddr, Shutdown};
-	use std::sync::Arc;
-
-	use tokio::{io, runtime::Runtime, timer::timeout::{self, Timeout}, net::TcpStream};
-	use jsonrpc_core::futures::{Future, future};
-
 	pub struct VoidManager;
 
 	impl JobDispatcher for VoidManager {
@@ -320,29 +336,7 @@ mod tests {
 			Ok(())
 		}
 	}
-
-	fn dummy_request(addr: &SocketAddr, data: &str) -> Vec<u8> {
-		let mut runtime = Runtime::new().expect("Tokio Runtime should be created with no errors");
-
-		let mut data_vec = data.as_bytes().to_vec();
-		data_vec.extend(b"\n");
-
-		let stream = TcpStream::connect(addr)
-			.and_then(move |stream| {
-				io::write_all(stream, data_vec)
-			})
-			.and_then(|(stream, _)| {
-				stream.shutdown(Shutdown::Write).unwrap();
-				io::read_to_end(stream, Vec::with_capacity(2048))
-			})
-			.and_then(|(_stream, read_buf)| {
-				future::ok(read_buf)
-			});
-			let result = runtime.block_on(stream).expect("Runtime should run with no errors");
-
-			result
-	}
-
+	
 	#[test]
 	fn can_be_started() {
 		let stratum = Stratum::start(&"127.0.0.1:19980".parse().unwrap(), Arc::new(VoidManager), None);

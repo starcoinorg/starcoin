@@ -33,13 +33,12 @@ impl Miner {
         *state = Some(t)
     }
 
-    pub fn get_mint_job(&mut self) ->BlockTemplate {
-        println!("hello");
+    pub fn get_mint_job(&mut self) ->String {
         let mut state = self.state.lock().unwrap();
         let x = state.as_ref().unwrap().to_owned();
-        x
+        x.accumulator_root.short_str()
     }
-
+    
     pub fn submit(&self, payload: Vec<u8>) {
         // verify payload
         // create block
