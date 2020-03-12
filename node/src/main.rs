@@ -103,7 +103,7 @@ async fn main() {
         DummyConsensus,
         MockExecutor,
         TxPoolRef,
-        ChainActorRef<ChainActor>,
+        ChainActorRef,
         StarcoinStorage,
     >::launch(
         node_config.clone(),

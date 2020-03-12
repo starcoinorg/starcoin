@@ -51,7 +51,7 @@ pub struct DownloadActor {
 impl DownloadActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: ChainActorRef<ChainActor>,
+        chain_reader: ChainActorRef,
         network: NetworkAsyncService<TxPoolRef>,
         bus: Addr<BusActor>,
     ) -> Result<Addr<DownloadActor>> {
@@ -311,13 +311,13 @@ pub struct Downloader {
     header_pool: TTLPool<BlockHeader>,
     body_pool: TTLPool<BlockBody>,
     peers: Arc<RwLock<HashMap<PeerInfo, LatestStateMsg>>>,
-    chain_reader: ChainActorRef<ChainActor>,
+    chain_reader: ChainActorRef,
 }
 
 const HEAD_CT: u64 = 10;
 
 impl Downloader {
-    pub fn new(chain_reader: ChainActorRef<ChainActor>) -> Self {
+    pub fn new(chain_reader: ChainActorRef) -> Self {
         Downloader {
             hash_pool: TTLPool::new(),
             header_pool: TTLPool::new(),

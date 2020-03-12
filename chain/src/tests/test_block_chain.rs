@@ -25,7 +25,7 @@ fn it_works() {
     assert_eq!(2 + 2, 4);
 }
 
-async fn gen_head_chain(times: u64) -> ChainActorRef<ChainActor> {
+async fn gen_head_chain(times: u64) -> ChainActorRef {
     let node_config = NodeConfig::random_for_test();
     let conf = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());

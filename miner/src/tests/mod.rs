@@ -63,7 +63,7 @@ async fn test_miner_with_schedule_pacemaker() {
         DummyConsensus,
         MockExecutor,
         TxPoolRef,
-        ChainActorRef<ChainActor>,
+        ChainActorRef,
         StarcoinStorage,
     >::launch(
         config.clone(),
@@ -138,7 +138,7 @@ async fn test_miner_with_ondemand_pacemaker() {
         DummyConsensus,
         MockExecutor,
         TxPoolRef,
-        ChainActorRef<ChainActor>,
+        ChainActorRef,
         StarcoinStorage,
     >::launch(
         config.clone(),

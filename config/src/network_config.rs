@@ -1,17 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
-use std::fs;
-use libp2p::multiaddr::Multiaddr;
-use serde::{Deserialize, Serialize};
-use crypto::{
-    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-};
-use crypto::{test_utils::KeyPair, Uniform};
-use std::path::PathBuf;
 use anyhow::ensure;
 use anyhow::Result;
+use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use crypto::{test_utils::KeyPair, Uniform};
+use libp2p::multiaddr::Multiaddr;
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
@@ -44,20 +42,26 @@ impl NetworkConfig {
     }
 
     pub fn load(&mut self, data_dir: &PathBuf) -> Result<()> {
-        ensure!(self.network_key_file.is_relative(), "network key file should be relative path");
-        ensure!(!self.network_key_file.as_os_str().is_empty(), "network key file should not be empty path");
-            let path = data_dir.join(&self.network_key_file);
-            let keypair = if path.exists() {
-                // load from file directly
+        ensure!(
+            self.network_key_file.is_relative(),
+            "network key file should be relative path"
+        );
+        ensure!(
+            !self.network_key_file.as_os_str().is_empty(),
+            "network key file should not be empty path"
+        );
+        let path = data_dir.join(&self.network_key_file);
+        let keypair = if path.exists() {
+            // load from file directly
 
-                let network_keypair = crate::load_key(&path)?;
-                Arc::new(network_keypair)
-            } else {
-                // generate key and save it
-                let keypair = crate::gen_keypair();
-                crate::save_key(&keypair.private_key.to_bytes(), &path)?;
-                keypair
-            };
+            let network_keypair = crate::load_key(&path)?;
+            Arc::new(network_keypair)
+        } else {
+            // generate key and save it
+            let keypair = crate::gen_keypair();
+            crate::save_key(&keypair.private_key.to_bytes(), &path)?;
+            keypair
+        };
 
         self.network_keypair = Some(keypair);
 
