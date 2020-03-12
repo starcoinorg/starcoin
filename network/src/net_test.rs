@@ -26,7 +26,7 @@ mod tests {
     use futures_timer::Delay;
 
     use network_p2p::{identity, NetworkConfiguration, NodeKeyConfig, PeerId, PublicKey, Secret};
-    use types::account_address::AccountAddress;
+    use types::{account_address::AccountAddress, peer_info::PeerId as SPeerId};
 
     use crate::{helper::convert_boot_nodes, PeerEvent};
 
@@ -80,7 +80,7 @@ mod tests {
                 boot_nodes.push(format!(
                     "{}/p2p/{}",
                     first_addr,
-                    hex::encode(result[0].0.identify())
+                    result[0].0.identify().to_base58()
                 ));
             }
             let mut config = config::NetworkConfig::random_for_test();
@@ -88,7 +88,7 @@ mod tests {
             config.listen = format!("/ip4/127.0.0.1/tcp/{}", base_port + index as u16);
             config.seeds = boot_nodes;
 
-            println!("listen:{:?},boots {:?}", config.listen, config.seeds);
+            info!("listen:{:?},boots {:?}", config.listen, config.seeds);
             if first_addr.is_none() {
                 first_addr = Some(config.listen.clone().parse().unwrap());
             }
@@ -113,8 +113,8 @@ mod tests {
             (service1, tx1, rx1, event_rx1, close_tx1),
             (service2, tx2, _rx2, event_rx2, close_tx2),
         ) = build_test_network_pair(executor.clone());
-        let msg_peer_id_1 = service1.identify();
-        let msg_peer_id_2 = service2.identify();
+        let msg_peer_id_1 = service1.identify().clone();
+        let msg_peer_id_2 = service2.identify().clone();
         // Once sender has been droped, the select_all will return directly. clone it to prevent it.
         let _tx22 = tx2.clone();
         let _tx11 = tx1.clone();
@@ -135,12 +135,12 @@ mod tests {
 
                 match if count % 2 == 0 {
                     tx2.unbounded_send(NetworkMessage {
-                        peer_id: msg_peer_id_1,
+                        peer_id: SPeerId::from(msg_peer_id_1.clone()),
                         data: random_bytes,
                     })
                 } else {
                     tx1.unbounded_send(NetworkMessage {
-                        peer_id: msg_peer_id_2,
+                        peer_id: SPeerId::from(msg_peer_id_2.clone()),
                         data: random_bytes,
                     })
                 } {
@@ -184,7 +184,7 @@ mod tests {
             (service1, _tx1, rx1, event_rx1, _close_tx1),
             (mut service2, _tx2, _rx2, event_rx2, _close_tx2),
         ) = build_test_network_pair(executor.clone());
-        let msg_peer_id = service1.identify();
+        let msg_peer_id = service1.identify().clone();
         let receive_fut = async move {
             let mut rx1 = rx1.fuse();
             loop {
@@ -209,14 +209,15 @@ mod tests {
             let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
             let service2_clone = service2.clone();
 
+            let peer_id = msg_peer_id.clone();
             let fut = async move {
                 assert_eq!(
-                    service2_clone.is_connected(msg_peer_id).await.unwrap(),
+                    service2_clone.is_connected(peer_id.clone()).await.unwrap(),
                     true
                 );
 
                 service2_clone
-                    .send_message(msg_peer_id, random_bytes)
+                    .send_message(peer_id, random_bytes)
                     .await
                     .unwrap();
             };
@@ -260,15 +261,15 @@ mod tests {
             assert_eq!(
                 service1
                     .0
-                    .is_connected(_service2.0.identify())
+                    .is_connected(_service2.0.identify().clone())
                     .await
                     .unwrap(),
                 true
             );
-            assert_eq!(
-                AccountAddress::from_str(&hex::encode(service1.0.identify())).unwrap(),
-                service1.0.identify()
-            );
+            // assert_eq!(
+            //     AccountAddress::from_str(&hex::encode(service1.0.identify())).unwrap(),
+            //     service1.0.identify()
+            // );
         };
         _rt.block_on(fut);
     }

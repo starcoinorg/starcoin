@@ -44,6 +44,7 @@ where
     addr: Addr<NetworkActor<P>>,
     message_processor: MessageProcessor<RPCResponse>,
     tx: mpsc::UnboundedSender<NetworkMessage>,
+    peer_id: PeerId,
 }
 
 impl<P> NetworkAsyncService<P>
@@ -104,6 +105,10 @@ where
         self.tx.unbounded_send(network_message)?;
         Ok(())
     }
+
+    pub fn identify(&self) -> &PeerId {
+        &self.peer_id
+    }
 }
 
 pub struct NetworkActor<P>
@@ -144,6 +149,7 @@ where
         let message_processor = MessageProcessor::new();
         let message_processor_clone = message_processor.clone();
         let tx_clone = tx.clone();
+        let peer_id = service.identify().clone();
         let addr = NetworkActor::create(move |ctx: &mut Context<NetworkActor<P>>| {
             ctx.add_stream(rx.fuse());
             ctx.add_stream(event_rx.fuse());
@@ -160,6 +166,7 @@ where
             addr,
             message_processor,
             tx,
+            peer_id,
         }
     }
 }
@@ -369,7 +376,7 @@ mod tests {
         let (txpool1, network1, addr1, bus1) = build_network(node_config1.clone(), handle.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
-        let addr1_hex = hex::encode(addr1);
+        let addr1_hex = network1.peer_id.to_base58();
         let seed = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex);
         node_config2.network.listen =
             format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
@@ -419,7 +426,7 @@ mod tests {
             });
             info!("req :{:?}", request);
             let resp = network1
-                .send_request(addr2, request, Duration::from_secs(1))
+                .send_request(network2.identify().clone(), request, Duration::from_secs(1))
                 .await;
             info!("resp :{:?}", resp);
 
@@ -478,7 +485,7 @@ mod tests {
 
         fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
             let id = (&msg.request).get_id();
-            let peer_id = (&msg).peer_id;
+            let peer_id = (&msg).peer_id.clone();
             match msg.request {
                 RPCRequest::TestRequest(_r) => {
                     info!("request is {:?}", _r);
@@ -489,7 +496,7 @@ mod tests {
                     let network_service = self.network_service.clone();
                     let f = async move {
                         network_service
-                            .response_for(peer_id, id, RPCResponse::TestResponse(response))
+                            .response_for(peer_id.into(), id, RPCResponse::TestResponse(response))
                             .await;
                     };
                     let f = actix::fut::wrap_future(f);
