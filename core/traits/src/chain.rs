@@ -22,6 +22,11 @@ pub trait AsyncChain: Clone + std::marker::Unpin {
         self,
         parent_hash: HashValue,
     ) -> Option<BlockTemplate>;
+    async fn create_block_template_with_tx(
+        self,
+        parent_hash: Option<HashValue>,
+        txs: Vec<SignedUserTransaction>,
+    ) -> Option<BlockTemplate>;
     async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block>;
 }
 

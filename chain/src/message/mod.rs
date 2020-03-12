@@ -5,6 +5,7 @@ use crypto::HashValue;
 use types::{
     block::{Block, BlockHeader, BlockTemplate},
     startup_info::ChainInfo,
+    transaction::SignedUserTransaction,
 };
 
 #[derive(Clone)]
@@ -16,6 +17,7 @@ pub enum ChainRequest {
     GetBlockByNumber(u64),
     CreateBlockTemplate(),
     CreateBlockTemplateWithParent(HashValue), // just fot test
+    CreateBlockTemplateWithTx(Option<HashValue>, Vec<SignedUserTransaction>), // just fot test
     GetBlockByHash(HashValue),
     ConnectBlock(Block),
     GetHeadBranch(),

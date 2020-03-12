@@ -34,6 +34,7 @@ use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
+    transaction::SignedUserTransaction,
 };
 
 /// actor for block chain.
@@ -97,6 +98,15 @@ impl Handler<ChainRequest> for ChainActor {
                 //TODO get txn from txpool.
                 self.service.create_block_template(vec![]).unwrap(),
             )),
+            ChainRequest::CreateBlockTemplateWithTx(parent_hash, txs) => {
+                Ok(ChainResponse::BlockTemplate(match parent_hash {
+                    Some(hash) => self
+                        .service
+                        .create_block_template_with_parent(hash, txs)
+                        .unwrap(),
+                    None => self.service.create_block_template(txs).unwrap(),
+                }))
+            }
             ChainRequest::CreateBlockTemplateWithParent(parent_hash) => {
                 Ok(ChainResponse::BlockTemplate(
                     //TODO get txn from txpool.
@@ -256,6 +266,25 @@ impl AsyncChain for ChainActorRef {
         drop(self);
         if let ChainResponse::BlockTemplate(block_template) = address
             .send(ChainRequest::CreateBlockTemplateWithParent(parent_hash))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(block_template)
+        } else {
+            None
+        }
+    }
+
+    async fn create_block_template_with_tx(
+        self,
+        parent_hash: Option<HashValue>,
+        txs: Vec<SignedUserTransaction>,
+    ) -> Option<BlockTemplate> {
+        let address = self.address.clone();
+        drop(self);
+        if let ChainResponse::BlockTemplate(block_template) = address
+            .send(ChainRequest::CreateBlockTemplateWithTx(parent_hash, txs))
             .await
             .unwrap()
             .unwrap()

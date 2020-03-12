@@ -2,30 +2,46 @@ use super::random_block;
 use crate::{
     message::ChainRequest, AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService,
 };
-use actix::Addr;
+use actix::prelude::*;
+use actix::utils::IntervalFunc;
+use actix::{Actor, Addr, Context};
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{dummy::DummyConsensus, Consensus};
 use crypto::{hash::CryptoHash, HashValue};
+use executor::mock_executor::mock_mint_txn;
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
 use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
+use std::time::Instant;
 use std::{sync::Arc, time::Duration};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
+use types::account_address::AccountAddress;
 use types::block::Block;
+use types::transaction::SignedUserTransaction;
 
 #[test]
 fn it_works() {
     assert_eq!(2 + 2, 4);
 }
 
-async fn gen_head_chain(times: u64) -> ChainActorRef {
+fn gen_txs() -> Vec<SignedUserTransaction> {
+    let tx = mock_mint_txn(AccountAddress::random(), 100)
+        .as_signed_user_txn()
+        .unwrap()
+        .clone();
+    let mut txs = Vec::new();
+    txs.push(tx);
+    txs
+}
+
+async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
     let node_config = NodeConfig::random_for_test();
     let conf = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());
@@ -50,8 +66,12 @@ async fn gen_head_chain(times: u64) -> ChainActorRef {
     )
     .unwrap();
     if times > 0 {
-        for i in 0..times {
-            let block_template = chain.clone().create_block_template().await.unwrap();
+        for _i in 0..times {
+            let block_template = chain
+                .clone()
+                .create_block_template_with_tx(None, gen_txs())
+                .await
+                .unwrap();
             let (_sender, receiver) = oneshot::channel();
 
             let mut chain_info = chain.clone().get_chain_info().await.unwrap();
@@ -67,6 +87,9 @@ async fn gen_head_chain(times: u64) -> ChainActorRef {
                 DummyConsensus::create_block(conf.clone(), &block_chain, block_template, receiver)
                     .unwrap();
             chain.clone().try_connect(block).await.unwrap();
+            if delay {
+                Delay::new(Duration::from_millis(1000)).await;
+            }
         }
     }
 
@@ -76,20 +99,22 @@ async fn gen_head_chain(times: u64) -> ChainActorRef {
 #[actix_rt::test]
 async fn test_block_chain_head() {
     let times = 5;
-    let chain = gen_head_chain(times).await;
+    let chain = gen_head_chain(times, false).await;
     assert_eq!(chain.current_header().await.unwrap().number(), times);
 }
 
 #[actix_rt::test]
 async fn test_block_chain_forks() {
     let times = 5;
-    let chain = gen_head_chain(times).await;
+    let chain = gen_head_chain(times, true).await;
     let mut parent_hash = chain.clone().get_chain_info().await.unwrap().get_begin();
+
     if times > 0 {
         for i in 0..(times + 1) {
+            Delay::new(Duration::from_millis(1000)).await;
             let block = chain
                 .clone()
-                .create_block_template_with_parent(parent_hash)
+                .create_block_template_with_tx(Some(parent_hash), gen_txs())
                 .await
                 .unwrap()
                 .into_block(DummyHeader {});
@@ -106,11 +131,6 @@ async fn test_block_chain_forks() {
     }
 
     assert_eq!(chain.current_header().await.unwrap().number(), (times + 1))
-}
-
-#[actix_rt::test]
-async fn test_block_chain_rollback() {
-    // todo
 }
 
 #[stest::test]
