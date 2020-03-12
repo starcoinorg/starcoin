@@ -363,6 +363,9 @@ mod tests {
 
     #[test]
     fn test_network_with_mock() {
+        use std::thread;
+        use std::time::Duration;
+
         ::logger::init_for_test();
         let mut system = System::new("test");
         let mut rt = Runtime::new().unwrap();
@@ -375,6 +378,8 @@ mod tests {
 
         let (txpool1, network1, addr1, bus1) = build_network(node_config1.clone(), handle.clone());
 
+        thread::sleep(Duration::from_secs(1));
+
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
         let seed = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex);
@@ -384,9 +389,6 @@ mod tests {
         let node_config2 = Arc::new(node_config2);
 
         let (txpool2, network2, addr2, bus2) = build_network(node_config2.clone(), handle.clone());
-
-        use std::thread;
-        use std::time::Duration;
 
         thread::sleep(Duration::from_secs(1));
 

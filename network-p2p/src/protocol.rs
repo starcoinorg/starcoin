@@ -24,6 +24,7 @@ use std::task::Poll;
 use std::time;
 use wasm_timer::Instant;
 
+const REQUEST_TIMEOUT_SEC: u64 = 40;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
 /// Current protocol version.
@@ -96,6 +97,20 @@ pub struct PeerInfo {
     pub protocol_version: u32,
 }
 
+#[derive(Default)]
+struct PacketStats {
+    bytes_in: u64,
+    bytes_out: u64,
+    count_in: u64,
+    count_out: u64,
+}
+
+struct ContextData {
+    // All connected peers
+    peers: HashMap<PeerId, Peer>,
+    stats: HashMap<&'static str, PacketStats>,
+}
+
 pub struct Protocol {
     /// Interval at which we call `tick`.
     tick_timeout: Pin<Box<dyn Stream<Item = ()> + Send>>,
@@ -106,6 +121,7 @@ pub struct Protocol {
     peerset_handle: peerset::PeersetHandle,
     /// Handles opening the unique substream and sending and receiving raw messages.
     behaviour: GenericProto,
+    context_data: ContextData,
 }
 
 impl NetworkBehaviour for Protocol {
@@ -280,6 +296,10 @@ impl Protocol {
             important_peers,
             peerset_handle: peerset_handle.clone(),
             behaviour,
+            context_data: ContextData {
+                peers: HashMap::new(),
+                stats: HashMap::new(),
+            },
         };
 
         Ok((protocol, peerset_handle))
@@ -378,57 +398,28 @@ impl Protocol {
     /// > **Note**: This method normally doesn't have to be called except for testing purposes.
     pub fn tick(&mut self) {
         self.maintain_peers();
-        // self.light_dispatch.maintain_peers(LightDispatchIn {
-        //     behaviour: &mut self.behaviour,
-        //     peerset: self.peerset_handle.clone(),
-        // });
     }
 
     fn maintain_peers(&mut self) {
-        // let tick = Instant::now();
-        // let mut aborting = Vec::new();
-        // {
-        //     for (who, peer) in self.context_data.peers.iter() {
-        //         if peer
-        //             .block_request
-        //             .as_ref()
-        //             .map_or(false, |(t, _)| (tick - *t).as_secs() > REQUEST_TIMEOUT_SEC)
-        //         {
-        //             log!(
-        //                 target: "sync",
-        //                 if self.important_peers.contains(who) { Level::Warn } else { Level::Trace },
-        //                 "Request timeout {}", who
-        //             );
-        //             aborting.push(who.clone());
-        //         } else if peer
-        //             .obsolete_requests
-        //             .values()
-        //             .any(|t| (tick - *t).as_secs() > REQUEST_TIMEOUT_SEC)
-        //         {
-        //             log!(
-        //                 target: "sync",
-        //                 if self.important_peers.contains(who) { Level::Warn } else { Level::Trace },
-        //                 "Obsolete timeout {}", who
-        //             );
-        //             aborting.push(who.clone());
-        //         }
-        //     }
-        //     for (who, _) in self.handshaking_peers.iter().filter(|(_, handshaking)| {
-        //         (tick - handshaking.timestamp).as_secs() > REQUEST_TIMEOUT_SEC
-        //     }) {
-        //         log!(
-        //             target: "sync",
-        //             if self.important_peers.contains(who) { Level::Warn } else { Level::Trace },
-        //             "Handshake timeout {}", who
-        //         );
-        //         aborting.push(who.clone());
-        //     }
-        // }
-        //
-        // for p in aborting {
-        //     self.behaviour.disconnect_peer(&p);
-        //     self.peerset_handle.report_peer(p, rep::TIMEOUT);
-        // }
+        let tick = Instant::now();
+        let mut aborting = Vec::new();
+        {
+            for (who, _) in self.handshaking_peers.iter().filter(|(_, handshaking)| {
+                (tick - handshaking.timestamp).as_secs() > REQUEST_TIMEOUT_SEC
+            }) {
+                log!(
+                    target: "sync",
+                    if self.important_peers.contains(who) { Level::Warn } else { Level::Trace },
+                    "Handshake timeout {}", who
+                );
+                aborting.push(who.clone());
+            }
+        }
+
+        for p in aborting {
+            self.behaviour.disconnect_peer(&p);
+            self.peerset_handle.report_peer(p, rep::TIMEOUT);
+        }
     }
 
     /// Send a notification to the given peer we're connected to.
