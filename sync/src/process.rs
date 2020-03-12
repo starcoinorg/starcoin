@@ -104,7 +104,6 @@ impl Handler<RpcRequestMessage> for ProcessActor {
     type Result = Result<()>;
 
     fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
-        let id = (&msg.request).get_id();
         let mut responder = msg.responder.clone();
         let processor = self.processor.clone();
         match msg.request {
@@ -115,7 +114,6 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                     debug!("get_hash_by_number_msg");
                     Arbiter::spawn(async move {
                         let batch_hash_by_number_msg = Processor::handle_get_hash_by_number_msg(
-                            id.clone(),
                             processor.clone(),
                             get_hash_by_number_msg,
                         )
@@ -147,7 +145,6 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                                 );
 
                                 let resp = RPCResponse::BatchHeaderAndBodyMsg(
-                                    id,
                                     batch_header_msg,
                                     batch_body_msg,
                                 );
@@ -188,7 +185,6 @@ impl Processor {
     }
 
     pub async fn handle_get_hash_by_number_msg(
-        req_id: HashValue,
         processor: Arc<Processor>,
         get_hash_by_number_msg: GetHashByNumberMsg,
     ) -> BatchHashByNumberMsg {
@@ -213,7 +209,7 @@ impl Processor {
             hashs.push(hash_with_number);
         }
 
-        BatchHashByNumberMsg { req_id, hashs }
+        BatchHashByNumberMsg { hashs }
     }
 
     pub async fn handle_get_header_by_hash_msg(

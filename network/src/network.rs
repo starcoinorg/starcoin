@@ -278,17 +278,15 @@ where
                 let network_service = self.network_service.clone();
                 let task = async move {
                     let mut response = rx.next().await.unwrap();
-                    response.set_request_id(id);
-                    let peer_msg = PeerMessage::RPCResponse(response);
+                    let peer_msg = PeerMessage::RPCResponse(id, response);
                     let data = peer_msg.encode().unwrap();
                     network_service.send_message(peer_id, data).await.unwrap();
                 };
                 self.handle.spawn(task);
                 info!("receive rpc request");
             }
-            PeerMessage::RPCResponse(response) => {
+            PeerMessage::RPCResponse(id, response) => {
                 info!("do response.");
-                let id = response.get_id();
                 self.message_processor.send_response(id, response).await?;
             }
         }

@@ -32,7 +32,7 @@ pub enum PeerMessage {
     Block(Block),
     LatestStateMsg(LatestStateMsg),
     RPCRequest(RPCRequest),
-    RPCResponse(RPCResponse),
+    RPCResponse(HashValue, RPCResponse),
 }
 
 #[rtype(result = "Result<()>")]
@@ -79,27 +79,7 @@ pub struct TestResponse {
 pub enum RPCResponse {
     TestResponse(TestResponse),
     BatchHashByNumberMsg(BatchHashByNumberMsg),
-    BatchHeaderAndBodyMsg(HashValue, BatchHeaderMsg, BatchBodyMsg),
-}
-
-impl RPCMessage for RPCResponse {
-    fn get_id(&self) -> HashValue {
-        match self {
-            RPCResponse::TestResponse(r) => r.id,
-            RPCResponse::BatchHashByNumberMsg(resp) => resp.req_id,
-            RPCResponse::BatchHeaderAndBodyMsg(req_id, headers, bodies) => req_id.clone(),
-        }
-    }
-}
-
-impl RPCResponse {
-    pub fn set_request_id(&mut self, id: HashValue) {
-        match self {
-            RPCResponse::TestResponse(r) => r.id = id,
-            RPCResponse::BatchHashByNumberMsg(resp) => resp.req_id = id,
-            RPCResponse::BatchHeaderAndBodyMsg(mut req_id, headers, bodies) => req_id = id,
-        };
-    }
+    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
 }
 
 #[derive(Clone, Hash, Debug)]

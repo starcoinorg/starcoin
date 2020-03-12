@@ -83,7 +83,6 @@ impl Ord for HashWithNumber {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct BatchHashByNumberMsg {
-    pub req_id: HashValue,
     pub hashs: Vec<HashWithNumber>,
 }
 

@@ -262,19 +262,16 @@ impl DownloadActor {
                                             ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
                                         );
 
-                                        if let RPCResponse::BatchHeaderAndBodyMsg(
-                                            _,
-                                            headers,
-                                            bodies,
-                                        ) = network
-                                            .clone()
-                                            .send_request(
-                                                best_peer.id.clone().into(),
-                                                get_data_by_hash_req.clone(),
-                                                do_duration(DELAY_TIME),
-                                            )
-                                            .await
-                                            .unwrap()
+                                        if let RPCResponse::BatchHeaderAndBodyMsg(headers, bodies) =
+                                            network
+                                                .clone()
+                                                .send_request(
+                                                    best_peer.id.clone().into(),
+                                                    get_data_by_hash_req.clone(),
+                                                    do_duration(DELAY_TIME),
+                                                )
+                                                .await
+                                                .unwrap()
                                         {
                                             Downloader::do_blocks(
                                                 downloader.clone(),

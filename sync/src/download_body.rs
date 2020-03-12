@@ -64,7 +64,7 @@ impl Handler<SyncBodyEvent> for DownloadBodyActor {
         let headers = event.headers;
         Arbiter::spawn(async move {
             for peer in peers {
-                if let RPCResponse::BatchHeaderAndBodyMsg(_, _, bodies) = network
+                if let RPCResponse::BatchHeaderAndBodyMsg(_, bodies) = network
                     .clone()
                     .send_request(
                         peer.id.clone().into(),
