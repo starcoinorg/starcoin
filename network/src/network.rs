@@ -32,6 +32,7 @@ use types::{account_address::AccountAddress, peer_info::PeerInfo};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 use actix::fut::wrap_future;
+use futures_timer::Delay;
 use std::time::Duration;
 use tokio::runtime::Handle;
 
@@ -87,7 +88,7 @@ where
         &self,
         peer_id: PeerId,
         message: RPCRequest,
-        _time_out: Duration,
+        time_out: Duration,
     ) -> Result<RPCResponse> {
         let request_id = message.get_id();
         let peer_msg = PeerMessage::RPCRequest(message);
@@ -99,8 +100,17 @@ where
         self.tx.unbounded_send(network_message)?;
         let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
-        self.message_processor.add_future(request_id, tx).await;
+        self.message_processor
+            .add_future(request_id.clone(), tx)
+            .await;
         info!("send request to {}", peer_id);
+        let processor = self.message_processor.clone();
+        let task = async move {
+            Delay::new(time_out).await;
+            processor.remove_future(request_id);
+        };
+
+        self.handle.spawn(task);
         message_future.await
     }
 
