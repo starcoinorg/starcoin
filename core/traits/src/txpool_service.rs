@@ -9,7 +9,7 @@ use types::transaction;
 use types::transaction::SignedUserTransaction;
 
 #[async_trait::async_trait]
-pub trait TxPoolAsyncService: Clone + std::marker::Unpin {
+pub trait TxPoolAsyncService: Clone + std::marker::Unpin + Send + Sync {
     /// TODO: should be deprecated, use add_txns instead.
     async fn add(self, txn: SignedUserTransaction) -> Result<bool>;
 
