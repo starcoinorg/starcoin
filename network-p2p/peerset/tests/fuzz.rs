@@ -18,7 +18,7 @@ use futures::prelude::*;
 use libp2p::PeerId;
 use rand::distributions::{Distribution, Uniform, WeightedIndex};
 use rand::seq::IteratorRandom;
-use sc_peerset::{IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange};
+use peerset::{IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange};
 use std::{collections::HashMap, collections::HashSet, iter, pin::Pin, task::Poll};
 
 #[test]
