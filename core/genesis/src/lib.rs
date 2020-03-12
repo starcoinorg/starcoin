@@ -4,6 +4,7 @@
 use anyhow::Result;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::NodeConfig;
+use starcoin_consensus::Consensus;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_executor::TransactionExecutor;
 use starcoin_logger::prelude::*;
@@ -27,9 +28,10 @@ pub struct Genesis {
 }
 
 impl Genesis {
-    pub fn new<E, S>(config: Arc<NodeConfig>, storage: Arc<S>) -> Result<Self>
+    pub fn new<E, C, S>(config: Arc<NodeConfig>, storage: Arc<S>) -> Result<Self>
     where
         E: TransactionExecutor + 'static,
+        C: Consensus + 'static,
         S: BlockChainStore + 'static,
     {
         //TODO init genesis by network
@@ -48,7 +50,8 @@ impl Genesis {
         let accumulator = MerkleAccumulator::new(vec![], 0, 0, storage.clone())?;
         let txn_info_hash = transaction_info.crypto_hash();
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
-        let block = Block::genesis_block(accumulator_root, state_root);
+        let consensus_header = C::init_genesis_header(config.clone());
+        let block = Block::genesis_block(accumulator_root, state_root, consensus_header);
         assert_eq!(block.header().number(), 0);
         BlockStorageOp::commit_block(storage.as_ref(), block.clone())?;
         let mut hash_number = Vec::new();
@@ -84,6 +87,7 @@ impl Genesis {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_consensus::dummy::DummyConsensus;
     use starcoin_executor::mock_executor::MockExecutor;
 
     #[stest::test]
@@ -91,8 +95,9 @@ mod tests {
         let config = Arc::new(NodeConfig::default());
         let repo = Arc::new(MemoryStorage::new());
         let storage = Arc::new(StarcoinStorage::new(repo)?);
-        let genesis = Genesis::new::<MockExecutor, StarcoinStorage>(config, storage)
-            .expect("init genesis must success.");
+        let genesis =
+            Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(config, storage)
+                .expect("init genesis must success.");
         info!("genesis: {:?}", genesis);
         Ok(())
     }

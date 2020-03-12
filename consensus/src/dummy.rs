@@ -3,8 +3,10 @@
 
 use crate::{Consensus, ConsensusHeader};
 use anyhow::{Error, Result};
+use config::NodeConfig;
 use futures::channel::oneshot::Receiver;
 use std::convert::TryFrom;
+use std::sync::Arc;
 use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
 
@@ -29,14 +31,23 @@ impl Into<Vec<u8>> for DummyHeader {
 pub struct DummyConsensus {}
 
 impl Consensus for DummyConsensus {
-    fn verify_header(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+    fn init_genesis_header(_config: Arc<NodeConfig>) -> Vec<u8> {
+        vec![]
+    }
+
+    fn verify_header(
+        _config: Arc<NodeConfig>,
+        reader: &dyn ChainReader,
+        header: &BlockHeader,
+    ) -> Result<()> {
         Ok(())
     }
 
     fn create_block(
-        reader: &dyn ChainReader,
+        _config: Arc<NodeConfig>,
+        _reader: &dyn ChainReader,
         block_template: BlockTemplate,
-        cancel: Receiver<()>,
+        _cancel: Receiver<()>,
     ) -> Result<Block> {
         Ok(block_template.into_block(DummyHeader {}))
     }

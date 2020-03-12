@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use libp2p::identity::PublicKey;
+use libp2p::multihash;
 use serde::{de::Error as _, de::Unexpected, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::fmt;
@@ -12,6 +14,44 @@ pub struct PeerId(libp2p::PeerId);
 impl PeerId {
     pub fn new(peer_id: libp2p::PeerId) -> Self {
         Self(peer_id)
+    }
+
+    /// Builds a `PeerId` from a public key.
+    pub fn from_public_key(key: PublicKey) -> PeerId {
+        Self::new(libp2p::PeerId::from_public_key(key))
+    }
+
+    /// Checks whether `data` is a valid `PeerId`. If so, returns the `PeerId`. If not, returns
+    /// back the data as an error.
+    pub fn from_bytes(data: Vec<u8>) -> Result<PeerId, Vec<u8>> {
+        Ok(Self::new(libp2p::PeerId::from_bytes(data)?))
+    }
+
+    /// Turns a `Multihash` into a `PeerId`. If the multihash doesn't use the correct algorithm,
+    /// returns back the data as an error.
+    pub fn from_multihash(data: multihash::Multihash) -> Result<PeerId, multihash::Multihash> {
+        Ok(Self::new(libp2p::PeerId::from_multihash(data)?))
+    }
+
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.0.into_bytes()
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    /// Returns a base-58 encoded string of this `PeerId`.
+    pub fn to_base58(&self) -> String {
+        self.0.to_base58()
+    }
+
+    /// Checks whether the public key passed as parameter matches the public key of this `PeerId`.
+    ///
+    /// Returns `None` if this `PeerId`s hash algorithm is not supported when encoding the
+    /// given public key, otherwise `Some` boolean as the result of an equality check.
+    pub fn is_public_key(&self, public_key: &PublicKey) -> Option<bool> {
+        self.0.is_public_key(public_key)
     }
 
     pub fn random() -> Self {

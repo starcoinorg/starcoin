@@ -4789,6 +4789,7 @@ dependencies = [
  "serde",
  "starcoin-accumulator",
  "starcoin-config",
+ "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-logger",
