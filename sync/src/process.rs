@@ -107,7 +107,6 @@ impl Handler<RpcRequestMessage> for ProcessActor {
         let id = (&msg.request).get_id();
         let mut responder = msg.responder.clone();
         let processor = self.processor.clone();
-        let network = self.network.clone();
         match msg.request {
             RPCRequest::TestRequest(_r) => {}
             RPCRequest::GetHashByNumberMsg(process_msg)
