@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    //    executor::Executor,
+    executor::Executor,
     mock_executor::{
         get_signed_txn, mock_mint_txn, mock_transfer_txn, mock_txn, MockChainState, MockExecutor,
     },
@@ -84,14 +84,14 @@ fn test_validate_txn() {
     assert_eq!(None, output);
 }
 
-//#[stest::test]
-//fn test_execute_txn_with_starcoin_vm() {
-//    let chain_state = MockChainState::new();
-//    //let txn = encode_mint_transaction(gen_address(0), 100);
-//    let txn = mock_txn();
-//    let config = VMConfig::default();
-//    info!("invoke Executor::execute_transaction");
-//    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
-//
-//    assert_eq!(KEEP_STATUS.clone(), *output.status());
-//}
+#[stest::test]
+fn test_execute_txn_with_starcoin_vm() {
+    let chain_state = MockChainState::new();
+    //let txn = encode_mint_transaction(gen_address(0), 100);
+    let txn = mock_txn();
+    let config = VMConfig::default();
+    info!("invoke Executor::execute_transaction");
+    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
+
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
+}

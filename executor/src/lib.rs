@@ -11,7 +11,7 @@ use types::{
     vm_error::VMStatus,
 };
 
-//pub mod executor;
+pub mod executor;
 pub mod executor_test;
 pub mod mock_executor;
 

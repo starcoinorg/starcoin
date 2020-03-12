@@ -30,4 +30,5 @@ members = [
     "network-p2p/peerset",
     "network",
     "vm/vm-runtime",
+    "vm/stdlib",
 ]
