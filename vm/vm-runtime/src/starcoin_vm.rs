@@ -49,6 +49,7 @@ use vm::{
     transaction_metadata::TransactionMetadata,
 };
 
+
 #[derive(Clone)]
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
@@ -111,7 +112,7 @@ impl StarcoinVM {
         remote_cache: &mut BlockDataCache<'_>,
         txn_data: &TransactionMetadata,
         payload: VerifiedTranscationPayload,
-    ) -> TransactionOutput {
+    ) -> LibraTransactionOutput {
         info!("execute verified payload");
         let mut ctx = TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
         let mut failed_gas_left = GasUnits::new(0);
@@ -123,7 +124,7 @@ impl StarcoinVM {
                 ////////
                 let gas_schedule = match self.get_gas_schedule() {
                     Ok(s) => s,
-                    Err(e) => return discard_error_output(e),
+                    Err(e) => return discard_libra_error_output(TransactionHelper::to_libra_VMStatus(e)),
                 };
                 info!("invoke MoveVM::execute_script()");
                 self.move_vm.execute_script(
@@ -154,7 +155,7 @@ impl StarcoinVM {
         });
         // TODO convert to starcoin type
         info!("{:?}", output);
-        TransactionHelper::to_starcoin_TransactionOutput(output)
+        output
     }
 
     pub fn execute_transaction(
@@ -162,7 +163,7 @@ impl StarcoinVM {
         chain_state: &dyn traits::ChainState,
         txn: Transaction,
     ) -> TransactionOutput {
-        let state_store = StateStore::new(chain_state);
+        let mut state_store = StateStore::new(chain_state);
         info!("new remote cache");
         let mut data_cache = BlockDataCache::new(&state_store);
         self.load_gas_schedule(&data_cache);
@@ -189,15 +190,14 @@ impl StarcoinVM {
                             }
                             Err(e) => {
                                 info!("we are here!!!");
-                                discard_error_output(e)
+                                discard_libra_error_output(TransactionHelper::to_libra_VMStatus(e))
                             }
                         };
 
-                        if let TransactionStatus::Keep(_) = result.status() {
-                            //ToDo: when to write back the state changes?
-                            //                            data_cache.push_write_set(result.write_set())
+                        if let LibraTransactionStatus::Keep(_) = result.status() {
+                            state_store.add_write_set(result.write_set())
                         };
-                        result
+                        TransactionHelper::to_starcoin_TransactionOutput(result)
                     }
                     Err(e) => {
                         info!("we are here!!!");

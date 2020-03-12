@@ -4,7 +4,10 @@
 use crate::access_path_helper::AccessPathHelper;
 use anyhow::{Error, Result};
 use libra_state_view::StateView;
-use libra_types::access_path::AccessPath as LibraAccessPath;
+use libra_types::{
+    access_path::AccessPath as LibraAccessPath,
+    write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet},
+};
 use logger::prelude::*;
 use move_vm_state::data_cache::{BlockDataCache, RemoteCache};
 use std::sync::Arc;
@@ -31,14 +34,14 @@ impl<'txn> StateStore<'txn> {
     }
 
     /// Adds a [`WriteSet`] to state store.
-    pub fn add_write_set(&mut self, write_set: &WriteSet) {
+    pub fn add_write_set(&mut self, write_set: &LibraWriteSet) {
         for (access_path, write_op) in write_set {
             match write_op {
-                WriteOp::Value(blob) => {
-                    self.set(access_path.clone(), blob.clone());
+                LibraWriteOp::Value(blob) => {
+                    self.set(AccessPath::from(access_path.clone()), blob.clone());
                 }
-                WriteOp::Deletion => {
-                    self.remove(access_path);
+                LibraWriteOp::Deletion => {
+                    self.remove(&AccessPath::from(access_path.clone()));
                 }
             }
         }

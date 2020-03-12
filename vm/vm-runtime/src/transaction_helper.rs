@@ -95,6 +95,14 @@ impl TransactionHelper {
             message: status.message,
         }
     }
+    pub fn to_libra_VMStatus(status: VMStatus) -> LibraVMStatus {
+        let major: u64 = status.major_status.into();
+        LibraVMStatus {
+            major_status: LibraStatusCode::try_from(major).unwrap(),
+            sub_status: status.sub_status,
+            message: status.message,
+        }
+    }
     pub fn to_starcoin_TransactionStatus(status: &LibraTransactionStatus) -> TransactionStatus {
         match status {
             LibraTransactionStatus::Discard(vm_status) => {

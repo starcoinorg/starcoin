@@ -29,6 +29,8 @@ use types::{
     vm_error::{StatusCode, VMStatus},
 };
 use vm_runtime::mock_vm::{encode_mint_transaction, encode_transfer_transaction, MockVM};
+use stdlib::transaction_scripts::{EMPTY_TXN};
+
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
@@ -189,7 +191,7 @@ pub fn get_signed_txn(
 }
 
 pub fn mock_txn() -> Transaction {
-    let empty_script = StarcoinCompiler::compile_script("main() {return;}");
+    let empty_script = EMPTY_TXN.clone();
     Transaction::UserTransaction(SignedUserTransaction::mock_from(empty_script))
 }
 

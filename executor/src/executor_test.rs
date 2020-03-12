@@ -27,6 +27,7 @@ use vm_runtime::mock_vm::{
     encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, DISCARD_STATUS,
     KEEP_STATUS,
 };
+use stdlib::transaction_scripts::{EMPTY_TXN};
 
 #[stest::test]
 fn test_execute_mint_txn() {
