@@ -64,7 +64,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
                     endpoint,
                     libp2p::core::upgrade::Version::V1,
                 )
-                    .map_ok(|muxer| (peer_id, libp2p::core::muxing::StreamMuxerBox::new(muxer)))
+                .map_ok(|muxer| (peer_id, libp2p::core::muxing::StreamMuxerBox::new(muxer)))
             })
             .timeout(Duration::from_secs(20))
             .map_err(|err| io::Error::new(io::ErrorKind::Other, err))
@@ -180,7 +180,7 @@ impl NetworkBehaviour for CustomProtoWithAddr {
             <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
             Self::OutEvent
         >
-    > {
+>{
         self.inner.poll(cx, params)
     }
 
@@ -244,10 +244,7 @@ fn two_nodes_transfer_lots_of_packets() {
             match ready!(service1.poll_next_unpin(cx)) {
                 Some(GenericProtoOut::CustomProtocolOpen { peer_id, .. }) => {
                     for n in 0..NUM_PACKETS {
-                        service1.send_packet(
-                            &peer_id,
-                            vec![],
-                        );
+                        service1.send_packet(&peer_id, vec![]);
                     }
                 }
                 _ => panic!(),
@@ -260,11 +257,11 @@ fn two_nodes_transfer_lots_of_packets() {
         match ready!(service2.poll_next_unpin(cx)) {
             Some(GenericProtoOut::CustomProtocolOpen { .. }) => {}
             Some(GenericProtoOut::CustomMessage { message, .. }) => {
-                        packet_counter += 1;
-                        if packet_counter == NUM_PACKETS {
-                            return Poll::Ready(());
-                        }
-                    }
+                packet_counter += 1;
+                if packet_counter == NUM_PACKETS {
+                    return Poll::Ready(());
+                }
+            }
             _ => panic!(),
         }
     });
@@ -422,7 +419,7 @@ fn reconnect_after_disconnect() {
             Poll::Pending
         }
     }))
-        .unwrap();
+    .unwrap();
 
     // Do a second 3-seconds run to make sure we don't get disconnected immediately again.
     let mut delay = futures_timer::Delay::new(Duration::from_secs(3));
@@ -443,5 +440,5 @@ fn reconnect_after_disconnect() {
             Poll::Pending
         }
     }))
-        .unwrap();
+    .unwrap();
 }
