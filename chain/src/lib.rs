@@ -6,7 +6,6 @@ mod chain;
 pub use chain::BlockChain;
 
 pub mod chain_service;
-pub mod mem_chain;
 pub mod message;
 
 use crate::chain_service::ChainServiceImpl;

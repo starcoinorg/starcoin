@@ -150,11 +150,7 @@ impl StarcoinVM {
         })
         .unwrap_or_else(|err| {
             let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
-            failed_transaction_output(
-                &mut gas_free_ctx,
-                txn_data,
-                err,
-            )
+            failed_transaction_output(&mut gas_free_ctx, txn_data, err)
         });
         // TODO convert to starcoin type
         info!("{:?}", output);
@@ -273,9 +269,9 @@ pub fn failed_transaction_output(
     error_code: LibraVMStatus,
 ) -> LibraTransactionOutput {
     match LibraTransactionStatus::from(error_code) {
-        LibraTransactionStatus::Keep(status) =>
-            get_transaction_output(ctx, txn_data, status)
-            .unwrap_or_else(discard_libra_error_output),
+        LibraTransactionStatus::Keep(status) => {
+            get_transaction_output(ctx, txn_data, status).unwrap_or_else(discard_libra_error_output)
+        }
         LibraTransactionStatus::Discard(status) => discard_libra_error_output(status),
         _ => unreachable!(),
     }
