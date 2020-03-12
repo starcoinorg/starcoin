@@ -38,7 +38,7 @@ impl BlockInfoStore {
     }
 
     pub fn save(&self, block_info: BlockInfo) -> Result<()> {
-        self.store.put(block_info.id(), block_info)
+        self.store.put(block_info.block_id, block_info)
     }
 
     pub fn get(&self, hash_value: HashValue) -> Result<Option<BlockInfo>> {

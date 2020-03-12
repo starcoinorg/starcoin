@@ -5,7 +5,6 @@ use crate::block::{Block, BlockHeader, BlockNumber};
 use anyhow::Result;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::AccumulatorInfo;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};

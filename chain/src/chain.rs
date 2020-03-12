@@ -26,7 +26,7 @@ use traits::{
 };
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate, BLOCK_INFO_DEFAULT_ID},
     block_metadata::BlockMetadata,
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
@@ -73,8 +73,8 @@ where
             ))?;
         let block_info = match storage.clone().get_block_info(head_block_hash) {
             Ok(Some(block_info_1)) => block_info_1,
-            Err(e) => BlockInfo::new(vec![], 0, 0),
-            _ => BlockInfo::new(vec![], 0, 0),
+            Err(e) => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
+            _ => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
         };
 
         let state_root = head.header().state_root();
@@ -105,7 +105,6 @@ where
         first_leaf_idx: u64,
     ) -> Result<()> {
         ensure!(leaves.len() > 0, "invalid leaves.");
-        info!("leaves :{:?}", leaves);
         leaves.iter().enumerate().for_each(|(i, hash)| {
             let leaf_index = first_leaf_idx + i as u64;
             let proof = self.accumulator.get_proof(leaf_index).unwrap().unwrap();
@@ -122,8 +121,8 @@ where
     fn get_block_info(&self, block_id: HashValue) -> BlockInfo {
         let block_info = match self.storage.get_block_info(block_id) {
             Ok(Some(block_info_1)) => block_info_1,
-            Err(e) => BlockInfo::new(vec![], 0, 0),
-            _ => BlockInfo::new(vec![], 0, 0),
+            Err(e) => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
+            _ => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
         };
         block_info
     }
@@ -205,6 +204,11 @@ where
         let (accumulator_root, first_leaf_idx) =
             accumulator.append_only_cache(&transaction_hash).unwrap();
         //Fixme proof verify
+        transaction_hash.iter().enumerate().for_each(|(i, hash)| {
+            let leaf_index = first_leaf_idx + i as u64;
+            let proof = accumulator.get_proof(leaf_index).unwrap().unwrap();
+            proof.verify(accumulator_root, *hash, leaf_index).unwrap();
+        });
         //TODO execute txns and computer state.
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -367,8 +371,9 @@ where
         self.save_block(&block);
         chain_state.flush();
         self.chain_info.append(&block.header());
-        self.head = block;
+        self.head = block.clone();
         self.save_block_info(BlockInfo::new(
+            header.id(),
             self.accumulator.get_frozen_subtree_roots().unwrap(),
             self.accumulator.num_leaves(),
             self.accumulator.num_nodes(),

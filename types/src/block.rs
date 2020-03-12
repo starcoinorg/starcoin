@@ -7,7 +7,9 @@ use crate::transaction::SignedUserTransaction;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
 use crate::state_set::ChainStateSet;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::create_literal_hash;
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
 
@@ -266,10 +268,16 @@ impl Block {
     }
 }
 
+/// Default ID of `BlockInfo`.
+pub static BLOCK_INFO_DEFAULT_ID: Lazy<HashValue> =
+    Lazy::new(|| create_literal_hash("BLOCK_INFO_DEFAULT_ID"));
+
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
 pub struct BlockInfo {
+    /// Block id
+    pub block_id: HashValue,
     /// Frozen subtree roots of this accumulator.
     pub frozen_subtree_roots: Vec<HashValue>,
     /// The total number of leaves in this accumulator.
@@ -279,14 +287,20 @@ pub struct BlockInfo {
 }
 
 impl BlockInfo {
-    pub fn new(frozen_subtree_roots: Vec<HashValue>, num_leaves: u64, num_nodes: u64) -> Self {
+    pub fn new(
+        block_id: HashValue,
+        frozen_subtree_roots: Vec<HashValue>,
+        num_leaves: u64,
+        num_nodes: u64,
+    ) -> Self {
         Self {
+            block_id,
             frozen_subtree_roots,
             num_leaves,
             num_nodes,
         }
     }
-    pub fn into_inner(self) -> (Vec<HashValue>, u64, u64) {
+    pub fn into_inner(self) -> (HashValue, Vec<HashValue>, u64, u64) {
         self.into()
     }
 
@@ -295,9 +309,14 @@ impl BlockInfo {
     }
 }
 
-impl Into<(Vec<HashValue>, u64, u64)> for BlockInfo {
-    fn into(self) -> (Vec<HashValue>, u64, u64) {
-        (self.frozen_subtree_roots, self.num_leaves, self.num_nodes)
+impl Into<(HashValue, Vec<HashValue>, u64, u64)> for BlockInfo {
+    fn into(self) -> (HashValue, Vec<HashValue>, u64, u64) {
+        (
+            self.block_id,
+            self.frozen_subtree_roots,
+            self.num_leaves,
+            self.num_nodes,
+        )
     }
 }
 

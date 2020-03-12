@@ -12,6 +12,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{
     memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage,
 };
+use starcoin_types::block::BlockInfo;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, state_set::ChainStateSet, transaction::Transaction};
@@ -59,6 +60,13 @@ impl Genesis {
         assert_eq!((block.header().number() + 1), hash_number.len() as u64);
         let head = ChainInfo::new(block.header(), block.header(), hash_number);
         let startup_info = StartupInfo::new(head, vec![]);
+        //save block info for accumulator init
+        storage.clone().save_block_info(BlockInfo::new(
+            block.header().id(),
+            accumulator.get_frozen_subtree_roots().unwrap(),
+            accumulator.num_leaves(),
+            accumulator.num_nodes(),
+        ));
         Ok(Self {
             transaction,
             transaction_info,

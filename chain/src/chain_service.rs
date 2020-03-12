@@ -12,7 +12,7 @@ use executor::TransactionExecutor;
 use futures_locks::RwLock;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
-use starcoin_accumulator::{Accumulator, AccumulatorInfo, AccumulatorNodeStore};
+use starcoin_accumulator::{Accumulator, AccumulatorNodeStore};
 use starcoin_statedb::ChainStateDB;
 use state_tree::StateNodeStore;
 use std::cell::RefCell;

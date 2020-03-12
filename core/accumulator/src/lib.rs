@@ -5,7 +5,7 @@ use anyhow::bail;
 use anyhow::{ensure, Error, Result};
 use mirai_annotations::*;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::HashValue;
 
 #[cfg(test)]
 mod accumulator_test;
@@ -92,47 +92,6 @@ impl AccumulatorProof {
     }
 }
 
-#[derive(Default, Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
-pub struct AccumulatorInfo {
-    pub frozen_subtree_roots: Vec<HashValue>,
-    /// The total number of leaves in this accumulator.
-    pub num_leaves: u64,
-    /// The total number of nodes in this accumulator.
-    pub num_nodes: u64,
-    /// The root hash of this accumulator.
-    pub root_hash: HashValue,
-}
-
-impl AccumulatorInfo {
-    pub fn new(
-        frozen_subtree_roots: Vec<HashValue>,
-        num_leaves: u64,
-        num_nodes: u64,
-        root_hash: HashValue,
-    ) -> Self {
-        Self {
-            frozen_subtree_roots,
-            num_leaves,
-            num_nodes,
-            root_hash,
-        }
-    }
-    pub fn into_inner(self) -> (Vec<HashValue>, u64, u64, HashValue) {
-        self.into()
-    }
-}
-
-impl Into<(Vec<HashValue>, u64, u64, HashValue)> for AccumulatorInfo {
-    fn into(self) -> (Vec<HashValue>, u64, u64, HashValue) {
-        (
-            self.frozen_subtree_roots,
-            self.num_leaves,
-            self.num_nodes,
-            self.root_hash,
-        )
-    }
-}
-
 /// accumulator method define
 pub trait Accumulator {
     /// Append leaves and return new root
@@ -183,7 +142,10 @@ pub struct MerkleAccumulator {
 }
 
 pub struct AccumulatorCache {
+    /// forzen subtree roots hashes.
     frozen_subtree_roots: RefCell<Vec<HashValue>>,
+    /// index cache for node_index map to hash value.
+    index_cache: RefCell<HashMap<NodeIndex, HashValue>>,
     /// The total number of leaves in this accumulator.
     num_leaves: LeafCount,
     /// The total number of nodes in this accumulator.
@@ -204,6 +166,7 @@ impl AccumulatorCache {
     ) -> Self {
         Self {
             frozen_subtree_roots: RefCell::new(frozen_subtree_roots),
+            index_cache: RefCell::new(HashMap::new()),
             num_leaves,
             num_nodes,
             root_hash,
@@ -230,7 +193,6 @@ impl AccumulatorCache {
         let mut new_num_nodes = self.num_nodes;
         let root_level = NodeIndex::root_level_from_leaf_count(last_new_leaf_count);
         let mut to_freeze = Vec::with_capacity(Self::max_to_freeze(num_new_leaves, root_level));
-
         // Iterate over the new leaves, adding them to to_freeze and then adding any frozen parents
         // when right children are encountered.  This has the effect of creating frozen nodes in
         // perfect post-order, which can be used as a strictly increasing append only index for
@@ -244,6 +206,7 @@ impl AccumulatorCache {
             let leaf_pos = NodeIndex::from_leaf_index(self.num_leaves + leaf_offset as LeafCount);
             let mut hash = *leaf;
             to_freeze.push(AccumulatorNode::new_leaf(leaf_pos, hash));
+            self.index_cache.borrow_mut().insert(leaf_pos, hash);
             new_num_nodes += 1;
             let mut pos = leaf_pos;
             let mut internal_node = AccumulatorNode::Empty;
@@ -269,6 +232,7 @@ impl AccumulatorCache {
                 };
                 pos = pos.parent();
                 to_freeze.push(internal_node);
+                self.index_cache.borrow_mut().insert(pos, hash);
                 new_num_nodes += 1;
             }
             // The node remaining must be a left child, possibly the root of a complete binary tree.
@@ -329,14 +293,19 @@ impl AccumulatorCache {
             .delete_larger_index(leaf_index, self.num_nodes);
 
         // update self frozen_subtree_roots
-        // for hash in larger_nodes {
-        //     let mut frozen_subtree_roots = self.frozen_subtree_roots.borrow_mut().to_vec();
-        //     let pos = frozen_subtree_roots
-        //         .iter()
-        //         .position(|x| *x == hash)
-        //         .unwrap();
-        //     frozen_subtree_roots.remove(pos);
-        // }
+        let mut frozen_subtree_roots = self.frozen_subtree_roots.borrow_mut().to_vec();
+        for hash in larger_nodes {
+            let pos = frozen_subtree_roots
+                .iter()
+                .position(|x| *x == hash)
+                .unwrap();
+            frozen_subtree_roots.remove(pos);
+        }
+        self.frozen_subtree_roots = RefCell::from(frozen_subtree_roots);
+        // update index cache
+        for index in leaf_index..self.num_nodes {
+            self.index_cache.borrow_mut().remove(&NodeIndex::new(index));
+        }
         //update self leaves number
         self.num_leaves = NodeIndex::leaves_count_end_from_index(leaf_index);
 
@@ -458,10 +427,17 @@ impl AccumulatorCache {
         if node_index.is_placeholder(idx) {
             Ok(*ACCUMULATOR_PLACEHOLDER_HASH)
         } else if node_index.is_freezable(idx) {
-            let node = self.node_store.get(node_index).unwrap();
-            match node {
-                Some(acc_node) => Ok(acc_node.hash()),
-                None => bail!("node is null: {:?}", node_index),
+            // first read from cache
+            match self.index_cache.borrow().get(&node_index) {
+                Some(hash) => Ok(*hash),
+                None => {
+                    // read from storage
+                    let node = self.node_store.get(node_index).unwrap();
+                    match node {
+                        Some(acc_node) => Ok(acc_node.hash()),
+                        None => bail!("node is null: {:?}", node_index),
+                    }
+                }
             }
         } else {
             // non-frozen non-placeholder node
@@ -493,15 +469,6 @@ impl AccumulatorCache {
         }
         Ok(hash_vec)
     }
-
-    pub fn get_info(&self) -> AccumulatorInfo {
-        AccumulatorInfo::new(
-            self.frozen_subtree_roots.borrow().clone(),
-            self.num_leaves,
-            self.num_nodes,
-            self.root_hash,
-        )
-    }
 }
 
 impl MerkleAccumulator {
@@ -523,20 +490,6 @@ impl MerkleAccumulator {
             )),
             node_store: node_store.clone(),
         })
-    }
-
-    /// Reconstruct from accumulator_info
-    pub fn form_accumulator_info(
-        info: AccumulatorInfo,
-        node_store: Arc<dyn AccumulatorNodeStore>,
-    ) -> Self {
-        Self::new(
-            info.frozen_subtree_roots,
-            info.num_leaves,
-            info.num_nodes,
-            node_store.clone(),
-        )
-        .unwrap()
     }
 
     /// Appends one leaf. This will update `frozen_subtree_roots` to store new frozen root nodes
@@ -607,10 +560,6 @@ impl MerkleAccumulator {
         }
 
         current_hash
-    }
-
-    pub fn get_info(&self) -> AccumulatorInfo {
-        self.cache.lock().unwrap().get_info()
     }
 }
 
