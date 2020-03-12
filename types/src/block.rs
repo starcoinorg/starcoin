@@ -132,7 +132,11 @@ impl BlockHeader {
         }
     }
 
-    pub fn genesis_block_header(accumulator_root: HashValue, state_root: HashValue) -> Self {
+    pub fn genesis_block_header(
+        accumulator_root: HashValue,
+        state_root: HashValue,
+        consensus_header: Vec<u8>,
+    ) -> Self {
         Self {
             //TODO should use a placeholder hash?
             parent_hash: HashValue::zero(),
@@ -145,8 +149,7 @@ impl BlockHeader {
             gas_used: 0,
             //TODO
             gas_limit: 0,
-            //TODO
-            consensus_header: vec![],
+            consensus_header,
         }
     }
 
@@ -248,8 +251,13 @@ impl Block {
         }
     }
 
-    pub fn genesis_block(accumulator_root: HashValue, state_root: HashValue) -> Self {
-        let header = BlockHeader::genesis_block_header(accumulator_root, state_root);
+    pub fn genesis_block(
+        accumulator_root: HashValue,
+        state_root: HashValue,
+        consensus_header: Vec<u8>,
+    ) -> Self {
+        let header =
+            BlockHeader::genesis_block_header(accumulator_root, state_root, consensus_header);
         //TODO put Transaction::StateSet txn to block body.
         Self {
             header,

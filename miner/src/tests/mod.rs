@@ -34,8 +34,11 @@ async fn test_miner_with_schedule_pacemaker() {
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
     let key_pair = config.network.network_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
-    let genesis =
-        Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
+    let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+        config.clone(),
+        storage.clone(),
+    )
+    .unwrap();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
         TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
@@ -103,8 +106,11 @@ async fn test_miner_with_ondemand_pacemaker() {
 
     let key_pair = config.network.network_keypair();
     let _address = AccountAddress::from_public_key(&key_pair.public_key);
-    let genesis =
-        Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone()).unwrap();
+    let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+        config.clone(),
+        storage.clone(),
+    )
+    .unwrap();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
         TxPoolRef::start(storage.clone(), best_block_id, bus.clone())

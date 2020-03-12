@@ -321,7 +321,7 @@ where
         //TODO custom verify macro
         assert_eq!(self.head.header().id(), block.header().parent_hash());
 
-        C::verify_header(self, header)?;
+        C::verify_header(self.config.clone(), self, header)?;
 
         let chain_state = &self.chain_state;
         let mut txns = block

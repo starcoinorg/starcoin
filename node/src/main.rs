@@ -58,9 +58,11 @@ async fn main() {
     let startup_info = match storage.get_startup_info().unwrap() {
         Some(startup_info) => startup_info,
         None => {
-            let genesis =
-                Genesis::new::<MockExecutor, StarcoinStorage>(node_config.clone(), storage.clone())
-                    .expect("init genesis fail.");
+            let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+                node_config.clone(),
+                storage.clone(),
+            )
+            .expect("init genesis fail.");
             genesis.startup_info().clone()
         }
     };
