@@ -19,3 +19,4 @@ starcoin-statedb = { path = "../statedb"}
 starcoin-accumulator = { path = "../accumulator"}
 stest = { path = "../../commons/stest"}
 starcoin-logger = { path = "../../commons/logger"}
+starcoin-consensus = { path = "../../consensus"}

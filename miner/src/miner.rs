@@ -5,6 +5,7 @@ use actix::prelude::*;
 use anyhow::{Chain, Result};
 use bus::{Broadcast, BusActor};
 use chain::ChainActor;
+use config::NodeConfig;
 use consensus::{Consensus, ConsensusHeader};
 use futures::channel::oneshot;
 use logger::prelude::*;
@@ -14,6 +15,7 @@ use traits::ChainReader;
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 pub fn mint<C>(
+    config: Arc<NodeConfig>,
     txns: Vec<SignedUserTransaction>,
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
@@ -24,7 +26,7 @@ where
     let block_template = chain.create_block_template(txns)?;
     let (_sender, receiver) = oneshot::channel();
     /// spawn a async task, maintain a task list, when new task coming, cancel old task.
-    let block = C::create_block(chain, block_template, receiver)?;
+    let block = C::create_block(config, chain, block_template, receiver)?;
     //println!("miner new block: {:?}", block);
     ///fire SystemEvents::MinedBlock.
     //TODO handle result.

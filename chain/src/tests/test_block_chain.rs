@@ -30,8 +30,11 @@ async fn gen_head_chain(times: u64) -> ChainActorRef<ChainActor> {
     let conf = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
-    let genesis =
-        Genesis::new::<MockExecutor, StarcoinStorage>(conf.clone(), storage.clone()).unwrap();
+    let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+        conf.clone(),
+        storage.clone(),
+    )
+    .unwrap();
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -61,7 +64,8 @@ async fn gen_head_chain(times: u64) -> ChainActorRef<ChainActor> {
                 )
                 .unwrap();
             let block =
-                DummyConsensus::create_block(&block_chain, block_template, receiver).unwrap();
+                DummyConsensus::create_block(conf.clone(), &block_chain, block_template, receiver)
+                    .unwrap();
             chain.clone().try_connect(block).await.unwrap();
         }
     }
@@ -115,7 +119,10 @@ async fn test_chain_apply() -> Result<()> {
     let config = Arc::new(node_config);
     let repo = Arc::new(MemoryStorage::new());
     let storage = Arc::new(StarcoinStorage::new(repo)?);
-    let genesis = Genesis::new::<MockExecutor, StarcoinStorage>(config.clone(), storage.clone())?;
+    let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+        config.clone(),
+        storage.clone(),
+    )?;
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -123,7 +130,7 @@ async fn test_chain_apply() -> Result<()> {
     };
     let mut block_chain =
         BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
-            config,
+            config.clone(),
             genesis.startup_info().head.clone(),
             storage,
             txpool,
@@ -132,7 +139,8 @@ async fn test_chain_apply() -> Result<()> {
     debug!("genesis header: {:?}", header);
     let block_template = block_chain.create_block_template(vec![])?;
     let (sender, receiver) = futures::channel::oneshot::channel();
-    let new_block = DummyConsensus::create_block(&block_chain, block_template, receiver)?;
+    let new_block =
+        DummyConsensus::create_block(config.clone(), &block_chain, block_template, receiver)?;
     block_chain.apply(new_block)?;
     let header1 = block_chain.current_header();
     debug!("block 1 header: {:?}", header1);

@@ -147,23 +147,27 @@ where
     type Result = Result<()>;
 
     fn handle(&mut self, _event: GenerateBlockEvent, ctx: &mut Self::Context) -> Self::Result {
-        let txpool_1 = self.txpool.clone();
-        let txpool_2 = self.txpool.clone();
+        let txpool = self.txpool.clone();
         let bus = self.bus.clone();
         let config = self.config.clone();
         let storage = self.storage.clone();
         let chain = self.chain.clone();
-
+        let config = self.config.clone();
         let f = async {
             //TODO handle error.
-            let txns = txpool_1.get_pending_txns(None).await.unwrap_or(vec![]);
+            let txns = txpool
+                .clone()
+                .get_pending_txns(None)
+                .await
+                .unwrap_or(vec![]);
             if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
             {
                 let chain_info = chain.get_chain_info().await.unwrap();
                 info!("head block : {:?}, txn len: {}", chain_info, txns.len());
                 let block_chain =
-                    BlockChain::<E, C, S, P>::new(config, chain_info, storage, txpool_2).unwrap();
-                match miner::mint::<C>(txns, &block_chain, bus) {
+                    BlockChain::<E, C, S, P>::new(config.clone(), chain_info, storage, txpool)
+                        .unwrap();
+                match miner::mint::<C>(config, txns, &block_chain, bus) {
                     Err(e) => {
                         error!("mint block err: {:?}", e);
                     }

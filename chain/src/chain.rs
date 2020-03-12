@@ -105,6 +105,7 @@ where
         first_leaf_idx: u64,
     ) -> Result<()> {
         ensure!(leaves.len() > 0, "invalid leaves.");
+        info!("leaves :{:?}", leaves);
         leaves.iter().enumerate().for_each(|(i, hash)| {
             let leaf_index = first_leaf_idx + i as u64;
             let proof = self.accumulator.get_proof(leaf_index).unwrap().unwrap();
@@ -203,7 +204,7 @@ where
         .unwrap();
         let (accumulator_root, first_leaf_idx) =
             accumulator.append_only_cache(&transaction_hash).unwrap();
-        self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx);
+        //Fixme proof verify
         //TODO execute txns and computer state.
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -320,7 +321,7 @@ where
         //TODO custom verify macro
         assert_eq!(self.head.header().id(), block.header().parent_hash());
 
-        C::verify_header(self, header)?;
+        C::verify_header(self.config.clone(), self, header)?;
 
         let chain_state = &self.chain_state;
         let mut txns = block
