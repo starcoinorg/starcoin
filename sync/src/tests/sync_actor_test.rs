@@ -24,7 +24,7 @@ use txpool::TxPoolRef;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
-    peer_info::PeerInfo,
+    peer_info::{PeerId, PeerInfo},
     system_events::SystemEvents,
     transaction::SignedUserTransaction,
 };
@@ -148,9 +148,9 @@ fn gen_network(
     bus: Addr<BusActor>,
     txpool: TxPoolRef,
     handle: Handle,
-) -> (NetworkAsyncService<TxPoolRef>, AccountAddress) {
+) -> (NetworkAsyncService<TxPoolRef>, PeerId) {
     let key_pair = node_config.network.network_keypair();
-    let addr = AccountAddress::from_public_key(&key_pair.public_key);
+    let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
     let network = NetworkActor::launch(node_config.clone(), bus, txpool, handle);
     (network, addr)
 }
@@ -188,8 +188,8 @@ async fn test_network_actor() {
     );
 
     let mut config_2 = NodeConfig::random_for_test();
-    let addr_1_hex = hex::encode(addr_1);
-    let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
+    let addr_1_str = addr_1.to_base58();
+    let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_str);
     config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
     config_2.network.seeds = vec![seed];
     let mut node_config_2 = Arc::new(config_2);

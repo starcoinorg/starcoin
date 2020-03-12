@@ -4,6 +4,7 @@
 use libp2p::identity::PublicKey;
 use libp2p::multihash;
 use serde::{de::Error as _, de::Unexpected, Deserialize, Deserializer, Serialize, Serializer};
+use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::fmt;
 use std::str::FromStr;
@@ -19,6 +20,12 @@ impl PeerId {
     /// Builds a `PeerId` from a public key.
     pub fn from_public_key(key: PublicKey) -> PeerId {
         Self::new(libp2p::PeerId::from_public_key(key))
+    }
+
+    pub fn from_ed25519_public_key(key: Ed25519PublicKey) -> PeerId {
+        let pub_key = libp2p::identity::ed25519::PublicKey::decode(key.to_bytes().as_ref())
+            .expect("Decode pubkey must success.");
+        Self::from_public_key(PublicKey::Ed25519(pub_key))
     }
 
     /// Checks whether `data` is a valid `PeerId`. If so, returns the `PeerId`. If not, returns
@@ -68,6 +75,12 @@ impl Into<libp2p::PeerId> for PeerId {
 impl From<libp2p::PeerId> for PeerId {
     fn from(peer_id: libp2p::PeerId) -> Self {
         Self(peer_id)
+    }
+}
+
+impl std::convert::AsRef<[u8]> for PeerId {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
     }
 }
 
