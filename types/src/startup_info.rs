@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::{HashValue};
 
 use std::convert::{TryFrom, TryInto};
-
+use std::env::split_paths;
+use logger::prelude::*;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
@@ -100,12 +101,18 @@ impl ChainInfo {
         self.hash_number.len()
     }
 
-    pub fn get_hash_by_number(&self, number: u64) -> HashValue {
-        assert!(number < (self.hash_number.len() as u64));
-        self.hash_number
-            .get::<usize>(number as usize)
-            .unwrap()
-            .clone()
+    pub fn get_hash_by_number(&self, number: u64) -> Option<HashValue> {
+        //assert!(number < (self.hash_number.len() as u64));
+        let len = self.hash_number.len() as u64;
+        if number < len {
+            Some(self.hash_number
+                .get::<usize>((number as usize))
+                .unwrap()
+                .clone())
+        } else {
+            warn!("get_hash_by_number:{}:{}", number, len);
+            None
+        }
     }
 
     pub fn latest_blocks(&self) -> Vec<(BlockNumber, HashValue)> {

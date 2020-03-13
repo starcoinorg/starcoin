@@ -88,7 +88,7 @@ where
                     .start();
                 }
                 PacemakerStrategy::Schedule => {
-                    SchedulePacemaker::new(Duration::from_millis(1000), sender).start();
+                    SchedulePacemaker::new(Duration::from_millis(10 * 1000), sender).start();
                 }
             };
 

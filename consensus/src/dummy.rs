@@ -9,6 +9,9 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
+use rand::{thread_rng, Rng};
+use std::thread;
+use std::time::Duration;
 
 pub struct DummyHeader {}
 
@@ -49,6 +52,9 @@ impl Consensus for DummyConsensus {
         block_template: BlockTemplate,
         _cancel: Receiver<()>,
     ) -> Result<Block> {
+        let mut rng = thread_rng();
+        let time: u64 = rng.gen_range(1, 7);
+        thread::sleep(Duration::from_secs(time));
         Ok(block_template.into_block(DummyHeader {}))
     }
 }

@@ -75,7 +75,7 @@ impl Handler<ProcessMessage> for ProcessActor {
             let id = msg.crypto_hash();
             match msg {
                 ProcessMessage::NewPeerMsg(peer_info) => {
-                    debug!(
+                    info!(
                         "send latest_state_msg to peer : {:?}:{:?}",
                         peer_info.id, my_peer_info.id
                     );
@@ -190,12 +190,13 @@ impl Processor {
     ) -> BatchHashByNumberMsg {
         let mut hashs = Vec::new();
         for number in get_hash_by_number_msg.numbers {
+            info!("get block from get_block_by_number with {}", number);
             let block = processor
                 .chain_reader
                 .clone()
                 .get_block_by_number(number)
                 .await
-                .unwrap();
+                .expect("block is none after get_block_by_number");
             debug!(
                 "block number:{:?}, hash {:?}",
                 block.header().number(),

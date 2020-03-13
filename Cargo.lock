@@ -4890,6 +4890,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures 0.3.4",
+ "rand 0.6.5",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-traits",
@@ -5237,6 +5238,7 @@ dependencies = [
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-logger",
  "thiserror",
  "tiny-keccak 1.5.0",
 ]
