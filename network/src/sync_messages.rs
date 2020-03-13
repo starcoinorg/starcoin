@@ -4,7 +4,6 @@ use crypto::{hash::CryptoHash, HashValue};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use types::{
-    account_address::AccountAddress,
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
     transaction::SignedUserTransaction,

@@ -17,11 +17,9 @@ pub use network::NetworkActor;
 
 pub use helper::get_unix_ts;
 
-use anyhow::{Error, Result};
 pub use messages::{
     PeerEvent, PeerMessage, RPCMessage, RPCRequest, RPCResponse, RpcRequestMessage,
 };
 pub use net::{build_network_service, SNetworkService};
 pub use network::NetworkAsyncService;
 pub use network_p2p::PeerId;
-use types::system_events::SystemEvents;

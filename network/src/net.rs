@@ -28,7 +28,6 @@ use network_p2p::{
 use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
 use scs::SCSCodec;
-use slog::Drain;
 use std::cell::{Cell, RefCell};
 use std::task::{Context, Poll};
 use std::{collections::HashMap, io, sync::Arc, thread};
@@ -83,9 +82,9 @@ impl SNetworkService {
         mpsc::UnboundedSender<()>,
     ) {
         let (close_tx, close_rx) = mpsc::unbounded::<()>();
-        let (mut tx, net_rx) = mpsc::unbounded();
-        let (net_tx, mut rx) = mpsc::unbounded::<NetworkMessage>();
-        let (event_tx, mut event_rx) = mpsc::unbounded::<PeerEvent>();
+        let (tx, net_rx) = mpsc::unbounded();
+        let (net_tx, rx) = mpsc::unbounded::<NetworkMessage>();
+        let (event_tx, event_rx) = mpsc::unbounded::<PeerEvent>();
         let inner = self.inner.clone();
 
         self.net_tx = Some(net_tx.clone());
@@ -98,9 +97,9 @@ impl SNetworkService {
     async fn start_network(
         inner: NetworkInner,
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
-        mut net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
+        net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
         event_tx: mpsc::UnboundedSender<PeerEvent>,
-        mut close_rx: mpsc::UnboundedReceiver<()>,
+        close_rx: mpsc::UnboundedReceiver<()>,
     ) {
         let mut event_stream = inner.service.event_stream().fuse();
         let mut net_rx = net_rx.fuse();
@@ -153,7 +152,7 @@ impl SNetworkService {
 
     pub async fn broadcast_message(&mut self, message: Vec<u8>) {
         info!("broadcast message");
-        let (protocol_msg, message_id) = Message::new_payload(message);
+        let (protocol_msg, _message_id) = Message::new_payload(message);
 
         let message_bytes = protocol_msg.into_bytes();
 
@@ -221,7 +220,7 @@ impl NetworkInner {
                 }
                 Message::ACK(message_id) => {
                     info!("Receive message ack");
-                    if let Some(mut tx) = self.acks.lock().remove(&message_id) {
+                    if let Some(tx) = self.acks.lock().remove(&message_id) {
                         let _ = tx.send(());
                     } else {
                         error!(

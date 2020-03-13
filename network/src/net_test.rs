@@ -110,15 +110,14 @@ mod tests {
 
         let executor = rt.handle();
         let (
-            (service1, tx1, rx1, event_rx1, close_tx1),
-            (service2, tx2, _rx2, event_rx2, close_tx2),
+            (service1, tx1, rx1, _event_rx1, close_tx1),
+            (service2, tx2, _rx2, _event_rx2, close_tx2),
         ) = build_test_network_pair(executor.clone());
         let msg_peer_id_1 = service1.identify().clone();
         let msg_peer_id_2 = service2.identify().clone();
         // Once sender has been droped, the select_all will return directly. clone it to prevent it.
         let _tx22 = tx2.clone();
         let _tx11 = tx1.clone();
-        let mut count = 0;
         //wait the network started.
         thread::sleep(Duration::from_secs(1));
         let sender_fut = async move {
@@ -181,8 +180,8 @@ mod tests {
         let rt = Runtime::new().unwrap();
         let executor = rt.handle();
         let (
-            (service1, _tx1, rx1, event_rx1, _close_tx1),
-            (mut service2, _tx2, _rx2, event_rx2, _close_tx2),
+            (service1, _tx1, rx1, _event_rx1, _close_tx1),
+            (service2, _tx2, _rx2, _event_rx2, _close_tx2),
         ) = build_test_network_pair(executor.clone());
         let msg_peer_id = service1.identify().clone();
         let receive_fut = async move {

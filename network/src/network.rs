@@ -81,7 +81,7 @@ where
     }
 
     pub async fn broadcast_system_event(&self, event: SystemEvents) -> Result<()> {
-        self.addr.send(event).await;
+        self.addr.send(event).await?;
         Ok(())
     }
 
@@ -108,7 +108,7 @@ where
         let processor = self.message_processor.clone();
         let task = async move {
             Delay::new(time_out).await;
-            processor.remove_future(request_id);
+            processor.remove_future(request_id).await;
         };
 
         self.handle.spawn(task);
@@ -126,9 +126,7 @@ where
     P: 'static,
 {
     network_service: SNetworkService,
-    tx: mpsc::UnboundedSender<NetworkMessage>,
-    bus: Addr<BusActor>,
-    txpool: P,
+    _txpool: P,
 }
 
 impl<P> NetworkActor<P>
@@ -155,17 +153,13 @@ where
         );
         let message_processor = MessageProcessor::new();
         let message_processor_clone = message_processor.clone();
-        let tx_clone = tx.clone();
         let peer_id = service.identify().clone();
 
         let service_clone = service.clone();
         let txpool_clone = txpool.clone();
-        let bus_clone = bus.clone();
-        let addr = NetworkActor::create(move |ctx: &mut Context<NetworkActor<P>>| NetworkActor {
+        let addr = NetworkActor::create(move |_ctx: &mut Context<NetworkActor<P>>| NetworkActor {
             network_service: service_clone,
-            tx: tx_clone,
-            bus: bus_clone,
-            txpool: txpool_clone,
+            _txpool: txpool_clone,
         });
         let inner = Inner {
             addr: addr.clone(),
@@ -206,7 +200,7 @@ where
                     info!("receive net event");
                 },
                 complete => {
-                    close_tx.unbounded_send(());
+                    close_tx.unbounded_send(()).unwrap();
                     warn!("all stream are complete");
                     break;
                 }
@@ -250,7 +244,7 @@ where
                             peer_info, block,
                         )),
                     })
-                    .await;
+                    .await?;
             }
             PeerMessage::LatestStateMsg(state) => {
                 info!("broadcast LatestStateMsg.");
@@ -261,7 +255,7 @@ where
                             peer_info, state,
                         )),
                     })
-                    .await;
+                    .await?;
             }
             PeerMessage::RPCRequest(request) => {
                 info!("do request.");
@@ -274,10 +268,10 @@ where
                             request,
                         },
                     })
-                    .await;
+                    .await?;
                 let network_service = self.network_service.clone();
                 let task = async move {
-                    let mut response = rx.next().await.unwrap();
+                    let response = rx.next().await.unwrap();
                     let peer_msg = PeerMessage::RPCResponse(id, response);
                     let data = peer_msg.encode().unwrap();
                     network_service.send_message(peer_id, data).await.unwrap();
@@ -295,7 +289,7 @@ where
 
     async fn handle_event_receive(&self, event: PeerEvent) -> Result<()> {
         info!("event is {:?}", event);
-        self.bus.send(Broadcast { msg: event }).await;
+        self.bus.send(Broadcast { msg: event }).await?;
         info!("already broadcast event");
         Ok(())
     }
@@ -366,8 +360,8 @@ mod tests {
         use std::time::Duration;
 
         ::logger::init_for_test();
-        let mut system = System::new("test");
-        let mut rt = Runtime::new().unwrap();
+        let system = System::new("test");
+        let rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
 
         let mut node_config1 = NodeConfig::random_for_test();
@@ -375,7 +369,8 @@ mod tests {
             format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         let node_config1 = Arc::new(node_config1);
 
-        let (txpool1, network1, addr1, bus1) = build_network(node_config1.clone(), handle.clone());
+        let (txpool1, network1, _addr1, _bus1) =
+            build_network(node_config1.clone(), handle.clone());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -387,7 +382,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (txpool2, network2, addr2, bus2) = build_network(node_config2.clone(), handle.clone());
+        let (txpool2, network2, _addr2, bus2) = build_network(node_config2.clone(), handle.clone());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -396,12 +391,14 @@ mod tests {
                 .broadcast_system_event(SystemEvents::NewUserTransaction(
                     SignedUserTransaction::mock(),
                 ))
-                .await;
+                .await
+                .unwrap();
             network2
                 .broadcast_system_event(SystemEvents::NewUserTransaction(
                     SignedUserTransaction::mock(),
                 ))
-                .await;
+                .await
+                .unwrap();
 
             let network_clone2 = network2.clone();
 
@@ -409,18 +406,18 @@ mod tests {
             let addr = response_actor.start();
 
             let recipient = addr.clone().recipient::<RpcRequestMessage>();
-            bus2.send(Subscription { recipient }).await;
+            bus2.send(Subscription { recipient }).await.unwrap();
 
             let recipient = addr.recipient::<PeerEvent>();
-            bus2.send(Subscription { recipient }).await;
+            bus2.send(Subscription { recipient }).await.unwrap();
 
             _delay(Duration::from_millis(100)).await;
 
             let txns = txpool1.get_pending_txns(None).await.unwrap();
-            //assert_eq!(1, txns.len());
+            assert_eq!(1, txns.len());
 
             let txns = txpool2.get_pending_txns(None).await.unwrap();
-            //assert_eq!(1, txns.len());
+            assert_eq!(1, txns.len());
 
             let request = RPCRequest::TestRequest(TestRequest {
                 data: HashValue::random(),
@@ -437,7 +434,7 @@ mod tests {
             ()
         });
 
-        system.run();
+        system.run().unwrap();
     }
 
     async fn _delay(duration: Duration) {
@@ -463,12 +460,14 @@ mod tests {
     }
 
     struct TestResponseActor {
-        network_service: NetworkAsyncService<MockTxPoolService>,
+        _network_service: NetworkAsyncService<MockTxPoolService>,
     }
 
     impl TestResponseActor {
         fn create(network_service: NetworkAsyncService<MockTxPoolService>) -> TestResponseActor {
-            let instance = Self { network_service };
+            let instance = Self {
+                _network_service: network_service,
+            };
             instance
         }
     }
@@ -484,7 +483,7 @@ mod tests {
     impl Handler<RpcRequestMessage> for TestResponseActor {
         type Result = Result<()>;
 
-        fn handle(&mut self, mut msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
             let id = (&msg.request).get_id();
             let mut responder = msg.responder.clone();
             match msg.request {
@@ -512,7 +511,7 @@ mod tests {
     impl Handler<PeerEvent> for TestResponseActor {
         type Result = Result<()>;
 
-        fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, msg: PeerEvent, _ctx: &mut Self::Context) -> Self::Result {
             info!("Event is {:?}", msg);
             Ok(())
         }
