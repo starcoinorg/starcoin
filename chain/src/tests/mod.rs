@@ -3,8 +3,6 @@ use types::block::{Block, BlockHeader, BlockNumber};
 
 #[cfg(test)]
 mod test_block_chain;
-#[cfg(test)]
-mod test_mem_chain;
 
 fn random_block(parent_block: Option<(HashValue, BlockNumber)>) -> Block {
     let header = match parent_block {

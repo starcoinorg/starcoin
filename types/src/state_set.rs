@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::access_path::DataType;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -54,25 +55,33 @@ impl Into<Vec<(HashValue, Vec<u8>)>> for StateSet {
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct AccountStateSet {
-    code_set: Option<StateSet>,
-    resource_set: Option<StateSet>,
-}
+pub struct AccountStateSet(Vec<Option<StateSet>>);
 
 impl AccountStateSet {
-    pub fn new(code_set: Option<StateSet>, resource_set: Option<StateSet>) -> Self {
-        Self {
-            code_set,
-            resource_set,
-        }
+    pub fn new(state_sets: Vec<Option<StateSet>>) -> Self {
+        Self(state_sets)
     }
 
     pub fn resource_set(&self) -> Option<&StateSet> {
-        self.resource_set.as_ref()
+        self.data_set(DataType::RESOURCE)
     }
 
     pub fn code_set(&self) -> Option<&StateSet> {
-        self.code_set.as_ref()
+        self.data_set(DataType::CODE)
+    }
+
+    #[inline]
+    pub fn data_set(&self, data_type: DataType) -> Option<&StateSet> {
+        self.0[data_type.storage_index()].as_ref()
+    }
+}
+
+impl<'a> IntoIterator for &'a AccountStateSet {
+    type Item = &'a Option<StateSet>;
+    type IntoIter = ::std::slice::Iter<'a, Option<StateSet>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
     }
 }
 
@@ -105,5 +114,16 @@ impl<'a> IntoIterator for &'a ChainStateSet {
 
     fn into_iter(self) -> Self::IntoIter {
         self.state_sets.iter()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_state_set() {
+        let account_state_set = AccountStateSet::new(vec![None, None]);
+        assert_eq!(2, account_state_set.into_iter().count());
     }
 }

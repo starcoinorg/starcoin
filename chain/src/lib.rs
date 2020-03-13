@@ -6,7 +6,6 @@ mod chain;
 pub use chain::BlockChain;
 
 pub mod chain_service;
-pub mod mem_chain;
 pub mod message;
 
 use crate::chain_service::ChainServiceImpl;
@@ -35,6 +34,7 @@ use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
+    transaction::SignedUserTransaction,
 };
 
 /// actor for block chain.
@@ -52,7 +52,7 @@ impl ChainActor {
         network: Option<NetworkAsyncService<TxPoolRef>>,
         bus: Addr<BusActor>,
         txpool: TxPoolRef,
-    ) -> Result<ChainActorRef<ChainActor>> {
+    ) -> Result<ChainActorRef> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(config, startup_info, storage, network, txpool)?,
             bus,
@@ -98,6 +98,15 @@ impl Handler<ChainRequest> for ChainActor {
                 //TODO get txn from txpool.
                 self.service.create_block_template(vec![]).unwrap(),
             )),
+            ChainRequest::CreateBlockTemplateWithTx(parent_hash, txs) => {
+                Ok(ChainResponse::BlockTemplate(match parent_hash {
+                    Some(hash) => self
+                        .service
+                        .create_block_template_with_parent(hash, txs)
+                        .unwrap(),
+                    None => self.service.create_block_template(txs).unwrap(),
+                }))
+            }
             ChainRequest::CreateBlockTemplateWithParent(parent_hash) => {
                 Ok(ChainResponse::BlockTemplate(
                     //TODO get txn from txpool.
@@ -145,52 +154,25 @@ impl Handler<SystemEvents> for ChainActor {
     }
 }
 
-pub struct ChainActorRef<A>
-where
-    A: Actor + Handler<ChainRequest>,
-    A::Context: ToEnvelope<A, ChainRequest>,
-{
-    pub address: Addr<A>,
+#[derive(Clone)]
+pub struct ChainActorRef {
+    pub address: Addr<ChainActor>,
 }
 
-impl<A> Clone for ChainActorRef<A>
-where
-    A: Actor + Handler<ChainRequest>,
-    A::Context: ToEnvelope<A, ChainRequest>,
-{
-    fn clone(&self) -> ChainActorRef<A> {
-        ChainActorRef {
-            address: self.address.clone(),
-        }
-    }
-}
-
-impl<A> Into<Addr<A>> for ChainActorRef<A>
-where
-    A: Actor + Handler<ChainRequest>,
-    A::Context: ToEnvelope<A, ChainRequest>,
-{
-    fn into(self) -> Addr<A> {
+impl Into<Addr<ChainActor>> for ChainActorRef {
+    fn into(self) -> Addr<ChainActor> {
         self.address
     }
 }
 
-impl<A> Into<ChainActorRef<A>> for Addr<A>
-where
-    A: Actor + Handler<ChainRequest>,
-    A::Context: ToEnvelope<A, ChainRequest>,
-{
-    fn into(self) -> ChainActorRef<A> {
+impl Into<ChainActorRef> for Addr<ChainActor> {
+    fn into(self) -> ChainActorRef {
         ChainActorRef { address: self }
     }
 }
 
 #[async_trait::async_trait(? Send)]
-impl<A> AsyncChain for ChainActorRef<A>
-where
-    A: Actor + Handler<ChainRequest>,
-    A::Context: ToEnvelope<A, ChainRequest>,
-{
+impl AsyncChain for ChainActorRef {
     async fn current_header(self) -> Option<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
             .address
@@ -294,6 +276,25 @@ where
         }
     }
 
+    async fn create_block_template_with_tx(
+        self,
+        parent_hash: Option<HashValue>,
+        txs: Vec<SignedUserTransaction>,
+    ) -> Option<BlockTemplate> {
+        let address = self.address.clone();
+        drop(self);
+        if let ChainResponse::BlockTemplate(block_template) = address
+            .send(ChainRequest::CreateBlockTemplateWithTx(parent_hash, txs))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(block_template)
+        } else {
+            None
+        }
+    }
+
     async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block> {
         debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlock(block) = self
@@ -314,11 +315,7 @@ where
 }
 
 #[async_trait::async_trait(? Send)]
-impl<A> ChainAsyncService for ChainActorRef<A>
-where
-    A: Actor + Handler<ChainRequest>,
-    A::Context: ToEnvelope<A, ChainRequest>,
-{
+impl ChainAsyncService for ChainActorRef {
     async fn try_connect(self, block: Block) -> Result<()> {
         self.address
             .send(ChainRequest::ConnectBlock(block))

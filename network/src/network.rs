@@ -32,6 +32,7 @@ use types::{account_address::AccountAddress, peer_info::PeerInfo};
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
 use actix::fut::wrap_future;
+use futures_timer::Delay;
 use std::time::Duration;
 use tokio::runtime::Handle;
 
@@ -45,6 +46,22 @@ where
     message_processor: MessageProcessor<RPCResponse>,
     tx: mpsc::UnboundedSender<NetworkMessage>,
     peer_id: PeerId,
+    handle: Handle,
+    inner: Inner<P>,
+}
+
+#[derive(Clone)]
+struct Inner<P>
+where
+    P: TxPoolAsyncService,
+    P: 'static,
+{
+    network_service: SNetworkService,
+    addr: Addr<NetworkActor<P>>,
+    bus: Addr<BusActor>,
+    txpool: P,
+    message_processor: MessageProcessor<RPCResponse>,
+    handle: Handle,
 }
 
 impl<P> NetworkAsyncService<P>
@@ -72,7 +89,7 @@ where
         &self,
         peer_id: PeerId,
         message: RPCRequest,
-        _time_out: Duration,
+        time_out: Duration,
     ) -> Result<RPCResponse> {
         let request_id = message.get_id();
         let peer_msg = PeerMessage::RPCRequest(message);
@@ -84,26 +101,18 @@ where
         self.tx.unbounded_send(network_message)?;
         let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
-        self.message_processor.add_future(request_id, tx).await;
+        self.message_processor
+            .add_future(request_id.clone(), tx)
+            .await;
         info!("send request to {}", peer_id);
-        message_future.await
-    }
-
-    pub async fn response_for(
-        &self,
-        peer_id: PeerId,
-        id: HashValue,
-        mut response: RPCResponse,
-    ) -> Result<()> {
-        response.set_request_id(id);
-        let peer_msg = PeerMessage::RPCResponse(response);
-        let data = peer_msg.encode().unwrap();
-        let network_message = NetworkMessage {
-            peer_id: peer_id.into(),
-            data,
+        let processor = self.message_processor.clone();
+        let task = async move {
+            Delay::new(time_out).await;
+            processor.remove_future(request_id);
         };
-        self.tx.unbounded_send(network_message)?;
-        Ok(())
+
+        self.handle.spawn(task);
+        message_future.await
     }
 
     pub fn identify(&self) -> &PeerId {
@@ -118,10 +127,8 @@ where
 {
     network_service: SNetworkService,
     tx: mpsc::UnboundedSender<NetworkMessage>,
-    tx_command: mpsc::UnboundedSender<()>,
     bus: Addr<BusActor>,
     txpool: P,
-    message_processor: MessageProcessor<RPCResponse>,
 }
 
 impl<P> NetworkActor<P>
@@ -135,7 +142,7 @@ where
         handle: Handle,
     ) -> NetworkAsyncService<P> {
         let (service, tx, rx, event_rx, tx_command) =
-            build_network_service(&node_config.network, handle);
+            build_network_service(&node_config.network, handle.clone());
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -150,24 +157,147 @@ where
         let message_processor_clone = message_processor.clone();
         let tx_clone = tx.clone();
         let peer_id = service.identify().clone();
-        let addr = NetworkActor::create(move |ctx: &mut Context<NetworkActor<P>>| {
-            ctx.add_stream(rx.fuse());
-            ctx.add_stream(event_rx.fuse());
-            NetworkActor {
-                network_service: service,
-                tx: tx_clone,
-                tx_command,
-                bus,
-                txpool,
-                message_processor: message_processor_clone,
-            }
+
+        let service_clone = service.clone();
+        let txpool_clone = txpool.clone();
+        let bus_clone = bus.clone();
+        let addr = NetworkActor::create(move |ctx: &mut Context<NetworkActor<P>>| NetworkActor {
+            network_service: service_clone,
+            tx: tx_clone,
+            bus: bus_clone,
+            txpool: txpool_clone,
         });
+        let inner = Inner {
+            addr: addr.clone(),
+            network_service: service,
+            bus,
+            txpool,
+            handle: handle.clone(),
+            message_processor: message_processor_clone,
+        };
+        handle.spawn(Self::start(inner.clone(), rx, event_rx, tx_command));
         NetworkAsyncService {
             addr,
             message_processor,
             tx,
             peer_id,
+            inner,
+            handle,
         }
+    }
+
+    async fn start(
+        inner: Inner<P>,
+        net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
+        event_rx: mpsc::UnboundedReceiver<PeerEvent>,
+        close_tx: mpsc::UnboundedSender<()>,
+    ) {
+        let mut net_rx = net_rx.fuse();
+        let mut event_rx = event_rx.fuse();
+
+        loop {
+            futures::select! {
+                message = net_rx.select_next_some()=>{
+                    inner.handle_network_receive(message).await.unwrap();
+                    info!("receive net message");
+                },
+                event = event_rx.select_next_some()=>{
+                    inner.handle_event_receive(event).await.unwrap();
+                    info!("receive net event");
+                },
+                complete => {
+                    close_tx.unbounded_send(());
+                    warn!("all stream are complete");
+                    break;
+                }
+            }
+        }
+    }
+}
+
+impl<P> Inner<P>
+where
+    P: TxPoolAsyncService,
+    P: 'static,
+{
+    async fn handle_network_receive(&self, network_msg: NetworkMessage) -> Result<()> {
+        info!("receive network_message {:?}", network_msg);
+        let message = PeerMessage::decode(&network_msg.data);
+        match message {
+            Ok(msg) => {
+                self.handle_network_message(network_msg.peer_id.into(), msg)
+                    .await?
+            }
+            Err(e) => {
+                warn!("get error {:?}", e);
+            }
+        }
+        Ok(())
+    }
+
+    async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
+        match msg {
+            PeerMessage::UserTransaction(txn) => {
+                let txpool = self.txpool.clone();
+                let new_txn = txpool.add(txn).await?;
+                info!("add tx success, is new tx: {}", new_txn);
+            }
+            PeerMessage::Block(block) => {
+                let peer_info = PeerInfo::new(peer_id.into());
+                self.bus
+                    .send(Broadcast {
+                        msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
+                            peer_info, block,
+                        )),
+                    })
+                    .await;
+            }
+            PeerMessage::LatestStateMsg(state) => {
+                info!("broadcast LatestStateMsg.");
+                let peer_info = PeerInfo::new(peer_id.into());
+                self.bus
+                    .send(Broadcast {
+                        msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
+                            peer_info, state,
+                        )),
+                    })
+                    .await;
+            }
+            PeerMessage::RPCRequest(request) => {
+                info!("do request.");
+                let (tx, mut rx) = mpsc::channel(1);
+                let id = request.get_id();
+                self.bus
+                    .send(Broadcast {
+                        msg: RpcRequestMessage {
+                            responder: tx,
+                            request,
+                        },
+                    })
+                    .await;
+                let network_service = self.network_service.clone();
+                let task = async move {
+                    let mut response = rx.next().await.unwrap();
+                    let peer_msg = PeerMessage::RPCResponse(id, response);
+                    let data = peer_msg.encode().unwrap();
+                    network_service.send_message(peer_id, data).await.unwrap();
+                };
+                self.handle.spawn(task);
+                info!("receive rpc request");
+            }
+            PeerMessage::RPCResponse(id, response) => {
+                info!("do response.");
+                self.message_processor.send_response(id, response).await?;
+            }
+        }
+        Ok(())
+    }
+
+    async fn handle_event_receive(&self, event: PeerEvent) -> Result<()> {
+        info!("event is {:?}", event);
+        self.bus.send(Broadcast { msg: event }).await;
+        info!("already broadcast event");
+        Ok(())
     }
 }
 
@@ -179,114 +309,6 @@ where
 
     fn started(&mut self, _ctx: &mut Self::Context) {
         info!("Network actor started ",);
-    }
-}
-
-impl<P> StreamHandler<NetworkMessage> for NetworkActor<P>
-where
-    P: TxPoolAsyncService,
-{
-    fn handle(&mut self, network_msg: NetworkMessage, ctx: &mut Self::Context) {
-        info!("receive network_message {:?}", network_msg);
-        let message = PeerMessage::decode(&network_msg.data);
-        match message {
-            Ok(msg) => {
-                self.handle_network_message(network_msg.peer_id.into(), msg, ctx);
-            }
-            Err(e) => {
-                warn!("get error {:?}", e);
-            }
-        }
-    }
-}
-
-impl<P> StreamHandler<PeerEvent> for NetworkActor<P>
-where
-    P: TxPoolAsyncService,
-{
-    fn handle(&mut self, event: PeerEvent, ctx: &mut Self::Context) {
-        info!("event is {:?}", event);
-        let bus = self.bus.clone();
-        let f = async move {
-            bus.send(Broadcast { msg: event }).await;
-            info!("already broadcast event");
-        };
-        let f = actix::fut::wrap_future(f);
-        ctx.spawn(Box::new(f));
-    }
-}
-
-impl<P> NetworkActor<P>
-where
-    P: TxPoolAsyncService,
-{
-    fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage, ctx: &mut Context<Self>) {
-        match msg {
-            PeerMessage::UserTransaction(txn) => {
-                let txpool = self.txpool.clone();
-                let f = async move {
-                    let new_txn = txpool.add(txn).await.unwrap();
-                    info!("add tx success, is new tx: {}", new_txn);
-                };
-                let f = actix::fut::wrap_future(f);
-                ctx.spawn(Box::new(f));
-            }
-            PeerMessage::Block(block) => {
-                let bus = self.bus.clone();
-                let peer_info = PeerInfo::new(peer_id.into());
-                let f = async move {
-                    bus.send(Broadcast {
-                        msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
-                            peer_info, block,
-                        )),
-                    })
-                    .await;
-                };
-                let f = actix::fut::wrap_future(f);
-                ctx.spawn(Box::new(f));
-            }
-            PeerMessage::LatestStateMsg(state) => {
-                info!("broadcast LatestStateMsg.");
-                let bus = self.bus.clone();
-                let peer_info = PeerInfo::new(peer_id.into());
-                let f = async move {
-                    bus.send(Broadcast {
-                        msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
-                            peer_info, state,
-                        )),
-                    })
-                    .await;
-                };
-                let f = actix::fut::wrap_future(f);
-                ctx.spawn(Box::new(f));
-            }
-            PeerMessage::RPCRequest(request) => {
-                info!("do request.");
-                let bus = self.bus.clone();
-                let f = async move {
-                    bus.send(Broadcast {
-                        msg: RpcRequestMessage {
-                            peer_id: peer_id.into(),
-                            request,
-                        },
-                    })
-                    .await;
-                    info!("receive rpc request");
-                };
-                let f = actix::fut::wrap_future(f);
-                ctx.spawn(Box::new(f));
-            }
-            PeerMessage::RPCResponse(response) => {
-                info!("do response.");
-                let message_processor = self.message_processor.clone();
-                let f = async move {
-                    let id = response.get_id();
-                    message_processor.send_response(id, response).await.unwrap();
-                };
-                let f = actix::fut::wrap_future(f);
-                ctx.spawn(Box::new(f));
-            }
-        }
     }
 }
 
@@ -319,23 +341,12 @@ where
     }
 }
 
-// /// Handler for receive broadcast from other peer.
-// impl<P> Handler<PeerMessage> for NetworkActor<P>
-// where
-//     P: TxPoolAsyncService,
-// {
-//     type Result = ResponseActFuture<Self, Result<()>>;
-//
-//     fn handle(&mut self, msg: PeerMessage, _ctx: &mut Self::Context) -> Self::Result {
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{RpcRequestMessage, TestRequest, TestResponse};
     use bus::Subscription;
-    use futures::future::IntoFuture;
+    use futures::{future::IntoFuture, sink::SinkExt};
     use futures_timer::Delay;
     use log::{Level, Metadata, Record};
     use log::{LevelFilter, SetLoggerError};
@@ -346,23 +357,11 @@ mod tests {
     use traits::mock::MockTxPoolService;
     use types::account_address::AccountAddress;
 
-    // #[actix_rt::test]
-    // async fn test_network() {
-    //     let node_config = NodeConfig::default();
-    //     let bus = BusActor::launch();
-    //     let txpool = TxPoolActor::launch(&node_config, bus.clone()).unwrap();
-    //     let network = NetworkActor::launch(&node_config, bus, txpool.clone()).unwrap();
-    //     network
-    //         .send(PeerMessage::UserTransaction(SignedUserTransaction::mock()))
-    //         .await
-    //         .unwrap();
-    //
-    //     let txns = txpool.get_pending_txns().await.unwrap();
-    //     assert_eq!(1, txns.len());
-    // }
-
     #[test]
     fn test_network_with_mock() {
+        use std::thread;
+        use std::time::Duration;
+
         ::logger::init_for_test();
         let mut system = System::new("test");
         let mut rt = Runtime::new().unwrap();
@@ -375,6 +374,8 @@ mod tests {
 
         let (txpool1, network1, addr1, bus1) = build_network(node_config1.clone(), handle.clone());
 
+        thread::sleep(Duration::from_secs(1));
+
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
         let seed = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex);
@@ -384,9 +385,6 @@ mod tests {
         let node_config2 = Arc::new(node_config2);
 
         let (txpool2, network2, addr2, bus2) = build_network(node_config2.clone(), handle.clone());
-
-        use std::thread;
-        use std::time::Duration;
 
         thread::sleep(Duration::from_secs(1));
 
@@ -483,9 +481,9 @@ mod tests {
     impl Handler<RpcRequestMessage> for TestResponseActor {
         type Result = Result<()>;
 
-        fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, mut msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
             let id = (&msg.request).get_id();
-            let peer_id = (&msg).peer_id.clone();
+            let mut responder = msg.responder.clone();
             match msg.request {
                 RPCRequest::TestRequest(_r) => {
                     info!("request is {:?}", _r);
@@ -493,11 +491,11 @@ mod tests {
                         len: 1,
                         id: id.clone(),
                     };
-                    let network_service = self.network_service.clone();
                     let f = async move {
-                        network_service
-                            .response_for(peer_id.into(), id, RPCResponse::TestResponse(response))
-                            .await;
+                        responder
+                            .send(RPCResponse::TestResponse(response))
+                            .await
+                            .unwrap();
                     };
                     let f = actix::fut::wrap_future(f);
                     ctx.spawn(Box::new(f));

@@ -7,6 +7,7 @@ use anyhow::Result;
 use bus::{Bus, BusActor, Subscription};
 use chain::{ChainActor, ChainActorRef};
 use crypto::{hash::CryptoHash, HashValue};
+use futures::sink::SinkExt;
 use futures_timer::Delay;
 /// Sync message which inbound
 use network::sync_messages::{
@@ -33,7 +34,7 @@ pub struct ProcessActor {
 impl ProcessActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: ChainActorRef<ChainActor>,
+        chain_reader: ChainActorRef,
         network: NetworkAsyncService<TxPoolRef>,
         bus: Addr<BusActor>,
     ) -> Result<Addr<ProcessActor>> {
@@ -103,10 +104,8 @@ impl Handler<RpcRequestMessage> for ProcessActor {
     type Result = Result<()>;
 
     fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
-        let id = (&msg.request).get_id();
-        let peer_id = msg.peer_id;
+        let mut responder = msg.responder.clone();
         let processor = self.processor.clone();
-        let network = self.network.clone();
         match msg.request {
             RPCRequest::TestRequest(_r) => {}
             RPCRequest::GetHashByNumberMsg(process_msg)
@@ -115,14 +114,14 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                     debug!("get_hash_by_number_msg");
                     Arbiter::spawn(async move {
                         let batch_hash_by_number_msg = Processor::handle_get_hash_by_number_msg(
-                            id.clone(),
                             processor.clone(),
                             get_hash_by_number_msg,
                         )
                         .await;
 
                         let resp = RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg);
-                        network.clone().response_for(peer_id.into(), id, resp).await;
+
+                        responder.send(resp).await.unwrap();
                     });
                 }
                 ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg) => {
@@ -146,11 +145,10 @@ impl Handler<RpcRequestMessage> for ProcessActor {
                                 );
 
                                 let resp = RPCResponse::BatchHeaderAndBodyMsg(
-                                    id,
                                     batch_header_msg,
                                     batch_body_msg,
                                 );
-                                network.clone().response_for(peer_id.into(), id, resp).await;
+                                responder.send(resp).await.unwrap();
                             }
                             _ => {}
                         }
@@ -166,11 +164,11 @@ impl Handler<RpcRequestMessage> for ProcessActor {
 
 /// Process request for syncing block
 pub struct Processor {
-    chain_reader: ChainActorRef<ChainActor>,
+    chain_reader: ChainActorRef,
 }
 
 impl Processor {
-    pub fn new(chain_reader: ChainActorRef<ChainActor>) -> Self {
+    pub fn new(chain_reader: ChainActorRef) -> Self {
         Processor { chain_reader }
     }
 
@@ -187,7 +185,6 @@ impl Processor {
     }
 
     pub async fn handle_get_hash_by_number_msg(
-        req_id: HashValue,
         processor: Arc<Processor>,
         get_hash_by_number_msg: GetHashByNumberMsg,
     ) -> BatchHashByNumberMsg {
@@ -212,7 +209,7 @@ impl Processor {
             hashs.push(hash_with_number);
         }
 
-        BatchHashByNumberMsg { req_id, hashs }
+        BatchHashByNumberMsg { hashs }
     }
 
     pub async fn handle_get_header_by_hash_msg(

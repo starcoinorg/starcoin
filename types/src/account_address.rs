@@ -77,6 +77,10 @@ impl AccountAddress {
 
         AccountAddress::try_from(padded_result)
     }
+
+    pub fn into_inner(self) -> [u8; ADDRESS_LENGTH] {
+        self.0
+    }
 }
 
 /// A struct that represents an account authentication key. An account's address is the last 16

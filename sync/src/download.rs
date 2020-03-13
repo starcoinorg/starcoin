@@ -51,7 +51,7 @@ pub struct DownloadActor {
 impl DownloadActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: ChainActorRef<ChainActor>,
+        chain_reader: ChainActorRef,
         network: NetworkAsyncService<TxPoolRef>,
         bus: Addr<BusActor>,
     ) -> Result<Addr<DownloadActor>> {
@@ -77,7 +77,7 @@ impl Actor for DownloadActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
-            if act.syncing.load(Ordering::Relaxed) {
+            if !act.syncing.load(Ordering::Relaxed) {
                 act.sync_event_sender.try_send(SyncEvent {});
             }
         });
@@ -262,19 +262,16 @@ impl DownloadActor {
                                             ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
                                         );
 
-                                        if let RPCResponse::BatchHeaderAndBodyMsg(
-                                            _,
-                                            headers,
-                                            bodies,
-                                        ) = network
-                                            .clone()
-                                            .send_request(
-                                                best_peer.id.clone().into(),
-                                                get_data_by_hash_req.clone(),
-                                                do_duration(DELAY_TIME),
-                                            )
-                                            .await
-                                            .unwrap()
+                                        if let RPCResponse::BatchHeaderAndBodyMsg(headers, bodies) =
+                                            network
+                                                .clone()
+                                                .send_request(
+                                                    best_peer.id.clone().into(),
+                                                    get_data_by_hash_req.clone(),
+                                                    do_duration(DELAY_TIME),
+                                                )
+                                                .await
+                                                .unwrap()
                                         {
                                             Downloader::do_blocks(
                                                 downloader.clone(),
@@ -311,13 +308,13 @@ pub struct Downloader {
     header_pool: TTLPool<BlockHeader>,
     body_pool: TTLPool<BlockBody>,
     peers: Arc<RwLock<HashMap<PeerInfo, LatestStateMsg>>>,
-    chain_reader: ChainActorRef<ChainActor>,
+    chain_reader: ChainActorRef,
 }
 
 const HEAD_CT: u64 = 10;
 
 impl Downloader {
-    pub fn new(chain_reader: ChainActorRef<ChainActor>) -> Self {
+    pub fn new(chain_reader: ChainActorRef) -> Self {
         Downloader {
             hash_pool: TTLPool::new(),
             header_pool: TTLPool::new(),

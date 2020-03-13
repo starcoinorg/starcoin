@@ -77,7 +77,7 @@ async fn test_rollback() {
 fn gen_pool_for_test() -> TxPoolRef {
     let storage = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
     storage.put(HashValue::zero(), Node::new_null().into());
-    let header = BlockHeader::genesis_block_header(HashValue::random(), HashValue::zero());
+    let header = BlockHeader::genesis_block_header(HashValue::random(), HashValue::zero(), vec![]);
     let bus = BusActor::launch();
     let pool = TxPoolRef::start_with_best_block_header(storage, header, bus);
     pool

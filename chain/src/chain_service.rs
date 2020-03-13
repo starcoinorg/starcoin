@@ -276,6 +276,11 @@ where
         retracted.iter().for_each(|b| {
             tx_retracted.append(&mut b.transactions().clone().to_vec());
         });
+        debug!(
+            "commit size:{}, rollback size:{}",
+            tx_enacted.len(),
+            tx_retracted.len()
+        );
         (tx_enacted, tx_retracted)
     }
 }

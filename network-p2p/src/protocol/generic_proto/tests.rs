@@ -16,7 +16,7 @@
 
 #![cfg(test)]
 
-use crate::message::{generic::BlockResponse, Message};
+
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
 use codec::{Decode, Encode};
 use futures::{prelude::*, ready};
@@ -26,7 +26,6 @@ use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler, Swarm};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::{Multiaddr, PeerId, Transport};
 use rand::seq::SliceRandom;
-use sp_test_primitives::Block;
 use std::collections::HashSet;
 use std::{error, io, task::Context, task::Poll, time::Duration};
 
@@ -71,7 +70,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
             .map_err(|err| io::Error::new(io::ErrorKind::Other, err))
             .boxed();
 
-        let (peerset, _) = sc_peerset::Peerset::from_config(sc_peerset::PeersetConfig {
+        let (peerset, _) = peerset::Peerset::from_config(peerset::PeersetConfig {
             in_peers: 25,
             out_peers: 25,
             bootnodes: if index == 0 {
@@ -172,15 +171,15 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         self.inner.inject_node_event(peer_id, event)
     }
 
-	fn poll(
-		&mut self,
-		cx: &mut Context,
-		params: &mut impl PollParameters
-	) -> Poll<
-		NetworkBehaviourAction<
-			<<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
-			Self::OutEvent
-		>
+    fn poll(
+        &mut self,
+        cx: &mut Context,
+        params: &mut impl PollParameters,
+    ) -> Poll<
+        NetworkBehaviourAction<
+            <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
+            Self::OutEvent
+        >
 >{
         self.inner.poll(cx, params)
     }
@@ -245,14 +244,7 @@ fn two_nodes_transfer_lots_of_packets() {
             match ready!(service1.poll_next_unpin(cx)) {
                 Some(GenericProtoOut::CustomProtocolOpen { peer_id, .. }) => {
                     for n in 0..NUM_PACKETS {
-                        service1.send_packet(
-                            &peer_id,
-                            Message::<Block>::BlockResponse(BlockResponse {
-                                id: n as _,
-                                blocks: Vec::new(),
-                            })
-                            .encode(),
-                        );
+                        service1.send_packet(&peer_id, vec![]);
                     }
                 }
                 _ => panic!(),
@@ -265,15 +257,9 @@ fn two_nodes_transfer_lots_of_packets() {
         match ready!(service2.poll_next_unpin(cx)) {
             Some(GenericProtoOut::CustomProtocolOpen { .. }) => {}
             Some(GenericProtoOut::CustomMessage { message, .. }) => {
-                match Message::<Block>::decode(&mut &message[..]).unwrap() {
-                    Message::<Block>::BlockResponse(BlockResponse { id: _, blocks }) => {
-                        assert!(blocks.is_empty());
-                        packet_counter += 1;
-                        if packet_counter == NUM_PACKETS {
-                            return Poll::Ready(());
-                        }
-                    }
-                    _ => panic!(),
+                packet_counter += 1;
+                if packet_counter == NUM_PACKETS {
+                    return Poll::Ready(());
                 }
             }
             _ => panic!(),
@@ -305,10 +291,7 @@ fn basic_two_nodes_requests_in_parallel() {
                 }
             };
 
-            to_send.push(Message::<Block>::BlockResponse(BlockResponse {
-                id: req_id,
-                blocks: Vec::new(),
-            }));
+            to_send.push(vec![0]);
         }
         to_send
     };
