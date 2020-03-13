@@ -60,6 +60,10 @@ impl<'txn> StateStore<'txn> {
     pub fn create_account(&self, account_address: AccountAddress) -> Result<()> {
         self.chain_state.create_account(account_address)
     }
+
+    pub fn state(&mut self) -> &'txn dyn ChainState {
+        self.chain_state
+    }
 }
 
 impl<'txn> StateView for StateStore<'txn> {

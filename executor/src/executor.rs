@@ -12,8 +12,7 @@ use types::{
     vm_error::VMStatus,
 };
 use vm_runtime::starcoin_vm::StarcoinVM;
-use vm_runtime::genesis::{ generate_genesis_transaction, GENESIS_KEYPAIR, };
-use state_tree::mock::MockStateNodeStore;
+use vm_runtime::genesis::{ generate_genesis_state_set, GENESIS_KEYPAIR, };
 use statedb::ChainStateDB;
 use std::sync::Arc;
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
@@ -35,21 +34,13 @@ impl Executor {
 
 impl TransactionExecutor for Executor {
     fn init_genesis(_config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
-        let chain_state = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
+        let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
+        let mut chain_state =
+            ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
 
         // ToDo: load genesis txn from genesis.blob, instead of generating from stdlib
-        let genesis_state_set = match generate_genesis_transaction(
-            &GENESIS_KEYPAIR.0,
-            GENESIS_KEYPAIR.1.clone(),
-        )
-            .payload()
-            {
-                TransactionPayload::StateSet(state_set) => state_set.clone(),
-                _ => panic!("Expected writeset txn in genesis txn"),
-            };
-
-        chain_state.apply(genesis_state_set);
-        Ok((chain_state.state_root(), chain_state.dump()?))
+        generate_genesis_state_set( &GENESIS_KEYPAIR.0,
+                                    GENESIS_KEYPAIR.1.clone(), &chain_state)
     }
 
     fn execute_transaction(

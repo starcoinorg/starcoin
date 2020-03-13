@@ -1,42 +1,46 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
 use crate::genesis_gas_schedule::initial_gas_schedule;
 use crate::transaction_helper::TransactionHelper;
-use stdlib::stdlib_modules;
+use stdlib::{stdlib_modules, StdLibOptions};
 use once_cell::sync::Lazy;
 use bytecode_verifier::VerifiedModule;
-
+use crypto::HashValue;
 use crypto::{
     ed25519::*,
-};
-use types::{
-    account_config,
 };
 use libra_types::{
     access_path::AccessPath,
     transaction::{ChangeSet, RawTransaction,},
     byte_array::ByteArray,
     account_address::AccountAddress,
-    identifier::Identifier,
 
+};
+use move_core_types::identifier::Identifier;
+use move_vm_runtime::MoveVM;
+use move_vm_state::{
+    data_cache::BlockDataCache,
+    execution_context::{ExecutionContext, TransactionExecutionContext},
 };
 use types::{
     transaction::{RawUserTransaction, SignatureCheckedTransaction},
     state_set::ChainStateSet,
+    account_config,
 };
 use vm::{
     access::ModuleAccess,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
-use vm_runtime::{
-    chain_state::{ChainState, TransactionExecutionContext},
-    data_cache::BlockDataCache,
-    move_vm::MoveVM,
-    system_module_names::*,
+use crate::{
+    system_module_names::*, chain_state::StateStore,
 };
 use libra_state_view::StateView;
-use vm_runtime_types::value::Value;
+use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
 use rand::{rngs::StdRng, SeedableRng};
+use traits::ChainState;
 
 //use std::str::FromStr;
 
@@ -59,12 +63,13 @@ static EPILOGUE: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unw
 static ROTATE_AUTHENTICATION_KEY: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("rotate_authentication_key").unwrap());
 
-pub fn generate_genesis_transaction(
+pub fn generate_genesis_state_set(
     private_key: &Ed25519PrivateKey,
     public_key: Ed25519PublicKey,
-) -> SignatureCheckedTransaction {
+    chain_state: &dyn ChainState,
+) -> Result<(HashValue, ChainStateSet)> {
     // Compile the needed stdlib modules.
-    let modules = stdlib_modules();
+    let modules = stdlib_modules(StdLibOptions::Staged);
 
     // create a MoveVM
     let mut move_vm = MoveVM::new();
@@ -87,26 +92,20 @@ pub fn generate_genesis_transaction(
         move_vm.cache_module(module.clone());
     }
 
-    // generate the genesis WriteSet
-    let genesis_state_set = {
-        {
-            create_and_initialize_main_accounts(
-                &move_vm,
-                &gas_schedule,
-                &mut interpreter_context,
-                &public_key,
-                initial_gas_schedule(&move_vm, &data_cache),
-            );
-            publish_stdlib(&mut interpreter_context, modules);
+    create_and_initialize_main_accounts(
+        &move_vm,
+        &gas_schedule,
+        &mut interpreter_context,
+        &public_key,
+        initial_gas_schedule(&move_vm, &data_cache),
+    );
+    publish_stdlib(&mut interpreter_context, modules);
 
-            ChainStateSet::new(
-               vec![],
-            )
-        }
-    };
-    let transaction =
-        RawUserTransaction::new_state_set(account_config::association_address(), 0, genesis_state_set);
-    transaction.sign(private_key, public_key).unwrap()
+    let write_set = interpreter_context.make_write_set()?;
+    let mut state_store = StateStore::new(chain_state);
+    state_store.add_write_set(&write_set);
+
+    Ok((state_store.state().state_root(), state_store.state().dump()?))
 }
 
 
@@ -232,7 +231,7 @@ fn create_and_initialize_main_accounts(
 }
 
 /// Publish the standard library.
-fn publish_stdlib(interpreter_context: &mut dyn ChainState, stdlib: &[VerifiedModule]) {
+fn publish_stdlib(interpreter_context: &mut dyn LibraChainState, stdlib: &[VerifiedModule]) {
     for module in stdlib {
         let mut module_vec = vec![];
         module.serialize(&mut module_vec).unwrap();

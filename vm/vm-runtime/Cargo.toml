@@ -11,6 +11,7 @@ anyhow = "1.0"
 once_cell = "1.2.0"
 types = { package="starcoin-types", path = "../../types"}
 libra-state-view = { package="libra-state-view", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+move-core-types = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
 move-vm-runtime = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
 move-vm-types = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
 move-vm-state = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
@@ -25,7 +26,7 @@ crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 rand = "0.6.5"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 stdlib = { package="stdlib", path = "../stdlib"}
-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+bytecode-verifier = { git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
 
 
 [dev-dependencies]
