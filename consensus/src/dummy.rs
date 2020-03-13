@@ -5,13 +5,13 @@ use crate::{Consensus, ConsensusHeader};
 use anyhow::{Error, Result};
 use config::NodeConfig;
 use futures::channel::oneshot::Receiver;
+use rand::{thread_rng, EntropyRng, Rng, SeedableRng, StdRng};
 use std::convert::TryFrom;
 use std::sync::Arc;
+use std::thread;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
-use rand::{thread_rng, Rng};
-use std::thread;
-use std::time::Duration;
 
 pub struct DummyHeader {}
 
@@ -52,8 +52,13 @@ impl Consensus for DummyConsensus {
         block_template: BlockTemplate,
         _cancel: Receiver<()>,
     ) -> Result<Block> {
-        let mut rng = thread_rng();
-        let time: u64 = rng.gen_range(1, 7);
+        let start = SystemTime::now();
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        let mut rng: StdRng = SeedableRng::seed_from_u64(since_the_epoch.as_secs());
+        let time: u64 = rng.gen_range(10, 30);
+        println!("rand time : {}", time);
         thread::sleep(Duration::from_secs(time));
         Ok(block_template.into_block(DummyHeader {}))
     }

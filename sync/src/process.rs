@@ -111,7 +111,7 @@ impl Handler<RpcRequestMessage> for ProcessActor {
             RPCRequest::GetHashByNumberMsg(process_msg)
             | RPCRequest::GetDataByHashMsg(process_msg) => match process_msg {
                 ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg) => {
-                    debug!("get_hash_by_number_msg");
+                    info!("get_hash_by_number_msg:{:?}", get_hash_by_number_msg);
                     Arbiter::spawn(async move {
                         let batch_hash_by_number_msg = Processor::handle_get_hash_by_number_msg(
                             processor.clone(),

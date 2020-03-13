@@ -41,11 +41,11 @@ pub struct GenerateBlockEvent {}
 
 pub struct MinerActor<C, E, P, CS, S>
 where
-    C: Consensus + 'static,
-    E: TransactionExecutor + 'static,
-    P: TxPoolAsyncService + 'static,
-    CS: ChainAsyncService + 'static,
-    S: BlockChainStore + 'static,
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -58,11 +58,11 @@ where
 
 impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
 where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: BlockChainStore + 'static,
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -123,11 +123,11 @@ where
 
 impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
 where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: BlockChainStore + 'static,
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     type Context = Context<Self>;
 
@@ -138,11 +138,11 @@ where
 
 impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
 where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: BlockChainStore + 'static,
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
@@ -163,18 +163,20 @@ where
             if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
             {
                 let chain_info = chain.get_chain_info().await.unwrap();
-                info!("head block : {:?}, txn len: {}", chain_info, txns.len());
-                let block_chain =
-                    BlockChain::<E, C, S, P>::new(config.clone(), chain_info, storage, txpool)
-                        .unwrap();
-                match miner::mint::<C>(config, txns, &block_chain, bus) {
-                    Err(e) => {
-                        error!("mint block err: {:?}", e);
-                    }
-                    Ok(_) => {
-                        info!("mint block success.");
-                    }
-                }
+                debug!("head block : {:?}, txn len: {}", chain_info, txns.len());
+                std::thread::spawn(move || {
+                    let block_chain =
+                        BlockChain::<E, C, S, P>::new(config.clone(), chain_info, storage, txpool)
+                            .unwrap();
+                    match miner::mint::<C>(config, txns, &block_chain, bus) {
+                        Err(e) => {
+                            error!("mint block err: {:?}", e);
+                        }
+                        Ok(_) => {
+                            info!("mint block success.");
+                        }
+                    };
+                });
             }
         }
         .into_actor(self);

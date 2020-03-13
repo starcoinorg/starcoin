@@ -183,6 +183,7 @@ impl DownloadActor {
                                 ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg),
                             );
 
+                            info!("request id 1 :{}", get_hash_by_number_req.get_id());
                             if let RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) =
                                 network
                                     .clone()
@@ -192,7 +193,7 @@ impl DownloadActor {
                                         do_duration(DELAY_TIME),
                                     )
                                     .await
-                                    .unwrap()
+                                    .expect("send_request 1 err.")
                             {
                                 debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
                                 hash_with_number = Downloader::find_ancestor(
@@ -235,6 +236,7 @@ impl DownloadActor {
                                         ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg),
                                     );
 
+                                    info!("request id 2 :{}", get_hash_by_number_req.get_id());
                                     if let RPCResponse::BatchHashByNumberMsg(
                                         batch_hash_by_number_msg,
                                     ) = network
@@ -245,7 +247,7 @@ impl DownloadActor {
                                             do_duration(DELAY_TIME),
                                         )
                                         .await
-                                        .unwrap()
+                                        .expect("send_request 2 err.")
                                     {
                                         Downloader::handle_batch_hash_by_number_msg(
                                             downloader.clone(),
@@ -262,6 +264,7 @@ impl DownloadActor {
                                             ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
                                         );
 
+                                        info!("request id 3 :{}", get_data_by_hash_req.get_id());
                                         if let RPCResponse::BatchHeaderAndBodyMsg(headers, bodies) =
                                             network
                                                 .clone()
@@ -271,7 +274,7 @@ impl DownloadActor {
                                                     do_duration(DELAY_TIME),
                                                 )
                                                 .await
-                                                .unwrap()
+                                                .expect("send_request 3 err.")
                                         {
                                             Downloader::do_blocks(
                                                 downloader.clone(),
@@ -340,6 +343,12 @@ impl Downloader {
         if lock.get(&peer).is_none()
             || (lock.get(&peer).unwrap().header.number() < latest_state_msg.header.number())
         {
+            info!(
+                "peer {:?} : latest number: {} , hash : {:?}",
+                peer.id,
+                latest_state_msg.header.number(),
+                latest_state_msg.header.id()
+            );
             lock.insert(peer, latest_state_msg.clone());
         }
     }
@@ -373,6 +382,10 @@ impl Downloader {
             .header
             .number();
 
+        info!(
+            "sync with peer {:?} : latest number: {} , begin number : {}",
+            peer.id, number, begin_number
+        );
         if begin_number < number {
             let mut numbers = Vec::new();
             let mut end = false;
@@ -391,6 +404,7 @@ impl Downloader {
 
             Some((GetHashByNumberMsg { numbers }, end, next_number))
         } else {
+            warn!("GetHashByNumberMsg is none.");
             None
         }
     }

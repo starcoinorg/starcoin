@@ -3,13 +3,13 @@
 
 use crate::block::{BlockHeader, BlockNumber};
 use anyhow::Result;
+use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{HashValue};
 
 use std::convert::{TryFrom, TryInto};
 use std::env::split_paths;
-use logger::prelude::*;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
@@ -105,10 +105,12 @@ impl ChainInfo {
         //assert!(number < (self.hash_number.len() as u64));
         let len = self.hash_number.len() as u64;
         if number < len {
-            Some(self.hash_number
-                .get::<usize>((number as usize))
-                .unwrap()
-                .clone())
+            Some(
+                self.hash_number
+                    .get::<usize>((number as usize))
+                    .unwrap()
+                    .clone(),
+            )
         } else {
             warn!("get_hash_by_number:{}:{}", number, len);
             None

@@ -51,6 +51,7 @@ impl Genesis {
         let consensus_header = C::init_genesis_header(config.clone());
         let block = Block::genesis_block(accumulator_root, state_root, consensus_header);
         assert_eq!(block.header().number(), 0);
+        info!("Genesis block id : {:?}", block.header().id());
         BlockStorageOp::commit_block(storage.as_ref(), block.clone())?;
         let mut hash_number = Vec::new();
         hash_number.push(block.header().id());
