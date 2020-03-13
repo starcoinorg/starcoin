@@ -6,10 +6,12 @@ use anyhow::Result;
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::{test_utils::KeyPair, Uniform};
 use libp2p::multiaddr::Multiaddr;
+use logger::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
+use types::peer_info::PeerId;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
@@ -59,6 +61,8 @@ impl NetworkConfig {
         } else {
             // generate key and save it
             let keypair = crate::gen_keypair();
+            let peer_id = PeerId::from_ed25519_public_key(keypair.public_key.clone());
+            info!("peer_id is : {:?}", peer_id.to_base58());
             crate::save_key(&keypair.private_key.to_bytes(), &path)?;
             keypair
         };
