@@ -31,7 +31,7 @@ use move_vm_state::{
 use move_vm_types::chain_state::ChainState as LibraChainState;
 use move_vm_types::values::Value;
 use std::sync::Arc;
-use traits::ChainState;
+
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
@@ -69,7 +69,7 @@ impl StarcoinVM {
 
     fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
         info!("load gas schedule");
-        let mut ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
+        let _ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
         //        self.gas_schedule = self.move_vm.load_gas_schedule(&mut ctx, data_cache).ok();
         self.gas_schedule = Some(CostTable::zero());
     }
@@ -83,12 +83,12 @@ impl StarcoinVM {
     fn verify_transaction(
         &self,
         transaction: &SignatureCheckedTransaction,
-        state_view: &dyn StateView,
+        _state_view: &dyn StateView,
         remote_cache: &dyn RemoteCache,
-        txn_data: &TransactionMetadata,
+        _txn_data: &TransactionMetadata,
     ) -> Result<VerifiedTranscationPayload, VMStatus> {
         info!("very transaction");
-        let mut ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
+        let _ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
         // ToDo: check gas
         match transaction.payload() {
             TransactionPayload::Script(script) => {

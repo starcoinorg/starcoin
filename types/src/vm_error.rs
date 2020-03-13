@@ -6,7 +6,7 @@
 
 #![allow(clippy::unit_arg)]
 
-use anyhow::{Error, Result};
+
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{de, ser};
 use std::{convert::TryFrom, fmt};

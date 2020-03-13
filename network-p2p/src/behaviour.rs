@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::protocol::{self, CustomMessageOutcome, Protocol};
+use crate::protocol::{CustomMessageOutcome, Protocol};
 use crate::{
     debug_info, discovery::DiscoveryBehaviour, discovery::DiscoveryOut, protocol::event::DhtEvent,
     protocol::event::Event, DiscoveryNetBehaviour,

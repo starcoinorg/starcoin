@@ -55,7 +55,7 @@ use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
 use crate::protocol::event::Event;
-use crate::protocol::{self, PeerInfo, Protocol};
+use crate::protocol::{Protocol};
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
     parse_addr, parse_str_addr,
@@ -216,7 +216,7 @@ impl NetworkWorker {
                 };
                 transport::build_transport(local_identity, config_mem, config_wasm, flowctrl)
             };
-            let mut builder = SwarmBuilder::new(transport, behaviour, local_peer_id.clone());
+            let builder = SwarmBuilder::new(transport, behaviour, local_peer_id.clone());
             (builder.build(), bandwidth)
         };
 
@@ -674,7 +674,7 @@ impl Future for NetworkWorker {
                     protocol_name,
                     message,
                 ),
-                ServiceToWorkerMsg::RegisterNotifProtocol { protocol_name } => {
+                ServiceToWorkerMsg::RegisterNotifProtocol { protocol_name: _ } => {
                     // let events = this
                     //     .network_service
                     //     .user_protocol_mut()
@@ -688,10 +688,10 @@ impl Future for NetworkWorker {
                     .network_service
                     .user_protocol_mut()
                     .disconnect_peer(&who),
-                ServiceToWorkerMsg::IsConnected(who, mut tx) => {
+                ServiceToWorkerMsg::IsConnected(who, tx) => {
                     tx.send(this.is_open(&who));
                 }
-                ServiceToWorkerMsg::ConnectedPeers(mut tx) => {
+                ServiceToWorkerMsg::ConnectedPeers(tx) => {
                     let peers = this.connected_peers();
                     let mut result = HashSet::new();
                     for peer in peers {

@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain_state::StateStore;
-use anyhow::{Error, Result};
+use anyhow::{Result};
 use config::VMConfig;
-use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
-use logger::prelude::*;
+use crypto::{ed25519::compat};
+
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
+
 use std::convert::TryInto;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
@@ -63,7 +63,7 @@ impl MockVM {
         account_address: AccountAddress,
         chain_state: &dyn ChainState,
     ) -> Result<()> {
-        let mut state_store = StateStore::new(chain_state);
+        let state_store = StateStore::new(chain_state);
         state_store.create_account(account_address)
     }
 
@@ -73,7 +73,7 @@ impl MockVM {
         txn: Transaction,
     ) -> Result<TransactionOutput> {
         let mut state_store = StateStore::new(chain_state);
-        let mut output;
+        let output;
 
         match txn {
             Transaction::UserTransaction(txn) => match decode_transaction(&txn) {
@@ -118,7 +118,7 @@ impl MockVM {
 
                     let balance_sender = account_resource_sender.balance();
                     let balance_receiver = account_resource_receiver.balance();
-                    let mut deduction;
+                    let deduction;
 
                     if balance_sender < amount {
                         deduction = balance_sender;
@@ -149,7 +149,7 @@ impl MockVM {
                 }
             },
             Transaction::BlockMetadata(block_metadata) => {
-                let (id, timestamp, author) = block_metadata.into_inner().unwrap();
+                let (_id, _timestamp, author) = block_metadata.into_inner().unwrap();
                 let access_path = AccessPath::new_for_account(author);
                 let account_resource: AccountResource = state_store
                     .get_from_statedb(&access_path)

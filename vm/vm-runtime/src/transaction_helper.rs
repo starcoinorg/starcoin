@@ -3,7 +3,6 @@
 
 use libra_types::{
     account_address::AccountAddress as LibraAccountAddress,
-    byte_array::ByteArray as LibraByteArray,
     contract_event::ContractEvent as LibraContractEvent,
     transaction::{
         Module as LibraModule, RawTransaction as LibraRawTransaction, Script as LibraScript,
@@ -14,7 +13,7 @@ use libra_types::{
     },
     vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
 };
-use num_enum::TryFromPrimitive;
+
 use std::convert::TryFrom;
 use types::{
     account_address::{AccountAddress, ADDRESS_LENGTH},
@@ -80,7 +79,7 @@ impl TransactionHelper {
             }
         }
     }
-    pub fn to_starcoin_Events(events: Vec<LibraContractEvent>) -> Vec<ContractEvent> {
+    pub fn to_starcoin_Events(_events: Vec<LibraContractEvent>) -> Vec<ContractEvent> {
         // ToDo: support ContractEvent
         vec![]
     }

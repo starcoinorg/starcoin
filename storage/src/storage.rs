@@ -135,7 +135,7 @@ where
         self.store.keys()
     }
     fn compose_key(&self, source_key: Vec<u8>) -> Result<Vec<u8>> {
-        let mut temp_vec = self.prefix_key.as_bytes().to_vec();
+        let temp_vec = self.prefix_key.as_bytes().to_vec();
         let mut compose = Vec::with_capacity(temp_vec.len() + source_key.len());
         compose.extend(temp_vec);
         compose.extend(source_key);

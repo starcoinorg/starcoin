@@ -3,9 +3,7 @@
 
 use crate::{StateNode, StateNodeStore};
 use anyhow::Result;
-use forkable_jellyfish_merkle::node_type::Node;
-use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
-use starcoin_crypto::hash::CryptoHash;
+
 use starcoin_crypto::HashValue;
 use std::cell::RefCell;
 use std::collections::HashMap;

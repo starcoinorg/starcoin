@@ -9,8 +9,8 @@ use crate::block::BlockHeader;
 use crate::byte_array::ByteArray;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{ed25519::Ed25519Signature, hash::CryptoHash, HashValue};
-use std::collections::BTreeMap;
+use starcoin_crypto::{hash::CryptoHash, HashValue};
+
 
 /// Struct that will be persisted on chain to store the information of the current block.
 ///

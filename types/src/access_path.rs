@@ -40,21 +40,17 @@
 
 use crate::{
     account_address::AccountAddress,
-    account_config::{association_address, ACCOUNT_RESOURCE_PATH},
+    account_config::ACCOUNT_RESOURCE_PATH,
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, ResourceKey, StructTag},
 };
-use anyhow::{Error, Result};
+
 use mirai_annotations::*;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use once_cell::sync::Lazy;
+
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, HashValue};
-use std::{
-    convert::{TryFrom, TryInto},
-    fmt,
-    slice::Iter,
-};
+use std::{fmt, slice::Iter};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, Ord, PartialOrd)]
 pub struct Field(Identifier);
@@ -315,7 +311,6 @@ impl fmt::Display for AccessPath {
         match &self.data_type {
             DataType::RESOURCE => write!(f, "type: Resource, ")?,
             DataType::CODE => write!(f, "type: Module, ")?,
-            tag => write!(f, "type: {:?}, ", tag)?,
         };
         write!(f, "hash: {:?}, ", self.data_hash.to_hex())?;
         // write!(

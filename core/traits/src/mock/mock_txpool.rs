@@ -5,8 +5,8 @@ use crate::TxPoolAsyncService;
 use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
-use std::borrow::{Borrow, BorrowMut};
-use std::cell::RefCell;
+
+
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
 use types::transaction;
@@ -67,16 +67,16 @@ impl TxPoolAsyncService for MockTxPoolService {
 
     async fn chain_new_blocks(
         self,
-        enacted: Vec<HashValue>,
-        retracted: Vec<HashValue>,
+        _enacted: Vec<HashValue>,
+        _retracted: Vec<HashValue>,
     ) -> Result<()> {
         unimplemented!()
     }
 
     async fn rollback(
         self,
-        enacted: Vec<SignedUserTransaction>,
-        retracted: Vec<SignedUserTransaction>,
+        _enacted: Vec<SignedUserTransaction>,
+        _retracted: Vec<SignedUserTransaction>,
     ) -> Result<()> {
         unimplemented!()
     }

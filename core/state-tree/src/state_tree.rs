@@ -1,18 +1,18 @@
-use anyhow::{bail, Result};
+use anyhow::{Result};
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::iterator::JellyfishMerkleIterator;
-use forkable_jellyfish_merkle::node_type::{LeafNode, Node, NodeKey};
+use forkable_jellyfish_merkle::node_type::{Node, NodeKey};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
-    tree_cache::TreeCache, JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
+    JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
     SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
 use starcoin_types::state_set::StateSet;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::ops::{Deref, DerefMut};
-use std::sync::atomic::AtomicBool;
+use std::collections::{BTreeMap};
+use std::ops::{DerefMut};
+
 use std::sync::{Arc, Mutex, RwLock};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -232,7 +232,7 @@ impl StateTree {
     pub fn dump(&self) -> Result<StateSet> {
         let cur_root_hash = self.root_hash();
         let mut cache_guard = self.cache.lock().unwrap();
-        let mut cache = cache_guard.deref_mut();
+        let cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
             cache,
@@ -255,7 +255,7 @@ impl StateTree {
             return Ok(cur_root_hash);
         }
         let mut cache_guard = self.cache.lock().unwrap();
-        let mut cache = cache_guard.deref_mut();
+        let cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
             cache,
@@ -305,7 +305,7 @@ impl StateTree {
 
     /// get all changes so far based on initial root_hash.
     fn get_change_sets(&self) -> (HashValue, TreeUpdateBatch) {
-        let mut cache_guard = self.cache.lock().unwrap();
+        let cache_guard = self.cache.lock().unwrap();
         (cache_guard.root_hash, cache_guard.change_set.clone())
     }
     // TODO: to keep atomic with other commit.

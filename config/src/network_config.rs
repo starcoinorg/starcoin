@@ -4,11 +4,11 @@
 use anyhow::ensure;
 use anyhow::Result;
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use crypto::{test_utils::KeyPair, Uniform};
-use libp2p::multiaddr::Multiaddr;
+use crypto::{test_utils::KeyPair};
+
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::fs;
+
 use std::path::PathBuf;
 use std::sync::Arc;
 use types::peer_info::PeerId;

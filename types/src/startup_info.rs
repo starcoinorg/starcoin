@@ -1,14 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, BlockHeader, BlockNumber};
+use crate::block::{BlockHeader, BlockNumber};
 use anyhow::Result;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
-use std::collections::HashMap;
+use starcoin_crypto::{HashValue};
+
 use std::convert::{TryFrom, TryInto};
-use std::env::split_paths;
+
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
@@ -103,7 +103,7 @@ impl ChainInfo {
     pub fn get_hash_by_number(&self, number: u64) -> HashValue {
         assert!(number < (self.hash_number.len() as u64));
         self.hash_number
-            .get::<usize>((number as usize))
+            .get::<usize>(number as usize)
             .unwrap()
             .clone()
     }

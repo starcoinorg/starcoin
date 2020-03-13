@@ -18,7 +18,7 @@
 
 
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
-use codec::{Decode, Encode};
+use codec::{Encode};
 use futures::{prelude::*, ready};
 use libp2p::core::nodes::listeners::ListenerId;
 use libp2p::core::ConnectedPoint;
@@ -243,7 +243,7 @@ fn two_nodes_transfer_lots_of_packets() {
         loop {
             match ready!(service1.poll_next_unpin(cx)) {
                 Some(GenericProtoOut::CustomProtocolOpen { peer_id, .. }) => {
-                    for n in 0..NUM_PACKETS {
+                    for _n in 0..NUM_PACKETS {
                         service1.send_packet(&peer_id, vec![]);
                     }
                 }
@@ -256,7 +256,7 @@ fn two_nodes_transfer_lots_of_packets() {
     let fut2 = future::poll_fn(move |cx| loop {
         match ready!(service2.poll_next_unpin(cx)) {
             Some(GenericProtoOut::CustomProtocolOpen { .. }) => {}
-            Some(GenericProtoOut::CustomMessage { message, .. }) => {
+            Some(GenericProtoOut::CustomMessage { message: _, .. }) => {
                 packet_counter += 1;
                 if packet_counter == NUM_PACKETS {
                     return Poll::Ready(());
@@ -281,7 +281,7 @@ fn basic_two_nodes_requests_in_parallel() {
         let mut existing_ids = HashSet::new();
         for _ in 0..200 {
             // Note: don't make that number too high or the CPU usage will explode.
-            let req_id = loop {
+            let _req_id = loop {
                 let req_id = rand::random::<u64>();
 
                 // ensure uniqueness - odds of randomly sampling collisions

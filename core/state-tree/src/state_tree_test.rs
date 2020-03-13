@@ -1,7 +1,7 @@
 use super::*;
 use crate::mock::MockStateNodeStore;
 use anyhow::Result;
-use forkable_jellyfish_merkle::node_type::Node;
+
 use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::hash::*;
 use std::sync::Arc;
@@ -124,7 +124,7 @@ pub fn test_state_commit() -> Result<()> {
     let account1 = update_nibble(&hash_value, 0, 1);
     let account1 = update_nibble(&account1, 2, 2);
     state.put(account1, vec![0, 0, 0]);
-    let new_root_hash = state.commit()?;
+    let _new_root_hash = state.commit()?;
 
     let account3 = update_nibble(&account1, 2, 3);
     for (k, v) in vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])] {

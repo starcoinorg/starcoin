@@ -2,20 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_helper::AccessPathHelper;
-use anyhow::{Error, Result};
+use anyhow::{Result};
 use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath as LibraAccessPath,
     write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet},
 };
 use logger::prelude::*;
-use move_vm_state::data_cache::{BlockDataCache, RemoteCache};
-use std::sync::Arc;
+use move_vm_state::data_cache::{RemoteCache};
+
 use traits::ChainState;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    write_set::{WriteOp, WriteSet},
 };
 use vm::errors::VMResult;
 

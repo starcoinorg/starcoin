@@ -4,7 +4,6 @@
 use libra_types::access_path::AccessPath as LibraAccessPath;
 use types::{
     access_path::AccessPath,
-    account_address::{AccountAddress, ADDRESS_LENGTH},
 };
 
 pub struct AccessPathHelper {}

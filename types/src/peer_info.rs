@@ -3,9 +3,9 @@
 
 use libp2p::identity::PublicKey;
 use libp2p::multihash;
-use serde::{de::Error as _, de::Unexpected, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+
 use std::fmt;
 use std::str::FromStr;
 
@@ -144,6 +144,6 @@ mod tests {
 
     #[test]
     fn test_peer_info() {
-        let peer_info = PeerInfo::random();
+        let _peer_info = PeerInfo::random();
     }
 }

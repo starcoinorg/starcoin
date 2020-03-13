@@ -269,10 +269,10 @@ mod tests {
     extern crate chrono;
 
     use crate::memory_storage::MemoryStorage;
-    use anyhow::Result;
+
     use chrono::prelude::*;
     use crypto::{hash::CryptoHash, HashValue};
-    use std::time::SystemTime;
+
     use types::account_address::AccountAddress;
     use types::block::{Block, BlockBody, BlockHeader};
     use types::transaction::{SignedUserTransaction, TransactionInfo};
@@ -417,10 +417,10 @@ mod tests {
     #[test]
     fn test_block_branch_hashes() {
         let store = Arc::new(MemoryStorage::new());
-        let block_store = Arc::new(MemoryStorage::new());
-        let header_store = Arc::new(MemoryStorage::new());
-        let sons_store = Arc::new(MemoryStorage::new());
-        let body_store = Arc::new(MemoryStorage::new());
+        let _block_store = Arc::new(MemoryStorage::new());
+        let _header_store = Arc::new(MemoryStorage::new());
+        let _sons_store = Arc::new(MemoryStorage::new());
+        let _body_store = Arc::new(MemoryStorage::new());
         let storage = StarcoinStorage::new(store).unwrap();
         let consensus_header = vec![0u8; 1];
         let dt = Local::now();

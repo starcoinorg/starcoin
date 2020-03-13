@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path::DataType;
-use anyhow::Result;
+
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
@@ -99,7 +99,7 @@ impl ChainStateSet {
         Self { state_sets }
     }
 
-    pub fn into_inner(self) -> (Vec<(HashValue, AccountStateSet)>) {
+    pub fn into_inner(self) -> Vec<(HashValue, AccountStateSet)> {
         (self.state_sets)
     }
 

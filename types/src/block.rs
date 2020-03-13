@@ -6,7 +6,7 @@ use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedUserTransaction;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
-use crate::state_set::ChainStateSet;
+
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::create_literal_hash;
@@ -411,6 +411,6 @@ mod tests {
     #[test]
     fn test_block_hash() {
         let block = Block::new_nil_block_for_test(BlockHeader::genesis_block_header_for_test());
-        let hash = block.crypto_hash();
+        let _hash = block.crypto_hash();
     }
 }

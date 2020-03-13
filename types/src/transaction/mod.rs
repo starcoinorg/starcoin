@@ -8,16 +8,11 @@ use crate::{
     state_set::ChainStateSet,
     vm_error::{StatusCode, StatusType, VMStatus},
 };
-use anyhow::{ensure, format_err, Error, Result};
+use anyhow::{format_err, Error, Result};
 use starcoin_crypto::{ed25519::*, hash::CryptoHash, traits::*, HashValue};
 
 use serde::{de, ser, Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    convert::{TryFrom, TryInto},
-    fmt,
-    time::Duration,
-};
+use std::{convert::TryFrom, fmt, time::Duration};
 
 mod error;
 pub mod helpers;

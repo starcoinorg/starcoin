@@ -27,7 +27,7 @@ fn test_accumulator_append() {
     {
         assert_eq!(accumulator.root_hash(), expected_root_hash);
         assert_eq!(accumulator.num_leaves(), i as LeafCount);
-        accumulator.append(&[leaf]);
+        accumulator.append(&[leaf]).unwrap();
     }
 }
 
@@ -57,7 +57,7 @@ fn test_one_leaf() {
 fn test_multiple_leaves() {
     let mut batch1 = create_leaves(0..8);
     let mock_store = MockAccumulatorStore::new();
-    let mut accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
+    let accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
     let batch2 = create_leaves(0..4);

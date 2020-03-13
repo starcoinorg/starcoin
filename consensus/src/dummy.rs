@@ -17,7 +17,7 @@ impl ConsensusHeader for DummyHeader {}
 impl TryFrom<Vec<u8>> for DummyHeader {
     type Error = Error;
 
-    fn try_from(value: Vec<u8>) -> Result<Self> {
+    fn try_from(_value: Vec<u8>) -> Result<Self> {
         Ok(DummyHeader {})
     }
 }
@@ -37,8 +37,8 @@ impl Consensus for DummyConsensus {
 
     fn verify_header(
         _config: Arc<NodeConfig>,
-        reader: &dyn ChainReader,
-        header: &BlockHeader,
+        _reader: &dyn ChainReader,
+        _header: &BlockHeader,
     ) -> Result<()> {
         Ok(())
     }

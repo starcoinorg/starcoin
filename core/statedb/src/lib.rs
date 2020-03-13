@@ -280,14 +280,14 @@ impl ChainStateReader for ChainStateDB {
         for (address_hash, account_state_bytes) in global_states.iter() {
             let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
 
-            let code_set = match account_state.code_root() {
+            let _code_set = match account_state.code_root() {
                 Some(root) => Some(self.new_state_tree(root).dump()?),
                 None => None,
             };
             let mut state_sets = vec![];
             for storage_root in account_state.storage_roots().iter() {
                 let state_set = match storage_root {
-                    Some(storage_root) => {
+                    Some(_storage_root) => {
                         Some(self.new_state_tree(account_state.resource_root()).dump()?)
                     }
                     None => None,

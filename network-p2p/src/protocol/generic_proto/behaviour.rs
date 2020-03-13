@@ -21,7 +21,7 @@ use crate::protocol::generic_proto::upgrade::RegisteredProtocol;
 use crate::{config::ProtocolId, DiscoveryNetBehaviour};
 
 use bytes::BytesMut;
-use codec::Encode as _;
+
 use fnv::FnvHashMap;
 use futures::prelude::*;
 use libp2p::core::{ConnectedPoint, Multiaddr, PeerId};
@@ -1133,7 +1133,7 @@ impl NetworkBehaviour for GenericProto {
 
             NotifsHandlerOut::Notification {
                 protocol_name,
-                message,
+                message: _,
             } => {
                 debug_assert!(self.is_open(&source));
                 trace!(

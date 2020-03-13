@@ -61,6 +61,7 @@ fn is_valid(s: &str) -> bool {
 
 /// A regex describing what identifiers are allowed. Used for proptests.
 // TODO: "<SELF>" is coded as an exception. It should be removed once CompiledScript goes away.
+#[allow(dead_code)]
 #[cfg(any(test, feature = "fuzzing"))]
 pub(crate) static ALLOWED_IDENTIFIERS: &str =
     r"(?:[a-zA-Z][a-zA-Z0-9_]*)|(?:_[a-zA-Z0-9_]+)|(?:<SELF>)";

@@ -2,16 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use crypto::{hash::CryptoHash, HashValue};
-use std::collections::HashMap;
-use std::sync::Arc;
+use crypto::HashValue;
+
 use types::{
-    access_path::AccessPath,
-    account_address::AccountAddress,
-    account_state::AccountState,
-    language_storage::{ModuleId, StructTag},
+    access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
     state_set::ChainStateSet,
-    transaction::{Transaction, TransactionInfo},
 };
 
 pub trait ChainStateReader {

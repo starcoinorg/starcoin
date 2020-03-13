@@ -62,7 +62,7 @@ use crate::protocol::generic_proto::{
 };
 
 use bytes::BytesMut;
-use codec::Encode as _;
+
 use libp2p::core::upgrade::{
     EitherUpgrade, InboundUpgrade, OutboundUpgrade, SelectUpgrade, UpgradeError,
 };
@@ -104,10 +104,10 @@ pub struct NotifsHandlerProto {
 /// See the documentation at the module level for more information.
 pub struct NotifsHandler {
     /// Handlers for inbound substreams.
-    in_handlers: Vec<(NotifsInHandler)>,
+    in_handlers: Vec<NotifsInHandler>,
 
     /// Handlers for outbound substreams.
-    out_handlers: Vec<(NotifsOutHandler)>,
+    out_handlers: Vec<NotifsOutHandler>,
 
     /// Handler for backwards-compatibility.
     legacy: LegacyProtoHandler,

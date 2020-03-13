@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::TransactionExecutor;
-use anyhow::{Error, Result};
-use compiler::compile::StarcoinCompiler;
+use anyhow::{Result};
+
 use config::VMConfig;
 use crypto::HashValue;
 use traits::ChainState;
@@ -28,7 +28,7 @@ impl Executor {
 }
 
 impl TransactionExecutor for Executor {
-    fn init_genesis(config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
+    fn init_genesis(_config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
         unimplemented!()
     }
 
@@ -43,9 +43,9 @@ impl TransactionExecutor for Executor {
     }
 
     fn validate_transaction(
-        config: &VMConfig,
-        chain_state: &dyn ChainState,
-        txn: SignedUserTransaction,
+        _config: &VMConfig,
+        _chain_state: &dyn ChainState,
+        _txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         None
     }

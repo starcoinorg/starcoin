@@ -3,12 +3,12 @@
 
 use anyhow::Result;
 use config::NodeConfig;
-use crypto::HashValue;
+
 use futures::channel::oneshot;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use traits::ChainReader;
-use types::block::{Block, BlockHeader, BlockNumber, BlockTemplate};
+use types::block::{Block, BlockHeader, BlockTemplate};
 
 pub mod dummy;
 

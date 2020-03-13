@@ -16,7 +16,7 @@ pub struct AccountState {
 impl AccountState {
     pub fn new(mut storage_roots: Vec<Option<HashValue>>) -> AccountState {
         if storage_roots.len() < DataType::LENGTH {
-            storage_roots.extend(vec![None; (DataType::LENGTH - storage_roots.len())]);
+            storage_roots.extend(vec![None; DataType::LENGTH - storage_roots.len()]);
         }
         assert_eq!(
             storage_roots.len(),

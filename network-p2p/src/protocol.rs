@@ -8,15 +8,15 @@ use crate::utils::interval;
 use crate::{DiscoveryNetBehaviour, Multiaddr};
 
 use crate::network_state::Peer;
-use crate::protocol::util::LruHashSet;
-use bytes::{Buf, Bytes, BytesMut};
+
+use bytes::{Bytes, BytesMut};
 use futures::prelude::*;
 use libp2p::core::{nodes::listeners::ListenerId, ConnectedPoint};
 use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
-use serde_json::error;
+
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::pin::Pin;
@@ -196,9 +196,9 @@ impl NetworkBehaviour for Protocol {
             GenericProtoOut::CustomMessage { peer_id, message } => {
                 self.on_custom_message(peer_id, message)
             }
-            GenericProtoOut::Clogged { peer_id, messages } => {
+            GenericProtoOut::Clogged { peer_id: _, messages } => {
                 debug!(target: "sync", "{} clogging messages:", messages.len());
-                for msg in messages.into_iter().take(5) {
+                for _msg in messages.into_iter().take(5) {
                     //let message: Option<Message<B>> = Decode::decode(&mut &msg[..]).ok();
                     //debug!(target: "sync", "{:?}", message);
                     //self.on_clogged_peer(peer_id.clone(), message);
@@ -376,7 +376,7 @@ impl Protocol {
         }
 
         // lock all the the peer lists so that add/remove peer events are in order
-        let removed = {
+        let _removed = {
             self.handshaking_peers.remove(&peer);
         };
     }

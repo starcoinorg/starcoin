@@ -5,19 +5,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    access_path::{AccessPath, Accesses},
+    access_path::{AccessPath},
     account_address::AccountAddress,
     byte_array::ByteArray,
     identifier::{IdentStr, Identifier},
     language_storage::StructTag,
 };
-use anyhow::{bail, Error, Result};
+use anyhow::{Result};
 use once_cell::sync::Lazy;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use std::{
-    collections::BTreeMap,
     convert::{TryFrom, TryInto},
 };
 

@@ -3,13 +3,13 @@
 
 use crate::TransactionExecutor;
 use anyhow::{Error, Result};
-use compiler::compile::StarcoinCompiler;
+
 use config::VMConfig;
-use crypto::{ed25519::compat, ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
-use once_cell::sync::Lazy;
+use crypto::{ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
+
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
-use std::collections::HashMap;
+
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -29,7 +29,7 @@ use types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
-use vm_runtime::mock_vm::{encode_mint_transaction, encode_transfer_transaction, MockVM};
+use vm_runtime::mock_vm::{encode_transfer_transaction, MockVM};
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
@@ -59,11 +59,11 @@ impl MockChainState {
 impl ChainState for MockChainState {}
 
 impl ChainStateReader for MockChainState {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>, Error> {
+    fn get(&self, _access_path: &AccessPath) -> Result<Option<Vec<u8>>, Error> {
         Ok(None)
     }
 
-    fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
+    fn get_account_state(&self, _address: &AccountAddress) -> Result<Option<AccountState>> {
         Ok(None)
     }
 
@@ -81,19 +81,19 @@ impl ChainStateReader for MockChainState {
 }
 
 impl ChainStateWriter for MockChainState {
-    fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
+    fn set(&self, _access_path: &AccessPath, _value: Vec<u8>) -> Result<()> {
         Ok(())
     }
 
-    fn remove(&self, access_path: &AccessPath) -> Result<()> {
+    fn remove(&self, _access_path: &AccessPath) -> Result<()> {
         unimplemented!()
     }
 
-    fn create_account(&self, account_address: AccountAddress) -> Result<(), Error> {
+    fn create_account(&self, _account_address: AccountAddress) -> Result<(), Error> {
         unimplemented!()
     }
 
-    fn apply(&self, state_set: ChainStateSet) -> Result<(), Error> {
+    fn apply(&self, _state_set: ChainStateSet) -> Result<(), Error> {
         unimplemented!()
     }
 }
@@ -155,9 +155,9 @@ impl TransactionExecutor for MockExecutor {
     }
 
     fn validate_transaction(
-        config: &VMConfig,
-        chain_state: &dyn ChainState,
-        txn: SignedUserTransaction,
+        _config: &VMConfig,
+        _chain_state: &dyn ChainState,
+        _txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         None
     }
