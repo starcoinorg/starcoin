@@ -9,7 +9,7 @@ use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_executor::TransactionExecutor;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{BlockChainStore, BlockStorageOp, StarcoinStorage};
+use starcoin_storage::{BlockChainStore, BlockStorageOp};
 use starcoin_types::block::BlockInfo;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::TransactionInfo;
@@ -64,7 +64,7 @@ impl Genesis {
             accumulator.get_frozen_subtree_roots().unwrap(),
             accumulator.num_leaves(),
             accumulator.num_nodes(),
-        ));
+        ))?;
         info!("Genesis startup info: {:?}", startup_info);
         Ok(Self {
             transaction,
@@ -96,7 +96,7 @@ mod tests {
     use super::*;
     use starcoin_consensus::dummy::DummyConsensus;
     use starcoin_executor::mock_executor::MockExecutor;
-    use starcoin_storage::memory_storage::MemoryStorage;
+    use starcoin_storage::{memory_storage::MemoryStorage, StarcoinStorage};
 
     #[stest::test]
     pub fn test_genesis() -> Result<()> {

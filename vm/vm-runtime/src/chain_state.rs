@@ -1,21 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::access_path_helper::AccessPathHelper;
-use anyhow::{Result};
+use anyhow::Result;
 use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath as LibraAccessPath,
     write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet},
 };
 use logger::prelude::*;
-use move_vm_state::data_cache::{RemoteCache};
+use move_vm_state::data_cache::RemoteCache;
 
 use traits::ChainState;
-use types::{
-    access_path::AccessPath,
-    account_address::AccountAddress,
-};
+use types::{access_path::AccessPath, account_address::AccountAddress};
 use vm::errors::VMResult;
 
 /// Adaptor for chain state
@@ -68,10 +64,7 @@ impl<'txn> StateStore<'txn> {
 
 impl<'txn> StateView for StateStore<'txn> {
     fn get(&self, access_path: &LibraAccessPath) -> Result<Option<Vec<u8>>> {
-        ChainState::get(
-            self.chain_state,
-            &AccessPathHelper::to_Starcoin_AccessPath(access_path),
-        )
+        ChainState::get(self.chain_state, &access_path.clone().into())
     }
 
     fn multi_get(&self, _access_paths: &[LibraAccessPath]) -> Result<Vec<Option<Vec<u8>>>> {

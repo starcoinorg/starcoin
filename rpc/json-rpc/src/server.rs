@@ -11,9 +11,9 @@ use jsonrpc_ws_server;
 use std::sync::Arc;
 
 pub struct RpcServer {
-    pub(crate) http: jsonrpc_http_server::Server,
-    pub(crate) tcp: Option<jsonrpc_tcp_server::Server>,
-    pub(crate) ws: Option<jsonrpc_ws_server::Server>,
+    http: jsonrpc_http_server::Server,
+    tcp: Option<jsonrpc_tcp_server::Server>,
+    ws: Option<jsonrpc_ws_server::Server>,
 }
 
 impl RpcServer {

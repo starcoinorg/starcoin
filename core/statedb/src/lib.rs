@@ -312,7 +312,7 @@ impl ChainStateWriter for ChainStateDB {
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
         let (account_address, data_type, hash) = access_path.clone().into();
         let account_state_object = self.get_account_state_object(&account_address)?;
-        account_state_object.remove(data_type, &hash);
+        account_state_object.remove(data_type, &hash)?;
         Ok(())
     }
 
@@ -400,7 +400,7 @@ mod tests {
 
         let new_account_resource =
             AccountResource::new(10, 1, account_resource.authentication_key().clone());
-        chain_state_db.set(&access_path, new_account_resource.try_into()?);
+        chain_state_db.set(&access_path, new_account_resource.try_into()?)?;
 
         let account_resource2: AccountResource =
             chain_state_db.get(&access_path)?.unwrap().try_into()?;
@@ -416,7 +416,7 @@ mod tests {
         let storage = MockStateNodeStore::new();
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
         let account_address = AccountAddress::random();
-        chain_state_db.create_account(account_address);
+        chain_state_db.create_account(account_address)?;
 
         chain_state_db.commit()?;
         chain_state_db.flush()?;

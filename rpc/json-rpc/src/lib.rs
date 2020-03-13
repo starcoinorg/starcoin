@@ -14,7 +14,7 @@ mod module;
 mod server;
 
 pub struct JSONRpcActor {
-    server: RpcServer,
+    _server: RpcServer,
 }
 
 impl JSONRpcActor {
@@ -22,12 +22,18 @@ impl JSONRpcActor {
         let mut io_handler = IoHandler::new();
         io_handler.extend_with(TxPoolRpcImpl::new(txpool_ref).to_delegate());
         let server = RpcServer::new(config, io_handler);
-        Ok(JSONRpcActor { server }.start())
+        Ok(JSONRpcActor { _server: server }.start())
     }
 }
 
 impl Actor for JSONRpcActor {
     type Context = Context<Self>;
+
+    fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
+        //TODO stop
+        //self.server.close();
+        Running::Stop
+    }
 }
 
 impl Supervised for JSONRpcActor {
