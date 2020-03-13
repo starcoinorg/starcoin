@@ -2,15 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //use anyhow::Result;
-use anyhow::*;
-use libp2p::identity::error::DecodingError;
 use network_p2p::PeerId;
 use std::{
-    convert::TryFrom,
     str::FromStr,
     time::{SystemTime, UNIX_EPOCH},
 };
-use types::account_address::AccountAddress;
 
 pub fn convert_boot_nodes(boot_nodes: Vec<String>) -> Vec<String> {
     boot_nodes

@@ -11,10 +11,7 @@ use parity_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use types::account_address::AccountAddress;
 use types::transaction::SignedUserTransaction;
-use types::{
-    block::Block,
-    peer_info::{PeerId, PeerInfo},
-};
+use types::{block::Block, peer_info::PeerId};
 
 pub trait RPCMessage {
     fn get_id(&self) -> HashValue;

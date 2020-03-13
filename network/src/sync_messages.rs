@@ -85,14 +85,6 @@ pub struct BatchHashByNumberMsg {
     pub hashs: Vec<HashWithNumber>,
 }
 
-struct StateNodeHashMsg {
-    hash: HashValue,
-}
-
-struct BatchStateNodeDataMsg {
-    //nodes:
-}
-
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum DataType {
     HEADER,

@@ -5,33 +5,21 @@ use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
 use crate::sync_messages::{DownloadMessage, SyncMessage};
 use crate::{
-    GetCounterMessage, NetworkMessage, PeerEvent, PeerMessage, RPCMessage, RPCRequest, RPCResponse,
-    RpcRequestMessage,
+    NetworkMessage, PeerEvent, PeerMessage, RPCMessage, RPCRequest, RPCResponse, RpcRequestMessage,
 };
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
-use config::{NetworkConfig, NodeConfig};
-use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use config::NodeConfig;
 use crypto::hash::{CryptoHash, HashValue};
-use crypto::{test_utils::KeyPair, Uniform};
-use futures::{
-    channel::{mpsc, oneshot},
-    stream::StreamExt,
-    TryFutureExt,
-};
-use libp2p::{
-    identity,
-    ping::{Ping, PingConfig, PingEvent},
-    PeerId, Swarm,
-};
+use futures::{channel::mpsc, stream::StreamExt};
+use libp2p::PeerId;
 use scs::SCSCodec;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
-use types::{account_address::AccountAddress, peer_info::PeerInfo};
+use types::peer_info::PeerInfo;
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
 
-use actix::fut::wrap_future;
 use futures_timer::Delay;
 use std::time::Duration;
 use tokio::runtime::Handle;
@@ -343,13 +331,9 @@ mod tests {
     use super::*;
     use crate::{RpcRequestMessage, TestRequest, TestResponse};
     use bus::Subscription;
-    use futures::{future::IntoFuture, sink::SinkExt};
+    use futures::sink::SinkExt;
     use futures_timer::Delay;
-    use log::{Level, Metadata, Record};
-    use log::{LevelFilter, SetLoggerError};
     use logger::*;
-    use std::sync::atomic::{AtomicU64, Ordering};
-    use std::time::Instant;
     use tokio::runtime::{Handle, Runtime};
     use traits::mock::MockTxPoolService;
     use types::account_address::AccountAddress;

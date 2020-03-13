@@ -1,38 +1,29 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{helper::convert_boot_nodes, PayloadMsg, PeerEvent};
-use crypto::{
-    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-    test_utils::KeyPair,
-};
+use crate::{helper::convert_boot_nodes, PeerEvent};
 
 use crate::messages::{Message, NetworkMessage};
 use anyhow::*;
 use futures::{
     channel::{
         mpsc,
-        oneshot::{self, Canceled, Sender},
+        oneshot::{self, Sender},
     },
     prelude::*,
 };
 
-use anyhow::*;
 use bytes::Bytes;
 use config::NetworkConfig;
 use libp2p::PeerId;
 use network_p2p::{
-    identity, Event, GenericProtoOut as ServiceEvent, NetworkConfiguration, NetworkService,
-    NetworkWorker, NodeKeyConfig, Params, Secret,
+    identity, Event, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig, Params,
+    Secret,
 };
 use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
-use scs::SCSCodec;
-use std::cell::{Cell, RefCell};
-use std::task::{Context, Poll};
-use std::{collections::HashMap, io, sync::Arc, thread};
+use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Handle;
-use types::account_address::AccountAddress;
 
 #[derive(Clone)]
 pub struct SNetworkService {

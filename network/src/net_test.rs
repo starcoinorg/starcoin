@@ -5,39 +5,22 @@
 mod tests {
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
-        future::Future,
-        stream::{Stream, StreamExt},
+        stream::StreamExt,
     };
-    use hex;
-    use libp2p::multihash;
-    use rand::prelude::*;
-    use std::{
-        str::FromStr,
-        thread,
-        time::{Duration, Instant},
-    };
-    use tokio::runtime::{Builder, Handle, Runtime};
+    use std::{thread, time::Duration};
+    use tokio::runtime::{Handle, Runtime};
 
-    use crypto::{
-        ed25519::{compat, Ed25519PrivateKey, Ed25519PublicKey},
-        test_utils::KeyPair,
-        Uniform,
-    };
     use futures_timer::Delay;
 
-    use network_p2p::{identity, NetworkConfiguration, NodeKeyConfig, PeerId, PublicKey, Secret};
-    use types::{account_address::AccountAddress, peer_info::PeerId as SPeerId};
+    use network_p2p::PeerId;
+    use types::peer_info::PeerId as SPeerId;
 
     use crate::{helper::convert_boot_nodes, PeerEvent};
 
     use crate::net::{build_network_service, SNetworkService};
 
     use crate::messages::NetworkMessage;
-    use config::NetworkConfig;
-    use futures::channel::oneshot;
-    use log::logger;
     use logger::*;
-    use std::sync::Arc;
 
     pub type NetworkComponent = (
         SNetworkService,
