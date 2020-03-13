@@ -4932,6 +4932,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-runtime",
+ "stdlib 0.1.0",
  "stest",
 ]
 
