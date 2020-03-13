@@ -238,9 +238,7 @@ fn convert_txn_args(args: Vec<TransactionArgument>) -> Vec<Value> {
                 Value::address(TransactionHelper::to_libra_AccountAddress(a))
             }
             TransactionArgument::Bool(b) => Value::bool(b),
-            TransactionArgument::ByteArray(b) => {
-                Value::byte_array(LibraByteArray::new((b.clone()).into_inner()))
-            }
+            TransactionArgument::U8Vector(_) => todo!(),
         })
         .collect()
 }

@@ -5312,6 +5312,7 @@ dependencies = [
  "env_logger",
  "log",
  "quote 1.0.3",
+ "stest",
  "syn 1.0.16",
 ]
 
