@@ -139,7 +139,6 @@ impl SNetworkService {
         let (tx, rx) = oneshot::channel::<()>();
         let (protocol_msg, message_id) = Message::new_payload(message);
 
-        info!("send message is  {:?}", protocol_msg);
         self.service
             .send_notification(peer_id, protocol_msg.into_bytes());
         info!("Send message with ack");
@@ -171,7 +170,6 @@ impl NetworkInner {
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
         event_tx: mpsc::UnboundedSender<PeerEvent>,
     ) -> Result<()> {
-        info!("message is {:?}", event);
         match event {
             Event::Dht(_) => {
                 info!("ignore dht event");
@@ -202,7 +200,6 @@ impl NetworkInner {
         info!("Receive message with peer_id:{:?}", &peer_id);
         for message in messages {
             let message = Message::from_bytes(message.as_ref())?;
-            info!("message is {:?}", message);
             match message {
                 Message::Payload(payload) => {
                     //receive message
