@@ -4,7 +4,6 @@
 use super::KeyPrefixName;
 use crate::storage::{CodecStorage, Repository, ValueCodec};
 use anyhow::Result;
-use crypto::hash::CryptoHash;
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::sync::Arc;
