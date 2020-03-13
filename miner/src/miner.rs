@@ -16,7 +16,7 @@ use futures::channel::mpsc;
 use futures::AsyncReadExt;
 use futures::{Future, TryFutureExt};
 use futures::prelude::*;
-
+use sc_stratum::*;
 #[derive(Clone)]
 pub struct Miner {
     state: Arc<Mutex<Option<BlockTemplate>>>,
@@ -25,7 +25,7 @@ pub struct Miner {
 impl Miner {
     pub fn new() -> Miner {
         Self {
-            state: Arc::new(Mutex::new(None))
+            state: Arc::new(Mutex::new(None)),
         }
     }
     pub fn set_mint_job(&mut self, t: BlockTemplate) {
@@ -45,7 +45,6 @@ impl Miner {
         // notify chain mined block
     }
 }
-
 
 pub fn mint<C>(
     txns: Vec<SignedUserTransaction>,

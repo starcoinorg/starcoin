@@ -14,7 +14,7 @@ use consensus::{Consensus, ConsensusHeader};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
-use futures::{Future, TryFutureExt,};
+use futures::{Future, TryFutureExt};
 use futures::prelude::*;
 use logger::prelude::*;
 use starcoin_accumulator::AccumulatorNodeStore;
@@ -26,6 +26,9 @@ use storage::{BlockStorageOp, StarcoinStorage};
 use traits::{ChainAsyncService, ChainReader, TxPoolAsyncService};
 use types::transaction::TxStatus;
 use crate::miner::Miner;
+
+use crate::stratum::StratumManager;
+use sc_stratum::*;
 
 mod headblock_pacemaker;
 mod miner;
@@ -43,12 +46,12 @@ pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 pub struct GenerateBlockEvent {}
 
 pub struct MinerActor<C, E, P, CS, S>
-where
-    C: Consensus + 'static,
-    E: TransactionExecutor + 'static,
-    P: TxPoolAsyncService + 'static,
-    CS: ChainAsyncService + 'static,
-    S: BlockChainStore + 'static,
+    where
+        C: Consensus + 'static,
+        E: TransactionExecutor + 'static,
+        P: TxPoolAsyncService + 'static,
+        CS: ChainAsyncService + 'static,
+        S: BlockChainStore + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -58,15 +61,16 @@ where
     phantom_e: PhantomData<E>,
     chain: CS,
     miner: Miner,
+    stratum: Arc<Stratum>,
 }
 
 impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: BlockChainStore + 'static,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
+        S: BlockChainStore + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -89,7 +93,7 @@ where
                         sender.clone(),
                         transaction_receiver.take().unwrap(),
                     )
-                    .start();
+                        .start();
                 }
                 PacemakerStrategy::Schedule => {
                     SchedulePacemaker::new(Duration::from_millis(1000), sender).start();
@@ -111,6 +115,8 @@ where
                 });
             });
             let miner = Miner::new();
+            let addr = "127.0.0.1:9000".parse().unwrap();
+            let stratum = Stratum::start(&addr, Arc::new(StratumManager::new(miner.clone())), None).unwrap();
             MinerActor {
                 config,
                 bus,
@@ -120,6 +126,7 @@ where
                 phantom_e: PhantomData,
                 chain,
                 miner,
+                stratum,
             }
         });
         Ok(actor)
@@ -127,12 +134,12 @@ where
 }
 
 impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: BlockChainStore + 'static,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
+        S: BlockChainStore + 'static,
 {
     type Context = Context<Self>;
 
@@ -142,12 +149,12 @@ where
 }
 
 impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
-where
-    C: Consensus,
-    E: TransactionExecutor,
-    P: TxPoolAsyncService,
-    CS: ChainAsyncService,
-    S: BlockChainStore + 'static,
+    where
+        C: Consensus,
+        E: TransactionExecutor,
+        P: TxPoolAsyncService,
+        CS: ChainAsyncService,
+        S: BlockChainStore + 'static,
 {
     type Result = Result<()>;
 
@@ -159,8 +166,8 @@ where
         let storage = self.storage.clone();
         let chain = self.chain.clone();
         let mut miner = self.miner.clone();
-
-        let f = async move{
+        let stratum = self.stratum.clone();
+        let f = async move {
             //TODO handle error.
             let txns = txpool_1.get_pending_txns(None).await.unwrap_or(vec![]);
             if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
@@ -172,10 +179,10 @@ where
                     BlockChain::<E, C, S, P>::new(config, storage, head_branch, txpool_2).unwrap();
                 let block_template = block_chain.create_block_template(txns).unwrap();
                 miner.set_mint_job(block_template);
-                // stratum.update_all_worker()
+                stratum.push_work_all(miner.get_mint_job());
             }
         }
-        .into_actor(self);
+            .into_actor(self);
         ctx.spawn(f);
         Ok(())
     }

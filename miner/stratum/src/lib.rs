@@ -173,7 +173,8 @@ impl StratumImpl {
 					})
 					.collect::<Vec<String>>()) {
 						Ok(()) => {
-							self.update_peers(&meta.tcp_dispatcher.expect("tcp_dispatcher is always initialized; qed"));
+							// Do not update peers in submit
+							//self.update_peers(&meta.tcp_dispatcher.expect("tcp_dispatcher is always initialized; qed"));
 							to_value(true)
 						},
 						Err(submit_err) => {
