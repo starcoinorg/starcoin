@@ -4,7 +4,6 @@
 use crate::bus::BusImpl;
 use actix::prelude::*;
 use anyhow::Result;
-use logger::prelude::*;
 
 mod bus;
 
@@ -106,6 +105,7 @@ impl Bus for Addr<BusActor> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use logger::prelude::*;
     use tokio::time::{delay_for, Duration};
 
     #[derive(Debug, Message, Clone)]

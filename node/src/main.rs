@@ -3,14 +3,14 @@
 use actix::prelude::*;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
-use config::{load_config_from_dir, NodeConfig, PacemakerStrategy};
-use consensus::{dummy::DummyConsensus, Consensus};
+use config::PacemakerStrategy;
+use consensus::dummy::DummyConsensus;
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
     Uniform,
 };
-use executor::{mock_executor::MockExecutor, TransactionExecutor};
+use executor::mock_executor::MockExecutor;
 use json_rpc::JSONRpcActor;
 use logger::prelude::*;
 use miner::MinerActor;
@@ -18,7 +18,7 @@ use network::NetworkActor;
 use starcoin_genesis::Genesis;
 use std::env;
 use std::{path::PathBuf, sync::Arc};
-use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
+use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage};
 use structopt::StructOpt;
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use traits::TxPoolAsyncService;

@@ -1,10 +1,10 @@
 use crate::MinerActor;
-use actix_rt::{Runtime, System};
+use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::{dummy::DummyConsensus, Consensus};
-use executor::{mock_executor::MockExecutor, TransactionExecutor};
+use consensus::dummy::DummyConsensus;
+use executor::mock_executor::MockExecutor;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
