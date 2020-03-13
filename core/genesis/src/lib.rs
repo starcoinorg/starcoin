@@ -9,15 +9,11 @@ use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_executor::TransactionExecutor;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{
-    memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage,
-};
+use starcoin_storage::{BlockChainStore, BlockStorageOp, StarcoinStorage};
 use starcoin_types::block::BlockInfo;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::{block::Block, state_set::ChainStateSet, transaction::Transaction};
-use std::collections::HashMap;
-use std::marker::PhantomData;
+use starcoin_types::{block::Block, transaction::Transaction};
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -35,6 +31,7 @@ impl Genesis {
         C: Consensus + 'static,
         S: BlockChainStore + 'static,
     {
+        info!("Init genesis");
         //TODO init genesis by network
         let (state_root, chain_state_set) = E::init_genesis(&config.vm)?;
         let chain_state_db = ChainStateDB::new(storage.clone(), None);
@@ -61,12 +58,13 @@ impl Genesis {
         let head = ChainInfo::new(block.header(), block.header(), hash_number);
         let startup_info = StartupInfo::new(head, vec![]);
         //save block info for accumulator init
-        storage.clone().save_block_info(BlockInfo::new(
+        storage.save_block_info(BlockInfo::new(
             block.header().id(),
             accumulator.get_frozen_subtree_roots().unwrap(),
             accumulator.num_leaves(),
             accumulator.num_nodes(),
         ));
+        info!("Genesis startup info: {:?}", startup_info);
         Ok(Self {
             transaction,
             transaction_info,
@@ -97,6 +95,7 @@ mod tests {
     use super::*;
     use starcoin_consensus::dummy::DummyConsensus;
     use starcoin_executor::mock_executor::MockExecutor;
+    use starcoin_storage::memory_storage::MemoryStorage;
 
     #[stest::test]
     pub fn test_genesis() -> Result<()> {

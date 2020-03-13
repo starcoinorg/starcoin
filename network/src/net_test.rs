@@ -227,30 +227,6 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_account_and_peer_id() {
-        let (private_key, public_key) = compat::generate_keypair(None);
-
-        let mut cfg = network_p2p::NetworkConfiguration::new();
-        let seckey = identity::ed25519::SecretKey::from_bytes(&mut private_key.to_bytes()).unwrap();
-        cfg.node_key = NodeKeyConfig::Ed25519(Secret::Input(seckey));
-        let libp2p_public_key = cfg.node_key.into_keypair().unwrap().public();
-        let libp2p_public_key_byte;
-        if let PublicKey::Ed25519(key) = libp2p_public_key {
-            libp2p_public_key_byte = key.encode();
-            assert_eq!(libp2p_public_key_byte, public_key.to_bytes());
-        } else {
-            panic!("failed");
-        }
-
-        let address = AccountAddress::from_public_key(&public_key).to_vec();
-        let peer_id = multihash::encode(multihash::Hash::SHA3256, &public_key.to_bytes())
-            .unwrap()
-            .into_bytes();
-        PeerId::from_bytes(peer_id.clone()).unwrap();
-        assert_eq!(address, &peer_id[2..]);
-    }
-
-    #[test]
     fn test_connected_nodes() {
         ::logger::init_for_test();
 
@@ -274,23 +250,16 @@ mod tests {
         _rt.block_on(fut);
     }
 
-    fn generate_account_address() -> String {
-        let (_private_key, public_key) = compat::generate_keypair(Option::None);
-        let account_address = AccountAddress::from_public_key(&public_key);
-        hex::encode(account_address)
+    fn generate_peer_address() -> String {
+        PeerId::random().to_base58()
     }
 
     #[test]
     fn test_boot_nodes() {
         let mut boot_nodes = Vec::new();
 
-        boot_nodes.push(
-            format!(
-                "/ip4/127.0.0.1/tcp/5000/p2p/{:}",
-                generate_account_address()
-            )
-            .to_string(),
-        );
+        boot_nodes
+            .push(format!("/ip4/127.0.0.1/tcp/5000/p2p/{:}", generate_peer_address()).to_string());
         boot_nodes.iter().for_each(|x| println!("{}", x));
 
         let boot_nodes = convert_boot_nodes(boot_nodes);
