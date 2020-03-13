@@ -187,7 +187,6 @@ impl BlockStore {
                     temp_block_id = header.parent_hash();
                     match self.get_sons(temp_block_id) {
                         Ok(sons) => {
-                            println!("  sons:{:?}", sons);
                             if sons.len() > 1 {
                                 break;
                             }
@@ -209,7 +208,6 @@ impl BlockStore {
         let mut parent_id1 = block_id1;
         let mut parent_id2 = block_id2;
         let mut found = false;
-        println!("block1: {}, block2: {}", block_id1, block_id2);
         loop {
             println!("block_id: {}", parent_id1.to_hex());
             //get header by block_id
@@ -219,22 +217,20 @@ impl BlockStore {
                     ensure!(parent_id1 != HashValue::zero(), "invaild block id is zero.");
                     match self.get_sons(parent_id1) {
                         Ok(sons1) => {
-                            println!("  sons:{:?}", sons1);
                             if sons1.len() > 1 {
                                 // get parent2 from block2
                                 loop {
-                                    println!("parent2 : {}", parent_id2);
                                     ensure!(
                                         parent_id2 != HashValue::zero(),
                                         "invaild block id is zero."
                                     );
+                                    if sons1.contains(&parent_id2) {
+                                        found = true;
+                                        break;
+                                    }
                                     match self.get_block_header_by_hash(parent_id2)? {
                                         Some(header2) => {
                                             parent_id2 = header2.parent_hash();
-                                            if sons1.contains(&parent_id2) {
-                                                found = true;
-                                                break;
-                                            }
                                         }
                                         None => {
                                             bail!("Error: can not find block2 {:?}", parent_id2)
