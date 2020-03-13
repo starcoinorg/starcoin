@@ -49,7 +49,6 @@ use vm::{
     transaction_metadata::TransactionMetadata,
 };
 
-
 #[derive(Clone)]
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
@@ -124,7 +123,9 @@ impl StarcoinVM {
                 ////////
                 let gas_schedule = match self.get_gas_schedule() {
                     Ok(s) => s,
-                    Err(e) => return discard_libra_error_output(TransactionHelper::to_libra_VMStatus(e)),
+                    Err(e) => {
+                        return discard_libra_error_output(TransactionHelper::to_libra_VMStatus(e))
+                    }
                 };
                 info!("invoke MoveVM::execute_script()");
                 self.move_vm.execute_script(
@@ -237,9 +238,7 @@ fn convert_txn_args(args: Vec<TransactionArgument>) -> Vec<Value> {
                 Value::address(TransactionHelper::to_libra_AccountAddress(a))
             }
             TransactionArgument::Bool(b) => Value::bool(b),
-            TransactionArgument::ByteArray(b) => {
-                Value::byte_array(LibraByteArray::new((b.clone()).into_inner()))
-            }
+            TransactionArgument::U8Vector(_) => todo!(),
         })
         .collect()
 }

@@ -82,6 +82,7 @@ fn test_multiple_tree() {
     proof_verify(&accumulator2, root_hash2, &batch1, 0);
 }
 
+#[ignore]
 #[test]
 fn test_update_leaf() {
     // construct a accumulator

@@ -115,7 +115,7 @@ where
 
     fn save_block(&self, block: &Block) {
         self.storage.commit_block(block.clone());
-        info!("commit block : {:?}", block);
+        info!("commit block : {:?}", block.header().id());
     }
 
     fn get_block_info(&self, block_id: HashValue) -> BlockInfo {
@@ -146,6 +146,18 @@ where
 
     pub fn exist_block(&self, block_id: &HashValue) -> bool {
         self.chain_info.contains(block_id)
+    }
+
+    pub fn latest_blocks(&self) {
+        self.chain_info
+            .latest_blocks()
+            .iter()
+            .for_each(|(number, block_id)| {
+                info!(
+                    "block chain :: number : {} , block_id : {:?}",
+                    number, block_id
+                );
+            });
     }
 
     pub fn create_block_template_inner(

@@ -21,8 +21,10 @@ impl SchedulePacemaker {
     }
 
     pub fn send_event(&mut self) {
-        //TODO handle result.
-        self.sender.try_send(GenerateBlockEvent {});
+        match self.sender.try_send(GenerateBlockEvent {}) {
+            Ok(()) => {}
+            Err(e) => warn!("Send GenerateBlockEvent error: {:?}", e),
+        };
     }
 }
 
@@ -31,7 +33,7 @@ impl Actor for SchedulePacemaker {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let duration = self.duration.clone();
-        ctx.run_later(duration * 2, move |act, ctx| {
+        ctx.run_later(duration, move |_act, ctx| {
             ctx.run_interval(duration, move |act, _ctx| {
                 info!("send GenerateBlockEvent.");
                 act.send_event();
@@ -44,7 +46,6 @@ impl Actor for SchedulePacemaker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures::{future, TryStreamExt};
 
     #[test]
     fn test_schedule_pacemaker() {
@@ -56,7 +57,7 @@ mod tests {
             })
             .unwrap();
         });
-        std::thread::sleep(duration * 2);
+        std::thread::sleep(duration * 3);
         let _result = receiver.try_next().expect("To receive response in time");
     }
 }

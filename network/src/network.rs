@@ -13,7 +13,7 @@ use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::{NetworkConfig, NodeConfig};
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use crypto::hash::HashValue;
+use crypto::hash::{CryptoHash, HashValue};
 use crypto::{test_utils::KeyPair, Uniform};
 use futures::{
     channel::{mpsc, oneshot},
@@ -221,7 +221,7 @@ where
     P: 'static,
 {
     async fn handle_network_receive(&self, network_msg: NetworkMessage) -> Result<()> {
-        info!("receive network_message {:?}", network_msg);
+        info!("receive network_message ");
         let message = PeerMessage::decode(&network_msg.data);
         match message {
             Ok(msg) => {
@@ -322,7 +322,7 @@ where
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         let peer_msg = match msg {
             SystemEvents::NewUserTransaction(txn) => {
-                info!("new user transaction {:?}", txn);
+                info!("new user transaction {:?}", txn.crypto_hash());
                 Some(PeerMessage::UserTransaction(txn))
             }
             SystemEvents::NewHeadBlock(block) => {

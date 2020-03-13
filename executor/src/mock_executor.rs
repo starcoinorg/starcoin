@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use stdlib::transaction_scripts::EMPTY_TXN;
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
@@ -29,8 +30,6 @@ use types::{
     vm_error::{StatusCode, VMStatus},
 };
 use vm_runtime::mock_vm::{encode_mint_transaction, encode_transfer_transaction, MockVM};
-use stdlib::transaction_scripts::{EMPTY_TXN};
-
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
