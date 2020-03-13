@@ -1,19 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::accumulator_store::AccumulatorStore;
-use crate::block_info_store::{BlockInfoStorage, BlockInfoStore};
-use crate::block_store::BlockStore;
-use crate::memory_storage::MemoryStorage;
-use crate::state_node_storage::StateNodeStorage;
-use crate::storage::{CodecStorage, Repository};
-use crate::transaction_info_store::TransactionInfoStore;
-use accumulator::{
+use crate::accumulator::AccumulatorStore;
+use crate::block::BlockStore;
+use crate::block_info::{BlockInfoStorage, BlockInfoStore};
+use crate::state_node::StateNodeStorage;
+use crate::storage::Repository;
+use crate::transaction_info::TransactionInfoStore;
+use anyhow::{ensure, Error, Result};
+use crypto::HashValue;
+use starcoin_accumulator::{
     node_index::NodeIndex, AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore,
     AccumulatorNodeWriter,
 };
-use anyhow::{ensure, Error, Result};
-use crypto::HashValue;
 use state_tree::{StateNode, StateNodeStore};
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -22,14 +21,14 @@ use types::{
     startup_info::StartupInfo,
 };
 
-pub mod accumulator_store;
-pub mod block_info_store;
-pub mod block_store;
+pub mod accumulator;
+pub mod block;
+pub mod block_info;
 pub mod memory_storage;
 pub mod persistence_storage;
-pub mod state_node_storage;
+pub mod state_node;
 pub mod storage;
-pub mod transaction_info_store;
+pub mod transaction_info;
 
 pub type KeyPrefixName = &'static str;
 
@@ -210,7 +209,7 @@ impl AccumulatorNodeReader for StarcoinStorage {
     }
     ///get node by node hash
     fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
-        self.get_node(hash)
+        self.accumulator_store.get_node(hash)
     }
 }
 

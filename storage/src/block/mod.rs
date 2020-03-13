@@ -4,11 +4,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use super::KeyPrefixName;
-use crate::memory_storage::MemoryStorage;
 use crate::storage::{CodecStorage, KeyCodec, Repository, ValueCodec};
 use anyhow::{bail, ensure, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt};
-use crypto::hash::CryptoHash;
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::io::Write;

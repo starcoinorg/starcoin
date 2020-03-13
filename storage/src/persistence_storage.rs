@@ -18,18 +18,18 @@ impl PersistenceStorage {
 }
 
 impl Repository for PersistenceStorage {
-    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    fn get(&self, _key: &[u8]) -> Result<Option<Vec<u8>>> {
         unimplemented!()
     }
 
-    fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    fn put(&self, _key: Vec<u8>, _value: Vec<u8>) -> Result<()> {
         unimplemented!()
     }
 
-    fn contains_key(&self, key: Vec<u8>) -> Result<bool> {
+    fn contains_key(&self, _key: Vec<u8>) -> Result<bool> {
         unimplemented!()
     }
-    fn remove(&self, key: Vec<u8>) -> Result<()> {
+    fn remove(&self, _key: Vec<u8>) -> Result<()> {
         unimplemented!()
     }
 

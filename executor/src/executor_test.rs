@@ -17,6 +17,7 @@ use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::Duration;
+use stdlib::transaction_scripts::EMPTY_TXN;
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
@@ -27,7 +28,6 @@ use vm_runtime::mock_vm::{
     encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, DISCARD_STATUS,
     KEEP_STATUS,
 };
-use stdlib::transaction_scripts::{EMPTY_TXN};
 
 #[stest::test]
 fn test_execute_mint_txn() {

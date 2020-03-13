@@ -107,6 +107,22 @@ impl ChainInfo {
             .unwrap()
             .clone()
     }
+
+    pub fn latest_blocks(&self) -> Vec<(BlockNumber, HashValue)> {
+        let mut latest = Vec::new();
+        let mut len = self.hash_number.len();
+        loop {
+            if len == 0 || latest.len() >= 10 {
+                break;
+            }
+            let index = len - 1;
+            let block_id: HashValue = self.hash_number.get(index).unwrap().clone();
+            latest.push((index as BlockNumber, block_id));
+            len = len - 1;
+        }
+        latest.reverse();
+        latest
+    }
 }
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]

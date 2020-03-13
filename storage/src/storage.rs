@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::memory_storage::MemoryStorage;
 use crate::KeyPrefixName;
-use anyhow::{Error, Result};
+use anyhow::{bail, Error, Result};
 use crypto::HashValue;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -45,23 +44,27 @@ impl Repository for Storage {
     }
 
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
-        unimplemented!()
+        self.persistence.put(key.clone(), value.clone()).unwrap();
+        self.cache.put(key, value)
     }
 
     fn contains_key(&self, key: Vec<u8>) -> Result<bool, Error> {
-        unimplemented!()
+        self.cache.contains_key(key)
     }
 
     fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
-        unimplemented!()
+        match self.persistence.remove(key.clone()) {
+            Ok(_) => self.cache.remove(key),
+            Err(err) => bail!("remove persistence error: {}", err),
+        }
     }
 
     fn get_len(&self) -> Result<u64, Error> {
-        unimplemented!()
+        self.cache.get_len()
     }
 
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
-        unimplemented!()
+        self.cache.keys()
     }
 }
 

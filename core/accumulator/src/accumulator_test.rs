@@ -5,7 +5,6 @@ use crate::{
     node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, Accumulator, AccumulatorNode,
     LeafCount, MerkleAccumulator, MockAccumulatorStore,
 };
-use proptest::{collection::vec, prelude::*};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::{collections::HashMap, sync::Arc};
 
@@ -21,7 +20,7 @@ fn test_accumulator_append() {
 
     let leaves = create_leaves(0..100);
     let mock_store = MockAccumulatorStore::new();
-    let mut accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
+    let accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
     // Append the leaves one at a time and check the root hashes match.
     for (i, (leaf, expected_root_hash)) in
         itertools::zip_eq(leaves.into_iter(), expected_root_hashes.into_iter()).enumerate()
@@ -43,7 +42,7 @@ fn test_error_on_bad_parameters() {
 fn test_one_leaf() {
     let hash = HashValue::random();
     let mock_store = MockAccumulatorStore::new();
-    let mut accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
+    let accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
     let (root_hash, _) = accumulator.append(&[hash]).unwrap();
     assert_eq!(hash, root_hash);
     proof_verify(&accumulator, root_hash, &[hash], 0);
@@ -69,10 +68,10 @@ fn test_multiple_leaves() {
 
 #[test]
 fn test_multiple_tree() {
-    let mut batch1 = create_leaves(0..8);
+    let batch1 = create_leaves(0..8);
     let mock_store = MockAccumulatorStore::new();
     let arc_store = Arc::new(mock_store);
-    let mut accumulator = MerkleAccumulator::new(vec![], 0, 0, arc_store.clone()).unwrap();
+    let accumulator = MerkleAccumulator::new(vec![], 0, 0, arc_store.clone()).unwrap();
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
     let frozen_hash = accumulator.get_frozen_subtree_roots().unwrap();
@@ -83,12 +82,13 @@ fn test_multiple_tree() {
     proof_verify(&accumulator2, root_hash2, &batch1, 0);
 }
 
+#[ignore]
 #[test]
 fn test_update_leaf() {
     // construct a accumulator
-    let mut leaves = create_leaves(0..8);
+    let leaves = create_leaves(0..8);
     let mock_store = MockAccumulatorStore::new();
-    let mut accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
+    let accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
     let (root_hash, _) = accumulator.append(&leaves).unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
     // update index from 6

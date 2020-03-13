@@ -3,19 +3,15 @@
 
 use crate::ensure_slice_len_eq;
 use crate::storage::{CodecStorage, KeyCodec, Repository, ValueCodec};
-use accumulator::node::{InternalNode, ACCUMULATOR_PLACEHOLDER_HASH};
-use accumulator::node_index::NodeIndex;
-use accumulator::{
-    Accumulator, AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore,
-    AccumulatorNodeWriter, AccumulatorProof, LeafCount, MerkleAccumulator,
-};
 use anyhow::Error;
-use anyhow::{bail, ensure, format_err, Result};
+use anyhow::{bail, ensure, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::hash::HashValue;
 use scs::SCSCodec;
-use std::collections::HashMap;
-use std::marker::PhantomData;
+use starcoin_accumulator::node_index::NodeIndex;
+use starcoin_accumulator::{
+    AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore, AccumulatorNodeWriter,
+};
 use std::mem::size_of;
 use std::sync::Arc;
 
@@ -84,7 +80,7 @@ impl AccumulatorNodeWriter for AccumulatorStore {
 
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
         for hash in node_hash_vec {
-            self.node_store.remove(hash);
+            self.node_store.remove(hash)?;
         }
         Ok(())
     }
@@ -97,7 +93,7 @@ impl AccumulatorNodeWriter for AccumulatorStore {
             max_notes
         );
         for index in from_index..max_notes {
-            self.index_storage.remove(NodeIndex::new(index));
+            self.index_storage.remove(NodeIndex::new(index))?;
         }
         Ok(())
     }

@@ -12,7 +12,7 @@ use quote::quote;
 /// The async test need actix.
 /// ## Usage
 ///
-/// ```no_run
+/// ```no-run
 /// #[stest::test]
 /// async fn my_async_test() {
 ///     assert!(true);

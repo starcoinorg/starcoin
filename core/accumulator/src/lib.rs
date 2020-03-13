@@ -273,7 +273,7 @@ impl AccumulatorCache {
         Ok((hash, to_freeze))
     }
 
-    fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>> {
+    fn _get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>> {
         Ok(self.frozen_subtree_roots.borrow().to_vec())
     }
 
@@ -288,9 +288,9 @@ impl AccumulatorCache {
         //find deleting node by leaf_index
         let larger_nodes = self.get_larger_nodes_from_index(leaf_index).unwrap();
         //delete node and index
-        self.node_store.delete_nodes(larger_nodes.clone());
+        self.node_store.delete_nodes(larger_nodes.clone())?;
         self.node_store
-            .delete_larger_index(leaf_index, self.num_nodes);
+            .delete_larger_index(leaf_index, self.num_nodes)?;
 
         // update self frozen_subtree_roots
         let mut frozen_subtree_roots = self.frozen_subtree_roots.borrow_mut().to_vec();
@@ -361,7 +361,7 @@ impl AccumulatorCache {
     fn save_frozen_nodes(&self, frozen_nodes: Vec<AccumulatorNode>) -> Result<()> {
         ensure!(frozen_nodes.len() > 0, "invalid frozen nodes length");
         for node in frozen_nodes {
-            self.save_index_and_node(node.index(), node.hash(), node);
+            self.save_index_and_node(node.index(), node.hash(), node)?;
         }
         Ok(())
     }
@@ -373,7 +373,7 @@ impl AccumulatorCache {
         node_hash: HashValue,
         node: AccumulatorNode,
     ) -> Result<()> {
-        self.node_store.save(index, node_hash);
+        self.node_store.save(index, node_hash)?;
         self.node_store.save_node(node)
     }
 
@@ -401,9 +401,9 @@ impl AccumulatorCache {
                     let parent_node =
                         AccumulatorNode::new_internal(parent_index, left_hash, right_hash);
                     //save parent node
-                    self.node_store.save_node(parent_node.clone());
+                    self.node_store.save_node(parent_node.clone())?;
                     new_root = parent_node.hash();
-                    self.node_store.save(parent_index, new_root);
+                    self.node_store.save(parent_index, new_root)?;
                     if parent_index == root_index {
                         //get root node
                         break;
@@ -494,7 +494,7 @@ impl MerkleAccumulator {
 
     /// Appends one leaf. This will update `frozen_subtree_roots` to store new frozen root nodes
     /// and remove old nodes if they are now part of a larger frozen subtree.
-    fn append_one(
+    fn _append_one(
         &self,
         frozen_subtree_roots: &mut Vec<HashValue>,
         num_existing_leaves: LeafCount,
@@ -514,13 +514,17 @@ impl MerkleAccumulator {
             let parent_index = NodeIndex::new(num_nodes + i as u64);
             let parent_node = AccumulatorNode::new_internal(parent_index, left_hash, right_hash);
             frozen_subtree_roots.push(parent_node.hash());
-            cache.save_index_and_node(parent_index, parent_node.hash(), parent_node);
+            cache
+                .save_index_and_node(parent_index, parent_node.hash(), parent_node)
+                .unwrap();
             num_internal_nodes += 1;
         }
         //save current leaf node
         let leaf_index = NodeIndex::new(num_nodes + num_trailing_ones as u64);
         let leaf_node = AccumulatorNode::new_leaf(leaf_index, leaf);
-        cache.save_index_and_node(leaf_index, leaf, leaf_node);
+        cache
+            .save_index_and_node(leaf_index, leaf, leaf_node)
+            .unwrap();
 
         num_internal_nodes
     }
@@ -566,18 +570,18 @@ impl MerkleAccumulator {
 impl Accumulator for MerkleAccumulator {
     fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
         let mut cache_guard = self.cache.lock().unwrap();
-        let mut cache = cache_guard.deref_mut();
+        let cache = cache_guard.deref_mut();
         let first_index_leaf = cache.num_leaves;
         let (root_hash, frozen_nodes) = cache.append_leaves(new_leaves).unwrap();
-        cache.save_frozen_nodes(frozen_nodes);
+        cache.save_frozen_nodes(frozen_nodes)?;
         Ok((root_hash, first_index_leaf))
     }
 
     fn append_only_cache(&self, leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
         let mut cache_guard = self.cache.lock().unwrap();
-        let mut cache = cache_guard.deref_mut();
+        let cache = cache_guard.deref_mut();
         let first_index_leaf = cache.num_leaves;
-        let (root_hash, frozen_nodes) = cache.append_leaves(leaves).unwrap();
+        let (root_hash, _frozen_nodes) = cache.append_leaves(leaves).unwrap();
         Ok((root_hash, first_index_leaf))
     }
 
@@ -618,7 +622,7 @@ impl Accumulator for MerkleAccumulator {
 
     fn update(&self, leaf_index: u64, leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
         let mut cache_guard = self.cache.lock().unwrap();
-        let mut cache = cache_guard.deref_mut();
+        let cache = cache_guard.deref_mut();
         //ensure leaves is null
         ensure!(leaves.len() > 0, "invalid leaves len: {}", leaves.len());
         ensure!(
@@ -628,7 +632,7 @@ impl Accumulator for MerkleAccumulator {
             cache.num_leaves
         );
         // delete larger nodes from index
-        cache.delete(leaf_index);
+        cache.delete(leaf_index)?;
         // append new notes
         self.append(leaves)
     }

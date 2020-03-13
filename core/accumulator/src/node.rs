@@ -8,7 +8,6 @@ use starcoin_crypto::{
     hash::{create_literal_hash, CryptoHash},
     HashValue,
 };
-use std::cell::Cell;
 
 /// Placeholder hash of `Accumulator`.
 pub static ACCUMULATOR_PLACEHOLDER_HASH: Lazy<HashValue> =

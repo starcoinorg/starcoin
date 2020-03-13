@@ -4869,7 +4869,9 @@ dependencies = [
  "rand 0.6.5",
  "serde",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-traits",
+ "starcoin-types",
  "thiserror",
  "toml",
 ]
@@ -5310,6 +5312,7 @@ dependencies = [
  "env_logger",
  "log",
  "quote 1.0.3",
+ "stest",
  "syn 1.0.16",
 ]
 

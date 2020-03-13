@@ -334,7 +334,10 @@ where
 
         if let Some(msg) = peer_msg {
             let bytes = msg.encode().unwrap();
-            self.network_service.broadcast_message(bytes);
+            let mut network_service = self.network_service.clone();
+            Arbiter::spawn(async move {
+                network_service.broadcast_message(bytes).await;
+            })
         };
 
         ()

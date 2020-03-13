@@ -56,10 +56,7 @@ impl TransactionHelper {
             TransactionArgument::Address(address) => {
                 LibraTransactionArgument::Address(Self::to_libra_AccountAddress(*address))
             }
-            TransactionArgument::ByteArray(byte_array) => LibraTransactionArgument::U8Vector(
-                //LibraByteArray::new((byte_array.clone()).into_inner()),
-                byte_array.clone().into_inner(),
-            ),
+            TransactionArgument::U8Vector(_) => todo!(),
         }
     }
     pub fn to_libra_Script(s: Script) -> LibraScript {
