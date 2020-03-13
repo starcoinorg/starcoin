@@ -209,6 +209,7 @@ impl AccumulatorCache {
             self.index_cache.borrow_mut().insert(leaf_pos, hash);
             new_num_nodes += 1;
             let mut pos = leaf_pos;
+            let mut internal_node = AccumulatorNode::Empty;
             while pos.is_right_child() {
                 let sibling = pos.sibling();
 
