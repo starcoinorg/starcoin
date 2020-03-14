@@ -18,6 +18,7 @@ pub enum SyncMessage {
 
 #[derive(Clone)]
 pub enum DownloadMessage {
+    ClosePeerMsg(PeerInfo),
     LatestStateMsg(PeerInfo, LatestStateMsg),
     BatchHashByNumberMsg(PeerInfo, BatchHashByNumberMsg),
     BatchHeaderMsg(PeerInfo, BatchHeaderMsg),

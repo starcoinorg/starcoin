@@ -131,6 +131,11 @@ impl Handler<DownloadMessage> for DownloadActor {
                     //2. connect block
                     Downloader::do_block(downloader.clone(), block).await;
                 }
+                DownloadMessage::ClosePeerMsg(peer_info) => {
+                    debug!("close peer: {:?}", peer_info,);
+
+                    Downloader::close_peer(downloader.clone(), peer_info).await;
+                }
                 _ => {}
             }
 
@@ -381,19 +386,29 @@ impl Downloader {
         if begin_number < number {
             let mut numbers = Vec::new();
             let mut end = false;
-            let mut next_number = 0;
-            if begin_number < HEAD_CT {
-                for i in 0..(begin_number + 1) {
-                    numbers.push(i);
-                    end = true;
-                }
+            // let mut next_number = 0;
+            // if number < HEAD_CT {
+            //     for i in 0..(number + 1) {
+            //         info!("best peer number : {}, number : {}", number, i);
+            //         numbers.push(i);
+            //         end = true;
+            //     }
+            // } else {
+            let next_number = if (begin_number + HEAD_CT + 1) > number {
+                end = true;
+                number
             } else {
-                for i in (begin_number - HEAD_CT + 1)..(begin_number + 1) {
-                    numbers.push(begin_number - HEAD_CT + i + 1);
-                }
-                next_number = begin_number - HEAD_CT;
+                begin_number + HEAD_CT + 1
             };
-
+            for i in begin_number..next_number {
+                info!("best peer number : {}, number : {}, ", number, i);
+                numbers.push(i);
+            }
+            // };
+            info!(
+                "best peer number : {}, netx number : {}",
+                number, next_number
+            );
             Some((GetHashByNumberMsg { numbers }, end, next_number))
         } else {
             warn!("GetHashByNumberMsg is none.");
@@ -549,5 +564,10 @@ impl Downloader {
         info!("do block {:?}", block.header().id());
         //todo:verify block
         let _ = downloader.chain_reader.clone().try_connect(block).await;
+    }
+
+    pub async fn close_peer(downloader: Arc<Downloader>, peer: PeerInfo) {
+        let mut lock = downloader.peers.write().compat().await.unwrap();
+        let _ = lock.remove(&peer);
     }
 }

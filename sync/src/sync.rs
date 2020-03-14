@@ -3,7 +3,7 @@ use crate::process::ProcessActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
-use network::sync_messages::{ProcessMessage, SyncMessage};
+use network::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
 use network::PeerEvent;
 use types::peer_info::PeerInfo;
 
@@ -92,7 +92,16 @@ impl Handler<PeerEvent> for SyncActor {
                     .then(|_result, act, _ctx| async {}.into_actor(act))
                     .wait(ctx);
             }
-            _ => {}
+            PeerEvent::Close(close_peer) => {
+                info!("disconnect new peer: {:?}", close_peer);
+                let peer_info = PeerInfo::new(close_peer);
+                let download_msg = DownloadMessage::ClosePeerMsg(peer_info);
+                self.download_address
+                    .send(download_msg)
+                    .into_actor(self)
+                    .then(|_result, act, _ctx| async {}.into_actor(act))
+                    .wait(ctx);
+            }
         }
 
         Ok(())
