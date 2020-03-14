@@ -22,9 +22,7 @@ where
     P: TxPoolAsyncService,
 {
     pub fn _launch(txpool: P) -> Result<Addr<Self>> {
-        let actor = TxFactoryActor {
-            txpool,
-        };
+        let actor = TxFactoryActor { txpool };
         Ok(actor.start())
     }
 }

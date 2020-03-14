@@ -3,10 +3,7 @@ use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
 use anyhow::Result;
 use network::{
-    sync_messages::{
-        DataType,
-        GetDataByHashMsg, ProcessMessage,
-    },
+    sync_messages::{DataType, GetDataByHashMsg, ProcessMessage},
     NetworkAsyncService, RPCRequest, RPCResponse,
 };
 use std::sync::Arc;

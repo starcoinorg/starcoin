@@ -1,8 +1,5 @@
 use actix::prelude::*;
-use actix::{
-    fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler,
-    ResponseActFuture,
-};
+use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, ResponseActFuture};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
@@ -11,12 +8,10 @@ use futures::sink::SinkExt;
 use futures_timer::Delay;
 /// Sync message which inbound
 use network::sync_messages::{
-    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
+    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
-use network::{
-    NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage,
-};
+use network::{NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::AsyncChain;
@@ -87,7 +82,8 @@ impl Handler<ProcessMessage> for ProcessActor {
                             peer_info.id.into(),
                             PeerMessage::LatestStateMsg(latest_state_msg),
                         )
-                        .await {
+                        .await
+                    {
                         warn!("err :{:?}", e);
                     }
                 }

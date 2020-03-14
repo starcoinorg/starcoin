@@ -10,25 +10,19 @@ pub mod message;
 
 use crate::chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;
-use actix::dev::ToEnvelope;
-use actix::fut::wrap_future;
 use actix::prelude::*;
 use anyhow::{bail, Error, Result};
 use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use consensus::dummy::DummyConsensus;
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::HashValue;
 use executor::mock_executor::MockExecutor;
-use futures::compat::Future01CompatExt;
-use futures_locks::RwLock;
 use logger::prelude::*;
 use message::ChainRequest;
 use network::network::NetworkAsyncService;
-use starcoin_accumulator::{Accumulator, AccumulatorNodeStore, MerkleAccumulator};
-use state_tree::StateNodeStore;
 use std::sync::Arc;
-use storage::{BlockStorageOp, StarcoinStorage};
-use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService, ChainWriter};
+use storage::StarcoinStorage;
+use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService};
 use txpool::TxPoolRef;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
@@ -79,7 +73,7 @@ impl Actor for ChainActor {
 impl Handler<ChainRequest> for ChainActor {
     type Result = Result<ChainResponse>;
 
-    fn handle(&mut self, msg: ChainRequest, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ChainRequest, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
             ChainRequest::CurrentHeader() => {
                 Ok(ChainResponse::BlockHeader(self.service.current_header()))
@@ -140,7 +134,7 @@ impl Handler<ChainRequest> for ChainActor {
 impl Handler<SystemEvents> for ChainActor {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         debug!("try connect mined block.");
         match msg {
             SystemEvents::MinedBlock(new_block) => match self.service.try_connect(new_block) {
@@ -320,7 +314,7 @@ impl ChainAsyncService for ChainActorRef {
         self.address
             .send(ChainRequest::ConnectBlock(block))
             .await
-            .map_err(|e| Into::<Error>::into(e))?;
+            .map_err(|e| Into::<Error>::into(e))??;
         Ok(())
     }
 
@@ -351,7 +345,7 @@ impl ChainAsyncService for ChainActorRef {
         self.address
             .send(ChainRequest::GenTx())
             .await
-            .map_err(|e| Into::<Error>::into(e))?;
+            .map_err(|e| Into::<Error>::into(e))??;
         Ok(())
     }
 }

@@ -2,10 +2,7 @@
 use crate::pool::TTLPool;
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
-use actix::{
-    fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler,
-    ResponseActFuture,
-};
+use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, ResponseActFuture};
 use anyhow::Result;
 use bus::BusActor;
 use chain::ChainActorRef;
@@ -14,8 +11,8 @@ use futures::compat::Future01CompatExt;
 use futures_locks::RwLock;
 use itertools;
 use network::sync_messages::{
-    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
+    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
 use network::{NetworkAsyncService, RPCMessage, RPCRequest, RPCResponse};
 use std::collections::HashMap;

@@ -3,9 +3,7 @@ use crate::process::ProcessActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
-use network::sync_messages::{
-    ProcessMessage, SyncMessage,
-};
+use network::sync_messages::{ProcessMessage, SyncMessage};
 use network::PeerEvent;
 use types::peer_info::PeerInfo;
 

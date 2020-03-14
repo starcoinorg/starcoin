@@ -1,29 +1,21 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::message::{ChainRequest, ChainResponse};
 use actix::prelude::*;
 use anyhow::{ensure, format_err, Error, Result};
-use config::{NodeConfig, VMConfig};
-use consensus::{Consensus, ConsensusHeader};
+use config::NodeConfig;
+use consensus::Consensus;
 use crypto::{hash::CryptoHash, HashValue};
 use executor::mock_executor::mock_mint_txn;
 use executor::TransactionExecutor;
-use futures_locks::RwLock;
 use logger::prelude::*;
-use starcoin_accumulator::node_index::NodeIndex;
-use starcoin_accumulator::{Accumulator, AccumulatorNodeStore, MerkleAccumulator};
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_statedb::ChainStateDB;
-use state_tree::StateNodeStore;
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
-use traits::{
-    ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter, TxPoolAsyncService,
-};
+use storage::BlockChainStore;
+use traits::{ChainReader, ChainState, ChainStateReader, ChainWriter, TxPoolAsyncService};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate, BLOCK_INFO_DEFAULT_ID},
@@ -73,12 +65,15 @@ where
             ))?;
         let block_info = match storage.clone().get_block_info(head_block_hash) {
             Ok(Some(block_info_1)) => block_info_1,
-            Err(e) => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
+            Err(e) => {
+                warn!("err : {:?}", e);
+                BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0)
+            }
             _ => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
         };
 
         let state_root = head.header().state_root();
-        let mut chain = Self {
+        let chain = Self {
             config: config.clone(),
             accumulator: MerkleAccumulator::new(
                 block_info.frozen_subtree_roots,
@@ -114,20 +109,27 @@ where
     }
 
     fn save_block(&self, block: &Block) {
-        self.storage.commit_block(block.clone());
+        if let Err(e) = self.storage.commit_block(block.clone()) {
+            warn!("err : {:?}", e);
+        }
         info!("commit block : {:?}", block.header().id());
     }
 
     fn get_block_info(&self, block_id: HashValue) -> BlockInfo {
         let block_info = match self.storage.get_block_info(block_id) {
             Ok(Some(block_info_1)) => block_info_1,
-            Err(e) => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
+            Err(e) => {
+                warn!("err : {:?}", e);
+                BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0)
+            }
             _ => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
         };
         block_info
     }
     fn save_block_info(&self, block_info: BlockInfo) {
-        self.storage.save_block_info(block_info);
+        if let Err(e) = self.storage.save_block_info(block_info) {
+            warn!("err : {:?}", e);
+        }
     }
 
     fn gen_tx_for_test(&self) {
@@ -189,13 +191,13 @@ where
             let output = E::execute_transaction(&self.config.vm, &chain_state, txn)?;
             match output.status() {
                 TransactionStatus::Discard(status) => return Err(status.clone().into()),
-                TransactionStatus::Keep(status) => {
+                TransactionStatus::Keep(_status) => {
                     //continue.
                 }
             }
             //TODO should not commit here.
             state_root = chain_state.commit()?;
-            let transaction_info = TransactionInfo::new(
+            let _transaction_info = TransactionInfo::new(
                 txn_hash,
                 state_root,
                 HashValue::zero(),
@@ -271,11 +273,11 @@ where
         self.storage.get_block_by_hash(hash)
     }
 
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>, Error> {
+    fn get_transaction(&self, _hash: HashValue) -> Result<Option<Transaction>, Error> {
         unimplemented!()
     }
 
-    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
+    fn get_transaction_info(&self, _hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
         unimplemented!()
     }
 
@@ -359,12 +361,12 @@ where
             let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
             match output.status() {
                 TransactionStatus::Discard(status) => return Err(status.clone().into()),
-                TransactionStatus::Keep(status) => {
+                TransactionStatus::Keep(_status) => {
                     //continue.
                 }
             }
             state_root = chain_state.commit()?;
-            let transaction_info = TransactionInfo::new(
+            let _transaction_info = TransactionInfo::new(
                 txn_hash,
                 state_root,
                 HashValue::zero(),
@@ -382,9 +384,13 @@ where
             "verify block:{:?} state_root fail.",
             block.header().id()
         );
-        self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx);
+        if let Err(e) = self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx) {
+            warn!("err : {:?}", e);
+        }
         self.save_block(&block);
-        chain_state.flush();
+        if let Err(e) = chain_state.flush() {
+            warn!("err : {:?}", e);
+        }
         self.chain_info.append(&block.header());
         self.head = block.clone();
         self.save_block_info(BlockInfo::new(

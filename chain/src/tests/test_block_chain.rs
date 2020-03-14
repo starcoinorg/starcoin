@@ -1,4 +1,3 @@
-use super::random_block;
 use crate::{
     message::ChainRequest, AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService,
 };

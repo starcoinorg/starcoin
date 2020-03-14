@@ -2,13 +2,10 @@ use crate::download::Downloader;
 use crate::download_body::{DownloadBodyActor, SyncBodyEvent};
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
-use anyhow::{Result};
+use anyhow::Result;
 use crypto::hash::HashValue;
 use network::{
-    sync_messages::{
-        DataType,
-        GetDataByHashMsg, ProcessMessage,
-    },
+    sync_messages::{DataType, GetDataByHashMsg, ProcessMessage},
     NetworkAsyncService, RPCRequest, RPCResponse,
 };
 use std::sync::Arc;

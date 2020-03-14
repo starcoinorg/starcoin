@@ -2,33 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain::BlockChain;
-use crate::message::{ChainRequest, ChainResponse};
 use actix::prelude::*;
-use anyhow::{Error, Result};
+use anyhow::Result;
 use config::NodeConfig;
-use consensus::{Consensus, ConsensusHeader};
-use crypto::{hash::CryptoHash, HashValue};
+use consensus::Consensus;
+use crypto::HashValue;
 use executor::TransactionExecutor;
-use futures_locks::RwLock;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
-use starcoin_accumulator::{Accumulator, AccumulatorNodeStore};
 use starcoin_statedb::ChainStateDB;
-use state_tree::StateNodeStore;
-use std::cell::RefCell;
-use std::marker::PhantomData;
-use std::process::exit;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, BlockChainStore, BlockStorageOp, StarcoinStorage};
-use traits::{
-    ChainAsyncService, ChainReader, ChainService, ChainStateReader, ChainWriter, TxPoolAsyncService,
-};
+use storage::BlockChainStore;
+use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter, TxPoolAsyncService};
 use types::{
-    account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
-    transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
 pub struct ChainServiceImpl<E, C, P, S>
@@ -117,7 +107,7 @@ where
         None
     }
 
-    pub fn state_at(&self, root: HashValue) -> ChainStateDB {
+    pub fn state_at(&self, _root: HashValue) -> ChainStateDB {
         unimplemented!()
     }
 
@@ -134,13 +124,13 @@ where
             //delete txpool
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
             enacted.append(&mut block.transactions().clone().to_vec());
-            let mut retracted = Vec::new();
+            let retracted = Vec::new();
             self.commit_2_txpool(enacted, retracted);
         } else {
             //2. update branches
             let mut update_branch_flag = false;
             let mut index = 0;
-            for mut branch in &self.branches {
+            for branch in &self.branches {
                 index = index + 1;
                 if new_branch_parent_hash == branch.current_header().id() {
                     if new_branch.current_header().number() > self.head.current_header().number() {
@@ -153,7 +143,7 @@ where
                         );
 
                         self.branches.insert(
-                            (index - 1),
+                            index - 1,
                             BlockChain::new(
                                 self.config.clone(),
                                 self.head.get_chain_info(),
@@ -176,7 +166,7 @@ where
                     } else {
                         debug!("replace branch.");
                         self.branches.insert(
-                            (index - 1),
+                            index - 1,
                             BlockChain::new(
                                 new_branch.config.clone(),
                                 new_branch.get_chain_info(),
