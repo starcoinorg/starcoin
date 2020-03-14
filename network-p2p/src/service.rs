@@ -55,7 +55,7 @@ use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
 use crate::protocol::event::Event;
-use crate::protocol::{Protocol};
+use crate::protocol::Protocol;
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
     parse_addr, parse_str_addr,

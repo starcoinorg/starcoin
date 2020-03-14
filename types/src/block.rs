@@ -6,7 +6,6 @@ use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedUserTransaction;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
-
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::create_literal_hash;

@@ -126,7 +126,7 @@ where
         let mut need_broadcast = false;
         let block = new_branch.head_block();
         if new_branch_parent_hash == self.head.current_header().id() {
-            println!("head branch.");
+            debug!("head branch.");
             //1. update head branch
             self.head = new_branch;
             need_broadcast = true;
@@ -144,7 +144,7 @@ where
                 index = index + 1;
                 if new_branch_parent_hash == branch.current_header().id() {
                     if new_branch.current_header().number() > self.head.current_header().number() {
-                        println!("rollback branch.");
+                        debug!("rollback branch.");
                         //3. change head
                         //rollback txpool
                         let (enacted, retracted) = self.find_ancestors(
@@ -174,7 +174,7 @@ where
 
                         need_broadcast = true;
                     } else {
-                        println!("replace branch.");
+                        debug!("replace branch.");
                         self.branches.insert(
                             (index - 1),
                             BlockChain::new(
@@ -192,7 +192,7 @@ where
             }
 
             if !update_branch_flag {
-                println!("update branch.");
+                debug!("update branch.");
                 self.branches.push(new_branch);
             }
         }

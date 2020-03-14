@@ -11,7 +11,6 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
-
 /// Struct that will be persisted on chain to store the information of the current block.
 ///
 /// The flow will look like following:

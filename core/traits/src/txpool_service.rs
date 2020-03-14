@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{Result};
+use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
 use std::sync::Arc;

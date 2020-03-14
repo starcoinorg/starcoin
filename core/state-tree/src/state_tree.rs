@@ -1,4 +1,4 @@
-use anyhow::{Result};
+use anyhow::Result;
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::iterator::JellyfishMerkleIterator;
 use forkable_jellyfish_merkle::node_type::{Node, NodeKey};
@@ -10,8 +10,8 @@ use forkable_jellyfish_merkle::{
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
 use starcoin_types::state_set::StateSet;
-use std::collections::{BTreeMap};
-use std::ops::{DerefMut};
+use std::collections::BTreeMap;
+use std::ops::DerefMut;
 
 use std::sync::{Arc, Mutex, RwLock};
 

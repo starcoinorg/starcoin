@@ -16,3 +16,4 @@ types = {path = "../types", package="starcoin-types"}
 traits = {path = "../core/traits", package="starcoin-traits"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 rand = { version = "0.6.5", default-features = false }
+logger = {path = "../commons/logger", package="starcoin-logger"}

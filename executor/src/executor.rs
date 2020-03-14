@@ -2,21 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::TransactionExecutor;
-use anyhow::{Result};
+use anyhow::Result;
 
 use config::VMConfig;
 use crypto::HashValue;
+use statedb::ChainStateDB;
+use std::sync::Arc;
+use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     state_set::ChainStateSet,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionPayload},
     vm_error::VMStatus,
 };
+use vm_runtime::genesis::{generate_genesis_state_set, GENESIS_KEYPAIR};
 use vm_runtime::starcoin_vm::StarcoinVM;
-use vm_runtime::genesis::{ generate_genesis_state_set, GENESIS_KEYPAIR, };
-use statedb::ChainStateDB;
-use std::sync::Arc;
-use traits::{ChainState, ChainStateReader, ChainStateWriter};
-
 
 pub struct Executor {
     config: VMConfig,
@@ -29,7 +28,6 @@ impl Executor {
             config: VMConfig::default(),
         }
     }
-
 }
 
 impl TransactionExecutor for Executor {
@@ -39,8 +37,7 @@ impl TransactionExecutor for Executor {
             ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
 
         // ToDo: load genesis txn from genesis.blob, instead of generating from stdlib
-        generate_genesis_state_set( &GENESIS_KEYPAIR.0,
-                                    GENESIS_KEYPAIR.1.clone(), &chain_state)
+        generate_genesis_state_set(&GENESIS_KEYPAIR.0, GENESIS_KEYPAIR.1.clone(), &chain_state)
     }
 
     fn execute_transaction(

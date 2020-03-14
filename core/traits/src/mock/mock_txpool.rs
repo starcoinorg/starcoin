@@ -6,7 +6,6 @@ use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
 
-
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
 use types::transaction;

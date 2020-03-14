@@ -1,22 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
 use crate::genesis_gas_schedule::initial_gas_schedule;
 use crate::transaction_helper::TransactionHelper;
-use stdlib::{stdlib_modules, StdLibOptions};
-use once_cell::sync::Lazy;
+use crate::{chain_state::StateStore, system_module_names::*};
+use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
+use crypto::ed25519::*;
 use crypto::HashValue;
-use crypto::{
-    ed25519::*,
-};
+use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath,
-    transaction::{ChangeSet, RawTransaction,},
-    byte_array::ByteArray,
     account_address::AccountAddress,
-
+    byte_array::ByteArray,
+    transaction::{ChangeSet, RawTransaction},
 };
 use move_core_types::identifier::Identifier;
 use move_vm_runtime::MoveVM;
@@ -24,23 +21,21 @@ use move_vm_state::{
     data_cache::BlockDataCache,
     execution_context::{ExecutionContext, TransactionExecutionContext},
 };
+use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
+use once_cell::sync::Lazy;
+use rand::{rngs::StdRng, SeedableRng};
+use stdlib::{stdlib_modules, StdLibOptions};
+use traits::ChainState;
 use types::{
-    transaction::{RawUserTransaction, SignatureCheckedTransaction},
-    state_set::ChainStateSet,
     account_config,
+    state_set::ChainStateSet,
+    transaction::{RawUserTransaction, SignatureCheckedTransaction},
 };
 use vm::{
     access::ModuleAccess,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
-use crate::{
-    system_module_names::*, chain_state::StateStore,
-};
-use libra_state_view::StateView;
-use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
-use rand::{rngs::StdRng, SeedableRng};
-use traits::ChainState;
 
 //use std::str::FromStr;
 
@@ -105,9 +100,11 @@ pub fn generate_genesis_state_set(
     let mut state_store = StateStore::new(chain_state);
     state_store.add_write_set(&write_set);
 
-    Ok((state_store.state().state_root(), state_store.state().dump()?))
+    Ok((
+        state_store.state().state_root(),
+        state_store.state().dump()?,
+    ))
 }
-
 
 /// Create and initialize Transaction Fee and Core Code accounts.
 fn create_and_initialize_main_accounts(
@@ -117,7 +114,8 @@ fn create_and_initialize_main_accounts(
     public_key: &Ed25519PublicKey,
     initial_gas_schedule: Value,
 ) {
-    let association_addr = TransactionHelper::to_libra_AccountAddress(account_config::association_address());
+    let association_addr =
+        TransactionHelper::to_libra_AccountAddress(account_config::association_address());
     let mut txn_data = TransactionMetadata::default();
     txn_data.sender = association_addr;
 
@@ -227,7 +225,6 @@ fn create_and_initialize_main_accounts(
             ],
         )
         .expect("Failure running epilogue for association account");
-
 }
 
 /// Publish the standard library.

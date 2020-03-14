@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Names of modules and functions used by Libra System.
 
-use types::{account_config, identifier::Identifier,language_storage::ModuleId};
+use libra_types::language_storage::ModuleId as LibraModuleId;
 use move_core_types::identifier::Identifier as LibraIdentifier;
 use once_cell::sync::Lazy;
-use libra_types::{language_storage::ModuleId as LibraModuleId};
+use types::{account_config, identifier::Identifier, language_storage::ModuleId};
 
 // Data to resolve basic account and transaction flow functions and structs
 /// The ModuleId for the Account module
@@ -84,7 +84,9 @@ pub static TRANSACTION_FEE_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
 // Names for special functions and structs
 pub static CREATE_ACCOUNT_NAME: Lazy<LibraIdentifier> =
     Lazy::new(|| LibraIdentifier::new("create_account").unwrap());
-pub static PROLOGUE_NAME: Lazy<LibraIdentifier> = Lazy::new(|| LibraIdentifier::new("prologue").unwrap());
-pub static EPILOGUE_NAME: Lazy<LibraIdentifier> = Lazy::new(|| LibraIdentifier::new("epilogue").unwrap());
+pub static PROLOGUE_NAME: Lazy<LibraIdentifier> =
+    Lazy::new(|| LibraIdentifier::new("prologue").unwrap());
+pub static EPILOGUE_NAME: Lazy<LibraIdentifier> =
+    Lazy::new(|| LibraIdentifier::new("epilogue").unwrap());
 pub static BLOCK_PROLOGUE: Lazy<LibraIdentifier> =
     Lazy::new(|| LibraIdentifier::new("block_prologue").unwrap());

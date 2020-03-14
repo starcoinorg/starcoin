@@ -201,7 +201,6 @@ impl RawUserTransaction {
             }
             TransactionPayload::Module(_) => ("module publishing".to_string(), &empty_vec[..]),
             TransactionPayload::StateSet(_) => ("genesis".to_string(), &empty_vec[..]),
-
         };
         let mut f_args: String = "".to_string();
         for arg in args {

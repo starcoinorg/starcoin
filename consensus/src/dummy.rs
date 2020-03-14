@@ -5,6 +5,7 @@ use crate::{Consensus, ConsensusHeader};
 use anyhow::{Error, Result};
 use config::NodeConfig;
 use futures::channel::oneshot::Receiver;
+use logger::prelude::*;
 use rand::{thread_rng, EntropyRng, Rng, SeedableRng, StdRng};
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -58,7 +59,7 @@ impl Consensus for DummyConsensus {
             .expect("Time went backwards");
         let mut rng: StdRng = SeedableRng::seed_from_u64(since_the_epoch.as_secs());
         let time: u64 = rng.gen_range(10, 30);
-        println!("rand time : {}", time);
+        info!("rand time : {}", time);
         thread::sleep(Duration::from_secs(time));
         Ok(block_template.into_block(DummyHeader {}))
     }

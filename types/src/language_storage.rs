@@ -9,9 +9,9 @@ use crate::{
     identifier::{IdentStr, Identifier},
 };
 
+use move_core_types::identifier::Identifier as LibraIdentifier;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, HashValue};
-use move_core_types::identifier::Identifier as LibraIdentifier;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
 pub enum TypeTag {
@@ -88,12 +88,18 @@ impl ModuleId {
 
 impl Into<libra_types::language_storage::ModuleId> for ModuleId {
     fn into(self) -> libra_types::language_storage::ModuleId {
-        libra_types::language_storage::ModuleId::new(self.address().into(), LibraIdentifier::from_utf8(self.name.into_bytes()).unwrap())
+        libra_types::language_storage::ModuleId::new(
+            self.address().into(),
+            LibraIdentifier::from_utf8(self.name.into_bytes()).unwrap(),
+        )
     }
 }
 
 impl From<libra_types::language_storage::ModuleId> for ModuleId {
     fn from(module_id: libra_types::language_storage::ModuleId) -> Self {
-        Self::new(AccountAddress::from(module_id.address().clone()), Identifier::new(module_id.name().as_str()).unwrap())
+        Self::new(
+            AccountAddress::from(module_id.address().clone()),
+            Identifier::new(module_id.name().as_str()).unwrap(),
+        )
     }
 }

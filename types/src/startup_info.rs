@@ -6,7 +6,7 @@ use anyhow::Result;
 use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{HashValue};
+use starcoin_crypto::HashValue;
 
 use std::convert::{TryFrom, TryInto};
 use std::env::split_paths;

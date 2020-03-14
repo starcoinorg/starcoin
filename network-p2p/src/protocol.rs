@@ -196,7 +196,10 @@ impl NetworkBehaviour for Protocol {
             GenericProtoOut::CustomMessage { peer_id, message } => {
                 self.on_custom_message(peer_id, message)
             }
-            GenericProtoOut::Clogged { peer_id: _, messages } => {
+            GenericProtoOut::Clogged {
+                peer_id: _,
+                messages,
+            } => {
                 debug!(target: "sync", "{} clogging messages:", messages.len());
                 for _msg in messages.into_iter().take(5) {
                     //let message: Option<Message<B>> = Decode::decode(&mut &msg[..]).ok();

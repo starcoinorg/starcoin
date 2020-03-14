@@ -355,12 +355,11 @@ impl Downloader {
 
     async fn best_peer(downloader: Arc<Downloader>) -> Option<PeerInfo> {
         let lock = downloader.peers.read().compat().await.unwrap();
-        println!("size : {}", lock.len());
         for p in lock.keys() {
             return Some(p.clone());
         }
 
-        println!("best peer return none.");
+        info!("best peer return none.");
         None
     }
 

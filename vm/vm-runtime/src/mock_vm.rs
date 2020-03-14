@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain_state::StateStore;
-use anyhow::{Result};
+use anyhow::Result;
 use config::VMConfig;
-use crypto::{ed25519::compat};
+use crypto::ed25519::compat;
 
 use once_cell::sync::Lazy;
 
@@ -267,6 +267,5 @@ fn decode_transaction(txn: &SignedUserTransaction) -> MockTransaction {
         TransactionPayload::StateSet(_) => {
             unimplemented!("MockExecutor does not support StateSet transaction payload.")
         }
-
     }
 }

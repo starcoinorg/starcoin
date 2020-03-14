@@ -4,7 +4,7 @@
 use anyhow::ensure;
 use anyhow::Result;
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use crypto::{test_utils::KeyPair};
+use crypto::test_utils::KeyPair;
 
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
