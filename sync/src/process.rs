@@ -12,7 +12,7 @@ use network::sync_messages::{
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
 use network::{
-    NetworkAsyncService, PeerMessage, RPCMessage, RPCRequest, RPCResponse, RpcRequestMessage,
+    NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage,
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -105,15 +105,14 @@ impl Handler<RpcRequestMessage> for ProcessActor {
     fn handle(&mut self, msg: RpcRequestMessage, _ctx: &mut Self::Context) -> Self::Result {
         let mut responder = msg.responder.clone();
         let processor = self.processor.clone();
-        let id = msg.request.get_id();
         match msg.request {
             RPCRequest::TestRequest(_r) => {}
             RPCRequest::GetHashByNumberMsg(process_msg)
             | RPCRequest::GetDataByHashMsg(process_msg) => match process_msg {
                 ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg) => {
                     info!(
-                        "get_hash_by_number_msg:{:?}, do request id : {:?} begin",
-                        get_hash_by_number_msg, id
+                        "get_hash_by_number_msg:{:?}, do request begin",
+                        get_hash_by_number_msg
                     );
                     Arbiter::spawn(async move {
                         let batch_hash_by_number_msg = Processor::handle_get_hash_by_number_msg(
@@ -126,7 +125,7 @@ impl Handler<RpcRequestMessage> for ProcessActor {
 
                         responder.send(resp).await.unwrap();
 
-                        info!("do request id : {:?} end", id);
+                        info!("do request end");
                     });
                 }
                 ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg) => {

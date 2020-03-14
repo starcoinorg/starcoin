@@ -5,17 +5,13 @@ use crate::helper::get_unix_ts;
 use crate::sync_messages::*;
 use actix::prelude::*;
 use anyhow::*;
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::{ HashValue};
 use futures::channel::mpsc::Sender;
 use parity_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use types::account_address::AccountAddress;
 use types::transaction::SignedUserTransaction;
 use types::{block::Block, peer_info::PeerId};
-
-pub trait RPCMessage {
-    fn get_id(&self) -> HashValue;
-}
 
 #[derive(Message)]
 #[rtype(result = "u64")]
@@ -28,8 +24,8 @@ pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
     Block(Block),
     LatestStateMsg(LatestStateMsg),
-    RPCRequest(RPCRequest),
-    RPCResponse(HashValue, RPCResponse),
+    RPCRequest(u128,RPCRequest),
+    RPCResponse(u128, RPCResponse),
 }
 
 #[rtype(result = "Result<()>")]
@@ -52,16 +48,6 @@ pub enum RPCRequest {
 pub struct RpcRequestMessage {
     pub request: RPCRequest,
     pub responder: Sender<RPCResponse>,
-}
-
-impl RPCMessage for RPCRequest {
-    fn get_id(&self) -> HashValue {
-        return match self {
-            RPCRequest::TestRequest(request) => request.data,
-            RPCRequest::GetHashByNumberMsg(request) => request.crypto_hash(),
-            RPCRequest::GetDataByHashMsg(request) => request.crypto_hash(),
-        };
-    }
 }
 
 #[rtype(result = "Result<()>")]

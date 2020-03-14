@@ -11,7 +11,6 @@ use futures::{
 };
 
 use anyhow::*;
-use crypto::HashValue;
 use futures::lock::Mutex;
 
 use std::pin::Pin;
@@ -52,7 +51,7 @@ impl<T> Future for MessageFuture<T> {
 
 #[derive(Clone)]
 pub struct MessageProcessor<T> {
-    tx_map: Arc<Mutex<HashMap<HashValue, Sender<Result<T>>>>>,
+    tx_map: Arc<Mutex<HashMap<u128, Sender<Result<T>>>>>,
 }
 
 impl<T> MessageProcessor<T>
@@ -65,43 +64,43 @@ where
         }
     }
 
-    pub async fn add_future(&self, hash: HashValue, sender: Sender<Result<T>>) {
+    pub async fn add_future(&self, id: u128, sender: Sender<Result<T>>) {
         self.tx_map
             .lock()
             .await
-            .entry(hash)
+            .entry(id)
             .or_insert(sender.clone());
     }
 
-    pub async fn send_response(&self, hash: HashValue, value: T) -> Result<()> {
+    pub async fn send_response(&self, id: u128, value: T) -> Result<()> {
         let mut tx_map = self.tx_map.lock().await;
-        match tx_map.get(&hash) {
+        match tx_map.get(&id) {
             Some(tx) => {
                 match tx.clone().send(Ok(value)).await {
                     Ok(_new_tx) => {
                         info!("send message succ");
-                        tx_map.remove(&hash);
+                        tx_map.remove(&id);
                     }
                     Err(_) => warn!("send message error"),
                 };
             }
-            _ => info!("tx hash {} not in map", hash),
+            _ => info!("tx id {} not in map", id),
         }
         Ok(())
     }
-
-    pub async fn remove_future(&self, hash: HashValue) {
+    //
+    pub async fn remove_future(&self, id: u128) {
         let mut tx_map = self.tx_map.lock().await;
-        match tx_map.get(&hash) {
+        match tx_map.get(&id) {
             Some(tx) => {
-                info!("future time out,hash is {:?}", hash);
+                info!("future time out,id is {:?}", id);
                 tx.clone()
                     .send(Err(anyhow!("future time out")))
                     .await
                     .unwrap();
-                tx_map.remove(&hash);
+                tx_map.remove(&id);
             }
-            _ => info!("tx hash {} not in map,timeout is not necessary", hash),
+            _ => info!("tx hash {} not in map,timeout is not necessary", id),
         }
     }
 }

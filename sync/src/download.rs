@@ -14,7 +14,7 @@ use network::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
-use network::{NetworkAsyncService, RPCMessage, RPCRequest, RPCResponse};
+use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -181,7 +181,6 @@ impl DownloadActor {
                                 ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg),
                             );
 
-                            info!("request id 1 :{}", get_hash_by_number_req.get_id());
                             if let RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) =
                                 network
                                     .clone()
@@ -234,7 +233,6 @@ impl DownloadActor {
                                         ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg),
                                     );
 
-                                    info!("request id 2 :{}", get_hash_by_number_req.get_id());
                                     if let RPCResponse::BatchHashByNumberMsg(
                                         batch_hash_by_number_msg,
                                     ) = network
@@ -262,7 +260,6 @@ impl DownloadActor {
                                             ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
                                         );
 
-                                        info!("request id 3 :{}", get_data_by_hash_req.get_id());
                                         if let RPCResponse::BatchHeaderAndBodyMsg(headers, bodies) =
                                             network
                                                 .clone()

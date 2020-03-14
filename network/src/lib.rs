@@ -18,7 +18,7 @@ pub use network::NetworkActor;
 pub use helper::get_unix_ts;
 
 pub use messages::{
-    PeerEvent, PeerMessage, RPCMessage, RPCRequest, RPCResponse, RpcRequestMessage,
+    PeerEvent, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage,
 };
 pub use net::{build_network_service, SNetworkService};
 pub use network::NetworkAsyncService;

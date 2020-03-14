@@ -20,7 +20,6 @@ mod tests {
     use crate::net::{build_network_service, SNetworkService};
 
     use crate::messages::NetworkMessage;
-    use logger::*;
 
     pub type NetworkComponent = (
         SNetworkService,
