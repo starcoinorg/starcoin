@@ -57,7 +57,7 @@ impl DownloadActor {
                 network,
                 bus,
                 sync_event_sender,
-                sync_duration: Duration::from_secs(30),
+                sync_duration: Duration::from_secs(5),
                 syncing: Arc::new(AtomicBool::new(false)),
             }
         });
@@ -550,8 +550,12 @@ impl Downloader {
         headers: Vec<BlockHeader>,
         bodies: Vec<BlockBody>,
     ) {
-        for (header, body) in itertools::zip_eq(headers, bodies) {
-            let block = Block::new(header, body.transactions);
+        assert_eq!(headers.len(), bodies.len());
+        for i in 0..headers.len() {
+            let block = Block::new(
+                headers.get(i).unwrap().clone(),
+                bodies.get(i).unwrap().clone().transactions,
+            );
             //todo:verify block
             let _ = Self::do_block(downloader.clone(), block).await;
         }
