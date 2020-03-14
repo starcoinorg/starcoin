@@ -18,7 +18,7 @@ use scs::SCSCodec;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
 use types::peer_info::PeerInfo;
-use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
+use types::{system_events::SystemEvents};
 
 use futures_timer::Delay;
 use std::time::Duration;
@@ -32,7 +32,7 @@ where
     P: 'static,
 {
     addr: Addr<NetworkActor<P>>,
-    message_processor: MessageProcessor<RPCResponse>,
+    message_processor: MessageProcessor<u128,RPCResponse>,
     tx: mpsc::UnboundedSender<NetworkMessage>,
     peer_id: PeerId,
     handle: Handle,
@@ -49,7 +49,7 @@ where
     addr: Addr<NetworkActor<P>>,
     bus: Addr<BusActor>,
     txpool: P,
-    message_processor: MessageProcessor<RPCResponse>,
+    message_processor: MessageProcessor<u128,RPCResponse>,
     handle: Handle,
 }
 
@@ -341,6 +341,7 @@ mod tests {
     use traits::mock::MockTxPoolService;
     use types::account_address::AccountAddress;
     use crypto::HashValue;
+    use types::transaction::SignedUserTransaction;
 
     #[test]
     fn test_network_with_mock() {

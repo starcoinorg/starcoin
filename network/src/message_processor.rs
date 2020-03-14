@@ -14,6 +14,8 @@ use anyhow::*;
 use futures::lock::Mutex;
 
 use std::pin::Pin;
+use std::cmp::Eq;
+use std::hash::Hash;
 
 pub struct MessageFuture<T> {
     rx: Receiver<Result<T>>,
@@ -50,12 +52,13 @@ impl<T> Future for MessageFuture<T> {
 }
 
 #[derive(Clone)]
-pub struct MessageProcessor<T> {
-    tx_map: Arc<Mutex<HashMap<u128, Sender<Result<T>>>>>,
+pub struct MessageProcessor<K,T> {
+    tx_map: Arc<Mutex<HashMap<K, Sender<Result<T>>>>>,
 }
 
-impl<T> MessageProcessor<T>
+impl<K,T> MessageProcessor<K,T>
 where
+    K: Send + Sync+Hash+Eq + 'static,
     T: Send + Sync + 'static,
 {
     pub fn new() -> Self {
@@ -64,7 +67,7 @@ where
         }
     }
 
-    pub async fn add_future(&self, id: u128, sender: Sender<Result<T>>) {
+    pub async fn add_future(&self, id: K, sender: Sender<Result<T>>) {
         self.tx_map
             .lock()
             .await
@@ -72,7 +75,7 @@ where
             .or_insert(sender.clone());
     }
 
-    pub async fn send_response(&self, id: u128, value: T) -> Result<()> {
+    pub async fn send_response(&self, id: K, value: T) -> Result<()> {
         let mut tx_map = self.tx_map.lock().await;
         match tx_map.get(&id) {
             Some(tx) => {
@@ -84,23 +87,22 @@ where
                     Err(_) => warn!("send message error"),
                 };
             }
-            _ => info!("tx id {} not in map", id),
+            _ => info!("tx id  not in map"),
         }
         Ok(())
     }
     //
-    pub async fn remove_future(&self, id: u128) {
+    pub async fn remove_future(&self, id: K) {
         let mut tx_map = self.tx_map.lock().await;
         match tx_map.get(&id) {
             Some(tx) => {
-                info!("future time out,id is {:?}", id);
                 tx.clone()
                     .send(Err(anyhow!("future time out")))
                     .await
                     .unwrap();
                 tx_map.remove(&id);
             }
-            _ => info!("tx hash {} not in map,timeout is not necessary", id),
+            _ => (),
         }
     }
 }
