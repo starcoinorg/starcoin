@@ -169,6 +169,10 @@ impl DownloadActor {
                         )
                         .await;
 
+                    info!(
+                        "get_hash_by_number_msg:{:?}, backward",
+                        send_get_hash_by_number_msg
+                    );
                     match send_get_hash_by_number_msg {
                         Some((get_hash_by_number_msg, end, next_number)) => {
                             begin_number = next_number;
@@ -214,9 +218,9 @@ impl DownloadActor {
                 debug!("hash_with_number:{:?}", hash_with_number);
                 match hash_with_number {
                     Some(hash_number) => {
+                        begin_number = hash_number.number + 1;
                         loop {
                             //1. sync hash
-                            begin_number = hash_number.number + 1;
                             let send_get_hash_by_number_msg =
                                 Downloader::send_get_hash_by_number_msg_forward(
                                     downloader.clone(),
@@ -224,6 +228,11 @@ impl DownloadActor {
                                     begin_number,
                                 )
                                 .await;
+
+                            info!(
+                                "get_hash_by_number_msg:{:?}, forward",
+                                send_get_hash_by_number_msg
+                            );
 
                             match send_get_hash_by_number_msg {
                                 Some((get_hash_by_number_msg, end, next_number)) => {
@@ -358,6 +367,7 @@ impl Downloader {
         None
     }
 
+    /// for ancestors
     pub async fn send_get_hash_by_number_msg_backward(
         downloader: Arc<Downloader>,
         peer: PeerInfo,
@@ -383,27 +393,22 @@ impl Downloader {
         if begin_number < number {
             let mut numbers = Vec::new();
             let mut end = false;
-            // let mut next_number = 0;
-            // if number < HEAD_CT {
-            //     for i in 0..(number + 1) {
-            //         info!("best peer number : {}, number : {}", number, i);
-            //         numbers.push(i);
-            //         end = true;
-            //     }
-            // } else {
-            let next_number = if (begin_number + HEAD_CT + 1) > number {
-                end = true;
-                number
+            let mut next_number = 0;
+            if begin_number < HEAD_CT {
+                for i in 0..(begin_number + 1) {
+                    info!("best peer backward number : {}, number : {}", number, i);
+                    numbers.push(i);
+                    end = true;
+                }
             } else {
-                begin_number + HEAD_CT + 1
+                for i in (begin_number - HEAD_CT + 1)..(begin_number + 1) {
+                    info!("best peer backward number : {}, number : {}, ", number, i);
+                    numbers.push(i);
+                }
+                next_number = begin_number - HEAD_CT;
             };
-            for i in begin_number..next_number {
-                info!("best peer number : {}, number : {}, ", number, i);
-                numbers.push(i);
-            }
-            // };
             info!(
-                "best peer number : {}, netx number : {}",
+                "best peer backward number : {}, next number : {}",
                 number, next_number
             );
             Some((GetHashByNumberMsg { numbers }, end, next_number))
@@ -435,16 +440,22 @@ impl Downloader {
             let mut next_number = 0;
             if (number - begin_number) < HEAD_CT {
                 for i in begin_number..(number + 1) {
+                    info!("best peer forward number : {}, next number : {}", number, i,);
                     numbers.push(i);
                     end = true;
                 }
             } else {
                 for i in begin_number..(begin_number + HEAD_CT) {
+                    info!("best peer forward number : {}, next number : {}", number, i,);
                     numbers.push(i);
                 }
                 next_number = begin_number + HEAD_CT;
             };
 
+            info!(
+                "best peer forward number : {}, next number : {}",
+                number, next_number
+            );
             Some((GetHashByNumberMsg { numbers }, end, next_number))
         } else {
             None

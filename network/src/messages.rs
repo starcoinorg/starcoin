@@ -5,7 +5,7 @@ use crate::helper::get_unix_ts;
 use crate::sync_messages::*;
 use actix::prelude::*;
 use anyhow::*;
-use crypto::{ HashValue};
+use crypto::HashValue;
 use futures::channel::mpsc::Sender;
 use parity_codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
@@ -24,7 +24,7 @@ pub enum PeerMessage {
     UserTransaction(SignedUserTransaction),
     Block(Block),
     LatestStateMsg(LatestStateMsg),
-    RPCRequest(u128,RPCRequest),
+    RPCRequest(u128, RPCRequest),
     RPCResponse(u128, RPCResponse),
 }
 

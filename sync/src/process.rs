@@ -11,9 +11,7 @@ use network::sync_messages::{
     BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
-use network::{
-    NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage,
-};
+use network::{NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::AsyncChain;
@@ -199,19 +197,25 @@ impl Processor {
                 .chain_reader
                 .clone()
                 .get_block_by_number(number)
-                .await
-                .expect("block is none after get_block_by_number");
-            debug!(
-                "block number:{:?}, hash {:?}",
-                block.header().number(),
-                block.header().id()
-            );
-            let hash_with_number = HashWithNumber {
-                number: block.header().number(),
-                hash: block.header().id(),
-            };
+                .await;
+            match block {
+                Some(b) => {
+                    debug!(
+                        "block number:{:?}, hash {:?}",
+                        b.header().number(),
+                        b.header().id()
+                    );
+                    let hash_with_number = HashWithNumber {
+                        number: b.header().number(),
+                        hash: b.header().id(),
+                    };
 
-            hashs.push(hash_with_number);
+                    hashs.push(hash_with_number);
+                }
+                None => {
+                    warn!("block is none.");
+                }
+            }
         }
 
         BatchHashByNumberMsg { hashs }

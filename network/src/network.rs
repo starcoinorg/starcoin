@@ -4,26 +4,24 @@
 use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
 use crate::sync_messages::{DownloadMessage, SyncMessage};
-use crate::{
-    NetworkMessage, PeerEvent, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage,
-};
+use crate::{NetworkMessage, PeerEvent, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
-use crypto::hash::{CryptoHash};
+use crypto::hash::CryptoHash;
 use futures::{channel::mpsc, stream::StreamExt};
 use libp2p::PeerId;
 use scs::SCSCodec;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
 use types::peer_info::PeerInfo;
-use types::{system_events::SystemEvents};
+use types::system_events::SystemEvents;
 
+use crate::helper::get_unix_ts;
 use futures_timer::Delay;
 use std::time::Duration;
 use tokio::runtime::Handle;
-use crate::helper::get_unix_ts;
 
 #[derive(Clone)]
 pub struct NetworkAsyncService<P>
@@ -32,7 +30,7 @@ where
     P: 'static,
 {
     addr: Addr<NetworkActor<P>>,
-    message_processor: MessageProcessor<u128,RPCResponse>,
+    message_processor: MessageProcessor<u128, RPCResponse>,
     tx: mpsc::UnboundedSender<NetworkMessage>,
     peer_id: PeerId,
     handle: Handle,
@@ -49,7 +47,7 @@ where
     addr: Addr<NetworkActor<P>>,
     bus: Addr<BusActor>,
     txpool: P,
-    message_processor: MessageProcessor<u128,RPCResponse>,
+    message_processor: MessageProcessor<u128, RPCResponse>,
     handle: Handle,
 }
 
@@ -81,7 +79,7 @@ where
         time_out: Duration,
     ) -> Result<RPCResponse> {
         let request_id = get_unix_ts();
-        let peer_msg = PeerMessage::RPCRequest(request_id,message);
+        let peer_msg = PeerMessage::RPCRequest(request_id, message);
         let data = peer_msg.encode().unwrap();
         let network_message = NetworkMessage {
             peer_id: peer_id.clone().into(),
@@ -90,21 +88,22 @@ where
         self.tx.unbounded_send(network_message)?;
         let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
-        self.message_processor
-                .add_future(request_id, tx)
-            .await;
-        info!("send request to {} with id {}", peer_id,request_id);
+        self.message_processor.add_future(request_id, tx).await;
+        info!("send request to {} with id {}", peer_id, request_id);
         let processor = self.message_processor.clone();
         let peer_id_clone = peer_id.clone();
         let task = async move {
             Delay::new(time_out).await;
             processor.remove_future(request_id).await;
-            warn!("send request to {} with id {} timeout", peer_id_clone,request_id);
+            warn!(
+                "send request to {} with id {} timeout",
+                peer_id_clone, request_id
+            );
         };
 
         self.handle.spawn(task);
-        let response=message_future.await;
-        info!("receive response from {} with id {}", peer_id,request_id);
+        let response = message_future.await;
+        info!("receive response from {} with id {}", peer_id, request_id);
         response
     }
 
@@ -250,7 +249,7 @@ where
                     })
                     .await?;
             }
-            PeerMessage::RPCRequest(id,request) => {
+            PeerMessage::RPCRequest(id, request) => {
                 info!("do request.");
                 let (tx, mut rx) = mpsc::channel(1);
                 self.bus
@@ -335,12 +334,13 @@ mod tests {
     use super::*;
     use crate::{RpcRequestMessage, TestRequest, TestResponse};
     use bus::Subscription;
+    use crypto::HashValue;
+    use crypto::HashValue;
     use futures::sink::SinkExt;
     use futures_timer::Delay;
     use tokio::runtime::{Handle, Runtime};
     use traits::mock::MockTxPoolService;
     use types::account_address::AccountAddress;
-    use crypto::HashValue;
     use types::transaction::SignedUserTransaction;
 
     #[test]

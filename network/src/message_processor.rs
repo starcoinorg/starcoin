@@ -13,9 +13,9 @@ use futures::{
 use anyhow::*;
 use futures::lock::Mutex;
 
-use std::pin::Pin;
 use std::cmp::Eq;
 use std::hash::Hash;
+use std::pin::Pin;
 
 pub struct MessageFuture<T> {
     rx: Receiver<Result<T>>,
@@ -52,13 +52,13 @@ impl<T> Future for MessageFuture<T> {
 }
 
 #[derive(Clone)]
-pub struct MessageProcessor<K,T> {
+pub struct MessageProcessor<K, T> {
     tx_map: Arc<Mutex<HashMap<K, Sender<Result<T>>>>>,
 }
 
-impl<K,T> MessageProcessor<K,T>
+impl<K, T> MessageProcessor<K, T>
 where
-    K: Send + Sync+Hash+Eq + 'static,
+    K: Send + Sync + Hash + Eq + 'static,
     T: Send + Sync + 'static,
 {
     pub fn new() -> Self {
@@ -68,11 +68,7 @@ where
     }
 
     pub async fn add_future(&self, id: K, sender: Sender<Result<T>>) {
-        self.tx_map
-            .lock()
-            .await
-            .entry(id)
-            .or_insert(sender.clone());
+        self.tx_map.lock().await.entry(id).or_insert(sender.clone());
     }
 
     pub async fn send_response(&self, id: K, value: T) -> Result<()> {
