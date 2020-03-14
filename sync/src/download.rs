@@ -57,7 +57,7 @@ impl DownloadActor {
                 network,
                 bus,
                 sync_event_sender,
-                sync_duration: Duration::from_secs(5),
+                sync_duration: Duration::from_secs(30),
                 syncing: Arc::new(AtomicBool::new(false)),
             }
         });
