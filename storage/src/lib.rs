@@ -227,8 +227,8 @@ impl AccumulatorNodeWriter for StarcoinStorage {
         self.accumulator_store.delete_nodes(node_hash_vec)
     }
     ///delete larger index than one
-    fn delete_larger_index(&self, index: u64, max_notes: u64) -> Result<()> {
-        self.accumulator_store.delete_larger_index(index, max_notes)
+    fn delete_nodes_index(&self, vec_index: Vec<NodeIndex>) -> Result<()> {
+        self.accumulator_store.delete_nodes_index(vec_index)
     }
 }
 

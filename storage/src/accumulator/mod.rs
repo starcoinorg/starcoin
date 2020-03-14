@@ -85,15 +85,14 @@ impl AccumulatorNodeWriter for AccumulatorStore {
         Ok(())
     }
 
-    fn delete_larger_index(&self, from_index: u64, max_notes: u64) -> Result<(), Error> {
+    fn delete_nodes_index(&self, vec_index: Vec<NodeIndex>) -> Result<(), Error> {
         ensure!(
-            from_index <= max_notes,
-            " invalid index form: {} to max notes:{}.",
-            from_index,
-            max_notes
+            vec_index.len() > 0,
+            " invalid index len : {}.",
+            vec_index.len()
         );
-        for index in from_index..max_notes {
-            self.index_storage.remove(NodeIndex::new(index))?;
+        for index in vec_index {
+            self.index_storage.remove(index)?;
         }
         Ok(())
     }

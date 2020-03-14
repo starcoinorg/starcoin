@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::node_index::FrozenSubTreeIterator;
 use crate::{
     node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, Accumulator, AccumulatorNode,
     LeafCount, MerkleAccumulator, MockAccumulatorStore,
@@ -82,50 +83,41 @@ fn test_multiple_tree() {
     proof_verify(&accumulator2, root_hash2, &batch1, 0);
 }
 
-#[ignore]
 #[test]
-fn test_update_leaf() {
+fn test_update_left_leaf() {
     // construct a accumulator
-    let leaves = create_leaves(0..8);
+    let mut leaves = create_leaves(0..20);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
     let (root_hash, _) = accumulator.append(&leaves).unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
-    // update index from 6
-    let new_leaves = create_leaves(0..4);
-    let (new_root_hash, first_idx) = accumulator.update(6, &new_leaves).unwrap();
-    proof_verify(&accumulator, new_root_hash, &leaves, first_idx);
+
+    // update index from 8
+    let new_leaves = create_leaves(0..8);
+    let (new_root_hash, first_idx) = accumulator.update(8, &new_leaves).unwrap();
+    proof_verify(&accumulator, new_root_hash, &new_leaves, 4);
+    leaves.truncate(4);
+    leaves.extend_from_slice(&new_leaves);
+    proof_verify(&accumulator, new_root_hash, &leaves, 0);
 }
+#[test]
+fn test_update_right_leaf() {
+    // construct a accumulator
+    let mut leaves = create_leaves(0..20);
+    let mock_store = MockAccumulatorStore::new();
+    let accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
+    let (root_hash, _) = accumulator.append(&leaves).unwrap();
 
-// FIXME: proptest is not implemented for HashValue.
-// Delete it or make HashValue right.
+    proof_verify(&accumulator, root_hash, &leaves, 0);
 
-// //batch test
-// proptest! {
-//     #![proptest_config(ProptestConfig::with_cases(1))]
-
-//     #[test]
-//     fn test_proof(
-//         batch1 in vec(any::<HashValue>(), 1..10),
-//         batch2 in vec(any::<HashValue>(), 1..10),
-//     ) {
-//         let total_leaves = batch1.len() + batch2.len();
-//         let mock_store = MockAccumulatorStore::new();
-//         let mut accumulator = MerkleAccumulator::new(vec![], 0, 0, Arc::new(mock_store)).unwrap();
-
-//         // insert all leaves in two batches
-//         let (root_hash1, _) = accumulator.append(&batch1).unwrap();
-//         proof_verify(&accumulator, root_hash1, &batch1, 0);
-
-//         let (root_hash2, _) = accumulator.append(&batch2).unwrap();
-//         // verify proofs for all leaves towards current root
-
-//         proof_verify(&accumulator, root_hash2, &batch2, batch1.len() as u64);
-//         let mut total_vec = batch1.clone();
-//         total_vec.extend_from_slice(&batch2);
-//         proof_verify(&accumulator, root_hash2, &total_vec, 0);
-//     }
-// }
+    // update index from 14
+    let new_leaves = create_leaves(0..8);
+    let (new_root_hash, first_idx) = accumulator.update(14, &new_leaves).unwrap();
+    proof_verify(&accumulator, new_root_hash, &new_leaves, 7);
+    leaves.truncate(7);
+    leaves.extend_from_slice(&new_leaves);
+    proof_verify(&accumulator, new_root_hash, &leaves, 0);
+}
 
 fn proof_verify(
     accumulator: &MerkleAccumulator,

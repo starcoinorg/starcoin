@@ -4788,6 +4788,7 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-logger",
 ]
 
 [[package]]

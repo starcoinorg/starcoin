@@ -3,6 +3,7 @@
 
 use anyhow::bail;
 use anyhow::{ensure, Error, Result};
+use logger::prelude::*;
 use mirai_annotations::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -15,6 +16,7 @@ pub mod node_index;
 
 use crate::node::{InternalNode, ACCUMULATOR_PLACEHOLDER_HASH};
 use crate::node_index::{FrozenSubTreeIterator, NodeIndex};
+use itertools::Itertools;
 pub use node::AccumulatorNode;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -128,8 +130,8 @@ pub trait AccumulatorNodeWriter {
     fn save_node(&self, node: AccumulatorNode) -> Result<()>;
     ///delete node
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()>;
-    ///delete larger index than one
-    fn delete_larger_index(&self, index: u64, max_notes: u64) -> Result<()>;
+    ///delete indexes
+    fn delete_nodes_index(&self, index_vec: Vec<NodeIndex>) -> Result<()>;
 }
 
 pub trait AccumulatorNodeStore: AccumulatorNodeReader + AccumulatorNodeWriter {}
@@ -286,16 +288,31 @@ impl AccumulatorCache {
             leaf_index,
             self.num_leaves
         );
+        let new_num_leaves = NodeIndex::leaves_count_end_from_index(leaf_index);
         //find deleting node by leaf_index
-        let larger_nodes = self.get_larger_nodes_from_index(leaf_index).unwrap();
+        let little_index = FrozenSubTreeIterator::new(new_num_leaves).collect::<Vec<_>>();
+        //merge update node and index
+        let update_nodes = self
+            .get_all_update_nodes_from_index(leaf_index, little_index)
+            .unwrap();
+
+        let node_index = NodeIndex::new(leaf_index);
         //delete node and index
-        self.node_store.delete_nodes(larger_nodes.clone())?;
+        let vec_update_nodes = update_nodes
+            .values()
+            .map(|v| v.clone())
+            .collect::<Vec<HashValue>>();
+        let vec_update_nodes_index = update_nodes
+            .keys()
+            .map(|v| v.clone())
+            .collect::<Vec<NodeIndex>>();
+        self.node_store.delete_nodes(vec_update_nodes.clone())?;
         self.node_store
-            .delete_larger_index(leaf_index, self.num_nodes)?;
+            .delete_nodes_index(vec_update_nodes_index.clone())?;
 
         // update self frozen_subtree_roots
         let mut frozen_subtree_roots = self.frozen_subtree_roots.borrow_mut().to_vec();
-        for hash in larger_nodes {
+        for hash in vec_update_nodes.clone() {
             let pos = frozen_subtree_roots
                 .iter()
                 .position(|x| *x == hash)
@@ -303,25 +320,30 @@ impl AccumulatorCache {
             frozen_subtree_roots.remove(pos);
         }
         self.frozen_subtree_roots = RefCell::from(frozen_subtree_roots);
+
         // update index cache
-        for index in leaf_index..self.num_nodes {
-            self.index_cache.borrow_mut().remove(&NodeIndex::new(index));
+        for index in vec_update_nodes_index.clone() {
+            self.index_cache.borrow_mut().remove(&index);
+        }
+        //update node number
+        if node_index.is_left_child() {
+            self.num_nodes = leaf_index - 1;
+        } else {
+            self.num_nodes = node_index.sibling().to_inorder_index();
         }
         //update self leaves number
-        self.num_leaves = NodeIndex::leaves_count_end_from_index(leaf_index);
+        self.num_leaves = new_num_leaves;
 
         //update root hash
-        let node_index = NodeIndex::new(leaf_index);
-        let new_root_index = NodeIndex::root_from_leaf_count(self.num_leaves + 1);
+        let new_root_index = NodeIndex::root_from_leaf_count(self.num_leaves);
         if node_index.is_left_child() {
             //if index is left, update root hash
-            self.root_hash = self.node_store.get(new_root_index).unwrap().unwrap().hash();
+            self.root_hash = *self.index_cache.borrow().get(&new_root_index).unwrap();
         } else {
             self.root_hash = self
-                .get_new_root_and_update_right_node(node_index, new_root_index)
+                .get_new_root_and_update_node(node_index, new_root_index)
                 .unwrap();
         };
-
         Ok(())
     }
 
@@ -346,16 +368,47 @@ impl AccumulatorCache {
         Ok(siblings)
     }
 
-    ///get all nodes larger than index of leaf_node
-    fn get_larger_nodes_from_index(&self, leaf_index: u64) -> Result<Vec<HashValue>> {
-        let mut node_vec = vec![];
+    ///get all nodes larger than index of leaf_node and little update nodes
+    fn get_all_update_nodes_from_index(
+        &self,
+        leaf_index: u64,
+        little_index: Vec<NodeIndex>,
+    ) -> Result<HashMap<NodeIndex, HashValue>> {
+        let mut node_map = HashMap::new();
+        //find larger nodes
         for index in leaf_index..self.num_nodes {
-            match self.node_store.get(NodeIndex::new(index)).unwrap() {
-                Some(node) => node_vec.push(node.hash()),
-                _ => bail!("get larger nodes from index: {:?}", leaf_index),
+            let node_index = NodeIndex::new(index);
+            match self.index_cache.borrow().get(&node_index) {
+                Some(node) => {
+                    node_map.insert(node_index, *node);
+                }
+                _ => {
+                    error!(
+                        "get larger nodes from leaf index: {:?}, node:{:?}",
+                        leaf_index, node_index
+                    );
+                    break;
+                }
             }
         }
-        Ok(node_vec)
+        //find little nodes
+        for index in little_index {
+            let parent_index = index.parent();
+            match self.index_cache.borrow().get(&parent_index) {
+                Some(node) => {
+                    node_map.insert(parent_index, *node);
+                }
+                _ => {
+                    bail!(
+                        "get little nodes from index: {:?}, parent: {:?}",
+                        index,
+                        parent_index
+                    );
+                    break;
+                }
+            }
+        }
+        Ok(node_map)
     }
 
     /// save frozen nodes
@@ -378,46 +431,68 @@ impl AccumulatorCache {
         self.node_store.save_node(node)
     }
 
-    ///get new root by right leaf index
-    fn get_new_root_and_update_right_node(
+    ///get new root by leaf index and update
+    fn get_new_root_and_update_node(
         &self,
         leaf_index: NodeIndex,
         root_index: NodeIndex,
     ) -> Result<HashValue> {
         let mut right_hash = *ACCUMULATOR_PLACEHOLDER_HASH;
         let mut right_index = leaf_index.clone();
-        //save current node
-        // self.node_store.save(leaf_index, right_hash);
-        // self.node_store
-        //     .save_node(AccumulatorNode::new_leaf(leaf_index, right_hash));
         #[allow(unused_assignments)]
         let mut new_root = right_hash;
         loop {
             //get sibling
-            let left_node_index = right_index.sibling();
-            match self.node_store.get(left_node_index).unwrap() {
-                Some(node) => {
-                    let left_hash = node.hash();
-                    let parent_index = right_index.parent();
-                    //set new root hash to parent node hash
-                    let parent_node =
-                        AccumulatorNode::new_internal(parent_index, left_hash, right_hash);
-                    //save parent node
-                    self.node_store.save_node(parent_node.clone())?;
-                    new_root = parent_node.hash();
-                    self.node_store.save(parent_index, new_root)?;
-                    if parent_index == root_index {
-                        //get root node
-                        break;
-                    }
-                    //for next loop
-                    right_index = parent_node.index();
-                    right_hash = new_root;
+            let sibling_index = right_index.sibling();
+            if sibling_index.to_inorder_index() > leaf_index.to_inorder_index() {
+                //right left replace node
+                let left_hash = right_hash;
+                right_hash = *ACCUMULATOR_PLACEHOLDER_HASH;
+                let parent_index = right_index.parent();
+                //set new root hash to parent node hash
+                let parent_node =
+                    AccumulatorNode::new_internal(parent_index, left_hash, right_hash);
+                new_root = parent_node.hash();
+                self.update_node(parent_index, new_root, parent_node.clone())?;
+                if parent_index == root_index {
+                    //get root node
+                    break;
                 }
-                _ => bail!("get leaf node error: {:?}", left_node_index),
+                //for next loop
+                right_index = parent_node.index();
+                right_hash = new_root;
+            } else {
+                match self.node_store.get(sibling_index) {
+                    Ok(Some(node)) => {
+                        let left_hash = node.hash();
+                        let parent_index = right_index.parent();
+                        //set new root hash to parent node hash
+                        let parent_node =
+                            AccumulatorNode::new_internal(parent_index, left_hash, right_hash);
+                        new_root = parent_node.hash();
+                        self.update_node(parent_index, new_root, parent_node.clone())?;
+                        if parent_index == root_index {
+                            //get root node
+                            break;
+                        }
+                        //for next loop
+                        right_index = parent_node.index();
+                        right_hash = new_root;
+                    }
+                    _ => {
+                        warn!("get leaf node error: {:?}", sibling_index);
+                    }
+                }
             }
         }
         Ok(new_root)
+    }
+    /// Update node storage,and index cache
+    fn update_node(&self, index: NodeIndex, hash: HashValue, node: AccumulatorNode) -> Result<()> {
+        self.node_store.save_node(node.clone())?;
+        self.node_store.save(index, hash)?;
+        self.index_cache.borrow_mut().insert(index, hash);
+        Ok(())
     }
 
     fn rightmost_leaf_index(&self) -> u64 {
@@ -601,7 +676,7 @@ impl Accumulator for MerkleAccumulator {
         let cache = self.cache.lock().unwrap();
         ensure!(
             leaf_index < cache.num_leaves as u64,
-            "invalid leaf_index {}, num_leaves {}",
+            "get proof invalid leaf_index {}, num_leaves {}",
             leaf_index,
             cache.num_leaves
         );
@@ -629,14 +704,15 @@ impl Accumulator for MerkleAccumulator {
         ensure!(leaves.len() > 0, "invalid leaves len: {}", leaves.len());
         ensure!(
             leaf_index < cache.num_leaves as u64,
-            "invalid leaf_index {}, num_leaves {}",
+            "update invalid leaf_index {}, num_leaves {}",
             leaf_index,
             cache.num_leaves
         );
         // delete larger nodes from index
         cache.delete(leaf_index)?;
         // append new notes
-        self.append(leaves)
+        let (root, _) = cache.append_leaves(leaves).unwrap();
+        Ok((root, leaf_index))
     }
 
     fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>, Error> {
@@ -700,15 +776,14 @@ impl AccumulatorNodeWriter for MockAccumulatorStore {
         Ok(())
     }
 
-    fn delete_larger_index(&self, from_index: u64, max_notes: u64) -> Result<(), Error> {
+    fn delete_nodes_index(&self, index_vec: Vec<NodeIndex>) -> Result<(), Error> {
         ensure!(
-            from_index <= max_notes,
-            " invalid index form: {} to max notes:{}.",
-            from_index,
-            max_notes
+            index_vec.len() > 0,
+            " invalid index vec len: {}.",
+            index_vec.len()
         );
-        for index in from_index..max_notes {
-            self.index_store.borrow_mut().remove(&NodeIndex::new(index));
+        for index in index_vec {
+            self.index_store.borrow_mut().remove(&index);
         }
         Ok(())
     }
