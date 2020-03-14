@@ -1,20 +1,13 @@
-use crate::download::{DownloadActor, Downloader};
-use crate::pool::TTLPool;
-use crate::process::{ProcessActor, Processor};
+use crate::download::DownloadActor;
+use crate::process::ProcessActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
-use bus::{Bus, BusActor, Subscription};
-use chain::{ChainActor, ChainActorRef};
-use config::NodeConfig;
-use crypto::HashValue;
-use futures_locks::RwLock;
+use bus::{BusActor, Subscription};
 use network::sync_messages::{
-    BlockBody, DownloadMessage, HashWithNumber, ProcessMessage, SyncMessage,
+    ProcessMessage, SyncMessage,
 };
-use network::{PeerEvent, RPCMessage, RPCRequest, RpcRequestMessage};
-use std::sync::Arc;
-use std::time::Duration;
-use types::{block::BlockHeader, peer_info::PeerInfo, system_events::SystemEvents};
+use network::PeerEvent;
+use types::peer_info::PeerInfo;
 
 pub struct SyncActor {
     process_address: Addr<ProcessActor>,
@@ -105,24 +98,5 @@ impl Handler<PeerEvent> for SyncActor {
         }
 
         Ok(())
-    }
-}
-
-#[derive(Clone)]
-pub struct SyncFlow {
-    pub downloader: Arc<RwLock<Downloader>>,
-    pub processor: Arc<RwLock<Processor>>,
-    pub peer_info: PeerInfo,
-}
-
-impl SyncFlow {
-    pub fn new(peer_info: PeerInfo, chain_reader: ChainActorRef) -> Self {
-        let downloader = Arc::new(RwLock::new(Downloader::new(chain_reader.clone())));
-        let processor = Arc::new(RwLock::new(Processor::new(chain_reader)));
-        SyncFlow {
-            downloader,
-            processor,
-            peer_info,
-        }
     }
 }

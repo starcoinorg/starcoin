@@ -1,26 +1,25 @@
 use actix::prelude::*;
 use actix::{
-    fut::wrap_future, fut::FutureWrap, Actor, Addr, AsyncContext, Context, Handler,
+    fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler,
     ResponseActFuture,
 };
 use anyhow::Result;
-use bus::{Bus, BusActor, Subscription};
-use chain::{ChainActor, ChainActorRef};
-use crypto::{hash::CryptoHash, HashValue};
+use bus::{BusActor, Subscription};
+use chain::ChainActorRef;
+use crypto::hash::CryptoHash;
 use futures::sink::SinkExt;
 use futures_timer::Delay;
 /// Sync message which inbound
 use network::sync_messages::{
-    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
+    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
     GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
 use network::{
-    NetworkAsyncService, PeerMessage, RPCMessage, RPCRequest, RPCResponse, RpcRequestMessage,
+    NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage,
 };
-use std::hash::Hash;
 use std::sync::Arc;
 use std::time::Duration;
-use traits::{AsyncChain, Chain, ChainAsyncService, ChainReader, ChainService};
+use traits::AsyncChain;
 use txpool::TxPoolRef;
 use types::{block::Block, peer_info::PeerInfo};
 
@@ -67,8 +66,8 @@ impl Actor for ProcessActor {
 impl Handler<ProcessMessage> for ProcessActor {
     type Result = ResponseActFuture<Self, Result<()>>;
 
-    fn handle(&mut self, msg: ProcessMessage, ctx: &mut Self::Context) -> Self::Result {
-        let mut processor = self.processor.clone();
+    fn handle(&mut self, msg: ProcessMessage, _ctx: &mut Self::Context) -> Self::Result {
+        let processor = self.processor.clone();
         let my_peer_info = self.peer_info.as_ref().clone();
         let network = self.network.clone();
         let fut = async move {
@@ -76,19 +75,21 @@ impl Handler<ProcessMessage> for ProcessActor {
             match msg {
                 ProcessMessage::NewPeerMsg(peer_info) => {
                     info!(
-                        "send latest_state_msg to peer : {:?}:{:?}",
-                        peer_info.id, my_peer_info.id
+                        "send latest_state_msg to peer : {:?}:{:?}, message id is {:?}",
+                        peer_info.id, my_peer_info.id, id
                     );
                     let latest_state_msg =
                         Processor::send_latest_state_msg(processor.clone()).await;
                     Delay::new(Duration::from_secs(1)).await;
-                    network
+                    if let Err(e) = network
                         .clone()
                         .send_peer_message(
                             peer_info.id.into(),
                             PeerMessage::LatestStateMsg(latest_state_msg),
                         )
-                        .await;
+                        .await {
+                        warn!("err :{:?}", e);
+                    }
                 }
                 _ => {}
             }
@@ -103,7 +104,7 @@ impl Handler<ProcessMessage> for ProcessActor {
 impl Handler<RpcRequestMessage> for ProcessActor {
     type Result = Result<()>;
 
-    fn handle(&mut self, msg: RpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: RpcRequestMessage, _ctx: &mut Self::Context) -> Self::Result {
         let mut responder = msg.responder.clone();
         let processor = self.processor.clone();
         match msg.request {

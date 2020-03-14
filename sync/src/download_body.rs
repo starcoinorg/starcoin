@@ -1,13 +1,13 @@
 use crate::download::Downloader;
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
-use anyhow::{Error, Result};
+use anyhow::Result;
 use network::{
     sync_messages::{
-        BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
-        GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+        DataType,
+        GetDataByHashMsg, ProcessMessage,
     },
-    NetworkAsyncService, RPCMessage, RPCRequest, RPCResponse,
+    NetworkAsyncService, RPCRequest, RPCResponse,
 };
 use std::sync::Arc;
 use txpool::TxPoolRef;
@@ -28,12 +28,12 @@ pub struct DownloadBodyActor {
 }
 
 impl DownloadBodyActor {
-    pub fn launch(
+    pub fn _launch(
         downloader: Arc<Downloader>,
         peer_info: Arc<PeerInfo>,
         network: NetworkAsyncService<TxPoolRef>,
     ) -> Result<Addr<DownloadBodyActor>> {
-        Ok(Actor::create(move |ctx| DownloadBodyActor {
+        Ok(Actor::create(move |_ctx| DownloadBodyActor {
             downloader,
             peer_info,
             network,
@@ -47,7 +47,7 @@ impl Actor for DownloadBodyActor {
 
 impl Handler<SyncBodyEvent> for DownloadBodyActor {
     type Result = Result<()>;
-    fn handle(&mut self, event: SyncBodyEvent, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, event: SyncBodyEvent, _ctx: &mut Self::Context) -> Self::Result {
         let hashs = event.headers.iter().map(|h| h.id().clone()).collect();
         let get_data_by_hash_msg = GetDataByHashMsg {
             hashs,

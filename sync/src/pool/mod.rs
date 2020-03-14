@@ -19,7 +19,7 @@ impl<E> TTLEntry<E>
 where
     E: Ord + Clone,
 {
-    fn expiration_time(&self) -> Duration {
+    fn _expiration_time(&self) -> Duration {
         self.expiration_time
     }
 
@@ -119,12 +119,12 @@ where
         entries.iter().map(|e| e.data.clone()).collect()
     }
 
-    pub(crate) fn gc(&self, now: Duration) -> Vec<E> {
+    pub(crate) fn _gc(&self, _now: Duration) -> Vec<E> {
         //todo
         unimplemented!()
     }
 
-    pub(crate) fn size(&self) -> usize {
+    pub(crate) fn _size(&self) -> usize {
         self.data.read().unwrap().len()
     }
 }

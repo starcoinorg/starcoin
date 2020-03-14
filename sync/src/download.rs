@@ -3,25 +3,21 @@ use crate::pool::TTLPool;
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
 use actix::{
-    fut::wrap_future, fut::FutureWrap, Actor, Addr, AsyncContext, Context, Handler,
+    fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler,
     ResponseActFuture,
 };
-use anyhow::{Error, Result};
-use atomic_refcell::AtomicRefCell;
-use bus::{Bus, BusActor, Subscription};
-use chain::{ChainActor, ChainActorRef};
-use crypto::hash::CryptoHash;
+use anyhow::Result;
+use bus::BusActor;
+use chain::ChainActorRef;
 use futures::channel::mpsc;
 use futures::compat::Future01CompatExt;
-use futures_locks::{Mutex, RwLock};
-use futures_timer::Delay;
+use futures_locks::RwLock;
 use itertools;
 use network::sync_messages::{
-    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
+    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
     GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
 use network::{NetworkAsyncService, RPCMessage, RPCRequest, RPCResponse};
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -78,7 +74,9 @@ impl Actor for DownloadActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
             if !act.syncing.load(Ordering::Relaxed) {
-                act.sync_event_sender.try_send(SyncEvent {});
+                if let Err(e) = act.sync_event_sender.try_send(SyncEvent {}) {
+                    warn!("err:{:?}", e);
+                }
             }
         });
         info!("download actor started.")
@@ -100,10 +98,8 @@ impl Handler<SyncEvent> for DownloadActor {
 impl Handler<DownloadMessage> for DownloadActor {
     type Result = ResponseActFuture<Self, Result<()>>;
 
-    fn handle(&mut self, msg: DownloadMessage, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: DownloadMessage, _ctx: &mut Self::Context) -> Self::Result {
         let downloader = self.downloader.clone();
-        let my_peer_info = self.peer_info.id.clone();
-        let network = self.network.clone();
         let fut = async move {
             match msg {
                 DownloadMessage::LatestStateMsg(peer_info, latest_state_msg) => {
@@ -308,8 +304,8 @@ impl DownloadActor {
 /// Send download message
 pub struct Downloader {
     hash_pool: TTLPool<HashWithNumber>,
-    header_pool: TTLPool<BlockHeader>,
-    body_pool: TTLPool<BlockBody>,
+    _header_pool: TTLPool<BlockHeader>,
+    _body_pool: TTLPool<BlockBody>,
     peers: Arc<RwLock<HashMap<PeerInfo, LatestStateMsg>>>,
     chain_reader: ChainActorRef,
 }
@@ -320,8 +316,8 @@ impl Downloader {
     pub fn new(chain_reader: ChainActorRef) -> Self {
         Downloader {
             hash_pool: TTLPool::new(),
-            header_pool: TTLPool::new(),
-            body_pool: TTLPool::new(),
+            _header_pool: TTLPool::new(),
+            _body_pool: TTLPool::new(),
             //            _network: network,
             peers: Arc::new(RwLock::new(HashMap::new())),
             chain_reader,
@@ -396,9 +392,9 @@ impl Downloader {
                 }
             } else {
                 for i in (begin_number - HEAD_CT + 1)..(begin_number + 1) {
-                    numbers.push((begin_number - HEAD_CT + i + 1));
+                    numbers.push(begin_number - HEAD_CT + i + 1);
                 }
-                next_number = (begin_number - HEAD_CT);
+                next_number = begin_number - HEAD_CT;
             };
 
             Some((GetHashByNumberMsg { numbers }, end, next_number))
@@ -437,7 +433,7 @@ impl Downloader {
                 for i in begin_number..(begin_number + HEAD_CT) {
                     numbers.push(i);
                 }
-                next_number = (begin_number + HEAD_CT);
+                next_number = begin_number + HEAD_CT;
             };
 
             Some((GetHashByNumberMsg { numbers }, end, next_number))
@@ -457,13 +453,6 @@ impl Downloader {
         let mut hashs = batch_hash_by_number_msg.hashs.clone();
         let mut not_exist_hash = Vec::new();
         hashs.reverse();
-        let id = downloader
-            .chain_reader
-            .clone()
-            .current_header()
-            .await
-            .unwrap()
-            .id();
         for hash in hashs {
             if downloader
                 .chain_reader
@@ -508,7 +497,7 @@ impl Downloader {
     ) -> Option<GetDataByHashMsg> {
         let hash_vec = downloader.hash_pool.take(100);
         if !hash_vec.is_empty() {
-            let mut hashs = hash_vec.iter().map(|hash| hash.hash).collect();
+            let hashs = hash_vec.iter().map(|hash| hash.hash).collect();
             Some(GetDataByHashMsg {
                 hashs,
                 data_type: DataType::HEADER,
@@ -518,7 +507,7 @@ impl Downloader {
         }
     }
 
-    pub async fn handle_batch_header_msg(
+    pub async fn _handle_batch_header_msg(
         downloader: Arc<Downloader>,
         peer: PeerInfo,
         batch_header_msg: BatchHeaderMsg,
@@ -526,18 +515,18 @@ impl Downloader {
         if !batch_header_msg.headers.is_empty() {
             for header in batch_header_msg.headers {
                 downloader
-                    .header_pool
+                    ._header_pool
                     .insert(peer.clone(), header.number(), header);
             }
         }
     }
 
-    pub async fn send_get_body_by_hash_msg(
+    pub async fn _send_get_body_by_hash_msg(
         downloader: Arc<Downloader>,
     ) -> Option<GetDataByHashMsg> {
-        let header_vec = downloader.header_pool.take(100);
+        let header_vec = downloader._header_pool.take(100);
         if !header_vec.is_empty() {
-            let mut hashs = header_vec.iter().map(|header| header.id()).collect();
+            let hashs = header_vec.iter().map(|header| header.id()).collect();
             Some(GetDataByHashMsg {
                 hashs,
                 data_type: DataType::BODY,

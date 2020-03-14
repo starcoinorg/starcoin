@@ -2,14 +2,14 @@ use crate::download::Downloader;
 use crate::download_body::{DownloadBodyActor, SyncBodyEvent};
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
-use anyhow::{Error, Result};
+use anyhow::{Result};
 use crypto::hash::HashValue;
 use network::{
     sync_messages::{
-        BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage,
-        GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+        DataType,
+        GetDataByHashMsg, ProcessMessage,
     },
-    NetworkAsyncService, RPCMessage, RPCRequest, RPCResponse,
+    NetworkAsyncService, RPCRequest, RPCResponse,
 };
 use std::sync::Arc;
 use txpool::TxPoolRef;
@@ -31,13 +31,13 @@ pub struct DownloadHeaderActor {
 }
 
 impl DownloadHeaderActor {
-    pub fn launch(
+    pub fn _launch(
         downloader: Arc<Downloader>,
         peer_info: Arc<PeerInfo>,
         network: NetworkAsyncService<TxPoolRef>,
         download_body: Addr<DownloadBodyActor>,
     ) -> Result<Addr<DownloadHeaderActor>> {
-        Ok(Actor::create(move |ctx| DownloadHeaderActor {
+        Ok(Actor::create(move |_ctx| DownloadHeaderActor {
             downloader,
             peer_info,
             network,
@@ -52,7 +52,7 @@ impl Actor for DownloadHeaderActor {
 
 impl Handler<SyncHeaderEvent> for DownloadHeaderActor {
     type Result = Result<()>;
-    fn handle(&mut self, event: SyncHeaderEvent, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, event: SyncHeaderEvent, _ctx: &mut Self::Context) -> Self::Result {
         let get_data_by_hash_msg = GetDataByHashMsg {
             hashs: event.hashs.clone(),
             data_type: DataType::HEADER,
@@ -66,7 +66,7 @@ impl Handler<SyncHeaderEvent> for DownloadHeaderActor {
         let download_body = self.download_body.clone();
         Arbiter::spawn(async move {
             for peer in peers.clone() {
-                if let RPCResponse::BatchHeaderAndBodyMsg(headers, bodies) = network
+                if let RPCResponse::BatchHeaderAndBodyMsg(headers, _bodies) = network
                     .clone()
                     .send_request(
                         peer.id.clone().into(),
