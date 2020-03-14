@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::prelude::*;
-use anyhow::{Chain, Result};
+use anyhow::Result;
 use bus::{Broadcast, BusActor};
-use chain::ChainActor;
 use config::NodeConfig;
-use consensus::{Consensus, ConsensusHeader};
+use consensus::Consensus;
 use futures::channel::oneshot;
 use logger::prelude::*;
-use std::marker::PhantomData;
 use std::sync::Arc;
 use traits::ChainReader;
 use types::{system_events::SystemEvents, transaction::SignedUserTransaction};
@@ -25,10 +23,9 @@ where
 {
     let block_template = chain.create_block_template(txns)?;
     let (_sender, receiver) = oneshot::channel();
-    /// spawn a async task, maintain a task list, when new task coming, cancel old task.
+    // spawn a async task, maintain a task list, when new task coming, cancel old task.
     let block = C::create_block(config, chain, block_template, receiver)?;
-    //println!("miner new block: {:?}", block);
-    ///fire SystemEvents::MinedBlock.
+    // fire SystemEvents::MinedBlock.
     //TODO handle result.
     info!("broadcast new block: {:?}.", block.header().id());
     bus.do_send(Broadcast {

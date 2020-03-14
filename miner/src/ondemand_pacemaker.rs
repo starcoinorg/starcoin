@@ -9,10 +9,8 @@ use futures::channel::mpsc;
 use super::TransactionStatusEvent;
 use bus::{BusActor, Subscription};
 use crypto::hash::HashValue;
-use futures::stream::StreamExt;
 use logger::prelude::*;
-use std::{sync::Arc, time::Duration};
-use traits::TxPoolAsyncService;
+use std::sync::Arc;
 use txpool::TxStatus;
 use types::system_events::SystemEvents;
 
@@ -37,8 +35,9 @@ impl OndemandPacemaker {
     }
 
     pub fn send_event(&mut self) {
-        // TODO handle result.
-        self.sender.try_send(GenerateBlockEvent {});
+        if let Err(e) = self.sender.try_send(GenerateBlockEvent {}) {
+            warn!("err : {:?}", e);
+        }
     }
 }
 
@@ -61,7 +60,7 @@ impl Actor for OndemandPacemaker {
 impl Handler<SystemEvents> for OndemandPacemaker {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
             SystemEvents::NewUserTransaction(_txn) => self.send_event(),
             _ => {}
@@ -70,8 +69,8 @@ impl Handler<SystemEvents> for OndemandPacemaker {
 }
 
 impl StreamHandler<TransactionStatusEvent> for OndemandPacemaker {
-    fn handle(&mut self, tx_item: Arc<Vec<(HashValue, TxStatus)>>, ctx: &mut Self::Context) {
-        tx_item.iter().for_each(|(tx, tx_status)| {
+    fn handle(&mut self, tx_item: Arc<Vec<(HashValue, TxStatus)>>, _ctx: &mut Self::Context) {
+        tx_item.iter().for_each(|(_tx, tx_status)| {
             if tx_status.clone() == TxStatus::Added {
                 self.send_event();
             }

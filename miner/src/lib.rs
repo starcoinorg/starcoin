@@ -4,25 +4,21 @@
 use crate::headblock_pacemaker::HeadBlockPacemaker;
 use crate::ondemand_pacemaker::OndemandPacemaker;
 use crate::schedule_pacemaker::SchedulePacemaker;
-use crate::tx_factory::{GenTxEvent, TxFactoryActor};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
-use chain::{BlockChain, ChainActor, ChainActorRef};
+use chain::{BlockChain};
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::{Consensus, ConsensusHeader};
+use consensus::{Consensus};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
-use futures::{Future, TryFutureExt};
 use logger::prelude::*;
-use starcoin_accumulator::AccumulatorNodeStore;
-use state_tree::StateNodeStore;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
-use storage::{BlockChainStore, BlockStorageOp, StarcoinStorage};
-use traits::{ChainAsyncService, ChainReader, TxPoolAsyncService};
+use storage::{BlockChainStore};
+use traits::{ChainAsyncService, TxPoolAsyncService};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
@@ -68,7 +64,7 @@ where
         config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         storage: Arc<S>,
-        mut txpool: P,
+        txpool: P,
         chain: CS,
         mut transaction_receiver: Option<mpsc::UnboundedReceiver<TransactionStatusEvent>>,
     ) -> Result<Addr<Self>> {
@@ -99,11 +95,13 @@ where
             // });
 
             let gen_tx_chain = chain.clone();
-            ctx.run_interval(Duration::from_millis(1000), move |act, _ctx| {
+            ctx.run_interval(Duration::from_millis(1000), move |_act, _ctx| {
                 info!("miner call gen_tx.");
                 let tmp_chain = gen_tx_chain.clone();
                 Arbiter::spawn(async move {
-                    tmp_chain.clone().gen_tx().await;
+                    if let Err(e) = tmp_chain.clone().gen_tx().await {
+                        warn!("err : {:?}", e);
+                    }
                 });
             });
 
@@ -149,7 +147,6 @@ where
     fn handle(&mut self, _event: GenerateBlockEvent, ctx: &mut Self::Context) -> Self::Result {
         let txpool = self.txpool.clone();
         let bus = self.bus.clone();
-        let config = self.config.clone();
         let storage = self.storage.clone();
         let chain = self.chain.clone();
         let config = self.config.clone();
