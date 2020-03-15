@@ -16,7 +16,6 @@ pub mod node_index;
 
 use crate::node::{InternalNode, ACCUMULATOR_PLACEHOLDER_HASH};
 use crate::node_index::{FrozenSubTreeIterator, NodeIndex};
-use itertools::Itertools;
 pub use node::AccumulatorNode;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -387,7 +386,6 @@ impl AccumulatorCache {
                         "get larger nodes from leaf index: {:?}, node:{:?}",
                         leaf_index, node_index
                     );
-                    break;
                 }
             }
         }
@@ -404,7 +402,6 @@ impl AccumulatorCache {
                         index,
                         parent_index
                     );
-                    break;
                 }
             }
         }

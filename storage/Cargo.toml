@@ -19,7 +19,7 @@ byteorder = "1.3.2"
 state-tree = { package="starcoin-state-tree", path = "../core/state-tree"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
-
+logger = {path = "../commons/logger", package="starcoin-logger"}
 [dependencies.rocksdb]
 git = "https://github.com/pingcap/rust-rocksdb.git"
 rev = "3cd18c44d160a3cdba586d6502d51b7cc67efc59"

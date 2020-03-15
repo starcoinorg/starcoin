@@ -5135,6 +5135,7 @@ dependencies = [
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-state-tree",
  "starcoin-types",
 ]

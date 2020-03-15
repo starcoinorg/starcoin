@@ -8,10 +8,11 @@ use crate::storage::{CodecStorage, KeyCodec, Repository, ValueCodec};
 use anyhow::{bail, ensure, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::HashValue;
+use logger::prelude::*;
 use scs::SCSCodec;
 use std::io::Write;
 use std::mem::size_of;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use types::block::{Block, BlockBody, BlockHeader, BlockNumber};
 
 const BLOCK_KEY_NAME: &'static str = "block";
@@ -24,7 +25,7 @@ pub struct BlockStore {
     block_store: CodecStorage<HashValue, Block>,
     header_store: CodecStorage<HashValue, BlockHeader>,
     //store parents relationship
-    sons_store: CodecStorage<HashValue, Vec<HashValue>>,
+    sons_store: RwLock<CodecStorage<HashValue, Vec<HashValue>>>,
     body_store: CodecStorage<HashValue, BlockBody>,
     number_store: CodecStorage<BlockNumber, HashValue>,
 }
@@ -109,7 +110,7 @@ impl BlockStore {
         BlockStore {
             block_store: CodecStorage::new(block_store, BLOCK_KEY_PREFIX_NAME),
             header_store: CodecStorage::new(header_store, BLOCK_HEADER_KEY_PREFIX_NAME),
-            sons_store: CodecStorage::new(sons_store, BLOCK_SONS_KEY_PREFIX_NAME),
+            sons_store: RwLock::new(CodecStorage::new(sons_store, BLOCK_SONS_KEY_PREFIX_NAME)),
             body_store: CodecStorage::new(body_store, BLOCK_BODY_KEY_PREFIX_NAME),
             number_store: CodecStorage::new(number_store, BLOCK_NUM_KEY_PREFIX_NAME),
         }
@@ -208,8 +209,18 @@ impl BlockStore {
         let mut parent_id1 = block_id1;
         let mut parent_id2 = block_id2;
         let mut found = false;
+        info!("common ancestor: {:?}, {:?}", block_id1, block_id2);
+        match self.get_relationship(block_id1, block_id2) {
+            Ok(Some(hash)) => return Ok(Some(hash)),
+            _ => {}
+        }
+        match self.get_relationship(block_id2, block_id1) {
+            Ok(Some(hash)) => return Ok(Some(hash)),
+            _ => {}
+        }
+
         loop {
-            println!("block_id: {}", parent_id1.to_hex());
+            // info!("block_id: {}", parent_id1.to_hex());
             //get header by block_id
             match self.get_block_header_by_hash(parent_id1)? {
                 Some(header) => {
@@ -217,9 +228,11 @@ impl BlockStore {
                     ensure!(parent_id1 != HashValue::zero(), "invaild block id is zero.");
                     match self.get_sons(parent_id1) {
                         Ok(sons1) => {
+                            info!("parent: {:?}, sons1 : {:?}", parent_id1, sons1);
                             if sons1.len() > 1 {
                                 // get parent2 from block2
                                 loop {
+                                    info!("parent2 : {:?}", parent_id2);
                                     ensure!(
                                         parent_id2 != HashValue::zero(),
                                         "invaild block id is zero."
@@ -292,23 +305,42 @@ impl BlockStore {
         }
     }
 
+    fn get_relationship(
+        &self,
+        block_id1: HashValue,
+        block_id2: HashValue,
+    ) -> Result<Option<HashValue>> {
+        match self.get_sons(block_id1) {
+            Ok(sons) => {
+                if sons.contains(&block_id2) {
+                    return Ok(Some(block_id1));
+                }
+            }
+            _ => {}
+        }
+        Ok(None)
+    }
+
     fn get_sons(&self, parent_hash: HashValue) -> Result<Vec<HashValue>> {
-        match self.sons_store.get(parent_hash)? {
+        match self.sons_store.read().unwrap().get(parent_hash)? {
             Some(sons) => Ok(sons),
             None => bail!("cant't find sons: {}", parent_hash),
         }
     }
 
     fn put_sons(&self, parent_hash: HashValue, son_hash: HashValue) -> Result<()> {
-        println!("put son:{}, {}", parent_hash, son_hash);
+        info!("put son:{}, {}", parent_hash, son_hash);
         match self.get_sons(parent_hash) {
             Ok(mut vec_hash) => {
-                println!("branch block:{}, {:?}", parent_hash, vec_hash);
+                info!("branch block:{}, {:?}", parent_hash, vec_hash);
                 vec_hash.push(son_hash);
-                self.sons_store.put(parent_hash, vec_hash);
+                self.sons_store.write().unwrap().put(parent_hash, vec_hash);
             }
             _ => {
-                self.sons_store.put(parent_hash, vec![son_hash]);
+                self.sons_store
+                    .write()
+                    .unwrap()
+                    .put(parent_hash, vec![son_hash]);
             }
         }
         Ok(())
