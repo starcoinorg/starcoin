@@ -13,7 +13,7 @@ use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use stdlib::transaction_scripts::EMPTY_TXN;
+use stdlib::transaction_scripts::{EMPTY_TXN, MINT_TXN};
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
@@ -202,3 +202,4 @@ pub fn mock_mint_txn(to: AccountAddress, amount: u64) -> Transaction {
 pub fn mock_transfer_txn(from: AccountAddress, to: AccountAddress, amount: u64) -> Transaction {
     encode_transfer_transaction(from, to, amount)
 }
+

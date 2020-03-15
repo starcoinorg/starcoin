@@ -87,11 +87,28 @@ fn test_validate_txn() {
 
 #[stest::test]
 fn test_execute_txn_with_starcoin_vm() {
-    let chain_state = MockChainState::new();
-    //let txn = encode_mint_transaction(gen_address(0), 100);
+    let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
+    let chain_state =
+        ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
+
     let txn = mock_txn();
     let config = VMConfig::default();
     info!("invoke Executor::execute_transaction");
+    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
+
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
+}
+
+#[stest::test]
+fn test_generate_genesis_state_set() {
+    let config = VMConfig::default();
+    let (hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
+    let chain_state =
+        ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
+
+    chain_state.apply(state_set);
+    let txn = mock_txn();
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
 
     assert_eq!(KEEP_STATUS.clone(), *output.status());

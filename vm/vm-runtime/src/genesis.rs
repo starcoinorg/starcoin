@@ -11,7 +11,7 @@ use crypto::HashValue;
 use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath,
-    account_address::AccountAddress,
+    account_address::{ AccountAddress, AuthenticationKey },
     byte_array::ByteArray,
     transaction::{ChangeSet, RawTransaction},
 };
@@ -127,12 +127,36 @@ fn create_and_initialize_main_accounts(
             gas_schedule,
             interpreter_context,
             &txn_data,
-            vec![Value::address(association_addr)],
+            vec![
+                Value::address(association_addr),
+                Value::vector_u8(association_addr.to_vec()),
+            ],
         )
-        .unwrap_or_else(|_| {
+        .unwrap_or_else(|e| {
             panic!(
-                "Failure creating association account {:?}",
-                association_addr
+                "Failure creating association account {:?}: {}",
+                association_addr, e
+            )
+        });
+
+    // create the transaction fee account
+    let transaction_fee_address = TransactionHelper::to_libra_AccountAddress(account_config::transaction_fee_address());
+    move_vm
+        .execute_function(
+            &ACCOUNT_MODULE,
+            &CREATE_ACCOUNT_NAME,
+            gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![
+                Value::address(transaction_fee_address),
+                Value::vector_u8(transaction_fee_address.to_vec()),
+            ],
+        )
+        .unwrap_or_else(|e| {
+            panic!(
+                "Failure creating transaction fee account {:?}: {}",
+                transaction_fee_address, e
             )
         });
 
@@ -160,7 +184,7 @@ fn create_and_initialize_main_accounts(
 
     move_vm
         .execute_function(
-            &LIBRA_SYSTEM_MODULE,
+            &LIBRA_BLOCK_MODULE,
             &INITIALIZE_BLOCK,
             &gas_schedule,
             interpreter_context,
@@ -189,12 +213,13 @@ fn create_and_initialize_main_accounts(
             &txn_data,
             vec![
                 Value::address(association_addr),
+                Value::vector_u8(association_addr.to_vec()),
                 Value::u64(ASSOCIATION_INIT_BALANCE),
             ],
         )
         .expect("Failure minting to association");
 
-    let genesis_auth_key = ByteArray::new(AccountAddress::from_public_key(public_key).to_vec());
+    let genesis_auth_key = AuthenticationKey::from_public_key(public_key).to_vec();
     move_vm
         .execute_function(
             &ACCOUNT_MODULE,
@@ -202,7 +227,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
-            vec![Value::byte_array(genesis_auth_key)],
+            vec![Value::vector_u8(genesis_auth_key)],
         )
         .expect("Failure rotating association key");
 
