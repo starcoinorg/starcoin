@@ -19,6 +19,7 @@ members = [
     "storage",
     "consensus",
     "txpool",
+    "txpool/tx-relay",
     "rpc/json-rpc",
     "executor",
     "chain",

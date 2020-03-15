@@ -21,7 +21,7 @@ pub struct GetCounterMessage {}
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Serialize, Deserialize, Message)]
 pub enum PeerMessage {
-    UserTransaction(SignedUserTransaction),
+    UserTransactions(Vec<SignedUserTransaction>),
     Block(Block),
     LatestStateMsg(LatestStateMsg),
     RPCRequest(u128, RPCRequest),

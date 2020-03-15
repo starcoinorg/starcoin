@@ -46,7 +46,7 @@ fn test_miner_with_schedule_pacemaker() {
             let best_block_id = genesis.startup_info().head.get_head();
             TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
         };
-        let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), handle);
+        let network = NetworkActor::launch(config.clone(), bus.clone(), handle);
         let chain = ChainActor::launch(
             config.clone(),
             genesis.startup_info().clone(),
@@ -118,7 +118,7 @@ fn test_miner_with_ondemand_pacemaker() {
             let best_block_id = genesis.startup_info().head.get_head();
             TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
         };
-        let network = NetworkActor::launch(config.clone(), bus.clone(), txpool.clone(), handle);
+        let network = NetworkActor::launch(config.clone(), bus.clone(), handle);
         let chain = ChainActor::launch(
             config.clone(),
             genesis.startup_info().clone(),

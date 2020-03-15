@@ -58,8 +58,8 @@ async fn test_subscribe_txns() {
 async fn test_rollback() {
     let pool = gen_pool_for_test();
     let txn = SignedUserTransaction::mock();
-    let txn_hash = txn.crypto_hash();
-    let mut result = pool.clone().add_txns(vec![txn.clone()]).await.unwrap();
+    let _txn_hash = txn.crypto_hash();
+    let _result = pool.clone().add_txns(vec![txn.clone()]).await.unwrap();
     let new_txn = SignedUserTransaction::mock();
     pool.clone()
         .rollback(vec![txn], vec![new_txn.clone()])

@@ -23,7 +23,7 @@ struct SyncHeaderEvent {
 pub struct DownloadHeaderActor {
     downloader: Arc<Downloader>,
     peer_info: Arc<PeerInfo>,
-    network: NetworkAsyncService<TxPoolRef>,
+    network: NetworkAsyncService,
     download_body: Addr<DownloadBodyActor>,
 }
 
@@ -31,7 +31,7 @@ impl DownloadHeaderActor {
     pub fn _launch(
         downloader: Arc<Downloader>,
         peer_info: Arc<PeerInfo>,
-        network: NetworkAsyncService<TxPoolRef>,
+        network: NetworkAsyncService,
         download_body: Addr<DownloadBodyActor>,
     ) -> Result<Addr<DownloadHeaderActor>> {
         Ok(Actor::create(move |_ctx| DownloadHeaderActor {

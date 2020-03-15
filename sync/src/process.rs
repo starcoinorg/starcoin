@@ -21,7 +21,7 @@ use types::{block::Block, peer_info::PeerInfo};
 pub struct ProcessActor {
     processor: Arc<Processor>,
     peer_info: Arc<PeerInfo>,
-    network: NetworkAsyncService<TxPoolRef>,
+    network: NetworkAsyncService,
     bus: Addr<BusActor>,
 }
 
@@ -29,7 +29,7 @@ impl ProcessActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
         chain_reader: ChainActorRef,
-        network: NetworkAsyncService<TxPoolRef>,
+        network: NetworkAsyncService,
         bus: Addr<BusActor>,
     ) -> Result<Addr<ProcessActor>> {
         let process_actor = ProcessActor {

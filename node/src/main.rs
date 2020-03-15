@@ -81,8 +81,7 @@ fn main() {
         // let mut config = NodeConfig::default();
         // config.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         // let node_config = Arc::new(config);
-        let network =
-            NetworkActor::launch(node_config.clone(), bus.clone(), txpool.clone(), handle);
+        let network = NetworkActor::launch(node_config.clone(), bus.clone(), handle);
         let chain = ChainActor::launch(
             node_config.clone(),
             startup_info,

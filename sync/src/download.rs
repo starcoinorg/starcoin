@@ -34,7 +34,7 @@ struct SyncEvent {}
 pub struct DownloadActor {
     downloader: Arc<Downloader>,
     peer_info: Arc<PeerInfo>,
-    network: NetworkAsyncService<TxPoolRef>,
+    network: NetworkAsyncService,
     bus: Addr<BusActor>,
     sync_event_sender: mpsc::Sender<SyncEvent>,
     sync_duration: Duration,
@@ -45,7 +45,7 @@ impl DownloadActor {
     pub fn launch(
         peer_info: Arc<PeerInfo>,
         chain_reader: ChainActorRef,
-        network: NetworkAsyncService<TxPoolRef>,
+        network: NetworkAsyncService,
         bus: Addr<BusActor>,
     ) -> Result<Addr<DownloadActor>> {
         let download_actor = DownloadActor::create(move |ctx| {
@@ -147,7 +147,7 @@ impl Handler<DownloadMessage> for DownloadActor {
 }
 
 impl DownloadActor {
-    fn sync_from_best_peer(downloader: Arc<Downloader>, network: NetworkAsyncService<TxPoolRef>) {
+    fn sync_from_best_peer(downloader: Arc<Downloader>, network: NetworkAsyncService) {
         Arbiter::spawn(async move {
             debug!("begin sync.");
             if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {

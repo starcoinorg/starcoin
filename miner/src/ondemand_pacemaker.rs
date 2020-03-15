@@ -62,7 +62,6 @@ impl Handler<SystemEvents> for OndemandPacemaker {
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            SystemEvents::NewUserTransaction(_txn) => self.send_event(),
             _ => {}
         }
     }

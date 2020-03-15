@@ -21,14 +21,14 @@ pub struct SyncBodyEvent {
 pub struct DownloadBodyActor {
     downloader: Arc<Downloader>,
     peer_info: Arc<PeerInfo>,
-    network: NetworkAsyncService<TxPoolRef>,
+    network: NetworkAsyncService,
 }
 
 impl DownloadBodyActor {
     pub fn _launch(
         downloader: Arc<Downloader>,
         peer_info: Arc<PeerInfo>,
-        network: NetworkAsyncService<TxPoolRef>,
+        network: NetworkAsyncService,
     ) -> Result<Addr<DownloadBodyActor>> {
         Ok(Actor::create(move |_ctx| DownloadBodyActor {
             downloader,

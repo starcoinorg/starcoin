@@ -8,7 +8,6 @@ use crate::{
         UnverifiedUserTransaction,
     },
     pool_client::{NonceCache, PoolClient},
-    BlockReader,
 };
 use actix::prelude::*;
 use anyhow::Result;
@@ -17,6 +16,9 @@ use futures_channel::mpsc;
 use starcoin_bus::{Bus, BusActor};
 use std::sync::Arc;
 use storage::StarcoinStorage;
+use tx_relay::{PeerTransactions, PropagateNewTransactions};
+
+use crate::pool::VerifiedTransaction;
 use types::{
     block::BlockHeader, system_events::SystemEvents, transaction,
     transaction::SignedUserTransaction,
@@ -69,22 +71,94 @@ impl TxPoolActor {
             sequence_number_cache: NonceCache::new(128),
         }
     }
+    fn get_pending(&self, max_len: u64) -> Vec<Arc<VerifiedTransaction>> {
+        let pending_settings = PendingSettings {
+            block_number: u64::max_value(),
+            current_timestamp: u64::max_value(),
+            nonce_cap: None,
+            max_len: max_len as usize,
+            ordering: PendingOrdering::Priority,
+        };
+        let client = PoolClient::new(
+            self.chain_header.clone(),
+            self.storage.clone(),
+            self.sequence_number_cache.clone(),
+        );
+        self.queue.pending(client, pending_settings)
+    }
 }
 
 impl actix::Actor for TxPoolActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        // subscribe system block event
         let myself = ctx.address().recipient::<SystemEvents>();
-
         self.bus
             .clone()
             .subscribe(myself)
             .into_actor(self)
-            .then(|_, act, _| async {}.into_actor(act))
+            .then(|res, act, ctx| {
+                if let Err(e) = res {
+                    error!("fail to subscribe system events, err: {:?}", e);
+                    ctx.terminate();
+                }
+                async {}.into_actor(act)
+            })
             .wait(ctx);
 
-        info!("event listener started");
+        // subscribe txn relay peer txns
+        let myself = ctx.address().recipient::<PeerTransactions>();
+        self.bus
+            .clone()
+            .subscribe(myself)
+            .into_actor(self)
+            .then(|res, act, ctx| {
+                if let Err(e) = res {
+                    error!("fail to subscribe txn relay message, err: {:?}", e);
+                    ctx.terminate();
+                }
+                async {}.into_actor(act)
+            })
+            .wait(ctx);
+
+        let receiver = {
+            let (tx, rx) = mpsc::unbounded();
+            self.queue.add_full_listener(tx);
+            rx
+        };
+        ctx.add_stream(receiver);
+
+        info!("txn pool started");
+    }
+}
+type TxnStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
+/// Listen to txn status, and propagate to remote peers if necessary.
+impl StreamHandler<TxnStatusEvent> for TxPoolActor {
+    fn handle(&mut self, item: TxnStatusEvent, ctx: &mut Context<Self>) {
+        /// TODO: need peer info to do more accurate sending.
+        let mut txns = vec![];
+        for (h, s) in item.iter() {
+            if *s != TxStatus::Added {
+                continue;
+            }
+
+            if let Some(txn) = self.queue.find(h) {
+                txns.push(txn.signed().clone());
+            }
+        }
+        if txns.is_empty() {
+            return;
+        }
+        self.bus
+            .clone()
+            .broadcast(PropagateNewTransactions::from(txns))
+            .into_actor(self)
+            .then(|_res, act, _ctx| {
+                error!("fail to emit propagate new txn event");
+                async {}.into_actor(act)
+            })
+            .wait(ctx);
     }
 }
 
@@ -99,6 +173,20 @@ impl actix::Handler<SystemEvents> for TxPoolActor {
             }
             _ => {}
         }
+    }
+}
+
+impl actix::Handler<PeerTransactions> for TxPoolActor {
+    type Result = ();
+
+    fn handle(
+        &mut self,
+        msg: PeerTransactions,
+        ctx: &mut <Self as Actor>::Context,
+    ) -> Self::Result {
+        // JUST need to keep at most once delivery.
+        let txns = msg.peer_transactions();
+        ctx.notify(ImportTxns { txns });
     }
 }
 
@@ -141,21 +229,7 @@ impl actix::Handler<GetPendingTxns> for TxPoolActor {
 
     fn handle(&mut self, msg: GetPendingTxns, _ctx: &mut Self::Context) -> Self::Result {
         let GetPendingTxns { max_len } = msg;
-        let result = {
-            let pending_settings = PendingSettings {
-                block_number: u64::max_value(),
-                current_timestamp: u64::max_value(),
-                nonce_cap: None,
-                max_len: max_len as usize,
-                ordering: PendingOrdering::Priority,
-            };
-            let client = PoolClient::new(
-                self.chain_header.clone(),
-                self.storage.clone(),
-                self.sequence_number_cache.clone(),
-            );
-            self.queue.pending(client, pending_settings)
-        };
+        let result = self.get_pending(max_len);
         actix::MessageResult(result)
     }
 }

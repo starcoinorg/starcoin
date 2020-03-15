@@ -32,7 +32,7 @@ where
     head: BlockChain<E, C, S, P>,
     branches: Vec<BlockChain<E, C, S, P>>,
     storage: Arc<S>,
-    network: Option<NetworkAsyncService<P>>,
+    network: Option<NetworkAsyncService>,
     txpool: P,
 }
 
@@ -47,7 +47,7 @@ where
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<S>,
-        network: Option<NetworkAsyncService<P>>,
+        network: Option<NetworkAsyncService>,
         txpool: P,
     ) -> Result<Self> {
         let head = BlockChain::new(

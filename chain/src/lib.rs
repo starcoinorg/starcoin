@@ -43,7 +43,7 @@ impl ChainActor {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<StarcoinStorage>,
-        network: Option<NetworkAsyncService<TxPoolRef>>,
+        network: Option<NetworkAsyncService>,
         bus: Addr<BusActor>,
         txpool: TxPoolRef,
     ) -> Result<ChainActorRef> {

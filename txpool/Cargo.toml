@@ -35,3 +35,4 @@ forkable-jellyfish-merkle = {path="../core/forkable-jellyfish-merkle"}
 starcoin-state-tree={path="../core/state-tree"}
 starcoin-executor={path="../executor"}
 starcoin-config={path="../config"}
+tx-relay = {path="./tx-relay", package="starcoin-tx-relay"}

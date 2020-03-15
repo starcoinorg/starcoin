@@ -36,12 +36,11 @@ fn genesis_block_for_test() -> Block {
 fn gen_network(
     node_config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
-    txpool: TxPoolRef,
     handle: Handle,
-) -> (NetworkAsyncService<TxPoolRef>, PeerId) {
+) -> (NetworkAsyncService, PeerId) {
     let key_pair = node_config.network.network_keypair();
     let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
-    let network = NetworkActor::launch(node_config.clone(), bus, txpool, handle);
+    let network = NetworkActor::launch(node_config.clone(), bus, handle);
     (network, addr)
 }
 
@@ -76,12 +75,7 @@ fn test_network_actor() {
             TxPoolRef::start(storage_1.clone(), best_block_id, bus_1.clone())
         };
 
-        let (network_1, addr_1) = gen_network(
-            node_config_1.clone(),
-            bus_1.clone(),
-            txpool_1.clone(),
-            handle.clone(),
-        );
+        let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), handle.clone());
         Delay::new(Duration::from_secs(1)).await;
 
         // chain actor
@@ -148,12 +142,7 @@ fn test_network_actor() {
             TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
         };
 
-        let (network_2, addr_2) = gen_network(
-            node_config_2.clone(),
-            bus_2.clone(),
-            txpool_2.clone(),
-            handle.clone(),
-        );
+        let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), handle.clone());
         Delay::new(Duration::from_secs(1)).await;
 
         let second_chain = ChainActor::launch(
@@ -230,12 +219,7 @@ fn test_network_actor_rpc() {
         };
 
         // network
-        let (network_1, addr_1) = gen_network(
-            node_config_1.clone(),
-            bus_1.clone(),
-            txpool_1.clone(),
-            handle.clone(),
-        );
+        let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), handle.clone());
         println!("addr_1 : {:?}", addr_1);
 
         // chain
@@ -313,12 +297,7 @@ fn test_network_actor_rpc() {
             TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
         };
         // network
-        let (network_2, addr_2) = gen_network(
-            node_config_2.clone(),
-            bus_2.clone(),
-            txpool_2.clone(),
-            handle.clone(),
-        );
+        let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), handle.clone());
         println!("addr_2 : {:?}", addr_2);
         Delay::new(Duration::from_secs(1)).await;
 
@@ -400,12 +379,7 @@ fn test_network_actor_rpc_2() {
         };
 
         // network
-        let (network_1, addr_1) = gen_network(
-            node_config_1.clone(),
-            bus_1.clone(),
-            txpool_1.clone(),
-            handle.clone(),
-        );
+        let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), handle.clone());
         info!("addr_1 : {:?}", addr_1);
 
         // chain
@@ -466,12 +440,7 @@ fn test_network_actor_rpc_2() {
             TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
         };
         // network
-        let (network_2, addr_2) = gen_network(
-            node_config_2.clone(),
-            bus_2.clone(),
-            txpool_2.clone(),
-            handle,
-        );
+        let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), handle);
         Delay::new(Duration::from_secs(1)).await;
         println!("addr_2 : {:?}", addr_2);
 
