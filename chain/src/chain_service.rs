@@ -222,7 +222,7 @@ where
             new_branch.chain_info.size() as u64
         };
 
-        println!(
+        debug!(
             "find_ancestors_in_memory:{}, {} , {}",
             new_branch.chain_info.size(),
             head.chain_info.size(),
@@ -231,6 +231,17 @@ where
 
         let mut common_ancestor = None;
         loop {
+            debug!(
+                "number {}, block1 {:?}, block2 {:?}",
+                (begin_number - 1),
+                new_branch
+                    .chain_info
+                    .get_hash_by_number(begin_number - 1)
+                    .unwrap(),
+                head.chain_info
+                    .get_hash_by_number(begin_number - 1)
+                    .unwrap()
+            );
             if new_branch
                 .chain_info
                 .get_hash_by_number(begin_number - 1)
@@ -272,7 +283,12 @@ where
         let block_retracted = &self.head.current_header().parent_hash();
         let mut block_enacted_tmp = block_enacted.clone();
 
+        debug!("ancestor block is : {:?}", ancestor);
         loop {
+            if block_enacted_tmp == ancestor {
+                break;
+            };
+            debug!("get block 1 {:?}.", block_enacted_tmp);
             let block_tmp = self
                 .storage
                 .get_block(block_enacted_tmp.clone())
@@ -280,13 +296,14 @@ where
                 .expect("block is none 1.");
             block_enacted_tmp = block_tmp.header().parent_hash();
             enacted.push(block_tmp);
-            if block_enacted_tmp == ancestor {
-                break;
-            };
         }
 
         let mut block_retracted_tmp = block_retracted.clone();
         loop {
+            if block_retracted_tmp == ancestor {
+                break;
+            };
+            debug!("get block 2 {:?}.", block_retracted_tmp);
             let block_tmp = self
                 .storage
                 .get_block(block_retracted_tmp)
@@ -294,9 +311,6 @@ where
                 .expect("block is none 2.");
             block_retracted_tmp = block_tmp.header().parent_hash();
             retracted.push(block_tmp);
-            if block_retracted_tmp == ancestor {
-                break;
-            };
         }
         retracted.reverse();
         enacted.reverse();

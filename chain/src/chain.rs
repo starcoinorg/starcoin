@@ -399,6 +399,7 @@ where
             self.accumulator.num_leaves(),
             self.accumulator.num_nodes(),
         ));
+        debug!("save block {:?} succ.", block.header().id());
         //todo
         Ok(())
     }

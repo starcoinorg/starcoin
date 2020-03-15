@@ -7,7 +7,6 @@ use network::{
     NetworkAsyncService, RPCRequest, RPCResponse,
 };
 use std::sync::Arc;
-use txpool::TxPoolRef;
 use types::{block::BlockHeader, peer_info::PeerInfo};
 
 #[derive(Default, Debug, Message)]

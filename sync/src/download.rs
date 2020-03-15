@@ -20,7 +20,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::{AsyncChain, ChainAsyncService};
-use txpool::TxPoolRef;
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
