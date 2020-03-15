@@ -217,23 +217,33 @@ where
         head: &BlockChain<E, C, S, P>,
     ) -> Option<HashValue> {
         let mut begin_number = if new_branch.chain_info.size() > head.chain_info.size() {
-            (head.chain_info.size() - 1) as u64
+            head.chain_info.size() as u64
         } else {
-            (new_branch.chain_info.size() - 1) as u64
+            new_branch.chain_info.size() as u64
         };
+
+        println!(
+            "find_ancestors_in_memory:{}, {} , {}",
+            new_branch.chain_info.size(),
+            head.chain_info.size(),
+            begin_number
+        );
 
         let mut common_ancestor = None;
         loop {
             if new_branch
                 .chain_info
-                .get_hash_by_number(begin_number)
+                .get_hash_by_number(begin_number - 1)
                 .unwrap()
-                == head.chain_info.get_hash_by_number(begin_number).unwrap()
+                == head
+                    .chain_info
+                    .get_hash_by_number(begin_number - 1)
+                    .unwrap()
             {
                 common_ancestor = Some(
                     new_branch
                         .chain_info
-                        .get_hash_by_number(begin_number)
+                        .get_hash_by_number(begin_number - 1)
                         .unwrap(),
                 );
                 break;

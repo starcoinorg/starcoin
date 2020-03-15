@@ -83,10 +83,10 @@ fn test_miner_with_schedule_pacemaker() {
                 .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
-        delay_for(Duration::from_millis(10 * 1000)).await;
+        delay_for(Duration::from_millis(6 * 10 * 1000)).await;
         let number = chain.clone().current_header().await.unwrap().number();
         info!("current block number: {}", number);
-        assert!(number > 4);
+        assert!(number > 1);
     };
     system.block_on(fut);
     drop(rt);
@@ -157,7 +157,7 @@ fn test_miner_with_ondemand_pacemaker() {
                 .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
-        delay_for(Duration::from_millis(5 * 1000)).await;
+        delay_for(Duration::from_millis(6 * 10 * 1000)).await;
 
         let number = chain.clone().current_header().await.unwrap().number();
         info!("{}", number);
