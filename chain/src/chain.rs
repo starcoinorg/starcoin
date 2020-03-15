@@ -40,7 +40,7 @@ where
     phantom_c: PhantomData<C>,
     pub storage: Arc<S>,
     pub txpool: P,
-    chain_info: ChainInfo,
+    pub chain_info: ChainInfo,
 }
 
 impl<E, C, S, P> BlockChain<E, C, S, P>

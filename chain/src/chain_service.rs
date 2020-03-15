@@ -137,10 +137,7 @@ where
                         debug!("rollback branch.");
                         //3. change head
                         //rollback txpool
-                        let (enacted, retracted) = self.find_ancestors(
-                            &new_branch.current_header().parent_hash(),
-                            &self.head.current_header().parent_hash(),
-                        );
+                        let (enacted, retracted) = self.find_ancestors(&new_branch, &self.head);
 
                         self.branches.insert(
                             index - 1,
@@ -215,47 +212,82 @@ where
         });
     }
 
+    fn find_ancestors_in_memory(
+        new_branch: &BlockChain<E, C, S, P>,
+        head: &BlockChain<E, C, S, P>,
+    ) -> Option<HashValue> {
+        let mut begin_number = if new_branch.chain_info.size() > head.chain_info.size() {
+            (head.chain_info.size() - 1) as u64
+        } else {
+            (new_branch.chain_info.size() - 1) as u64
+        };
+
+        let mut common_ancestor = None;
+        loop {
+            if new_branch
+                .chain_info
+                .get_hash_by_number(begin_number)
+                .unwrap()
+                == head.chain_info.get_hash_by_number(begin_number).unwrap()
+            {
+                common_ancestor = Some(
+                    new_branch
+                        .chain_info
+                        .get_hash_by_number(begin_number)
+                        .unwrap(),
+                );
+                break;
+            }
+
+            begin_number = begin_number - 1;
+
+            if begin_number == 0 {
+                break;
+            }
+        }
+
+        common_ancestor
+    }
+
     fn find_ancestors(
         &self,
-        block_enacted: &HashValue,
-        block_retracted: &HashValue,
+        new_branch: &BlockChain<E, C, S, P>,
+        head: &BlockChain<E, C, S, P>,
     ) -> (Vec<SignedUserTransaction>, Vec<SignedUserTransaction>) {
         let mut enacted: Vec<Block> = Vec::new();
         let mut retracted: Vec<Block> = Vec::new();
-        if let Some(ancestor) = self
-            .storage
-            .get_common_ancestor(block_enacted.clone(), block_retracted.clone())
-            .expect("common ancestor is none.")
-        {
-            let mut block_enacted_tmp = block_enacted.clone();
+        let ancestor =
+            Self::find_ancestors_in_memory(new_branch, head).expect("common ancestor is none.");
+        let block_enacted = &new_branch.current_header().parent_hash();
+        let block_retracted = &self.head.current_header().parent_hash();
+        let mut block_enacted_tmp = block_enacted.clone();
 
-            loop {
-                let block_tmp = self
-                    .storage
-                    .get_block(block_enacted_tmp.clone())
-                    .unwrap()
-                    .unwrap();
-                block_enacted_tmp = block_tmp.header().parent_hash();
-                enacted.push(block_tmp);
-                if block_enacted_tmp == ancestor {
-                    break;
-                };
-            }
+        loop {
+            let block_tmp = self
+                .storage
+                .get_block(block_enacted_tmp.clone())
+                .unwrap()
+                .expect("block is none 1.");
+            block_enacted_tmp = block_tmp.header().parent_hash();
+            enacted.push(block_tmp);
+            if block_enacted_tmp == ancestor {
+                break;
+            };
+        }
 
-            let mut block_retracted_tmp = block_retracted.clone();
-            loop {
-                let block_tmp = self
-                    .storage
-                    .get_block_by_hash(block_retracted_tmp)
-                    .unwrap()
-                    .unwrap();
-                block_retracted_tmp = block_tmp.header().parent_hash();
-                retracted.push(block_tmp);
-                if block_retracted_tmp == ancestor {
-                    break;
-                };
-            }
-        };
+        let mut block_retracted_tmp = block_retracted.clone();
+        loop {
+            let block_tmp = self
+                .storage
+                .get_block(block_retracted_tmp)
+                .unwrap()
+                .expect("block is none 2.");
+            block_retracted_tmp = block_tmp.header().parent_hash();
+            retracted.push(block_tmp);
+            if block_retracted_tmp == ancestor {
+                break;
+            };
+        }
         retracted.reverse();
         enacted.reverse();
         let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
