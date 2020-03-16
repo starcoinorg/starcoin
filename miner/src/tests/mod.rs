@@ -82,7 +82,7 @@ fn test_miner_with_schedule_pacemaker() {
                 .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
-        delay_for(Duration::from_millis(6 * 10* 1000)).await;
+        delay_for(Duration::from_millis(6 * 10 * 1000)).await;
         let number = chain.clone().current_header().await.unwrap().number();
         info!("current block number: {}", number);
         assert!(number > 1);

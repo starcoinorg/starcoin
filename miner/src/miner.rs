@@ -12,11 +12,11 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use crypto::HashValue;
 use traits::ChainReader;
 use types::{
     block::BlockTemplate, system_events::SystemEvents, transaction::SignedUserTransaction,
 };
-use crypto::HashValue;
 #[derive(Clone)]
 pub struct Miner {
     state: Arc<Mutex<Option<MineCtx>>>,
@@ -49,8 +49,8 @@ pub fn mint<C>(
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
 ) -> Result<()>
-    where
-        C: Consensus,
+where
+    C: Consensus,
 {
     let difficulty = difficult::get_next_work_required(chain);
     let block_template = chain.create_block_template(difficulty, txns)?;
@@ -81,8 +81,9 @@ impl Miner {
     pub fn get_mint_job(&mut self) -> String {
         let state = self.state.lock().unwrap();
         let x = state.as_ref().unwrap().to_owned();
-        format!(r#"[0x{:x},0x{:x}]"#,
-                x.header_hash,x.block_template.difficult
+        format!(
+            r#"[0x{:x},0x{:x}]"#,
+            x.header_hash, x.block_template.difficult
         )
     }
 

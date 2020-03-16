@@ -1,28 +1,20 @@
-use crate::{
-    message::ChainRequest, AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService,
-};
-use actix::prelude::*;
-use actix::utils::IntervalFunc;
-use actix::{Actor, Addr, Context};
+use crate::{AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus, Consensus};
-use crypto::{hash::CryptoHash, HashValue};
 use executor::mock_executor::mock_mint_txn;
-use executor::{mock_executor::MockExecutor, TransactionExecutor};
+use executor::mock_executor::MockExecutor;
 use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
-use std::time::Instant;
 use std::{sync::Arc, time::Duration};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
 use types::account_address::AccountAddress;
-use types::block::Block;
 use types::transaction::SignedUserTransaction;
 
 #[test]
@@ -73,8 +65,8 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
                 .unwrap();
             let (_sender, receiver) = oneshot::channel();
 
-            let mut chain_info = chain.clone().get_chain_info().await.unwrap();
-            let mut block_chain =
+            let chain_info = chain.clone().get_chain_info().await.unwrap();
+            let block_chain =
                 BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
                     conf.clone(),
                     chain_info,
@@ -158,7 +150,7 @@ async fn test_chain_apply() -> Result<()> {
     debug!("genesis header: {:?}", header);
     let difficulty = difficult::get_next_work_required(&block_chain);
     let block_template = block_chain.create_block_template(difficulty, vec![])?;
-    let (sender, receiver) = futures::channel::oneshot::channel();
+    let (_sender, receiver) = futures::channel::oneshot::channel();
     let new_block =
         DummyConsensus::create_block(config.clone(), &block_chain, block_template, receiver)?;
     block_chain.apply(new_block)?;

@@ -9,28 +9,28 @@ use anyhow::Result;
 use bus::BusActor;
 use chain::BlockChain;
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::{Consensus, difficult};
+use consensus::{difficult, Consensus};
 
+use crate::miner::MineCtx;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use logger::prelude::*;
+use sc_stratum::{self, PushWorkHandler};
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::BlockChainStore;
+use traits::ChainReader;
 use traits::{ChainAsyncService, TxPoolAsyncService};
 use types::transaction::TxStatus;
-use sc_stratum::{self, PushWorkHandler};
-use crate::miner::MineCtx;
-use traits::ChainReader;
 
 mod headblock_pacemaker;
 #[allow(dead_code)]
 mod miner;
-mod stratum;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
+mod stratum;
 #[cfg(test)]
 mod tests;
 mod tx_factory;
@@ -42,12 +42,12 @@ pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 pub struct GenerateBlockEvent {}
 
 pub struct MinerActor<C, E, P, CS, S>
-    where
-        C: Consensus + Sync + Send + 'static,
-        E: TransactionExecutor + Sync + Send + 'static,
-        P: TxPoolAsyncService + Sync + Send + 'static,
-        CS: ChainAsyncService + Sync + Send + 'static,
-        S: BlockChainStore + Sync + Send + 'static,
+where
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -61,12 +61,12 @@ pub struct MinerActor<C, E, P, CS, S>
 }
 
 impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
-    where
-        C: Consensus + Sync + Send + 'static,
-        E: TransactionExecutor + Sync + Send + 'static,
-        P: TxPoolAsyncService + Sync + Send + 'static,
-        CS: ChainAsyncService + Sync + Send + 'static,
-        S: BlockChainStore + Sync + Send + 'static,
+where
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -89,7 +89,7 @@ impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
                         sender.clone(),
                         transaction_receiver.take().unwrap(),
                     )
-                        .start();
+                    .start();
                 }
                 PacemakerStrategy::Schedule => {
                     SchedulePacemaker::new(Duration::from_millis(10 * 1000), sender).start();
@@ -117,7 +117,9 @@ impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
             let stratum = sc_stratum::Stratum::start(
                 &addr,
                 Arc::new(stratum::StratumManager::new(miner.clone())),
-                None).unwrap();
+                None,
+            )
+            .unwrap();
 
             MinerActor {
                 config,
@@ -136,12 +138,12 @@ impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
 }
 
 impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
-    where
-        C: Consensus + Sync + Send + 'static,
-        E: TransactionExecutor + Sync + Send + 'static,
-        P: TxPoolAsyncService + Sync + Send + 'static,
-        CS: ChainAsyncService + Sync + Send + 'static,
-        S: BlockChainStore + Sync + Send + 'static,
+where
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     type Context = Context<Self>;
 
@@ -151,12 +153,12 @@ impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
 }
 
 impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
-    where
-        C: Consensus + Sync + Send + 'static,
-        E: TransactionExecutor + Sync + Send + 'static,
-        P: TxPoolAsyncService + Sync + Send + 'static,
-        CS: ChainAsyncService + Sync + Send + 'static,
-        S: BlockChainStore + Sync + Send + 'static,
+where
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
@@ -185,7 +187,9 @@ impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
                         BlockChain::<E, C, S, P>::new(config.clone(), chain_info, storage, txpool)
                             .unwrap();
                     let difficulty = difficult::get_next_work_required(&block_chain);
-                    let block_template = block_chain.create_block_template(difficulty, txns.clone()).unwrap();
+                    let block_template = block_chain
+                        .create_block_template(difficulty, txns.clone())
+                        .unwrap();
                     miner.set_mint_job(MineCtx::new(block_template));
                     let job = miner.get_mint_job();
                     info!("Push job to worker{:?}", job);
@@ -202,7 +206,7 @@ impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
                 });
             }
         }
-            .into_actor(self);
+        .into_actor(self);
         ctx.spawn(f);
         Ok(())
     }

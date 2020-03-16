@@ -1,20 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
-use sc_stratum::*;
 use crate::miner::Miner;
 use logger::prelude::*;
+use sc_stratum::*;
+use std::sync::Arc;
 
 pub struct StratumManager {
-    miner: Miner
+    miner: Miner,
 }
 
 impl StratumManager {
     pub fn new(miner: Miner) -> Self {
-        Self {
-            miner
-        }
+        Self { miner }
     }
 }
 
@@ -28,12 +26,17 @@ impl JobDispatcher for StratumManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use types::block::{Block, BlockTemplate, BlockHeader};
-    use jsonrpc_tcp_server::tokio::{io,runtime::Runtime,net::TcpStream,timer::{timeout,Timeout}};
-    use jsonrpc_core::futures::{Future, future};
-    use std::net::Shutdown;
     use crate::miner::MineCtx;
     use bus::BusActor;
+    use jsonrpc_core::futures::{future, Future};
+    use jsonrpc_tcp_server::tokio::{
+        io,
+        net::TcpStream,
+        runtime::Runtime,
+        timer::{timeout, Timeout},
+    };
+    use std::net::Shutdown;
+    use types::block::{Block, BlockHeader, BlockTemplate};
     #[test]
     #[ignore]
     fn test_stratum() {
@@ -48,7 +51,7 @@ mod tests {
         };
         miner_1.set_mint_job(MineCtx::new(block_template));
         //stratum.push_work_all(miner_1.get_mint_job());
-        
+
         let addr = "127.0.0.1:19995".parse().unwrap();
         let stratum = Stratum::start(&addr, Arc::new(StratumManager::new(miner)), None).unwrap();
         let mut auth_request =
@@ -61,12 +64,8 @@ mod tests {
         let read_buf0 = vec![0u8; auth_response.len()];
         let read_buf1 = Vec::with_capacity(2048);
         let stream = TcpStream::connect(&addr)
-            .and_then(move |stream| {
-                io::write_all(stream, auth_request)
-            })
-            .and_then(|(stream, _)| {
-                io::read_exact(stream, read_buf0)
-            })
+            .and_then(move |stream| io::write_all(stream, auth_request))
+            .and_then(|(stream, _)| io::read_exact(stream, read_buf0))
             .map_err(|err| panic!("{:?}", err))
             .and_then(move |(stream, read_buf0)| {
                 assert_eq!(String::from_utf8(read_buf0).unwrap(), auth_response);
@@ -76,7 +75,8 @@ mod tests {
             .map_err(|err: timeout::Error<()>| panic!("Timeout: {:?}", err))
             .and_then(move |stream| {
                 debug!(target: "stratum", "Pusing work to peers");
-                stratum.push_work_all(r#"{ "00040008", "100500" }"#.to_owned())
+                stratum
+                    .push_work_all(r#"{ "00040008", "100500" }"#.to_owned())
                     .expect("Pushing work should produce no errors");
                 Timeout::new(future::ok(stream), ::std::time::Duration::from_millis(100))
             })
@@ -91,8 +91,11 @@ mod tests {
                 future::ok(read_buf1)
             });
         let response = String::from_utf8(
-            runtime.block_on(stream).expect("Runtime should run with no errors")
-        ).expect("Response should be utf-8");
+            runtime
+                .block_on(stream)
+                .expect("Runtime should run with no errors"),
+        )
+        .expect("Response should be utf-8");
 
         assert_eq!(
             "{ \"id\": 17, \"method\": \"mining.notify\", \"params\": { \"00040008\", \"100500\" } }\n",

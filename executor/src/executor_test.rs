@@ -28,7 +28,9 @@ use vm_runtime::mock_vm::{
     encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, DISCARD_STATUS,
     KEEP_STATUS,
 };
-use vm_runtime::{common_transactions::{create_account_txn_send_with_genesis_account}, account::Account};
+use vm_runtime::{
+    account::Account, common_transactions::create_account_txn_send_with_genesis_account,
+};
 
 #[stest::test]
 fn test_execute_mint_txn() {
@@ -125,7 +127,11 @@ fn test_execute_real_txn_with_starcoin_vm() {
     chain_state.apply(state_set);
     let new_account = Account::new();
     let initial_amount = 1_000;
-    let txn = Transaction::UserTransaction(create_account_txn_send_with_genesis_account(&new_account, 10, initial_amount));
+    let txn = Transaction::UserTransaction(create_account_txn_send_with_genesis_account(
+        &new_account,
+        10,
+        initial_amount,
+    ));
 
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
 

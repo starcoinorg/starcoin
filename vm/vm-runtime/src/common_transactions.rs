@@ -3,11 +3,9 @@
 
 //! Support for encoding transactions for common situations.
 
-use crate::{account::Account, account::create_signed_txn_with_genesis_account};
+use crate::{account::create_signed_txn_with_genesis_account, account::Account};
+use stdlib::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TRANSFER_TXN};
 use types::transaction::{SignedUserTransaction, TransactionArgument};
-use stdlib::transaction_scripts::{
-    CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TRANSFER_TXN,
-};
 
 pub const TXN_RESERVED: u64 = 500_000;
 
@@ -23,13 +21,7 @@ pub fn create_account_txn(
     args.push(TransactionArgument::U8Vector(new_account.auth_key_prefix()));
     args.push(TransactionArgument::U64(initial_amount));
 
-    sender.create_signed_txn_with_args(
-        CREATE_ACCOUNT_TXN.clone(),
-        args,
-        seq_num,
-        TXN_RESERVED,
-        1,
-    )
+    sender.create_signed_txn_with_args(CREATE_ACCOUNT_TXN.clone(), args, seq_num, TXN_RESERVED, 1)
 }
 
 /// Returns a transaction to transfer coin from one account to another (possibly new) one, with the
@@ -51,7 +43,7 @@ pub fn peer_to_peer_txn(
         args,
         seq_num,
         TXN_RESERVED, // this is a default for gas
-        1,                       // this is a default for gas
+        1,            // this is a default for gas
     )
 }
 
@@ -73,7 +65,7 @@ pub fn mint_txn(
         args,
         seq_num,
         TXN_RESERVED, // this is a default for gas
-        1,                       // this is a default for gas
+        1,            // this is a default for gas
     )
 }
 
@@ -115,7 +107,7 @@ pub fn peer_to_peer_txn_send_by_genesis_account(
         args,
         seq_num,
         TXN_RESERVED, // this is a default for gas
-        1,                       // this is a default for gas
+        1,            // this is a default for gas
     )
 }
 
@@ -136,6 +128,6 @@ pub fn mint_txn_send_by_genesis_account(
         args,
         seq_num,
         TXN_RESERVED, // this is a default for gas
-        1,                       // this is a default for gas
+        1,            // this is a default for gas
     )
 }

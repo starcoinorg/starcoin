@@ -3,7 +3,15 @@
 
 //! Test infrastructure for modeling Libra accounts.
 
+use crate::genesis::GENESIS_KEYPAIR;
 use crypto::ed25519::*;
+use move_vm_types::identifier::create_access_path;
+use move_vm_types::{
+    loaded_data::{struct_def::StructDef, types::Type},
+    values::{Struct, Value},
+};
+use rand::{Rng, SeedableRng};
+use std::time::Duration;
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, AuthenticationKey},
@@ -14,14 +22,6 @@ use types::{
         RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
     },
 };
-use move_vm_types::identifier::create_access_path;
-use move_vm_types::{
-    loaded_data::{struct_def::StructDef, types::Type},
-    values::{Struct, Value},
-};
-use rand::{Rng, SeedableRng};
-use std::time::Duration;
-use crate::genesis::{GENESIS_KEYPAIR};
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -79,8 +79,6 @@ impl Account {
         &self.addr
     }
 
-
-
     /// Changes the keys for this account to the provided ones.
     pub fn rotate_key(&mut self, privkey: Ed25519PrivateKey, pubkey: Ed25519PublicKey) {
         self.privkey = privkey;
@@ -113,9 +111,7 @@ impl Account {
         gas_unit_price: u64,
     ) -> SignedUserTransaction {
         let raw_txn = match payload {
-            TransactionPayload::StateSet(state_set) => {
-                unimplemented!()
-            }
+            TransactionPayload::StateSet(state_set) => unimplemented!(),
             TransactionPayload::Module(module) => RawUserTransaction::new_module(
                 *self.address(),
                 sequence_number,
@@ -158,7 +154,6 @@ impl Account {
             gas_unit_price,
         )
     }
-
 
     /// Returns a [`SignedUserTransaction`] with the arguments defined in `args` and a custom sender.
     ///
@@ -205,7 +200,6 @@ impl Account {
         .unwrap()
         .into_inner()
     }
-
 }
 
 impl Default for Account {
@@ -230,10 +224,9 @@ pub fn create_signed_txn_with_genesis_account(
         // TTL is 86400s. Initial time was set to 0.
         Duration::from_secs(DEFAULT_EXPIRATION_TIME),
     )
-        .sign(&GENESIS_KEYPAIR.0, GENESIS_KEYPAIR.1.clone())
-        .unwrap()
-        .into_inner()
-
+    .sign(&GENESIS_KEYPAIR.0, GENESIS_KEYPAIR.1.clone())
+    .unwrap()
+    .into_inner()
 }
 /// Struct that represents an account balance resource for tests.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -262,5 +255,3 @@ impl Balance {
         StructDef::new(vec![Type::U64])
     }
 }
-
-
