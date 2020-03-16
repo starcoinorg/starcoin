@@ -9,7 +9,8 @@ use anyhow::Result;
 use bus::BusActor;
 use chain::BlockChain;
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::Consensus;
+use consensus::{Consensus, difficult};
+
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
@@ -20,10 +21,14 @@ use std::time::Duration;
 use storage::BlockChainStore;
 use traits::{ChainAsyncService, TxPoolAsyncService};
 use types::transaction::TxStatus;
+use sc_stratum::{self, PushWorkHandler};
+use crate::miner::MineCtx;
+use traits::ChainReader;
 
 mod headblock_pacemaker;
 #[allow(dead_code)]
 mod miner;
+mod stratum;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 #[cfg(test)]
@@ -37,12 +42,12 @@ pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 pub struct GenerateBlockEvent {}
 
 pub struct MinerActor<C, E, P, CS, S>
-where
-    C: Consensus + Sync + Send + 'static,
-    E: TransactionExecutor + Sync + Send + 'static,
-    P: TxPoolAsyncService + Sync + Send + 'static,
-    CS: ChainAsyncService + Sync + Send + 'static,
-    S: BlockChainStore + Sync + Send + 'static,
+    where
+        C: Consensus + Sync + Send + 'static,
+        E: TransactionExecutor + Sync + Send + 'static,
+        P: TxPoolAsyncService + Sync + Send + 'static,
+        CS: ChainAsyncService + Sync + Send + 'static,
+        S: BlockChainStore + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -51,15 +56,17 @@ where
     phantom_c: PhantomData<C>,
     phantom_e: PhantomData<E>,
     chain: CS,
+    miner: miner::Miner,
+    stratum: Arc<sc_stratum::Stratum>,
 }
 
 impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
-where
-    C: Consensus + Sync + Send + 'static,
-    E: TransactionExecutor + Sync + Send + 'static,
-    P: TxPoolAsyncService + Sync + Send + 'static,
-    CS: ChainAsyncService + Sync + Send + 'static,
-    S: BlockChainStore + Sync + Send + 'static,
+    where
+        C: Consensus + Sync + Send + 'static,
+        E: TransactionExecutor + Sync + Send + 'static,
+        P: TxPoolAsyncService + Sync + Send + 'static,
+        CS: ChainAsyncService + Sync + Send + 'static,
+        S: BlockChainStore + Sync + Send + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -82,7 +89,7 @@ where
                         sender.clone(),
                         transaction_receiver.take().unwrap(),
                     )
-                    .start();
+                        .start();
                 }
                 PacemakerStrategy::Schedule => {
                     SchedulePacemaker::new(Duration::from_millis(10 * 1000), sender).start();
@@ -105,6 +112,12 @@ where
                     }
                 });
             });
+            let miner = miner::Miner::new(bus.clone());
+            let addr = "127.0.0.1:9000".parse().unwrap();
+            let stratum = sc_stratum::Stratum::start(
+                &addr,
+                Arc::new(stratum::StratumManager::new(miner.clone())),
+                None).unwrap();
 
             MinerActor {
                 config,
@@ -114,6 +127,8 @@ where
                 phantom_c: PhantomData,
                 phantom_e: PhantomData,
                 chain,
+                miner,
+                stratum,
             }
         });
         Ok(actor)
@@ -121,12 +136,12 @@ where
 }
 
 impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
-where
-    C: Consensus + Sync + Send + 'static,
-    E: TransactionExecutor + Sync + Send + 'static,
-    P: TxPoolAsyncService + Sync + Send + 'static,
-    CS: ChainAsyncService + Sync + Send + 'static,
-    S: BlockChainStore + Sync + Send + 'static,
+    where
+        C: Consensus + Sync + Send + 'static,
+        E: TransactionExecutor + Sync + Send + 'static,
+        P: TxPoolAsyncService + Sync + Send + 'static,
+        CS: ChainAsyncService + Sync + Send + 'static,
+        S: BlockChainStore + Sync + Send + 'static,
 {
     type Context = Context<Self>;
 
@@ -136,12 +151,12 @@ where
 }
 
 impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
-where
-    C: Consensus + Sync + Send + 'static,
-    E: TransactionExecutor + Sync + Send + 'static,
-    P: TxPoolAsyncService + Sync + Send + 'static,
-    CS: ChainAsyncService + Sync + Send + 'static,
-    S: BlockChainStore + Sync + Send + 'static,
+    where
+        C: Consensus + Sync + Send + 'static,
+        E: TransactionExecutor + Sync + Send + 'static,
+        P: TxPoolAsyncService + Sync + Send + 'static,
+        CS: ChainAsyncService + Sync + Send + 'static,
+        S: BlockChainStore + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
@@ -151,6 +166,8 @@ where
         let storage = self.storage.clone();
         let chain = self.chain.clone();
         let config = self.config.clone();
+        let mut miner = self.miner.clone();
+        let stratum = self.stratum.clone();
         let f = async {
             //TODO handle error.
             let txns = txpool
@@ -158,6 +175,7 @@ where
                 .get_pending_txns(None)
                 .await
                 .unwrap_or(vec![]);
+
             if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
             {
                 let chain_info = chain.get_chain_info().await.unwrap();
@@ -166,6 +184,13 @@ where
                     let block_chain =
                         BlockChain::<E, C, S, P>::new(config.clone(), chain_info, storage, txpool)
                             .unwrap();
+                    let difficulty = difficult::get_next_work_required(&block_chain);
+                    let block_template = block_chain.create_block_template(difficulty, txns.clone()).unwrap();
+                    miner.set_mint_job(MineCtx::new(block_template));
+                    let job = miner.get_mint_job();
+                    info!("Push job to worker{:?}", job);
+                    stratum.push_work_all(job).unwrap();
+
                     match miner::mint::<C>(config, txns, &block_chain, bus) {
                         Err(e) => {
                             error!("mint block err: {:?}", e);
@@ -177,7 +202,7 @@ where
                 });
             }
         }
-        .into_actor(self);
+            .into_actor(self);
         ctx.spawn(f);
         Ok(())
     }

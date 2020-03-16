@@ -11,11 +11,12 @@ use logger::prelude::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use std::sync::Mutex;
+
 use traits::ChainReader;
 use types::{
     block::BlockTemplate, system_events::SystemEvents, transaction::SignedUserTransaction,
 };
-
+use crypto::HashValue;
 #[derive(Clone)]
 pub struct Miner {
     state: Arc<Mutex<Option<MineCtx>>>,
@@ -24,7 +25,7 @@ pub struct Miner {
 
 #[derive(Clone)]
 pub struct MineCtx {
-    header_hash: Vec<u8>,
+    header_hash: HashValue,
     block_template: BlockTemplate,
 }
 
@@ -33,8 +34,8 @@ impl MineCtx {
         let header_hash = block_template
             .clone()
             .into_block_header(DummyHeader {})
-            .id()
-            .to_vec();
+            .id();
+
         MineCtx {
             header_hash,
             block_template,
@@ -48,8 +49,8 @@ pub fn mint<C>(
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
 ) -> Result<()>
-where
-    C: Consensus,
+    where
+        C: Consensus,
 {
     let difficulty = difficult::get_next_work_required(chain);
     let block_template = chain.create_block_template(difficulty, txns)?;
@@ -79,8 +80,10 @@ impl Miner {
 
     pub fn get_mint_job(&mut self) -> String {
         let state = self.state.lock().unwrap();
-        let _x = state.as_ref().unwrap().to_owned();
-        "".to_ascii_lowercase()
+        let x = state.as_ref().unwrap().to_owned();
+        format!(r#"[0x{:x},0x{:x}]"#,
+                x.header_hash,x.block_template.difficult
+        )
     }
 
     pub fn submit(&self, payload: Vec<u8>) {
@@ -91,9 +94,9 @@ impl Miner {
         let consensus_header = consensus_impl::ConsensusHeaderImpl::try_from(payload).unwrap();
         let block = block_template.into_block(consensus_header);
         // notify chain mined block
-        println!("miner new block: {:?}", block);
+        info!("Miner new block: {:?}", block);
         // fire SystemEvents::MinedBlock.
-        info!("broadcast new block: {:?}.", block.header().id());
+        info!("Broadcast new block: {:?}.", block.header().id());
         self.bus.do_send(Broadcast {
             msg: SystemEvents::MinedBlock(block),
         });
