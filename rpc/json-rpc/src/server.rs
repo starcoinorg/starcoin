@@ -8,6 +8,7 @@ use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
 use jsonrpc_tcp_server;
 use jsonrpc_ws_server;
+use starcoin_logger::prelude::*;
 use std::sync::Arc;
 
 pub struct RpcServer {
@@ -20,7 +21,7 @@ impl RpcServer {
     pub fn new(config: Arc<NodeConfig>, mut io_handler: IoHandler) -> RpcServer {
         io_handler.add_method("status", |_| jsonrpc_core::futures::future::ok("ok".into()));
 
-        let http = jsonrpc_http_server::ServerBuilder::new(io_handler.clone())
+        let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
             .cors(DomainsValidation::AllowOnly(vec![
                 AccessControlAllowOrigin::Null,
                 AccessControlAllowOrigin::Any,
@@ -30,7 +31,7 @@ impl RpcServer {
             .health_api(("/status", "status"))
             .start_http(&config.rpc.http_address)
             .expect("Unable to start RPC server");
-        println!("Json-rpc start at :{}", &config.rpc.http_address);
+        info!("Json-rpc start at :{}", &config.rpc.http_address);
         RpcServer {
             http,
             tcp: None,

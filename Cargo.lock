@@ -5271,9 +5271,11 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-config",
+ "starcoin-logger",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",
+ "stest",
  "thiserror",
 ]
 

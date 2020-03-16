@@ -6,7 +6,6 @@ use jsonrpc_core::BoxFuture;
 use jsonrpc_core::Error;
 use jsonrpc_derive::rpc;
 use traits::TxPoolAsyncService;
-use txpool::TxPoolRef;
 use types::transaction::SignedUserTransaction;
 
 #[rpc(server)]
@@ -15,19 +14,28 @@ pub trait TxPoolRpc {
     fn submit_transaction(&self, tx: SignedUserTransaction) -> BoxFuture<bool>;
 }
 
-pub(crate) struct TxPoolRpcImpl {
-    actor_ref: TxPoolRef,
+pub(crate) struct TxPoolRpcImpl<S>
+where
+    S: TxPoolAsyncService + 'static,
+{
+    service: S,
 }
 
-impl TxPoolRpcImpl {
-    pub fn new(actor_ref: TxPoolRef) -> Self {
-        Self { actor_ref }
+impl<S> TxPoolRpcImpl<S>
+where
+    S: TxPoolAsyncService,
+{
+    pub fn new(service: S) -> Self {
+        Self { service }
     }
 }
 
-impl TxPoolRpc for TxPoolRpcImpl {
+impl<S> TxPoolRpc for TxPoolRpcImpl<S>
+where
+    S: TxPoolAsyncService,
+{
     fn submit_transaction(&self, txn: SignedUserTransaction) -> BoxFuture<bool> {
-        let fut = self.actor_ref.clone().add(txn).map_err(|_err| {
+        let fut = self.service.clone().add(txn).map_err(|_err| {
             //TODO
             Error::internal_error()
         });
