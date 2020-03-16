@@ -14,9 +14,7 @@ use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
 use traits::{AsyncChain, TxPoolAsyncService};
 use txpool::TxPoolRef;
-use types::{
-    account_address::AccountAddress, peer_info::PeerInfo,
-};
+use types::{account_address::AccountAddress, peer_info::PeerInfo};
 
 #[test]
 fn it_works() {
