@@ -10,12 +10,13 @@ use crate::state_set::ChainStateSet;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
+use crate::U256;
 
 /// Type for block number.
 pub type BlockNumber = u64;
 
 #[derive(
-    Default, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHash,
+Default, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHash,
 )]
 pub struct BlockHeader {
     /// Parent hash.
@@ -34,8 +35,11 @@ pub struct BlockHeader {
     gas_used: u64,
     /// Block gas limit.
     gas_limit: u64,
+    /// Block difficult
+    difficult: U256,
     /// Consensus extend header field.
     consensus_header: Vec<u8>,
+
 }
 
 impl BlockHeader {
@@ -48,10 +52,11 @@ impl BlockHeader {
         state_root: HashValue,
         gas_used: u64,
         gas_limit: u64,
+        difficult: U256,
         consensus_header: H,
     ) -> BlockHeader
-    where
-        H: Into<Vec<u8>>,
+        where
+            H: Into<Vec<u8>>,
     {
         BlockHeader {
             parent_hash,
@@ -62,6 +67,7 @@ impl BlockHeader {
             state_root,
             gas_used,
             gas_limit,
+            difficult,
             consensus_header: consensus_header.into(),
         }
     }
@@ -109,7 +115,9 @@ impl BlockHeader {
     pub fn into_metadata(self) -> BlockMetadata {
         BlockMetadata::new(self.id(), self.timestamp, self.author)
     }
-
+    pub fn difficult(&self)->U256{
+        self.difficult
+    }
     //#[cfg(test)]
     pub fn genesis_block_header_for_test() -> Self {
         BlockHeader {
@@ -127,6 +135,8 @@ impl BlockHeader {
             gas_used: 0,
             /// Block gas limit.
             gas_limit: std::u64::MAX,
+            /// Block difficult
+            difficult: U256::zero(),
             /// Block proof of work extend field.
             consensus_header: HashValue::zero().to_vec(),
         }
@@ -146,6 +156,7 @@ impl BlockHeader {
             //TODO
             gas_limit: 0,
             //TODO
+            difficult: U256::zero(),
             consensus_header: vec![],
         }
     }
@@ -168,6 +179,7 @@ impl BlockHeader {
             /// Block gas limit.
             gas_limit: std::u64::MAX,
             /// Block proof of work extend field.
+            difficult: U256::zero(),
             consensus_header: HashValue::random().to_vec(),
         }
     }
@@ -221,8 +233,8 @@ pub struct Block {
 
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
-    where
-        B: Into<BlockBody>,
+        where
+            B: Into<BlockBody>,
     {
         Block {
             header,
@@ -281,6 +293,9 @@ pub struct BlockTemplate {
     /// Block gas limit.
     pub gas_limit: u64,
 
+    /// Block difficult
+    pub difficult: U256,
+
     pub body: BlockBody,
 }
 
@@ -294,6 +309,7 @@ impl BlockTemplate {
         state_root: HashValue,
         gas_used: u64,
         gas_limit: u64,
+        difficult: U256,
         body: BlockBody,
     ) -> Self {
         Self {
@@ -305,13 +321,14 @@ impl BlockTemplate {
             state_root,
             gas_used,
             gas_limit,
+            difficult,
             body,
         }
     }
 
     pub fn into_block<H>(self, consensus_header: H) -> Block
-    where
-        H: Into<Vec<u8>>,
+        where
+            H: Into<Vec<u8>>,
     {
         let header = BlockHeader::new(
             self.parent_hash,
@@ -322,12 +339,31 @@ impl BlockTemplate {
             self.state_root,
             self.gas_used,
             self.gas_limit,
+            self.difficult,
             consensus_header.into(),
         );
         Block {
             header,
             body: self.body,
         }
+    }
+    pub fn into_block_header<H>(self, consensus_header: H) -> BlockHeader
+        where
+            H: Into<Vec<u8>>,
+    {
+        let header = BlockHeader::new(
+            self.parent_hash,
+            self.timestamp,
+            self.number,
+            self.author,
+            self.accumulator_root,
+            self.state_root,
+            self.gas_used,
+            self.gas_limit,
+            self.difficult,
+            consensus_header.into(),
+        );
+        header
     }
 
     pub fn from_block(block: Block) -> Self {
@@ -341,6 +377,7 @@ impl BlockTemplate {
             gas_used: block.header().gas_used,
             gas_limit: block.header().gas_limit,
 
+            difficult: block.header().difficult,
             body: block.body,
         }
     }

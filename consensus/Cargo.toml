@@ -16,6 +16,6 @@ types = {path = "../types", package="starcoin-types"}
 traits = {path = "../core/traits", package="starcoin-traits"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
-byteorder = "1.3.1"
 blake2-rfc = "0.2"
 async-std = { version = "1.0.1", features = ["unstable"]}
+byteorder = "1.3.1"

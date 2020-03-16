@@ -25,7 +25,7 @@ use std::time::Duration;
 use storage::{BlockStorageOp, StarcoinStorage};
 use traits::{ChainAsyncService, ChainReader, TxPoolAsyncService};
 use types::transaction::TxStatus;
-use crate::miner::Miner;
+use crate::miner::{Miner, MineCtx};
 
 use crate::stratum::StratumManager;
 use sc_stratum::*;
@@ -114,7 +114,7 @@ impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
                     tmp_chain.clone().gen_tx().await;
                 });
             });
-            let miner = Miner::new();
+            let miner = Miner::new(bus.clone());
             let addr = "127.0.0.1:9000".parse().unwrap();
             let stratum = Stratum::start(&addr, Arc::new(StratumManager::new(miner.clone())), None).unwrap();
             MinerActor {
@@ -178,7 +178,9 @@ impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
                 let block_chain =
                     BlockChain::<E, C, S, P>::new(config, storage, head_branch, txpool_2).unwrap();
                 let block_template = block_chain.create_block_template(txns).unwrap();
-                miner.set_mint_job(block_template);
+                let mine_ctx = MineCtx::new(block_template);
+
+                miner.set_mint_job(mine_ctx);
                 stratum.push_work_all(miner.get_mint_job());
             }
         }

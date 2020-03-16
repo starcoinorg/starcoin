@@ -15,6 +15,7 @@ pub use types::{H256, U256};
 use std::convert::{From, Into};
 use std::fmt::{Debug, Error, Formatter};
 pub mod dummy;
+pub mod consensus_impl;
 pub mod difficult;
 
 pub const BLOCK_WINDOW: u32 = 24;
@@ -26,12 +27,6 @@ pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin
 
 pub trait Consensus: std::marker::Unpin {
     fn verify_header(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()>;
-    /// Construct block with BlockTemplate
-    fn create_block(
-        reader: &dyn ChainReader,
-        block_template: BlockTemplate,
-        cancel: oneshot::Receiver<()>,
-    ) -> Result<Block>;
 }
 
 

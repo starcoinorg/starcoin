@@ -32,12 +32,4 @@ impl Consensus for DummyConsensus {
     fn verify_header(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
         Ok(())
     }
-
-    fn create_block(
-        reader: &dyn ChainReader,
-        block_template: BlockTemplate,
-        cancel: Receiver<()>,
-    ) -> Result<Block> {
-        Ok(block_template.into_block(DummyHeader {}))
-    }
 }

@@ -5161,6 +5161,7 @@ dependencies = [
  "futures 0.3.4",
  "futures-channel",
  "jsonrpc-core 12.2.0",
+ "jsonrpc-tcp-server 12.2.0",
  "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-chain",

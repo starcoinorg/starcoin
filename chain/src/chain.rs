@@ -29,6 +29,7 @@ use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     block_metadata::BlockMetadata,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
+    U256,
 };
 
 pub struct BlockChain<E, C, S, P>
@@ -224,6 +225,7 @@ where
         //TODO accumulator
         let (accumulator_root, _) = self.accumulator.append(&transaction_hash).unwrap();
 
+        let difficulty = U256::zero();
         //TODO execute txns and computer state.
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -234,6 +236,7 @@ where
             state_root,
             0,
             0,
+            difficulty,
             user_txns.into(),
         ))
     }
