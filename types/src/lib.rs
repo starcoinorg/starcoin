@@ -22,3 +22,12 @@ pub mod system_events;
 pub mod transaction;
 pub mod vm_error;
 pub mod write_set;
+pub use ethereum_types::{H256, U256};
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
+}

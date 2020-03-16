@@ -29,6 +29,9 @@ logger = {path = "../commons/logger", package="starcoin-logger"}
 futures-channel = "0.3"
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
+sc_stratum = {path = "./stratum", package ="starcoin-stratum"}
+jsonrpc-core = "12.0.0"
+jsonrpc-tcp-server="12.0.0"
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}

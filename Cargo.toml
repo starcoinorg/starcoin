@@ -26,6 +26,7 @@ members = [
     "node",
     "sync",
     "miner",
+    "miner/stratum",
     "node",
     "network-p2p",
     "network-p2p/peerset",

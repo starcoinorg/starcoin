@@ -11,7 +11,7 @@ use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
 
 pub mod dummy;
-
+pub mod consensus_impl;
 pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin {}
 
 pub trait Consensus: std::marker::Unpin {

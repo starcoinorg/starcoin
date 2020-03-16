@@ -37,3 +37,5 @@ libra-types = { git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa
 libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
 move-core-types = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+
+ethereum-types = "0.2.3"
