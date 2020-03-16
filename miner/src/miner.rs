@@ -4,22 +4,24 @@
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
-use config::NodeConfig;
 use chain::ChainActor;
-use std::sync::Arc;
-use consensus::{ConsensusHeader, dummy::DummyHeader, consensus_impl, Consensus};
-use futures::channel::oneshot;
-use logger::prelude::*;
-use std::marker::PhantomData;
-use std::sync::Mutex;
-use std::convert::TryFrom;
-use traits::ChainReader;
-use types::{system_events::SystemEvents, transaction::SignedUserTransaction, block::BlockTemplate};
+use config::NodeConfig;
+use consensus::{consensus_impl, dummy::DummyHeader, Consensus, ConsensusHeader};
 use futures::channel::mpsc;
+use futures::channel::oneshot;
+use futures::prelude::*;
 use futures::AsyncReadExt;
 use futures::{Future, TryFutureExt};
-use futures::prelude::*;
+use logger::prelude::*;
 use sc_stratum::*;
+use std::convert::TryFrom;
+use std::marker::PhantomData;
+use std::sync::Arc;
+use std::sync::Mutex;
+use traits::ChainReader;
+use types::{
+    block::BlockTemplate, system_events::SystemEvents, transaction::SignedUserTransaction,
+};
 
 #[derive(Clone)]
 pub struct Miner {
@@ -33,10 +35,13 @@ pub struct MineCtx {
     block_template: BlockTemplate,
 }
 
-
 impl MineCtx {
     pub fn new(block_template: BlockTemplate) -> MineCtx {
-        let header_hash = block_template.clone().into_block_header(DummyHeader {}).id().to_vec();
+        let header_hash = block_template
+            .clone()
+            .into_block_header(DummyHeader {})
+            .id()
+            .to_vec();
         MineCtx {
             header_hash,
             block_template,
@@ -50,8 +55,8 @@ pub fn mint<C>(
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
 ) -> Result<()>
-    where
-        C: Consensus,
+where
+    C: Consensus,
 {
     let block_template = chain.create_block_template(txns)?;
     let (_sender, receiver) = oneshot::channel();

@@ -6,12 +6,12 @@ use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedUserTransaction;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 
+use crate::U256;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::create_literal_hash;
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
-use crate::U256;
 
 /// Type for block number.
 pub type BlockNumber = u64;
@@ -115,7 +115,7 @@ impl BlockHeader {
     pub fn into_metadata(self) -> BlockMetadata {
         BlockMetadata::new(self.id(), self.timestamp, self.author)
     }
-    pub fn difficult(&self)->U256{
+    pub fn difficult(&self) -> U256 {
         self.difficult
     }
     //#[cfg(test)]
@@ -161,7 +161,6 @@ impl BlockHeader {
             gas_limit: 0,
             difficult: U256::zero(),
             consensus_header,
-
         }
     }
 
@@ -384,8 +383,8 @@ impl BlockTemplate {
     }
 
     pub fn into_block<H>(self, consensus_header: H) -> Block
-        where
-            H: Into<Vec<u8>>,
+    where
+        H: Into<Vec<u8>>,
     {
         let header = BlockHeader::new(
             self.parent_hash,
@@ -405,8 +404,8 @@ impl BlockTemplate {
         }
     }
     pub fn into_block_header<H>(self, consensus_header: H) -> BlockHeader
-        where
-            H: Into<Vec<u8>>,
+    where
+        H: Into<Vec<u8>>,
     {
         let header = BlockHeader::new(
             self.parent_hash,

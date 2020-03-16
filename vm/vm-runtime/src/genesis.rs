@@ -11,7 +11,7 @@ use crypto::HashValue;
 use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath,
-    account_address::{ AccountAddress, AuthenticationKey },
+    account_address::{AccountAddress, AuthenticationKey},
     byte_array::ByteArray,
     transaction::{ChangeSet, RawTransaction},
 };
@@ -140,7 +140,8 @@ fn create_and_initialize_main_accounts(
         });
 
     // create the transaction fee account
-    let transaction_fee_address = TransactionHelper::to_libra_AccountAddress(account_config::transaction_fee_address());
+    let transaction_fee_address =
+        TransactionHelper::to_libra_AccountAddress(account_config::transaction_fee_address());
     move_vm
         .execute_function(
             &ACCOUNT_MODULE,

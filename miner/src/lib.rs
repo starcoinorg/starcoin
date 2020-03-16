@@ -36,12 +36,12 @@ pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 pub struct GenerateBlockEvent {}
 
 pub struct MinerActor<C, E, P, CS, S>
-    where
-        C: Consensus + Sync + Send + 'static,
-        E: TransactionExecutor + Sync + Send + 'static,
-        P: TxPoolAsyncService + Sync + Send + 'static,
-        CS: ChainAsyncService + Sync + Send + 'static,
-        S: BlockChainStore + Sync + Send + 'static,
+where
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -53,12 +53,12 @@ pub struct MinerActor<C, E, P, CS, S>
 }
 
 impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
-    where
-        C: Consensus + Sync + Send + 'static,
-        E: TransactionExecutor + Sync + Send + 'static,
-        P: TxPoolAsyncService + Sync + Send + 'static,
-        CS: ChainAsyncService + Sync + Send + 'static,
-        S: BlockChainStore + Sync + Send + 'static,
+where
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -81,7 +81,7 @@ impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
                         sender.clone(),
                         transaction_receiver.take().unwrap(),
                     )
-                        .start();
+                    .start();
                 }
                 PacemakerStrategy::Schedule => {
                     SchedulePacemaker::new(Duration::from_millis(10 * 1000), sender).start();
@@ -120,12 +120,12 @@ impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
 }
 
 impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
-    where
-        C: Consensus + Sync + Send + 'static,
-        E: TransactionExecutor + Sync + Send + 'static,
-        P: TxPoolAsyncService + Sync + Send + 'static,
-        CS: ChainAsyncService + Sync + Send + 'static,
-        S: BlockChainStore + Sync + Send + 'static,
+where
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     type Context = Context<Self>;
 
@@ -135,12 +135,12 @@ impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
 }
 
 impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
-    where
-        C: Consensus + Sync + Send + 'static,
-        E: TransactionExecutor + Sync + Send + 'static,
-        P: TxPoolAsyncService + Sync + Send + 'static,
-        CS: ChainAsyncService + Sync + Send + 'static,
-        S: BlockChainStore + Sync + Send + 'static,
+where
+    C: Consensus + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+    P: TxPoolAsyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: BlockChainStore + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
@@ -176,7 +176,7 @@ impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
                 });
             }
         }
-            .into_actor(self);
+        .into_actor(self);
         ctx.spawn(f);
         Ok(())
     }

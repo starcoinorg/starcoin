@@ -17,20 +17,20 @@ use std::sync::Arc;
 use storage::BlockChainStore;
 use traits::{ChainReader, ChainState, ChainStateReader, ChainWriter, TxPoolAsyncService};
 use types::{
-    U256,
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate, BLOCK_INFO_DEFAULT_ID},
     block_metadata::BlockMetadata,
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
+    U256,
 };
 
 pub struct BlockChain<E, C, S, P>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        S: BlockChainStore + 'static,
-        P: TxPoolAsyncService + 'static,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    S: BlockChainStore + 'static,
+    P: TxPoolAsyncService + 'static,
 {
     pub config: Arc<NodeConfig>,
     //TODO
@@ -45,11 +45,11 @@ pub struct BlockChain<E, C, S, P>
 }
 
 impl<E, C, S, P> BlockChain<E, C, S, P>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        S: BlockChainStore,
-        P: TxPoolAsyncService,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    S: BlockChainStore,
+    P: TxPoolAsyncService,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -82,7 +82,7 @@ impl<E, C, S, P> BlockChain<E, C, S, P>
                 block_info.num_nodes,
                 storage.clone(),
             )
-                .unwrap(),
+            .unwrap(),
             head,
             chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
             phantom_e: PhantomData,
@@ -215,7 +215,7 @@ impl<E, C, S, P> BlockChain<E, C, S, P>
             block_info.num_nodes,
             self.storage.clone(),
         )
-            .unwrap();
+        .unwrap();
         let (accumulator_root, first_leaf_idx) =
             accumulator.append_only_cache(&transaction_hash).unwrap();
         //Fixme proof verify
@@ -242,11 +242,11 @@ impl<E, C, S, P> BlockChain<E, C, S, P>
 }
 
 impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        S: BlockChainStore,
-        P: TxPoolAsyncService,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    S: BlockChainStore,
+    P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
         self.head.clone()
@@ -329,11 +329,11 @@ impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
 }
 
 impl<E, C, S, P> ChainWriter for BlockChain<E, C, S, P>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        S: BlockChainStore,
-        P: TxPoolAsyncService,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    S: BlockChainStore,
+    P: TxPoolAsyncService,
 {
     fn apply(&mut self, block: Block) -> Result<()> {
         let header = block.header();

@@ -202,4 +202,3 @@ pub fn mock_mint_txn(to: AccountAddress, amount: u64) -> Transaction {
 pub fn mock_transfer_txn(from: AccountAddress, to: AccountAddress, amount: u64) -> Transaction {
     encode_transfer_transaction(from, to, amount)
 }
-
