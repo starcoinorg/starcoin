@@ -51,7 +51,7 @@ impl ChainActor {
             service: ChainServiceImpl::new(config, startup_info, storage, network, txpool)?,
             bus,
         }
-            .start();
+        .start();
         Ok(actor.into())
     }
 }
@@ -90,15 +90,20 @@ impl Handler<ChainRequest> for ChainActor {
             )),
             ChainRequest::CreateBlockTemplate() => Ok(ChainResponse::BlockTemplate(
                 //TODO get txn from txpool.
-                self.service.create_block_template(types::U256::zero(), vec![]).unwrap(),
+                self.service
+                    .create_block_template(types::U256::zero(), vec![])
+                    .unwrap(),
             )),
             ChainRequest::CreateBlockTemplateWithTx(parent_hash, txs) => {
                 Ok(ChainResponse::BlockTemplate(match parent_hash {
                     Some(hash) => self
                         .service
-                        .create_block_template_with_parent(hash, types::U256::zero(),txs)
+                        .create_block_template_with_parent(hash, types::U256::zero(), txs)
                         .unwrap(),
-                    None => self.service.create_block_template(types::U256::zero(), txs).unwrap(),
+                    None => self
+                        .service
+                        .create_block_template(types::U256::zero(), txs)
+                        .unwrap(),
                 }))
             }
             ChainRequest::CreateBlockTemplateWithParent(parent_hash) => {
@@ -320,7 +325,7 @@ impl ChainAsyncService for ChainActorRef {
 
     async fn get_head_branch(self) -> Result<HashValue> {
         if let ChainResponse::HashValue(hash) =
-        self.address.send(ChainRequest::GetHeadBranch()).await??
+            self.address.send(ChainRequest::GetHeadBranch()).await??
         {
             Ok(hash)
         } else {

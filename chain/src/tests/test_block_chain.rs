@@ -8,7 +8,7 @@ use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
-use consensus::{dummy::DummyConsensus, Consensus, difficult};
+use consensus::{difficult, dummy::DummyConsensus, Consensus};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::mock_executor::mock_mint_txn;
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
@@ -49,7 +49,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
         conf.clone(),
         storage.clone(),
     )
-        .unwrap();
+    .unwrap();
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -63,7 +63,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
         bus.clone(),
         txpool.clone(),
     )
-        .unwrap();
+    .unwrap();
     if times > 0 {
         for _i in 0..times {
             let block_template = chain
@@ -81,7 +81,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
                     storage.clone(),
                     txpool.clone(),
                 )
-                    .unwrap();
+                .unwrap();
             let block =
                 DummyConsensus::create_block(conf.clone(), &block_chain, block_template, receiver)
                     .unwrap();

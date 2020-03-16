@@ -25,6 +25,7 @@ fn it_works() {
 
 #[test]
 fn test_miner_with_schedule_pacemaker() {
+    ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let handle = rt.handle().clone();
     let mut system = System::new("test");
@@ -94,6 +95,7 @@ fn test_miner_with_schedule_pacemaker() {
 
 #[test]
 fn test_miner_with_ondemand_pacemaker() {
+    ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let handle = rt.handle().clone();
     let mut system = System::new("test");

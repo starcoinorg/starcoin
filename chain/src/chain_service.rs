@@ -15,19 +15,19 @@ use std::sync::Arc;
 use storage::BlockChainStore;
 use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter, TxPoolAsyncService};
 use types::{
-    U256,
     block::{Block, BlockHeader, BlockInfo, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
+    U256,
 };
 
 pub struct ChainServiceImpl<E, C, P, S>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        P: TxPoolAsyncService + 'static,
-        S: BlockChainStore + 'static,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService + 'static,
+    S: BlockChainStore + 'static,
 {
     config: Arc<NodeConfig>,
     head: BlockChain<E, C, S, P>,
@@ -38,11 +38,11 @@ pub struct ChainServiceImpl<E, C, P, S>
 }
 
 impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        P: TxPoolAsyncService,
-        S: BlockChainStore,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService,
+    S: BlockChainStore,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -87,7 +87,7 @@ impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
                     self.storage.clone(),
                     self.txpool.clone(),
                 )
-                    .unwrap(),
+                .unwrap(),
             );
         } else {
             for branch in &self.branches {
@@ -99,7 +99,7 @@ impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
                             self.storage.clone(),
                             self.txpool.clone(),
                         )
-                            .unwrap(),
+                        .unwrap(),
                     );
                 }
             }
@@ -148,7 +148,7 @@ impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
                                 self.storage.clone(),
                                 self.txpool.clone(),
                             )
-                                .unwrap(),
+                            .unwrap(),
                         );
                         self.head = BlockChain::new(
                             new_branch.config.clone(),
@@ -156,7 +156,7 @@ impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
                             new_branch.storage.clone(),
                             new_branch.txpool.clone(),
                         )
-                            .unwrap();
+                        .unwrap();
 
                         self.commit_2_txpool(enacted, retracted);
 
@@ -171,7 +171,7 @@ impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
                                 new_branch.storage.clone(),
                                 new_branch.txpool.clone(),
                             )
-                                .unwrap(),
+                            .unwrap(),
                         );
                     }
                     update_branch_flag = true;
@@ -248,9 +248,9 @@ impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
                 .get_hash_by_number(begin_number - 1)
                 .unwrap()
                 == head
-                .chain_info
-                .get_hash_by_number(begin_number - 1)
-                .unwrap()
+                    .chain_info
+                    .get_hash_by_number(begin_number - 1)
+                    .unwrap()
             {
                 common_ancestor = Some(
                     new_branch
@@ -333,11 +333,11 @@ impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
 }
 
 impl<E, C, P, S> ChainService for ChainServiceImpl<E, C, P, S>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        P: TxPoolAsyncService,
-        S: BlockChainStore,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService,
+    S: BlockChainStore,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
@@ -346,9 +346,9 @@ impl<E, C, P, S> ChainService for ChainServiceImpl<E, C, P, S>
             .get_block_by_hash(block.header().id())?
             .is_none()
             && self
-            .storage
-            .get_block_by_hash(block.header().parent_hash())?
-            .is_some()
+                .storage
+                .get_block_by_hash(block.header().parent_hash())?
+                .is_some()
         {
             let header = block.header();
             let mut branch = self.find_or_fork(&header).expect("fork branch failed.");
@@ -365,11 +365,11 @@ impl<E, C, P, S> ChainService for ChainServiceImpl<E, C, P, S>
 }
 
 impl<E, C, P, S> ChainReader for ChainServiceImpl<E, C, P, S>
-    where
-        E: TransactionExecutor,
-        C: Consensus,
-        P: TxPoolAsyncService,
-        S: BlockChainStore,
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService,
+    S: BlockChainStore,
 {
     fn head_block(&self) -> Block {
         self.head.head_block()
@@ -403,7 +403,11 @@ impl<E, C, P, S> ChainReader for ChainServiceImpl<E, C, P, S>
         self.head.get_transaction_info(hash)
     }
 
-    fn create_block_template(&self, difficulty: U256, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
+    fn create_block_template(
+        &self,
+        difficulty: U256,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
         self.head.create_block_template(difficulty, txns)
     }
 

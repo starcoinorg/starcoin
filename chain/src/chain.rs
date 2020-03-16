@@ -14,6 +14,7 @@ use starcoin_statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use storage::BlockChainStore;
 use traits::{ChainReader, ChainState, ChainStateReader, ChainWriter, TxPoolAsyncService};
 use types::{
@@ -227,9 +228,13 @@ where
         });
         let difficulty = U256::zero();
         //TODO execute txns and computer state.
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         Ok(BlockTemplate::new(
             previous_header.id(),
-            previous_header.number() + 1,
+            timestamp,
             previous_header.number() + 1,
             author,
             accumulator_root,

@@ -23,7 +23,7 @@ impl SchedulePacemaker {
     pub fn send_event(&mut self) {
         match self.sender.try_send(GenerateBlockEvent {}) {
             Ok(()) => {}
-            Err(e) => warn!("Send GenerateBlockEvent error: {:?}", e),
+            Err(e) => trace!("Send GenerateBlockEvent error: {:?}", e),
         };
     }
 }
