@@ -154,7 +154,7 @@ impl StratumImpl {
             },
             None => to_value(&[0u8; 0]),
         }
-        .expect("Empty slices are serializable; qed"))
+            .expect("Empty slices are serializable; qed"))
     }
 
     /// rpc method `mining.authorize`
@@ -205,7 +205,7 @@ impl StratumImpl {
                 to_value(false)
             }
         }
-        .expect("Only true/false is returned and it's always serializable; qed"))
+            .expect("Only true/false is returned and it's always serializable; qed"))
     }
 
     /// Helper method
@@ -332,6 +332,7 @@ impl MetaExtractor<SocketMetadata> for PeerMetaExtractor {
         }
     }
 }
+
 pub fn dummy_request(addr: &SocketAddr, data: &str) -> Vec<u8> {
     let mut runtime = Runtime::new().expect("Tokio Runtime should be created with no errors");
 
@@ -355,10 +356,7 @@ pub fn dummy_request(addr: &SocketAddr, data: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-<<<<<<< HEAD
 
-=======
->>>>>>> [chain && txpool]loop.
     pub struct VoidManager;
 
     impl JobDispatcher for VoidManager {
@@ -449,7 +447,7 @@ mod tests {
             Arc::new(DummyManager::build().of_initial(r#"["dummy autorize payload"]"#)),
             None,
         )
-        .expect("There should be no error starting stratum");
+            .expect("There should be no error starting stratum");
 
         let request = r#"{"jsonrpc": "2.0", "method": "mining.authorize", "params": ["miner1", ""], "id": 1}"#;
         let response = String::from_utf8(dummy_request(&addr, request)).unwrap();
@@ -471,18 +469,12 @@ mod tests {
             Arc::new(DummyManager::build().of_initial(r#"["dummy autorize payload"]"#)),
             None,
         )
-        .expect("There should be no error starting stratum");
+            .expect("There should be no error starting stratum");
 
         let mut auth_request =
-<<<<<<< HEAD
             r#"{"jsonrpc": "2.0", "method": "mining.authorize", "params": ["miner1", ""], "id": 1}"#
                 .as_bytes()
                 .to_vec();
-=======
-			r#"{"jsonrpc": "2.0", "method": "mining.authorize", "params": ["miner1", ""], "id": 1}"#
-			.as_bytes()
-			.to_vec();
->>>>>>> [chain && txpool]loop.
         auth_request.extend(b"\n");
 
         let auth_response = "{\"jsonrpc\":\"2.0\",\"result\":true,\"id\":1}\n";
@@ -522,15 +514,10 @@ mod tests {
                 .block_on(stream)
                 .expect("Runtime should run with no errors"),
         )
-        .expect("Response should be utf-8");
+            .expect("Response should be utf-8");
 
         assert_eq!(
-<<<<<<< HEAD
             "{ \"id\": 17, \"method\": \"mining.notify\", \"params\": { \"00040008\", \"100500\" } }\n",
             response);
-=======
-			"{ \"id\": 17, \"method\": \"mining.notify\", \"params\": { \"00040008\", \"100500\" } }\n",
-			response);
->>>>>>> [chain && txpool]loop.
     }
 }
