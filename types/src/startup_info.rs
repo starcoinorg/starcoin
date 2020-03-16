@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
 use std::convert::{TryFrom, TryInto};
-use std::env::split_paths;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
@@ -107,7 +106,7 @@ impl ChainInfo {
         if number < len {
             Some(
                 self.hash_number
-                    .get::<usize>((number as usize))
+                    .get::<usize>(number as usize)
                     .unwrap()
                     .clone(),
             )
