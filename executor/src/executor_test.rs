@@ -28,6 +28,7 @@ use vm_runtime::mock_vm::{
     encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, DISCARD_STATUS,
     KEEP_STATUS,
 };
+use vm_runtime::{common_transactions::{create_account_txn_send_with_genesis_account}, account::Account};
 
 #[stest::test]
 fn test_execute_mint_txn() {
@@ -109,6 +110,23 @@ fn test_generate_genesis_state_set() {
 
     chain_state.apply(state_set);
     let txn = mock_txn();
+    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
+
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
+}
+
+fn test_execute_real_txn_with_starcoin_vm() {
+    let config = VMConfig::default();
+    let (hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
+    let chain_state =
+        ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
+
+    chain_state.apply(state_set);
+    let new_account = Account::new();
+    let initial_amount = 1_000;
+    let txn = Transaction::UserTransaction(create_account_txn_send_with_genesis_account(&new_account, 10, initial_amount));
+
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
 
     assert_eq!(KEEP_STATUS.clone(), *output.status());
