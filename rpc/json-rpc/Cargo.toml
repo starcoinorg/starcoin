@@ -29,3 +29,5 @@ types = { package="starcoin-types", path = "../../types"}
 traits = { package="starcoin-traits", path = "../../core/traits"}
 config = {path = "../../config", package="starcoin-config"}
 txpool = {path = "../../txpool", package="starcoin-txpool"}
+starcoin-logger = { path = "../../commons/logger"}
+stest = { path = "../../commons/stest"}

@@ -11,12 +11,12 @@ use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
 
 pub mod consensus_impl;
+pub mod difficult;
 pub mod dummy;
 pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin {}
 
 pub trait Consensus: std::marker::Unpin {
     fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8>;
-
     fn verify_header(
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,

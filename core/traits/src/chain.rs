@@ -8,6 +8,7 @@ use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
+    U256,
 };
 
 #[async_trait::async_trait(? Send)]
@@ -40,10 +41,15 @@ pub trait ChainReader {
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// get transaction info by transaction info hash.
     fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
-    fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate>;
+    fn create_block_template(
+        &self,
+        difficulty: U256,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate>;
     fn create_block_template_with_parent(
         &self,
         parent_hash: HashValue,
+        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;

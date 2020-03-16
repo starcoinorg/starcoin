@@ -8,14 +8,14 @@ use executor::mock_executor::MockExecutor;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
-use std::{fmt, sync::Arc, thread};
+use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
 use traits::{AsyncChain, TxPoolAsyncService};
 use txpool::TxPoolRef;
 use types::{
-    account_address::AccountAddress, peer_info::PeerInfo, transaction::SignedUserTransaction,
+    account_address::AccountAddress, peer_info::PeerInfo,
 };
 
 #[test]
@@ -25,6 +25,7 @@ fn it_works() {
 
 #[test]
 fn test_miner_with_schedule_pacemaker() {
+    ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let handle = rt.handle().clone();
     let mut system = System::new("test");
@@ -94,6 +95,7 @@ fn test_miner_with_schedule_pacemaker() {
 
 #[test]
 fn test_miner_with_ondemand_pacemaker() {
+    ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let handle = rt.handle().clone();
     let mut system = System::new("test");

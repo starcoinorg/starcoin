@@ -90,22 +90,27 @@ impl Handler<ChainRequest> for ChainActor {
             )),
             ChainRequest::CreateBlockTemplate() => Ok(ChainResponse::BlockTemplate(
                 //TODO get txn from txpool.
-                self.service.create_block_template(vec![]).unwrap(),
+                self.service
+                    .create_block_template(types::U256::zero(), vec![])
+                    .unwrap(),
             )),
             ChainRequest::CreateBlockTemplateWithTx(parent_hash, txs) => {
                 Ok(ChainResponse::BlockTemplate(match parent_hash {
                     Some(hash) => self
                         .service
-                        .create_block_template_with_parent(hash, txs)
+                        .create_block_template_with_parent(hash, types::U256::zero(), txs)
                         .unwrap(),
-                    None => self.service.create_block_template(txs).unwrap(),
+                    None => self
+                        .service
+                        .create_block_template(types::U256::zero(), txs)
+                        .unwrap(),
                 }))
             }
             ChainRequest::CreateBlockTemplateWithParent(parent_hash) => {
                 Ok(ChainResponse::BlockTemplate(
                     //TODO get txn from txpool.
                     self.service
-                        .create_block_template_with_parent(parent_hash, vec![])
+                        .create_block_template_with_parent(parent_hash, types::U256::zero(), vec![])
                         .unwrap(),
                 ))
             }

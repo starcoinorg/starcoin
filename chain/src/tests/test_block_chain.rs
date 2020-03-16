@@ -8,7 +8,7 @@ use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
-use consensus::{dummy::DummyConsensus, Consensus};
+use consensus::{difficult, dummy::DummyConsensus, Consensus};
 use crypto::{hash::CryptoHash, HashValue};
 use executor::mock_executor::mock_mint_txn;
 use executor::{mock_executor::MockExecutor, TransactionExecutor};
@@ -156,7 +156,8 @@ async fn test_chain_apply() -> Result<()> {
         )?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
-    let block_template = block_chain.create_block_template(vec![])?;
+    let difficulty = difficult::get_next_work_required(&block_chain);
+    let block_template = block_chain.create_block_template(difficulty, vec![])?;
     let (sender, receiver) = futures::channel::oneshot::channel();
     let new_block =
         DummyConsensus::create_block(config.clone(), &block_chain, block_template, receiver)?;

@@ -14,6 +14,7 @@ use starcoin_statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use storage::BlockChainStore;
 use traits::{ChainReader, ChainState, ChainStateReader, ChainWriter, TxPoolAsyncService};
 use types::{
@@ -166,6 +167,7 @@ where
     pub fn create_block_template_inner(
         &self,
         previous_header: BlockHeader,
+        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         //TODO read address from config
@@ -224,11 +226,14 @@ where
             let proof = accumulator.get_proof(leaf_index).unwrap().unwrap();
             proof.verify(accumulator_root, *hash, leaf_index).unwrap();
         });
-        let difficulty = U256::zero();
         //TODO execute txns and computer state.
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         Ok(BlockTemplate::new(
             previous_header.id(),
-            previous_header.number() + 1,
+            timestamp,
             previous_header.number() + 1,
             author,
             accumulator_root,
@@ -286,15 +291,17 @@ where
 
     fn create_block_template(
         &self,
+        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        self.create_block_template_inner(self.current_header(), user_txns)
+        self.create_block_template_inner(self.current_header(), difficulty, user_txns)
     }
 
     /// just for test
     fn create_block_template_with_parent(
         &self,
         parent_hash: HashValue,
+        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         let previous_header = self
@@ -304,7 +311,7 @@ where
             .unwrap()
             .header()
             .clone();
-        self.create_block_template_inner(previous_header, user_txns)
+        self.create_block_template_inner(previous_header, difficulty, user_txns)
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

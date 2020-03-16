@@ -23,7 +23,7 @@ impl HeadBlockPacemaker {
 
     pub fn send_event(&mut self) {
         if let Err(e) = self.sender.try_send(GenerateBlockEvent {}) {
-            warn!("err : {:?}", e);
+            trace!("err : {:?}", e);
         }
     }
 }

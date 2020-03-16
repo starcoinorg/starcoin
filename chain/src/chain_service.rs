@@ -19,6 +19,7 @@ use types::{
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
+    U256,
 };
 
 pub struct ChainServiceImpl<E, C, P, S>
@@ -402,17 +403,22 @@ where
         self.head.get_transaction_info(hash)
     }
 
-    fn create_block_template(&self, txns: Vec<SignedUserTransaction>) -> Result<BlockTemplate> {
-        self.head.create_block_template(txns)
+    fn create_block_template(
+        &self,
+        difficulty: U256,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
+        self.head.create_block_template(difficulty, txns)
     }
 
     fn create_block_template_with_parent(
         &self,
         parent_hash: HashValue,
+        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         self.head
-            .create_block_template_with_parent(parent_hash, user_txns)
+            .create_block_template_with_parent(parent_hash, difficulty, user_txns)
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
