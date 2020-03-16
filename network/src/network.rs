@@ -19,8 +19,11 @@ use types::system_events::SystemEvents;
 
 use crate::helper::get_unix_ts;
 use futures_timer::Delay;
+use lru::LruCache;
 use std::time::Duration;
 use tokio::runtime::Handle;
+
+use crypto::{hash::CryptoHash, HashValue};
 
 #[derive(Clone)]
 pub struct NetworkAsyncService {
@@ -106,6 +109,7 @@ impl NetworkAsyncService {
 pub struct NetworkActor {
     network_service: SNetworkService,
     bus: Addr<BusActor>,
+    lru_cache: LruCache<HashValue, ()>,
 }
 
 impl NetworkActor {
@@ -135,6 +139,7 @@ impl NetworkActor {
         let addr = NetworkActor::create(move |_ctx: &mut Context<NetworkActor>| NetworkActor {
             network_service: service_clone,
             bus: bus_clone,
+            lru_cache: LruCache::new(10240),
         });
         let inner = Inner {
             addr: addr.clone(),
@@ -294,6 +299,13 @@ impl Handler<SystemEvents> for NetworkActor {
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         let peer_msg = match msg {
             SystemEvents::NewHeadBlock(block) => {
+                let id = block.header().id().clone();
+                if self.lru_cache.contains(&id) {
+                    info!("already handle block {:?}", block.header().id());
+                    return;
+                } else {
+                    self.lru_cache.put(id, ());
+                }
                 info!("broadcast a new block {:?}", block.header().id());
                 Some(PeerMessage::Block(block))
             }
@@ -324,7 +336,21 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
             return;
         }
         info!("propagate new txns, len: {}", txns.len());
-        let msg = PeerMessage::UserTransactions(txns);
+        let mut txns_unhandled = Vec::new();
+        for txn in txns {
+            let id = txn.crypto_hash();
+            if self.lru_cache.contains(&id) {
+                continue;
+            } else {
+                self.lru_cache.put(id, ());
+                txns_unhandled.push(txn);
+            }
+        }
+        info!(
+            "propagate new unhandled txns, len: {}",
+            txns_unhandled.len()
+        );
+        let msg = PeerMessage::UserTransactions(txns_unhandled);
         let bytes = msg.encode().unwrap();
         let mut network_service = self.network_service.clone();
         Arbiter::spawn(async move {
@@ -340,7 +366,6 @@ mod tests {
     use super::*;
     use crate::{RpcRequestMessage, TestRequest, TestResponse};
     use bus::Subscription;
-    use crypto::HashValue;
     use futures::sink::SinkExt;
     use futures_timer::Delay;
     use tokio::runtime::{Handle, Runtime};

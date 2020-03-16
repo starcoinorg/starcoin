@@ -30,16 +30,11 @@ mod tests {
         UnboundedSender<()>,
     );
 
-<<<<<<< HEAD
     fn build_test_network_pair(
         host: String,
         handle: Handle,
     ) -> (NetworkComponent, NetworkComponent) {
-        let mut l = build_test_network_services(2, host, 50400, handle).into_iter();
-=======
-    fn build_test_network_pair(handle: Handle) -> (NetworkComponent, NetworkComponent) {
-        let mut l = build_test_network_services(2, get_available_port(), handle).into_iter();
->>>>>>> 4ce8e5e10a690f9953577c709dc4d914cda29180
+        let mut l = build_test_network_services(2, host, get_available_port(), handle).into_iter();
         let a = l.next().unwrap();
         let b = l.next().unwrap();
         (a, b)
