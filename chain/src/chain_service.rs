@@ -206,10 +206,9 @@ where
     ) {
         let txpool = self.txpool.clone();
         Arbiter::spawn(async move {
-            txpool
-                .rollback(enacted, retracted)
-                .await
-                .expect("rollback failed.");
+            if let Err(e) = txpool.rollback(enacted, retracted).await {
+                warn!("rollback err : {:?}", e);
+            }
         });
     }
 

@@ -355,7 +355,10 @@ pub fn dummy_request(addr: &SocketAddr, data: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+<<<<<<< HEAD
 
+=======
+>>>>>>> [chain && txpool]loop.
     pub struct VoidManager;
 
     impl JobDispatcher for VoidManager {
@@ -471,9 +474,15 @@ mod tests {
         .expect("There should be no error starting stratum");
 
         let mut auth_request =
+<<<<<<< HEAD
             r#"{"jsonrpc": "2.0", "method": "mining.authorize", "params": ["miner1", ""], "id": 1}"#
                 .as_bytes()
                 .to_vec();
+=======
+			r#"{"jsonrpc": "2.0", "method": "mining.authorize", "params": ["miner1", ""], "id": 1}"#
+			.as_bytes()
+			.to_vec();
+>>>>>>> [chain && txpool]loop.
         auth_request.extend(b"\n");
 
         let auth_response = "{\"jsonrpc\":\"2.0\",\"result\":true,\"id\":1}\n";
@@ -516,7 +525,12 @@ mod tests {
         .expect("Response should be utf-8");
 
         assert_eq!(
+<<<<<<< HEAD
             "{ \"id\": 17, \"method\": \"mining.notify\", \"params\": { \"00040008\", \"100500\" } }\n",
             response);
+=======
+			"{ \"id\": 17, \"method\": \"mining.notify\", \"params\": { \"00040008\", \"100500\" } }\n",
+			response);
+>>>>>>> [chain && txpool]loop.
     }
 }
