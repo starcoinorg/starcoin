@@ -3,6 +3,7 @@
 
 #[cfg(test)]
 mod tests {
+    use config::get_available_port;
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
         stream::StreamExt,
@@ -30,7 +31,7 @@ mod tests {
     );
 
     fn build_test_network_pair(handle: Handle) -> (NetworkComponent, NetworkComponent) {
-        let mut l = build_test_network_services(2, 50400, handle).into_iter();
+        let mut l = build_test_network_services(2, get_available_port(), handle).into_iter();
         let a = l.next().unwrap();
         let b = l.next().unwrap();
         (a, b)
