@@ -277,6 +277,7 @@ mod tests {
     use types::block::{Block, BlockBody, BlockHeader};
     use types::transaction::{SignedUserTransaction, TransactionInfo};
     use types::vm_error::StatusCode;
+    use types::U256;
 
     #[test]
     fn test_storage() {
@@ -318,6 +319,7 @@ mod tests {
             HashValue::zero(),
             0,
             0,
+            U256::zero(),
             consensus_header,
         );
         storage.block_store.save_header(block_header1.clone());
@@ -370,6 +372,7 @@ mod tests {
             HashValue::zero(),
             0,
             0,
+            U256::zero(),
             consensus_header,
         );
         storage.block_store.save_header(block_header1.clone());
@@ -434,6 +437,7 @@ mod tests {
             HashValue::zero(),
             0,
             0,
+            U256::zero(),
             consensus_header.clone(),
         );
         storage.block_store.save_header(block_header0.clone());
@@ -448,6 +452,7 @@ mod tests {
             HashValue::zero(),
             0,
             0,
+            U256::zero(),
             consensus_header.clone(),
         );
         storage.block_store.save_header(block_header1.clone());
@@ -462,6 +467,7 @@ mod tests {
             HashValue::zero(),
             0,
             0,
+            U256::zero(),
             consensus_header.clone(),
         );
         storage.block_store.save_header(block_header2.clone());
@@ -476,6 +482,7 @@ mod tests {
             HashValue::zero(),
             0,
             0,
+            U256::zero(),
             consensus_header.clone(),
         );
         storage.block_store.save_header(block_header3.clone());
@@ -490,6 +497,7 @@ mod tests {
             HashValue::zero(),
             0,
             0,
+            U256::zero(),
             consensus_header,
         );
         storage.block_store.save_header(block_header4.clone());
