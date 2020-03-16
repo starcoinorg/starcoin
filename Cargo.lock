@@ -5337,7 +5337,6 @@ dependencies = [
  "hex 0.4.2",
  "libp2p 0.16.1",
  "log",
- "lru",
  "network-p2p",
  "parity-codec",
  "parking_lot 0.10.0",
