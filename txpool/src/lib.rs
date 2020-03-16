@@ -23,7 +23,11 @@ use starcoin_bus::{Broadcast, Bus, BusActor, Subscription};
 use std::{fmt::Debug, sync::Arc};
 use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
-use types::{block::Block, transaction, transaction::SignedUserTransaction};
+use types::{
+    block::{Block, BlockHeader},
+    transaction,
+    transaction::SignedUserTransaction,
+};
 
 mod pool;
 mod pool_client;
