@@ -435,4 +435,8 @@ where
     fn get_block_info(&self) -> BlockInfo {
         self.head.get_block_info()
     }
+
+    fn get_difficulty(&self) -> U256 {
+        self.head.get_difficulty()
+    }
 }

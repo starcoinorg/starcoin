@@ -12,6 +12,7 @@ use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_statedb::ChainStateDB;
 use std::convert::TryInto;
+use std::iter;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -332,6 +333,26 @@ where
             .get_block_info(self.head.header().id())
             .unwrap()
             .unwrap()
+    }
+
+    fn get_difficulty(&self) -> U256 {
+        // Caculate a difficulty for recent "block_count" blocks
+        let mut block_count = 10;
+        let mut current_number = self.head.header().number();
+        let mut avg_target = U256::zero();
+        if block_count > current_number {
+            block_count = current_number
+        }
+        for _ in 0..block_count {
+            let block = self
+                .storage
+                .get_block_by_number(current_number)
+                .unwrap()
+                .unwrap();
+            avg_target = avg_target + block.header().difficult() / block_count.into();
+            current_number -= 1;
+        }
+        avg_target
     }
 }
 

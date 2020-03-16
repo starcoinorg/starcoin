@@ -56,6 +56,7 @@ pub trait ChainReader {
     fn gen_tx(&self) -> Result<()>;
     fn get_chain_info(&self) -> ChainInfo;
     fn get_block_info(&self) -> BlockInfo;
+    fn get_difficulty(&self) -> U256;
 }
 
 pub trait ChainWriter {
