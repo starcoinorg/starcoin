@@ -10,7 +10,7 @@ use jsonrpc_core::IoHandler;
 use starcoin_logger::prelude::*;
 use std::cell::RefCell;
 use std::sync::Arc;
-use traits::{mock::MockTxPoolService, TxPoolAsyncService};
+use traits::TxPoolAsyncService;
 
 mod module;
 mod server;
@@ -74,6 +74,7 @@ impl Supervised for JSONRpcActor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use traits::mock::MockTxPoolService;
 
     #[stest::test]
     async fn test_start() {
