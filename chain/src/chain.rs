@@ -166,6 +166,7 @@ where
     pub fn create_block_template_inner(
         &self,
         previous_header: BlockHeader,
+        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         //TODO read address from config
@@ -286,15 +287,17 @@ where
 
     fn create_block_template(
         &self,
+        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        self.create_block_template_inner(self.current_header(), user_txns)
+        self.create_block_template_inner(self.current_header(), difficulty, user_txns)
     }
 
     /// just for test
     fn create_block_template_with_parent(
         &self,
         parent_hash: HashValue,
+        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         let previous_header = self
@@ -304,7 +307,7 @@ where
             .unwrap()
             .header()
             .clone();
-        self.create_block_template_inner(previous_header, user_txns)
+        self.create_block_template_inner(previous_header, difficulty, user_txns)
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

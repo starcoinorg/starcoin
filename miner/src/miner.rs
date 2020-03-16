@@ -6,7 +6,7 @@ use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use chain::ChainActor;
 use config::NodeConfig;
-use consensus::{consensus_impl, dummy::DummyHeader, Consensus, ConsensusHeader};
+use consensus::{consensus_impl, dummy::DummyHeader, Consensus, ConsensusHeader,difficult};
 use futures::channel::mpsc;
 use futures::channel::oneshot;
 use futures::prelude::*;
@@ -58,7 +58,8 @@ pub fn mint<C>(
 where
     C: Consensus,
 {
-    let block_template = chain.create_block_template(txns)?;
+    let difficulty = difficult::get_next_work_required(chain);
+    let block_template = chain.create_block_template(difficulty, txns) ? ;
     let (_sender, receiver) = oneshot::channel();
     // spawn a async task, maintain a task list, when new task coming, cancel old task.
     let block = C::create_block(config, chain, block_template, receiver)?;

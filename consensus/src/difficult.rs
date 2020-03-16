@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use types::U256;
-use crate::{Algo, BLOCK_TIME_SEC, BLOCK_WINDOW, HashValue};
+pub const BLOCK_TIME_SEC: u32 = 60;
+pub const BLOCK_WINDOW: u32 = 24;
 use logger::prelude::*;
-
+use traits::ChainReader;
 pub fn difficult_1_target() -> U256 {
     U256::max_value() / DIFF_1_HASH_TIMES.into()
 }
@@ -17,21 +18,19 @@ pub fn current_hash_rate(target: &[u8]) -> u64 {
     ((difficult_1_target() / target_u256) * DIFF_1_HASH_TIMES).low_u64() / (BLOCK_TIME_SEC as u64)
 }
 
-pub fn get_next_work_required<B>(block_index: B, algo: Algo) -> U256
-    where
-        B: TBlockIndex,
+pub fn get_next_work_required(chain: &dyn ChainReader) -> U256
 {
+
     let blocks = {
         let mut blocks: Vec<BlockInfo> = vec![];
         let mut count = 0;
-        for b in block_index {
-            if b.algo != algo {
+        loop {
+            let block = chain.head_block();
+            if block.header().timestamp() == 0 {
                 continue;
             }
-            if b.timestamp == 0 {
-                continue;
-            }
-            blocks.push(b);
+            let block_info = BlockInfo { timestamp: block.header().timestamp(), target: block.header().difficult() };
+            blocks.push(block_info);
             count += 1;
             if count == BLOCK_WINDOW {
                 break;
@@ -94,10 +93,4 @@ pub fn get_next_work_required<B>(block_index: B, algo: Algo) -> U256
 pub struct BlockInfo {
     pub timestamp: u64,
     pub target: U256,
-    pub algo: Algo,
-}
-
-pub trait TBlockIndex: Iterator<Item=BlockInfo> + Send + Sync + Clone {
-    //String is a HashValue
-    fn set_latest(&mut self, block: HashValue);
 }
