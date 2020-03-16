@@ -96,6 +96,7 @@ fn test_miner_with_schedule_pacemaker() {
     drop(rt);
 }
 
+#[ignore]
 #[test]
 fn test_miner_with_ondemand_pacemaker() {
     ::logger::init_for_test();

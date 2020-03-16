@@ -196,6 +196,7 @@ fn test_network_actor() {
     drop(rt);
 }
 
+#[ignore]
 #[test]
 fn test_network_actor_rpc() {
     ::logger::init_for_test();
@@ -367,6 +368,7 @@ fn test_network_actor_rpc() {
     drop(rt);
 }
 
+#[ignore]
 #[test]
 fn test_network_actor_rpc_2() {
     ::logger::init_for_test();
