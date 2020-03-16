@@ -136,7 +136,7 @@ type TxnStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 /// Listen to txn status, and propagate to remote peers if necessary.
 impl StreamHandler<TxnStatusEvent> for TxPoolActor {
     fn handle(&mut self, item: TxnStatusEvent, ctx: &mut Context<Self>) {
-        /// TODO: need peer info to do more accurate sending.
+        // TODO: need peer info to do more accurate sending.
         let mut txns = vec![];
         for (h, s) in item.iter() {
             if *s != TxStatus::Added {

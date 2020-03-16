@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
 use std::{
     collections::hash_map::HashMap,
-    io::{prelude::*, Cursor, Read, SeekFrom, Write},
+    io::{prelude::*, Cursor, Read, SeekFrom},
     mem::size_of,
 };
 use thiserror::Error;

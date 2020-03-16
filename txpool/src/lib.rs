@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
+#![allow(dead_code)]
 #[macro_use]
 extern crate async_trait;
-#[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate log;
@@ -19,21 +18,19 @@ use actix::prelude::*;
 use anyhow::Result;
 use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
-use starcoin_bus::{Broadcast, Bus, BusActor, Subscription};
+use starcoin_bus::BusActor;
 use std::{fmt::Debug, sync::Arc};
 use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
-use types::{
-    block::{Block, BlockHeader},
-    transaction,
-    transaction::SignedUserTransaction,
-};
-
+#[cfg(test)]
+use types::block::BlockHeader;
+use types::{block::Block, transaction, transaction::SignedUserTransaction};
 mod pool;
 mod pool_client;
 #[cfg(test)]
 mod test;
 mod tx_pool_service_impl;
+
 trait BlockReader {
     fn get_block_by_hash(&self, block_hash: HashValue) -> Result<Option<Block>>;
 }

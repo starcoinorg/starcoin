@@ -1,8 +1,4 @@
-use crate::{
-    pool::{AccountSeqNumberClient, SeqNumber, UnverifiedUserTransaction},
-    tx_pool_service_impl::{ChainNewBlock, GetPendingTxns, ImportTxns, SubscribeTxns, TxPoolActor},
-};
-use actix::prelude::*;
+use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
 use anyhow::Result;
 use parking_lot::RwLock;
 use starcoin_config::VMConfig;
@@ -13,9 +9,9 @@ use storage::StarcoinStorage;
 use traits::ChainStateReader;
 use types::{
     access_path::AccessPath,
-    account_address::{AccountAddress, *},
+    account_address::AccountAddress,
     account_config::AccountResource,
-    block::{Block, BlockHeader},
+    block::BlockHeader,
     transaction,
     transaction::{CallError, SignedUserTransaction, TransactionError},
 };
