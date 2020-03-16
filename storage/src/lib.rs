@@ -24,8 +24,8 @@ use types::{
 pub mod accumulator;
 pub mod block;
 pub mod block_info;
+pub mod db_storage;
 pub mod memory_storage;
-pub mod persistence_storage;
 pub mod state_node;
 pub mod storage;
 pub mod transaction_info;

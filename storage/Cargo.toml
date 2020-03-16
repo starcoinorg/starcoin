@@ -22,4 +22,4 @@ forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", packag
 logger = {path = "../commons/logger", package="starcoin-logger"}
 [dependencies.rocksdb]
 git = "https://github.com/pingcap/rust-rocksdb.git"
-rev = "3cd18c44d160a3cdba586d6502d51b7cc67efc59"
+rev = "72e45c3f3283302c825d53c3cd7154f4cd9e8f5b"

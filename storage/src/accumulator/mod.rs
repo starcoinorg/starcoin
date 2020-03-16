@@ -20,8 +20,8 @@ pub struct AccumulatorStore {
     node_store: CodecStorage<HashValue, AccumulatorNode>,
 }
 
-const ACCUMULATOR_INDEX_KEY_PREFIX: &str = "AccumulatorIndex";
-const ACCUMULATOR_NODE_KEY_PREFIX: &str = "AccumulatorNode";
+const ACCUMULATOR_INDEX_KEY_PREFIX: &str = "accumulator_index";
+const ACCUMULATOR_NODE_KEY_PREFIX: &str = "accumulator_node";
 
 impl AccumulatorStore {
     pub fn new(storage: Arc<dyn Repository>) -> Self {

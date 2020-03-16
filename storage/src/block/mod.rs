@@ -265,7 +265,6 @@ impl BlockStore {
             Ok(Some(parent_id1))
         } else {
             bail!("not find common ancestor");
-            Ok(None)
         }
     }
 
