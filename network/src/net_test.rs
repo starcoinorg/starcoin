@@ -29,8 +29,11 @@ mod tests {
         UnboundedSender<()>,
     );
 
-    fn build_test_network_pair(handle: Handle) -> (NetworkComponent, NetworkComponent) {
-        let mut l = build_test_network_services(2, 50400, handle).into_iter();
+    fn build_test_network_pair(
+        host: String,
+        handle: Handle,
+    ) -> (NetworkComponent, NetworkComponent) {
+        let mut l = build_test_network_services(2, host, 50400, handle).into_iter();
         let a = l.next().unwrap();
         let b = l.next().unwrap();
         (a, b)
@@ -38,6 +41,7 @@ mod tests {
 
     fn build_test_network_services(
         num: usize,
+        host: String,
         base_port: u16,
         handle: Handle,
     ) -> Vec<(
@@ -67,7 +71,7 @@ mod tests {
             }
             let mut config = config::NetworkConfig::random_for_test();
 
-            config.listen = format!("/ip4/127.0.0.1/tcp/{}", base_port + index as u16);
+            config.listen = format!("/ip4/{}/tcp/{}", host, base_port + index as u16);
             config.seeds = boot_nodes;
 
             info!("listen:{:?},boots {:?}", config.listen, config.seeds);
@@ -94,7 +98,7 @@ mod tests {
         let (
             (service1, tx1, rx1, _event_rx1, close_tx1),
             (service2, tx2, _rx2, _event_rx2, close_tx2),
-        ) = build_test_network_pair(executor.clone());
+        ) = build_test_network_pair("127.0.0.1".to_string(), executor.clone());
         let msg_peer_id_1 = service1.identify().clone();
         let msg_peer_id_2 = service2.identify().clone();
         // Once sender has been droped, the select_all will return directly. clone it to prevent it.
@@ -164,7 +168,7 @@ mod tests {
         let (
             (service1, _tx1, rx1, _event_rx1, _close_tx1),
             (service2, _tx2, _rx2, _event_rx2, _close_tx2),
-        ) = build_test_network_pair(executor.clone());
+        ) = build_test_network_pair("127.0.0.1".to_string(), executor.clone());
         let msg_peer_id = service1.identify().clone();
         let receive_fut = async move {
             let mut rx1 = rx1.fuse();
@@ -212,7 +216,8 @@ mod tests {
         ::logger::init_for_test();
 
         let mut _rt = Runtime::new().unwrap();
-        let (service1, _service2) = build_test_network_pair(_rt.handle().clone());
+        let (service1, _service2) =
+            build_test_network_pair("127.0.0.1".to_string(), _rt.handle().clone());
         thread::sleep(Duration::from_secs(1));
         let fut = async move {
             assert_eq!(

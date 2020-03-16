@@ -9,12 +9,10 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
-use crypto::hash::CryptoHash;
 use futures::{channel::mpsc, stream::StreamExt};
 use libp2p::PeerId;
 use scs::SCSCodec;
 use std::sync::Arc;
-use traits::TxPoolAsyncService;
 use tx_relay::*;
 use types::peer_info::PeerInfo;
 use types::system_events::SystemEvents;
@@ -204,7 +202,7 @@ impl Inner {
     async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         match msg {
             PeerMessage::UserTransactions(txns) => {
-                let peer_info = PeerInfo::new(peer_id.into());
+                let _peer_info = PeerInfo::new(peer_id.into());
                 self.bus
                     .clone()
                     .broadcast(PeerTransactions::new(txns))
@@ -346,7 +344,6 @@ mod tests {
     use futures::sink::SinkExt;
     use futures_timer::Delay;
     use tokio::runtime::{Handle, Runtime};
-    use traits::mock::MockTxPoolService;
     use types::account_address::AccountAddress;
     use types::transaction::SignedUserTransaction;
 
@@ -479,7 +476,7 @@ mod tests {
     impl Handler<PeerTransactions> for TestResponseActor {
         type Result = ();
 
-        fn handle(&mut self, msg: PeerTransactions, ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, msg: PeerTransactions, _ctx: &mut Self::Context) -> Self::Result {
             self.peer_txns.push(msg);
         }
     }
@@ -490,7 +487,7 @@ mod tests {
     impl Handler<GetPeerTransactions> for TestResponseActor {
         type Result = MessageResult<GetPeerTransactions>;
 
-        fn handle(&mut self, msg: GetPeerTransactions, ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, _msg: GetPeerTransactions, _ctx: &mut Self::Context) -> Self::Result {
             MessageResult(self.peer_txns.clone())
         }
     }
