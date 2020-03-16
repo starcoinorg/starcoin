@@ -154,7 +154,7 @@ impl StratumImpl {
             },
             None => to_value(&[0u8; 0]),
         }
-            .expect("Empty slices are serializable; qed"))
+        .expect("Empty slices are serializable; qed"))
     }
 
     /// rpc method `mining.authorize`
@@ -205,7 +205,7 @@ impl StratumImpl {
                 to_value(false)
             }
         }
-            .expect("Only true/false is returned and it's always serializable; qed"))
+        .expect("Only true/false is returned and it's always serializable; qed"))
     }
 
     /// Helper method
@@ -447,7 +447,7 @@ mod tests {
             Arc::new(DummyManager::build().of_initial(r#"["dummy autorize payload"]"#)),
             None,
         )
-            .expect("There should be no error starting stratum");
+        .expect("There should be no error starting stratum");
 
         let request = r#"{"jsonrpc": "2.0", "method": "mining.authorize", "params": ["miner1", ""], "id": 1}"#;
         let response = String::from_utf8(dummy_request(&addr, request)).unwrap();
@@ -469,7 +469,7 @@ mod tests {
             Arc::new(DummyManager::build().of_initial(r#"["dummy autorize payload"]"#)),
             None,
         )
-            .expect("There should be no error starting stratum");
+        .expect("There should be no error starting stratum");
 
         let mut auth_request =
             r#"{"jsonrpc": "2.0", "method": "mining.authorize", "params": ["miner1", ""], "id": 1}"#
@@ -514,7 +514,7 @@ mod tests {
                 .block_on(stream)
                 .expect("Runtime should run with no errors"),
         )
-            .expect("Response should be utf-8");
+        .expect("Response should be utf-8");
 
         assert_eq!(
             "{ \"id\": 17, \"method\": \"mining.notify\", \"params\": { \"00040008\", \"100500\" } }\n",
