@@ -14,6 +14,7 @@ use anyhow::Result;
 use common_crypto::hash::{CryptoHash, HashValue};
 use futures_channel::mpsc;
 use starcoin_bus::{Bus, BusActor};
+use starcoin_config::TxPoolConfig;
 use std::sync::Arc;
 use storage::StarcoinStorage;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
@@ -47,18 +48,23 @@ impl std::fmt::Debug for TxPoolActor {
 
 impl TxPoolActor {
     pub fn new(
+        pool_config: TxPoolConfig,
         storage: Arc<StarcoinStorage>,
         chain_header: BlockHeader,
         bus: actix::Addr<BusActor>,
     ) -> Self {
         let verifier_options = pool::VerifierOptions {
-            minimal_gas_price: 0,
+            minimal_gas_price: pool_config.minimal_gas_price,
             block_gas_limit: Gas::max_value(),
-            tx_gas_limit: Gas::max_value(),
+            tx_gas_limit: pool_config.tx_gas_limit,
             no_early_reject: false,
         };
         let queue = TxnQueue::new(
-            tx_pool::Options::default(),
+            tx_pool::Options {
+                max_count: pool_config.max_count as usize,
+                max_mem_usage: pool_config.max_mem_usage as usize,
+                max_per_sender: pool_config.max_per_sender as usize,
+            },
             verifier_options,
             PrioritizationStrategy::GasPriceOnly,
         );

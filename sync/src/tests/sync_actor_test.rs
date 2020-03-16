@@ -67,7 +67,12 @@ fn test_network_actor() {
         // txpool
         let txpool_1 = {
             let best_block_id = genesis_1.startup_info().head.get_head();
-            TxPoolRef::start(storage_1.clone(), best_block_id, bus_1.clone())
+            TxPoolRef::start(
+                node_config_1.tx_pool.clone(),
+                storage_1.clone(),
+                best_block_id,
+                bus_1.clone(),
+            )
         };
 
         let (network_1, _addr_1) =
@@ -135,7 +140,12 @@ fn test_network_actor() {
         .unwrap();
         let txpool_2 = {
             let best_block_id = genesis_2.startup_info().head.get_head();
-            TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
+            TxPoolRef::start(
+                node_config_2.tx_pool.clone(),
+                storage_2.clone(),
+                best_block_id,
+                bus_2.clone(),
+            )
         };
 
         let (network_2, _addr_2) =
@@ -212,7 +222,12 @@ fn test_network_actor_rpc() {
         .unwrap();
         let txpool_1 = {
             let best_block_id = genesis_1.startup_info().head.get_head();
-            TxPoolRef::start(storage_1.clone(), best_block_id, bus_1.clone())
+            TxPoolRef::start(
+                node_config_1.tx_pool.clone(),
+                storage_1.clone(),
+                best_block_id,
+                bus_1.clone(),
+            )
         };
 
         // network
@@ -291,7 +306,12 @@ fn test_network_actor_rpc() {
         // txpool
         let txpool_2 = {
             let best_block_id = genesis_2.startup_info().head.get_head();
-            TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
+            TxPoolRef::start(
+                node_config_2.tx_pool.clone(),
+                storage_2.clone(),
+                best_block_id,
+                bus_2.clone(),
+            )
         };
         // network
         let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), handle.clone());
@@ -371,7 +391,12 @@ fn test_network_actor_rpc_2() {
         .unwrap();
         let txpool_1 = {
             let best_block_id = genesis_1.startup_info().head.get_head();
-            TxPoolRef::start(storage_1.clone(), best_block_id, bus_1.clone())
+            TxPoolRef::start(
+                node_config_1.tx_pool.clone(),
+                storage_1.clone(),
+                best_block_id,
+                bus_1.clone(),
+            )
         };
 
         // network
@@ -433,7 +458,12 @@ fn test_network_actor_rpc_2() {
         // txpool
         let txpool_2 = {
             let best_block_id = genesis_2.startup_info().head.get_head();
-            TxPoolRef::start(storage_2.clone(), best_block_id, bus_2.clone())
+            TxPoolRef::start(
+                node_config_2.tx_pool.clone(),
+                storage_2.clone(),
+                best_block_id,
+                bus_2.clone(),
+            )
         };
         // network
         let (network_2, addr_2) = gen_network(node_config_2.clone(), bus_2.clone(), handle);

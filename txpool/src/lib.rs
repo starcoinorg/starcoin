@@ -19,6 +19,7 @@ use anyhow::Result;
 use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use starcoin_bus::BusActor;
+use starcoin_config::TxPoolConfig;
 use std::{fmt::Debug, sync::Arc};
 use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
@@ -42,6 +43,7 @@ pub struct TxPoolRef {
 
 impl TxPoolRef {
     pub fn start(
+        pool_config: TxPoolConfig,
         storage: Arc<StarcoinStorage>,
         best_block_hash: HashValue,
         bus: actix::Addr<BusActor>,
@@ -55,7 +57,7 @@ impl TxPoolRef {
             Ok(Some(block)) => block,
         };
         let best_block_header = best_block.into_inner().0;
-        let pool = TxPoolActor::new(storage, best_block_header, bus);
+        let pool = TxPoolActor::new(pool_config, storage, best_block_header, bus);
         let pool_addr = pool.start();
         TxPoolRef { addr: pool_addr }
     }
@@ -66,7 +68,7 @@ impl TxPoolRef {
         best_block_header: BlockHeader,
         bus: actix::Addr<BusActor>,
     ) -> TxPoolRef {
-        let pool = TxPoolActor::new(storage, best_block_header, bus);
+        let pool = TxPoolActor::new(TxPoolConfig::default(), storage, best_block_header, bus);
         let pool_addr = pool.start();
         TxPoolRef { addr: pool_addr }
     }

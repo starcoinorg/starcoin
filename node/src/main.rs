@@ -74,7 +74,12 @@ fn main() {
 
         let txpool = {
             let best_block_id = startup_info.head.get_head();
-            TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
+            TxPoolRef::start(
+                node_config.tx_pool.clone(),
+                storage.clone(),
+                best_block_id,
+                bus.clone(),
+            )
         };
 
         // node config

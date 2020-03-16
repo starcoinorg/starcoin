@@ -45,7 +45,12 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
-        TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
+        TxPoolRef::start(
+            conf.tx_pool.clone(),
+            storage.clone(),
+            best_block_id,
+            bus.clone(),
+        )
     };
     let chain = ChainActor::launch(
         conf.clone(),
@@ -137,7 +142,12 @@ async fn test_chain_apply() -> Result<()> {
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
-        TxPoolRef::start(storage.clone(), best_block_id, bus.clone())
+        TxPoolRef::start(
+            config.tx_pool.clone(),
+            storage.clone(),
+            best_block_id,
+            bus.clone(),
+        )
     };
     let mut block_chain =
         BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(

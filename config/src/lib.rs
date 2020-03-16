@@ -9,12 +9,14 @@ mod miner_config;
 mod network_config;
 mod rpc_config;
 mod storage_config;
+mod txpool_config;
 mod vm_config;
 
 pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use storage_config::StorageConfig;
+pub use txpool_config::TxPoolConfig;
 pub use vm_config::VMConfig;
 
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
@@ -57,12 +59,15 @@ pub struct NodeConfig {
     pub miner: MinerConfig,
     #[serde(default)]
     pub storage: StorageConfig,
+    #[serde(default)]
+    pub tx_pool: TxPoolConfig,
 }
 
 impl NodeConfig {
     pub fn random_for_test() -> Self {
         let mut config = NodeConfig::default();
         config.network = NetworkConfig::random_for_test();
+        config.tx_pool = TxPoolConfig::random_for_test();
         config
     }
 
@@ -86,6 +91,7 @@ impl NodeConfig {
             default_config
         };
         node_config.network.load(&base_dir)?;
+        node_config.tx_pool.load()?;
         // NOTICE: if there is more load case, make it here.
         // such as: node_config.storage.load(&base_dir)?;
         Ok(node_config)
