@@ -22,6 +22,7 @@ use traits::{ChainAsyncService, TxPoolAsyncService};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
+#[allow(dead_code)]
 mod miner;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;

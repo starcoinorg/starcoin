@@ -226,7 +226,6 @@ where
             let proof = accumulator.get_proof(leaf_index).unwrap().unwrap();
             proof.verify(accumulator_root, *hash, leaf_index).unwrap();
         });
-        let difficulty = U256::zero();
         //TODO execute txns and computer state.
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)

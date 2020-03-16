@@ -26,14 +26,14 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
         let mut blocks: Vec<BlockInfo> = vec![];
         let mut count = 0;
         let current_block = chain.head_block();
-        let mut current_number = current_block.header().number();
+        let mut current_number = current_block.header().number() + 1;
         loop {
-            if count == BLOCK_WINDOW {
+            if count == BLOCK_WINDOW || current_number <= 0 {
                 break;
             }
+            current_number -= 1;
             let block = chain.get_block_by_number(current_number).unwrap().unwrap();
             if block.header().timestamp() == 0 {
-                count += 1;
                 continue;
             }
             let block_info = BlockInfo {
@@ -41,7 +41,6 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
                 target: block.header().difficult(),
             };
             blocks.push(block_info);
-            current_number -= 1;
             count += 1;
         }
         blocks
