@@ -154,8 +154,10 @@ impl StreamHandler<TxnStatusEvent> for TxPoolActor {
             .clone()
             .broadcast(PropagateNewTransactions::from(txns))
             .into_actor(self)
-            .then(|_res, act, _ctx| {
-                error!("fail to emit propagate new txn event");
+            .then(|res, act, _ctx| {
+                if let Err(e) = res {
+                    error!("fail to emit propagate new txn event, err: {}", &e);
+                }
                 async {}.into_actor(act)
             })
             .wait(ctx);
