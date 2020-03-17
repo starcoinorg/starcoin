@@ -6,14 +6,14 @@
 use super::KeyPrefixName;
 use crate::storage::{CodecStorage, KeyCodec, Repository, ValueCodec};
 use anyhow::{bail, ensure, Error, Result};
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use std::io::Write;
 use std::mem::size_of;
 use std::sync::{Arc, RwLock};
-use types::block::{Block, BlockBody, BlockHeader, BlockNumber};
+use types::block::{Block, BlockBody, BlockHeader, BlockNumber, BranchNumber};
 
 const BLOCK_KEY_NAME: &'static str = "block";
 const BLOCK_KEY_PREFIX_NAME: KeyPrefixName = BLOCK_KEY_NAME;
@@ -28,6 +28,7 @@ pub struct BlockStore {
     sons_store: RwLock<CodecStorage<HashValue, Vec<HashValue>>>,
     body_store: CodecStorage<HashValue, BlockBody>,
     number_store: CodecStorage<BlockNumber, HashValue>,
+    branch_number_store: CodecStorage<BranchNumber, HashValue>,
 }
 
 impl ValueCodec for Block {
@@ -64,7 +65,7 @@ impl ValueCodec for Vec<HashValue> {
     fn encode_value(&self) -> Result<Vec<u8>> {
         let mut encoded = vec![];
         for hash in self {
-            encoded.write_all(&hash.to_vec());
+            encoded.write_all(&hash.to_vec()).unwrap();
         }
         Ok(encoded)
     }
@@ -99,6 +100,23 @@ impl KeyCodec for BlockNumber {
     }
 }
 
+impl KeyCodec for BranchNumber {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        let (branch_id, number) = *self;
+
+        let mut encoded_key = Vec::with_capacity(size_of::<BranchNumber>());
+        encoded_key.write(&branch_id.to_vec()).unwrap();
+        encoded_key.write_u64::<BigEndian>(number)?;
+        Ok(encoded_key)
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self, Error> {
+        let branch_id = HashValue::from_slice(&data[..HashValue::LENGTH])?;
+        let number = (&data[HashValue::LENGTH..]).read_u64::<BigEndian>()?;
+        Ok((branch_id, number))
+    }
+}
+
 impl BlockStore {
     pub fn new(
         block_store: Arc<dyn Repository>,
@@ -106,6 +124,7 @@ impl BlockStore {
         sons_store: Arc<dyn Repository>,
         body_store: Arc<dyn Repository>,
         number_store: Arc<dyn Repository>,
+        branch_number_store: Arc<dyn Repository>,
     ) -> Self {
         BlockStore {
             block_store: CodecStorage::new(block_store, BLOCK_KEY_PREFIX_NAME),
@@ -113,6 +132,7 @@ impl BlockStore {
             sons_store: RwLock::new(CodecStorage::new(sons_store, BLOCK_SONS_KEY_PREFIX_NAME)),
             body_store: CodecStorage::new(body_store, BLOCK_BODY_KEY_PREFIX_NAME),
             number_store: CodecStorage::new(number_store, BLOCK_NUM_KEY_PREFIX_NAME),
+            branch_number_store: CodecStorage::new(branch_number_store, BLOCK_NUM_KEY_PREFIX_NAME),
         }
     }
 
@@ -126,7 +146,7 @@ impl BlockStore {
     }
 
     pub fn save_header(&self, header: BlockHeader) -> Result<()> {
-        self.header_store.put(header.id(), header.clone());
+        self.header_store.put(header.id(), header.clone()).unwrap();
         //save sons relationship
         self.put_sons(header.parent_hash(), header.id())
     }
@@ -147,6 +167,15 @@ impl BlockStore {
     pub fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()> {
         self.number_store.put(number, block_id)
     }
+    pub fn save_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+        block_id: HashValue,
+    ) -> Result<()> {
+        let key = (branch_id, number);
+        self.branch_number_store.put(key, block_id)
+    }
 
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_store.get(block_id)
@@ -160,15 +189,39 @@ impl BlockStore {
         self.number_store.get(number)
     }
 
+    pub fn get_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+    ) -> Result<Option<HashValue>> {
+        let key = (branch_id, number);
+        self.branch_number_store.get(key)
+    }
+
     pub fn commit_block(&self, block: Block) -> Result<()> {
         let (header, body) = block.clone().into_inner();
         //save header
         let block_id = header.id();
-        self.save_header(header.clone());
+        self.save_header(header.clone()).unwrap();
         //save number
-        self.save_number(header.number(), block_id);
+        self.save_number(header.number(), block_id).unwrap();
         //save body
-        self.save_body(block_id, body);
+        self.save_body(block_id, body).unwrap();
+        //save block cache
+        self.save(block)
+    }
+
+    pub fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()> {
+        info!("commit block: {:?}, block: {:?}", branch_id, block);
+        let (header, body) = block.clone().into_inner();
+        //save header
+        let block_id = header.id();
+        self.save_header(header.clone()).unwrap();
+        //save number
+        self.save_branch_number(branch_id, header.number(), block_id)
+            .unwrap();
+        //save body
+        self.save_body(block_id, body).unwrap();
         //save block cache
         self.save(block)
     }
@@ -208,6 +261,7 @@ impl BlockStore {
     ) -> Result<Option<HashValue>> {
         let mut parent_id1 = block_id1;
         let mut parent_id2 = block_id2;
+        #[warn(unused_assignments)]
         let mut found = false;
         info!("common ancestor: {:?}, {:?}", block_id1, block_id2);
         match self.get_relationship(block_id1, block_id2) {
@@ -304,6 +358,38 @@ impl BlockStore {
         }
     }
 
+    pub fn get_header_by_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+    ) -> Result<Option<BlockHeader>> {
+        let key = (branch_id, number);
+        match self.branch_number_store.get(key).unwrap() {
+            Some(block_id) => self.get_block_header_by_hash(block_id),
+            None => bail!(
+                "can't find header by branch number:{:?}, {}",
+                branch_id,
+                number
+            ),
+        }
+    }
+
+    pub fn get_block_by_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+    ) -> Result<Option<Block>> {
+        let key = (branch_id, number);
+        match self.branch_number_store.get(key).unwrap() {
+            Some(block_id) => self.get(block_id),
+            None => bail!(
+                "can't find block by branch number:{:?}, {}",
+                branch_id,
+                number
+            ),
+        }
+    }
+
     fn get_relationship(
         &self,
         block_id1: HashValue,
@@ -333,13 +419,16 @@ impl BlockStore {
             Ok(mut vec_hash) => {
                 info!("branch block:{}, {:?}", parent_hash, vec_hash);
                 vec_hash.push(son_hash);
-                self.sons_store.write().unwrap().put(parent_hash, vec_hash);
+                self.sons_store
+                    .write()
+                    .unwrap()
+                    .put(parent_hash, vec_hash)?;
             }
             _ => {
                 self.sons_store
                     .write()
                     .unwrap()
-                    .put(parent_hash, vec![son_hash]);
+                    .put(parent_hash, vec![son_hash])?;
             }
         }
         Ok(())
