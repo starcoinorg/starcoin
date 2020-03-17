@@ -161,16 +161,6 @@ impl ChainAsyncService for ChainActorRef {
         Ok(())
     }
 
-    async fn get_head_branch(self) -> Result<HashValue> {
-        if let ChainResponse::HashValue(hash) =
-            self.address.send(ChainRequest::GetHeadBranch()).await??
-        {
-            Ok(hash)
-        } else {
-            panic!("Chain response type error.")
-        }
-    }
-
     async fn get_chain_info(self) -> Result<ChainInfo> {
         let response = self
             .address
@@ -192,7 +182,6 @@ impl ChainAsyncService for ChainActorRef {
         Ok(())
     }
 
-    ///////////////////////////////////////////////////////////
     async fn current_header(self) -> Option<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
             .address
@@ -230,20 +219,6 @@ impl ChainAsyncService for ChainActorRef {
             .unwrap()
         {
             Some(block)
-        } else {
-            None
-        }
-    }
-
-    async fn get_header_by_number(self, number: BlockNumber) -> Option<BlockHeader> {
-        if let ChainResponse::BlockHeader(header) = self
-            .address
-            .send(ChainRequest::GetHeaderByNumber(number))
-            .await
-            .unwrap()
-            .unwrap()
-        {
-            Some(header)
         } else {
             None
         }
