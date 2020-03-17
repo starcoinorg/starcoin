@@ -178,33 +178,30 @@ where
                 .await
                 .unwrap_or(vec![]);
 
-            if !(config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand && txns.is_empty())
-            {
-                let chain_info = chain.get_chain_info().await.unwrap();
-                debug!("head block : {:?}, txn len: {}", chain_info, txns.len());
-                std::thread::spawn(move || {
-                    let block_chain =
-                        BlockChain::<E, C, S, P>::new(config.clone(), chain_info, storage, txpool)
-                            .unwrap();
-                    let difficulty = difficult::get_next_work_required(&block_chain);
-                    let block_template = block_chain
-                        .create_block_template(difficulty, txns.clone())
+            let chain_info = chain.get_chain_info().await.unwrap();
+            debug!("head block : {:?}, txn len: {}", chain_info, txns.len());
+            std::thread::spawn(move || {
+                let block_chain =
+                    BlockChain::<E, C, S, P>::new(config.clone(), chain_info, storage, txpool)
                         .unwrap();
-                    miner.set_mint_job(MineCtx::new(block_template));
-                    let job = miner.get_mint_job();
-                    info!("Push job to worker{:?}", job);
-                    stratum.push_work_all(job).unwrap();
+                let difficulty = difficult::get_next_work_required(&block_chain);
+                let block_template = block_chain
+                    .create_block_template(None, difficulty, txns.clone())
+                    .unwrap();
+                miner.set_mint_job(MineCtx::new(block_template));
+                let job = miner.get_mint_job();
+                info!("Push job to worker{:?}", job);
+                stratum.push_work_all(job).unwrap();
 
-                    match miner::mint::<C>(config, txns, &block_chain, bus) {
-                        Err(e) => {
-                            error!("mint block err: {:?}", e);
-                        }
-                        Ok(_) => {
-                            info!("mint block success.");
-                        }
-                    };
-                });
-            }
+                match miner::mint::<C>(config, txns, &block_chain, bus) {
+                    Err(e) => {
+                        error!("mint block err: {:?}", e);
+                    }
+                    Ok(_) => {
+                        info!("mint block success.");
+                    }
+                };
+            });
         }
         .into_actor(self);
         ctx.spawn(f);

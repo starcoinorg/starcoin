@@ -9,7 +9,7 @@ use chain::ChainActorRef;
 use futures::channel::mpsc;
 use futures::compat::Future01CompatExt;
 use futures_locks::RwLock;
-use itertools;
+// use itertools;
 use network::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use traits::{AsyncChain, ChainAsyncService};
+use traits::ChainAsyncService;
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,

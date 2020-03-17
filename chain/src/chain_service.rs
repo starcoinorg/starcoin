@@ -404,20 +404,12 @@ where
 
     fn create_block_template(
         &self,
-        difficulty: U256,
-        txns: Vec<SignedUserTransaction>,
-    ) -> Result<BlockTemplate> {
-        self.head.create_block_template(difficulty, txns)
-    }
-
-    fn create_block_template_with_parent(
-        &self,
-        parent_hash: HashValue,
+        parent_hash: Option<HashValue>,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         self.head
-            .create_block_template_with_parent(parent_hash, difficulty, user_txns)
+            .create_block_template(parent_hash, difficulty, user_txns)
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

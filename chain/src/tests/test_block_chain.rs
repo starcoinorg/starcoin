@@ -1,4 +1,4 @@
-use crate::{AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
+use crate::{BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
@@ -65,7 +65,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
         for _i in 0..times {
             let block_template = chain
                 .clone()
-                .create_block_template_with_tx(None, gen_txs())
+                .create_block_template(None, gen_txs())
                 .await
                 .unwrap();
             let (_sender, receiver) = oneshot::channel();
@@ -110,7 +110,7 @@ async fn test_block_chain_forks() {
             Delay::new(Duration::from_millis(1000)).await;
             let block = chain
                 .clone()
-                .create_block_template_with_tx(Some(parent_hash), gen_txs())
+                .create_block_template(Some(parent_hash), gen_txs())
                 .await
                 .unwrap()
                 .into_block(DummyHeader {});
@@ -159,7 +159,7 @@ async fn test_chain_apply() -> Result<()> {
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let difficulty = difficult::get_next_work_required(&block_chain);
-    let block_template = block_chain.create_block_template(difficulty, vec![])?;
+    let block_template = block_chain.create_block_template(None, difficulty, vec![])?;
     let (_sender, receiver) = futures::channel::oneshot::channel();
     let new_block =
         DummyConsensus::create_block(config.clone(), &block_chain, block_template, receiver)?;
