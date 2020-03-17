@@ -12,7 +12,7 @@ use std::sync::Arc;
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
-use traits::TxPoolAsyncService;
+use traits::{ChainAsyncService, TxPoolAsyncService};
 use txpool::TxPoolRef;
 use types::{account_address::AccountAddress, peer_info::PeerInfo};
 

@@ -12,7 +12,6 @@ use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_statedb::ChainStateDB;
 use std::convert::TryInto;
-use std::iter;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};

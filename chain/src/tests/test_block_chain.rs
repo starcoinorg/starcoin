@@ -159,7 +159,7 @@ async fn test_chain_apply() -> Result<()> {
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let difficulty = difficult::get_next_work_required(&block_chain);
-    let block_template = block_chain.create_block_template(difficulty, vec![])?;
+    let block_template = block_chain.create_block_template(None, difficulty, vec![])?;
     let (_sender, receiver) = futures::channel::oneshot::channel();
     let new_block =
         DummyConsensus::create_block(config.clone(), &block_chain, block_template, receiver)?;
