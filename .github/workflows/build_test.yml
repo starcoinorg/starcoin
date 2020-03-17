@@ -4,7 +4,6 @@ on:
     # only build master
     branches:
       - master
-      - develop
     paths-ignore:
       - '**.md'
   pull_request:
@@ -68,9 +67,18 @@ jobs:
           args: --all-targets --no-run -j 4
       - name: test
         env:
-          RUST_LOG: debug
+          RUST_LOG: error
           RUST_BACKTRACE: full
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-targets -- --nocapture
+          args: --all-targets
+      - name: test_with_debug
+          if: failure()
+          env:
+            RUST_LOG: debug
+            RUST_BACKTRACE: full
+          uses: actions-rs/cargo@v1
+          with:
+            command: test
+            args: --all-targets -- --nocapture
