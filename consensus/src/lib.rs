@@ -1,31 +1,34 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-mod consensus;
-
-use actix::prelude::*;
 use anyhow::Result;
 use config::NodeConfig;
-use network::NetworkActor;
 
-pub struct ConsensusActor {}
+use futures::channel::oneshot;
+use std::convert::TryFrom;
+use std::sync::Arc;
+use traits::ChainReader;
+use types::block::{Block, BlockHeader, BlockTemplate};
 
-impl ConsensusActor {
-    pub fn launch(
-        _node_config: &NodeConfig,
-        _network: Addr<NetworkActor>,
-    ) -> Result<Addr<ConsensusActor>> {
-        let actor = ConsensusActor {};
-        Ok(actor.start())
-    }
-}
+pub mod consensus_impl;
+pub mod difficult;
+pub mod dummy;
+pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin {}
 
-impl Actor for ConsensusActor {
-    type Context = Context<Self>;
-
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("Consensus actor started");
-    }
+pub trait Consensus: std::marker::Unpin {
+    fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8>;
+    fn verify_header(
+        config: Arc<NodeConfig>,
+        reader: &dyn ChainReader,
+        header: &BlockHeader,
+    ) -> Result<()>;
+    /// Construct block with BlockTemplate
+    fn create_block(
+        config: Arc<NodeConfig>,
+        reader: &dyn ChainReader,
+        block_template: BlockTemplate,
+        cancel: oneshot::Receiver<()>,
+    ) -> Result<Block>;
 }
 
 #[cfg(test)]

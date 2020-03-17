@@ -11,8 +11,28 @@ edition = "2018"
 anyhow = "1.0"
 actix = "0.9"
 actix-rt = "1.0"
+async-trait = "0.1"
+log = "0.4"
+#transaction-pool = "2.0"
+futures = "0.3"
+futures-channel = "0.3"
 
+rand = "0.6"
+serde = "1.0"
+serde_derive = "1.0"
+parking_lot = "0.9"
+linked-hash-map = "0.5"
+trace-time = "0.1"
 types = { package = "starcoin-types", path = "../types"}
-config = {path = "../config", package="starcoin-config"}
-bus = {path = "../bus", package="starcoin-bus"}
-network = {path = "../network", package="starcoin-network"}
+traits = { package = "starcoin-traits", path = "../core/traits"}
+starcoin_bus = {path = "../bus", package="starcoin-bus"}
+common_crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
+#transaction-pool = {path = "../commons/transaction-pool", package="tx-pool"}
+transaction-pool = "2.0.2"
+storage = {path = "../storage", package="starcoin-storage"}
+starcoin-statedb={ path="../core/statedb" }
+forkable-jellyfish-merkle = {path="../core/forkable-jellyfish-merkle"}
+starcoin-state-tree={path="../core/state-tree"}
+starcoin-executor={path="../executor"}
+starcoin-config={path="../config"}
+tx-relay = {path="./tx-relay", package="starcoin-tx-relay"}

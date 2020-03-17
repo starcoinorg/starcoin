@@ -1,0 +1,12 @@
+[package]
+name = "starcoin-config-generator"
+version = "0.1.0"
+authors = ["nonsense <nonsense0202@pm.me>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+starcoin-config = {path="../../config"}
+# TODO: replace with versioned crate, once clap release 3.0.
+clap = { git = "https://github.com/clap-rs/clap/" }

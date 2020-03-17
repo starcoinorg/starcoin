@@ -26,7 +26,8 @@ futures = { version = "0.3.2", features = ["compat"] }
 num_cpus = "1.10"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 types = { package="starcoin-types", path = "../../types"}
+traits = { package="starcoin-traits", path = "../../core/traits"}
 config = {path = "../../config", package="starcoin-config"}
 txpool = {path = "../../txpool", package="starcoin-txpool"}
-libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+starcoin-logger = { path = "../../commons/logger"}
+stest = { path = "../../commons/stest"}

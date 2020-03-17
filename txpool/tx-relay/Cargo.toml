@@ -1,0 +1,11 @@
+[package]
+name = "starcoin-tx-relay"
+version = "0.1.0"
+authors = ["nonsense <nonsense0202@pm.me>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix = "0.9"
+starcoin-types = { package = "starcoin-types", path = "../../types"}

@@ -1,0 +1,38 @@
+[package]
+name = "starcoin-miner"
+version = "0.1.0"
+authors = ["tiangong3624749 <tiangong3624749@163.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+actix = "0.9"
+actix-rt = "1.0"
+futures = { version = "0.3.2"}
+config = {path = "../config", package="starcoin-config"}
+network = {path = "../network", package="starcoin-network"}
+chain = {path = "../chain", package="starcoin-chain" }
+types = {path = "../types", package="starcoin-types" }
+traits = {path = "../core/traits", package="starcoin-traits" }
+statedb = {path = "../core/statedb", package="starcoin-statedb" }
+state_tree = {path = "../core/state-tree", package="starcoin-state-tree" }
+consensus = {path = "../consensus", package="starcoin-consensus" }
+bus = {path = "../bus", package="starcoin-bus" }
+storage = {path = "../storage", package="starcoin-storage" }
+executor = {path = "../executor", package="starcoin-executor" }
+txpool = {path = "../txpool", package="starcoin-txpool"}
+tx-relay = {path="../txpool/tx-relay", package="starcoin-tx-relay"}
+tokio = { version = "0.2", features = ["full"] }
+logger = {path = "../commons/logger", package="starcoin-logger"}
+futures-channel = "0.3"
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
+sc_stratum = {path = "./stratum", package ="starcoin-stratum"}
+jsonrpc-core = "12.0.0"
+jsonrpc-tcp-server="12.0.0"
+[dev-dependencies]
+sync = {path = "../sync", package="starcoin-sync" }
+starcoin-genesis = {path = "../core/genesis"}
+tokio = { version = "0.2", features = ["full"] }

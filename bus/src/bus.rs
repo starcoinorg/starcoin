@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::prelude::*;
+use logger::prelude::*;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
-pub struct Bus {
+pub struct BusImpl {
     subscribers: HashMap<TypeId, Vec<Box<dyn Any + Send>>>,
 }
 
-impl Bus {
+impl BusImpl {
     pub fn new() -> Self {
         Self {
             subscribers: HashMap::new(),
@@ -22,6 +23,7 @@ impl Bus {
     {
         let type_id = TypeId::of::<M>();
         let topic_subscribes = self.subscribers.entry(type_id).or_insert(vec![]);
+        debug!("{:?} subscribe {:?}", recipient, type_id);
         topic_subscribes.push(Box::new(recipient));
     }
 
@@ -40,7 +42,7 @@ impl Bus {
                             Result::Ok(_) => {}
                             Result::Err(e) => {
                                 //TODO retry.
-                                println!("broadcast to {:?} error {:?}", recipient, e);
+                                error!("broadcast to {:?} error {:?}", recipient, e);
                             }
                         }
                     }

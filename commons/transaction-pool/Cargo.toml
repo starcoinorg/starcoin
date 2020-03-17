@@ -1,0 +1,19 @@
+[package]
+name = "tx-pool"
+version = "0.1.0"
+authors = ["caojiafeng <funfriendcjf@gmail.com>"]
+edition = "2018"
+publish = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.8"
+smallvec = "0.6.10"
+async-trait = "0.1"
+#trace-time = { path = "../trace-time", version = "0.1" }
+futures-util = "0.3"
+
+[dev-dependencies]
+types = {path="../../types", "package" = "starcoin-types"}
+crypto = {path="../crypto", "package" = "starcoin-crypto"}
+tokio = { version = "0.2", features = ["full"] }

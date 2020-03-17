@@ -10,7 +10,31 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+thiserror = "1.0"
+actix = "0.9"
 types = {path = "../types", package="starcoin-types"}
-state-view = {path = "../core/state-view", package="starcoin-state-view"}
-libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+config = {path = "../config", package="starcoin-config"}
+state-tree = {path = "../core/state-tree", package="starcoin-state-tree"}
+executor = {path = "../executor", package="starcoin-executor"}
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+consensus = { package="starcoin-consensus", path = "../consensus"}
+scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+traits = {path = "../core/traits", package="starcoin-traits"}
+starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
+async-trait = "0.1"
+futures = "0.3"
+futures_locks = { version = "0.5.0", package = "futures-locks"}
+storage = { package="starcoin-storage", path = "../storage"}
+actix-rt = "1.0"
+futures-timer = "3.0.1"
+
+logger = {path = "../commons/logger", package="starcoin-logger"}
+stest = {path = "../commons/stest"}
+network = {path = "../network", package="starcoin-network"}
+txpool = {path = "../txpool", package="starcoin-txpool"}
+starcoin-statedb = {path = "../core/statedb"}
+bus = {path = "../bus", package="starcoin-bus" }
+starcoin-genesis = {path = "../core/genesis"}
+
+[dev-dependencies]
+env_logger = "0.7.1"

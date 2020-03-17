@@ -1,0 +1,12 @@
+[package]
+name = "starcoin-logger"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+log = "0.4.8"
+env_logger = "0.7.1"
+chrono = "0.4.11"

@@ -4,6 +4,7 @@ on:
     # only build master
     branches:
       - master
+      - develop
     paths-ignore:
       - '**.md'
   pull_request:

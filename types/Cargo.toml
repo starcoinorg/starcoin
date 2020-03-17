@@ -10,14 +10,32 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-thiserror = "1.0"
-bytes = "0.5"
 bech32 = "0.6.0"
+byteorder = { version = "1.3.2", default-features = false }
+bytes = "0.5"
+chrono = { version = "0.4.7", default-features = false, features = ["clock"] }
 hex = { version = "0.3.2", default-features = false }
+itertools = { version = "0.8.0", default-features = false }
+once_cell = "1.2.0"
+mirai-annotations = "1.5.0"
+parity-multiaddr = "0.6.0"
+proptest = { version = "0.9.4", default-features = false, optional = true }
+proptest-derive = { version = "0.1.2", default-features = false, optional = true }
+prost = "0.6"
+radix_trie = { version = "0.1.4", default-features = false }
 rand = "0.6.5"
-serde = { version = "1.0", features = ["derive"] }
+ref-cast = "1.0"
+serde = { version = "1.0.99", default-features = false }
+thiserror = "1.0"
+tiny-keccak = { version = "1.5.0", default-features = false }
+num_enum = "0.4.1"
 actix = "0.9"
-actix-rt = "1.0"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
-libra-crypto = { package="libra-crypto",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/libra/libra", rev="3193ec4b7afff05e9476fd923f331f18fb7f3050" }
+starcoin-crypto = { path = "../commons/crypto"}
+starcoin-accumulator = { path = "../core/accumulator"}
+libra-types = { git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
+logger = {path = "../commons/logger", package="starcoin-logger"}
+move-core-types = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+
+ethereum-types = "0.2.3"

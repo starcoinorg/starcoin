@@ -10,6 +10,13 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-actix = "0.9"
+futures = { version = "0.3.2"}
 config = {path = "../config", package="starcoin-config"}
-network = {path = "../network", package="starcoin-network"}
+types = {path = "../types", package="starcoin-types"}
+traits = {path = "../core/traits", package="starcoin-traits"}
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+rand = { version = "0.6.5", default-features = false }
+logger = {path = "../commons/logger", package="starcoin-logger"}
+blake2-rfc = "0.2"
+async-std = { version = "1.0.1", features = ["unstable"]}
+byteorder = "1.3.1"

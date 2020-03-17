@@ -1,7 +1,34 @@
 [package]
-name = "vm-runtime"
+name = "starcoin-vm-runtime"
 version = "0.1.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+once_cell = "1.2.0"
+types = { package="starcoin-types", path = "../../types"}
+libra-state-view = { package="libra-state-view", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+move-core-types = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+move-vm-runtime = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+move-vm-types = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+move-vm-state = {git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+vm = { package="vm", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+traits = {package="starcoin-traits", path = "../../core/traits"}
+config = { package="starcoin-config", path = "../../config"}
+libra_types = { package="libra-types", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+logger = {path = "../../commons/logger", package="starcoin-logger"}
+stest = {path = "../../commons/stest"}
+num_enum = "0.4.1"
+crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+rand = "0.6.5"
+scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+stdlib = { package="stdlib", path = "../stdlib"}
+bytecode-verifier = { git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+
+
+[dev-dependencies]
+env_logger = "0.7.1"
+

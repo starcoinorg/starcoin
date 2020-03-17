@@ -1,24 +1,35 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_config::config::VMConfig;
-use starcoin_state_view::StateView;
-use starcoin_types::{
-    transaction::{
-        Transaction, TransactionOutput,
-    },
+use anyhow::Result;
+use config::VMConfig;
+use crypto::HashValue;
+use traits::ChainState;
+use types::{
+    state_set::ChainStateSet,
+    transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
-use vm_runtime::VMExecutor;
 
-pub struct Executor {}
+pub mod executor;
+pub mod executor_test;
+pub mod mock_executor;
 
-impl Executor {
-    pub fn execute_transaction(
-        &self,
-        repo: &dyn Repository,
-        tx: &SignedTransaction,
-    ) -> Result<TransactionOutput> {
-        unimplemented!()
-    }
+pub trait TransactionExecutor: std::marker::Unpin {
+    /// Create genesis state, return state root and state set.
+    fn init_genesis(config: &VMConfig) -> Result<(HashValue, ChainStateSet)>;
+
+    /// Execute transaction, update state to state_store, and return events and TransactionStatus.
+    fn execute_transaction(
+        config: &VMConfig,
+        chain_state: &dyn ChainState,
+        txn: Transaction,
+    ) -> Result<TransactionOutput>;
+
+    /// Executes the prologue and verifies that the transaction is valid.
+    fn validate_transaction(
+        config: &VMConfig,
+        chain_state: &dyn ChainState,
+        txn: SignedUserTransaction,
+    ) -> Option<VMStatus>;
 }
