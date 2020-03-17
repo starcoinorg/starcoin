@@ -84,7 +84,9 @@ impl MockVM {
                         1,
                         account_resource.authentication_key().clone(),
                     );
-                    state_store.set(access_path, new_account_resource.try_into()?).unwrap();
+                    state_store
+                        .set(access_path, new_account_resource.try_into()?)
+                        .unwrap();
                     output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
                 }
                 MockTransaction::Payment {
