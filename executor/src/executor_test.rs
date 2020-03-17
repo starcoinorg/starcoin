@@ -23,6 +23,7 @@ use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
     transaction::{SignedUserTransaction, Transaction},
+    vm_error::{StatusCode, VMStatus},
 };
 use vm_runtime::mock_vm::{
     encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, DISCARD_STATUS,
@@ -75,18 +76,74 @@ fn test_execute_transfer_txn() {
 
 #[stest::test]
 fn test_validate_txn() {
-    let chain_state = MockChainState::new();
+    let storage = MockStateNodeStore::new();
+    let chain_state = ChainStateDB::new(Arc::new(storage), None);
     let config = VMConfig::default();
-
+    let sender_account_address = AccountAddress::random();
+    let receiver_account_address = AccountAddress::random();
     let (private_key, public_key) = compat::generate_keypair(None);
-
-    let receiver = AccountAddress::random();
-    let program = encode_transfer_program(receiver, 100);
-    let txn = get_signed_txn(receiver, 1, &private_key, public_key, program);
-
+    let program = encode_transfer_program(receiver_account_address, 100);
+    let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
     let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    assert_eq!(
+        output,
+        Some(VMStatus::new(StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST))
+    );
 
-    assert_eq!(None, output);
+    // now we create the account
+    chain_state.create_account(sender_account_address);
+    chain_state.create_account(receiver_account_address);
+    info!(
+        "create account: sender: {:?}, receiver: {:?}",
+        sender_account_address, receiver_account_address
+    );
+    let (private_key, public_key) = compat::generate_keypair(None);
+    let program = encode_transfer_program(receiver_account_address, 100);
+    let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
+    // validate again
+    let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    assert_eq!(output, None);
+
+    // now we execute it
+    let mint_txn = encode_mint_transaction(sender_account_address, 10000);
+    let transfer_txn =
+        encode_transfer_transaction(sender_account_address, receiver_account_address, 100);
+    let config = VMConfig::default();
+    info!("invoke Executor::execute_transaction");
+    let output1 = MockExecutor::execute_transaction(&config, &chain_state, mint_txn).unwrap();
+    let output2 = MockExecutor::execute_transaction(&config, &chain_state, transfer_txn).unwrap();
+
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    assert_eq!(KEEP_STATUS.clone(), *output2.status());
+
+    // after execute, the seq numebr should be 2.
+    // and then validate again
+    let (private_key, public_key) = compat::generate_keypair(None);
+    let program = encode_transfer_program(receiver_account_address, 100);
+    let txn = get_signed_txn(
+        sender_account_address,
+        0,
+        &private_key,
+        public_key.clone(),
+        program.clone(),
+    );
+    // validate again
+    let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    assert_eq!(
+        output,
+        Some(VMStatus::new(StatusCode::SEQUENCE_NUMBER_TOO_OLD))
+    );
+
+    // use right seq number
+    let txn = get_signed_txn(
+        sender_account_address,
+        2,
+        &private_key,
+        public_key.clone(),
+        program.clone(),
+    );
+    let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    assert_eq!(output, None);
 }
 
 #[stest::test]

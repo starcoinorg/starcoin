@@ -5,6 +5,7 @@ use crate::chain_state::StateStore;
 use anyhow::Result;
 use config::VMConfig;
 use crypto::ed25519::compat;
+use logger::prelude::*;
 
 use once_cell::sync::Lazy;
 
@@ -61,6 +62,42 @@ impl MockVM {
     ) -> Result<()> {
         let state_store = StateStore::new(chain_state);
         state_store.create_account(account_address)
+    }
+
+    pub fn verify_transaction(
+        &mut self,
+        chain_state: &dyn ChainState,
+        txn: SignedUserTransaction,
+    ) -> Option<VMStatus> {
+        // check signature
+        let signature_verified_txn = match txn.check_signature() {
+            Ok(t) => t,
+            Err(_) => return Some(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
+        };
+
+        // get account resource from db
+        let state_store = StateStore::new(chain_state);
+        let sender = signature_verified_txn.sender();
+        let access_path = AccessPath::new_for_account(sender);
+        let account_resource: AccountResource = match state_store.get_from_statedb(&access_path) {
+            Err(e) => {
+                error!("access storage error: {}", e);
+                return Some(VMStatus::new(StatusCode::STORAGE_ERROR));
+            }
+            Ok(None) => return Some(VMStatus::new(StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST)),
+            Ok(Some(b)) => match b.try_into() {
+                Err(e) => {
+                    error!("fail to deserialize account resouerce, err: {}", e);
+                    return Some(VMStatus::new(StatusCode::VALUE_DESERIALIZATION_ERROR));
+                }
+                Ok(account) => account,
+            },
+        };
+        // check seq number
+        if signature_verified_txn.sequence_number() < account_resource.sequence_number() {
+            return Some(VMStatus::new(StatusCode::SEQUENCE_NUMBER_TOO_OLD));
+        }
+        None
     }
 
     pub fn execute_transaction(
