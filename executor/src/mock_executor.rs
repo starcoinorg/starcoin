@@ -152,11 +152,12 @@ impl TransactionExecutor for MockExecutor {
     }
 
     fn validate_transaction(
-        _config: &VMConfig,
-        _chain_state: &dyn ChainState,
-        _txn: SignedUserTransaction,
+        config: &VMConfig,
+        chain_state: &dyn ChainState,
+        txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
-        None
+        let mut vm = MockVM::new(config);
+        vm.verify_transaction(chain_state, txn)
     }
 }
 

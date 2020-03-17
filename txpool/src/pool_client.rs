@@ -13,7 +13,7 @@ use types::{
     account_config::AccountResource,
     block::BlockHeader,
     transaction,
-    transaction::{CallError, SignedUserTransaction, TransactionError},
+    transaction::{SignedUserTransaction, TransactionError},
 };
 
 /// Cache for state nonces.
@@ -162,7 +162,11 @@ impl crate::pool::Client for PoolClient {
         match MockExecutor::validate_transaction(&vmconfig, self.nonce_client.statedb.as_ref(), txn)
         {
             None => Ok(checked_txn),
-            Some(status) => Err(TransactionError::CallErr(CallError::Execution(status))),
+            Some(_status) => {
+                Ok(checked_txn)
+                // TODO: open it when chain mock txn is ready
+                // Err(TransactionError::CallErr(CallError::Execution(status)))
+            }
         }
     }
 }
