@@ -74,11 +74,11 @@ jobs:
           command: test
           args: --all-targets
       - name: test_with_debug
-          if: failure()
-          env:
-            RUST_LOG: debug
-            RUST_BACKTRACE: full
-          uses: actions-rs/cargo@v1
-          with:
-            command: test
-            args: --all-targets -- --nocapture
+        if: failure()
+        env:
+          RUST_LOG: debug
+          RUST_BACKTRACE: full
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-targets -- --nocapture
