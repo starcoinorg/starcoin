@@ -13,12 +13,12 @@ use network::network::NetworkAsyncService;
 use starcoin_statedb::ChainStateDB;
 use std::sync::Arc;
 use storage::BlockChainStore;
-use traits::{ChainReader, ChainService, ChainStateReader, ChainWriter, TxPoolAsyncService};
+use traits::{ChainReader, ChainService, ChainWriter, TxPoolAsyncService};
 use types::{
-    block::{Block, BlockHeader, BlockInfo, BlockTemplate},
+    block::{Block, BlockHeader, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
-    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
+    transaction::SignedUserTransaction,
     U256,
 };
 
@@ -358,18 +358,6 @@ where
         Ok(())
     }
 
-    fn get_head_branch(&self) -> HashValue {
-        self.head.current_header().id()
-    }
-}
-
-impl<E, C, P, S> ChainReader for ChainServiceImpl<E, C, P, S>
-where
-    E: TransactionExecutor,
-    C: Consensus,
-    P: TxPoolAsyncService,
-    S: BlockChainStore,
-{
     fn head_block(&self) -> Block {
         self.head.head_block()
     }
@@ -378,28 +366,16 @@ where
         self.head.current_header()
     }
 
-    fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
-        self.head.get_header(hash)
-    }
-
-    fn get_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        self.head.get_header_by_number(number)
+    fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
+        self.storage.get_block_header_by_hash(hash)
     }
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.head.get_block_by_number(number)
     }
 
-    fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        self.head.get_block(hash)
-    }
-
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>> {
-        self.head.get_transaction(hash)
-    }
-
-    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>> {
-        self.head.get_transaction_info(hash)
+    fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {
+        self.storage.get_block_by_hash(hash)
     }
 
     fn create_block_template(
@@ -412,23 +388,11 @@ where
             .create_block_template(parent_hash, difficulty, user_txns)
     }
 
-    fn chain_state_reader(&self) -> &dyn ChainStateReader {
-        self.head.chain_state_reader()
-    }
-
     fn gen_tx(&self) -> Result<()> {
         self.head.gen_tx()
     }
 
     fn get_chain_info(&self) -> ChainInfo {
         self.head.get_chain_info()
-    }
-
-    fn get_block_info(&self) -> BlockInfo {
-        self.head.get_block_info()
-    }
-
-    fn get_difficulty(&self) -> U256 {
-        self.head.get_difficulty()
     }
 }

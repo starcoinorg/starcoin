@@ -22,7 +22,7 @@ use message::ChainRequest;
 use network::network::NetworkAsyncService;
 use std::sync::Arc;
 use storage::StarcoinStorage;
-use traits::{ChainAsyncService, ChainReader, ChainService};
+use traits::{ChainAsyncService, ChainService};
 use txpool::TxPoolRef;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
@@ -79,12 +79,9 @@ impl Handler<ChainRequest> for ChainActor {
                 Ok(ChainResponse::BlockHeader(self.service.current_header()))
             }
             ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeader(
-                self.service.get_header(hash).unwrap().unwrap(),
+                self.service.get_header_by_hash(hash).unwrap().unwrap(),
             )),
             ChainRequest::HeadBlock() => Ok(ChainResponse::Block(self.service.head_block())),
-            ChainRequest::GetHeaderByNumber(number) => Ok(ChainResponse::BlockHeader(
-                self.service.get_header_by_number(number)?.unwrap(),
-            )),
             ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(
                 self.service.get_block_by_number(number)?.unwrap(),
             )),
@@ -96,15 +93,11 @@ impl Handler<ChainRequest> for ChainActor {
                 ))
             }
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
-                self.service.get_block(hash).unwrap(),
+                self.service.get_block_by_hash(hash).unwrap(),
             )),
             ChainRequest::ConnectBlock(block) => {
                 self.service.try_connect(block).unwrap();
                 Ok(ChainResponse::None)
-            }
-            ChainRequest::GetHeadBranch() => {
-                let hash = self.service.get_head_branch();
-                Ok(ChainResponse::HashValue(hash))
             }
             ChainRequest::GetChainInfo() => {
                 Ok(ChainResponse::ChainInfo(self.service.get_chain_info()))

@@ -13,12 +13,10 @@ pub enum ChainRequest {
     CurrentHeader(),
     GetHeaderByHash(HashValue),
     HeadBlock(),
-    GetHeaderByNumber(u64),
     GetBlockByNumber(u64),
     CreateBlockTemplate(Option<HashValue>, Vec<SignedUserTransaction>), // just fot test
     GetBlockByHash(HashValue),
     ConnectBlock(Block),
-    GetHeadBranch(),
     GetChainInfo(),
     GenTx(), // just for test
 }

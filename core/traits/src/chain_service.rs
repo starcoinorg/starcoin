@@ -7,13 +7,33 @@ use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     startup_info::ChainInfo,
     transaction::SignedUserTransaction,
+    U256,
 };
 
+/// implement ChainService
 pub trait ChainService {
+    /////////////////////////////////////////////// for chain service
     fn try_connect(&mut self, block: Block) -> Result<()>;
-    fn get_head_branch(&self) -> HashValue;
+    fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
+    fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
+
+    /////////////////////////////////////////////// for head branch
+    fn current_header(&self) -> BlockHeader;
+    fn head_block(&self) -> Block;
+    fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
+    fn get_chain_info(&self) -> ChainInfo;
+
+    /////////////////////////////////////////////// just for test
+    fn create_block_template(
+        &self,
+        parent_hash: Option<HashValue>,
+        difficulty: U256,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate>;
+    fn gen_tx(&self) -> Result<()>;
 }
 
+/// ChainActor
 #[async_trait::async_trait(? Send)]
 pub trait ChainAsyncService: Clone + std::marker::Unpin {
     /////////////////////////////////////////////// for chain service
