@@ -46,9 +46,18 @@ pub trait BlockStorageOp {
 
     fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()>;
 
+    fn save_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+        block_id: HashValue,
+    ) -> Result<()>;
+
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
+
+    fn get_branch_number(&self, branch_id: HashValue, number: u64) -> Result<Option<HashValue>>;
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>>;
 
@@ -66,7 +75,19 @@ pub trait BlockStorageOp {
 
     fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>>;
 
+    fn get_header_by_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+    ) -> Result<Option<BlockHeader>>;
+
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>>;
+
+    fn get_block_by_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+    ) -> Result<Option<Block>>;
 
     fn get_common_ancestor(
         &self,
@@ -149,12 +170,29 @@ impl BlockStorageOp for StarcoinStorage {
         self.block_store.save_number(number, block_id)
     }
 
+    fn save_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+        block_id: HashValue,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_store.get(block_id)
     }
 
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
         self.block_store.get_body(block_id)
+    }
+
+    fn get_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+    ) -> Result<Option<HashValue>, Error> {
+        unimplemented!()
     }
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>> {
@@ -189,9 +227,26 @@ impl BlockStorageOp for StarcoinStorage {
         self.block_store.get_block_header_by_number(number)
     }
 
+    fn get_header_by_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+    ) -> Result<Option<BlockHeader>, Error> {
+        unimplemented!()
+    }
+
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.block_store.get_block_by_number(number)
     }
+
+    fn get_block_by_branch_number(
+        &self,
+        branch_id: HashValue,
+        number: u64,
+    ) -> Result<Option<Block>, Error> {
+        unimplemented!()
+    }
+
     fn get_common_ancestor(
         &self,
         block_id1: HashValue,

@@ -15,6 +15,8 @@ use std::cmp::PartialOrd;
 
 /// Type for block number.
 pub type BlockNumber = u64;
+/// Type for branch number.
+pub type BranchNumber = (HashValue, u64);
 
 #[derive(
     Default, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHash,
