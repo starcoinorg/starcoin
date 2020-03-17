@@ -15,9 +15,7 @@ pub enum ChainRequest {
     HeadBlock(),
     GetHeaderByNumber(u64),
     GetBlockByNumber(u64),
-    CreateBlockTemplate(),
-    CreateBlockTemplateWithParent(HashValue), // just fot test
-    CreateBlockTemplateWithTx(Option<HashValue>, Vec<SignedUserTransaction>), // just fot test
+    CreateBlockTemplate(Option<HashValue>, Vec<SignedUserTransaction>), // just fot test
     GetBlockByHash(HashValue),
     ConnectBlock(Block),
     GetHeadBranch(),

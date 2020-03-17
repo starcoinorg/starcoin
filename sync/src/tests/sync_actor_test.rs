@@ -17,7 +17,7 @@ use starcoin_genesis::Genesis;
 use std::{sync::Arc, time::Duration};
 use storage::{memory_storage::MemoryStorage, StarcoinStorage};
 use tokio::runtime::Handle;
-use traits::AsyncChain;
+use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::{
     block::{Block, BlockHeader},

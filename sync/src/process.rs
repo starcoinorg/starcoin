@@ -14,7 +14,7 @@ use network::sync_messages::{
 use network::{NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use std::sync::Arc;
 use std::time::Duration;
-use traits::AsyncChain;
+use traits::ChainAsyncService;
 use types::{block::Block, peer_info::PeerInfo};
 
 pub struct ProcessActor {

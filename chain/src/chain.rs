@@ -292,26 +292,20 @@ where
 
     fn create_block_template(
         &self,
+        parent_hash: Option<HashValue>,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        self.create_block_template_inner(self.current_header(), difficulty, user_txns)
-    }
-
-    /// just for test
-    fn create_block_template_with_parent(
-        &self,
-        parent_hash: HashValue,
-        difficulty: U256,
-        user_txns: Vec<SignedUserTransaction>,
-    ) -> Result<BlockTemplate> {
-        let previous_header = self
-            .storage
-            .get_block(parent_hash)
-            .unwrap()
-            .unwrap()
-            .header()
-            .clone();
+        let previous_header = match parent_hash {
+            Some(block_id) => self
+                .storage
+                .get_block(block_id)
+                .unwrap()
+                .unwrap()
+                .header()
+                .clone(),
+            None => self.current_header(),
+        };
         self.create_block_template_inner(previous_header, difficulty, user_txns)
     }
 

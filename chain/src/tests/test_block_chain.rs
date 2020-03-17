@@ -1,4 +1,4 @@
-use crate::{AsyncChain, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
+use crate::{BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
@@ -65,7 +65,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
         for _i in 0..times {
             let block_template = chain
                 .clone()
-                .create_block_template_with_tx(None, gen_txs())
+                .create_block_template(None, gen_txs())
                 .await
                 .unwrap();
             let (_sender, receiver) = oneshot::channel();
@@ -110,7 +110,7 @@ async fn test_block_chain_forks() {
             Delay::new(Duration::from_millis(1000)).await;
             let block = chain
                 .clone()
-                .create_block_template_with_tx(Some(parent_hash), gen_txs())
+                .create_block_template(Some(parent_hash), gen_txs())
                 .await
                 .unwrap()
                 .into_block(DummyHeader {});

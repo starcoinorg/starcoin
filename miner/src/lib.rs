@@ -188,7 +188,7 @@ where
                             .unwrap();
                     let difficulty = difficult::get_next_work_required(&block_chain);
                     let block_template = block_chain
-                        .create_block_template(difficulty, txns.clone())
+                        .create_block_template(None, difficulty, txns.clone())
                         .unwrap();
                     miner.set_mint_job(MineCtx::new(block_template));
                     let job = miner.get_mint_job();

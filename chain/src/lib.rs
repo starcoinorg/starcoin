@@ -22,7 +22,7 @@ use message::ChainRequest;
 use network::network::NetworkAsyncService;
 use std::sync::Arc;
 use storage::StarcoinStorage;
-use traits::{AsyncChain, ChainAsyncService, ChainReader, ChainService};
+use traits::{ChainAsyncService, ChainReader, ChainService};
 use txpool::TxPoolRef;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
@@ -88,29 +88,10 @@ impl Handler<ChainRequest> for ChainActor {
             ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(
                 self.service.get_block_by_number(number)?.unwrap(),
             )),
-            ChainRequest::CreateBlockTemplate() => Ok(ChainResponse::BlockTemplate(
-                //TODO get txn from txpool.
-                self.service
-                    .create_block_template(types::U256::zero(), vec![])
-                    .unwrap(),
-            )),
-            ChainRequest::CreateBlockTemplateWithTx(parent_hash, txs) => {
-                Ok(ChainResponse::BlockTemplate(match parent_hash {
-                    Some(hash) => self
-                        .service
-                        .create_block_template_with_parent(hash, types::U256::zero(), txs)
-                        .unwrap(),
-                    None => self
-                        .service
-                        .create_block_template(types::U256::zero(), txs)
-                        .unwrap(),
-                }))
-            }
-            ChainRequest::CreateBlockTemplateWithParent(parent_hash) => {
+            ChainRequest::CreateBlockTemplate(parent_hash, txs) => {
                 Ok(ChainResponse::BlockTemplate(
-                    //TODO get txn from txpool.
                     self.service
-                        .create_block_template_with_parent(parent_hash, types::U256::zero(), vec![])
+                        .create_block_template(parent_hash, types::U256::zero(), txs)
                         .unwrap(),
                 ))
             }
@@ -171,7 +152,47 @@ impl Into<ChainActorRef> for Addr<ChainActor> {
 }
 
 #[async_trait::async_trait(? Send)]
-impl AsyncChain for ChainActorRef {
+impl ChainAsyncService for ChainActorRef {
+    async fn try_connect(self, block: Block) -> Result<()> {
+        self.address
+            .send(ChainRequest::ConnectBlock(block))
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        Ok(())
+    }
+
+    async fn get_head_branch(self) -> Result<HashValue> {
+        if let ChainResponse::HashValue(hash) =
+            self.address.send(ChainRequest::GetHeadBranch()).await??
+        {
+            Ok(hash)
+        } else {
+            panic!("Chain response type error.")
+        }
+    }
+
+    async fn get_chain_info(self) -> Result<ChainInfo> {
+        let response = self
+            .address
+            .send(ChainRequest::GetChainInfo())
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        if let ChainResponse::ChainInfo(chain_info) = response {
+            Ok(chain_info)
+        } else {
+            bail!("Get chain info response error.")
+        }
+    }
+
+    async fn gen_tx(&self) -> Result<()> {
+        self.address
+            .send(ChainRequest::GenTx())
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        Ok(())
+    }
+
+    ///////////////////////////////////////////////////////////
     async fn current_header(self) -> Option<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
             .address
@@ -242,40 +263,7 @@ impl AsyncChain for ChainActorRef {
         }
     }
 
-    async fn create_block_template(self) -> Option<BlockTemplate> {
-        let address = self.address.clone();
-        drop(self);
-        if let ChainResponse::BlockTemplate(block_template) = address
-            .send(ChainRequest::CreateBlockTemplate())
-            .await
-            .unwrap()
-            .unwrap()
-        {
-            Some(block_template)
-        } else {
-            None
-        }
-    }
-
-    async fn create_block_template_with_parent(
-        self,
-        parent_hash: HashValue,
-    ) -> Option<BlockTemplate> {
-        let address = self.address.clone();
-        drop(self);
-        if let ChainResponse::BlockTemplate(block_template) = address
-            .send(ChainRequest::CreateBlockTemplateWithParent(parent_hash))
-            .await
-            .unwrap()
-            .unwrap()
-        {
-            Some(block_template)
-        } else {
-            None
-        }
-    }
-
-    async fn create_block_template_with_tx(
+    async fn create_block_template(
         self,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
@@ -283,7 +271,7 @@ impl AsyncChain for ChainActorRef {
         let address = self.address.clone();
         drop(self);
         if let ChainResponse::BlockTemplate(block_template) = address
-            .send(ChainRequest::CreateBlockTemplateWithTx(parent_hash, txs))
+            .send(ChainRequest::CreateBlockTemplate(parent_hash, txs))
             .await
             .unwrap()
             .unwrap()
@@ -310,48 +298,6 @@ impl AsyncChain for ChainActorRef {
         } else {
             None
         }
-    }
-}
-
-#[async_trait::async_trait(? Send)]
-impl ChainAsyncService for ChainActorRef {
-    async fn try_connect(self, block: Block) -> Result<()> {
-        self.address
-            .send(ChainRequest::ConnectBlock(block))
-            .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        Ok(())
-    }
-
-    async fn get_head_branch(self) -> Result<HashValue> {
-        if let ChainResponse::HashValue(hash) =
-            self.address.send(ChainRequest::GetHeadBranch()).await??
-        {
-            Ok(hash)
-        } else {
-            panic!("Chain response type error.")
-        }
-    }
-
-    async fn get_chain_info(self) -> Result<ChainInfo> {
-        let response = self
-            .address
-            .send(ChainRequest::GetChainInfo())
-            .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        if let ChainResponse::ChainInfo(chain_info) = response {
-            Ok(chain_info)
-        } else {
-            bail!("Get chain info response error.")
-        }
-    }
-
-    async fn gen_tx(&self) -> Result<()> {
-        self.address
-            .send(ChainRequest::GenTx())
-            .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        Ok(())
     }
 }
 

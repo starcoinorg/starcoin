@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use traits::{AsyncChain, ChainAsyncService};
+use traits::ChainAsyncService;
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,

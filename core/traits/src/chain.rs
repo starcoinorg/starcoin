@@ -11,26 +11,6 @@ use types::{
     U256,
 };
 
-#[async_trait::async_trait(? Send)]
-pub trait AsyncChain: Clone + std::marker::Unpin {
-    async fn current_header(self) -> Option<BlockHeader>;
-    async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader>;
-    async fn head_block(self) -> Option<Block>;
-    async fn get_header_by_number(self, number: BlockNumber) -> Option<BlockHeader>;
-    async fn get_block_by_number(self, number: BlockNumber) -> Option<Block>;
-    async fn create_block_template(self) -> Option<BlockTemplate>;
-    async fn create_block_template_with_parent(
-        self,
-        parent_hash: HashValue,
-    ) -> Option<BlockTemplate>;
-    async fn create_block_template_with_tx(
-        self,
-        parent_hash: Option<HashValue>,
-        txs: Vec<SignedUserTransaction>,
-    ) -> Option<BlockTemplate>;
-    async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block>;
-}
-
 pub trait ChainReader {
     fn head_block(&self) -> Block;
     fn current_header(&self) -> BlockHeader;
@@ -43,12 +23,7 @@ pub trait ChainReader {
     fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn create_block_template(
         &self,
-        difficulty: U256,
-        txns: Vec<SignedUserTransaction>,
-    ) -> Result<BlockTemplate>;
-    fn create_block_template_with_parent(
-        &self,
-        parent_hash: HashValue,
+        parent_hash: Option<HashValue>,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
