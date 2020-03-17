@@ -32,30 +32,7 @@ pub static COIN_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
     );
     module_id.into()
 });
-/// The ModuleId for the Event
-pub static EVENT_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
-        account_config::core_code_address(),
-        Identifier::new("Event").unwrap(),
-    );
-    module_id.into()
-});
-/// The ModuleId for the validator config
-pub static VALIDATOR_CONFIG_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
-        account_config::core_code_address(),
-        Identifier::new("ValidatorConfig").unwrap(),
-    );
-    module_id.into()
-});
-/// The ModuleId for the libra system module
-pub static LIBRA_SYSTEM_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
-        account_config::core_code_address(),
-        Identifier::new("LibraSystem").unwrap(),
-    );
-    module_id.into()
-});
+
 /// The ModuleId for the libra block module
 pub static LIBRA_BLOCK_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
     let module_id = ModuleId::new(
@@ -72,21 +49,7 @@ pub static GAS_SCHEDULE_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
     );
     module_id.into()
 });
-/// The ModuleId for the transaction fee module
-pub static TRANSACTION_FEE_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
-        account_config::core_code_address(),
-        Identifier::new("TransactionFee").unwrap(),
-    );
-    module_id.into()
-});
 
 // Names for special functions and structs
 pub static CREATE_ACCOUNT_NAME: Lazy<LibraIdentifier> =
     Lazy::new(|| LibraIdentifier::new("create_account").unwrap());
-pub static PROLOGUE_NAME: Lazy<LibraIdentifier> =
-    Lazy::new(|| LibraIdentifier::new("prologue").unwrap());
-pub static EPILOGUE_NAME: Lazy<LibraIdentifier> =
-    Lazy::new(|| LibraIdentifier::new("epilogue").unwrap());
-pub static BLOCK_PROLOGUE: Lazy<LibraIdentifier> =
-    Lazy::new(|| LibraIdentifier::new("block_prologue").unwrap());

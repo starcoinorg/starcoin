@@ -8,19 +8,11 @@ use crate::{
 use config::VMConfig;
 use libra_state_view::StateView;
 use libra_types::{
-    byte_array::ByteArray as LibraByteArray,
     transaction::{
-        Module as LibraModule, Script as LibraScript,
-        SignatureCheckedTransaction as LibraSignatureCheckedTransaction,
-        SignedTransaction as LibraSignedTransaction,
-        TransactionArgument as LibraTransactionArgument,
-        TransactionOutput as LibraTransactionOutput, TransactionPayload as LibraTransactionPayload,
-        TransactionStatus as LibraTransactionStatus,
+        TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
     },
     vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
-    write_set::{
-        WriteOp as LibraWriteOp, WriteSet as LibraWriteSet, WriteSetMut as LibraMutWriteSetMut,
-    },
+    write_set::WriteSet as LibraWriteSet,
 };
 use logger::prelude::*;
 use move_vm_runtime::MoveVM;
@@ -33,19 +25,15 @@ use move_vm_types::values::Value;
 use std::sync::Arc;
 
 use types::{
-    access_path::AccessPath,
-    account_address::{AccountAddress, ADDRESS_LENGTH},
-    account_state::AccountState,
     transaction::{
-        RawUserTransaction, Script, SignatureCheckedTransaction, SignedUserTransaction,
-        Transaction, TransactionArgument, TransactionOutput, TransactionPayload, TransactionStatus,
+        SignatureCheckedTransaction, Transaction, TransactionArgument, TransactionOutput,
+        TransactionPayload, TransactionStatus,
     },
     vm_error::{StatusCode, VMStatus},
-    write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use vm::{
     errors::VMResult,
-    gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits},
+    gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
 
@@ -124,7 +112,7 @@ impl StarcoinVM {
                 let gas_schedule = match self.get_gas_schedule() {
                     Ok(s) => s,
                     Err(e) => {
-                        return discard_libra_error_output(TransactionHelper::to_libra_VMStatus(e))
+                        return discard_libra_error_output(TransactionHelper::to_libra_vmstatus(e))
                     }
                 };
                 info!("invoke MoveVM::execute_script()");
@@ -171,7 +159,7 @@ impl StarcoinVM {
 
         match txn {
             Transaction::UserTransaction(txn) => {
-                let libra_txn = TransactionHelper::to_libra_SignedTransaction(&txn);
+                let libra_txn = TransactionHelper::to_libra_signed_transaction(&txn);
                 let txn_data = TransactionMetadata::new(&libra_txn);
 
                 // check signature
@@ -191,14 +179,14 @@ impl StarcoinVM {
                             }
                             Err(e) => {
                                 info!("we are here!!!");
-                                discard_libra_error_output(TransactionHelper::to_libra_VMStatus(e))
+                                discard_libra_error_output(TransactionHelper::to_libra_vmstatus(e))
                             }
                         };
 
                         if let LibraTransactionStatus::Keep(_) = result.status() {
                             state_store.add_write_set(result.write_set())
                         };
-                        TransactionHelper::to_starcoin_TransactionOutput(result)
+                        TransactionHelper::to_starcoin_transaction_output(result)
                     }
                     Err(e) => {
                         info!("we are here!!!");
@@ -207,7 +195,7 @@ impl StarcoinVM {
                 };
                 output
             }
-            _ => TransactionHelper::fake_starcoin_TransactionOutput(),
+            _ => TransactionHelper::fake_starcoin_transaction_output(),
         }
     }
 }
@@ -235,7 +223,7 @@ fn convert_txn_args(args: Vec<TransactionArgument>) -> Vec<Value> {
         .map(|arg| match arg {
             TransactionArgument::U64(i) => Value::u64(i),
             TransactionArgument::Address(a) => {
-                Value::address(TransactionHelper::to_libra_AccountAddress(a))
+                Value::address(TransactionHelper::to_libra_account_address(a))
             }
             TransactionArgument::Bool(b) => Value::bool(b),
             TransactionArgument::U8Vector(v) => Value::vector_u8(v),

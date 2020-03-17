@@ -5,7 +5,6 @@
 
 use crate::genesis::GENESIS_KEYPAIR;
 use crypto::ed25519::*;
-use move_vm_types::identifier::create_access_path;
 use move_vm_types::{
     loaded_data::{struct_def::StructDef, types::Type},
     values::{Struct, Value},
@@ -13,11 +12,8 @@ use move_vm_types::{
 use rand::{Rng, SeedableRng};
 use std::time::Duration;
 use types::{
-    access_path::AccessPath,
     account_address::{AccountAddress, AuthenticationKey},
     account_config,
-    event::EventHandle,
-    language_storage::StructTag,
     transaction::{
         RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
     },
@@ -111,7 +107,7 @@ impl Account {
         gas_unit_price: u64,
     ) -> SignedUserTransaction {
         let raw_txn = match payload {
-            TransactionPayload::StateSet(state_set) => unimplemented!(),
+            TransactionPayload::StateSet(_state_set) => unimplemented!(),
             TransactionPayload::Module(module) => RawUserTransaction::new_module(
                 *self.address(),
                 sequence_number,

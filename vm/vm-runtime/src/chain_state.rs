@@ -33,10 +33,10 @@ impl<'txn> StateStore<'txn> {
         for (access_path, write_op) in write_set {
             match write_op {
                 LibraWriteOp::Value(blob) => {
-                    self.set(AccessPath::from(access_path.clone()), blob.clone());
+                    self.set(AccessPath::from(access_path.clone()), blob.clone()).unwrap();
                 }
                 LibraWriteOp::Deletion => {
-                    self.remove(&AccessPath::from(access_path.clone()));
+                    self.remove(&AccessPath::from(access_path.clone())).unwrap();
                 }
             }
         }

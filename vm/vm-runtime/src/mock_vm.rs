@@ -10,20 +10,16 @@ use once_cell::sync::Lazy;
 
 use std::convert::TryInto;
 
-use traits::{ChainState, ChainStateReader, ChainStateWriter};
+use traits::ChainState;
 use types::{
     access_path::AccessPath,
-    account_address::{AccountAddress, ADDRESS_LENGTH},
-    account_config::{account_struct_tag, AccountResource},
-    account_state::AccountState,
-    contract_event::ContractEvent,
-    language_storage::{ModuleId, StructTag, TypeTag},
+    account_address::AccountAddress,
+    account_config::AccountResource,
     transaction::{
         RawUserTransaction, Script, SignedUserTransaction, Transaction, TransactionArgument,
         TransactionOutput, TransactionPayload, TransactionStatus,
     },
     vm_error::{StatusCode, VMStatus},
-    write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 
 enum MockTransaction {
@@ -88,7 +84,7 @@ impl MockVM {
                         1,
                         account_resource.authentication_key().clone(),
                     );
-                    state_store.set(access_path, new_account_resource.try_into()?);
+                    state_store.set(access_path, new_account_resource.try_into()?).unwrap();
                     output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
                 }
                 MockTransaction::Payment {
@@ -136,11 +132,11 @@ impl MockVM {
                         account_resource_sender.sequence_number(),
                         account_resource_receiver.authentication_key().clone(),
                     );
-                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?);
+                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?)?;
                     state_store.set(
                         access_path_receiver,
                         new_account_resource_receiver.try_into()?,
-                    );
+                    )?;
                     output = TransactionOutput::new(
                         vec![],
                         0,
@@ -169,7 +165,7 @@ impl MockVM {
                     account_resource.sequence_number(),
                     account_resource.authentication_key().clone(),
                 );
-                state_store.set(access_path, new_account_resource.try_into()?);
+                state_store.set(access_path, new_account_resource.try_into()?)?;
                 output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
             }
             Transaction::StateSet(state_set) => {
@@ -182,19 +178,6 @@ impl MockVM {
         }
         Ok(output)
     }
-}
-
-fn read_u64_from_storage(chain_state: &dyn ChainState, access_path: &AccessPath) -> u64 {
-    chain_state
-        .get(&access_path)
-        .expect("Failed to query storage.")
-        .map_or(0, |bytes| decode_bytes(&bytes))
-}
-
-fn decode_bytes(bytes: &[u8]) -> u64 {
-    let mut buf = [0; 8];
-    buf.copy_from_slice(bytes);
-    u64::from_le_bytes(buf)
 }
 
 pub fn encode_mint_program(amount: u64) -> Script {

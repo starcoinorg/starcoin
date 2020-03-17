@@ -38,7 +38,9 @@ fn test_execute_mint_txn() {
     let chain_state =
         ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
     let receiver_account_address = AccountAddress::random();
-    chain_state.create_account(receiver_account_address);
+    chain_state
+        .create_account(receiver_account_address)
+        .unwrap_or_else(|e| panic!("Failure"));
     let txn = encode_mint_transaction(receiver_account_address, 100);
     let config = VMConfig::default();
     info!("invoke Executor::execute_transaction");
@@ -74,7 +76,6 @@ fn test_execute_transfer_txn() {
 #[stest::test]
 fn test_validate_txn() {
     let chain_state = MockChainState::new();
-    let txn = encode_mint_transaction(AccountAddress::random(), 100);
     let config = VMConfig::default();
 
     let (private_key, public_key) = compat::generate_keypair(None);
@@ -102,10 +103,9 @@ fn test_execute_txn_with_starcoin_vm() {
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 }
 
-#[stest::test]
 fn test_generate_genesis_state_set() {
     let config = VMConfig::default();
-    let (hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
     let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
     let chain_state =
         ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
@@ -119,12 +119,12 @@ fn test_generate_genesis_state_set() {
 
 fn test_execute_real_txn_with_starcoin_vm() {
     let config = VMConfig::default();
-    let (hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
     let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
     let chain_state =
         ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
 
-    chain_state.apply(state_set);
+    chain_state.apply(state_set).unwrap();
     let new_account = Account::new();
     let initial_amount = 1_000;
     let txn = Transaction::UserTransaction(create_account_txn_send_with_genesis_account(

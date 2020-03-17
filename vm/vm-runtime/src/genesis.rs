@@ -9,12 +9,7 @@ use bytecode_verifier::VerifiedModule;
 use crypto::ed25519::*;
 use crypto::HashValue;
 use libra_state_view::StateView;
-use libra_types::{
-    access_path::AccessPath,
-    account_address::{AccountAddress, AuthenticationKey},
-    byte_array::ByteArray,
-    transaction::{ChangeSet, RawTransaction},
-};
+use libra_types::{access_path::AccessPath, account_address::AuthenticationKey};
 use move_core_types::identifier::Identifier;
 use move_vm_runtime::MoveVM;
 use move_vm_state::{
@@ -26,11 +21,7 @@ use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use stdlib::{stdlib_modules, StdLibOptions};
 use traits::ChainState;
-use types::{
-    account_config,
-    state_set::ChainStateSet,
-    transaction::{RawUserTransaction, SignatureCheckedTransaction},
-};
+use types::{account_config, state_set::ChainStateSet};
 use vm::{
     access::ModuleAccess,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
@@ -59,7 +50,7 @@ static ROTATE_AUTHENTICATION_KEY: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("rotate_authentication_key").unwrap());
 
 pub fn generate_genesis_state_set(
-    private_key: &Ed25519PrivateKey,
+    _private_key: &Ed25519PrivateKey,
     public_key: Ed25519PublicKey,
     chain_state: &dyn ChainState,
 ) -> Result<(HashValue, ChainStateSet)> {
@@ -67,7 +58,7 @@ pub fn generate_genesis_state_set(
     let modules = stdlib_modules(StdLibOptions::Staged);
 
     // create a MoveVM
-    let mut move_vm = MoveVM::new();
+    let move_vm = MoveVM::new();
 
     // create a data view for move_vm
     let state_view = GenesisStateView;
@@ -115,7 +106,7 @@ fn create_and_initialize_main_accounts(
     initial_gas_schedule: Value,
 ) {
     let association_addr =
-        TransactionHelper::to_libra_AccountAddress(account_config::association_address());
+        TransactionHelper::to_libra_account_address(account_config::association_address());
     let mut txn_data = TransactionMetadata::default();
     txn_data.sender = association_addr;
 
@@ -141,7 +132,7 @@ fn create_and_initialize_main_accounts(
 
     // create the transaction fee account
     let transaction_fee_address =
-        TransactionHelper::to_libra_AccountAddress(account_config::transaction_fee_address());
+        TransactionHelper::to_libra_account_address(account_config::transaction_fee_address());
     move_vm
         .execute_function(
             &ACCOUNT_MODULE,

@@ -13,21 +13,19 @@ use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use stdlib::transaction_scripts::{EMPTY_TXN, MINT_TXN};
+use stdlib::transaction_scripts::{EMPTY_TXN};
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
-    account_address::{AccountAddress, ADDRESS_LENGTH},
-    account_config::{account_struct_tag, association_address, AccountResource},
+    account_address::{AccountAddress},
+    account_config::{association_address, AccountResource},
     account_state::AccountState,
-    contract_event::ContractEvent,
-    language_storage::{ModuleId, StructTag, TypeTag},
     state_set::ChainStateSet,
     transaction::{
-        RawUserTransaction, Script, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus,
+        RawUserTransaction, Script, SignedUserTransaction, Transaction,
+        TransactionOutput,
     },
-    vm_error::{StatusCode, VMStatus},
+    vm_error::{VMStatus},
 };
 use vm_runtime::mock_vm::{encode_transfer_transaction, MockVM};
 

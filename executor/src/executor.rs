@@ -8,10 +8,10 @@ use config::VMConfig;
 use crypto::HashValue;
 use statedb::ChainStateDB;
 use std::sync::Arc;
-use traits::{ChainState, ChainStateReader, ChainStateWriter};
+use traits::ChainState;
 use types::{
     state_set::ChainStateSet,
-    transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionPayload},
+    transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
 use vm_runtime::genesis::{generate_genesis_state_set, GENESIS_KEYPAIR};
@@ -33,7 +33,7 @@ impl Executor {
 impl TransactionExecutor for Executor {
     fn init_genesis(_config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
         let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
-        let mut chain_state =
+        let chain_state =
             ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
 
         // ToDo: load genesis txn from genesis.blob, instead of generating from stdlib
