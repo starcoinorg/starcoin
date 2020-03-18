@@ -20,6 +20,7 @@ use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
 use std::sync::Arc;
 
+use crate::StateError::AccountNotExist;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -204,9 +205,27 @@ impl ChainStateDB {
     fn get_account_state_object(
         &self,
         account_address: &AccountAddress,
+        create: bool,
     ) -> Result<Arc<AccountStateObject>> {
-        self.get_account_state_object_option(&account_address)?
-            .ok_or(StateError::AccountNotExist(*account_address).into())
+        let account_state_object = self.get_account_state_object_option(&account_address)?;
+        match account_state_object {
+            Some(account_state_object) => Ok(account_state_object),
+            None => {
+                if create {
+                    let account_state_object = Arc::new(AccountStateObject::new_account(
+                        *account_address,
+                        self.store.clone(),
+                    ));
+                    let address_hash = account_address.crypto_hash();
+                    self.cache
+                        .borrow_mut()
+                        .insert(address_hash, Some(account_state_object.clone()));
+                    Ok(account_state_object)
+                } else {
+                    Err(AccountNotExist(*account_address).into())
+                }
+            }
+        }
     }
 
     fn get_account_state_object_option(
@@ -304,14 +323,14 @@ impl ChainStateReader for ChainStateDB {
 impl ChainStateWriter for ChainStateDB {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
         let (account_address, data_type, key_hash) = access_path.clone().into();
-        let account_state_object = self.get_account_state_object(&account_address)?;
+        let account_state_object = self.get_account_state_object(&account_address, true)?;
         account_state_object.set(data_type, key_hash, value);
         Ok(())
     }
 
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
         let (account_address, data_type, hash) = access_path.clone().into();
-        let account_state_object = self.get_account_state_object(&account_address)?;
+        let account_state_object = self.get_account_state_object(&account_address, false)?;
         account_state_object.remove(data_type, &hash)?;
         Ok(())
     }
@@ -408,6 +427,22 @@ mod tests {
 
         let new_state_root = chain_state_db.commit()?;
         assert_ne!(state_root, new_state_root);
+        Ok(())
+    }
+
+    #[test]
+    fn test_write_no_exist_account() -> Result<()> {
+        let storage = MockStateNodeStore::new();
+        let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
+        let access_path = AccessPath::new(
+            AccountAddress::random(),
+            DataType::RESOURCE,
+            HashValue::random(),
+        );
+        let data = vec![1u8, 2u8];
+        chain_state_db.set(&access_path, data.clone())?;
+        let data1 = chain_state_db.get(&access_path)?;
+        assert_eq!(data1, Some(data));
         Ok(())
     }
 
