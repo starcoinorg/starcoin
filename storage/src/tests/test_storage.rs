@@ -3,10 +3,10 @@
 
 extern crate chrono;
 
-use crate::memory_storage::MemoryStorage;
-
 use crypto::{hash::CryptoHash, HashValue};
 
+use crate::cache_storage::CacheStorage;
+use crate::db_storage::DBStorage;
 use crate::StarcoinStorage;
 use std::sync::Arc;
 use types::transaction::TransactionInfo;
@@ -14,8 +14,9 @@ use types::vm_error::StatusCode;
 
 #[test]
 fn test_storage() {
-    let store = Arc::new(MemoryStorage::new());
-    let storage = StarcoinStorage::new(store).unwrap();
+    let cache_storage = Arc::new(CacheStorage::new());
+    let db_storage = Arc::new(DBStorage::new("./data"));
+    let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
         HashValue::zero(),

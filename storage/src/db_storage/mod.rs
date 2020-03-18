@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::Repository;
+use crate::storage::{ColumnFamilyName, InnerRepository};
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
-use rocksdb::{ColumnFamilyOptions, DBOptions, Writable, DB};
+use rocksdb::{CFHandle, ColumnFamilyOptions, DBOptions, Writable, DB};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -12,12 +12,14 @@ use std::sync::Arc;
 pub const DEFAULT_CF_NAME: ColumnFamilyName = "default";
 pub const ACCUMULATOR_CF_NAME: ColumnFamilyName = "accumulator";
 pub const BLOCK_CF_NAME: ColumnFamilyName = "block";
+pub const BLOCK_HEADER_CF_NAME: ColumnFamilyName = "block_header";
+pub const BLOCK_SONS_CF_NAME: ColumnFamilyName = "block_sons";
+pub const BLOCK_BODY_CF_NAME: ColumnFamilyName = "block_body";
+pub const BLOCK_NUMBER_CF_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_CF_NAME: ColumnFamilyName = "block_info";
 pub const STATE_NODE_CF_NAME: ColumnFamilyName = "state_node";
 pub const TRANSACTION_INFO_CF_NAME: ColumnFamilyName = "transaction_info";
 
-/// Type alias to improve readability.
-pub type ColumnFamilyName = &'static str;
 /// Type alias to improve readability.
 pub type ColumnFamilyOptionsMap = HashMap<ColumnFamilyName, ColumnFamilyOptions>;
 
@@ -41,6 +43,10 @@ impl DBStorage {
             ),
             (ACCUMULATOR_CF_NAME, ColumnFamilyOptions::default()),
             (BLOCK_CF_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_HEADER_CF_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_SONS_CF_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_BODY_CF_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_NUMBER_CF_NAME, ColumnFamilyOptions::default()),
             (BLOCK_INFO_CF_NAME, ColumnFamilyOptions::default()),
             (STATE_NODE_CF_NAME, ColumnFamilyOptions::default()),
             (TRANSACTION_INFO_CF_NAME, ColumnFamilyOptions::default()),
@@ -157,33 +163,50 @@ impl DBStorage {
     pub fn convert_rocksdb_err(msg: String) -> anyhow::Error {
         format_err!("RocksDB internal error: {}.", msg)
     }
+
+    fn get_cf_handle(&self, cf_name: &str) -> Result<&CFHandle> {
+        self.db.cf_handle(cf_name).ok_or_else(|| {
+            format_err!(
+                "DB::cf_handle not found for column family name: {}",
+                cf_name
+            )
+        })
+    }
 }
 
-impl Repository for DBStorage {
-    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        match self.db.clone().get(key).map_err(Self::convert_rocksdb_err) {
+impl InnerRepository for DBStorage {
+    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
+        match self
+            .db
+            .clone()
+            .get_cf(cf_handle, key.as_slice())
+            .map_err(Self::convert_rocksdb_err)
+        {
             Ok(Some(value)) => Ok(Some(value.to_vec())),
             _ => Ok(None),
         }
     }
 
-    fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
         self.db
             .clone()
-            .put(&key, &value)
+            .put_cf(cf_handle, &key, &value)
             .map_err(Self::convert_rocksdb_err)
     }
 
-    fn contains_key(&self, key: Vec<u8>) -> Result<bool> {
-        match self.get(&key) {
+    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
+        match self.get(prefix_name, key) {
             Ok(Some(_)) => Ok(true),
             _ => Ok(false),
         }
     }
-    fn remove(&self, key: Vec<u8>) -> Result<()> {
+    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
         self.db
             .clone()
-            .delete(&key)
+            .delete_cf(cf_handle, &key)
             .map_err(Self::convert_rocksdb_err)
     }
 

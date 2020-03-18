@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{CodecStorage, Repository, ValueCodec};
+use crate::storage::{CodecStorage, ColumnFamilyName, Repository, ValueCodec};
 use anyhow::Result;
 use crypto::HashValue;
 use forkable_jellyfish_merkle::node_type::Node;
@@ -12,12 +12,12 @@ pub struct StateNodeStorage {
     storage: CodecStorage<HashValue, StateNode>,
 }
 
-const KEY_PREFIX: &str = "StateNode";
+pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 
 impl StateNodeStorage {
     pub fn new(storage: Arc<dyn Repository>) -> Self {
         Self {
-            storage: CodecStorage::new(storage, KEY_PREFIX),
+            storage: CodecStorage::new(storage),
         }
     }
 }

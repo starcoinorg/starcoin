@@ -3,10 +3,10 @@
 
 use crate::accumulator::AccumulatorStore;
 use crate::block::BlockStore;
-use crate::block_info::{BlockInfoStorage, BlockInfoStore};
-use crate::state_node::StateNodeStorage;
-use crate::storage::Repository;
-use crate::transaction_info::TransactionInfoStore;
+use crate::block_info::{BlockInfoStorage, BlockInfoStore, BLOCK_INFO_PREFIX_NAME};
+use crate::state_node::{StateNodeStorage, STATE_NODE_PREFIX_NAME};
+use crate::storage::{InnerRepository, Repository, Storage};
+use crate::transaction_info::{TransactionInfoStore, TRANSACTION_KEY_NAME};
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use starcoin_accumulator::{
@@ -24,14 +24,13 @@ use types::{
 pub mod accumulator;
 pub mod block;
 pub mod block_info;
+pub mod cache_storage;
 pub mod db_storage;
 pub mod memory_storage;
 pub mod state_node;
 pub mod storage;
 mod tests;
 pub mod transaction_info;
-
-pub type KeyPrefixName = &'static str;
 
 pub trait BlockStorageOp {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
@@ -122,6 +121,35 @@ impl StarcoinStorage {
             accumulator_store: AccumulatorStore::new(storage.clone()),
             block_info_store: BlockInfoStore::new(storage.clone()),
             startup_info_store: storage.clone(),
+        })
+    }
+    pub fn two_new(
+        cache_storage: Arc<dyn InnerRepository>,
+        db_storage: Arc<dyn InnerRepository>,
+    ) -> Result<Self> {
+        Ok(Self {
+            transaction_info_store: TransactionInfoStore::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                TRANSACTION_KEY_NAME,
+            ))),
+            block_store: BlockStore::two_new(cache_storage.clone(), db_storage.clone()),
+            state_node_store: StateNodeStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                STATE_NODE_PREFIX_NAME,
+            ))),
+            accumulator_store: AccumulatorStore::two_new(cache_storage.clone(), db_storage.clone()),
+            block_info_store: BlockInfoStore::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_INFO_PREFIX_NAME,
+            ))),
+            startup_info_store: Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_INFO_PREFIX_NAME,
+            )),
         })
     }
 }

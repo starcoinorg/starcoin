@@ -3,8 +3,9 @@
 
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use super::KeyPrefixName;
-use crate::storage::{CodecStorage, KeyCodec, Repository, ValueCodec};
+use crate::storage::{
+    CodecStorage, ColumnFamilyName, InnerRepository, KeyCodec, Repository, Storage, ValueCodec,
+};
 use anyhow::{bail, ensure, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crypto::HashValue;
@@ -16,11 +17,11 @@ use std::sync::{Arc, RwLock};
 use types::block::{Block, BlockBody, BlockHeader, BlockNumber, BranchNumber};
 
 const BLOCK_KEY_NAME: &'static str = "block";
-const BLOCK_KEY_PREFIX_NAME: KeyPrefixName = BLOCK_KEY_NAME;
-const BLOCK_HEADER_KEY_PREFIX_NAME: KeyPrefixName = "block_header";
-const BLOCK_SONS_KEY_PREFIX_NAME: KeyPrefixName = "block_sons";
-const BLOCK_BODY_KEY_PREFIX_NAME: KeyPrefixName = "block_body";
-const BLOCK_NUM_KEY_PREFIX_NAME: KeyPrefixName = "block_num";
+const BLOCK_KEY_PREFIX_NAME: ColumnFamilyName = BLOCK_KEY_NAME;
+const BLOCK_HEADER_KEY_PREFIX_NAME: ColumnFamilyName = "block_header";
+const BLOCK_SONS_KEY_PREFIX_NAME: ColumnFamilyName = "block_sons";
+const BLOCK_BODY_KEY_PREFIX_NAME: ColumnFamilyName = "block_body";
+const BLOCK_NUM_KEY_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub struct BlockStore {
     block_store: CodecStorage<HashValue, Block>,
     header_store: CodecStorage<HashValue, BlockHeader>,
@@ -127,15 +128,52 @@ impl BlockStore {
         branch_number_store: Arc<dyn Repository>,
     ) -> Self {
         BlockStore {
-            block_store: CodecStorage::new(block_store, BLOCK_KEY_PREFIX_NAME),
-            header_store: CodecStorage::new(header_store, BLOCK_HEADER_KEY_PREFIX_NAME),
-            sons_store: RwLock::new(CodecStorage::new(sons_store, BLOCK_SONS_KEY_PREFIX_NAME)),
-            body_store: CodecStorage::new(body_store, BLOCK_BODY_KEY_PREFIX_NAME),
-            number_store: CodecStorage::new(number_store, BLOCK_NUM_KEY_PREFIX_NAME),
-            branch_number_store: CodecStorage::new(branch_number_store, BLOCK_NUM_KEY_PREFIX_NAME),
+            block_store: CodecStorage::new(block_store),
+            header_store: CodecStorage::new(header_store),
+            sons_store: RwLock::new(CodecStorage::new(sons_store)),
+            body_store: CodecStorage::new(body_store),
+            number_store: CodecStorage::new(number_store),
+            branch_number_store: CodecStorage::new(branch_number_store),
         }
     }
 
+    pub fn two_new(
+        cache_storage: Arc<dyn InnerRepository>,
+        db_storage: Arc<dyn InnerRepository>,
+    ) -> Self {
+        BlockStore {
+            block_store: CodecStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_KEY_PREFIX_NAME,
+            ))),
+            header_store: CodecStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_HEADER_KEY_PREFIX_NAME,
+            ))),
+            sons_store: RwLock::new(CodecStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_SONS_KEY_PREFIX_NAME,
+            )))),
+            body_store: CodecStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_BODY_KEY_PREFIX_NAME,
+            ))),
+            number_store: CodecStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_NUM_KEY_PREFIX_NAME,
+            ))),
+            branch_number_store: CodecStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_NUM_KEY_PREFIX_NAME,
+            ))),
+        }
+    }
     pub fn save(&self, block: Block) -> Result<()> {
         println!(
             "insert block:{:?}, block:{:?}",
