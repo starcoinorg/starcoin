@@ -13,6 +13,7 @@ pub struct TxPoolConfig {
     /// Minimal allowed gas price.
     pub minimal_gas_price: u64,
     /// Maximal gas limit for a single transaction.
+    #[serde(skip)]
     pub tx_gas_limit: u64,
 }
 
