@@ -22,9 +22,9 @@ pub struct RpcConfig {
 impl Default for RpcConfig {
     fn default() -> Self {
         Self {
-            http_address: "0.0.0.0:9830".parse::<SocketAddr>().unwrap(),
-            ws_address: Some("0.0.0.0:9831".parse::<SocketAddr>().unwrap()),
-            tcp_address: Some("0.0.0.0:9832".parse::<SocketAddr>().unwrap()),
+            http_address: "127.0.0.1:9830".parse::<SocketAddr>().unwrap(),
+            ws_address: Some("127.0.0.1:9831".parse::<SocketAddr>().unwrap()),
+            tcp_address: Some("127.0.0.1:9832".parse::<SocketAddr>().unwrap()),
             max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
             threads: None,
         }

@@ -1,13 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.
+// SPDX-License-Identifier: Apache-2
 
-use crate::module::{TxPoolRpc, TxPoolRpcImpl};
+use crate::module::{StatusRpcImpl, TxPoolRpcImpl};
 use crate::server::RpcServer;
 use actix::prelude::*;
 use anyhow::Result;
 use config::NodeConfig;
 use jsonrpc_core::IoHandler;
 use starcoin_logger::prelude::*;
+use starcoin_rpc_api::{status::StatusApi, txpool::TxPoolApi};
 use std::cell::RefCell;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
@@ -26,8 +27,29 @@ impl JSONRpcActor {
     where
         TS: TxPoolAsyncService + 'static,
     {
+        Self::launch_with_apis(
+            config,
+            Some(StatusRpcImpl::new()),
+            Some(TxPoolRpcImpl::new(txpool_service)),
+        )
+    }
+
+    pub fn launch_with_apis<S, T>(
+        config: Arc<NodeConfig>,
+        status_api: Option<S>,
+        txpool_api: Option<T>,
+    ) -> Result<Addr<Self>>
+    where
+        S: StatusApi,
+        T: TxPoolApi,
+    {
         let mut io_handler = IoHandler::new();
-        io_handler.extend_with(TxPoolRpcImpl::new(txpool_service).to_delegate());
+        if let Some(status_api) = status_api {
+            io_handler.extend_with(StatusApi::to_delegate(status_api));
+        }
+        if let Some(txpool_api) = txpool_api {
+            io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
+        }
         Ok(JSONRpcActor {
             config,
             server: RefCell::new(None),
@@ -48,6 +70,8 @@ impl JSONRpcActor {
             None => {}
         }
     }
+
+    pub fn attach(&self) {}
 }
 
 impl Actor for JSONRpcActor {
@@ -74,6 +98,7 @@ impl Supervised for JSONRpcActor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jsonrpc_core_client::transports::{http, local};
     use traits::mock::MockTxPoolService;
 
     #[stest::test]
