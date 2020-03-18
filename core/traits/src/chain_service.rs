@@ -17,7 +17,7 @@ pub trait ChainService {
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
 
-    /////////////////////////////////////////////// for head branch
+    /////////////////////////////////////////////// for master
     fn current_header(&self) -> BlockHeader;
     fn head_block(&self) -> Block;
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
@@ -37,12 +37,12 @@ pub trait ChainService {
 #[async_trait::async_trait(? Send)]
 pub trait ChainAsyncService: Clone + std::marker::Unpin {
     /////////////////////////////////////////////// for chain service
-    /// connect to head or a fork branch.
+    /// connect to master or a fork branch.
     async fn try_connect(self, block: Block) -> Result<()>;
     async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader>;
     async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block>;
 
-    /////////////////////////////////////////////// for head branch
+    /////////////////////////////////////////////// for master
     async fn current_header(self) -> Option<BlockHeader>;
     async fn head_block(self) -> Option<Block>;
     async fn get_block_by_number(self, number: BlockNumber) -> Option<Block>;

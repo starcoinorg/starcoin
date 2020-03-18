@@ -30,7 +30,7 @@ where
     S: BlockChainStore + 'static,
 {
     config: Arc<NodeConfig>,
-    head: BlockChain<E, C, S, P>,
+    master: BlockChain<E, C, S, P>,
     branches: Vec<BlockChain<E, C, S, P>>,
     storage: Arc<S>,
     network: Option<NetworkAsyncService>,
@@ -51,7 +51,7 @@ where
         network: Option<NetworkAsyncService>,
         txpool: P,
     ) -> Result<Self> {
-        let head = BlockChain::new(
+        let master = BlockChain::new(
             config.clone(),
             startup_info.head,
             storage.clone(),
@@ -68,7 +68,7 @@ where
         }
         Ok(Self {
             config,
-            head,
+            master,
             branches,
             storage,
             network,
@@ -78,12 +78,12 @@ where
 
     pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
-        let exist_in_head = self.head.exist_block(&header.parent_hash());
+        let exist_in_head = self.master.exist_block(&header.parent_hash());
         if exist_in_head {
             return Some(
                 BlockChain::new(
                     self.config.clone(),
-                    self.head.fork_chain_info(&header.parent_hash()),
+                    self.master.fork_chain_info(&header.parent_hash()),
                     self.storage.clone(),
                     self.txpool.clone(),
                 )
@@ -116,10 +116,10 @@ where
         let new_branch_parent_hash = new_branch.current_header().parent_hash();
         let mut need_broadcast = false;
         let block = new_branch.head_block();
-        if new_branch_parent_hash == self.head.current_header().id() {
+        if new_branch_parent_hash == self.master.current_header().id() {
             debug!("head branch.");
             //1. update head branch
-            self.head = new_branch;
+            self.master = new_branch;
             need_broadcast = true;
 
             //delete txpool
@@ -134,23 +134,24 @@ where
             for branch in &self.branches {
                 index = index + 1;
                 if new_branch_parent_hash == branch.current_header().id() {
-                    if new_branch.current_header().number() > self.head.current_header().number() {
+                    if new_branch.current_header().number() > self.master.current_header().number()
+                    {
                         debug!("rollback branch.");
                         //3. change head
                         //rollback txpool
-                        let (enacted, retracted) = self.find_ancestors(&new_branch, &self.head);
+                        let (enacted, retracted) = self.find_ancestors(&new_branch, &self.master);
 
                         self.branches.insert(
                             index - 1,
                             BlockChain::new(
                                 self.config.clone(),
-                                self.head.get_chain_info(),
+                                self.master.get_chain_info(),
                                 self.storage.clone(),
                                 self.txpool.clone(),
                             )
                             .unwrap(),
                         );
-                        self.head = BlockChain::new(
+                        self.master = BlockChain::new(
                             new_branch.config.clone(),
                             new_branch.get_chain_info(),
                             new_branch.storage.clone(),
@@ -280,7 +281,7 @@ where
         let ancestor =
             Self::find_ancestors_in_memory(new_branch, head).expect("common ancestor is none.");
         let block_enacted = &new_branch.current_header().parent_hash();
-        let block_retracted = &self.head.current_header().parent_hash();
+        let block_retracted = &self.master.current_header().parent_hash();
         let mut block_enacted_tmp = block_enacted.clone();
 
         debug!("ancestor block is : {:?}", ancestor);
@@ -353,17 +354,17 @@ where
             let mut branch = self.find_or_fork(&header).expect("fork branch failed.");
             branch.apply(block.clone())?;
             self.select_head(branch);
-            self.head.latest_blocks();
+            self.master.latest_blocks();
         }
         Ok(())
     }
 
     fn head_block(&self) -> Block {
-        self.head.head_block()
+        self.master.head_block()
     }
 
     fn current_header(&self) -> BlockHeader {
-        self.head.current_header()
+        self.master.current_header()
     }
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -371,7 +372,7 @@ where
     }
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
-        self.head.get_block_by_number(number)
+        self.master.get_block_by_number(number)
     }
 
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {
@@ -384,15 +385,15 @@ where
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        self.head
+        self.master
             .create_block_template(parent_hash, difficulty, user_txns)
     }
 
     fn gen_tx(&self) -> Result<()> {
-        self.head.gen_tx()
+        self.master.gen_tx()
     }
 
     fn get_chain_info(&self) -> ChainInfo {
-        self.head.get_chain_info()
+        self.master.get_chain_info()
     }
 }
