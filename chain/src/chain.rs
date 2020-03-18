@@ -42,7 +42,7 @@ where
     phantom_c: PhantomData<C>,
     pub storage: Arc<S>,
     pub txpool: P,
-    pub chain_info: ChainInfo,
+    chain_info: ChainInfo,
 }
 
 impl<E, C, S, P> BlockChain<E, C, S, P>
@@ -111,7 +111,10 @@ where
     }
 
     fn save_block(&self, block: &Block) {
-        if let Err(e) = self.storage.commit_block(block.clone()) {
+        if let Err(e) = self
+            .storage
+            .commit_branch_block(self.get_chain_info().branch_id(), block.clone())
+        {
             warn!("err : {:?}", e);
         }
         info!("commit block : {:?}", block.header().id());
@@ -144,24 +147,25 @@ where
         });
     }
 
-    pub fn fork_chain_info(&self, block_id: &HashValue) -> ChainInfo {
-        self.chain_info.fork(block_id).unwrap()
-    }
-
-    // pub fn exist_block(&self, block_id: &HashValue) -> bool {
-    //     self.chain_info.contains(block_id)
-    // }
-
     pub fn latest_blocks(&self) {
-        self.chain_info
-            .latest_blocks()
-            .iter()
-            .for_each(|(number, block_id)| {
-                info!(
-                    "block chain :: number : {} , block_id : {:?}",
-                    number, block_id
-                );
-            });
+        let mut count = 0;
+        let mut last = self.head.header().clone();
+        loop {
+            info!(
+                "block chain :: number : {} , block_id : {:?}",
+                last.number(),
+                last.id()
+            );
+            if last.number() == 0 || count >= 10 {
+                break;
+            }
+            last = self
+                .get_header(last.parent_hash())
+                .unwrap()
+                .unwrap()
+                .clone();
+            count = count + 1;
+        }
     }
 
     pub fn create_block_template_inner(
@@ -244,6 +248,18 @@ where
             user_txns.into(),
         ))
     }
+
+    pub fn fork(&self, block_header: &BlockHeader) -> Option<ChainInfo> {
+        if self.exist_block(block_header.parent_hash()) {
+            Some(if self.head.header().id() == block_header.parent_hash() {
+                self.chain_info.clone()
+            } else {
+                ChainInfo::new(block_header.parent_hash(), block_header.id())
+            })
+        } else {
+            None
+        }
+    }
 }
 
 impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
@@ -318,7 +334,7 @@ where
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         let block_id = match parent_hash {
-            Some(id) => id,
+            Some(hash) => hash,
             None => self.current_header().id(),
         };
         assert!(self.exist_block(block_id));
@@ -349,23 +365,27 @@ where
     }
 
     fn get_total_difficulty(&self) -> U256 {
-        // Caculate a difficulty for recent "block_count" blocks
-        let mut block_count = 10;
-        let mut current_number = self.head.header().number();
-        let mut avg_target = U256::zero();
-        if block_count > current_number {
-            block_count = current_number
+        if false {
+            // Caculate a difficulty for recent "block_count" blocks
+            let mut block_count = 10;
+            let mut current_number = self.head.header().number();
+            let mut avg_target = U256::zero();
+            if block_count > current_number {
+                block_count = current_number
+            }
+            for _ in 0..block_count {
+                let block = self
+                    .storage
+                    .get_block_by_number(current_number)
+                    .unwrap()
+                    .unwrap();
+                avg_target = avg_target + block.header().difficult() / block_count.into();
+                current_number -= 1;
+            }
+            avg_target
+        } else {
+            self.head.header().number().into()
         }
-        for _ in 0..block_count {
-            let block = self
-                .storage
-                .get_block_by_number(current_number)
-                .unwrap()
-                .unwrap();
-            avg_target = avg_target + block.header().difficult() / block_count.into();
-            current_number -= 1;
-        }
-        avg_target
     }
 
     fn exist_block(&self, block_id: HashValue) -> bool {
@@ -443,7 +463,7 @@ where
         if let Err(e) = chain_state.flush() {
             warn!("err : {:?}", e);
         }
-        self.chain_info.append(&block.header());
+        self.chain_info.update_head(block.header().clone());
         self.head = block.clone();
         self.save_block_info(BlockInfo::new(
             header.id(),

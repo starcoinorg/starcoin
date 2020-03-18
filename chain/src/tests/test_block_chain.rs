@@ -103,7 +103,7 @@ async fn test_block_chain_head() {
 async fn test_block_chain_forks() {
     let times = 5;
     let chain = gen_head_chain(times, true).await;
-    let mut parent_hash = chain.clone().master_chain_info().await.unwrap().get_begin();
+    let mut parent_hash = chain.clone().master_chain_info().await.unwrap().branch_id();
 
     if times > 0 {
         for i in 0..(times + 1) {

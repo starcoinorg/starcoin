@@ -3,7 +3,7 @@
 
 use crate::chain::BlockChain;
 use actix::prelude::*;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use config::NodeConfig;
 use consensus::Consensus;
 use crypto::HashValue;
@@ -11,6 +11,7 @@ use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
 use starcoin_statedb::ChainStateDB;
+use std::collections::HashMap;
 use std::sync::Arc;
 use storage::BlockChainStore;
 use traits::{ChainReader, ChainService, ChainWriter, TxPoolAsyncService};
@@ -31,7 +32,7 @@ where
 {
     config: Arc<NodeConfig>,
     master: BlockChain<E, C, S, P>,
-    branches: Vec<BlockChain<E, C, S, P>>,
+    branches: HashMap<HashValue, BlockChain<E, C, S, P>>,
     storage: Arc<S>,
     network: Option<NetworkAsyncService>,
     txpool: P,
@@ -57,14 +58,12 @@ where
             storage.clone(),
             txpool.clone(),
         )?;
-        let mut branches = Vec::new();
+        let mut branches = HashMap::new();
         for branch_info in startup_info.branches {
-            branches.push(BlockChain::new(
-                config.clone(),
-                branch_info,
-                storage.clone(),
-                txpool.clone(),
-            )?)
+            branches.insert(
+                branch_info.branch_id(),
+                BlockChain::new(config.clone(), branch_info, storage.clone(), txpool.clone())?,
+            );
         }
         Ok(Self {
             config,
@@ -78,34 +77,29 @@ where
 
     pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
-        let exist_in_head = self.master.exist_block(header.parent_hash());
-        if exist_in_head {
+        let mut chain_info = self.master.fork(header);
+        if chain_info.is_none() {
+            for branch in self.branches.values() {
+                chain_info = branch.fork(header);
+                if chain_info.is_some() {
+                    break;
+                }
+            }
+        }
+
+        if chain_info.is_some() {
             return Some(
                 BlockChain::new(
                     self.config.clone(),
-                    self.master.fork_chain_info(&header.parent_hash()),
+                    chain_info.unwrap(),
                     self.storage.clone(),
                     self.txpool.clone(),
                 )
                 .unwrap(),
             );
         } else {
-            for branch in &self.branches {
-                if branch.exist_block(header.parent_hash()) {
-                    return Some(
-                        BlockChain::new(
-                            self.config.clone(),
-                            branch.fork_chain_info(&header.parent_hash()),
-                            self.storage.clone(),
-                            self.txpool.clone(),
-                        )
-                        .unwrap(),
-                    );
-                }
-            }
+            None
         }
-
-        None
     }
 
     pub fn state_at(&self, _root: HashValue) -> ChainStateDB {
@@ -113,80 +107,37 @@ where
     }
 
     fn select_head(&mut self, new_branch: BlockChain<E, C, S, P>) {
-        let new_branch_parent_hash = new_branch.current_header().parent_hash();
-        let mut need_broadcast = false;
         let block = new_branch.head_block();
-        if new_branch_parent_hash == self.master.current_header().id() {
-            debug!("head branch.");
-            //1. update head branch
-            self.master = new_branch;
-            need_broadcast = true;
+        let _ = self
+            .branches
+            .remove(&new_branch.get_chain_info().branch_id());
 
-            //delete txpool
+        if new_branch.get_total_difficulty() > self.master.get_total_difficulty() {
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
-            enacted.append(&mut block.transactions().clone().to_vec());
-            let retracted = Vec::new();
+            let mut retracted = Vec::new();
+            if new_branch.get_chain_info().branch_id() == self.master.get_chain_info().branch_id() {
+                enacted.append(&mut block.transactions().clone().to_vec());
+            } else {
+                debug!("rollback branch.");
+                let (mut enacted_tmp, mut retracted_tmp) = self.find_ancestors(&new_branch);
+                enacted.append(&mut enacted_tmp);
+                retracted.append(&mut retracted_tmp);
+
+                self.branches.insert(
+                    self.master.get_chain_info().branch_id(),
+                    BlockChain::new(
+                        self.config.clone(),
+                        self.master.get_chain_info(),
+                        self.storage.clone(),
+                        self.txpool.clone(),
+                    )
+                    .unwrap(),
+                );
+            }
+
+            self.master = new_branch;
             self.commit_2_txpool(enacted, retracted);
-        } else {
-            //2. update branches
-            let mut update_branch_flag = false;
-            let mut index = 0;
-            for branch in &self.branches {
-                index = index + 1;
-                if new_branch_parent_hash == branch.current_header().id() {
-                    if new_branch.current_header().number() > self.master.current_header().number()
-                    {
-                        debug!("rollback branch.");
-                        //3. change head
-                        //rollback txpool
-                        let (enacted, retracted) = self.find_ancestors(&new_branch, &self.master);
 
-                        self.branches.insert(
-                            index - 1,
-                            BlockChain::new(
-                                self.config.clone(),
-                                self.master.get_chain_info(),
-                                self.storage.clone(),
-                                self.txpool.clone(),
-                            )
-                            .unwrap(),
-                        );
-                        self.master = BlockChain::new(
-                            new_branch.config.clone(),
-                            new_branch.get_chain_info(),
-                            new_branch.storage.clone(),
-                            new_branch.txpool.clone(),
-                        )
-                        .unwrap();
-
-                        self.commit_2_txpool(enacted, retracted);
-
-                        need_broadcast = true;
-                    } else {
-                        debug!("replace branch.");
-                        self.branches.insert(
-                            index - 1,
-                            BlockChain::new(
-                                new_branch.config.clone(),
-                                new_branch.get_chain_info(),
-                                new_branch.storage.clone(),
-                                new_branch.txpool.clone(),
-                            )
-                            .unwrap(),
-                        );
-                    }
-                    update_branch_flag = true;
-                    break;
-                }
-            }
-
-            if !update_branch_flag {
-                debug!("update branch.");
-                self.branches.push(new_branch);
-            }
-        }
-
-        if need_broadcast {
             if let Some(network) = self.network.clone() {
                 Arbiter::spawn(async move {
                     info!("broadcast system event : {:?}", block.header().id());
@@ -197,6 +148,9 @@ where
                         .expect("broadcast new head block failed.");
                 });
             };
+        } else {
+            self.branches
+                .insert(self.master.get_chain_info().branch_id(), new_branch);
         }
     }
 
@@ -213,75 +167,22 @@ where
         });
     }
 
-    fn find_ancestors_in_memory(
-        new_branch: &BlockChain<E, C, S, P>,
-        head: &BlockChain<E, C, S, P>,
-    ) -> Option<HashValue> {
-        let mut begin_number = if new_branch.chain_info.size() > head.chain_info.size() {
-            head.chain_info.size() as u64
-        } else {
-            new_branch.chain_info.size() as u64
-        };
-
-        debug!(
-            "find_ancestors_in_memory:{}, {} , {}",
-            new_branch.chain_info.size(),
-            head.chain_info.size(),
-            begin_number
-        );
-
-        let mut common_ancestor = None;
-        loop {
-            debug!(
-                "number {}, block1 {:?}, block2 {:?}",
-                (begin_number - 1),
-                new_branch
-                    .chain_info
-                    .get_hash_by_number(begin_number - 1)
-                    .unwrap(),
-                head.chain_info
-                    .get_hash_by_number(begin_number - 1)
-                    .unwrap()
-            );
-            if new_branch
-                .chain_info
-                .get_hash_by_number(begin_number - 1)
-                .unwrap()
-                == head
-                    .chain_info
-                    .get_hash_by_number(begin_number - 1)
-                    .unwrap()
-            {
-                common_ancestor = Some(
-                    new_branch
-                        .chain_info
-                        .get_hash_by_number(begin_number - 1)
-                        .unwrap(),
-                );
-                break;
-            }
-
-            begin_number = begin_number - 1;
-
-            if begin_number == 0 {
-                break;
-            }
-        }
-
-        common_ancestor
-    }
-
     fn find_ancestors(
         &self,
         new_branch: &BlockChain<E, C, S, P>,
-        head: &BlockChain<E, C, S, P>,
     ) -> (Vec<SignedUserTransaction>, Vec<SignedUserTransaction>) {
         let mut enacted: Vec<Block> = Vec::new();
         let mut retracted: Vec<Block> = Vec::new();
-        let ancestor =
-            Self::find_ancestors_in_memory(new_branch, head).expect("common ancestor is none.");
-        let block_enacted = &new_branch.current_header().parent_hash();
-        let block_retracted = &self.master.current_header().parent_hash();
+
+        let block_enacted = &new_branch.current_header().id();
+        let block_retracted = &self.master.current_header().id();
+
+        let ancestor = self
+            .storage
+            .get_common_ancestor(block_enacted.clone(), block_retracted.clone())
+            .unwrap()
+            .unwrap();
+
         let mut block_enacted_tmp = block_enacted.clone();
 
         debug!("ancestor block is : {:?}", ancestor);
@@ -290,8 +191,7 @@ where
                 break;
             };
             debug!("get block 1 {:?}.", block_enacted_tmp);
-            let block_tmp = self
-                .storage
+            let block_tmp = new_branch
                 .get_block(block_enacted_tmp.clone())
                 .unwrap()
                 .expect("block is none 1.");
@@ -306,7 +206,7 @@ where
             };
             debug!("get block 2 {:?}.", block_retracted_tmp);
             let block_tmp = self
-                .storage
+                .master
                 .get_block(block_retracted_tmp)
                 .unwrap()
                 .expect("block is none 2.");
@@ -385,8 +285,32 @@ where
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        self.master
-            .create_block_template(parent_hash, difficulty, user_txns)
+        let block_id = match parent_hash {
+            Some(hash) => hash,
+            None => self.master.current_header().id(),
+        };
+
+        if let Ok(Some(_)) = self.get_block_by_hash(block_id) {
+            return if self.master.exist_block(block_id) {
+                self.master
+                    .create_block_template(Some(block_id), difficulty, user_txns)
+            } else {
+                let mut tmp = None;
+                for branch in self.branches.values() {
+                    if branch.exist_block(block_id) {
+                        tmp = Some(branch.create_block_template(
+                            Some(block_id),
+                            difficulty,
+                            user_txns.clone(),
+                        ));
+                    }
+                }
+
+                Ok(tmp.unwrap().unwrap())
+            };
+        } else {
+            Err(format_err!("Block {:?} not exist.", block_id))
+        }
     }
 
     fn gen_tx(&self) -> Result<()> {
