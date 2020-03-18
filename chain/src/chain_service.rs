@@ -359,11 +359,11 @@ where
         Ok(())
     }
 
-    fn head_block(&self) -> Block {
+    fn master_head_block(&self) -> Block {
         self.master.head_block()
     }
 
-    fn current_header(&self) -> BlockHeader {
+    fn master_head_header(&self) -> BlockHeader {
         self.master.current_header()
     }
 
@@ -371,7 +371,7 @@ where
         self.storage.get_block_header_by_hash(hash)
     }
 
-    fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
+    fn master_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.master.get_block_by_number(number)
     }
 
@@ -393,7 +393,7 @@ where
         self.master.gen_tx()
     }
 
-    fn get_chain_info(&self) -> ChainInfo {
+    fn master_chain_info(&self) -> ChainInfo {
         self.master.get_chain_info()
     }
 }

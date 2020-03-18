@@ -70,7 +70,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
                 .unwrap();
             let (_sender, receiver) = oneshot::channel();
 
-            let chain_info = chain.clone().get_chain_info().await.unwrap();
+            let chain_info = chain.clone().master_chain_info().await.unwrap();
             let block_chain =
                 BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
                     conf.clone(),
@@ -96,14 +96,14 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
 async fn test_block_chain_head() {
     let times = 5;
     let chain = gen_head_chain(times, false).await;
-    assert_eq!(chain.current_header().await.unwrap().number(), times);
+    assert_eq!(chain.master_head_header().await.unwrap().number(), times);
 }
 
 #[actix_rt::test]
 async fn test_block_chain_forks() {
     let times = 5;
     let chain = gen_head_chain(times, true).await;
-    let mut parent_hash = chain.clone().get_chain_info().await.unwrap().get_begin();
+    let mut parent_hash = chain.clone().master_chain_info().await.unwrap().get_begin();
 
     if times > 0 {
         for i in 0..(times + 1) {
@@ -126,7 +126,10 @@ async fn test_block_chain_forks() {
         }
     }
 
-    assert_eq!(chain.current_header().await.unwrap().number(), (times + 1))
+    assert_eq!(
+        chain.master_head_header().await.unwrap().number(),
+        (times + 1)
+    )
 }
 
 #[stest::test]

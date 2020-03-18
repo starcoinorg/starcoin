@@ -182,8 +182,8 @@ fn test_network_actor() {
 
         Delay::new(Duration::from_secs(3 * 10)).await;
 
-        let block_1 = first_chain.head_block().await.unwrap();
-        let block_2 = second_chain.head_block().await.unwrap();
+        let block_1 = first_chain.master_head_block().await.unwrap();
+        let block_2 = second_chain.master_head_block().await.unwrap();
 
         debug!(
             "block number:{}:{}",
@@ -279,7 +279,7 @@ fn test_network_actor_rpc() {
             None,
         );
         Delay::new(Duration::from_secs(3 * 10)).await;
-        let block_1 = first_chain.clone().head_block().await.unwrap();
+        let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();
         debug!("first chain :{:?}", number);
         assert!(number > 0);
@@ -352,11 +352,11 @@ fn test_network_actor_rpc() {
 
         for i in 0..5 as usize {
             Delay::new(Duration::from_secs(5)).await;
-            let block_1 = first_chain.clone().head_block().await.unwrap();
+            let block_1 = first_chain.clone().master_head_block().await.unwrap();
             let number_1 = block_1.header().number();
             debug!("index : {}, first chain number is {}", i, number_1);
 
-            let block_2 = second_chain.clone().head_block().await.unwrap();
+            let block_2 = second_chain.clone().master_head_block().await.unwrap();
             let number_2 = block_2.header().number();
             debug!("index : {}, second chain number is {}", i, number_2);
 
@@ -435,7 +435,7 @@ fn test_network_actor_rpc_2() {
             SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
 
         info!("here");
-        let block_1 = first_chain.clone().head_block().await.unwrap();
+        let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();
         info!("first chain :{:?} : {:?}", number, block_1.header().id());
 
@@ -501,7 +501,7 @@ fn test_network_actor_rpc_2() {
         let _second_sync_actor =
             SyncActor::launch(bus_2, second_p_actor, second_d_actor.clone()).unwrap();
 
-        let block_2 = second_chain.clone().head_block().await.unwrap();
+        let block_2 = second_chain.clone().master_head_block().await.unwrap();
         let number = block_2.header().number();
         debug!("second chain :{:?} : {:?}", number, block_2.header().id());
 

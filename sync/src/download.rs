@@ -153,7 +153,7 @@ impl DownloadActor {
                 let mut begin_number = downloader
                     .chain_reader
                     .clone()
-                    .current_header()
+                    .master_head_header()
                     .await
                     .unwrap()
                     .number();
