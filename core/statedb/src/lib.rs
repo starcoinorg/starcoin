@@ -166,38 +166,6 @@ impl ChainStateDB {
         }
     }
 
-    /// Commit
-    pub fn commit(&self) -> Result<HashValue> {
-        //TODO optimize
-        for (address_hash, state_object) in self.cache.borrow().iter() {
-            match state_object {
-                Some(state_object) => {
-                    if state_object.is_dirty() {
-                        let account_state = state_object.commit()?;
-                        self.state_tree
-                            .put(*address_hash, account_state.try_into()?);
-                    }
-                }
-                None => {}
-            }
-        }
-        self.state_tree.commit()
-    }
-
-    /// flush data to db.
-    pub fn flush(&self) -> Result<()> {
-        //TODO optimize
-        for (_address_hash, state_object) in self.cache.borrow().iter() {
-            match state_object {
-                Some(state_object) => {
-                    state_object.flush()?;
-                }
-                None => {}
-            }
-        }
-        self.state_tree.flush()
-    }
-
     fn new_state_tree(&self, root_hash: HashValue) -> StateTree {
         StateTree::new(self.store.clone(), Some(root_hash))
     }
@@ -299,21 +267,17 @@ impl ChainStateReader for ChainStateDB {
         for (address_hash, account_state_bytes) in global_states.iter() {
             let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
 
-            let _code_set = match account_state.code_root() {
-                Some(root) => Some(self.new_state_tree(root).dump()?),
-                None => None,
-            };
             let mut state_sets = vec![];
             for storage_root in account_state.storage_roots().iter() {
                 let state_set = match storage_root {
-                    Some(_storage_root) => {
-                        Some(self.new_state_tree(account_state.resource_root()).dump()?)
-                    }
+                    Some(storage_root) => Some(self.new_state_tree(storage_root.clone()).dump()?),
                     None => None,
                 };
+
                 state_sets.push(state_set);
             }
             let account_state_set = AccountStateSet::new(state_sets);
+
             account_states.push((address_hash.clone(), account_state_set));
         }
         Ok(ChainStateSet::new(account_states))
@@ -394,6 +358,37 @@ impl ChainStateWriter for ChainStateDB {
         self.state_tree.commit()?;
         self.state_tree.flush()?;
         Ok(())
+    }
+    /// Commit
+    fn commit(&self) -> Result<HashValue> {
+        //TODO optimize
+        for (address_hash, state_object) in self.cache.borrow().iter() {
+            match state_object {
+                Some(state_object) => {
+                    if state_object.is_dirty() {
+                        let account_state = state_object.commit()?;
+                        self.state_tree
+                            .put(*address_hash, account_state.try_into()?);
+                    }
+                }
+                None => {}
+            }
+        }
+        self.state_tree.commit()
+    }
+
+    /// flush data to db.
+    fn flush(&self) -> Result<()> {
+        //TODO optimize
+        for (_address_hash, state_object) in self.cache.borrow().iter() {
+            match state_object {
+                Some(state_object) => {
+                    state_object.flush()?;
+                }
+                None => {}
+            }
+        }
+        self.state_tree.flush()
     }
 }
 

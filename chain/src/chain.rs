@@ -17,7 +17,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage::BlockChainStore;
-use traits::{ChainReader, ChainState, ChainStateReader, ChainWriter, TxPoolAsyncService};
+use traits::{
+    ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter, TxPoolAsyncService,
+};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate, BLOCK_INFO_DEFAULT_ID},

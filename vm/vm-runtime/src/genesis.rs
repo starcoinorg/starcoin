@@ -78,6 +78,8 @@ pub fn generate_genesis_state_set(
         move_vm.cache_module(module.clone());
     }
 
+    let mut state_store = StateStore::new(chain_state);
+
     create_and_initialize_main_accounts(
         &move_vm,
         &gas_schedule,
@@ -88,13 +90,12 @@ pub fn generate_genesis_state_set(
     publish_stdlib(&mut interpreter_context, modules);
 
     let write_set = interpreter_context.make_write_set()?;
-    let mut state_store = StateStore::new(chain_state);
     state_store.add_write_set(&write_set);
+    state_store.commit()?;
+    state_store.flush()?;
 
-    Ok((
-        state_store.state().state_root(),
-        state_store.state().dump()?,
-    ))
+    let dump = state_store.state().dump()?;
+    Ok((state_store.state().state_root(), dump))
 }
 
 /// Create and initialize Transaction Fee and Core Code accounts.

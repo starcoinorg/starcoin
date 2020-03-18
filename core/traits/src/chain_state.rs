@@ -44,6 +44,10 @@ pub trait ChainStateWriter {
 
     /// Apply dump result to ChainState
     fn apply(&self, state_set: ChainStateSet) -> Result<()>;
+
+    fn commit(&self) -> Result<HashValue>;
+
+    fn flush(&self) -> Result<()>;
 }
 
 /// `ChainState` is a trait that defines chain's global state.
