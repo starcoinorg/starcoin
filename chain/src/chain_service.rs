@@ -254,7 +254,7 @@ where
             let mut branch = self.find_or_fork(&header).expect("fork branch failed.");
             branch.apply(block.clone())?;
             self.select_head(branch);
-            self.master.latest_blocks();
+            //self.master.latest_blocks();
         }
         Ok(())
     }
