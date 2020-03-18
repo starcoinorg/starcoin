@@ -11,11 +11,11 @@ use crypto::{
     Uniform,
 };
 use executor::mock_executor::MockExecutor;
-use json_rpc::JSONRpcActor;
 use logger::prelude::*;
 use miner::MinerActor;
 use network::NetworkActor;
 use starcoin_genesis::Genesis;
+use starcoin_rpc_server::JSONRpcActor;
 use std::env;
 use std::{path::PathBuf, sync::Arc};
 use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage};

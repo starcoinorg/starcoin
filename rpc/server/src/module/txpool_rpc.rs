@@ -5,14 +5,12 @@ use futures::future::{FutureExt, TryFutureExt};
 use jsonrpc_core::BoxFuture;
 use jsonrpc_core::Error;
 use jsonrpc_derive::rpc;
+use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
+use starcoin_types::transaction::SignedUserTransaction;
 use traits::TxPoolAsyncService;
-use types::transaction::SignedUserTransaction;
 
-#[rpc(server)]
-pub trait TxPoolRpc {
-    #[rpc(name = "submit_transaction")]
-    fn submit_transaction(&self, tx: SignedUserTransaction) -> BoxFuture<bool>;
-}
+/// Re-export the API
+pub use starcoin_rpc_api::txpool::*;
 
 pub(crate) struct TxPoolRpcImpl<S>
 where
@@ -30,15 +28,15 @@ where
     }
 }
 
-impl<S> TxPoolRpc for TxPoolRpcImpl<S>
+impl<S> TxPoolApi for TxPoolRpcImpl<S>
 where
     S: TxPoolAsyncService,
 {
-    fn submit_transaction(&self, txn: SignedUserTransaction) -> BoxFuture<bool> {
+    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<bool> {
         let fut = self.service.clone().add(txn).map_err(|_err| {
             //TODO
             Error::internal_error()
         });
-        Box::new(fut.boxed().compat())
+        Box::new(fut.compat())
     }
 }

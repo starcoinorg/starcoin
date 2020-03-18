@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-json-rpc"
+name = "starcoin-rpc-client"
 version = "0.1.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
@@ -11,7 +11,11 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 thiserror = "1.0"
-hex = { version = "0.3.2", default-features = false }
+# for RpcError convert.
+failure = "0.1"
+# for ipc connect
+tokio01 = { version="0.1", package="tokio"}
+tokio-compat = "0.1.5"
 serde = { version = "1.0", features = ["derive"] }
 actix = "0.9"
 actix-rt = "1.0"
@@ -19,15 +23,21 @@ jsonrpc-core = "14.0"
 jsonrpc-derive = "14.0"
 jsonrpc-http-server = "14.0"
 jsonrpc-tcp-server = "14.0"
+jsonrpc-ipc-server = "14.0"
 jsonrpc-ws-server = "14.0"
 jsonrpc-server-utils = "14.0"
 jsonrpc-pubsub = "14.0"
+jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws"]}
+jsonrpc-client-transports = "14.0"
 futures = { version = "0.3.2", features = ["compat"] }
-num_cpus = "1.10"
+futures01 = "0.1.29"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
-types = { package="starcoin-types", path = "../../types"}
-traits = { package="starcoin-traits", path = "../../core/traits"}
-config = {path = "../../config", package="starcoin-config"}
-txpool = {path = "../../txpool", package="starcoin-txpool"}
+starcoin-types = { path = "../../types"}
+starcoin-rpc-api = {path = "../api"}
 starcoin-logger = { path = "../../commons/logger"}
+
+[dev-dependencies]
+starcoin-rpc-server = { path = "../server" }
+starcoin-config = { path = "../../config"}
+starcoin-traits = { path = "../../core/traits"}
 stest = { path = "../../commons/stest"}

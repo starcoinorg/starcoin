@@ -23,7 +23,7 @@ executor = {path = "../executor", package="starcoin-executor"}
 network = {path = "../network", package="starcoin-network"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 chain = {path = "../chain", package="starcoin-chain"}
-json-rpc = {path = "../rpc/json-rpc", package="starcoin-json-rpc"}
+starcoin-rpc-server = {path = "../rpc/server"}
 storage = {path = "../storage", package="starcoin-storage"}
 miner = {path = "../miner", package="starcoin-miner"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
