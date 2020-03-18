@@ -131,6 +131,10 @@ impl ChainInfo {
         latest.reverse();
         latest
     }
+
+    pub fn branch_id(&self) -> HashValue {
+        self.fork_hash.clone()
+    }
 }
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]

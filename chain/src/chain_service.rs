@@ -78,7 +78,7 @@ where
 
     pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
-        let exist_in_head = self.master.exist_block(&header.parent_hash());
+        let exist_in_head = self.master.exist_block(header.parent_hash());
         if exist_in_head {
             return Some(
                 BlockChain::new(
@@ -91,7 +91,7 @@ where
             );
         } else {
             for branch in &self.branches {
-                if branch.exist_block(&header.parent_hash()) {
+                if branch.exist_block(header.parent_hash()) {
                     return Some(
                         BlockChain::new(
                             self.config.clone(),

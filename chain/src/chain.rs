@@ -148,9 +148,9 @@ where
         self.chain_info.fork(block_id).unwrap()
     }
 
-    pub fn exist_block(&self, block_id: &HashValue) -> bool {
-        self.chain_info.contains(block_id)
-    }
+    // pub fn exist_block(&self, block_id: &HashValue) -> bool {
+    //     self.chain_info.contains(block_id)
+    // }
 
     pub fn latest_blocks(&self) {
         self.chain_info
@@ -262,23 +262,45 @@ where
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
-        self.storage.get_block_header_by_hash(hash)
+        assert!(self.exist_block(hash));
+        Ok(Some(
+            self.get_block(hash).unwrap().unwrap().header().clone(),
+        ))
     }
 
     fn get_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        self.storage.get_block_header_by_number(number)
+        self.storage
+            .get_header_by_branch_number(self.chain_info.branch_id(), number)
     }
 
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        let block_id = self.chain_info.get_hash_by_number(number);
-        match block_id {
-            Some(id) => self.storage.get_block_by_hash(id),
-            None => Ok(None),
-        }
+        self.storage
+            .get_block_by_branch_number(self.chain_info.branch_id(), number)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        self.storage.get_block_by_hash(hash)
+        let block = self.storage.get_block_by_hash(hash);
+        match block {
+            Ok(tmp) => match tmp {
+                Some(b) => {
+                    if let Ok(Some(block_header)) = self.get_header_by_number(b.header().number()) {
+                        if block_header.id() == b.header().id() {
+                            return Ok(Some(b));
+                        } else {
+                            warn!("block is miss match {:?} : {:?}", hash, block_header.id());
+                        }
+                    }
+                }
+                None => {
+                    warn!("Get block from storage return none.");
+                }
+            },
+            Err(e) => {
+                warn!("err:{:?}", e);
+            }
+        }
+
+        return Ok(None);
     }
 
     fn get_transaction(&self, _hash: HashValue) -> Result<Option<Transaction>, Error> {
@@ -295,16 +317,12 @@ where
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        let previous_header = match parent_hash {
-            Some(block_id) => self
-                .storage
-                .get_block(block_id)
-                .unwrap()
-                .unwrap()
-                .header()
-                .clone(),
-            None => self.current_header(),
+        let block_id = match parent_hash {
+            Some(id) => id,
+            None => self.current_header().id(),
         };
+        assert!(self.exist_block(block_id));
+        let previous_header = self.get_header(block_id).unwrap().unwrap();
         self.create_block_template_inner(previous_header, difficulty, user_txns)
     }
 
@@ -321,14 +339,16 @@ where
         self.chain_info.clone()
     }
 
-    fn get_block_info(&self) -> BlockInfo {
-        self.storage
-            .get_block_info(self.head.header().id())
-            .unwrap()
-            .unwrap()
+    fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>> {
+        let id = match block_id {
+            Some(hash) => hash,
+            None => self.current_header().id(),
+        };
+        assert!(self.exist_block(id));
+        self.storage.get_block_info(id)
     }
 
-    fn get_difficulty(&self) -> U256 {
+    fn get_total_difficulty(&self) -> U256 {
         // Caculate a difficulty for recent "block_count" blocks
         let mut block_count = 10;
         let mut current_number = self.head.header().number();
@@ -346,6 +366,14 @@ where
             current_number -= 1;
         }
         avg_target
+    }
+
+    fn exist_block(&self, block_id: HashValue) -> bool {
+        if let Ok(Some(_)) = self.get_block(block_id) {
+            true
+        } else {
+            false
+        }
     }
 }
 
