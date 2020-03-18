@@ -22,12 +22,14 @@ use crate::{config::ProtocolId, DiscoveryNetBehaviour};
 
 use bytes::BytesMut;
 
+use crate::protocol::message::generic::{ConsensusMessage, Message};
 use fnv::FnvHashMap;
 use futures::prelude::*;
 use libp2p::core::{ConnectedPoint, Multiaddr, PeerId};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use log::{debug, error, trace, warn};
 use rand::distributions::{Distribution as _, Uniform};
+use scs::SCSCodec;
 use smallvec::SmallVec;
 use std::task::{Context, Poll};
 use std::{borrow::Cow, cmp, collections::hash_map::Entry};
@@ -1133,7 +1135,7 @@ impl NetworkBehaviour for GenericProto {
 
             NotifsHandlerOut::Notification {
                 protocol_name,
-                message: _,
+                message,
             } => {
                 debug_assert!(self.is_open(&source));
                 trace!(
@@ -1143,24 +1145,20 @@ impl NetworkBehaviour for GenericProto {
                     str::from_utf8(&protocol_name)
                 );
                 trace!(target: "sub-libp2p", "External API <= Message({:?})", source);
-                /*
                 let event = GenericProtoOut::CustomMessage {
                     peer_id: source,
                     message: {
-                        let message =
-                            GenericMessage::<(), (), (), ()>::Consensus(ConsensusMessage {
-                                engine_id,
-                                data: message.to_vec(),
-                            });
+                        let message = Message::Consensus(ConsensusMessage {
+                            data: message.to_vec(),
+                        });
 
                         // Note that we clone `message` here.
-                        From::from(&message.encode()[..])
+                        From::from(&message.encode().unwrap()[..])
                     },
                 };
 
                 self.events
                     .push(NetworkBehaviourAction::GenerateEvent(event));
-                */
             }
 
             NotifsHandlerOut::Clogged { messages } => {

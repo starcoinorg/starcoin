@@ -46,7 +46,7 @@ struct Inner {
 
 impl NetworkAsyncService {
     pub async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
-        let data = msg.encode().unwrap();
+        let data = msg.encode()?;
         let network_message = NetworkMessage {
             peer_id: peer_id.into(),
             data,
@@ -74,7 +74,7 @@ impl NetworkAsyncService {
     ) -> Result<RPCResponse> {
         let request_id = get_unix_ts();
         let peer_msg = PeerMessage::RPCRequest(request_id, message);
-        let data = peer_msg.encode().unwrap();
+        let data = peer_msg.encode()?;
         let network_message = NetworkMessage {
             peer_id: peer_id.clone().into(),
             data,
