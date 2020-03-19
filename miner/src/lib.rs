@@ -116,9 +116,8 @@ where
                 });
             });
             let miner = miner::Miner::new(bus.clone());
-            let addr = "127.0.0.1:9000".parse().unwrap();
             let stratum = sc_stratum::Stratum::start(
-                &addr,
+                &config.miner.stratum_server,
                 Arc::new(stratum::StratumManager::new(miner.clone())),
                 None,
             )
