@@ -5,6 +5,8 @@ pub use libra_crypto::hash::HashValue;
 
 pub use crypto_macro::CryptoHash;
 
+pub use libra_crypto::hash::CryptoHash as LibraCryptoHash;
+
 /// A type that implements `CryptoHash` can be hashed by a cryptographic hash function and produce
 /// a `HashValue`.
 pub trait CryptoHash {
