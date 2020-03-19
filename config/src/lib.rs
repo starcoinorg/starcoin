@@ -24,6 +24,7 @@ use crypto::{test_utils::KeyPair, Uniform};
 use dirs;
 use once_cell::sync::Lazy;
 use rand::prelude::*;
+use std::env;
 use std::fs::create_dir;
 use std::fs::File;
 use std::io::Read;
@@ -49,6 +50,8 @@ where
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    #[serde(skip)]
+    pub data_dir: PathBuf,
     #[serde(default)]
     pub network: NetworkConfig,
     #[serde(default)]
@@ -66,8 +69,10 @@ pub struct NodeConfig {
 impl NodeConfig {
     pub fn random_for_test() -> Self {
         let mut config = NodeConfig::default();
+        config.data_dir = env::temp_dir();
         config.network = NetworkConfig::random_for_test();
         config.tx_pool = TxPoolConfig::random_for_test();
+        config.rpc = RpcConfig::random_for_test();
         config
     }
 
@@ -90,6 +95,8 @@ impl NodeConfig {
             save_config(&default_config, &config_file_path)?;
             default_config
         };
+        node_config.data_dir = base_dir.clone();
+        //TODO every config should know the data_dir self.
         node_config.network.load(&base_dir)?;
         node_config.tx_pool.load()?;
         // NOTICE: if there is more load case, make it here.
@@ -164,9 +171,10 @@ pub fn gen_keypair() -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
 }
 
 pub fn get_available_port() -> u16 {
-    const MAX_PORT_RETRIES: u32 = 1000;
+    const MAX_PORT_RETRIES: u32 = 30000;
+    const MIN_PORT_RETRIES: u32 = 1024;
 
-    for _ in 0..MAX_PORT_RETRIES {
+    for _ in MIN_PORT_RETRIES..MAX_PORT_RETRIES {
         if let Ok(port) = get_ephemeral_port() {
             return port;
         }
