@@ -5,7 +5,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
-use consensus::{consensus_impl, difficult, dummy::DummyHeader, Consensus};
+use consensus::{argon_consensus, difficult, dummy::DummyHeader, Consensus};
 use futures::channel::oneshot;
 use logger::prelude::*;
 use std::convert::TryFrom;
@@ -17,6 +17,7 @@ use traits::ChainReader;
 use types::{
     block::BlockTemplate, system_events::SystemEvents, transaction::SignedUserTransaction,
 };
+
 #[derive(Clone)]
 pub struct Miner {
     state: Arc<Mutex<Option<MineCtx>>>,
@@ -92,7 +93,7 @@ impl Miner {
         // create block
         let state = self.state.lock().unwrap();
         let block_template = state.as_ref().unwrap().block_template.clone();
-        let consensus_header = consensus_impl::ConsensusHeaderImpl::try_from(payload).unwrap();
+        let consensus_header = argon_consensus::ArgonConsensus::try_from(payload).unwrap();
         let block = block_template.into_block(consensus_header);
         // notify chain mined block
         info!("Miner new block: {:?}", block);

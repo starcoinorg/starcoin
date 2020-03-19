@@ -614,9 +614,9 @@ checksum = "b170cd256a3f9fa6b9edae3e44a7dfdfc77e8124dbc3e2612d75f9c3e2396dae"
 
 [[package]]
 name = "bstr"
-version = "0.2.11"
+version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "502ae1441a0a5adb8fbd38a5955a6416b9493e92b465de5e4a9bde6a539c2c48"
+checksum = "2889e6d50f394968c8bf4240dc3f2a7eb4680844d27308f798229ac9d4725f41"
 dependencies = [
  "memchr",
 ]
@@ -4910,7 +4910,7 @@ checksum = "09b23093265f8d200fa7b4c2c76297f47e681c655f6f1285a8780d6a022f7431"
 dependencies = [
  "getrandom",
  "redox_syscall",
- "rust-argon2",
+ "rust-argon2 0.7.0",
 ]
 
 [[package]]
@@ -5029,6 +5029,18 @@ name = "rust-argon2"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bc8af4bda8e1ff4932523b94d3dd20ee30a87232323eda55903ffd71d2fb017"
+dependencies = [
+ "base64 0.11.0",
+ "blake2b_simd",
+ "constant_time_eq",
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "rust-argon2"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13d93898abbc08f4122732299b5cc3e81052c18c6218045eba4a80e02a086a42"
 dependencies = [
  "base64 0.11.0",
  "blake2b_simd",
@@ -5553,6 +5565,7 @@ dependencies = [
  "byteorder 1.3.4",
  "futures 0.3.4",
  "rand 0.6.5",
+ "rust-argon2 0.8.1",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
@@ -5636,10 +5649,13 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "byteorder 1.3.4",
  "futures 0.3.4",
  "futures-channel",
  "jsonrpc-core 12.2.0",
  "jsonrpc-tcp-server 12.2.0",
+ "rand 0.6.5",
+ "rust-argon2 0.8.1",
  "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-chain",
