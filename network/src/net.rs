@@ -130,9 +130,9 @@ impl SNetworkService {
         let (tx, rx) = oneshot::channel::<()>();
         let (protocol_msg, message_id) = Message::new_payload(message);
 
+        info!("Send message to {} with ack", peer_id);
         self.service
             .send_notification(peer_id, protocol_msg.into_bytes());
-        info!("Send message with ack");
         //self.waker.wake();
         self.inner.acks.lock().insert(message_id, tx);
         rx.await?;
