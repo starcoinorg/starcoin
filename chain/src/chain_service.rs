@@ -5,6 +5,7 @@ use crate::chain::BlockChain;
 use actix::prelude::*;
 use anyhow::{format_err, Result};
 use atomic_refcell::AtomicRefCell;
+use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use consensus::Consensus;
 use crypto::HashValue;
@@ -181,6 +182,7 @@ where
     storage: Arc<S>,
     network: Option<NetworkAsyncService>,
     txpool: P,
+    bus: Addr<BusActor>,
 }
 
 impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
@@ -196,6 +198,7 @@ where
         storage: Arc<S>,
         network: Option<NetworkAsyncService>,
         txpool: P,
+        bus: Addr<BusActor>,
     ) -> Result<Self> {
         let collection = to_block_chain_collection(
             config.clone(),
@@ -205,12 +208,11 @@ where
         )?;
         Ok(Self {
             config,
-            // master,
-            // branches,
             collection,
             storage,
             network,
             txpool,
+            bus,
         })
     }
 
@@ -291,6 +293,15 @@ where
                 .remove_branch(&new_branch.get_chain_info().branch_id());
             self.collection.update_master(new_branch);
             self.commit_2_txpool(enacted, retracted);
+
+            let bus = self.bus.clone();
+            let new_head = block.clone();
+            Arbiter::spawn(async move {
+                bus.send(Broadcast {
+                    msg: SystemEvents::NewHeadBlock(new_head),
+                })
+                .await;
+            });
 
             if let Some(network) = self.network.clone() {
                 Arbiter::spawn(async move {
