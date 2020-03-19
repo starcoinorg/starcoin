@@ -18,10 +18,10 @@ pub trait ChainService {
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
 
     /////////////////////////////////////////////// for master
-    fn current_header(&self) -> BlockHeader;
-    fn head_block(&self) -> Block;
-    fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
-    fn get_chain_info(&self) -> ChainInfo;
+    fn master_head_header(&self) -> BlockHeader;
+    fn master_head_block(&self) -> Block;
+    fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
+    fn master_chain_info(&self) -> ChainInfo;
 
     /////////////////////////////////////////////// just for test
     fn create_block_template(
@@ -43,10 +43,10 @@ pub trait ChainAsyncService: Clone + std::marker::Unpin {
     async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block>;
 
     /////////////////////////////////////////////// for master
-    async fn current_header(self) -> Option<BlockHeader>;
-    async fn head_block(self) -> Option<Block>;
-    async fn get_block_by_number(self, number: BlockNumber) -> Option<Block>;
-    async fn get_chain_info(self) -> Result<ChainInfo>;
+    async fn master_head_header(self) -> Option<BlockHeader>;
+    async fn master_head_block(self) -> Option<Block>;
+    async fn master_block_by_number(self, number: BlockNumber) -> Option<Block>;
+    async fn master_chain_info(self) -> Result<ChainInfo>;
 
     /////////////////////////////////////////////// just for test
     async fn gen_tx(&self) -> Result<()>;

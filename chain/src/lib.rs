@@ -75,15 +75,15 @@ impl Handler<ChainRequest> for ChainActor {
 
     fn handle(&mut self, msg: ChainRequest, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            ChainRequest::CurrentHeader() => {
-                Ok(ChainResponse::BlockHeader(self.service.current_header()))
-            }
+            ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(
+                self.service.master_head_header(),
+            )),
             ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeader(
                 self.service.get_header_by_hash(hash).unwrap().unwrap(),
             )),
-            ChainRequest::HeadBlock() => Ok(ChainResponse::Block(self.service.head_block())),
+            ChainRequest::HeadBlock() => Ok(ChainResponse::Block(self.service.master_head_block())),
             ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(
-                self.service.get_block_by_number(number)?.unwrap(),
+                self.service.master_block_by_number(number)?.unwrap(),
             )),
             ChainRequest::CreateBlockTemplate(parent_hash, txs) => {
                 Ok(ChainResponse::BlockTemplate(
@@ -100,7 +100,7 @@ impl Handler<ChainRequest> for ChainActor {
                 Ok(ChainResponse::None)
             }
             ChainRequest::GetChainInfo() => {
-                Ok(ChainResponse::ChainInfo(self.service.get_chain_info()))
+                Ok(ChainResponse::ChainInfo(self.service.master_chain_info()))
             }
             ChainRequest::GenTx() => {
                 self.service.gen_tx().unwrap();
@@ -154,7 +154,7 @@ impl ChainAsyncService for ChainActorRef {
         Ok(())
     }
 
-    async fn get_chain_info(self) -> Result<ChainInfo> {
+    async fn master_chain_info(self) -> Result<ChainInfo> {
         let response = self
             .address
             .send(ChainRequest::GetChainInfo())
@@ -175,7 +175,7 @@ impl ChainAsyncService for ChainActorRef {
         Ok(())
     }
 
-    async fn current_header(self) -> Option<BlockHeader> {
+    async fn master_head_header(self) -> Option<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
             .address
             .send(ChainRequest::CurrentHeader())
@@ -203,7 +203,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn head_block(self) -> Option<Block> {
+    async fn master_head_block(self) -> Option<Block> {
         if let ChainResponse::Block(block) = self
             .address
             .send(ChainRequest::HeadBlock())
@@ -217,7 +217,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn get_block_by_number(self, number: BlockNumber) -> Option<Block> {
+    async fn master_block_by_number(self, number: BlockNumber) -> Option<Block> {
         if let ChainResponse::Block(block) = self
             .address
             .send(ChainRequest::GetBlockByNumber(number))
