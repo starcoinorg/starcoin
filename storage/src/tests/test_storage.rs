@@ -16,7 +16,8 @@ use types::vm_error::StatusCode;
 #[test]
 fn test_storage() {
     let cache_storage = Arc::new(CacheStorage::new());
-    let db_storage = Arc::new(DBStorage::new("./data"));
+    let tmpdir = libra_temppath::TempPath::new();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
@@ -37,7 +38,8 @@ fn test_storage() {
 #[test]
 fn test_two_level_storage() {
     let cache_storage = Arc::new(CacheStorage::new());
-    let db_storage = Arc::new(DBStorage::new("./data2"));
+    let tmpdir = libra_temppath::TempPath::new();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
