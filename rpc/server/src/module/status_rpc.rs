@@ -18,8 +18,8 @@ impl StatusRpcImpl {
 }
 
 impl StatusApi for StatusRpcImpl {
-    fn status(&self) -> Result<String> {
+    fn status(&self) -> Result<bool> {
         //TODO check service status.
-        Ok("ok".to_string())
+        Ok(true)
     }
 }
