@@ -1,4 +1,4 @@
-use crate::{BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
+use crate::{to_block_chain_collection, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
@@ -70,13 +70,27 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
                 .unwrap();
             let (_sender, receiver) = oneshot::channel();
 
-            let chain_info = chain.clone().master_chain_info().await.unwrap();
+            let startup_info = chain.clone().master_startup_info().await.unwrap();
+            let collection = to_block_chain_collection(
+                conf.clone(),
+                startup_info,
+                storage.clone(),
+                txpool.clone(),
+            )
+            .unwrap();
             let block_chain =
                 BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
                     conf.clone(),
-                    chain_info,
+                    collection
+                        .clone()
+                        .get_master()
+                        .borrow()
+                        .get(0)
+                        .unwrap()
+                        .get_chain_info(),
                     storage.clone(),
                     txpool.clone(),
+                    collection,
                 )
                 .unwrap();
             let block =
@@ -103,7 +117,13 @@ async fn test_block_chain_head() {
 async fn test_block_chain_forks() {
     let times = 5;
     let chain = gen_head_chain(times, true).await;
-    let mut parent_hash = chain.clone().master_chain_info().await.unwrap().branch_id();
+    let mut parent_hash = chain
+        .clone()
+        .master_startup_info()
+        .await
+        .unwrap()
+        .head
+        .branch_id();
 
     if times > 0 {
         for i in 0..(times + 1) {
@@ -152,12 +172,19 @@ async fn test_chain_apply() -> Result<()> {
             bus.clone(),
         )
     };
+    let collection = to_block_chain_collection(
+        config.clone(),
+        genesis.startup_info().clone(),
+        storage.clone(),
+        txpool.clone(),
+    )?;
     let mut block_chain =
         BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
             config.clone(),
             genesis.startup_info().head.clone(),
             storage,
             txpool,
+            collection,
         )?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
