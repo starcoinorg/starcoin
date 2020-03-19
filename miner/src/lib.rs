@@ -29,6 +29,8 @@ use types::transaction::TxStatus;
 mod headblock_pacemaker;
 #[allow(dead_code)]
 mod miner;
+#[allow(dead_code)]
+mod miner_client;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 mod stratum;
