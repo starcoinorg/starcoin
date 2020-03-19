@@ -37,4 +37,8 @@ impl TransactionInfoStore {
     pub fn get(&self, hash_value: HashValue) -> Result<Option<TransactionInfo>> {
         self.store.get(hash_value)
     }
+
+    pub fn remove(&self, transaction_id: HashValue) -> Result<()> {
+        self.store.remove(transaction_id)
+    }
 }

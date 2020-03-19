@@ -12,7 +12,6 @@ use logger::prelude::*;
 use rocksdb::{CFHandle, ColumnFamilyOptions, DBOptions, Writable, WriteOptions, DB};
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Arc;
 
 pub const DEFAULT_CF_NAME: ColumnFamilyName = "default";
 
@@ -20,7 +19,7 @@ pub const DEFAULT_CF_NAME: ColumnFamilyName = "default";
 pub type ColumnFamilyOptionsMap = HashMap<ColumnFamilyName, ColumnFamilyOptions>;
 
 pub struct DBStorage {
-    db: Arc<DB>,
+    db: DB,
 }
 
 impl DBStorage {
@@ -56,7 +55,7 @@ impl DBStorage {
         .collect();
         let path = db_root_path.as_ref().join("starcoindb");
 
-        let db = Arc::new(if readonly {
+        let db = if readonly {
             let db_log_dir = log_dir
                 .ok_or_else(|| format_err!("Must provide log_dir if opening in readonly mode."))?;
             if !db_log_dir.as_ref().is_dir() {
@@ -66,7 +65,7 @@ impl DBStorage {
             Self::open_readonly(path.clone(), cf_opts_map, db_log_dir.as_ref().to_path_buf())?
         } else {
             Self::open_inner(path.clone(), cf_opts_map)?
-        });
+        };
 
         info!("Opened StarcoinDB at {:?}", path);
 
@@ -155,6 +154,29 @@ impl DBStorage {
         )
     }
 
+    pub fn drop_cf(&mut self) -> Result<(), Error> {
+        let vec_cf = vec![
+            DEFAULT_CF_NAME,
+            ACCUMULATOR_INDEX_PREFIX_NAME,
+            ACCUMULATOR_NODE_PREFIX_NAME,
+            BLOCK_PREFIX_NAME,
+            BLOCK_HEADER_PREFIX_NAME,
+            BLOCK_SONS_PREFIX_NAME,
+            BLOCK_BODY_PREFIX_NAME,
+            BLOCK_NUM_PREFIX_NAME,
+            BLOCK_INFO_PREFIX_NAME,
+            STATE_NODE_PREFIX_NAME,
+            TRANSACTION_PREFIX_NAME,
+        ];
+        for cf in vec_cf {
+            self.db
+                .drop_cf(cf)
+                .map_err(Self::convert_rocksdb_err)
+                .unwrap();
+        }
+        Ok(())
+    }
+
     fn db_exists(path: &Path) -> bool {
         let rocksdb_current_file = path.join("CURRENT");
         rocksdb_current_file.is_file()
@@ -185,7 +207,6 @@ impl InnerRepository for DBStorage {
         let cf_handle = self.get_cf_handle(prefix_name)?;
         match self
             .db
-            .clone()
             .get_cf(cf_handle, key.as_slice())
             .map_err(Self::convert_rocksdb_err)
         {
@@ -197,7 +218,6 @@ impl InnerRepository for DBStorage {
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         let cf_handle = self.get_cf_handle(prefix_name)?;
         self.db
-            .clone()
             .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())
             .map_err(Self::convert_rocksdb_err)
     }
@@ -211,7 +231,6 @@ impl InnerRepository for DBStorage {
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         let cf_handle = self.get_cf_handle(prefix_name)?;
         self.db
-            .clone()
             .delete_cf(cf_handle, &key)
             .map_err(Self::convert_rocksdb_err)
     }
