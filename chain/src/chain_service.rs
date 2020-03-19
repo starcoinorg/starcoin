@@ -10,6 +10,7 @@ use crypto::HashValue;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
+use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -22,6 +23,93 @@ use types::{
     transaction::SignedUserTransaction,
     U256,
 };
+// use std::sync::RwLock;
+
+struct BlockChainCollection<E, C, P, S>
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService + 'static,
+    S: BlockChainStore + 'static,
+{
+    master: BlockChain<E, C, S, P>,
+    branches: HashMap<HashValue, BlockChain<E, C, S, P>>,
+}
+
+impl<E, C, P, S> BlockChainCollection<E, C, P, S>
+where
+    E: TransactionExecutor,
+    C: Consensus,
+    P: TxPoolAsyncService + 'static,
+    S: BlockChainStore + 'static,
+{
+    pub fn new(master: BlockChain<E, C, S, P>) -> Self {
+        BlockChainCollection {
+            master,
+            branches: HashMap::new(),
+        }
+    }
+
+    pub fn insert_branch(&mut self, branch: BlockChain<E, C, S, P>) {
+        self.branches
+            .insert(branch.get_chain_info().branch_id(), branch);
+    }
+
+    pub fn update_master(&mut self, new_master: BlockChain<E, C, S, P>) {
+        self.master = new_master;
+    }
+
+    pub fn get_master(&self) -> &BlockChain<E, C, S, P> {
+        &self.master
+    }
+
+    pub fn get_branch(&self, branch_id: &HashValue) -> Option<&BlockChain<E, C, S, P>> {
+        self.branches.get(branch_id)
+    }
+
+    pub fn remove_branch(&mut self, branch_id: &HashValue) {
+        self.branches.remove(branch_id);
+    }
+
+    pub fn fork(&self, block_header: &BlockHeader) -> Option<ChainInfo> {
+        let mut chain_info = self.master.fork(block_header);
+        if chain_info.is_none() {
+            for branch in self.branches.values() {
+                chain_info = branch.fork(block_header);
+                if chain_info.is_some() {
+                    break;
+                }
+            }
+        }
+
+        chain_info
+    }
+
+    pub fn create_block_template(
+        &self,
+        block_id: HashValue,
+        difficulty: U256,
+        user_txns: Vec<SignedUserTransaction>,
+    ) -> Result<BlockTemplate> {
+        if self.master.exist_block(block_id) {
+            self.master
+                .create_block_template(Some(block_id), difficulty, user_txns)
+        } else {
+            let mut tmp = None;
+            for branch in self.branches.values() {
+                if branch.exist_block(block_id) {
+                    tmp = Some(branch.create_block_template(
+                        Some(block_id),
+                        difficulty,
+                        user_txns.clone(),
+                    ));
+                }
+            }
+
+            Ok(tmp.unwrap().unwrap())
+        }
+    }
+}
 
 pub struct ChainServiceImpl<E, C, P, S>
 where
@@ -31,8 +119,9 @@ where
     S: BlockChainStore + 'static,
 {
     config: Arc<NodeConfig>,
-    master: BlockChain<E, C, S, P>,
-    branches: HashMap<HashValue, BlockChain<E, C, S, P>>,
+    // master: BlockChain<E, C, S, P>,
+    // branches: Arc<RwLock<HashMap<HashValue, BlockChain<E, C, S, P>>>>,
+    collection: Arc<RwLock<BlockChainCollection<E, C, S, P>>>,
     storage: Arc<S>,
     network: Option<NetworkAsyncService>,
     txpool: P,
@@ -42,8 +131,8 @@ impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
 where
     E: TransactionExecutor,
     C: Consensus,
-    P: TxPoolAsyncService,
-    S: BlockChainStore,
+    P: TxPoolAsyncService + 'static,
+    S: BlockChainStore + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -58,17 +147,18 @@ where
             storage.clone(),
             txpool.clone(),
         )?;
-        let mut branches = HashMap::new();
+        let collection = Arc::new(RwLock::new(BlockChainCollection::new(master)));
         for branch_info in startup_info.branches {
-            branches.insert(
+            collection.write().insert(
                 branch_info.branch_id(),
                 BlockChain::new(config.clone(), branch_info, storage.clone(), txpool.clone())?,
             );
         }
         Ok(Self {
             config,
-            master,
-            branches,
+            // master,
+            // branches,
+            collection,
             storage,
             network,
             txpool,
@@ -77,15 +167,7 @@ where
 
     pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
-        let mut chain_info = self.master.fork(header);
-        if chain_info.is_none() {
-            for branch in self.branches.values() {
-                chain_info = branch.fork(header);
-                if chain_info.is_some() {
-                    break;
-                }
-            }
-        }
+        let mut chain_info = self.collection.read().fork(header);
 
         if chain_info.is_some() {
             return Some(
@@ -109,13 +191,23 @@ where
     fn select_head(&mut self, new_branch: BlockChain<E, C, S, P>) {
         let block = new_branch.head_block();
         let _ = self
-            .branches
-            .remove(&new_branch.get_chain_info().branch_id());
+            .collection
+            .write()
+            .remove_branch(&new_branch.get_chain_info().branch_id());
 
-        if new_branch.get_total_difficulty() > self.master.get_total_difficulty() {
+        if new_branch.get_total_difficulty()
+            > self.collection.read().get_master().get_total_difficulty()
+        {
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
             let mut retracted = Vec::new();
-            if new_branch.get_chain_info().branch_id() == self.master.get_chain_info().branch_id() {
+            if new_branch.get_chain_info().branch_id()
+                == self
+                    .collection
+                    .read()
+                    .get_master()
+                    .get_chain_info()
+                    .branch_id()
+            {
                 enacted.append(&mut block.transactions().clone().to_vec());
             } else {
                 debug!("rollback branch.");
@@ -123,11 +215,10 @@ where
                 enacted.append(&mut enacted_tmp);
                 retracted.append(&mut retracted_tmp);
 
-                self.branches.insert(
-                    self.master.get_chain_info().branch_id(),
+                self.collection.write().insert_branch(
                     BlockChain::new(
                         self.config.clone(),
-                        self.master.get_chain_info(),
+                        self.collection.read().get_master().get_chain_info(),
                         self.storage.clone(),
                         self.txpool.clone(),
                     )
@@ -135,7 +226,7 @@ where
                 );
             }
 
-            self.master = new_branch;
+            self.collection.write().update_master(new_branch);
             self.commit_2_txpool(enacted, retracted);
 
             if let Some(network) = self.network.clone() {
@@ -149,8 +240,7 @@ where
                 });
             };
         } else {
-            self.branches
-                .insert(self.master.get_chain_info().branch_id(), new_branch);
+            self.collection.write().insert_branch(new_branch);
         }
     }
 
@@ -175,7 +265,7 @@ where
         let mut retracted: Vec<Block> = Vec::new();
 
         let block_enacted = &new_branch.current_header().id();
-        let block_retracted = &self.master.current_header().id();
+        let block_retracted = &self.collection.read().get_master().current_header().id();
 
         let ancestor = self
             .storage
@@ -206,7 +296,9 @@ where
             };
             debug!("get block 2 {:?}.", block_retracted_tmp);
             let block_tmp = self
-                .master
+                .collection
+                .read()
+                .get_master()
                 .get_block(block_retracted_tmp)
                 .unwrap()
                 .expect("block is none 2.");
@@ -260,11 +352,11 @@ where
     }
 
     fn master_head_block(&self) -> Block {
-        self.master.head_block()
+        self.collection.read().get_master().head_block()
     }
 
     fn master_head_header(&self) -> BlockHeader {
-        self.master.current_header()
+        self.collection.read().get_master().current_header()
     }
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -272,7 +364,10 @@ where
     }
 
     fn master_block_by_number(&self, number: u64) -> Result<Option<Block>> {
-        self.master.get_block_by_number(number)
+        self.collection
+            .read()
+            .get_master()
+            .get_block_by_number(number)
     }
 
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {
@@ -287,37 +382,22 @@ where
     ) -> Result<BlockTemplate> {
         let block_id = match parent_hash {
             Some(hash) => hash,
-            None => self.master.current_header().id(),
+            None => self.collection.read().get_master().current_header().id(),
         };
 
         if let Ok(Some(_)) = self.get_block_by_hash(block_id) {
-            return if self.master.exist_block(block_id) {
-                self.master
-                    .create_block_template(Some(block_id), difficulty, user_txns)
-            } else {
-                let mut tmp = None;
-                for branch in self.branches.values() {
-                    if branch.exist_block(block_id) {
-                        tmp = Some(branch.create_block_template(
-                            Some(block_id),
-                            difficulty,
-                            user_txns.clone(),
-                        ));
-                    }
-                }
-
-                Ok(tmp.unwrap().unwrap())
-            };
+            self.collection
+                .create_block_template(block_id, difficulty, user_txns)
         } else {
             Err(format_err!("Block {:?} not exist.", block_id))
         }
     }
 
     fn gen_tx(&self) -> Result<()> {
-        self.master.gen_tx()
+        self.collection.read().get_master().gen_tx()
     }
 
     fn master_chain_info(&self) -> ChainInfo {
-        self.master.get_chain_info()
+        self.collection.read().get_master().get_chain_info()
     }
 }

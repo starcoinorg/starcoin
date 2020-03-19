@@ -23,7 +23,7 @@ traits = {path = "../core/traits", package="starcoin-traits"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
 async-trait = "0.1"
 futures = "0.3"
-futures_locks = { version = "0.5.0", package = "futures-locks"}
+parking_lot = "0.9"
 storage = { package="starcoin-storage", path = "../storage"}
 actix-rt = "1.0"
 futures-timer = "3.0.1"
