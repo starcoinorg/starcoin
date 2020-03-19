@@ -3,8 +3,10 @@
 
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::storage::{
-    CodecStorage, ColumnFamilyName, InnerRepository, KeyCodec, Repository, Storage, ValueCodec,
+use crate::storage::{CodecStorage, InnerRepository, KeyCodec, Repository, Storage, ValueCodec};
+use crate::{
+    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
+    BLOCK_SONS_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -16,12 +18,6 @@ use std::mem::size_of;
 use std::sync::{Arc, RwLock};
 use types::block::{Block, BlockBody, BlockHeader, BlockNumber, BranchNumber};
 
-const BLOCK_KEY_NAME: &'static str = "block";
-const BLOCK_KEY_PREFIX_NAME: ColumnFamilyName = BLOCK_KEY_NAME;
-const BLOCK_HEADER_KEY_PREFIX_NAME: ColumnFamilyName = "block_header";
-const BLOCK_SONS_KEY_PREFIX_NAME: ColumnFamilyName = "block_sons";
-const BLOCK_BODY_KEY_PREFIX_NAME: ColumnFamilyName = "block_body";
-const BLOCK_NUM_KEY_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub struct BlockStore {
     block_store: CodecStorage<HashValue, Block>,
     header_store: CodecStorage<HashValue, BlockHeader>,
@@ -145,32 +141,32 @@ impl BlockStore {
             block_store: CodecStorage::new(Arc::new(Storage::new(
                 cache_storage.clone(),
                 db_storage.clone(),
-                BLOCK_KEY_PREFIX_NAME,
+                BLOCK_PREFIX_NAME,
             ))),
             header_store: CodecStorage::new(Arc::new(Storage::new(
                 cache_storage.clone(),
                 db_storage.clone(),
-                BLOCK_HEADER_KEY_PREFIX_NAME,
+                BLOCK_HEADER_PREFIX_NAME,
             ))),
             sons_store: RwLock::new(CodecStorage::new(Arc::new(Storage::new(
                 cache_storage.clone(),
                 db_storage.clone(),
-                BLOCK_SONS_KEY_PREFIX_NAME,
+                BLOCK_SONS_PREFIX_NAME,
             )))),
             body_store: CodecStorage::new(Arc::new(Storage::new(
                 cache_storage.clone(),
                 db_storage.clone(),
-                BLOCK_BODY_KEY_PREFIX_NAME,
+                BLOCK_BODY_PREFIX_NAME,
             ))),
             number_store: CodecStorage::new(Arc::new(Storage::new(
                 cache_storage.clone(),
                 db_storage.clone(),
-                BLOCK_NUM_KEY_PREFIX_NAME,
+                BLOCK_NUM_PREFIX_NAME,
             ))),
             branch_number_store: CodecStorage::new(Arc::new(Storage::new(
                 cache_storage.clone(),
                 db_storage.clone(),
-                BLOCK_NUM_KEY_PREFIX_NAME,
+                BLOCK_NUM_PREFIX_NAME,
             ))),
         }
     }

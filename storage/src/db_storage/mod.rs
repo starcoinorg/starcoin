@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::storage::{ColumnFamilyName, InnerRepository};
+use crate::{
+    ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME,
+    BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
+    BLOCK_SONS_PREFIX_NAME, STATE_NODE_PREFIX_NAME, TRANSACTION_PREFIX_NAME,
+};
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
 use rocksdb::{CFHandle, ColumnFamilyOptions, DBOptions, Writable, DB};
@@ -10,15 +15,6 @@ use std::path::Path;
 use std::sync::Arc;
 
 pub const DEFAULT_CF_NAME: ColumnFamilyName = "default";
-pub const ACCUMULATOR_CF_NAME: ColumnFamilyName = "accumulator";
-pub const BLOCK_CF_NAME: ColumnFamilyName = "block";
-pub const BLOCK_HEADER_CF_NAME: ColumnFamilyName = "block_header";
-pub const BLOCK_SONS_CF_NAME: ColumnFamilyName = "block_sons";
-pub const BLOCK_BODY_CF_NAME: ColumnFamilyName = "block_body";
-pub const BLOCK_NUMBER_CF_NAME: ColumnFamilyName = "block_num";
-pub const BLOCK_INFO_CF_NAME: ColumnFamilyName = "block_info";
-pub const STATE_NODE_CF_NAME: ColumnFamilyName = "state_node";
-pub const TRANSACTION_INFO_CF_NAME: ColumnFamilyName = "transaction_info";
 
 /// Type alias to improve readability.
 pub type ColumnFamilyOptionsMap = HashMap<ColumnFamilyName, ColumnFamilyOptions>;
@@ -41,15 +37,19 @@ impl DBStorage {
                 /* LedgerInfo CF = */ DEFAULT_CF_NAME,
                 ColumnFamilyOptions::default(),
             ),
-            (ACCUMULATOR_CF_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_CF_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_HEADER_CF_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_SONS_CF_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_BODY_CF_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_NUMBER_CF_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_INFO_CF_NAME, ColumnFamilyOptions::default()),
-            (STATE_NODE_CF_NAME, ColumnFamilyOptions::default()),
-            (TRANSACTION_INFO_CF_NAME, ColumnFamilyOptions::default()),
+            (
+                ACCUMULATOR_INDEX_PREFIX_NAME,
+                ColumnFamilyOptions::default(),
+            ),
+            (ACCUMULATOR_NODE_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_HEADER_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_SONS_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_BODY_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_NUM_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_INFO_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (STATE_NODE_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (TRANSACTION_PREFIX_NAME, ColumnFamilyOptions::default()),
         ]
         .iter()
         .cloned()

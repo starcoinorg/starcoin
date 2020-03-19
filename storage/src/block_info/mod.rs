@@ -1,14 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{CodecStorage, ColumnFamilyName, Repository, ValueCodec};
+use crate::storage::{CodecStorage, Repository, ValueCodec};
 use anyhow::Result;
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::sync::Arc;
 use types::block::BlockInfo;
 
-pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub trait BlockInfoStorage {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<()>;
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>>;
