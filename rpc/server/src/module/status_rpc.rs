@@ -1,10 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use jsonrpc_core::{BoxFuture, Error, Result};
-use jsonrpc_derive::rpc;
+use jsonrpc_core::Result;
 use starcoin_rpc_api::status::StatusApi;
-use traits::TxPoolAsyncService;
 
 /// Re-export the API
 pub use starcoin_rpc_api::status::*;

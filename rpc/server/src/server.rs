@@ -12,14 +12,19 @@ use starcoin_logger::prelude::*;
 use std::sync::Arc;
 
 pub struct RpcServer {
+    ipc: jsonrpc_ipc_server::Server,
     http: Option<jsonrpc_http_server::Server>,
     tcp: Option<jsonrpc_tcp_server::Server>,
     ws: Option<jsonrpc_ws_server::Server>,
 }
 
 impl RpcServer {
-    pub fn new(config: Arc<NodeConfig>, mut io_handler: IoHandler) -> RpcServer {
-        //io_handler.add_method("status", |_| jsonrpc_core::futures::future::ok("ok".into()));
+    pub fn new(config: Arc<NodeConfig>, io_handler: IoHandler) -> RpcServer {
+        let ipc_file = config.rpc.get_ipc_file(config.data_dir.as_path());
+        let ipc = jsonrpc_ipc_server::ServerBuilder::new(io_handler.clone())
+            .start(ipc_file.to_str().expect("Path to string should success."))
+            .expect("Unable to start IPC server.");
+        info!("Ipc rpc server start at :{:?}", ipc_file.as_path());
         let http = match &config.rpc.http_address {
             Some(address) => {
                 let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
@@ -31,14 +36,15 @@ impl RpcServer {
                     .max_request_body_size(config.rpc.max_request_body_size)
                     .health_api(("/status", "status"))
                     .start_http(address)
-                    .expect("Unable to start RPC server");
-                info!("Json-rpc start at :{}", address);
+                    .expect("Unable to start RPC server.");
+                info!("Http rpc server start at :{}", address);
                 Some(http)
             }
             None => None,
         };
 
         RpcServer {
+            ipc,
             http,
             tcp: None,
             ws: None,
@@ -46,6 +52,7 @@ impl RpcServer {
     }
 
     pub fn close(self) {
+        self.ipc.close();
         if let Some(http) = self.http {
             http.close()
         }

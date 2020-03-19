@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use futures::future::{FutureExt, TryFutureExt};
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 
