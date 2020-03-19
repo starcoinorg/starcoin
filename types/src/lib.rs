@@ -11,7 +11,6 @@ pub mod byte_array;
 pub mod change_set;
 pub mod contract_event;
 pub mod event;
-pub mod identifier;
 pub mod ids;
 pub mod language_storage;
 pub mod peer_info;
