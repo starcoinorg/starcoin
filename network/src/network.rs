@@ -237,7 +237,6 @@ impl Inner {
                     for txn in &txns {
                         let id = txn.crypto_hash();
                         if !peer_info.known_transactions.contains(&id) {
-                            info!("txn id is {}", id);
                             peer_info.known_transactions.put(id, ());
                         } else {
                             return Ok(());
@@ -408,7 +407,6 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
         }
         Arbiter::spawn(async move {
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
-                info!("send message to {}", peer_id);
                 let mut txns_unhandled = Vec::new();
                 for (id, txn) in &txn_map {
                     if !peer_info.known_transactions.contains(id) {
@@ -512,7 +510,7 @@ mod tests {
             _delay(Duration::from_millis(100)).await;
 
             let txns = addr.send(GetPeerTransactions).await.unwrap();
-            //assert_eq!(1, txns.len());
+            assert_eq!(1, txns.len());
 
             let request = RPCRequest::TestRequest(TestRequest {
                 data: HashValue::random(),
