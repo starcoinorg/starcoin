@@ -9,7 +9,7 @@ use crate::{
 };
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
-use rocksdb::{CFHandle, ColumnFamilyOptions, DBOptions, Writable, DB};
+use rocksdb::{CFHandle, ColumnFamilyOptions, DBOptions, Writable, WriteOptions, DB};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -172,6 +172,12 @@ impl DBStorage {
             )
         })
     }
+
+    fn default_write_options() -> WriteOptions {
+        let mut opts = WriteOptions::new();
+        opts.set_sync(true);
+        opts
+    }
 }
 
 impl InnerRepository for DBStorage {
@@ -192,7 +198,7 @@ impl InnerRepository for DBStorage {
         let cf_handle = self.get_cf_handle(prefix_name)?;
         self.db
             .clone()
-            .put_cf(cf_handle, &key, &value)
+            .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())
             .map_err(Self::convert_rocksdb_err)
     }
 

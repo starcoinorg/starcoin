@@ -34,6 +34,7 @@ pub trait InnerRepository: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
 
+/// Define simple storage package for one storage
 pub struct StorageDelegated {
     repository: Arc<dyn InnerRepository>,
     pub prefix_name: ColumnFamilyName,
