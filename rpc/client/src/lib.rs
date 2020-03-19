@@ -34,7 +34,7 @@ impl RpcClient {
         Ok(Self::new(client_inner, rt))
     }
 
-    pub fn status(&self) -> anyhow::Result<String> {
+    pub fn status(&self) -> anyhow::Result<bool> {
         self.rt.borrow_mut().block_on_std(async {
             self.inner
                 .status_client
@@ -73,7 +73,7 @@ impl RpcClientInner {
         }
     }
 
-    pub async fn status(&self) -> anyhow::Result<String> {
+    pub async fn status(&self) -> anyhow::Result<bool> {
         self.status_client.status().map_err(map_err).compat().await
     }
 }
@@ -123,7 +123,8 @@ mod tests {
         starcoin_logger::init_for_test();
         //let rt = Runtime::new().unwrap();
         let config = Arc::new(NodeConfig::random_for_test());
-        let url = format!("http://{}", config.rpc.http_address.to_string());
+        let http_address = config.rpc.http_address.as_ref().unwrap();
+        let url = format!("http://{}", http_address.to_string());
         info!("url:{}", url);
         let (mut sender, mut receiver) = oneshot::channel::<bool>();
         let _system = actix_rt::System::new("test");

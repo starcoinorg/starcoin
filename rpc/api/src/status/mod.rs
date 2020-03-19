@@ -10,5 +10,5 @@ pub use self::gen_client::Client as StatusClient;
 #[rpc]
 pub trait StatusApi {
     #[rpc(name = "status")]
-    fn status(&self) -> Result<String>;
+    fn status(&self) -> Result<bool>;
 }

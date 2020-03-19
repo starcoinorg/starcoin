@@ -12,26 +12,32 @@ use starcoin_logger::prelude::*;
 use std::sync::Arc;
 
 pub struct RpcServer {
-    http: jsonrpc_http_server::Server,
+    http: Option<jsonrpc_http_server::Server>,
     tcp: Option<jsonrpc_tcp_server::Server>,
     ws: Option<jsonrpc_ws_server::Server>,
 }
 
 impl RpcServer {
     pub fn new(config: Arc<NodeConfig>, mut io_handler: IoHandler) -> RpcServer {
-        io_handler.add_method("status", |_| jsonrpc_core::futures::future::ok("ok".into()));
+        //io_handler.add_method("status", |_| jsonrpc_core::futures::future::ok("ok".into()));
+        let http = match &config.rpc.http_address {
+            Some(address) => {
+                let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
+                    .cors(DomainsValidation::AllowOnly(vec![
+                        AccessControlAllowOrigin::Null,
+                        AccessControlAllowOrigin::Any,
+                    ]))
+                    .threads(config.rpc.threads.unwrap_or_else(num_cpus::get))
+                    .max_request_body_size(config.rpc.max_request_body_size)
+                    .health_api(("/status", "status"))
+                    .start_http(address)
+                    .expect("Unable to start RPC server");
+                info!("Json-rpc start at :{}", address);
+                Some(http)
+            }
+            None => None,
+        };
 
-        let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
-            .cors(DomainsValidation::AllowOnly(vec![
-                AccessControlAllowOrigin::Null,
-                AccessControlAllowOrigin::Any,
-            ]))
-            .threads(config.rpc.threads.unwrap_or_else(num_cpus::get))
-            .max_request_body_size(config.rpc.max_request_body_size)
-            .health_api(("/status", "status"))
-            .start_http(&config.rpc.http_address)
-            .expect("Unable to start RPC server");
-        info!("Json-rpc start at :{}", &config.rpc.http_address);
         RpcServer {
             http,
             tcp: None,
@@ -40,7 +46,9 @@ impl RpcServer {
     }
 
     pub fn close(self) {
-        self.http.close();
+        if let Some(http) = self.http {
+            http.close()
+        }
         if let Some(tcp) = self.tcp {
             tcp.close();
         }
