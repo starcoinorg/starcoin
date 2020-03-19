@@ -13,6 +13,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 hex = { version = "0.3.2", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 actix = "0.9"
 actix-rt = "1.0"
 jsonrpc-core = "14.0"
@@ -24,6 +25,7 @@ jsonrpc-ws-server = "14.0"
 jsonrpc-server-utils = "14.0"
 jsonrpc-pubsub = "14.0"
 jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws"]}
+tokio01 = { version="0.1", package="tokio"}
 futures = { version = "0.3.2", features = ["compat"] }
 num_cpus = "1.10"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
@@ -33,4 +35,4 @@ config = {path = "../../config", package="starcoin-config"}
 txpool = {path = "../../txpool", package="starcoin-txpool"}
 starcoin-logger = { path = "../../commons/logger"}
 stest = { path = "../../commons/stest"}
-starcoin-rpc-api = {path = "../api"}
+starcoin-rpc-api = { path = "../api"}

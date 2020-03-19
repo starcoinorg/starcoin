@@ -23,7 +23,10 @@ pub struct JSONRpcActor {
 }
 
 impl JSONRpcActor {
-    pub fn launch<TS>(config: Arc<NodeConfig>, txpool_service: TS) -> Result<Addr<JSONRpcActor>>
+    pub fn launch<TS>(
+        config: Arc<NodeConfig>,
+        txpool_service: TS,
+    ) -> Result<(Addr<JSONRpcActor>, IoHandler)>
     where
         TS: TxPoolAsyncService + 'static,
     {
@@ -38,7 +41,7 @@ impl JSONRpcActor {
         config: Arc<NodeConfig>,
         status_api: Option<S>,
         txpool_api: Option<T>,
-    ) -> Result<Addr<Self>>
+    ) -> Result<(Addr<Self>, IoHandler)>
     where
         S: StatusApi,
         T: TxPoolApi,
@@ -50,12 +53,12 @@ impl JSONRpcActor {
         if let Some(txpool_api) = txpool_api {
             io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
         }
-        Ok(JSONRpcActor {
+        let actor = JSONRpcActor {
             config,
             server: RefCell::new(None),
-            io_handler,
-        }
-        .start())
+            io_handler: io_handler.clone(),
+        };
+        Ok((actor.start(), io_handler))
     }
 
     fn do_start(&mut self) {
@@ -70,8 +73,6 @@ impl JSONRpcActor {
             None => {}
         }
     }
-
-    pub fn attach(&self) {}
 }
 
 impl Actor for JSONRpcActor {
@@ -98,7 +99,6 @@ impl Supervised for JSONRpcActor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use jsonrpc_core_client::transports::{http, local};
     use traits::mock::MockTxPoolService;
 
     #[stest::test]

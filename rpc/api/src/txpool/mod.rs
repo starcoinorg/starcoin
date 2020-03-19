@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::FutureResult;
-use jsonrpc_core::{BoxFuture, Error, Result};
 use jsonrpc_derive::rpc;
 use starcoin_types::transaction::SignedUserTransaction;
 
