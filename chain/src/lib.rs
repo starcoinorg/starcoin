@@ -50,7 +50,14 @@ impl ChainActor {
         txpool: TxPoolRef,
     ) -> Result<ChainActorRef> {
         let actor = ChainActor {
-            service: ChainServiceImpl::new(config, startup_info, storage, network, txpool)?,
+            service: ChainServiceImpl::new(
+                config,
+                startup_info,
+                storage,
+                network,
+                txpool,
+                bus.clone(),
+            )?,
             bus,
         }
         .start();
