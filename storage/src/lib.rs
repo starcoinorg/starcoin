@@ -74,6 +74,8 @@ pub trait BlockStorageOp {
 
     fn commit_block(&self, block: Block) -> Result<()>;
 
+    fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()>;
+
     fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
 
     fn get_latest_block_header(&self) -> Result<Option<BlockHeader>>;
@@ -242,6 +244,10 @@ impl BlockStorageOp for StarcoinStorage {
 
     fn commit_block(&self, block: Block) -> Result<()> {
         self.block_store.commit_block(block)
+    }
+
+    fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()> {
+        self.block_store.commit_branch_block(branch_id, block)
     }
 
     fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {

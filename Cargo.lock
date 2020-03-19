@@ -3776,6 +3776,7 @@ dependencies = [
  "slog",
  "slog_derive",
  "smallvec 0.6.13",
+ "starcoin-canonical-serialization",
  "tempfile",
  "thiserror",
  "unsigned-varint 0.3.2",

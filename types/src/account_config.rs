@@ -5,26 +5,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    access_path::AccessPath,
-    account_address::AccountAddress,
-    byte_array::ByteArray,
-    identifier::{IdentStr, Identifier},
+    access_path::AccessPath, account_address::AccountAddress, byte_array::ByteArray,
     language_storage::StructTag,
 };
 use anyhow::Result;
+use move_core_types::identifier::{IdentStr, Identifier};
 use once_cell::sync::Lazy;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use std::convert::{TryFrom, TryInto};
 
+//TODO rename account and coin name.
 // Starcoin
-static COIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Starcoin").unwrap());
+static COIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LibraCoin").unwrap());
 static COIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 
 // Account
 static ACCOUNT_MODULE_NAME: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("StarcoinAccount").unwrap());
+    Lazy::new(|| Identifier::new("LibraAccount").unwrap());
 static ACCOUNT_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 
 // Payment Events

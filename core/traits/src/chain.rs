@@ -30,8 +30,9 @@ pub trait ChainReader {
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn gen_tx(&self) -> Result<()>;
     fn get_chain_info(&self) -> ChainInfo;
-    fn get_block_info(&self) -> BlockInfo;
-    fn get_difficulty(&self) -> U256;
+    fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
+    fn get_total_difficulty(&self) -> U256;
+    fn exist_block(&self, block_id: HashValue) -> bool;
 }
 
 pub trait ChainWriter {

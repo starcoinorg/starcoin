@@ -41,9 +41,9 @@
 use crate::{
     account_address::AccountAddress,
     account_config::ACCOUNT_RESOURCE_PATH,
-    identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, ResourceKey, StructTag},
 };
+use move_core_types::identifier::{IdentStr, Identifier};
 
 use mirai_annotations::*;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -361,6 +361,7 @@ impl From<libra_types::access_path::AccessPath> for AccessPath {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::account_config;
 
     #[test]
     fn test_convert() {
@@ -372,5 +373,23 @@ mod tests {
         let access_path1: libra_types::access_path::AccessPath = access_path0.clone().into();
         let access_path2: AccessPath = access_path1.into();
         assert_eq!(access_path0, access_path2);
+    }
+
+    #[test]
+    fn test_convert_with_struct_tag() {
+        let access_path0 = AccessPath::new_for_account(account_config::association_address());
+        let access_path1: libra_types::access_path::AccessPath = access_path0.clone().into();
+        let access_path2: AccessPath = access_path1.clone().into();
+        assert_eq!(access_path0, access_path2);
+
+        let access_path3 = libra_types::access_path::AccessPath::new_for_account(
+            account_config::association_address().into(),
+        );
+        let access_path4: AccessPath = access_path3.clone().into();
+        let access_path5: libra_types::access_path::AccessPath = access_path4.clone().into();
+        assert_eq!(access_path3, access_path5);
+
+        assert_eq!(access_path0, access_path4);
+        assert_eq!(access_path1, access_path5);
     }
 }

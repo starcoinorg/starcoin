@@ -9,6 +9,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
+use futures::lock::Mutex;
 use futures::{channel::mpsc, stream::StreamExt};
 use libp2p::PeerId;
 use scs::SCSCodec;
@@ -24,6 +25,10 @@ use std::time::Duration;
 use tokio::runtime::Handle;
 
 use crypto::{hash::CryptoHash, HashValue};
+use std::collections::HashMap;
+use types::transaction::SignedUserTransaction;
+
+const LRU_CACHE_SIZE: usize = 1024;
 
 #[derive(Clone)]
 pub struct NetworkAsyncService {
@@ -32,21 +37,39 @@ pub struct NetworkAsyncService {
     tx: mpsc::UnboundedSender<NetworkMessage>,
     peer_id: PeerId,
     handle: Handle,
-    inner: Inner,
+    inner: Arc<Inner>,
 }
 
-#[derive(Clone)]
 struct Inner {
     network_service: SNetworkService,
-    addr: Addr<NetworkActor>,
     bus: Addr<BusActor>,
     message_processor: MessageProcessor<u128, RPCResponse>,
     handle: Handle,
+    peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
+}
+
+struct PeerInfoNet {
+    pub protocol_version: u32,
+    pub best_number: u64,
+    known_transactions: LruCache<HashValue, ()>,
+    /// Holds a set of blocks known to this peer.
+    known_blocks: LruCache<HashValue, ()>,
+}
+
+impl PeerInfoNet {
+    fn new() -> Self {
+        Self {
+            protocol_version: 0,
+            best_number: 0,
+            known_blocks: LruCache::new(LRU_CACHE_SIZE),
+            known_transactions: LruCache::new(LRU_CACHE_SIZE),
+        }
+    }
 }
 
 impl NetworkAsyncService {
     pub async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
-        let data = msg.encode().unwrap();
+        let data = msg.encode()?;
         let network_message = NetworkMessage {
             peer_id: peer_id.into(),
             data,
@@ -74,7 +97,7 @@ impl NetworkAsyncService {
     ) -> Result<RPCResponse> {
         let request_id = get_unix_ts();
         let peer_msg = PeerMessage::RPCRequest(request_id, message);
-        let data = peer_msg.encode().unwrap();
+        let data = peer_msg.encode()?;
         let network_message = NetworkMessage {
             peer_id: peer_id.clone().into(),
             data,
@@ -109,7 +132,7 @@ impl NetworkAsyncService {
 pub struct NetworkActor {
     network_service: SNetworkService,
     bus: Addr<BusActor>,
-    lru_cache: LruCache<HashValue, ()>,
+    peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
 }
 
 impl NetworkActor {
@@ -136,18 +159,21 @@ impl NetworkActor {
 
         let service_clone = service.clone();
         let bus_clone = bus.clone();
+        let peers = Arc::new(Mutex::new(HashMap::new()));
+        let peers_clone = peers.clone();
         let addr = NetworkActor::create(move |_ctx: &mut Context<NetworkActor>| NetworkActor {
             network_service: service_clone,
             bus: bus_clone,
-            lru_cache: LruCache::new(10240),
+            peers: peers_clone,
         });
         let inner = Inner {
-            addr: addr.clone(),
             network_service: service,
             bus,
             handle: handle.clone(),
             message_processor: message_processor_clone,
+            peers,
         };
+        let inner = Arc::new(inner);
         handle.spawn(Self::start(inner.clone(), rx, event_rx, tx_command));
         NetworkAsyncService {
             addr,
@@ -160,7 +186,7 @@ impl NetworkActor {
     }
 
     async fn start(
-        inner: Inner,
+        inner: Arc<Inner>,
         net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
         event_rx: mpsc::UnboundedReceiver<PeerEvent>,
         close_tx: mpsc::UnboundedSender<()>,
@@ -207,6 +233,16 @@ impl Inner {
     async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         match msg {
             PeerMessage::UserTransactions(txns) => {
+                if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
+                    for txn in &txns {
+                        let id = txn.crypto_hash();
+                        if !peer_info.known_transactions.contains(&id) {
+                            peer_info.known_transactions.put(id, ());
+                        } else {
+                            return Ok(());
+                        }
+                    }
+                }
                 let _peer_info = PeerInfo::new(peer_id.into());
                 self.bus
                     .clone()
@@ -265,9 +301,28 @@ impl Inner {
 
     async fn handle_event_receive(&self, event: PeerEvent) -> Result<()> {
         info!("event is {:?}", event);
+        match event.clone() {
+            PeerEvent::Open(peer_id) => {
+                self.on_peer_connected(peer_id.into()).await;
+            }
+            PeerEvent::Close(peer_id) => {
+                self.on_peer_disconnected(peer_id.into()).await;
+            }
+        }
         self.bus.send(Broadcast { msg: event }).await?;
         info!("already broadcast event");
         Ok(())
+    }
+
+    async fn on_peer_connected(&self, peer_id: PeerId) {
+        let mut peers = self.peers.lock().await;
+        if !peers.contains_key(&peer_id) {
+            peers.insert(peer_id, PeerInfoNet::new());
+        };
+    }
+
+    async fn on_peer_disconnected(&self, peer_id: PeerId) {
+        self.peers.lock().await.remove(&peer_id);
     }
 }
 
@@ -297,27 +352,34 @@ impl Handler<SystemEvents> for NetworkActor {
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        let peer_msg = match msg {
+        match msg {
             SystemEvents::NewHeadBlock(block) => {
-                let id = block.header().id().clone();
-                if self.lru_cache.contains(&id) {
-                    info!("already handle block {:?}", block.header().id());
-                    return;
-                } else {
-                    self.lru_cache.put(id, ());
-                }
                 info!("broadcast a new block {:?}", block.header().id());
-                Some(PeerMessage::Block(block))
-            }
-            _ => None,
-        };
 
-        if let Some(msg) = peer_msg {
-            let bytes = msg.encode().unwrap();
-            let mut network_service = self.network_service.clone();
-            Arbiter::spawn(async move {
-                network_service.broadcast_message(bytes).await;
-            })
+                let id = block.header().id();
+                let peers = self.peers.clone();
+                let network_service = self.network_service.clone();
+                let msg = PeerMessage::Block(block);
+                let bytes = msg.encode().unwrap();
+
+                Arbiter::spawn(async move {
+                    for (peer_id, peer_info) in peers.lock().await.iter_mut() {
+                        if !peer_info.known_blocks.contains(&id) {
+                            peer_info.known_blocks.put(id.clone(), ());
+                        } else {
+                            continue;
+                        }
+
+                        network_service
+                            .send_message(peer_id.clone(), bytes.clone())
+                            .await
+                            .unwrap();
+                    }
+                });
+
+                ()
+            }
+            _ => (),
         };
 
         ()
@@ -336,25 +398,31 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
             return;
         }
         info!("propagate new txns, len: {}", txns.len());
-        let mut txns_unhandled = Vec::new();
+
+        let peers = self.peers.clone();
+        let network_service = self.network_service.clone();
+        let mut txn_map: HashMap<HashValue, SignedUserTransaction> = HashMap::new();
         for txn in txns {
-            let id = txn.crypto_hash();
-            if self.lru_cache.contains(&id) {
-                continue;
-            } else {
-                self.lru_cache.put(id, ());
-                txns_unhandled.push(txn);
-            }
+            txn_map.insert(txn.crypto_hash(), txn);
         }
-        info!(
-            "propagate new unhandled txns, len: {}",
-            txns_unhandled.len()
-        );
-        let msg = PeerMessage::UserTransactions(txns_unhandled);
-        let bytes = msg.encode().unwrap();
-        let mut network_service = self.network_service.clone();
         Arbiter::spawn(async move {
-            network_service.broadcast_message(bytes).await;
+            for (peer_id, peer_info) in peers.lock().await.iter_mut() {
+                let mut txns_unhandled = Vec::new();
+                for (id, txn) in &txn_map {
+                    if !peer_info.known_transactions.contains(id) {
+                        peer_info.known_transactions.put(id.clone(), ());
+                        txns_unhandled.push(txn.clone());
+                    }
+                }
+
+                let msg = PeerMessage::UserTransactions(txns_unhandled);
+
+                let bytes = msg.encode().unwrap();
+                network_service
+                    .send_message(peer_id.clone(), bytes)
+                    .await
+                    .unwrap();
+            }
         });
 
         ()
@@ -369,6 +437,7 @@ mod tests {
     use futures::sink::SinkExt;
     use futures_timer::Delay;
     use tokio::runtime::{Handle, Runtime};
+    use tokio::task;
     use types::account_address::AccountAddress;
     use types::transaction::SignedUserTransaction;
 
@@ -378,9 +447,12 @@ mod tests {
         use std::time::Duration;
 
         ::logger::init_for_test();
-        let system = System::new("test");
-        let rt = Runtime::new().unwrap();
+
+        let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
+
+        let local = task::LocalSet::new();
+        let future = System::run_in_tokio("test", &local);
 
         let mut node_config1 = NodeConfig::random_for_test();
         node_config1.network.listen =
@@ -404,21 +476,6 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
 
         Arbiter::spawn(async move {
-            network1
-                .network_actor_addr()
-                .send(PropagateNewTransactions::from(vec![
-                    SignedUserTransaction::mock(),
-                ]))
-                .await
-                .unwrap();
-            network2
-                .network_actor_addr()
-                .send(PropagateNewTransactions::from(vec![
-                    SignedUserTransaction::mock(),
-                ]))
-                .await
-                .unwrap();
-
             let network_clone2 = network2.clone();
 
             let response_actor = TestResponseActor::create(network_clone2);
@@ -439,6 +496,24 @@ mod tests {
 
             _delay(Duration::from_millis(100)).await;
 
+            network1
+                .network_actor_addr()
+                .send(PropagateNewTransactions::from(vec![
+                    SignedUserTransaction::mock(),
+                ]))
+                .await
+                .unwrap();
+
+            network2
+                .network_actor_addr()
+                .send(PropagateNewTransactions::from(vec![
+                    SignedUserTransaction::mock(),
+                ]))
+                .await
+                .unwrap();
+
+            _delay(Duration::from_millis(100)).await;
+
             let txns = addr.send(GetPeerTransactions).await.unwrap();
             assert_eq!(1, txns.len());
 
@@ -454,10 +529,11 @@ mod tests {
             _delay(Duration::from_millis(100)).await;
 
             System::current().stop();
+
             ()
         });
 
-        system.run().unwrap();
+        local.block_on(&mut rt, future).unwrap();
     }
 
     async fn _delay(duration: Duration) {

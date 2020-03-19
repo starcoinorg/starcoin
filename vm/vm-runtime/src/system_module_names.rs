@@ -3,9 +3,9 @@
 //! Names of modules and functions used by Libra System.
 
 use libra_types::language_storage::ModuleId as LibraModuleId;
-use move_core_types::identifier::Identifier as LibraIdentifier;
+use move_core_types::identifier::Identifier;
 use once_cell::sync::Lazy;
-use types::{account_config, identifier::Identifier, language_storage::ModuleId};
+use types::{account_config, language_storage::ModuleId};
 
 // Data to resolve basic account and transaction flow functions and structs
 /// The ModuleId for the Account module
@@ -51,5 +51,5 @@ pub static GAS_SCHEDULE_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
 });
 
 // Names for special functions and structs
-pub static CREATE_ACCOUNT_NAME: Lazy<LibraIdentifier> =
-    Lazy::new(|| LibraIdentifier::new("create_account").unwrap());
+pub static CREATE_ACCOUNT_NAME: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("create_account").unwrap());

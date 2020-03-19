@@ -4,32 +4,51 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    account_address::AccountAddress,
-    identifier::{IdentStr, Identifier},
-};
+use crate::account_address::AccountAddress;
 
-use move_core_types::identifier::Identifier as LibraIdentifier;
+use move_core_types::identifier::{IdentStr, Identifier};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::{CryptoHash, HashValue};
+use starcoin_crypto::hash::{CryptoHash, HashValue, LibraCryptoHash};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
-pub enum TypeTag {
-    Bool,
-    U8,
-    U64,
-    U128,
-    ByteArray,
-    Address,
-    Struct(StructTag),
-}
+pub use libra_types::language_storage::TypeTag;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
 pub struct StructTag {
     pub address: AccountAddress,
     pub module: Identifier,
     pub name: Identifier,
     pub type_params: Vec<TypeTag>,
+}
+
+impl Into<libra_types::language_storage::StructTag> for StructTag {
+    fn into(self) -> libra_types::language_storage::StructTag {
+        libra_types::language_storage::StructTag {
+            address: self.address.into(),
+            module: self.module,
+            name: self.name,
+            type_params: self.type_params,
+        }
+    }
+}
+
+impl From<libra_types::language_storage::StructTag> for StructTag {
+    fn from(struct_tag: libra_types::language_storage::StructTag) -> Self {
+        Self {
+            address: struct_tag.address.into(),
+            module: struct_tag.module,
+            name: struct_tag.name,
+            type_params: struct_tag.type_params,
+        }
+    }
+}
+
+impl CryptoHash for StructTag {
+    fn crypto_hash(&self) -> HashValue {
+        //TODO fixme.
+        //Use libra CryptoHash temporarily
+        let struct_tag: libra_types::language_storage::StructTag = self.clone().into();
+        LibraCryptoHash::hash(&struct_tag)
+    }
 }
 
 /// Represents the intitial key into global storage where we first index by the address, and then
@@ -74,32 +93,29 @@ impl ModuleId {
     }
 
     pub fn name_hash(&self) -> HashValue {
-        self.name.crypto_hash()
+        HashValue::from_sha3_256(self.name.as_bytes())
     }
 
     pub fn address(&self) -> AccountAddress {
         self.address
     }
 
-    pub fn into_inner(&self) -> (AccountAddress, Identifier) {
-        (self.address, self.name.clone())
+    pub fn into_inner(self) -> (AccountAddress, Identifier) {
+        (self.address, self.name)
     }
 }
 
 impl Into<libra_types::language_storage::ModuleId> for ModuleId {
     fn into(self) -> libra_types::language_storage::ModuleId {
-        libra_types::language_storage::ModuleId::new(
-            self.address().into(),
-            LibraIdentifier::from_utf8(self.name.into_bytes()).unwrap(),
-        )
+        libra_types::language_storage::ModuleId::new(self.address().into(), self.name)
     }
 }
 
 impl From<libra_types::language_storage::ModuleId> for ModuleId {
     fn from(module_id: libra_types::language_storage::ModuleId) -> Self {
         Self::new(
-            AccountAddress::from(module_id.address().clone()),
-            Identifier::new(module_id.name().as_str()).unwrap(),
+            module_id.address().clone().into(),
+            Identifier::from(module_id.name()),
         )
     }
 }
