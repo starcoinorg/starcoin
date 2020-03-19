@@ -88,7 +88,7 @@ fn test_miner_with_schedule_pacemaker() {
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
         delay_for(Duration::from_millis(6 * 10 * 1000)).await;
-        let number = chain.clone().current_header().await.unwrap().number();
+        let number = chain.clone().master_head_header().await.unwrap().number();
         info!("current block number: {}", number);
         assert!(number > 1);
     };
@@ -170,7 +170,7 @@ fn test_miner_with_ondemand_pacemaker() {
 
         delay_for(Duration::from_millis(6 * 10 * 1000)).await;
 
-        let number = chain.clone().current_header().await.unwrap().number();
+        let number = chain.clone().master_head_header().await.unwrap().number();
         info!("{}", number);
         assert!(number > 0);
 

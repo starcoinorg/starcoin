@@ -178,7 +178,7 @@ where
                 .await
                 .unwrap_or(vec![]);
 
-            let chain_info = chain.get_chain_info().await.unwrap();
+            let chain_info = chain.master_chain_info().await.unwrap();
             debug!("head block : {:?}, txn len: {}", chain_info, txns.len());
             std::thread::spawn(move || {
                 let block_chain =

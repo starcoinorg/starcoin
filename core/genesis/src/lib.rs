@@ -52,12 +52,10 @@ impl Genesis {
         let block = Block::genesis_block(accumulator_root, state_root, consensus_header);
         assert_eq!(block.header().number(), 0);
         info!("Genesis block id : {:?}", block.header().id());
-        BlockStorageOp::commit_block(storage.as_ref(), block.clone())?;
-        let mut hash_number = Vec::new();
-        hash_number.push(block.header().id());
-        assert_eq!((block.header().number() + 1), hash_number.len() as u64);
-        let head = ChainInfo::new(block.header(), block.header(), hash_number);
-        let startup_info = StartupInfo::new(head, vec![]);
+        let genesis_branch = block.header().id();
+        let chain_info = ChainInfo::new(genesis_branch, genesis_branch);
+        BlockStorageOp::commit_branch_block(storage.as_ref(), genesis_branch, block.clone())?;
+        let startup_info = StartupInfo::new(chain_info, vec![]);
         //save block info for accumulator init
         storage.save_block_info(BlockInfo::new(
             block.header().id(),

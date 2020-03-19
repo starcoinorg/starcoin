@@ -174,7 +174,12 @@ impl Processor {
     }
 
     pub async fn head_block(processor: Arc<Processor>) -> Block {
-        processor.chain_reader.clone().head_block().await.unwrap()
+        processor
+            .chain_reader
+            .clone()
+            .master_head_block()
+            .await
+            .unwrap()
     }
 
     pub async fn send_latest_state_msg(processor: Arc<Processor>) -> LatestStateMsg {
@@ -195,7 +200,7 @@ impl Processor {
             let block = processor
                 .chain_reader
                 .clone()
-                .get_block_by_number(number)
+                .master_block_by_number(number)
                 .await;
             match block {
                 Some(b) => {
