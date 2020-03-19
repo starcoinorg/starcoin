@@ -437,6 +437,7 @@ mod tests {
     use futures::sink::SinkExt;
     use futures_timer::Delay;
     use tokio::runtime::{Handle, Runtime};
+    use tokio::task;
     use types::account_address::AccountAddress;
     use types::transaction::SignedUserTransaction;
 
@@ -447,9 +448,11 @@ mod tests {
 
         ::logger::init_for_test();
 
-        let system = System::new("test");
-        let rt = Runtime::new().unwrap();
+        let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
+
+        let local = task::LocalSet::new();
+        let future = System::run_in_tokio("test", &local);
 
         let mut node_config1 = NodeConfig::random_for_test();
         node_config1.network.listen =
@@ -473,22 +476,6 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
 
         Arbiter::spawn(async move {
-            network1
-                .network_actor_addr()
-                .send(PropagateNewTransactions::from(vec![
-                    SignedUserTransaction::mock(),
-                ]))
-                .await
-                .unwrap();
-
-            network2
-                .network_actor_addr()
-                .send(PropagateNewTransactions::from(vec![
-                    SignedUserTransaction::mock(),
-                ]))
-                .await
-                .unwrap();
-
             let network_clone2 = network2.clone();
 
             let response_actor = TestResponseActor::create(network_clone2);
@@ -509,6 +496,24 @@ mod tests {
 
             _delay(Duration::from_millis(100)).await;
 
+            network1
+                .network_actor_addr()
+                .send(PropagateNewTransactions::from(vec![
+                    SignedUserTransaction::mock(),
+                ]))
+                .await
+                .unwrap();
+
+            network2
+                .network_actor_addr()
+                .send(PropagateNewTransactions::from(vec![
+                    SignedUserTransaction::mock(),
+                ]))
+                .await
+                .unwrap();
+
+            _delay(Duration::from_millis(100)).await;
+
             let txns = addr.send(GetPeerTransactions).await.unwrap();
             assert_eq!(1, txns.len());
 
@@ -524,10 +529,11 @@ mod tests {
             _delay(Duration::from_millis(100)).await;
 
             System::current().stop();
+
             ()
         });
 
-        system.run().unwrap();
+        local.block_on(&mut rt, future).unwrap();
     }
 
     async fn _delay(duration: Duration) {
