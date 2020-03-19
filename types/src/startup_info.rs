@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::BlockHeader;
+use crate::block::{BlockHeader, BlockNumber};
 use anyhow::Result;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
@@ -17,13 +17,22 @@ pub struct ChainInfo {
     //pub state_root: HashValue,
     //pub accumulator_info: AccumulatorInfo,
     branch_id: HashValue,
+    start_block_number: BlockNumber,
+    parent_branch_id: Option<HashValue>,
 }
 
 impl ChainInfo {
-    pub fn new(parent_hash: HashValue, branch_id: HashValue) -> Self {
+    pub fn new(
+        parent_branch_id: Option<HashValue>,
+        head_block: HashValue,
+        block_header: &BlockHeader,
+    ) -> Self {
+        assert!((head_block == block_header.id() || head_block == block_header.parent_hash()));
         Self {
-            head_block: parent_hash,
-            branch_id,
+            head_block,
+            branch_id: block_header.id(),
+            start_block_number: block_header.number(),
+            parent_branch_id,
         }
     }
 
@@ -38,6 +47,14 @@ impl ChainInfo {
 
     pub fn branch_id(&self) -> HashValue {
         self.branch_id.clone()
+    }
+
+    pub fn start_number(&self) -> BlockNumber {
+        self.start_block_number
+    }
+
+    pub fn parent_branch(&self) -> Option<HashValue> {
+        self.parent_branch_id
     }
 }
 

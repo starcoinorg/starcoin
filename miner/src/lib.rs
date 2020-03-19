@@ -12,6 +12,7 @@ use config::{NodeConfig, PacemakerStrategy};
 use consensus::{difficult, Consensus};
 
 use crate::miner::MineCtx;
+use chain::{to_block_chain_collection, BlockChainCollection};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
@@ -178,12 +179,25 @@ where
                 .await
                 .unwrap_or(vec![]);
 
-            let chain_info = chain.master_chain_info().await.unwrap();
-            debug!("head block : {:?}, txn len: {}", chain_info, txns.len());
+            let startup_info = chain.master_startup_info().await.unwrap();
+            debug!("head block : {:?}, txn len: {}", startup_info, txns.len());
             std::thread::spawn(move || {
-                let block_chain =
-                    BlockChain::<E, C, S, P>::new(config.clone(), chain_info, storage, txpool)
-                        .unwrap();
+                let head = startup_info.head.clone();
+                let collection = to_block_chain_collection(
+                    config.clone(),
+                    startup_info,
+                    storage.clone(),
+                    txpool.clone(),
+                )
+                .unwrap();
+                let block_chain = BlockChain::<E, C, S, P>::new(
+                    config.clone(),
+                    head,
+                    storage,
+                    txpool,
+                    collection,
+                )
+                .unwrap();
                 let difficulty = difficult::get_next_work_required(&block_chain);
                 let block_template = block_chain
                     .create_block_template(None, difficulty, txns.clone())

@@ -27,6 +27,7 @@ parking_lot = "0.9"
 storage = { package="starcoin-storage", path = "../storage"}
 actix-rt = "1.0"
 futures-timer = "3.0.1"
+atomic_refcell = "0.1.3"
 
 logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}

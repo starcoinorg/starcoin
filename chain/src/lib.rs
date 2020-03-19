@@ -7,6 +7,8 @@ pub use chain::BlockChain;
 
 pub mod chain_service;
 pub mod message;
+pub use chain_service::to_block_chain_collection;
+pub use chain_service::BlockChainCollection;
 
 use crate::chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;
@@ -26,7 +28,7 @@ use traits::{ChainAsyncService, ChainService};
 use txpool::TxPoolRef;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
-    startup_info::{ChainInfo, StartupInfo},
+    startup_info::StartupInfo,
     system_events::SystemEvents,
     transaction::SignedUserTransaction,
 };
@@ -99,9 +101,9 @@ impl Handler<ChainRequest> for ChainActor {
                 self.service.try_connect(block).unwrap();
                 Ok(ChainResponse::None)
             }
-            ChainRequest::GetChainInfo() => {
-                Ok(ChainResponse::ChainInfo(self.service.master_chain_info()))
-            }
+            ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
+                self.service.master_startup_info(),
+            )),
             ChainRequest::GenTx() => {
                 self.service.gen_tx().unwrap();
                 Ok(ChainResponse::None)
@@ -154,14 +156,14 @@ impl ChainAsyncService for ChainActorRef {
         Ok(())
     }
 
-    async fn master_chain_info(self) -> Result<ChainInfo> {
+    async fn master_startup_info(self) -> Result<StartupInfo> {
         let response = self
             .address
-            .send(ChainRequest::GetChainInfo())
+            .send(ChainRequest::GetStartupInfo())
             .await
             .map_err(|e| Into::<Error>::into(e))??;
-        if let ChainResponse::ChainInfo(chain_info) = response {
-            Ok(chain_info)
+        if let ChainResponse::StartupInfo(startup_info) = response {
+            Ok(startup_info)
         } else {
             bail!("Get chain info response error.")
         }

@@ -52,9 +52,8 @@ impl Genesis {
         let block = Block::genesis_block(accumulator_root, state_root, consensus_header);
         assert_eq!(block.header().number(), 0);
         info!("Genesis block id : {:?}", block.header().id());
-        let genesis_branch = block.header().id();
-        let chain_info = ChainInfo::new(genesis_branch, genesis_branch);
-        BlockStorageOp::commit_branch_block(storage.as_ref(), genesis_branch, block.clone())?;
+        let chain_info = ChainInfo::new(None, block.header().id(), block.header());
+        BlockStorageOp::commit_branch_block(storage.as_ref(), block.header().id(), block.clone())?;
         let startup_info = StartupInfo::new(chain_info, vec![]);
         //save block info for accumulator init
         storage.save_block_info(BlockInfo::new(
