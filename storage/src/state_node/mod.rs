@@ -12,12 +12,10 @@ pub struct StateNodeStorage {
     storage: CodecStorage<HashValue, StateNode>,
 }
 
-const KEY_PREFIX: &str = "StateNode";
-
 impl StateNodeStorage {
     pub fn new(storage: Arc<dyn Repository>) -> Self {
         Self {
-            storage: CodecStorage::new(storage, KEY_PREFIX),
+            storage: CodecStorage::new(storage),
         }
     }
 }

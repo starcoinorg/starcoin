@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::KeyPrefixName;
 use crate::storage::{CodecStorage, Repository, ValueCodec};
 use anyhow::Result;
 use crypto::HashValue;
@@ -9,7 +8,6 @@ use scs::SCSCodec;
 use std::sync::Arc;
 use types::block::BlockInfo;
 
-const BLOCK_INFO_KEY_NAME: KeyPrefixName = "block_info";
 pub trait BlockInfoStorage {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<()>;
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>>;
@@ -32,7 +30,7 @@ impl ValueCodec for BlockInfo {
 impl BlockInfoStore {
     pub fn new(kv_store: Arc<dyn Repository>) -> Self {
         BlockInfoStore {
-            store: CodecStorage::new(kv_store, BLOCK_INFO_KEY_NAME),
+            store: CodecStorage::new(kv_store),
         }
     }
 

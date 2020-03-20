@@ -9,7 +9,9 @@ use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
 use std::sync::Arc;
-use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use storage::cache_storage::CacheStorage;
+use storage::db_storage::DBStorage;
+use storage::StarcoinStorage;
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
 use traits::{ChainAsyncService, TxPoolAsyncService};
@@ -32,8 +34,10 @@ fn test_miner_with_schedule_pacemaker() {
         let peer_info = Arc::new(PeerInfo::random());
         let config = Arc::new(NodeConfig::random_for_test());
         let bus = BusActor::launch();
-        let repo = Arc::new(MemoryStorage::new());
-        let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
+        let cache_storage = Arc::new(CacheStorage::new());
+        let tmpdir = libra_temppath::TempPath::new();
+        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+        let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
         let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
@@ -110,8 +114,10 @@ fn test_miner_with_ondemand_pacemaker() {
         conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
         let config = Arc::new(conf);
         let bus = BusActor::launch();
-        let repo = Arc::new(MemoryStorage::new());
-        let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
+        let cache_storage = Arc::new(CacheStorage::new());
+        let tmpdir = libra_temppath::TempPath::new();
+        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+        let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
 
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);

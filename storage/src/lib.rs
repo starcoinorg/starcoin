@@ -5,7 +5,7 @@ use crate::accumulator::AccumulatorStore;
 use crate::block::BlockStore;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
 use crate::state_node::StateNodeStorage;
-use crate::storage::Repository;
+use crate::storage::{ColumnFamilyName, InnerRepository, Repository, Storage};
 use crate::transaction_info::TransactionInfoStore;
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
@@ -24,6 +24,7 @@ use types::{
 pub mod accumulator;
 pub mod block;
 pub mod block_info;
+pub mod cache_storage;
 pub mod db_storage;
 pub mod memory_storage;
 pub mod state_node;
@@ -31,7 +32,16 @@ pub mod storage;
 mod tests;
 pub mod transaction_info;
 
-pub type KeyPrefixName = &'static str;
+pub const ACCUMULATOR_INDEX_PREFIX_NAME: ColumnFamilyName = "acc_index";
+pub const ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node";
+pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
+pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
+pub const BLOCK_SONS_PREFIX_NAME: ColumnFamilyName = "block_sons";
+pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
+pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
+pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
+pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
+pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 
 pub trait BlockStorageOp {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
@@ -109,21 +119,33 @@ pub struct StarcoinStorage {
 }
 
 impl StarcoinStorage {
-    pub fn new(storage: Arc<dyn Repository>) -> Result<Self> {
+    pub fn new(
+        cache_storage: Arc<dyn InnerRepository>,
+        db_storage: Arc<dyn InnerRepository>,
+    ) -> Result<Self> {
         Ok(Self {
-            transaction_info_store: TransactionInfoStore::new(storage.clone()),
-            block_store: BlockStore::new(
-                storage.clone(),
-                storage.clone(),
-                storage.clone(),
-                storage.clone(),
-                storage.clone(),
-                storage.clone(),
-            ),
-            state_node_store: StateNodeStorage::new(storage.clone()),
-            accumulator_store: AccumulatorStore::new(storage.clone()),
-            block_info_store: BlockInfoStore::new(storage.clone()),
-            startup_info_store: storage.clone(),
+            transaction_info_store: TransactionInfoStore::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                TRANSACTION_PREFIX_NAME,
+            ))),
+            block_store: BlockStore::two_new(cache_storage.clone(), db_storage.clone()),
+            state_node_store: StateNodeStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                STATE_NODE_PREFIX_NAME,
+            ))),
+            accumulator_store: AccumulatorStore::two_new(cache_storage.clone(), db_storage.clone()),
+            block_info_store: BlockInfoStore::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_INFO_PREFIX_NAME,
+            ))),
+            startup_info_store: Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                BLOCK_INFO_PREFIX_NAME,
+            )),
         })
     }
 }

@@ -36,6 +36,7 @@ txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-statedb = {path = "../core/statedb"}
 bus = {path = "../bus", package="starcoin-bus" }
 starcoin-genesis = {path = "../core/genesis"}
+libra-temppath = { package="libra-temppath",  git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
 
 [dev-dependencies]
 env_logger = "0.7.1"

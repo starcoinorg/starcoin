@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ensure_slice_len_eq;
-use crate::storage::{CodecStorage, KeyCodec, Repository, ValueCodec};
+use crate::storage::{CodecStorage, InnerRepository, KeyCodec, Repository, Storage, ValueCodec};
+use crate::{ensure_slice_len_eq, ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Error;
 use anyhow::{bail, ensure, Result};
 use byteorder::{BigEndian, ReadBytesExt};
@@ -20,14 +20,28 @@ pub struct AccumulatorStore {
     node_store: CodecStorage<HashValue, AccumulatorNode>,
 }
 
-const ACCUMULATOR_INDEX_KEY_PREFIX: &str = "accumulator_index";
-const ACCUMULATOR_NODE_KEY_PREFIX: &str = "accumulator_node";
-
 impl AccumulatorStore {
     pub fn new(storage: Arc<dyn Repository>) -> Self {
         Self {
-            index_storage: CodecStorage::new(storage.clone(), ACCUMULATOR_INDEX_KEY_PREFIX),
-            node_store: CodecStorage::new(storage.clone(), ACCUMULATOR_NODE_KEY_PREFIX),
+            index_storage: CodecStorage::new(storage.clone()),
+            node_store: CodecStorage::new(storage.clone()),
+        }
+    }
+    pub fn two_new(
+        cache_storage: Arc<dyn InnerRepository>,
+        db_storage: Arc<dyn InnerRepository>,
+    ) -> Self {
+        Self {
+            index_storage: CodecStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                ACCUMULATOR_INDEX_PREFIX_NAME,
+            ))),
+            node_store: CodecStorage::new(Arc::new(Storage::new(
+                cache_storage.clone(),
+                db_storage.clone(),
+                ACCUMULATOR_NODE_PREFIX_NAME,
+            ))),
         }
     }
 }

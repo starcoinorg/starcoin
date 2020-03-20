@@ -1,28 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::Repository;
+use crate::storage::{ColumnFamilyName, InnerRepository};
+use crate::{
+    ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME,
+    BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
+    BLOCK_SONS_PREFIX_NAME, STATE_NODE_PREFIX_NAME, TRANSACTION_PREFIX_NAME,
+};
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
-use rocksdb::{ColumnFamilyOptions, DBOptions, Writable, DB};
+use rocksdb::{CFHandle, ColumnFamilyOptions, DBOptions, Writable, WriteOptions, DB};
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Arc;
 
 pub const DEFAULT_CF_NAME: ColumnFamilyName = "default";
-pub const ACCUMULATOR_CF_NAME: ColumnFamilyName = "accumulator";
-pub const BLOCK_CF_NAME: ColumnFamilyName = "block";
-pub const BLOCK_INFO_CF_NAME: ColumnFamilyName = "block_info";
-pub const STATE_NODE_CF_NAME: ColumnFamilyName = "state_node";
-pub const TRANSACTION_INFO_CF_NAME: ColumnFamilyName = "transaction_info";
 
-/// Type alias to improve readability.
-pub type ColumnFamilyName = &'static str;
 /// Type alias to improve readability.
 pub type ColumnFamilyOptionsMap = HashMap<ColumnFamilyName, ColumnFamilyOptions>;
 
 pub struct DBStorage {
-    db: Arc<DB>,
+    db: DB,
 }
 
 impl DBStorage {
@@ -39,18 +36,26 @@ impl DBStorage {
                 /* LedgerInfo CF = */ DEFAULT_CF_NAME,
                 ColumnFamilyOptions::default(),
             ),
-            (ACCUMULATOR_CF_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_CF_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_INFO_CF_NAME, ColumnFamilyOptions::default()),
-            (STATE_NODE_CF_NAME, ColumnFamilyOptions::default()),
-            (TRANSACTION_INFO_CF_NAME, ColumnFamilyOptions::default()),
+            (
+                ACCUMULATOR_INDEX_PREFIX_NAME,
+                ColumnFamilyOptions::default(),
+            ),
+            (ACCUMULATOR_NODE_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_HEADER_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_SONS_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_BODY_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_NUM_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (BLOCK_INFO_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (STATE_NODE_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (TRANSACTION_PREFIX_NAME, ColumnFamilyOptions::default()),
         ]
         .iter()
         .cloned()
         .collect();
         let path = db_root_path.as_ref().join("starcoindb");
 
-        let db = Arc::new(if readonly {
+        let db = if readonly {
             let db_log_dir = log_dir
                 .ok_or_else(|| format_err!("Must provide log_dir if opening in readonly mode."))?;
             if !db_log_dir.as_ref().is_dir() {
@@ -60,7 +65,7 @@ impl DBStorage {
             Self::open_readonly(path.clone(), cf_opts_map, db_log_dir.as_ref().to_path_buf())?
         } else {
             Self::open_inner(path.clone(), cf_opts_map)?
-        });
+        };
 
         info!("Opened StarcoinDB at {:?}", path);
 
@@ -149,6 +154,29 @@ impl DBStorage {
         )
     }
 
+    pub fn drop_cf(&mut self) -> Result<(), Error> {
+        let vec_cf = vec![
+            DEFAULT_CF_NAME,
+            ACCUMULATOR_INDEX_PREFIX_NAME,
+            ACCUMULATOR_NODE_PREFIX_NAME,
+            BLOCK_PREFIX_NAME,
+            BLOCK_HEADER_PREFIX_NAME,
+            BLOCK_SONS_PREFIX_NAME,
+            BLOCK_BODY_PREFIX_NAME,
+            BLOCK_NUM_PREFIX_NAME,
+            BLOCK_INFO_PREFIX_NAME,
+            STATE_NODE_PREFIX_NAME,
+            TRANSACTION_PREFIX_NAME,
+        ];
+        for cf in vec_cf {
+            self.db
+                .drop_cf(cf)
+                .map_err(Self::convert_rocksdb_err)
+                .unwrap();
+        }
+        Ok(())
+    }
+
     fn db_exists(path: &Path) -> bool {
         let rocksdb_current_file = path.join("CURRENT");
         rocksdb_current_file.is_file()
@@ -157,33 +185,53 @@ impl DBStorage {
     pub fn convert_rocksdb_err(msg: String) -> anyhow::Error {
         format_err!("RocksDB internal error: {}.", msg)
     }
+
+    fn get_cf_handle(&self, cf_name: &str) -> Result<&CFHandle> {
+        self.db.cf_handle(cf_name).ok_or_else(|| {
+            format_err!(
+                "DB::cf_handle not found for column family name: {}",
+                cf_name
+            )
+        })
+    }
+
+    fn default_write_options() -> WriteOptions {
+        let mut opts = WriteOptions::new();
+        opts.set_sync(true);
+        opts
+    }
 }
 
-impl Repository for DBStorage {
-    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        match self.db.clone().get(key).map_err(Self::convert_rocksdb_err) {
+impl InnerRepository for DBStorage {
+    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
+        match self
+            .db
+            .get_cf(cf_handle, key.as_slice())
+            .map_err(Self::convert_rocksdb_err)
+        {
             Ok(Some(value)) => Ok(Some(value.to_vec())),
             _ => Ok(None),
         }
     }
 
-    fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
         self.db
-            .clone()
-            .put(&key, &value)
+            .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())
             .map_err(Self::convert_rocksdb_err)
     }
 
-    fn contains_key(&self, key: Vec<u8>) -> Result<bool> {
-        match self.get(&key) {
+    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
+        match self.get(prefix_name, key) {
             Ok(Some(_)) => Ok(true),
             _ => Ok(false),
         }
     }
-    fn remove(&self, key: Vec<u8>) -> Result<()> {
+    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
         self.db
-            .clone()
-            .delete(&key)
+            .delete_cf(cf_handle, &key)
             .map_err(Self::convert_rocksdb_err)
     }
 

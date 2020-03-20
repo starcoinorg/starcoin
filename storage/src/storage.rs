@@ -1,12 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::KeyPrefixName;
 use anyhow::{bail, Error, Result};
 use crypto::HashValue;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
+
+/// Type alias to improve readability.
+pub type ColumnFamilyName = &'static str;
 
 /// Use for batch commit
 pub trait WriteBatch {
@@ -23,38 +25,101 @@ pub trait Repository: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
 
+pub trait InnerRepository: Send + Sync {
+    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
+    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool>;
+    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
+    fn get_len(&self) -> Result<u64>;
+    fn keys(&self) -> Result<Vec<Vec<u8>>>;
+}
+
+/// Define simple storage package for one storage
+pub struct StorageDelegated {
+    repository: Arc<dyn InnerRepository>,
+    pub prefix_name: ColumnFamilyName,
+}
+impl StorageDelegated {
+    pub fn new(repository: Arc<dyn InnerRepository>, prefix_name: ColumnFamilyName) -> Self {
+        Self {
+            repository,
+            prefix_name,
+        }
+    }
+}
+
+impl Repository for StorageDelegated {
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
+        self.repository.clone().get(self.prefix_name, key.to_vec())
+    }
+
+    fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+        self.repository.clone().put(self.prefix_name, key, value)
+    }
+
+    fn contains_key(&self, key: Vec<u8>) -> Result<bool, Error> {
+        self.repository.clone().contains_key(self.prefix_name, key)
+    }
+
+    fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
+        self.repository.clone().remove(self.prefix_name, key)
+    }
+
+    fn get_len(&self) -> Result<u64, Error> {
+        self.repository.clone().get_len()
+    }
+
+    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
+        self.repository.clone().keys()
+    }
+}
+
+/// two level storage package
 pub struct Storage {
-    cache: Arc<dyn Repository>,
-    persistence: Arc<dyn Repository>,
+    cache: Arc<dyn InnerRepository>,
+    db: Arc<dyn InnerRepository>,
+    pub prefix_name: ColumnFamilyName,
 }
 
 impl Storage {
-    pub fn new(cache: Arc<dyn Repository>, persistence: Arc<dyn Repository>) -> Self {
-        Storage { cache, persistence }
+    pub fn new(
+        cache: Arc<dyn InnerRepository>,
+        db: Arc<dyn InnerRepository>,
+        prefix_name: ColumnFamilyName,
+    ) -> Self {
+        Storage {
+            cache,
+            db,
+            prefix_name,
+        }
     }
 }
 
 impl Repository for Storage {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
         // first get from cache
-        match self.cache.get(key) {
+        let key_vec = key.to_vec();
+        match self.cache.clone().get(self.prefix_name, key_vec.clone()) {
             Ok(v) => Ok(v),
-            _ => self.persistence.get(key),
+            _ => self.db.clone().get(self.prefix_name, key_vec.clone()),
         }
     }
 
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
-        self.persistence.put(key.clone(), value.clone()).unwrap();
-        self.cache.put(key, value)
+        self.db
+            .clone()
+            .put(self.prefix_name, key.clone(), value.clone())
+            .unwrap();
+        self.cache.clone().put(self.prefix_name, key, value)
     }
 
     fn contains_key(&self, key: Vec<u8>) -> Result<bool, Error> {
-        self.cache.contains_key(key)
+        self.cache.clone().contains_key(self.prefix_name, key)
     }
 
     fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
-        match self.persistence.remove(key.clone()) {
-            Ok(_) => self.cache.remove(key),
+        match self.db.clone().remove(self.prefix_name, key.clone()) {
+            Ok(_) => self.cache.clone().remove(self.prefix_name, key),
             Err(err) => bail!("remove persistence error: {}", err),
         }
     }
@@ -90,7 +155,6 @@ where
     store: Arc<dyn Repository>,
     k: PhantomData<K>,
     v: PhantomData<V>,
-    prefix_key: KeyPrefixName,
 }
 
 impl<K, V> CodecStorage<K, V>
@@ -98,34 +162,28 @@ where
     K: KeyCodec,
     V: ValueCodec,
 {
-    // const COLUMN_FAMILY_NAME: schemadb::ColumnFamilyName = BLOCK_CF_NAME;
-    pub fn new(store: Arc<dyn Repository>, prefix_key: KeyPrefixName) -> Self {
+    pub fn new(store: Arc<dyn Repository>) -> Self {
         Self {
             store,
             k: PhantomData,
             v: PhantomData,
-            prefix_key,
         }
     }
+
     pub fn get(&self, key: K) -> Result<Option<V>> {
-        match self
-            .store
-            .get(self.compose_key(key.encode_key()?)?.as_slice())?
-        {
+        match self.store.get(key.encode_key()?.as_slice())? {
             Some(v) => Ok(Some(V::decode_value(v.as_slice())?)),
             None => Ok(None),
         }
     }
     pub fn put(&self, key: K, value: V) -> Result<()> {
-        self.store
-            .put(self.compose_key(key.encode_key()?)?, value.encode_value()?)
+        self.store.put(key.encode_key()?, value.encode_value()?)
     }
     pub fn contains_key(&self, key: K) -> Result<bool> {
-        self.store
-            .contains_key(self.compose_key(key.encode_key()?)?)
+        self.store.contains_key(key.encode_key()?)
     }
     pub fn remove(&self, key: K) -> Result<()> {
-        self.store.remove(self.compose_key(key.encode_key()?)?)
+        self.store.remove(key.encode_key()?)
     }
 
     pub fn get_len(&self) -> Result<u64> {
@@ -133,13 +191,6 @@ where
     }
     pub fn keys(&self) -> Result<Vec<Vec<u8>>> {
         self.store.keys()
-    }
-    fn compose_key(&self, source_key: Vec<u8>) -> Result<Vec<u8>> {
-        let temp_vec = self.prefix_key.as_bytes().to_vec();
-        let mut compose = Vec::with_capacity(temp_vec.len() + source_key.len());
-        compose.extend(temp_vec);
-        compose.extend(source_key);
-        Ok(compose)
     }
 }
 

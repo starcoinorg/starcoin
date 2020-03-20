@@ -11,7 +11,9 @@ use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
 use std::{sync::Arc, time::Duration};
-use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use storage::cache_storage::CacheStorage;
+use storage::db_storage::DBStorage;
+use storage::StarcoinStorage;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
 use types::account_address::AccountAddress;
@@ -35,8 +37,11 @@ fn gen_txs() -> Vec<SignedUserTransaction> {
 async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
     let node_config = NodeConfig::random_for_test();
     let conf = Arc::new(node_config);
-    let repo = Arc::new(MemoryStorage::new());
-    let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
+    let cache_storage = Arc::new(CacheStorage::new());
+    let tmpdir = libra_temppath::TempPath::new();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+    let storage =
+        Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
     let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
         conf.clone(),
         storage.clone(),
@@ -156,8 +161,11 @@ async fn test_block_chain_forks() {
 async fn test_chain_apply() -> Result<()> {
     let node_config = NodeConfig::random_for_test();
     let config = Arc::new(node_config);
-    let repo = Arc::new(MemoryStorage::new());
-    let storage = Arc::new(StarcoinStorage::new(repo)?);
+    let cache_storage = Arc::new(CacheStorage::new());
+    let tmpdir = libra_temppath::TempPath::new();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+    let storage =
+        Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
     let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
         config.clone(),
         storage.clone(),
