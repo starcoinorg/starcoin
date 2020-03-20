@@ -41,6 +41,7 @@ pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
+pub const STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "startup_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 
 pub trait BlockStorageOp {
@@ -144,7 +145,7 @@ impl StarcoinStorage {
             startup_info_store: Arc::new(Storage::new(
                 cache_storage.clone(),
                 db_storage.clone(),
-                BLOCK_INFO_PREFIX_NAME,
+                STARTUP_INFO_PREFIX_NAME,
             )),
         })
     }
@@ -163,7 +164,7 @@ impl StateNodeStore for StarcoinStorage {
 impl BlockStorageOp for StarcoinStorage {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.startup_info_store
-            .get("startup_info".as_bytes())
+            .get(STARTUP_INFO_PREFIX_NAME.as_bytes())
             .and_then(|bytes| match bytes {
                 Some(bytes) => Ok(Some(bytes.try_into()?)),
                 None => Ok(None),
@@ -171,8 +172,10 @@ impl BlockStorageOp for StarcoinStorage {
     }
 
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
-        self.startup_info_store
-            .put("starup_info".as_bytes().to_vec(), startup_info.try_into()?)
+        self.startup_info_store.put(
+            STARTUP_INFO_PREFIX_NAME.as_bytes().to_vec(),
+            startup_info.try_into()?,
+        )
     }
 
     fn save(&self, block: Block) -> Result<()> {
