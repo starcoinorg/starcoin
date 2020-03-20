@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::miner::Miner;
-use logger::prelude::*;
 use sc_stratum::*;
-use std::sync::Arc;
 
 pub struct StratumManager {
     miner: Miner,
@@ -35,7 +33,9 @@ mod tests {
         runtime::Runtime,
         timer::{timeout, Timeout},
     };
+    use logger::prelude::*;
     use std::net::Shutdown;
+    use std::sync::Arc;
     use types::block::{Block, BlockHeader, BlockTemplate};
     #[test]
     #[ignore]

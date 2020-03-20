@@ -73,6 +73,7 @@ impl NodeConfig {
         config.network = NetworkConfig::random_for_test();
         config.tx_pool = TxPoolConfig::random_for_test();
         config.rpc = RpcConfig::random_for_test();
+        config.miner = MinerConfig::random_for_test();
         config
     }
 
@@ -99,6 +100,7 @@ impl NodeConfig {
         //TODO every config should know the data_dir self.
         node_config.network.load(&base_dir)?;
         node_config.tx_pool.load()?;
+        node_config.miner.load(&base_dir)?;
         // NOTICE: if there is more load case, make it here.
         // such as: node_config.storage.load(&base_dir)?;
         Ok(node_config)

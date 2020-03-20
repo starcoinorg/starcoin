@@ -116,9 +116,8 @@ where
                 });
             });
             let miner = miner::Miner::new(bus.clone());
-            info!("miner address : {:?}", config.miner.miner_address);
             let stratum = sc_stratum::Stratum::start(
-                &config.miner.miner_address.unwrap(),
+                &config.miner.stratum_server,
                 Arc::new(stratum::StratumManager::new(miner.clone())),
                 None,
             )
