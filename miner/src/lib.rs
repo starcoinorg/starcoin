@@ -12,7 +12,7 @@ use config::{NodeConfig, PacemakerStrategy};
 use consensus::{difficult, Consensus};
 
 use crate::miner::MineCtx;
-use chain::{to_block_chain_collection, BlockChainCollection};
+use chain::to_block_chain_collection;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;

@@ -36,7 +36,7 @@ use types::{
 /// actor for block chain.
 pub struct ChainActor {
     //TODO use Generic Parameter for Executor and Consensus.
-    service: ChainServiceImpl<MockExecutor, DummyConsensus, TxPoolRef, StarcoinStorage>,
+    service: ChainServiceImpl<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>,
     bus: Addr<BusActor>,
 }
 
