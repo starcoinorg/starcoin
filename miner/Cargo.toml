@@ -32,7 +32,12 @@ starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumula
 sc_stratum = {path = "./stratum", package ="starcoin-stratum"}
 jsonrpc-core = "12.0.0"
 jsonrpc-tcp-server="12.0.0"
+rust-argon2 = "0.8"
+rand = { version = "0.6.5", default-features = false }
+byteorder = "1.3.1"
+
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}
 tokio = { version = "0.2", features = ["full"] }
+

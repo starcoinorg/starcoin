@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain_service::BlockChainCollection;
 use actix::prelude::*;
 use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
@@ -43,6 +44,7 @@ where
     pub storage: Arc<S>,
     pub txpool: P,
     chain_info: ChainInfo,
+    pub block_chain_collection: Arc<BlockChainCollection<E, C, S, P>>,
 }
 
 impl<E, C, S, P> BlockChain<E, C, S, P>
@@ -57,6 +59,7 @@ where
         chain_info: ChainInfo,
         storage: Arc<S>,
         txpool: P,
+        block_chain_collection: Arc<BlockChainCollection<E, C, S, P>>,
     ) -> Result<Self> {
         let head_block_hash = chain_info.get_head();
         let head = storage
@@ -91,6 +94,7 @@ where
             storage,
             txpool,
             chain_info,
+            block_chain_collection,
         };
         Ok(chain)
     }
@@ -252,13 +256,22 @@ where
     pub fn fork(&self, block_header: &BlockHeader) -> Option<ChainInfo> {
         if self.exist_block(block_header.parent_hash()) {
             Some(if self.head.header().id() == block_header.parent_hash() {
-                self.chain_info.clone()
+                self.get_chain_info()
             } else {
-                ChainInfo::new(block_header.parent_hash(), block_header.id())
+                ChainInfo::new(
+                    Some(self.get_chain_info().branch_id()),
+                    block_header.parent_hash(),
+                    block_header,
+                )
             })
         } else {
             None
         }
+    }
+
+    pub fn get_branch_id(&self, number: BlockNumber) -> Option<HashValue> {
+        self.block_chain_collection
+            .get_branch_id(&self.chain_info.branch_id(), number)
     }
 }
 
@@ -285,13 +298,20 @@ where
     }
 
     fn get_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        self.storage
-            .get_header_by_branch_number(self.chain_info.branch_id(), number)
+        if let Some(branch_id) = self.get_branch_id(number) {
+            self.storage.get_header_by_branch_number(branch_id, number)
+        } else {
+            Ok(None)
+        }
     }
 
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        self.storage
-            .get_block_by_branch_number(self.chain_info.branch_id(), number)
+        if let Some(branch_id) = self.get_branch_id(number) {
+            self.storage.get_block_by_branch_number(branch_id, number)
+        } else {
+            warn!("branch id not found.");
+            Ok(None)
+        }
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
@@ -374,11 +394,7 @@ where
                 block_count = current_number
             }
             for _ in 0..block_count {
-                let block = self
-                    .storage
-                    .get_block_by_number(current_number)
-                    .unwrap()
-                    .unwrap();
+                let block = self.get_block_by_number(current_number).unwrap().unwrap();
                 avg_target = avg_target + block.header().difficult() / block_count.into();
                 current_number -= 1;
             }

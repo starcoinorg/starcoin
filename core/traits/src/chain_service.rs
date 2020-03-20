@@ -5,7 +5,7 @@ use anyhow::Result;
 use crypto::HashValue;
 use types::{
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
-    startup_info::ChainInfo,
+    startup_info::StartupInfo,
     transaction::SignedUserTransaction,
     U256,
 };
@@ -21,7 +21,7 @@ pub trait ChainService {
     fn master_head_header(&self) -> BlockHeader;
     fn master_head_block(&self) -> Block;
     fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
-    fn master_chain_info(&self) -> ChainInfo;
+    fn master_startup_info(&self) -> StartupInfo;
 
     /////////////////////////////////////////////// just for test
     fn create_block_template(
@@ -46,7 +46,7 @@ pub trait ChainAsyncService: Clone + std::marker::Unpin {
     async fn master_head_header(self) -> Option<BlockHeader>;
     async fn master_head_block(self) -> Option<Block>;
     async fn master_block_by_number(self, number: BlockNumber) -> Option<Block>;
-    async fn master_chain_info(self) -> Result<ChainInfo>;
+    async fn master_startup_info(self) -> Result<StartupInfo>;
 
     /////////////////////////////////////////////// just for test
     async fn gen_tx(&self) -> Result<()>;

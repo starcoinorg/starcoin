@@ -20,7 +20,6 @@ members = [
     "consensus",
     "txpool",
     "txpool/tx-relay",
-    "rpc/json-rpc",
     "executor",
     "chain",
     "node",
@@ -33,4 +32,7 @@ members = [
     "network",
     "vm/vm-runtime",
     "vm/stdlib",
+    "rpc/api",
+    "rpc/client",
+    "rpc/server",
 ]

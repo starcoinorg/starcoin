@@ -10,7 +10,7 @@ use std::sync::Arc;
 use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
 
-pub mod consensus_impl;
+pub mod argon_consensus;
 pub mod difficult;
 pub mod dummy;
 pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin {}
