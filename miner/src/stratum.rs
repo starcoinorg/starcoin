@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::miner::Miner;
+
 use sc_stratum::*;
 
 pub struct StratumManager {

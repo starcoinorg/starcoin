@@ -83,7 +83,7 @@ impl Miner {
         let state = self.state.lock().unwrap();
         let x = state.as_ref().unwrap().to_owned();
         format!(
-            r#"[0x{:x},0x{:x}]"#,
+            r#"["{:x}","{:x}"]"#,
             x.header_hash, x.block_template.difficult
         )
     }
