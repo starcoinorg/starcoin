@@ -59,7 +59,7 @@ impl WalletStore for MemWalletStore {
         Ok(())
     }
 
-    fn list_account(&self) -> Result<Vec<WalletAccount>> {
+    fn get_accounts(&self) -> Result<Vec<WalletAccount>> {
         let store = self.store.borrow();
         Ok(store.iter().map(|(_, v)| v.account.clone()).collect())
     }

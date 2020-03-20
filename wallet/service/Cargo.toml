@@ -16,6 +16,10 @@ actix-rt = "1.0"
 async-trait = "0.1"
 starcoin-logger = {path = "../../commons/logger"}
 stest = {path = "../../commons/stest"}
+starcoin-types = { path = "../../types"}
+starcoin-config = { path = "../../config"}
+starcoin-wallet-api = { path = "../api", features = ["mock"]}
+starcoin-wallet-lib = { path = "../lib"}
 
 [dev-dependencies]
 env_logger = "0.7.1"

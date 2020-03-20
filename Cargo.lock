@@ -6074,7 +6074,11 @@ dependencies = [
  "async-trait",
  "env_logger 0.7.1",
  "futures 0.3.4",
+ "starcoin-config",
  "starcoin-logger",
+ "starcoin-types",
+ "starcoin-wallet-api",
+ "starcoin-wallet-lib",
  "stest",
 ]
 
