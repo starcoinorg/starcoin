@@ -64,8 +64,12 @@ fn main() {
         let storage =
             Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
         let startup_info = match storage.get_startup_info().unwrap() {
-            Some(startup_info) => startup_info,
+            Some(startup_info) => {
+                info!("return from db");
+                startup_info
+            }
             None => {
+                info!("return genesis");
                 let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
                     node_config.clone(),
                     storage.clone(),

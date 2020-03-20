@@ -317,6 +317,12 @@ where
         } else {
             self.collection.insert_branch(new_branch);
         }
+
+        let startup_info = self.collection.to_startup_info();
+        info!("save startup info : {:?}", startup_info);
+        if let Err(e) = self.storage.save_startup_info(startup_info) {
+            warn!("err: {:?}", e);
+        }
     }
 
     fn commit_2_txpool(

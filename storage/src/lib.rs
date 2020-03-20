@@ -26,7 +26,6 @@ pub mod block;
 pub mod block_info;
 pub mod cache_storage;
 pub mod db_storage;
-pub mod memory_storage;
 pub mod state_node;
 pub mod storage;
 mod tests;

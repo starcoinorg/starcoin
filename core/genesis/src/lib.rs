@@ -62,6 +62,7 @@ impl Genesis {
             accumulator.num_leaves(),
             accumulator.num_nodes(),
         ))?;
+        let _ = storage.save_startup_info(startup_info.clone());
         info!("Genesis startup info: {:?}", startup_info);
         Ok(Self {
             transaction,

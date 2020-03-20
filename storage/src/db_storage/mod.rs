@@ -5,7 +5,8 @@ use crate::storage::{ColumnFamilyName, InnerRepository};
 use crate::{
     ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_SONS_PREFIX_NAME, STATE_NODE_PREFIX_NAME, TRANSACTION_PREFIX_NAME,
+    BLOCK_SONS_PREFIX_NAME, STARTUP_INFO_PREFIX_NAME, STATE_NODE_PREFIX_NAME,
+    TRANSACTION_PREFIX_NAME,
 };
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
@@ -49,6 +50,7 @@ impl DBStorage {
             (BLOCK_INFO_PREFIX_NAME, ColumnFamilyOptions::default()),
             (STATE_NODE_PREFIX_NAME, ColumnFamilyOptions::default()),
             (TRANSACTION_PREFIX_NAME, ColumnFamilyOptions::default()),
+            (STARTUP_INFO_PREFIX_NAME, ColumnFamilyOptions::default()),
         ]
         .iter()
         .cloned()
@@ -167,6 +169,7 @@ impl DBStorage {
             BLOCK_INFO_PREFIX_NAME,
             STATE_NODE_PREFIX_NAME,
             TRANSACTION_PREFIX_NAME,
+            STARTUP_INFO_PREFIX_NAME,
         ];
         for cf in vec_cf {
             self.db
