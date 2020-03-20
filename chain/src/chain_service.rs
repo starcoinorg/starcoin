@@ -37,7 +37,7 @@ where
     branches: RwLock<HashMap<HashValue, BlockChain<E, C, S, P>>>,
 }
 
-impl<E, C, P, S> BlockChainCollection<E, C, S, P>
+impl<E, C, S, P> BlockChainCollection<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
@@ -170,7 +170,7 @@ where
     }
 }
 
-pub struct ChainServiceImpl<E, C, P, S>
+pub struct ChainServiceImpl<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
@@ -185,7 +185,7 @@ where
     bus: Addr<BusActor>,
 }
 
-impl<E, C, P, S> ChainServiceImpl<E, C, P, S>
+impl<E, C, S, P> ChainServiceImpl<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
@@ -297,10 +297,11 @@ where
             let bus = self.bus.clone();
             let new_head = block.clone();
             Arbiter::spawn(async move {
-                bus.send(Broadcast {
-                    msg: SystemEvents::NewHeadBlock(new_head),
-                })
-                .await;
+                let _ = bus
+                    .send(Broadcast {
+                        msg: SystemEvents::NewHeadBlock(new_head),
+                    })
+                    .await;
             });
 
             if let Some(network) = self.network.clone() {
@@ -407,7 +408,7 @@ where
     }
 }
 
-impl<E, C, P, S> ChainService for ChainServiceImpl<E, C, P, S>
+impl<E, C, S, P> ChainService for ChainServiceImpl<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
