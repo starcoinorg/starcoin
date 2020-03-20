@@ -19,7 +19,7 @@ fn test_block() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
     let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
@@ -74,7 +74,7 @@ fn test_block_number() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
     let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
@@ -142,7 +142,7 @@ fn test_branch_number() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
     let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
@@ -207,7 +207,7 @@ fn test_block_branch_hashes() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
     let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 

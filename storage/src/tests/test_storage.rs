@@ -18,7 +18,7 @@ fn test_storage() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
         HashValue::zero(),
@@ -40,7 +40,7 @@ fn test_two_level_storage() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::two_new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
         HashValue::zero(),

@@ -119,24 +119,7 @@ pub struct StarcoinStorage {
 }
 
 impl StarcoinStorage {
-    pub fn new(storage: Arc<dyn Repository>) -> Result<Self> {
-        Ok(Self {
-            transaction_info_store: TransactionInfoStore::new(storage.clone()),
-            block_store: BlockStore::new(
-                storage.clone(),
-                storage.clone(),
-                storage.clone(),
-                storage.clone(),
-                storage.clone(),
-                storage.clone(),
-            ),
-            state_node_store: StateNodeStorage::new(storage.clone()),
-            accumulator_store: AccumulatorStore::new(storage.clone()),
-            block_info_store: BlockInfoStore::new(storage.clone()),
-            startup_info_store: storage.clone(),
-        })
-    }
-    pub fn two_new(
+    pub fn new(
         cache_storage: Arc<dyn InnerRepository>,
         db_storage: Arc<dyn InnerRepository>,
     ) -> Result<Self> {

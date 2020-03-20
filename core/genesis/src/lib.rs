@@ -93,13 +93,18 @@ mod tests {
     use super::*;
     use starcoin_consensus::dummy::DummyConsensus;
     use starcoin_executor::mock_executor::MockExecutor;
-    use starcoin_storage::{memory_storage::MemoryStorage, StarcoinStorage};
+    use starcoin_storage::cache_storage::CacheStorage;
+    use starcoin_storage::db_storage::DBStorage;
+    use starcoin_storage::StarcoinStorage;
 
     #[stest::test]
     pub fn test_genesis() -> Result<()> {
         let config = Arc::new(NodeConfig::default());
-        let repo = Arc::new(MemoryStorage::new());
-        let storage = Arc::new(StarcoinStorage::new(repo)?);
+        let cache_storage = Arc::new(CacheStorage::new());
+        let tmpdir = libra_temppath::TempPath::new();
+        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+        let storage =
+            Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
         let genesis =
             Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(config, storage)
                 .expect("init genesis must success.");

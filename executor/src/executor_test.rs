@@ -18,6 +18,9 @@ use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::Duration;
 use stdlib::transaction_scripts::EMPTY_TXN;
+use storage::cache_storage::CacheStorage;
+use storage::db_storage::DBStorage;
+use storage::StarcoinStorage;
 use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
@@ -35,9 +38,13 @@ use vm_runtime::{
 
 #[stest::test]
 fn test_execute_mint_txn() {
-    let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
-    let chain_state =
-        ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
+    let cache_storage = Arc::new(CacheStorage::new());
+    let tmpdir = libra_temppath::TempPath::new();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+    let chain_state = ChainStateDB::new(
+        Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap()),
+        None,
+    );
     let receiver_account_address = AccountAddress::random();
     chain_state
         .create_account(receiver_account_address)
@@ -148,9 +155,13 @@ fn test_validate_txn() {
 
 #[stest::test]
 fn test_execute_txn_with_starcoin_vm() {
-    let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
-    let chain_state =
-        ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
+    let cache_storage = Arc::new(CacheStorage::new());
+    let tmpdir = libra_temppath::TempPath::new();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+    let chain_state = ChainStateDB::new(
+        Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap()),
+        None,
+    );
 
     let txn = mock_txn();
     let config = VMConfig::default();
@@ -163,9 +174,13 @@ fn test_execute_txn_with_starcoin_vm() {
 fn test_generate_genesis_state_set() {
     let config = VMConfig::default();
     let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
-    let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
-    let chain_state =
-        ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
+    let cache_storage = Arc::new(CacheStorage::new());
+    let tmpdir = libra_temppath::TempPath::new();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+    let chain_state = ChainStateDB::new(
+        Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap()),
+        None,
+    );
 
     chain_state.apply(state_set);
     let txn = mock_txn();
@@ -177,9 +192,13 @@ fn test_generate_genesis_state_set() {
 fn test_execute_real_txn_with_starcoin_vm() {
     let config = VMConfig::default();
     let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
-    let repo = Arc::new(storage::memory_storage::MemoryStorage::new());
-    let chain_state =
-        ChainStateDB::new(Arc::new(storage::StarcoinStorage::new(repo).unwrap()), None);
+    let cache_storage = Arc::new(CacheStorage::new());
+    let tmpdir = libra_temppath::TempPath::new();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+    let chain_state = ChainStateDB::new(
+        Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap()),
+        None,
+    );
 
     chain_state.apply(state_set).unwrap();
     let new_account = Account::new();

@@ -15,7 +15,9 @@ use network::{
 };
 use starcoin_genesis::Genesis;
 use std::{sync::Arc, time::Duration};
-use storage::{memory_storage::MemoryStorage, StarcoinStorage};
+use storage::cache_storage::CacheStorage;
+use storage::db_storage::DBStorage;
+use storage::StarcoinStorage;
 use tokio::runtime::Handle;
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
@@ -52,8 +54,17 @@ fn test_network_actor() {
         let bus_2 = BusActor::launch();
 
         // storage
-        let storage_1 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
-        let storage_2 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
+        let cache_storage = Arc::new(CacheStorage::new());
+        let tmpdir = libra_temppath::TempPath::new();
+        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+        let storage_1 =
+            Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
+
+        let cache_storage2 = Arc::new(CacheStorage::new());
+        let tmpdir2 = libra_temppath::TempPath::new();
+        let db_storage2 = Arc::new(DBStorage::new(tmpdir2.path()));
+        let storage_2 =
+            Arc::new(StarcoinStorage::new(cache_storage2.clone(), db_storage2.clone()).unwrap());
         // network actor
         let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
@@ -209,7 +220,10 @@ fn test_network_actor_rpc() {
         // bus
         let bus_1 = BusActor::launch();
         // storage
-        let storage_1 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
+        let cache_storage = Arc::new(CacheStorage::new());
+        let tmpdir = libra_temppath::TempPath::new();
+        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+        let storage_1 = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
         // node config
         let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
@@ -289,7 +303,10 @@ fn test_network_actor_rpc() {
         // bus
         let bus_2 = BusActor::launch();
         // storage
-        let storage_2 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
+        let cache_storage2 = Arc::new(CacheStorage::new());
+        let tmpdir2 = libra_temppath::TempPath::new();
+        let db_storage2 = Arc::new(DBStorage::new(tmpdir2.path()));
+        let storage_2 = Arc::new(StarcoinStorage::new(cache_storage2, db_storage2).unwrap());
 
         // node config
         let mut config_2 = NodeConfig::random_for_test();
@@ -381,7 +398,10 @@ fn test_network_actor_rpc_2() {
         // bus
         let bus_1 = BusActor::launch();
         // storage
-        let storage_1 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
+        let cache_storage = Arc::new(CacheStorage::new());
+        let tmpdir = libra_temppath::TempPath::new();
+        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+        let storage_1 = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
         // node config
         let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
@@ -444,7 +464,10 @@ fn test_network_actor_rpc_2() {
         // bus
         let bus_2 = BusActor::launch();
         // storage
-        let storage_2 = Arc::new(StarcoinStorage::new(Arc::new(MemoryStorage::new())).unwrap());
+        let cache_storage2 = Arc::new(CacheStorage::new());
+        let tmpdir2 = libra_temppath::TempPath::new();
+        let db_storage2 = Arc::new(DBStorage::new(tmpdir2.path()));
+        let storage_2 = Arc::new(StarcoinStorage::new(cache_storage2, db_storage2).unwrap());
         // node config
         let mut config_2 = NodeConfig::random_for_test();
         let addr_1_hex = network_1.identify().to_base58();

@@ -18,7 +18,9 @@ use starcoin_genesis::Genesis;
 use starcoin_rpc_server::JSONRpcActor;
 use std::env;
 use std::{path::PathBuf, sync::Arc};
-use storage::{memory_storage::MemoryStorage, BlockStorageOp, StarcoinStorage};
+use storage::cache_storage::CacheStorage;
+use storage::db_storage::DBStorage;
+use storage::{BlockStorageOp, StarcoinStorage};
 use structopt::StructOpt;
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use traits::TxPoolAsyncService;
@@ -57,8 +59,10 @@ fn main() {
         let node_config = Arc::new(node_config.unwrap());
 
         let bus = BusActor::launch();
-        let repo = Arc::new(MemoryStorage::new());
-        let storage = Arc::new(StarcoinStorage::new(repo).unwrap());
+        let cache_storage = Arc::new(CacheStorage::new());
+        let db_storage = Arc::new(DBStorage::new(node_config.storage.clone().dir));
+        let storage =
+            Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
         let startup_info = match storage.get_startup_info().unwrap() {
             Some(startup_info) => startup_info,
             None => {
