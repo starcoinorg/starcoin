@@ -52,9 +52,9 @@ pub trait Wallet {
     fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction>;
 
     /// Return the default account
-    fn default_account(&self) -> Result<WalletAccount>;
+    fn get_default_account(&self) -> Result<Option<WalletAccount>>;
 
-    fn accounts(&self) -> Result<Vec<WalletAccount>>;
+    fn get_accounts(&self) -> Result<Vec<WalletAccount>>;
 
     /// Set the address's Account to default account, and unset the origin default account.
     fn set_default(&self, address: &AccountAddress) -> Result<()>;
@@ -68,7 +68,20 @@ pub trait WalletStore {
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>>;
     fn save_account(&self, account: WalletAccount) -> Result<()>;
     fn remove_account(&self, address: &AccountAddress) -> Result<()>;
-    fn list_account(&self) -> Result<Vec<WalletAccount>>;
+    fn get_accounts(&self) -> Result<Vec<WalletAccount>>;
     fn save_to_account(&self, address: &AccountAddress, key: String, value: Vec<u8>) -> Result<()>;
     fn get_from_account(&self, address: &AccountAddress, key: &str) -> Result<Option<Vec<u8>>>;
+}
+
+pub trait WalletService: Wallet {}
+
+#[async_trait::async_trait(? Send)]
+pub trait WalletAsyncService {
+    async fn create_account(self, password: &str) -> Result<WalletAccount>;
+
+    async fn get_default_account(self) -> Result<Option<WalletAccount>>;
+
+    async fn get_accounts(self) -> Result<Vec<WalletAccount>>;
+
+    async fn sign_txn(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction>;
 }

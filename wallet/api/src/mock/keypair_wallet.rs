@@ -30,7 +30,7 @@ impl KeyPairWallet {
 
     pub fn new_with_store(store: Arc<dyn WalletStore>) -> Result<Self> {
         let wallet = Self { store };
-        if wallet.accounts()?.is_empty() {
+        if wallet.get_accounts()?.is_empty() {
             wallet.create_account("")?;
         }
         Ok(wallet)
@@ -71,7 +71,7 @@ impl Wallet for KeyPairWallet {
         let key_pair: KeyPair = KeyPair::generate_for_testing(&mut rng);
         let address = AccountAddress::from_public_key(&key_pair.public_key);
         //first account is default.
-        let is_default = self.accounts()?.len() == 0;
+        let is_default = self.get_accounts()?.len() == 0;
         let account = WalletAccount::new(address, is_default);
         self.save_account(account.clone(), key_pair)?;
         Ok(account)
@@ -120,32 +120,37 @@ impl Wallet for KeyPairWallet {
         key_pair.sign_txn(raw_txn)
     }
 
-    fn default_account(&self) -> Result<WalletAccount> {
-        self.store
-            .list_account()?
+    fn get_default_account(&self) -> Result<Option<WalletAccount>> {
+        Ok(self
+            .store
+            .get_accounts()?
             .iter()
             .find(|account| account.is_default)
-            .cloned()
-            .ok_or(format_err!("Should exist at least one account"))
+            .cloned())
     }
 
-    fn accounts(&self) -> Result<Vec<WalletAccount>> {
-        self.store.list_account()
+    fn get_accounts(&self) -> Result<Vec<WalletAccount>> {
+        self.store.get_accounts()
     }
 
     fn set_default(&self, address: &AccountAddress) -> Result<()> {
-        let mut default = self.default_account()?;
-        if &default.address == address {
-            return Ok(());
-        }
         let mut target = self.get_account(address)?.ok_or(format_err!(
             "Can not find account by address: {:?}",
             address
         ))?;
+
+        let default = self.get_default_account()?;
+        if let Some(mut default) = default {
+            if &default.address == address {
+                return Ok(());
+            }
+            default.is_default = false;
+            self.store.save_account(default)?;
+        }
+
         target.is_default = true;
-        default.is_default = false;
         self.store.save_account(target)?;
-        self.store.save_account(default)?;
+
         Ok(())
     }
 
@@ -169,7 +174,9 @@ mod tests {
     #[test]
     fn test_wallet() -> Result<()> {
         let wallet = KeyPairWallet::new()?;
-        let account = wallet.default_account()?;
+        let account = wallet.get_default_account()?;
+        assert!(account.is_some());
+        let account = account.unwrap();
         let raw_txn = RawUserTransaction::mock_by_sender(account.address);
         let _txn = wallet.sign_txn(raw_txn)?;
         Ok(())
