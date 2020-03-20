@@ -319,7 +319,7 @@ where
         }
 
         let startup_info = self.collection.to_startup_info();
-        info!("save startup info : {:?}", startup_info);
+        debug!("save startup info : {:?}", startup_info);
         if let Err(e) = self.storage.save_startup_info(startup_info) {
             warn!("err: {:?}", e);
         }
