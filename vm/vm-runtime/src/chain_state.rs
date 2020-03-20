@@ -10,6 +10,7 @@ use libra_types::{
 use logger::prelude::*;
 use move_vm_state::data_cache::RemoteCache;
 
+use crypto::HashValue;
 use traits::ChainState;
 use types::{access_path::AccessPath, account_address::AccountAddress};
 use vm::errors::VMResult;
@@ -34,10 +35,11 @@ impl<'txn> StateStore<'txn> {
             match write_op {
                 LibraWriteOp::Value(blob) => {
                     self.set(AccessPath::from(access_path.clone()), blob.clone())
-                        .unwrap();
+                        .unwrap_or_else(|e| panic!("Failure to set access path: {}", e));
                 }
                 LibraWriteOp::Deletion => {
-                    self.remove(&AccessPath::from(access_path.clone())).unwrap();
+                    self.remove(&AccessPath::from(access_path.clone()))
+                        .unwrap_or_else(|e| panic!("Failure to remove access path: {}", e));
                 }
             }
         }
@@ -45,16 +47,11 @@ impl<'txn> StateStore<'txn> {
 
     /// Sets a (key, value) pair within state store.
     pub fn set(&mut self, access_path: AccessPath, data_blob: Vec<u8>) -> Result<()> {
-        info!(
-            "set access_path: {:?}, data_blob: {:?}",
-            access_path, data_blob
-        );
         self.chain_state.set(&access_path, data_blob)
     }
 
     /// Deletes a key from state store.
     pub fn remove(&mut self, access_path: &AccessPath) -> Result<()> {
-        info!("remove access_path: {:?}", access_path);
         self.chain_state.remove(access_path)
     }
 
@@ -65,11 +62,19 @@ impl<'txn> StateStore<'txn> {
     pub fn state(&mut self) -> &'txn dyn ChainState {
         self.chain_state
     }
+
+    pub fn commit(&self) -> Result<HashValue> {
+        self.chain_state.commit()
+    }
+
+    pub fn flush(&self) -> Result<()> {
+        self.chain_state.flush()
+    }
 }
 
 impl<'txn> StateView for StateStore<'txn> {
     fn get(&self, access_path: &LibraAccessPath) -> Result<Option<Vec<u8>>> {
-        ChainState::get(self.chain_state, &access_path.clone().into())
+        ChainState::get(self.chain_state, &AccessPath::from(access_path.clone()))
     }
 
     fn multi_get(&self, _access_paths: &[LibraAccessPath]) -> Result<Vec<Option<Vec<u8>>>> {

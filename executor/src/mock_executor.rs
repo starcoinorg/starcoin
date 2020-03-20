@@ -93,6 +93,13 @@ impl ChainStateWriter for MockChainState {
     fn apply(&self, _state_set: ChainStateSet) -> Result<(), Error> {
         unimplemented!()
     }
+    fn commit(&self) -> Result<HashValue> {
+        unimplemented!()
+    }
+
+    fn flush(&self) -> Result<()> {
+        unimplemented!()
+    }
 }
 
 pub struct MockExecutor {

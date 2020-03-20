@@ -204,7 +204,7 @@ impl Default for Account {
     }
 }
 
-pub fn create_signed_txn_with_genesis_account(
+pub fn create_signed_txn_with_association_account(
     program: Vec<u8>,
     args: Vec<TransactionArgument>,
     sequence_number: u64,
