@@ -234,8 +234,12 @@ impl RawUserTransaction {
     }
 
     pub fn mock() -> Self {
+        Self::mock_by_sender(AccountAddress::random())
+    }
+
+    pub fn mock_by_sender(sender: AccountAddress) -> Self {
         Self::new(
-            AccountAddress::default(),
+            sender,
             0,
             TransactionPayload::Script(Script::default()),
             0,
