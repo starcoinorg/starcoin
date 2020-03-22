@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::pool::VerifiedTransaction;
 use crate::{
     pool,
     pool::{
@@ -18,8 +19,6 @@ use starcoin_config::TxPoolConfig;
 use std::sync::Arc;
 use storage::StarcoinStorage;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
-
-use crate::pool::VerifiedTransaction;
 use types::{
     block::BlockHeader, system_events::SystemEvents, transaction,
     transaction::SignedUserTransaction,
@@ -178,6 +177,17 @@ impl actix::Handler<SystemEvents> for TxPoolActor {
             SystemEvents::NewHeadBlock(block) => {
                 self.chain_header = block.into_inner().0;
                 self.sequence_number_cache.clear();
+
+                // NOTICE: as the new head block event is sepeated with chain_new_block event,
+                // we need to remove invalid txn here.
+                // In fact, it would be better if caller can make it into one.
+                // In this situation, we don't need to reimport invalid txn on chain_new_block.
+                let client = PoolClient::new(
+                    self.chain_header.clone(),
+                    self.storage.clone(),
+                    self.sequence_number_cache.clone(),
+                );
+                self.queue.cull(client)
             }
             _ => {}
         }
@@ -194,7 +204,7 @@ impl actix::Handler<PeerTransactions> for TxPoolActor {
     ) -> Self::Result {
         // JUST need to keep at most once delivery.
         let txns = msg.peer_transactions();
-        ctx.notify(ImportTxns { txns });
+        ctx.notify(ImportTxns { txns })
     }
 }
 
@@ -272,6 +282,19 @@ impl actix::Handler<ChainNewBlock> for TxPoolActor {
 
     fn handle(&mut self, msg: ChainNewBlock, _ctx: &mut Self::Context) -> Self::Result {
         let ChainNewBlock { enacted, retracted } = msg;
+
+        info!(
+            "receive chain_new_block msg, enacted: {:?}, retracted: {:?}",
+            enacted
+                .iter()
+                .map(|t| (t.sender(), t.sequence_number()))
+                .collect::<Vec<_>>(),
+            retracted
+                .iter()
+                .map(|t| (t.sender(), t.sequence_number()))
+                .collect::<Vec<_>>(),
+        );
+
         let hashes: Vec<_> = enacted.iter().map(|t| t.crypto_hash()).collect();
         let _ = self.queue.remove(hashes.iter(), false);
 
@@ -284,12 +307,12 @@ impl actix::Handler<ChainNewBlock> for TxPoolActor {
         let txns = retracted
             .into_iter()
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
-        let import_result = self.queue.import(client.clone(), txns);
-        for r in import_result {
-            r?;
-        }
-
-        self.queue.cull(client);
+        let _ = self.queue.import(client.clone(), txns);
+        // ignore import result
+        // for r in import_result {
+        //     r?;
+        // }
+        // self.queue.cull(client);
         Ok(())
     }
 }

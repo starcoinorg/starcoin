@@ -243,8 +243,22 @@ pub fn encode_transfer_transaction(
 }
 
 fn encode_transaction(sender: AccountAddress, program: Script) -> Transaction {
-    let raw_transaction =
-        RawUserTransaction::new_script(sender, 0, program, 0, 0, std::time::Duration::from_secs(0));
+    mock_transaction_with_seq_number(sender, 0, program)
+}
+
+pub fn mock_transaction_with_seq_number(
+    sender: AccountAddress,
+    seq_number: u64,
+    program: Script,
+) -> Transaction {
+    let raw_transaction = RawUserTransaction::new_script(
+        sender,
+        seq_number,
+        program,
+        0,
+        0,
+        std::time::Duration::from_secs(0),
+    );
 
     let (privkey, pubkey) = compat::generate_keypair(None);
     Transaction::UserTransaction(
