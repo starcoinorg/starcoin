@@ -60,7 +60,7 @@ fn main() {
 
         let bus = BusActor::launch();
         let cache_storage = Arc::new(CacheStorage::new());
-        let db_storage = Arc::new(DBStorage::new(node_config.storage.clone().dir));
+        let db_storage = Arc::new(DBStorage::new(node_config.storage.clone().dir()));
         let storage =
             Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
         let startup_info = match storage.get_startup_info().unwrap() {

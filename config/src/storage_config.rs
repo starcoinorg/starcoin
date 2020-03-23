@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::DEFAULT_DATA_DIR;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct StorageConfig {
-    pub dir: PathBuf,
+    dir: PathBuf,
     #[serde(skip)]
     data_dir: PathBuf,
 }
@@ -27,6 +29,11 @@ impl StorageConfig {
         } else {
             self.dir.clone()
         }
+    }
+
+    pub fn load(&mut self, data_dir: &PathBuf) -> Result<()> {
+        self.data_dir = data_dir.clone();
+        Ok(())
     }
 
     pub fn set_data_dir(&mut self, data_dir: PathBuf) {
