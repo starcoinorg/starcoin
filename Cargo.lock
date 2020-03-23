@@ -5610,6 +5610,7 @@ dependencies = [
  "anyhow",
  "env_logger 0.7.1",
  "libra-temppath",
+ "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
  "once_cell",
  "starcoin-canonical-serialization",
  "starcoin-compiler",
