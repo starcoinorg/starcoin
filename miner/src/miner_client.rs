@@ -3,19 +3,17 @@ use crate::stratum::StratumManager;
 use argon2::{self, Config};
 use bus::BusActor;
 use byteorder::{LittleEndian, WriteBytesExt};
-use jsonrpc_core::futures::{future, stream::Stream, Future};
+//use jsonrpc_core::futures::{future, stream::Stream, Future};
 use jsonrpc_core::{Params, Call, MethodCall, Request};
 use serde_json;
 use anyhow::Result;
 use rand::Rng;
 use sc_stratum::{PushWorkHandler, Stratum};
-use std::net::SocketAddr;
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 use types::block::{Block, BlockHeader, BlockTemplate};
 use types::{H256, U256};
 use futures_timer::Delay;
 use async_std::{net::TcpStream, prelude::*, io::BufReader, task};
-
 use futures::{
     channel::mpsc,
 };
@@ -71,7 +69,6 @@ impl MinerClient {
 
 
     fn process_job(params: String) -> anyhow::Result<u64> {
-        println!("job:{:?}", params);
         let resp: MethodCall = serde_json::from_str(&params)?;
         let params: Params = resp.params.parse()?;
         if let Params::Array(mut values) = params {
@@ -113,10 +110,10 @@ impl MinerClient {
             while let Some(line) = lines.next().await {
                 let line = line.unwrap();
                 let processed = MinerClient::process_job(line);
-                if processed.is_err(){
-                    continue
+                if processed.is_err() {
+                    continue;
                 }
-                let nonce  = processed.unwrap();
+                let nonce = processed.unwrap();
                 tx.unbounded_send(nonce).unwrap();
                 println!("process nonce:{:o}", nonce);
             };
@@ -154,9 +151,10 @@ mod test {
     use std::time::Duration;
     use types::block::{Block, BlockHeader, BlockTemplate};
     use tokio;
-
+    use config::NodeConfig;
     async fn prepare() -> Result<()> {
-        let mut miner = Miner::new(BusActor::launch());
+        let mut conf = Arc::new(NodeConfig::random_for_test());
+        let mut miner = Miner::new(BusActor::launch(),conf);
         let stratum = {
             let addr = "127.0.0.1:9000".parse().unwrap();
             let dispatcher = Arc::new(StratumManager::new(miner.clone()));
@@ -171,7 +169,6 @@ mod test {
         Delay::new(Duration::from_millis(3000)).await;
         miner.set_mint_job(mine_ctx);
         for i in 1..5 {
-            println!("push");
             stratum.push_work_all(miner.get_mint_job()).unwrap();
             Delay::new(Duration::from_millis(500)).await;
         }
@@ -187,7 +184,7 @@ mod test {
             tokio::task::spawn_local(fut);
             tokio::task::spawn_local(prepare());
             Delay::new(Duration::from_millis(500)).await;
-            let _ = MinerClient::main_loop("127.0.0.1:9000".parse().unwrap()).await;
+            let _ = async_std::future::timeout(Duration::from_secs(7), MinerClient::main_loop("127.0.0.1:9000".parse().unwrap())).await;
         });
     }
 

@@ -14,27 +14,29 @@ use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
 use types::{H256, U256};
 
-pub struct ArgonConsensus {
+pub struct ArgonConsensusHeader {
     nonce: u64,
 }
 
-impl ConsensusHeader for ArgonConsensus {}
+impl ConsensusHeader for ArgonConsensusHeader {}
 
-impl TryFrom<Vec<u8>> for ArgonConsensus {
+impl TryFrom<Vec<u8>> for ArgonConsensusHeader {
     type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
-        Ok(ArgonConsensus {
+        Ok(ArgonConsensusHeader {
             nonce: vec_to_u64(value),
         })
     }
 }
 
-impl Into<Vec<u8>> for ArgonConsensus {
+impl Into<Vec<u8>> for ArgonConsensusHeader {
     fn into(self) -> Vec<u8> {
         u64_to_vec(self.nonce)
     }
 }
+
+pub struct ArgonConsensus {}
 
 impl Consensus for ArgonConsensus {
     fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8> {
@@ -81,12 +83,14 @@ fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
     }
     return false;
 }
+
 pub fn calculate_hash(header: &[u8]) -> H256 {
     let config = Config::default();
     let output = argon2::hash_raw(header, header, &config).unwrap();
     let h_256: H256 = output.as_slice().into();
     h_256
 }
+
 fn generate_nonce() -> u64 {
     let mut rng = rand::thread_rng();
     rng.gen::<u64>();

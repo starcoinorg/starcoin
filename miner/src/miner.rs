@@ -22,6 +22,7 @@ use types::{
 pub struct Miner {
     state: Arc<Mutex<Option<MineCtx>>>,
     bus: Addr<BusActor>,
+    config: Arc<NodeConfig>,
 }
 
 #[derive(Clone)]
@@ -50,8 +51,8 @@ pub fn mint<C>(
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
 ) -> Result<()>
-where
-    C: Consensus,
+    where
+        C: Consensus,
 {
     let difficulty = difficult::get_next_work_required(chain);
     let block_template = chain.create_block_template(None, difficulty, txns)?;
@@ -68,10 +69,11 @@ where
 }
 
 impl Miner {
-    pub fn new(bus: Addr<BusActor>) -> Miner {
+    pub fn new(bus: Addr<BusActor>, config: Arc<NodeConfig>) -> Miner {
         Self {
             state: Arc::new(Mutex::new(None)),
             bus,
+            config,
         }
     }
     pub fn set_mint_job(&mut self, t: MineCtx) {
@@ -93,10 +95,12 @@ impl Miner {
         // create block
         let state = self.state.lock().unwrap();
         let block_template = state.as_ref().unwrap().block_template.clone();
-        let consensus_header = argon_consensus::ArgonConsensus::try_from(payload).unwrap();
+
+        let consensus_header = argon_consensus::ArgonConsensusHeader::try_from(payload).unwrap();
+
         let block = block_template.into_block(consensus_header);
         // notify chain mined block
-        info!("Miner new block: {:?}", block);
+        println!("Miner new block: {:?}", block);
         // fire SystemEvents::MinedBlock.
         info!("Broadcast new block: {:?}.", block.header().id());
         self.bus.do_send(Broadcast {
