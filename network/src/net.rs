@@ -100,11 +100,9 @@ impl SNetworkService {
             futures::select! {
                 message = net_rx.select_next_some()=>{
                     inner.handle_network_send(message).await.unwrap();
-                    info!("send net message");
                 },
                 event = event_stream.select_next_some()=>{
                     inner.handle_network_receive(event,net_tx.clone(),event_tx.clone()).await.unwrap();
-                    info!("receive net message");
                 },
                 _ = close_rx.select_next_some() => {
                     debug!("To shutdown command ");
@@ -140,6 +138,10 @@ impl SNetworkService {
         Ok(())
     }
 
+    pub(crate) fn service(&self) -> Arc<NetworkService> {
+        self.service.clone()
+    }
+
     pub async fn broadcast_message(&mut self, message: Vec<u8>) {
         info!("broadcast message");
         let (protocol_msg, _message_id) = Message::new_payload(message);
@@ -166,12 +168,20 @@ impl NetworkInner {
                 info!("ignore dht event");
             }
             Event::NotificationStreamOpened { remote } => {
-                info!("Connected peer {:?}", remote);
+                info!(
+                    "Connected peer {:?},Myself is {:?}",
+                    remote,
+                    self.service.peer_id()
+                );
                 let open_msg = PeerEvent::Open(remote.into());
                 event_tx.unbounded_send(open_msg)?;
             }
             Event::NotificationStreamClosed { remote } => {
-                info!("Close peer {:?}", remote);
+                info!(
+                    "Close peer {:?},Myself is {:?}",
+                    remote,
+                    self.service.peer_id()
+                );
                 let open_msg = PeerEvent::Close(remote.into());
                 event_tx.unbounded_send(open_msg)?;
             }

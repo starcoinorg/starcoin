@@ -252,4 +252,91 @@ mod tests {
         let boot_nodes = convert_boot_nodes(boot_nodes);
         boot_nodes.iter().for_each(|x| println!("{}", x));
     }
+
+    #[test]
+    fn test_reconnected_nodes() {
+        ::logger::init_for_test();
+
+        let mut rt = Runtime::new().unwrap();
+        let mut node_config1 = config::NetworkConfig::random_for_test();
+        node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+
+        let (service1, net_tx1, net_rx1, event_rx1, command_tx1) =
+            build_network_service(&node_config1, rt.handle().clone());
+
+        thread::sleep(Duration::from_secs(1));
+
+        let mut node_config2 = config::NetworkConfig::random_for_test();
+        let addr1_hex = service1.identify().to_base58();
+        let seed = format!("{}/p2p/{}", &node_config1.listen, addr1_hex);
+        node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+        node_config2.seeds = vec![seed.clone()];
+        let (service2, net_tx2, net_rx2, event_rx2, command_tx2) =
+            build_network_service(&node_config2, rt.handle().clone());
+
+        thread::sleep(Duration::from_secs(1));
+
+        let mut node_config3 = config::NetworkConfig::random_for_test();
+        node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+        node_config3.seeds = vec![seed];
+        let (service3, net_tx3, net_rx3, event_rx3, command_tx3) =
+            build_network_service(&node_config3, rt.handle().clone());
+
+        thread::sleep(Duration::from_secs(1));
+
+        let service1_clone = service1.clone();
+        let fut = async move {
+            assert_eq!(
+                service1_clone
+                    .is_connected(service2.identify().clone())
+                    .await
+                    .unwrap(),
+                true
+            );
+            assert_eq!(
+                service1_clone
+                    .is_connected(service3.identify().clone())
+                    .await
+                    .unwrap(),
+                true
+            );
+
+            drop(service2);
+            drop(service3);
+
+            Delay::new(Duration::from_secs(1)).await;
+        };
+        rt.block_on(fut);
+
+        thread::sleep(Duration::from_secs(10));
+
+        let (service2, net_tx2, net_rx2, event_tx2, command_tx2) =
+            build_network_service(&node_config2, rt.handle().clone());
+
+        thread::sleep(Duration::from_secs(1));
+
+        let (service3, net_tx3, net_rx3, event_rx3, command_tx3) =
+            build_network_service(&node_config3, rt.handle().clone());
+
+        thread::sleep(Duration::from_secs(1));
+
+        let service1_clone = service1.clone();
+        let fut = async move {
+            assert_eq!(
+                service1_clone
+                    .is_connected(service2.identify().clone())
+                    .await
+                    .unwrap(),
+                true
+            );
+            assert_eq!(
+                service1_clone
+                    .is_connected(service3.identify().clone())
+                    .await
+                    .unwrap(),
+                true
+            );
+        };
+        rt.block_on(fut);
+    }
 }
