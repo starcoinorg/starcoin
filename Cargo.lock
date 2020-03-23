@@ -1178,6 +1178,17 @@ dependencies = [
 
 [[package]]
 name = "dirs"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fd78930633bd1c6e35c4b42b1df7b0cbc6bc191146e512bb3bedf243fcc3901"
+dependencies = [
+ "libc",
+ "redox_users",
+ "winapi 0.3.8",
+]
+
+[[package]]
+name = "dirs"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13aea89a5c93364a98e9b37b2fa237effbb694d5cfe01c5b70941f7eb087d5e3"
@@ -3975,6 +3986,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d77f3db4bce033f4d04db08079b2ef1c3d02b44e86f25d08886fafa7756ffa"
 
 [[package]]
+name = "nix"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4dbdc256eaac2e3bd236d93ad999d3479ef775c863dbda3068c4006a92eec51b"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if",
+ "libc",
+ "void",
+]
+
+[[package]]
 name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5116,6 +5140,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustyline"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f47ea1ceb347d2deae482d655dc8eef4bd82363d3329baffa3818bd76fea48b"
+dependencies = [
+ "dirs 1.0.5",
+ "libc",
+ "log 0.4.8",
+ "memchr",
+ "nix",
+ "unicode-segmentation",
+ "unicode-width",
+ "utf8parse",
+ "winapi 0.3.8",
+]
+
+[[package]]
 name = "rw-stream-sink"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5175,6 +5216,17 @@ checksum = "507a9e6e8ffe0a4e0ebb9a10293e62fdf7657c06f1b8bb07a8fcf697d2abf295"
 dependencies = [
  "lazy_static",
  "winapi 0.3.8",
+]
+
+[[package]]
+name = "scmd"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 2.33.0",
+ "rustyline",
+ "serde",
+ "structopt",
 ]
 
 [[package]]
@@ -5528,6 +5580,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-cmd"
+version = "0.1.0"
+dependencies = [
+ "rustyline",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-rpc-client",
+]
+
+[[package]]
 name = "starcoin-compiler"
 version = "0.1.0"
 dependencies = [
@@ -5543,7 +5605,7 @@ name = "starcoin-config"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "dirs",
+ "dirs 2.0.2",
  "hex 0.4.2",
  "libp2p 0.15.0",
  "once_cell",
@@ -6960,6 +7022,12 @@ dependencies = [
  "matches",
  "percent-encoding 2.1.0",
 ]
+
+[[package]]
+name = "utf8parse"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8772a4ccbb4e89959023bc5b7cb8623a795caa7092d99f3aa9501b9484d4557d"
 
 [[package]]
 name = "vcpkg"

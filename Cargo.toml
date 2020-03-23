@@ -6,6 +6,7 @@ members = [
     "commons/crypto",
     "commons/logger",
     "commons/transaction-pool",
+    "commons/scmd",
     "types",
     "core/traits",
     "core/accumulator",
@@ -38,4 +39,5 @@ members = [
     "rpc/api",
     "rpc/client",
     "rpc/server",
+    "cmd/starcoin",
 ]
