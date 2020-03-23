@@ -26,7 +26,9 @@ use types::{
     },
     vm_error::VMStatus,
 };
-use vm_runtime::mock_vm::{encode_transfer_transaction, MockVM};
+use vm_runtime::mock_vm::{
+    encode_transfer_program, encode_transfer_transaction, mock_transaction_with_seq_number, MockVM,
+};
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
@@ -206,4 +208,14 @@ pub fn mock_mint_txn(to: AccountAddress, amount: u64) -> Transaction {
 
 pub fn mock_transfer_txn(from: AccountAddress, to: AccountAddress, amount: u64) -> Transaction {
     encode_transfer_transaction(from, to, amount)
+}
+
+pub fn mock_transfer_txn_with_seq_number(
+    sender_sequence_number: u64,
+    from: AccountAddress,
+    to: AccountAddress,
+    amount: u64,
+) -> Transaction {
+    let script = encode_transfer_program(to, amount);
+    mock_transaction_with_seq_number(from, sender_sequence_number, script)
 }

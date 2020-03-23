@@ -12,7 +12,8 @@ use config::{NodeConfig, PacemakerStrategy};
 use consensus::{difficult, Consensus};
 
 use crate::miner::MineCtx;
-use chain::to_block_chain_collection;
+use crate::tx_factory::{GenTxEvent, TxFactoryActor};
+use chain::{to_block_chain_collection, BlockChainCollection};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
@@ -31,6 +32,7 @@ mod headblock_pacemaker;
 mod miner;
 #[allow(dead_code)]
 mod miner_client;
+mod mock_txn_generator;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 mod stratum;
@@ -105,15 +107,14 @@ where
             //     tx_factory.do_send(GenTxEvent {});
             // });
 
-            let gen_tx_chain = chain.clone();
+            let tx_factory = TxFactoryActor::launch(txpool.clone(), storage.clone(), bus.clone())
+                .expect("start txn factory should be ok");
+
             ctx.run_interval(Duration::from_millis(1000), move |_act, _ctx| {
                 info!("miner call gen_tx.");
-                let tmp_chain = gen_tx_chain.clone();
-                Arbiter::spawn(async move {
-                    if let Err(e) = tmp_chain.clone().gen_tx().await {
-                        warn!("err : {:?}", e);
-                    }
-                });
+                if let Err(e) = tx_factory.try_send(GenTxEvent) {
+                    warn!("fail to send gen_tx_event, err: {:?}", e);
+                }
             });
             let miner = miner::Miner::new(bus.clone());
             let stratum = sc_stratum::Stratum::start(
