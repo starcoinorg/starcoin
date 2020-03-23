@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use anyhow::Result;
-use executor::mock_executor::mock_mint_txn;
+use executor::executor::mock_create_account_txn;
 use std::convert::TryInto;
 use traits::TxPoolAsyncService;
 use types::account_address::AccountAddress;
@@ -43,7 +43,7 @@ where
     fn handle(&mut self, _event: GenTxEvent, ctx: &mut Self::Context) -> Self::Result {
         let txpool = self.txpool.clone();
         let f = async {
-            let tx = mock_mint_txn(AccountAddress::random(), 100);
+            let tx = mock_create_account_txn();
             txpool.add(tx.try_into().unwrap()).await.unwrap();
         }
         .into_actor(self);

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    executor::{Executor, mock_create_account_txn},
+    executor::{mock_create_account_txn, Executor},
     mock_executor::{
         get_signed_txn, mock_mint_txn, mock_transfer_txn, mock_txn, MockChainState, MockExecutor,
     },
@@ -232,7 +232,7 @@ fn test_execute_mock_txn_with_starcoin_vm() -> Result<()> {
         .apply(state_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
-let txn = mock_create_account_txn();
+    let txn = mock_create_account_txn();
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 

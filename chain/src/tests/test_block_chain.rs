@@ -4,8 +4,8 @@ use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus, Consensus};
+use executor::executor::mock_create_account_txn;
 use executor::executor::Executor;
-use executor::mock_executor::mock_mint_txn;
 use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
@@ -25,7 +25,7 @@ fn it_works() {
 }
 
 fn gen_txs() -> Vec<SignedUserTransaction> {
-    let tx = mock_mint_txn(AccountAddress::random(), 100)
+    let tx = mock_create_account_txn()
         .as_signed_user_txn()
         .unwrap()
         .clone();

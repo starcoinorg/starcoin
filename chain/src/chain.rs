@@ -7,7 +7,7 @@ use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
 use consensus::Consensus;
 use crypto::{hash::CryptoHash, HashValue};
-use executor::mock_executor::mock_mint_txn;
+use executor::executor::mock_create_account_txn;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
@@ -144,7 +144,7 @@ where
     }
 
     fn gen_tx_for_test(&self) {
-        let tx = mock_mint_txn(AccountAddress::random(), 100);
+        let tx = mock_create_account_txn();
         // info!("gen test txn: {:?}", tx);
         let txpool = self.txpool.clone();
         Arbiter::spawn(async move {
