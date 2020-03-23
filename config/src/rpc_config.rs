@@ -25,7 +25,7 @@ pub struct RpcConfig {
 impl Default for RpcConfig {
     fn default() -> Self {
         Self {
-            ipc_file: Path::new("starcion.ipc").to_path_buf(),
+            ipc_file: Path::new("starcoin.ipc").to_path_buf(),
             //TODO http,ws,tcp should be disabled at default.
             http_address: Some("127.0.0.1:9830".parse::<SocketAddr>().unwrap()),
             ws_address: Some("127.0.0.1:9831".parse::<SocketAddr>().unwrap()),
