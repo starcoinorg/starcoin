@@ -18,7 +18,7 @@ use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use consensus::dummy::DummyConsensus;
 use crypto::HashValue;
-use executor::mock_executor::MockExecutor;
+use executor::executor::Executor;
 use logger::prelude::*;
 use message::ChainRequest;
 use network::network::NetworkAsyncService;
@@ -36,7 +36,7 @@ use types::{
 /// actor for block chain.
 pub struct ChainActor {
     //TODO use Generic Parameter for Executor and Consensus.
-    service: ChainServiceImpl<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>,
+    service: ChainServiceImpl<Executor, DummyConsensus, StarcoinStorage, TxPoolRef>,
     bus: Addr<BusActor>,
 }
 

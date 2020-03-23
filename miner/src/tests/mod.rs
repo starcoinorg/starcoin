@@ -4,7 +4,7 @@ use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::dummy::DummyConsensus;
-use executor::mock_executor::MockExecutor;
+use executor::executor::Executor;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -40,7 +40,7 @@ fn test_miner_with_schedule_pacemaker() {
         let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
-        let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+        let genesis = Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(
             config.clone(),
             storage.clone(),
         )
@@ -66,7 +66,7 @@ fn test_miner_with_schedule_pacemaker() {
         .unwrap();
         let _miner = MinerActor::<
             DummyConsensus,
-            MockExecutor,
+            Executor,
             TxPoolRef,
             ChainActorRef,
             StarcoinStorage,
@@ -121,7 +121,7 @@ fn test_miner_with_ondemand_pacemaker() {
 
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
-        let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+        let genesis = Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(
             config.clone(),
             storage.clone(),
         )
@@ -149,7 +149,7 @@ fn test_miner_with_ondemand_pacemaker() {
 
         let _miner = MinerActor::<
             DummyConsensus,
-            MockExecutor,
+            Executor,
             TxPoolRef,
             ChainActorRef,
             StarcoinStorage,

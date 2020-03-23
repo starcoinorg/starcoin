@@ -10,7 +10,7 @@ use crypto::{
     test_utils::KeyPair,
     Uniform,
 };
-use executor::mock_executor::MockExecutor;
+use executor::executor::Executor;
 use logger::prelude::*;
 use miner::MinerActor;
 use network::NetworkActor;
@@ -66,7 +66,7 @@ fn main() {
         let startup_info = match storage.get_startup_info().unwrap() {
             Some(startup_info) => startup_info,
             None => {
-                let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+                let genesis = Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(
                     node_config.clone(),
                     storage.clone(),
                 )
@@ -108,7 +108,7 @@ fn main() {
         };
         let _miner = MinerActor::<
             DummyConsensus,
-            MockExecutor,
+            Executor,
             TxPoolRef,
             ChainActorRef,
             StarcoinStorage,

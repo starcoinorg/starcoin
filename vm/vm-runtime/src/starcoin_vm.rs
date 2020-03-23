@@ -24,6 +24,7 @@ use move_vm_types::chain_state::ChainState as LibraChainState;
 use move_vm_types::values::Value;
 use std::sync::Arc;
 
+use once_cell::sync::Lazy;
 use types::{
     transaction::{
         SignatureCheckedTransaction, Transaction, TransactionArgument, TransactionOutput,
@@ -36,8 +37,6 @@ use vm::{
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
-use once_cell::sync::Lazy;
-
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
     Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
@@ -206,27 +205,27 @@ impl StarcoinVM {
                 output
             }
             Transaction::BlockMetadata(block_metadata) => {
-//                let (_id, _timestamp, author) = block_metadata.into_inner().unwrap();
-//                let access_path = AccessPath::new_for_account(author);
-//                let account_resource: AccountResource = state_store
-//                    .get_from_statedb(&access_path)
-//                    .and_then(|blob| match blob {
-//                        Some(blob) => Ok(blob),
-//                        None => {
-//                            state_store.create_account(author)?;
-//                            Ok(state_store
-//                                .get_from_statedb(&access_path)?
-//                                .expect("account resource must exist."))
-//                        }
-//                    })
-//                    .and_then(|blob| blob.try_into())?;
-//
-//                let new_account_resource = AccountResource::new(
-//                    account_resource.balance() + 50_00000000,
-//                    account_resource.sequence_number(),
-//                    account_resource.authentication_key().clone(),
-//                );
-//                state_store.set(access_path, new_account_resource.try_into()?)?;
+                //                let (_id, _timestamp, author) = block_metadata.into_inner().unwrap();
+                //                let access_path = AccessPath::new_for_account(author);
+                //                let account_resource: AccountResource = state_store
+                //                    .get_from_statedb(&access_path)
+                //                    .and_then(|blob| match blob {
+                //                        Some(blob) => Ok(blob),
+                //                        None => {
+                //                            state_store.create_account(author)?;
+                //                            Ok(state_store
+                //                                .get_from_statedb(&access_path)?
+                //                                .expect("account resource must exist."))
+                //                        }
+                //                    })
+                //                    .and_then(|blob| blob.try_into())?;
+                //
+                //                let new_account_resource = AccountResource::new(
+                //                    account_resource.balance() + 50_00000000,
+                //                    account_resource.sequence_number(),
+                //                    account_resource.authentication_key().clone(),
+                //                );
+                //                state_store.set(access_path, new_account_resource.try_into()?)?;
                 TransactionOutput::new(vec![], 0, KEEP_STATUS.clone())
             }
             Transaction::StateSet(state_set) => {

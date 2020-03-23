@@ -4,8 +4,8 @@ use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus, Consensus};
+use executor::executor::Executor;
 use executor::mock_executor::mock_mint_txn;
-use executor::mock_executor::MockExecutor;
 use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
@@ -42,11 +42,9 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage =
         Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
-    let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
-        conf.clone(),
-        storage.clone(),
-    )
-    .unwrap();
+    let genesis =
+        Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(conf.clone(), storage.clone())
+            .unwrap();
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -84,7 +82,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
             )
             .unwrap();
             let block_chain =
-                BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
+                BlockChain::<Executor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
                     conf.clone(),
                     collection
                         .clone()
@@ -166,10 +164,8 @@ async fn test_chain_apply() -> Result<()> {
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage =
         Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
-    let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
-        config.clone(),
-        storage.clone(),
-    )?;
+    let genesis =
+        Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(config.clone(), storage.clone())?;
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -186,14 +182,13 @@ async fn test_chain_apply() -> Result<()> {
         storage.clone(),
         txpool.clone(),
     )?;
-    let mut block_chain =
-        BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
-            config.clone(),
-            genesis.startup_info().head.clone(),
-            storage,
-            txpool,
-            collection,
-        )?;
+    let mut block_chain = BlockChain::<Executor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
+        config.clone(),
+        genesis.startup_info().head.clone(),
+        storage,
+        txpool,
+        collection,
+    )?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let difficulty = difficult::get_next_work_required(&block_chain);
