@@ -401,7 +401,7 @@ impl Protocol {
     ///
     /// > **Note**: This method normally doesn't have to be called except for testing purposes.
     pub fn tick(&mut self) {
-        self.maintain_peers();
+        //self.maintain_peers();
     }
 
     fn maintain_peers(&mut self) {
