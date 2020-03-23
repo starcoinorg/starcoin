@@ -401,7 +401,7 @@ impl Protocol {
     ///
     /// > **Note**: This method normally doesn't have to be called except for testing purposes.
     pub fn tick(&mut self) {
-        //self.maintain_peers();
+        self.maintain_peers();
     }
 
     fn maintain_peers(&mut self) {
@@ -411,9 +411,8 @@ impl Protocol {
             for (who, _) in self.handshaking_peers.iter().filter(|(_, handshaking)| {
                 (tick - handshaking.timestamp).as_secs() > REQUEST_TIMEOUT_SEC
             }) {
-                log!(
+                info!(
                     target: "sync",
-                    if self.important_peers.contains(who) { Level::Warn } else { Level::Trace },
                     "Handshake timeout {}", who
                 );
                 aborting.push(who.clone());
