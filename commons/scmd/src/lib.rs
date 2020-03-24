@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use clap::{App, ArgMatches};
+use clap::{App, ArgMatches, SubCommand};
+use rustyline::{config::CompletionType, error::ReadlineError, Config, Editor};
 use serde::export::PhantomData;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -145,8 +146,13 @@ where
     GlobalOpt: StructOpt,
 {
     pub fn new(state: State) -> Self {
+        //insert console command
+        let mut app = GlobalOpt::clap();
+        app = app.subcommand(
+            SubCommand::with_name("console").help("Start an interactive command console"),
+        );
         Self {
-            app: GlobalOpt::clap(),
+            app,
             commands: HashMap::new(),
             state: Arc::new(state),
         }
@@ -166,24 +172,131 @@ where
         self
     }
 
-    pub fn print_help(&mut self) -> Result<()> {
-        self.app.print_help()?;
-        Ok(())
+    pub fn print_help(&mut self) {
+        self.app.print_help().expect("print help should success.");
     }
 
     pub fn exec(mut self) -> Result<()> {
-        let matches = self.app.clone().get_matches();
-        let global_opt = Arc::new(GlobalOpt::from_clap(&matches));
-        let (cmd, arg_matches) = matches.subcommand();
-        let cmd = self.commands.get_mut(cmd);
-        match (cmd, arg_matches) {
-            (Some(cmd), Some(arg_matches)) => {
-                cmd.exec(self.state.clone(), global_opt, arg_matches)?;
-            }
-            _ => {
-                self.print_help()?;
+        let matches = match self
+            .app
+            .get_matches_from_safe_borrow(&mut std::env::args_os())
+        {
+            Ok(matches) => matches,
+            Err(e) => {
+                //println!("Match err: {:?}", e.kind);
+                println!("{}", e.message);
+                return Ok(());
             }
         };
+
+        let global_opt = Arc::new(GlobalOpt::from_clap(&matches));
+        let (cmd_name, arg_matches) = matches.subcommand();
+        match cmd_name {
+            "console" => {
+                self.console_inner(global_opt);
+            }
+            "" => {
+                self.print_help();
+            }
+            cmd_name => {
+                let cmd = self.commands.get_mut(cmd_name);
+                match (cmd, arg_matches) {
+                    (Some(cmd), Some(arg_matches)) => {
+                        cmd.exec(self.state.clone(), global_opt, arg_matches)?;
+                    }
+                    _ => {
+                        println!("Unknown command: {:?}", cmd_name);
+                        self.print_help();
+                    }
+                };
+            }
+        }
+
+        Ok(())
+    }
+
+    fn console_inner(mut self, global_opt: Arc<GlobalOpt>) {
+        let config = Config::builder()
+            .history_ignore_space(true)
+            .completion_type(CompletionType::List)
+            .auto_add_history(true)
+            .build();
+        // insert quit command
+        self.app = self.app.subcommand(
+            SubCommand::with_name("quit")
+                .aliases(&["exit", "q!"])
+                .help("Quit from console."),
+        );
+        let app_name = self.app.get_name().to_string();
+        let mut rl = Editor::<()>::with_config(config);
+        loop {
+            let readline = rl.readline("starcoin% ");
+            match readline {
+                Ok(line) => {
+                    let mut params: Vec<&str> = line.trim().split(' ').map(str::trim).collect();
+                    // insert the app name to first, for match env args style.
+                    params.insert(0, app_name.as_str());
+                    let arg_matches = match self.app.get_matches_from_safe_borrow(params) {
+                        Ok(arg_matches) => arg_matches,
+                        Err(e) => {
+                            //println!("match err: {:?}", e.kind);
+                            println!("{}", e.message);
+                            continue;
+                        }
+                    };
+                    let (cmd_name, arg_matches) = arg_matches.subcommand();
+                    match cmd_name {
+                        "quit" => break,
+                        "console" => continue,
+                        "" => continue,
+                        cmd_name => {
+                            let cmd = self.commands.get_mut(cmd_name);
+                            match (cmd, arg_matches) {
+                                (Some(cmd), Some(arg_matches)) => {
+                                    match cmd.exec(
+                                        self.state.clone(),
+                                        global_opt.clone(),
+                                        arg_matches,
+                                    ) {
+                                        Ok(()) => {}
+                                        Err(e) => println!("Execute error:{:?}", e),
+                                    };
+                                }
+                                _ => println!("Unknown command: {:?}", cmd_name),
+                            }
+                        }
+                    }
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("CTRL-C");
+                    break;
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("CTRL-D");
+                    break;
+                }
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break;
+                }
+            }
+        }
+    }
+
+    pub fn console(mut self) -> Result<()> {
+        let matches = match self
+            .app
+            .get_matches_from_safe_borrow(&mut std::env::args_os())
+        {
+            Ok(matches) => matches,
+            Err(e) => {
+                //println!("Match err: {:?}", e.kind);
+                println!("{}", e.message);
+                return Ok(());
+            }
+        };
+        let global_opt = Arc::new(GlobalOpt::from_clap(&matches));
+        self.console_inner(global_opt);
         Ok(())
     }
 }
