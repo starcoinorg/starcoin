@@ -4,6 +4,7 @@ use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::dummy::DummyConsensus;
+use consensus::argon_consensus::ArgonConsensus;
 use executor::mock_executor::MockExecutor;
 use logger::prelude::*;
 use network::network::NetworkActor;
@@ -17,7 +18,7 @@ use tokio::time::{delay_for, Duration};
 use traits::{ChainAsyncService, TxPoolAsyncService};
 use txpool::TxPoolRef;
 use types::{account_address::AccountAddress, peer_info::PeerInfo};
-
+use crate::miner_client::MinerClient;
 #[test]
 fn it_works() {
     assert_eq!(2 + 2, 4);
@@ -40,7 +41,7 @@ fn test_miner_with_schedule_pacemaker() {
         let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
-        let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+        let genesis = Genesis::new::<MockExecutor, ArgonConsensus, StarcoinStorage>(
             config.clone(),
             storage.clone(),
         )
@@ -54,7 +55,7 @@ fn test_miner_with_schedule_pacemaker() {
                 bus.clone(),
             )
         };
-        let network = NetworkActor::launch(config.clone(), bus.clone(), handle);
+        let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
         let chain = ChainActor::launch(
             config.clone(),
             genesis.startup_info().clone(),
@@ -65,7 +66,7 @@ fn test_miner_with_schedule_pacemaker() {
         )
         .unwrap();
         let _miner = MinerActor::<
-            DummyConsensus,
+            ArgonConsensus,
             MockExecutor,
             TxPoolRef,
             ChainActorRef,
@@ -79,6 +80,7 @@ fn test_miner_with_schedule_pacemaker() {
             None,
         );
 
+        handle.spawn(MinerClient::main_loop("127.0.0.1:9000".parse().unwrap()));
         let process_actor = ProcessActor::launch(
             Arc::clone(&peer_info),
             chain.clone(),
@@ -121,7 +123,7 @@ fn test_miner_with_ondemand_pacemaker() {
 
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
-        let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
+        let genesis = Genesis::new::<MockExecutor, ArgonConsensus, StarcoinStorage>(
             config.clone(),
             storage.clone(),
         )
@@ -148,7 +150,7 @@ fn test_miner_with_ondemand_pacemaker() {
         let receiver = txpool.clone().subscribe_txns().await.unwrap();
 
         let _miner = MinerActor::<
-            DummyConsensus,
+            ArgonConsensus,
             MockExecutor,
             TxPoolRef,
             ChainActorRef,

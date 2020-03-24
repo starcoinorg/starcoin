@@ -1,18 +1,11 @@
-use crate::miner::{MineCtx, Miner};
-use crate::stratum::StratumManager;
 use argon2::{self, Config};
-use bus::BusActor;
 use byteorder::{LittleEndian, WriteBytesExt};
-//use jsonrpc_core::futures::{future, stream::Stream, Future};
-use jsonrpc_core::{Params, Call, MethodCall, Request};
+use jsonrpc_core::{Params,MethodCall};
 use serde_json;
 use anyhow::Result;
 use rand::Rng;
-use sc_stratum::{PushWorkHandler, Stratum};
 use std::{net::SocketAddr, sync::Arc};
-use types::block::{Block, BlockHeader, BlockTemplate};
 use types::{H256, U256};
-use futures_timer::Delay;
 use async_std::{net::TcpStream, prelude::*, io::BufReader, task};
 use futures::{
     channel::mpsc,
@@ -29,7 +22,7 @@ pub fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
 }
 
 
-struct MinerClient {}
+pub struct MinerClient {}
 
 impl MinerClient {
     pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
@@ -75,7 +68,6 @@ impl MinerClient {
             let difficulty: U256 = values.pop().unwrap().as_str().unwrap().to_string().parse()?;
             let header = values.pop().unwrap().as_str().unwrap().as_bytes().to_vec();
             let nonce = MinerClient::solve(difficulty, &header);
-            assert_eq!(true, verify(&header, nonce, difficulty));
             return Ok(nonce);
         };
         Err(anyhow::Error::msg("mining.notify with bad params"))
@@ -94,21 +86,22 @@ impl MinerClient {
 
         let mut auth_response = Vec::<u8>::new();
         let stream = TcpStream::connect(&addr).await.unwrap();
-        let mut stream_arc = Arc::new(stream);
+        let stream_arc = Arc::new(stream);
         let reader_arc_clone = stream_arc.clone();
         let writer_arc_clone = stream_arc.clone();
         let mut writer = &*writer_arc_clone;
-        writer.write_all(&auth_request).await;
+        writer.write_all(&auth_request).await.unwrap();
 
         let (tx, mut rx) = mpsc::unbounded();
         let reader_future = async move {
             let mut buf_reader = BufReader::new(&*reader_arc_clone);
-            buf_reader.read_until(b'\n', &mut auth_response).await;
+            buf_reader.read_until(b'\n', &mut auth_response).await.unwrap();
             // todo::process auth response
             println!("{:?}", String::from_utf8(auth_response).expect("bad auth resp"));
             let mut lines = buf_reader.lines();
             while let Some(line) = lines.next().await {
                 let line = line.unwrap();
+                println!("the job:{}", line.clone());
                 let processed = MinerClient::process_job(line);
                 if processed.is_err() {
                     continue;
@@ -143,18 +136,17 @@ mod test {
     use crate::miner_client::{verify, MinerClient};
     use crate::stratum::StratumManager;
     use actix_rt::Runtime;
-    use bus::BusActor;
-    use futures_timer::Delay;
-    use sc_stratum::PushWorkHandler;
-    use sc_stratum::Stratum;
+    use sc_stratum::{PushWorkHandler, Stratum};
     use std::sync::Arc;
     use std::time::Duration;
     use types::block::{Block, BlockHeader, BlockTemplate};
     use tokio;
     use config::NodeConfig;
+    use futures_timer::Delay;
+    use bus::BusActor;
     async fn prepare() -> Result<()> {
         let mut conf = Arc::new(NodeConfig::random_for_test());
-        let mut miner = Miner::new(BusActor::launch(),conf);
+        let mut miner = Miner::new(BusActor::launch(), conf);
         let stratum = {
             let addr = "127.0.0.1:9000".parse().unwrap();
             let dispatcher = Arc::new(StratumManager::new(miner.clone()));
