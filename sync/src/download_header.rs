@@ -3,7 +3,9 @@ use crate::download_body::{DownloadBodyActor, SyncBodyEvent};
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
 use anyhow::Result;
+use consensus::Consensus;
 use crypto::hash::HashValue;
+use executor::TransactionExecutor;
 use network::{
     sync_messages::{DataType, GetDataByHashMsg, ProcessMessage},
     NetworkAsyncService, RPCRequest, RPCResponse,
@@ -19,20 +21,28 @@ struct SyncHeaderEvent {
 }
 
 #[derive(Clone)]
-pub struct DownloadHeaderActor {
-    downloader: Arc<Downloader>,
+pub struct DownloadHeaderActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    downloader: Arc<Downloader<E, C>>,
     peer_info: Arc<PeerInfo>,
     network: NetworkAsyncService,
-    download_body: Addr<DownloadBodyActor>,
+    download_body: Addr<DownloadBodyActor<E, C>>,
 }
 
-impl DownloadHeaderActor {
+impl<E, C> DownloadHeaderActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     pub fn _launch(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         peer_info: Arc<PeerInfo>,
         network: NetworkAsyncService,
-        download_body: Addr<DownloadBodyActor>,
-    ) -> Result<Addr<DownloadHeaderActor>> {
+        download_body: Addr<DownloadBodyActor<E, C>>,
+    ) -> Result<Addr<DownloadHeaderActor<E, C>>> {
         Ok(Actor::create(move |_ctx| DownloadHeaderActor {
             downloader,
             peer_info,
@@ -42,11 +52,19 @@ impl DownloadHeaderActor {
     }
 }
 
-impl Actor for DownloadHeaderActor {
+impl<E, C> Actor for DownloadHeaderActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Context = Context<Self>;
 }
 
-impl Handler<SyncHeaderEvent> for DownloadHeaderActor {
+impl<E, C> Handler<SyncHeaderEvent> for DownloadHeaderActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = Result<()>;
     fn handle(&mut self, event: SyncHeaderEvent, _ctx: &mut Self::Context) -> Self::Result {
         let get_data_by_hash_msg = GetDataByHashMsg {

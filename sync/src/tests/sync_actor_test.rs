@@ -6,6 +6,7 @@ use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
 use consensus::dummy::DummyConsensus;
 use executor::executor::Executor;
+use executor::mock_executor::MockExecutor;
 use futures_timer::Delay;
 use miner::MinerActor;
 use network::{
@@ -91,7 +92,7 @@ fn test_network_actor() {
         Delay::new(Duration::from_secs(1)).await;
 
         // chain actor
-        let first_chain = ChainActor::launch(
+        let first_chain = ChainActor::<MockExecutor, DummyConsensus>::launch(
             node_config_1.clone(),
             genesis_1.startup_info().clone(),
             storage_1.clone(),
@@ -125,7 +126,7 @@ fn test_network_actor() {
             DummyConsensus,
             Executor,
             TxPoolRef,
-            ChainActorRef,
+            ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
         >::launch(
             node_config_1.clone(),
@@ -163,7 +164,7 @@ fn test_network_actor() {
             gen_network(node_config_2.clone(), bus_2.clone(), handle.clone());
         Delay::new(Duration::from_secs(1)).await;
 
-        let second_chain = ChainActor::launch(
+        let second_chain = ChainActor::<MockExecutor, DummyConsensus>::launch(
             node_config_2.clone(),
             genesis_2.startup_info().clone(),
             storage_2.clone(),
@@ -282,7 +283,7 @@ fn test_network_actor_rpc() {
             DummyConsensus,
             Executor,
             TxPoolRef,
-            ChainActorRef,
+            ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
         >::launch(
             node_config_1.clone(),
@@ -337,7 +338,7 @@ fn test_network_actor_rpc() {
         Delay::new(Duration::from_secs(1)).await;
 
         // chain
-        let second_chain = ChainActor::launch(
+        let second_chain = ChainActor::<MockExecutor, DummyConsensus>::launch(
             node_config_2.clone(),
             genesis_2.startup_info().clone(),
             storage_2.clone(),
@@ -348,22 +349,26 @@ fn test_network_actor_rpc() {
         .unwrap();
         // sync
         let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
-        let second_p_actor = ProcessActor::launch(
+        let second_p_actor = ProcessActor::<MockExecutor, DummyConsensus>::launch(
             Arc::clone(&second_p),
             second_chain.clone(),
             network_2.clone(),
             bus_2.clone(),
         )
         .unwrap();
-        let second_d_actor = DownloadActor::launch(
+        let second_d_actor = DownloadActor::<MockExecutor, DummyConsensus>::launch(
             second_p,
             second_chain.clone(),
             network_2.clone(),
             bus_2.clone(),
         )
         .unwrap();
-        let _second_sync_actor =
-            SyncActor::launch(bus_2, second_p_actor, second_d_actor.clone()).unwrap();
+        let _second_sync_actor = SyncActor::<MockExecutor, DummyConsensus>::launch(
+            bus_2,
+            second_p_actor,
+            second_d_actor.clone(),
+        )
+        .unwrap();
 
         Delay::new(Duration::from_secs(3 * 10)).await;
 
@@ -426,7 +431,7 @@ fn test_network_actor_rpc_2() {
         info!("addr_1 : {:?}", addr_1);
 
         // chain
-        let first_chain = ChainActor::launch(
+        let first_chain = ChainActor::<MockExecutor, DummyConsensus>::launch(
             node_config_1.clone(),
             genesis_1.startup_info().clone(),
             storage_1.clone(),
@@ -437,14 +442,14 @@ fn test_network_actor_rpc_2() {
         .unwrap();
         // sync
         let first_p = Arc::new(PeerInfo::new(network_1.identify().clone().into()));
-        let first_p_actor = ProcessActor::launch(
+        let first_p_actor = ProcessActor::<MockExecutor, DummyConsensus>::launch(
             Arc::clone(&first_p),
             first_chain.clone(),
             network_1.clone(),
             bus_1.clone(),
         )
         .unwrap();
-        let first_d_actor = DownloadActor::launch(
+        let first_d_actor = DownloadActor::<MockExecutor, DummyConsensus>::launch(
             first_p,
             first_chain.clone(),
             network_1.clone(),
@@ -521,8 +526,12 @@ fn test_network_actor_rpc_2() {
             bus_2.clone(),
         )
         .unwrap();
-        let _second_sync_actor =
-            SyncActor::launch(bus_2, second_p_actor, second_d_actor.clone()).unwrap();
+        let _second_sync_actor = SyncActor::<MockExecutor, DummyConsensus>::launch(
+            bus_2,
+            second_p_actor,
+            second_d_actor.clone(),
+        )
+        .unwrap();
 
         let block_2 = second_chain.clone().master_head_block().await.unwrap();
         let number = block_2.header().number();

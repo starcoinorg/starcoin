@@ -10,7 +10,7 @@ use crypto::{
     test_utils::KeyPair,
     Uniform,
 };
-use executor::executor::Executor;
+use executor::mock_executor::MockExecutor;
 use logger::prelude::*;
 use miner::MinerActor;
 use network::NetworkActor;
@@ -69,7 +69,7 @@ fn main() {
                 startup_info
             }
             None => {
-                let genesis = Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(
+                let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
                     node_config.clone(),
                     storage.clone(),
                 )
@@ -111,9 +111,9 @@ fn main() {
         };
         let _miner = MinerActor::<
             DummyConsensus,
-            Executor,
+            MockExecutor,
             TxPoolRef,
-            ChainActorRef,
+            ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
         >::launch(
             node_config.clone(),
@@ -124,7 +124,7 @@ fn main() {
             receiver,
         );
         let peer_info = Arc::new(PeerInfo::random());
-        let process_actor = ProcessActor::launch(
+        let process_actor = ProcessActor::<MockExecutor, DummyConsensus>::launch(
             Arc::clone(&peer_info),
             chain.clone(),
             network.clone(),

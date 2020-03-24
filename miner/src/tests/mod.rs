@@ -5,6 +5,7 @@ use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::dummy::DummyConsensus;
 use executor::executor::Executor;
+use executor::mock_executor::MockExecutor;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -68,7 +69,7 @@ fn test_miner_with_schedule_pacemaker() {
             DummyConsensus,
             Executor,
             TxPoolRef,
-            ChainActorRef,
+            ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
         >::launch(
             config.clone(),
@@ -151,7 +152,7 @@ fn test_miner_with_ondemand_pacemaker() {
             DummyConsensus,
             Executor,
             TxPoolRef,
-            ChainActorRef,
+            ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
         >::launch(
             config.clone(),
