@@ -104,6 +104,7 @@ impl ChainStateWriter for MockChainState {
     }
 }
 
+#[derive(Clone)]
 pub struct MockExecutor {
     config: VMConfig,
 }

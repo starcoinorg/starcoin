@@ -3,23 +3,32 @@ use crate::process::ProcessActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
+use consensus::Consensus;
+use executor::TransactionExecutor;
 use network::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
 use network::PeerEvent;
 use types::peer_info::PeerInfo;
-
-pub struct SyncActor {
-    process_address: Addr<ProcessActor>,
-    download_address: Addr<DownloadActor>,
+pub struct SyncActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    process_address: Addr<ProcessActor<E, C>>,
+    download_address: Addr<DownloadActor<E, C>>,
     bus: Addr<BusActor>,
 }
 
-impl SyncActor {
+impl<E, C> SyncActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     pub fn launch(
         // _node_config: &NodeConfig,
         bus: Addr<BusActor>,
-        process_address: Addr<ProcessActor>,
-        download_address: Addr<DownloadActor>,
-    ) -> Result<Addr<SyncActor>> {
+        process_address: Addr<ProcessActor<E, C>>,
+        download_address: Addr<DownloadActor<E, C>>,
+    ) -> Result<Addr<SyncActor<E, C>>> {
         let actor = SyncActor {
             download_address,
             process_address,
@@ -29,7 +38,11 @@ impl SyncActor {
     }
 }
 
-impl Actor for SyncActor {
+impl<E, C> Actor for SyncActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -54,7 +67,11 @@ impl Actor for SyncActor {
     }
 }
 
-impl Handler<SyncMessage> for SyncActor {
+impl<E, C> Handler<SyncMessage> for SyncActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = ();
 
     fn handle(&mut self, msg: SyncMessage, ctx: &mut Self::Context) -> Self::Result {
@@ -77,7 +94,11 @@ impl Handler<SyncMessage> for SyncActor {
     }
 }
 
-impl Handler<PeerEvent> for SyncActor {
+impl<E, C> Handler<PeerEvent> for SyncActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {

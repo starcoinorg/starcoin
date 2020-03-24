@@ -9,14 +9,13 @@ use crate::{
     language_storage::StructTag,
 };
 use anyhow::Result;
+use logger::prelude::*;
 use move_core_types::identifier::{IdentStr, Identifier};
 use once_cell::sync::Lazy;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use std::convert::{TryFrom, TryInto};
-use logger::prelude::*;
-
 
 //TODO rename account and coin name.
 // Starcoin
@@ -181,7 +180,8 @@ impl From<libra_types::account_config::AccountResource> for AccountResource {
         AccountResource::new(
             libra_account_res.balance(),
             libra_account_res.sequence_number(),
-            ByteArray::new(libra_account_res.authentication_key().to_vec()))
+            ByteArray::new(libra_account_res.authentication_key().to_vec()),
+        )
     }
 }
 
@@ -194,11 +194,11 @@ mod tests {
         let address = libra_types::account_address::AccountAddress::random();
         let send_event_handle = libra_types::event::EventHandle::new(
             libra_types::event::EventKey::new_from_address(&address, 0),
-            0
+            0,
         );
         let receive_event_handle = libra_types::event::EventHandle::new(
             libra_types::event::EventKey::new_from_address(&address, 1),
-            0
+            0,
         );
         let account_res = libra_types::account_config::AccountResource::new(
             0,
@@ -208,10 +208,13 @@ mod tests {
             false,
             send_event_handle,
             receive_event_handle,
-            0
+            0,
         );
         let account_res1: AccountResource = AccountResource::from(account_res);
         assert_eq!(account_res1.balance(), 0);
-        assert_eq!(account_res1.authentication_key().len(), address.to_vec().len());
+        assert_eq!(
+            account_res1.authentication_key().len(),
+            address.to_vec().len()
+        );
     }
 }

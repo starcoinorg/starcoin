@@ -10,6 +10,8 @@ use futures::channel::mpsc;
 use futures::compat::Future01CompatExt;
 use futures_locks::RwLock;
 // use itertools;
+use consensus::Consensus;
+use executor::TransactionExecutor;
 use network::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
@@ -30,8 +32,12 @@ use types::{
 struct SyncEvent {}
 
 #[derive(Clone)]
-pub struct DownloadActor {
-    downloader: Arc<Downloader>,
+pub struct DownloadActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    downloader: Arc<Downloader<E, C>>,
     peer_info: Arc<PeerInfo>,
     network: NetworkAsyncService,
     bus: Addr<BusActor>,
@@ -40,13 +46,17 @@ pub struct DownloadActor {
     syncing: Arc<AtomicBool>,
 }
 
-impl DownloadActor {
+impl<E, C> DownloadActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: ChainActorRef,
+        chain_reader: ChainActorRef<E, C>,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
-    ) -> Result<Addr<DownloadActor>> {
+    ) -> Result<Addr<DownloadActor<E, C>>> {
         let download_actor = DownloadActor::create(move |ctx| {
             let (sync_event_sender, sync_event_receiver) = mpsc::channel(100);
             ctx.add_message_stream(sync_event_receiver);
@@ -64,7 +74,11 @@ impl DownloadActor {
     }
 }
 
-impl Actor for DownloadActor {
+impl<E, C> Actor for DownloadActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -79,7 +93,11 @@ impl Actor for DownloadActor {
     }
 }
 
-impl Handler<SyncEvent> for DownloadActor {
+impl<E, C> Handler<SyncEvent> for DownloadActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = Result<()>;
     fn handle(&mut self, _item: SyncEvent, _ctx: &mut Self::Context) -> Self::Result {
         if !self.syncing.load(Ordering::Relaxed) {
@@ -91,7 +109,11 @@ impl Handler<SyncEvent> for DownloadActor {
     }
 }
 
-impl Handler<DownloadMessage> for DownloadActor {
+impl<E, C> Handler<DownloadMessage> for DownloadActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = ResponseActFuture<Self, Result<()>>;
 
     fn handle(&mut self, msg: DownloadMessage, _ctx: &mut Self::Context) -> Self::Result {
@@ -145,8 +167,12 @@ impl Handler<DownloadMessage> for DownloadActor {
     }
 }
 
-impl DownloadActor {
-    fn sync_from_best_peer(downloader: Arc<Downloader>, network: NetworkAsyncService) {
+impl<E, C> DownloadActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    fn sync_from_best_peer(downloader: Arc<Downloader<E, C>>, network: NetworkAsyncService) {
         Arbiter::spawn(async move {
             debug!("begin sync.");
             if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {
@@ -309,18 +335,26 @@ impl DownloadActor {
 }
 
 /// Send download message
-pub struct Downloader {
+pub struct Downloader<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     hash_pool: TTLPool<HashWithNumber>,
     _header_pool: TTLPool<BlockHeader>,
     _body_pool: TTLPool<BlockBody>,
     peers: Arc<RwLock<HashMap<PeerInfo, LatestStateMsg>>>,
-    chain_reader: ChainActorRef,
+    chain_reader: ChainActorRef<E, C>,
 }
 
 const HEAD_CT: u64 = 10;
 
-impl Downloader {
-    pub fn new(chain_reader: ChainActorRef) -> Self {
+impl<E, C> Downloader<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    pub fn new(chain_reader: ChainActorRef<E, C>) -> Self {
         Downloader {
             hash_pool: TTLPool::new(),
             _header_pool: TTLPool::new(),
@@ -332,7 +366,7 @@ impl Downloader {
     }
 
     pub async fn handle_latest_state_msg(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         peer: PeerInfo,
         latest_state_msg: LatestStateMsg,
     ) {
@@ -356,7 +390,7 @@ impl Downloader {
         }
     }
 
-    async fn best_peer(downloader: Arc<Downloader>) -> Option<PeerInfo> {
+    async fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerInfo> {
         let lock = downloader.peers.read().compat().await.unwrap();
         for p in lock.keys() {
             return Some(p.clone());
@@ -368,7 +402,7 @@ impl Downloader {
 
     /// for ancestors
     pub async fn send_get_hash_by_number_msg_backward(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         peer: PeerInfo,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
@@ -418,7 +452,7 @@ impl Downloader {
     }
 
     pub async fn send_get_hash_by_number_msg_forward(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         peer: PeerInfo,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
@@ -462,7 +496,7 @@ impl Downloader {
     }
 
     pub async fn find_ancestor(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         peer: PeerInfo,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) -> Option<HashWithNumber> {
@@ -500,7 +534,7 @@ impl Downloader {
     }
 
     fn handle_batch_hash_by_number_msg(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         peer: PeerInfo,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) {
@@ -512,7 +546,7 @@ impl Downloader {
     }
 
     pub async fn send_get_header_by_hash_msg(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
     ) -> Option<GetDataByHashMsg> {
         let hash_vec = downloader.hash_pool.take(100);
         if !hash_vec.is_empty() {
@@ -527,7 +561,7 @@ impl Downloader {
     }
 
     pub async fn _handle_batch_header_msg(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         peer: PeerInfo,
         batch_header_msg: BatchHeaderMsg,
     ) {
@@ -541,7 +575,7 @@ impl Downloader {
     }
 
     pub async fn _send_get_body_by_hash_msg(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
     ) -> Option<GetDataByHashMsg> {
         let header_vec = downloader._header_pool.take(100);
         if !header_vec.is_empty() {
@@ -556,7 +590,7 @@ impl Downloader {
     }
 
     pub async fn do_blocks(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         headers: Vec<BlockHeader>,
         bodies: Vec<BlockBody>,
     ) {
@@ -571,13 +605,13 @@ impl Downloader {
         }
     }
 
-    pub async fn do_block(downloader: Arc<Downloader>, block: Block) {
+    pub async fn do_block(downloader: Arc<Downloader<E, C>>, block: Block) {
         info!("do block {:?}", block.header().id());
         //todo:verify block
         let _ = downloader.chain_reader.clone().try_connect(block).await;
     }
 
-    pub async fn close_peer(downloader: Arc<Downloader>, peer: PeerInfo) {
+    pub async fn close_peer(downloader: Arc<Downloader<E, C>>, peer: PeerInfo) {
         let mut lock = downloader.peers.write().compat().await.unwrap();
         let _ = lock.remove(&peer);
     }
