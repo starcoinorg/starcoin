@@ -52,7 +52,6 @@ impl Consensus for ArgonConsensus {
         let nonce = vec_to_u64(Vec::from(header.consensus_header()));
         let header = header.id().to_vec();
         if verify(&header, nonce, df) == true {
-            println!("fikgol");
             Ok(())
         } else {
             Err(anyhow::Error::msg("invalid header"))
