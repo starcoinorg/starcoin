@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::batch::WriteBatch;
 use crate::storage::{CodecStorage, InnerRepository, KeyCodec, Repository, Storage, ValueCodec};
 use crate::{ensure_slice_len_eq, ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Error;
@@ -93,10 +94,11 @@ impl AccumulatorNodeWriter for AccumulatorStore {
     }
 
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
-        for hash in node_hash_vec {
-            self.node_store.remove(hash)?;
+        let mut batch = WriteBatch::new();
+        for key in node_hash_vec {
+            batch.delete(ACCUMULATOR_NODE_PREFIX_NAME, key).unwrap();
         }
-        Ok(())
+        self.node_store.write_batch(batch)
     }
 
     fn delete_nodes_index(&self, vec_index: Vec<NodeIndex>) -> Result<(), Error> {
@@ -105,9 +107,10 @@ impl AccumulatorNodeWriter for AccumulatorStore {
             " invalid index len : {}.",
             vec_index.len()
         );
+        let mut batch = WriteBatch::new();
         for index in vec_index {
-            self.index_storage.remove(index)?;
+            batch.delete(ACCUMULATOR_INDEX_PREFIX_NAME, index).unwrap();
         }
-        Ok(())
+        self.index_storage.write_batch(batch)
     }
 }

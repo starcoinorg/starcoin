@@ -36,6 +36,7 @@ pub struct StateProof {}
 pub trait StateNodeStore {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>>;
     fn put(&self, key: HashValue, node: StateNode) -> Result<()>;
+    fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()>;
 }
 
 pub struct StateCache {
@@ -218,10 +219,11 @@ impl StateTree {
     pub fn flush(&self) -> Result<()> {
         let (root_hash, change_sets) = self.get_change_sets();
 
-        // TODO: save in batch to preserve atomic.
+        let mut node_map = BTreeMap::new();
         for (nk, n) in change_sets.node_batch.into_iter() {
-            self.storage.put(nk, StateNode(n))?;
+            node_map.insert(nk, StateNode(n));
         }
+        self.storage.write_batch(node_map).unwrap();
         // and then advance the storage root hash
         *self.storage_root_hash.write().unwrap() = root_hash;
         self.cache.lock().unwrap().reset(root_hash);
