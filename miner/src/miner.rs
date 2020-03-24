@@ -51,8 +51,8 @@ pub fn mint<C>(
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
 ) -> Result<()>
-    where
-        C: Consensus,
+where
+    C: Consensus,
 {
     let difficulty = difficult::get_next_work_required(chain);
     let block_template = chain.create_block_template(None, difficulty, txns)?;

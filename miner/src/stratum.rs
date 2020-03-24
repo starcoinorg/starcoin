@@ -27,6 +27,7 @@ mod tests {
     use super::*;
     use crate::miner::MineCtx;
     use bus::BusActor;
+    use config::NodeConfig;
     use jsonrpc_core::futures::{future, Future};
     use jsonrpc_tcp_server::tokio::{
         io,
@@ -38,13 +39,12 @@ mod tests {
     use std::net::Shutdown;
     use std::sync::Arc;
     use types::block::{Block, BlockHeader, BlockTemplate};
-    use config::NodeConfig;
     #[test]
     #[ignore]
     fn test_stratum() {
         ::logger::init_for_test();
         let bus = BusActor::launch();
-        let miner = Miner::new(bus,Arc::new(NodeConfig::random_for_test()));
+        let miner = Miner::new(bus, Arc::new(NodeConfig::random_for_test()));
         let mut miner_1 = miner.clone();
 
         let block_template = {

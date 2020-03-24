@@ -1,10 +1,11 @@
+use crate::miner_client::MinerClient;
 use crate::MinerActor;
 use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::dummy::DummyConsensus;
 use consensus::argon_consensus::ArgonConsensus;
+use consensus::dummy::DummyConsensus;
 use executor::mock_executor::MockExecutor;
 use logger::prelude::*;
 use network::network::NetworkActor;
@@ -18,7 +19,6 @@ use tokio::time::{delay_for, Duration};
 use traits::{ChainAsyncService, TxPoolAsyncService};
 use txpool::TxPoolRef;
 use types::{account_address::AccountAddress, peer_info::PeerInfo};
-use crate::miner_client::MinerClient;
 #[test]
 fn it_works() {
     assert_eq!(2 + 2, 4);
@@ -80,7 +80,7 @@ fn test_miner_with_schedule_pacemaker() {
             None,
         );
 
-        handle.spawn(MinerClient::main_loop("127.0.0.1:9000".parse().unwrap()));
+        handle.spawn(MinerClient::main_loop(config.miner.stratum_server.clone()));
         let process_actor = ProcessActor::launch(
             Arc::clone(&peer_info),
             chain.clone(),

@@ -1,15 +1,13 @@
-use argon2::{self, Config};
-use byteorder::{LittleEndian, WriteBytesExt};
-use jsonrpc_core::{Params,MethodCall};
-use serde_json;
 use anyhow::Result;
+use argon2::{self, Config};
+use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
+use byteorder::{LittleEndian, WriteBytesExt};
+use futures::channel::mpsc;
+use jsonrpc_core::{MethodCall, Params};
 use rand::Rng;
+use serde_json;
 use std::{net::SocketAddr, sync::Arc};
 use types::{H256, U256};
-use async_std::{net::TcpStream, prelude::*, io::BufReader, task};
-use futures::{
-    channel::mpsc,
-};
 
 pub fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
     let pow_header = MinerClient::set_header_nonce(header, nonce);
@@ -20,7 +18,6 @@ pub fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
     }
     return false;
 }
-
 
 pub struct MinerClient {}
 
@@ -43,7 +40,8 @@ impl MinerClient {
     pub fn solve(difficulty: U256, header: &[u8]) -> u64 {
         let mut nonce = MinerClient::generate_nonce();
         loop {
-            let pow_hash = MinerClient::calculate_hash(&MinerClient::set_header_nonce(header, nonce));
+            let pow_hash =
+                MinerClient::calculate_hash(&MinerClient::set_header_nonce(header, nonce));
             let hash_u256: U256 = pow_hash.into();
             if hash_u256 > difficulty {
                 nonce += 1;
@@ -60,12 +58,17 @@ impl MinerClient {
         rng.gen_range(0, u64::max_value())
     }
 
-
     fn process_job(params: String) -> anyhow::Result<u64> {
         let resp: MethodCall = serde_json::from_str(&params)?;
         let params: Params = resp.params.parse()?;
         if let Params::Array(mut values) = params {
-            let difficulty: U256 = values.pop().unwrap().as_str().unwrap().to_string().parse()?;
+            let difficulty: U256 = values
+                .pop()
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string()
+                .parse()?;
             let header = values.pop().unwrap().as_str().unwrap().as_bytes().to_vec();
             let nonce = MinerClient::solve(difficulty, &header);
             return Ok(nonce);
@@ -95,9 +98,15 @@ impl MinerClient {
         let (tx, mut rx) = mpsc::unbounded();
         let reader_future = async move {
             let mut buf_reader = BufReader::new(&*reader_arc_clone);
-            buf_reader.read_until(b'\n', &mut auth_response).await.unwrap();
+            buf_reader
+                .read_until(b'\n', &mut auth_response)
+                .await
+                .unwrap();
             // todo::process auth response
-            println!("{:?}", String::from_utf8(auth_response).expect("bad auth resp"));
+            println!(
+                "{:?}",
+                String::from_utf8(auth_response).expect("bad auth resp")
+            );
             let mut lines = buf_reader.lines();
             while let Some(line) = lines.next().await {
                 let line = line.unwrap();
@@ -109,10 +118,9 @@ impl MinerClient {
                 let nonce = processed.unwrap();
                 tx.unbounded_send(nonce).unwrap();
                 println!("process nonce:{:o}", nonce);
-            };
+            }
         };
         let reader_handle = task::spawn(reader_future);
-
 
         let writer_future = async move {
             let mut stream = &*writer_arc_clone;
@@ -136,14 +144,14 @@ mod test {
     use crate::miner_client::{verify, MinerClient};
     use crate::stratum::StratumManager;
     use actix_rt::Runtime;
+    use bus::BusActor;
+    use config::NodeConfig;
+    use futures_timer::Delay;
     use sc_stratum::{PushWorkHandler, Stratum};
     use std::sync::Arc;
     use std::time::Duration;
-    use types::block::{Block, BlockHeader, BlockTemplate};
     use tokio;
-    use config::NodeConfig;
-    use futures_timer::Delay;
-    use bus::BusActor;
+    use types::block::{Block, BlockHeader, BlockTemplate};
     async fn prepare() -> Result<()> {
         let mut conf = Arc::new(NodeConfig::random_for_test());
         let mut miner = Miner::new(BusActor::launch(), conf);
@@ -176,7 +184,11 @@ mod test {
             tokio::task::spawn_local(fut);
             tokio::task::spawn_local(prepare());
             Delay::new(Duration::from_millis(500)).await;
-            let _ = async_std::future::timeout(Duration::from_secs(7), MinerClient::main_loop("127.0.0.1:9000".parse().unwrap())).await;
+            let _ = async_std::future::timeout(
+                Duration::from_secs(7),
+                MinerClient::main_loop("127.0.0.1:9000".parse().unwrap()),
+            )
+            .await;
         });
     }
 
