@@ -99,9 +99,10 @@ impl Repository for Storage {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
         // first get from cache
         let key_vec = key.to_vec();
-        match self.cache.clone().get(self.prefix_name, key_vec.clone()) {
-            Ok(v) => Ok(v),
-            _ => self.db.clone().get(self.prefix_name, key_vec.clone()),
+        if let Ok(Some(v)) = self.cache.clone().get(self.prefix_name, key_vec.clone()) {
+            Ok(Some(v))
+        } else {
+            self.db.clone().get(self.prefix_name, key_vec.clone())
         }
     }
 

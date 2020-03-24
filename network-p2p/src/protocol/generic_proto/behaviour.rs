@@ -932,7 +932,7 @@ impl NetworkBehaviour for GenericProto {
                 );
 
                 if open {
-                    debug!(target: "sub-libp2p", "External API <= Closed({:?})", peer_id);
+                    info!(target: "sub-libp2p", "External API <= Closed({:?})", peer_id);
                     let event = GenericProtoOut::CustomProtocolClosed {
                         peer_id: peer_id.clone(),
                         reason: "Disconnected by libp2p".into(),
@@ -1013,7 +1013,7 @@ impl NetworkBehaviour for GenericProto {
     fn inject_node_event(&mut self, source: PeerId, event: NotifsHandlerOut) {
         match event {
             NotifsHandlerOut::Closed { reason } => {
-                debug!(target: "sub-libp2p", "Handler({:?}) => Closed: {}", source, reason);
+                info!(target: "sub-libp2p", "Handler({:?}) => Closed: {}", source, reason);
 
                 let mut entry = if let Entry::Occupied(entry) = self.peers.entry(source.clone()) {
                     entry
@@ -1022,7 +1022,7 @@ impl NetworkBehaviour for GenericProto {
                     return;
                 };
 
-                debug!(target: "sub-libp2p", "External API <= Closed({:?})", source);
+                info!(target: "sub-libp2p", "External API <= Closed({:?})", source);
                 let event = GenericProtoOut::CustomProtocolClosed {
                     reason,
                     peer_id: source.clone(),

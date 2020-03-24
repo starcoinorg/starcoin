@@ -101,6 +101,7 @@ impl NodeConfig {
         node_config.network.load(&base_dir)?;
         node_config.tx_pool.load()?;
         node_config.miner.load(&base_dir)?;
+        node_config.storage.load(&base_dir)?;
         // NOTICE: if there is more load case, make it here.
         // such as: node_config.storage.load(&base_dir)?;
         Ok(node_config)

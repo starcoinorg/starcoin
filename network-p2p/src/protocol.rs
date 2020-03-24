@@ -362,13 +362,13 @@ impl Protocol {
 
     /// Called when a new peer is connected
     pub fn on_peer_connected(&mut self, who: PeerId) {
-        trace!(target: "sync", "Connecting {}", who);
-        self.handshaking_peers.insert(
-            who.clone(),
-            HandshakingPeer {
-                timestamp: Instant::now(),
-            },
-        );
+        info!(target: "sync", "Connecting {}", who);
+        // self.handshaking_peers.insert(
+        //     who.clone(),
+        //     HandshakingPeer {
+        //         timestamp: Instant::now(),
+        //     },
+        // );
     }
 
     /// Called by peer when it is disconnecting
@@ -411,9 +411,8 @@ impl Protocol {
             for (who, _) in self.handshaking_peers.iter().filter(|(_, handshaking)| {
                 (tick - handshaking.timestamp).as_secs() > REQUEST_TIMEOUT_SEC
             }) {
-                log!(
+                info!(
                     target: "sync",
-                    if self.important_peers.contains(who) { Level::Warn } else { Level::Trace },
                     "Handshake timeout {}", who
                 );
                 aborting.push(who.clone());

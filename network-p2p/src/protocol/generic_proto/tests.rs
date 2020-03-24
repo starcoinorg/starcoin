@@ -16,7 +16,6 @@
 
 #![cfg(test)]
 
-
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
 use codec::Encode;
 use futures::{prelude::*, ready};
