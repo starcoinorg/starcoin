@@ -155,6 +155,7 @@ async fn test_block_chain_forks() {
     )
 }
 
+#[ignore]
 #[stest::test]
 async fn test_chain_apply() -> Result<()> {
     let node_config = NodeConfig::random_for_test();
