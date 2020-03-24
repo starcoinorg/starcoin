@@ -3,7 +3,9 @@ use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, Respo
 use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
+use consensus::Consensus;
 use crypto::hash::CryptoHash;
+use executor::TransactionExecutor;
 use futures::sink::SinkExt;
 use futures_timer::Delay;
 /// Sync message which inbound
@@ -17,20 +19,28 @@ use std::time::Duration;
 use traits::ChainAsyncService;
 use types::{block::Block, peer_info::PeerInfo};
 
-pub struct ProcessActor {
-    processor: Arc<Processor>,
+pub struct ProcessActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    processor: Arc<Processor<E, C>>,
     peer_info: Arc<PeerInfo>,
     network: NetworkAsyncService,
     bus: Addr<BusActor>,
 }
 
-impl ProcessActor {
+impl<E, C> ProcessActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     pub fn launch(
         peer_info: Arc<PeerInfo>,
-        chain_reader: ChainActorRef,
+        chain_reader: ChainActorRef<E, C>,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
-    ) -> Result<Addr<ProcessActor>> {
+    ) -> Result<Addr<ProcessActor<E, C>>> {
         let process_actor = ProcessActor {
             processor: Arc::new(Processor::new(chain_reader)),
             peer_info,
@@ -41,7 +51,11 @@ impl ProcessActor {
     }
 }
 
-impl Actor for ProcessActor {
+impl<E, C> Actor for ProcessActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -57,7 +71,11 @@ impl Actor for ProcessActor {
     }
 }
 
-impl Handler<ProcessMessage> for ProcessActor {
+impl<E, C> Handler<ProcessMessage> for ProcessActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = ResponseActFuture<Self, Result<()>>;
 
     fn handle(&mut self, msg: ProcessMessage, _ctx: &mut Self::Context) -> Self::Result {
@@ -96,7 +114,11 @@ impl Handler<ProcessMessage> for ProcessActor {
     }
 }
 
-impl Handler<RpcRequestMessage> for ProcessActor {
+impl<E, C> Handler<RpcRequestMessage> for ProcessActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, msg: RpcRequestMessage, _ctx: &mut Self::Context) -> Self::Result {
@@ -164,16 +186,24 @@ impl Handler<RpcRequestMessage> for ProcessActor {
 }
 
 /// Process request for syncing block
-pub struct Processor {
-    chain_reader: ChainActorRef,
+pub struct Processor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    chain_reader: ChainActorRef<E, C>,
 }
 
-impl Processor {
-    pub fn new(chain_reader: ChainActorRef) -> Self {
+impl<E, C> Processor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    pub fn new(chain_reader: ChainActorRef<E, C>) -> Self {
         Processor { chain_reader }
     }
 
-    pub async fn head_block(processor: Arc<Processor>) -> Block {
+    pub async fn head_block(processor: Arc<Processor<E, C>>) -> Block {
         processor
             .chain_reader
             .clone()
@@ -182,7 +212,7 @@ impl Processor {
             .unwrap()
     }
 
-    pub async fn send_latest_state_msg(processor: Arc<Processor>) -> LatestStateMsg {
+    pub async fn send_latest_state_msg(processor: Arc<Processor<E, C>>) -> LatestStateMsg {
         let head_block = Self::head_block(processor.clone()).await;
         //todo:send to network
         LatestStateMsg {
@@ -191,7 +221,7 @@ impl Processor {
     }
 
     pub async fn handle_get_hash_by_number_msg(
-        processor: Arc<Processor>,
+        processor: Arc<Processor<E, C>>,
         get_hash_by_number_msg: GetHashByNumberMsg,
     ) -> BatchHashByNumberMsg {
         let mut hashs = Vec::new();
@@ -226,7 +256,7 @@ impl Processor {
     }
 
     pub async fn handle_get_header_by_hash_msg(
-        processor: Arc<Processor>,
+        processor: Arc<Processor<E, C>>,
         get_header_by_hash_msg: GetDataByHashMsg,
     ) -> BatchHeaderMsg {
         let mut headers = Vec::new();
@@ -243,7 +273,7 @@ impl Processor {
     }
 
     pub async fn handle_get_body_by_hash_msg(
-        processor: Arc<Processor>,
+        processor: Arc<Processor<E, C>>,
         get_body_by_hash_msg: GetDataByHashMsg,
     ) -> BatchBodyMsg {
         let mut bodies = Vec::new();

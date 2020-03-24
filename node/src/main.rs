@@ -69,7 +69,6 @@ fn main() {
                 startup_info
             }
             None => {
-                info!("return genesis");
                 let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
                     node_config.clone(),
                     storage.clone(),
@@ -114,7 +113,7 @@ fn main() {
             DummyConsensus,
             MockExecutor,
             TxPoolRef,
-            ChainActorRef,
+            ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
         >::launch(
             node_config.clone(),
@@ -125,7 +124,7 @@ fn main() {
             receiver,
         );
         let peer_info = Arc::new(PeerInfo::random());
-        let process_actor = ProcessActor::launch(
+        let process_actor = ProcessActor::<MockExecutor, DummyConsensus>::launch(
             Arc::clone(&peer_info),
             chain.clone(),
             network.clone(),

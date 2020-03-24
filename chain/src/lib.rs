@@ -16,10 +16,9 @@ use actix::prelude::*;
 use anyhow::{bail, Error, Result};
 use bus::{BusActor, Subscription};
 use config::NodeConfig;
-use consensus::argon_consensus::ArgonConsensus;
-use consensus::dummy::DummyConsensus;
+use consensus::Consensus;
 use crypto::HashValue;
-use executor::mock_executor::MockExecutor;
+use executor::TransactionExecutor;
 use logger::prelude::*;
 use message::ChainRequest;
 use network::network::NetworkAsyncService;
@@ -35,13 +34,21 @@ use types::{
 };
 
 /// actor for block chain.
-pub struct ChainActor {
+pub struct ChainActor<E, C>
+where
+    E: TransactionExecutor,
+    C: Consensus,
+{
     //TODO use Generic Parameter for Executor and Consensus.
-    service: ChainServiceImpl<MockExecutor, ArgonConsensus, StarcoinStorage, TxPoolRef>,
+    service: ChainServiceImpl<E, C, StarcoinStorage, TxPoolRef>,
     bus: Addr<BusActor>,
 }
 
-impl ChainActor {
+impl<E, C> ChainActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     pub fn launch(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
@@ -49,7 +56,7 @@ impl ChainActor {
         network: Option<NetworkAsyncService>,
         bus: Addr<BusActor>,
         txpool: TxPoolRef,
-    ) -> Result<ChainActorRef> {
+    ) -> Result<ChainActorRef<E, C>> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(
                 config,
@@ -66,7 +73,11 @@ impl ChainActor {
     }
 }
 
-impl Actor for ChainActor {
+impl<E, C> Actor for ChainActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static,
+    C: Consensus + Sync + Send + 'static,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -80,7 +91,11 @@ impl Actor for ChainActor {
     }
 }
 
-impl Handler<ChainRequest> for ChainActor {
+impl<E, C> Handler<ChainRequest> for ChainActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static,
+    C: Consensus + Sync + Send + 'static,
+{
     type Result = Result<ChainResponse>;
 
     fn handle(&mut self, msg: ChainRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -120,7 +135,11 @@ impl Handler<ChainRequest> for ChainActor {
     }
 }
 
-impl Handler<SystemEvents> for ChainActor {
+impl<E, C> Handler<SystemEvents> for ChainActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static,
+    C: Consensus + Sync + Send + 'static,
+{
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
@@ -138,24 +157,40 @@ impl Handler<SystemEvents> for ChainActor {
 }
 
 #[derive(Clone)]
-pub struct ChainActorRef {
-    pub address: Addr<ChainActor>,
+pub struct ChainActorRef<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    pub address: Addr<ChainActor<E, C>>,
 }
 
-impl Into<Addr<ChainActor>> for ChainActorRef {
-    fn into(self) -> Addr<ChainActor> {
+impl<E, C> Into<Addr<ChainActor<E, C>>> for ChainActorRef<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    fn into(self) -> Addr<ChainActor<E, C>> {
         self.address
     }
 }
 
-impl Into<ChainActorRef> for Addr<ChainActor> {
-    fn into(self) -> ChainActorRef {
+impl<E, C> Into<ChainActorRef<E, C>> for Addr<ChainActor<E, C>>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    fn into(self) -> ChainActorRef<E, C> {
         ChainActorRef { address: self }
     }
 }
 
 #[async_trait::async_trait(? Send)]
-impl ChainAsyncService for ChainActorRef {
+impl<E, C> ChainAsyncService for ChainActorRef<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     async fn try_connect(self, block: Block) -> Result<()> {
         self.address
             .send(ChainRequest::ConnectBlock(block))

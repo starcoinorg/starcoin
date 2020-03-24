@@ -19,6 +19,10 @@ use types::{
 };
 use vm_runtime::genesis::{generate_genesis_state_set, GENESIS_KEYPAIR};
 use vm_runtime::starcoin_vm::StarcoinVM;
+use vm_runtime::{
+    account::Account,
+    common_transactions::{create_account_txn_send_with_association_account, peer_to_peer_txn},
+};
 
 pub struct Executor {
     config: VMConfig,
@@ -62,4 +66,12 @@ impl TransactionExecutor for Executor {
     ) -> Option<VMStatus> {
         None
     }
+}
+
+pub fn mock_create_account_txn() -> Transaction {
+    let account1 = Account::new();
+    Transaction::UserTransaction(create_account_txn_send_with_association_account(
+        &account1, 1, // fix me
+        1_000,
+    ))
 }

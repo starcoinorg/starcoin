@@ -2,6 +2,8 @@ use crate::download::Downloader;
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
 use anyhow::Result;
+use consensus::Consensus;
+use executor::TransactionExecutor;
 use network::{
     sync_messages::{DataType, GetDataByHashMsg, ProcessMessage},
     NetworkAsyncService, RPCRequest, RPCResponse,
@@ -17,18 +19,26 @@ pub struct SyncBodyEvent {
 }
 
 #[derive(Clone)]
-pub struct DownloadBodyActor {
-    downloader: Arc<Downloader>,
+pub struct DownloadBodyActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    downloader: Arc<Downloader<E, C>>,
     peer_info: Arc<PeerInfo>,
     network: NetworkAsyncService,
 }
 
-impl DownloadBodyActor {
+impl<E, C> DownloadBodyActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     pub fn _launch(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<E, C>>,
         peer_info: Arc<PeerInfo>,
         network: NetworkAsyncService,
-    ) -> Result<Addr<DownloadBodyActor>> {
+    ) -> Result<Addr<DownloadBodyActor<E, C>>> {
         Ok(Actor::create(move |_ctx| DownloadBodyActor {
             downloader,
             peer_info,
@@ -37,11 +47,19 @@ impl DownloadBodyActor {
     }
 }
 
-impl Actor for DownloadBodyActor {
+impl<E, C> Actor for DownloadBodyActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Context = Context<Self>;
 }
 
-impl Handler<SyncBodyEvent> for DownloadBodyActor {
+impl<E, C> Handler<SyncBodyEvent> for DownloadBodyActor<E, C>
+where
+    E: TransactionExecutor + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = Result<()>;
     fn handle(&mut self, event: SyncBodyEvent, _ctx: &mut Self::Context) -> Self::Result {
         let hashs = event.headers.iter().map(|h| h.id().clone()).collect();

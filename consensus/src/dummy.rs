@@ -31,7 +31,7 @@ impl Into<Vec<u8>> for DummyHeader {
         vec![]
     }
 }
-
+#[derive(Clone)]
 pub struct DummyConsensus {}
 
 impl Consensus for DummyConsensus {

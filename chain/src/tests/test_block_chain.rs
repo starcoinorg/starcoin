@@ -4,7 +4,7 @@ use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus, Consensus};
-use executor::mock_executor::mock_mint_txn;
+use executor::executor::mock_create_account_txn;
 use executor::mock_executor::MockExecutor;
 use futures::channel::oneshot;
 use futures_timer::Delay;
@@ -25,7 +25,7 @@ fn it_works() {
 }
 
 fn gen_txs() -> Vec<SignedUserTransaction> {
-    let tx = mock_mint_txn(AccountAddress::random(), 100)
+    let tx = mock_create_account_txn()
         .as_signed_user_txn()
         .unwrap()
         .clone();
@@ -34,7 +34,7 @@ fn gen_txs() -> Vec<SignedUserTransaction> {
     txs
 }
 
-async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
+async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<MockExecutor, DummyConsensus> {
     let node_config = NodeConfig::random_for_test();
     let conf = Arc::new(node_config);
     let cache_storage = Arc::new(CacheStorage::new());
@@ -57,7 +57,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef {
             bus.clone(),
         )
     };
-    let chain = ChainActor::launch(
+    let chain = ChainActor::<MockExecutor, DummyConsensus>::launch(
         conf.clone(),
         genesis.startup_info().clone(),
         storage.clone(),
