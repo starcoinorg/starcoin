@@ -37,7 +37,7 @@ use vm_runtime::mock_vm::{
 };
 use vm_runtime::{
     account::Account,
-    common_transactions::{create_account_txn_send_with_association_account, peer_to_peer_txn},
+    common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn},
 };
 
 #[stest::test]
@@ -196,7 +196,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
     let account1 = Account::new();
-    let txn1 = Transaction::UserTransaction(create_account_txn_send_with_association_account(
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1, 1, // fix me
         1_000,
     ));
@@ -204,7 +204,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let account2 = Account::new();
-    let txn2 = Transaction::UserTransaction(create_account_txn_send_with_association_account(
+    let txn2 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account2, 2, // fix me
         1_000,
     ));

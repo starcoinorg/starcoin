@@ -14,14 +14,15 @@ use storage::StarcoinStorage;
 use traits::ChainState;
 use types::{
     state_set::ChainStateSet,
-    transaction::{SignedUserTransaction, Transaction, TransactionOutput},
+    transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput, TransactionArgument},
     vm_error::VMStatus,
+    account_address::AccountAddress,
 };
 use vm_runtime::genesis::{generate_genesis_state_set, GENESIS_KEYPAIR};
 use vm_runtime::starcoin_vm::StarcoinVM;
 use vm_runtime::{
     account::Account,
-    common_transactions::{create_account_txn_send_with_association_account, peer_to_peer_txn},
+    common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn_sent_as_association, raw_peer_to_peer_txn,},
 };
 
 #[derive(Clone)]
@@ -67,11 +68,43 @@ impl TransactionExecutor for Executor {
     ) -> Option<VMStatus> {
         None
     }
+
+    fn build_mint_txn(
+        addr: AccountAddress,
+        auth_key_prefix: Vec<u8>,
+        seq_num: u64,
+        amount: u64,
+    ) -> Transaction {
+        Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
+            addr,
+            auth_key_prefix,
+            seq_num,
+            amount,
+        ))
+    }
+
+    fn build_transfer_txn(
+        sender: AccountAddress,
+        sender_auth_key_prefix: Vec<u8>,
+        receiver: AccountAddress,
+        receiver_auth_key_prefix: Vec<u8>,
+        seq_num: u64,
+        amount: u64,
+    ) -> RawUserTransaction {
+        raw_peer_to_peer_txn(
+            sender,
+            sender_auth_key_prefix,
+            receiver,
+            receiver_auth_key_prefix,
+            seq_num,
+            amount,
+        )
+    }
 }
 
 pub fn mock_create_account_txn() -> Transaction {
     let account1 = Account::new();
-    Transaction::UserTransaction(create_account_txn_send_with_association_account(
+    Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1, 1, // fix me
         1_000,
     ))

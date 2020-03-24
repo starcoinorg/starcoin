@@ -27,7 +27,8 @@ use types::{
     vm_error::VMStatus,
 };
 use vm_runtime::mock_vm::{
-    encode_transfer_program, encode_transfer_transaction, mock_transaction_with_seq_number, MockVM,
+    encode_transfer_program, encode_transfer_transaction, mock_transaction_with_seq_number,
+    mock_raw_transfer_txn, MockVM,
 };
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
@@ -168,6 +169,27 @@ impl TransactionExecutor for MockExecutor {
     ) -> Option<VMStatus> {
         let mut vm = MockVM::new(config);
         vm.verify_transaction(chain_state, txn)
+    }
+
+    fn build_mint_txn(
+        addr: AccountAddress,
+        auth_key_prefix: Vec<u8>,
+        seq_num: u64,
+        amount: u64,
+    ) -> Transaction {
+        let from = AccountAddress::default();
+        encode_transfer_transaction(from, addr, amount)
+    }
+
+    fn build_transfer_txn(
+        sender: AccountAddress,
+        sender_auth_key_prefix: Vec<u8>,
+        receiver: AccountAddress,
+        receiver_auth_key_prefix: Vec<u8>,
+        seq_num: u64,
+        amount: u64,
+    ) -> RawUserTransaction {
+        mock_raw_transfer_txn(sender, receiver, amount, seq_num)
     }
 }
 
