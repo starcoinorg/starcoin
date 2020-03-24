@@ -2,7 +2,7 @@ use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
 use anyhow::Result;
 use parking_lot::RwLock;
 use starcoin_config::VMConfig;
-use starcoin_executor::{mock_executor::MockExecutor, TransactionExecutor};
+use starcoin_executor::{executor::Executor, mock_executor::MockExecutor, TransactionExecutor};
 use starcoin_statedb::ChainStateDB;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 use storage::StarcoinStorage;
@@ -159,8 +159,7 @@ impl crate::pool::Client for PoolClient {
             .map_err(|e| TransactionError::InvalidSignature(e.description().to_string()))?;
         // TODO: use real vm validator
         let vmconfig = VMConfig::default();
-        match MockExecutor::validate_transaction(&vmconfig, self.nonce_client.statedb.as_ref(), txn)
-        {
+        match Executor::validate_transaction(&vmconfig, self.nonce_client.statedb.as_ref(), txn) {
             None => Ok(checked_txn),
             Some(status) => {
                 // Ok(checked_txn)

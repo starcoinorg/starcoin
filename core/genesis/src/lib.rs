@@ -93,7 +93,7 @@ impl Genesis {
 mod tests {
     use super::*;
     use starcoin_consensus::dummy::DummyConsensus;
-    use starcoin_executor::mock_executor::MockExecutor;
+    use starcoin_executor::executor::Executor;
     use starcoin_storage::cache_storage::CacheStorage;
     use starcoin_storage::db_storage::DBStorage;
     use starcoin_storage::StarcoinStorage;
@@ -106,9 +106,8 @@ mod tests {
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
         let storage =
             Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
-        let genesis =
-            Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(config, storage)
-                .expect("init genesis must success.");
+        let genesis = Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(config, storage)
+            .expect("init genesis must success.");
         info!("genesis: {:?}", genesis);
         Ok(())
     }
