@@ -295,7 +295,6 @@ impl BlockStore {
     ) -> Result<Option<HashValue>> {
         let mut parent_id1 = block_id1;
         let mut parent_id2 = block_id2;
-        #[warn(unused_assignments)]
         let mut found = false;
         info!("common ancestor: {:?}, {:?}", block_id1, block_id2);
         match self.get_relationship(block_id1, block_id2) {

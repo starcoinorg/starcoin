@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{ColumnFamilyName, InnerRepository};
+use crate::batch::WriteBatch;
+use crate::storage::{ColumnFamilyName, InnerRepository, WriteOp};
 use crate::{
     ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
@@ -10,7 +11,10 @@ use crate::{
 };
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
-use rocksdb::{CFHandle, ColumnFamilyOptions, DBOptions, Writable, WriteOptions, DB};
+use rocksdb::{
+    CFHandle, ColumnFamilyOptions, DBOptions, Writable, WriteBatch as DBWriteBatch, WriteOptions,
+    DB,
+};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -236,6 +240,26 @@ impl InnerRepository for DBStorage {
         self.db
             .delete_cf(cf_handle, &key)
             .map_err(Self::convert_rocksdb_err)
+    }
+
+    /// Writes a group of records wrapped in a WriteBatch.
+    fn write_batch(&self, batch: WriteBatch) -> Result<()> {
+        let db_batch = DBWriteBatch::new();
+        for (cf_name, rows) in &batch.rows {
+            let cf_handle = self.get_cf_handle(cf_name)?;
+            for (key, write_op) in rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                }
+                .map_err(Self::convert_rocksdb_err)?;
+            }
+        }
+
+        self.db
+            .write_opt(&db_batch, &Self::default_write_options())
+            .map_err(Self::convert_rocksdb_err)?;
+        Ok(())
     }
 
     fn get_len(&self) -> Result<u64, Error> {

@@ -1,19 +1,27 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::InnerRepository;
+use crate::batch::WriteBatch;
+use crate::storage::{InnerRepository, WriteOp};
 use anyhow::{Error, Result};
-use std::collections::HashMap;
-use std::sync::RwLock;
+use atomic_refcell::AtomicRefCell;
+use lru::LruCache;
+
+const LRU_CACHE_DEFAULT_SIZE: usize = 65535;
 
 pub struct CacheStorage {
-    map: RwLock<HashMap<Vec<u8>, Vec<u8>>>,
+    cache: AtomicRefCell<LruCache<Vec<u8>, Vec<u8>>>,
 }
 
 impl CacheStorage {
     pub fn new() -> Self {
         CacheStorage {
-            map: RwLock::new(HashMap::new()),
+            cache: AtomicRefCell::new(LruCache::new(LRU_CACHE_DEFAULT_SIZE)),
+        }
+    }
+    pub fn new_with_capacity(size: usize) -> Self {
+        CacheStorage {
+            cache: AtomicRefCell::new(LruCache::new(size)),
         }
     }
 }
@@ -21,39 +29,46 @@ impl CacheStorage {
 impl InnerRepository for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         let compose = compose_key(prefix_name.to_string(), key)?;
-        Ok(self
-            .map
-            .read()
-            .unwrap()
-            .get(compose.as_slice())
-            .map(|v| v.to_vec()))
+        Ok(self.cache.borrow_mut().get(&compose).map(|v| v.to_vec()))
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        self.map
-            .write()
-            .unwrap()
-            .insert(compose_key(prefix_name.to_string(), key)?, value);
+        &self
+            .cache
+            .borrow_mut()
+            .put(compose_key(prefix_name.to_string(), key)?, value);
         Ok(())
     }
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
         let compose = compose_key(prefix_name.to_string(), key)?;
-        Ok(self.map.read().unwrap().contains_key(compose.as_slice()))
+        Ok(self.cache.borrow_mut().contains(&compose))
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         let compose = compose_key(prefix_name.to_string(), key)?;
-        self.map.write().unwrap().remove(compose.as_slice());
+        self.cache.borrow_mut().pop(&compose).unwrap();
+        Ok(())
+    }
+
+    fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
+        for (prefix_name, rows) in &batch.rows {
+            for (key, write_op) in rows {
+                match write_op {
+                    WriteOp::Value(value) => self.put(prefix_name, key.to_vec(), value.to_vec()),
+                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()),
+                };
+            }
+        }
         Ok(())
     }
 
     fn get_len(&self) -> Result<u64, Error> {
-        Ok(self.map.read().unwrap().len() as u64)
+        Ok(self.cache.borrow_mut().len() as u64)
     }
 
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         let mut all_keys = vec![];
-        for key in self.map.read().unwrap().keys() {
+        for (key, _) in self.cache.borrow_mut().iter() {
             all_keys.push(key.to_vec());
         }
         Ok(all_keys)

@@ -14,6 +14,7 @@ use starcoin_accumulator::{
     AccumulatorNodeWriter,
 };
 use state_tree::{StateNode, StateNodeStore};
+use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::sync::Arc;
 use types::{
@@ -22,6 +23,7 @@ use types::{
 };
 
 pub mod accumulator;
+pub mod batch;
 pub mod block;
 pub mod block_info;
 pub mod cache_storage;
@@ -157,6 +159,10 @@ impl StateNodeStore for StarcoinStorage {
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
         self.state_node_store.put(key, node)
+    }
+
+    fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
+        self.state_node_store.write_batch(nodes)
     }
 }
 

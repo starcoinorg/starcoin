@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::batch::WriteBatch;
 use anyhow::{bail, Error, Result};
 use crypto::HashValue;
 use std::fmt::Debug;
@@ -10,10 +11,10 @@ use std::sync::Arc;
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
 
-/// Use for batch commit
-pub trait WriteBatch {
-    fn put(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
-    fn delete(&mut self, key: Vec<u8>) -> Result<()>;
+#[derive(Debug, Clone)]
+pub enum WriteOp {
+    Value(Vec<u8>),
+    Deletion,
 }
 
 pub trait Repository: Send + Sync {
@@ -21,6 +22,7 @@ pub trait Repository: Send + Sync {
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, key: Vec<u8>) -> Result<bool>;
     fn remove(&self, key: Vec<u8>) -> Result<()>;
+    fn write_batch(&self, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
@@ -30,6 +32,7 @@ pub trait InnerRepository: Send + Sync {
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool>;
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
+    fn write_batch(&self, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
@@ -63,6 +66,10 @@ impl Repository for StorageDelegated {
 
     fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
         self.repository.clone().remove(self.prefix_name, key)
+    }
+
+    fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
+        self.repository.write_batch(batch)
     }
 
     fn get_len(&self) -> Result<u64, Error> {
@@ -122,6 +129,13 @@ impl Repository for Storage {
         match self.db.clone().remove(self.prefix_name, key.clone()) {
             Ok(_) => self.cache.clone().remove(self.prefix_name, key),
             Err(err) => bail!("remove persistence error: {}", err),
+        }
+    }
+
+    fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
+        match self.db.write_batch(batch.clone()) {
+            Ok(_) => self.cache.write_batch(batch),
+            Err(err) => bail!("write batch db error: {}", err),
         }
     }
 
@@ -185,6 +199,10 @@ where
     }
     pub fn remove(&self, key: K) -> Result<()> {
         self.store.remove(key.encode_key()?)
+    }
+
+    pub fn write_batch(&self, batch: WriteBatch) -> Result<()> {
+        self.store.write_batch(batch)
     }
 
     pub fn get_len(&self) -> Result<u64> {
