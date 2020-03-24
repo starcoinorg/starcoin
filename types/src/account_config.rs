@@ -15,6 +15,8 @@ use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use std::convert::{TryFrom, TryInto};
+use logger::prelude::*;
+
 
 //TODO rename account and coin name.
 // Starcoin
@@ -131,7 +133,9 @@ impl AccountResource {
 
     /// Given an account map (typically from storage) retrieves the Account resource associated.
     pub fn make_from(bytes: &[u8]) -> Result<Self> {
-        Self::decode(bytes)
+        // make from libra data blob
+        let libra_account_res = libra_types::account_config::AccountResource::decode(bytes)?;
+        Ok(AccountResource::from(libra_account_res))
     }
 
     /// Return the sequence_number field for the given AccountResource
@@ -163,5 +167,51 @@ impl TryFrom<Vec<u8>> for AccountResource {
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
         AccountResource::make_from(value.as_slice())
+    }
+}
+
+impl Into<libra_types::account_config::AccountResource> for AccountResource {
+    fn into(self) -> libra_types::account_config::AccountResource {
+        unimplemented!()
+    }
+}
+
+impl From<libra_types::account_config::AccountResource> for AccountResource {
+    fn from(libra_account_res: libra_types::account_config::AccountResource) -> Self {
+        AccountResource::new(
+            libra_account_res.balance(),
+            libra_account_res.sequence_number(),
+            ByteArray::new(libra_account_res.authentication_key().to_vec()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_convert_account_res() {
+        let address = libra_types::account_address::AccountAddress::random();
+        let send_event_handle = libra_types::event::EventHandle::new(
+            libra_types::event::EventKey::new_from_address(&address, 0),
+            0
+        );
+        let receive_event_handle = libra_types::event::EventHandle::new(
+            libra_types::event::EventKey::new_from_address(&address, 1),
+            0
+        );
+        let account_res = libra_types::account_config::AccountResource::new(
+            0,
+            1,
+            address.to_vec(),
+            false,
+            false,
+            send_event_handle,
+            receive_event_handle,
+            0
+        );
+        let account_res1: AccountResource = AccountResource::from(account_res);
+        assert_eq!(account_res1.balance(), 0);
+        assert_eq!(account_res1.authentication_key().len(), address.to_vec().len());
     }
 }
