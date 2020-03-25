@@ -4,15 +4,15 @@
 //! Support for encoding transactions for common situations.
 
 use crate::{account::create_signed_txn_with_association_account, account::Account};
+use std::time::Duration;
 use stdlib::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TRANSFER_TXN};
 use types::account_address::AccountAddress;
-use types::transaction::{Script, RawUserTransaction, SignedUserTransaction, TransactionArgument, TransactionPayload,};
-use std::time::Duration;
-
+use types::transaction::{
+    RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
+};
 
 pub const TXN_RESERVED: u64 = 500_000;
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
-
 
 /// Returns a transaction to create a new account with the given arguments.
 pub fn create_account_txn(

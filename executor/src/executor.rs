@@ -13,16 +13,22 @@ use storage::db_storage::DBStorage;
 use storage::StarcoinStorage;
 use traits::ChainState;
 use types::{
-    state_set::ChainStateSet,
-    transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput, TransactionArgument},
-    vm_error::VMStatus,
     account_address::AccountAddress,
+    state_set::ChainStateSet,
+    transaction::{
+        RawUserTransaction, SignedUserTransaction, Transaction, TransactionArgument,
+        TransactionOutput,
+    },
+    vm_error::VMStatus,
 };
 use vm_runtime::genesis::{generate_genesis_state_set, GENESIS_KEYPAIR};
 use vm_runtime::starcoin_vm::StarcoinVM;
 use vm_runtime::{
     account::Account,
-    common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn_sent_as_association, raw_peer_to_peer_txn,},
+    common_transactions::{
+        create_account_txn_sent_as_association, peer_to_peer_txn_sent_as_association,
+        raw_peer_to_peer_txn,
+    },
 };
 
 #[derive(Clone)]

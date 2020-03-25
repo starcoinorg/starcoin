@@ -27,8 +27,8 @@ use types::{
     vm_error::VMStatus,
 };
 use vm_runtime::mock_vm::{
-    encode_transfer_program, encode_transfer_transaction, mock_transaction_with_seq_number,
-    mock_raw_transfer_txn, MockVM,
+    encode_transfer_program, encode_transfer_transaction, mock_raw_transfer_txn,
+    mock_transaction_with_seq_number, MockVM,
 };
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;

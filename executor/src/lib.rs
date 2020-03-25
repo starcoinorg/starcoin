@@ -6,10 +6,10 @@ use config::VMConfig;
 use crypto::HashValue;
 use traits::ChainState;
 use types::{
+    account_address::AccountAddress,
     state_set::ChainStateSet,
     transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
-    account_address::AccountAddress,
 };
 
 pub mod executor;
