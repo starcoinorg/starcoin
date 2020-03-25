@@ -295,7 +295,7 @@ fn test_network_actor_rpc() {
             first_chain.clone(),
             None,
         );
-        Delay::new(Duration::from_secs(3 * 10)).await;
+        Delay::new(Duration::from_secs(1 * 60)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();
         debug!("first chain :{:?}", number);
@@ -372,7 +372,7 @@ fn test_network_actor_rpc() {
         )
         .unwrap();
 
-        Delay::new(Duration::from_secs(3 * 10)).await;
+        Delay::new(Duration::from_secs(1 * 60)).await;
 
         for i in 0..5 as usize {
             Delay::new(Duration::from_secs(5)).await;

@@ -10,6 +10,7 @@ use std::sync::Arc;
 use storage::BlockChainStore;
 use traits::TxPoolAsyncService;
 use types::account_address::AccountAddress;
+use types::account_config;
 use types::block::BlockHeader;
 use types::system_events::SystemEvents;
 use types::transaction::{SignedUserTransaction, Transaction};
@@ -38,7 +39,7 @@ where
             storage,
             bus,
             best_block_header: None,
-            mock_txn_generator: MockTxnGenerator::new(AccountAddress::random()),
+            mock_txn_generator: MockTxnGenerator::new(account_config::association_address()),
         };
         Ok(actor.start())
     }
