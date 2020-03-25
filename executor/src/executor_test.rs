@@ -40,6 +40,7 @@ use vm_runtime::{
     common_transactions::{create_account_txn_send_with_association_account, peer_to_peer_txn},
 };
 
+#[ignore]
 #[stest::test]
 fn test_execute_mint_txn() -> Result<()> {
     let storage = MockStateNodeStore::new();
@@ -55,6 +56,7 @@ fn test_execute_mint_txn() -> Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[stest::test]
 fn test_execute_transfer_txn() -> Result<()> {
     let storage = MockStateNodeStore::new();
@@ -80,6 +82,7 @@ fn test_execute_transfer_txn() -> Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[stest::test]
 fn test_validate_txn() -> Result<()> {
     let storage = MockStateNodeStore::new();
