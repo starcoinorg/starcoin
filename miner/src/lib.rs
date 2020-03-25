@@ -107,8 +107,9 @@ where
             //     tx_factory.do_send(GenTxEvent {});
             // });
 
-            let tx_factory = TxFactoryActor::launch(txpool.clone(), storage.clone(), bus.clone())
-                .expect("start txn factory should be ok");
+            let tx_factory =
+                TxFactoryActor::<P, S, E>::launch(txpool.clone(), storage.clone(), bus.clone())
+                    .expect("start txn factory should be ok");
 
             ctx.run_interval(Duration::from_millis(1000), move |_act, _ctx| {
                 info!("miner call gen_tx.");

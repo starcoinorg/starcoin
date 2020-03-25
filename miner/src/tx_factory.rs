@@ -3,6 +3,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::Bus;
 use bus::BusActor;
+use executor::TransactionExecutor;
 use logger::prelude::*;
 use statedb::ChainStateDB;
 use std::convert::TryInto;
@@ -10,7 +11,6 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use storage::BlockChainStore;
 use traits::TxPoolAsyncService;
-use types::account_config;
 use types::block::BlockHeader;
 use types::system_events::SystemEvents;
 use types::transaction::{SignedUserTransaction, Transaction};
@@ -36,11 +36,15 @@ where
     TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     pub fn launch(txpool: P, storage: Arc<TStorage>, bus: Addr<BusActor>) -> Result<Addr<Self>> {
+        let startup_info = storage.get_startup_info()?.expect("no startup info");
+        let block = storage
+            .get_block_by_hash(startup_info.head.get_head())?
+            .expect("cannot find block for startupinfo head block");
         let actor = TxFactoryActor {
             txpool,
             storage,
             bus,
-            best_block_header: None,
+            best_block_header: Some(block.into_inner().0),
             mock_txn_generator: MockTxnGenerator::new(),
             phantom: PhantomData,
         };

@@ -1,14 +1,12 @@
 use anyhow::Result;
+use crypto::ed25519::*;
+use crypto::test_utils::KeyPair;
 use executor::mock_executor::mock_transfer_txn_with_seq_number;
+use executor::TransactionExecutor;
 use logger::prelude::*;
 use rand;
 use rand::{Rng, SeedableRng};
 use std::convert::TryInto;
-// use std::sync::RwLock;
-use crypto::ed25519::*;
-use crypto::test_utils::KeyPair;
-use executor::TransactionExecutor;
-use starcoin_crypto::Uniform;
 use traits::ChainStateReader;
 use types::{
     access_path::AccessPath, account_address::AccountAddress, account_address::AuthenticationKey,
@@ -39,32 +37,9 @@ impl MockTxnGenerator {
         let seed_buf: [u8; 32] = seed_rng.gen();
         let mut rng = rand::rngs::StdRng::from_seed(seed_buf);
 
-        compat::generate_keypair(rng)
+        compat::generate_keypair(Some(&mut rng))
     }
 
-    fn build_mint_txn<E>(
-        faucet_seq_number: u64,
-        receiver_address: AccountAddress,
-        receiver_pubkey: &Ed25519PublicKey,
-        amount: u64,
-    ) -> Transaction
-    where
-        E: TransactionExecutor + Sync + Send,
-    {
-        // add some randomness too.
-        let mut rng = rand::thread_rng();
-        let amount_to_transfer = rng.gen_range(5000u64, 10000u64);
-        // transfer will create account if it not exists.
-        let txn = <E as TransactionExecutor>::build_mint_txn(
-            receiver_address,
-            AuthenticationKey::from_public_key(receiver_pubkey)
-                .prefix()
-                .to_vec(),
-            faucet_seq_number,
-            amount,
-        );
-        txn
-    }
     fn get_account_resource(
         account_address: AccountAddress,
         state_db: &dyn ChainStateReader,
@@ -89,80 +64,77 @@ impl MockTxnGenerator {
         E: TransactionExecutor + Sync + Send,
     {
         let mint_function = |to_mint_address: AccountAddress, to_mint_key_pair: &AccountKeyPair| {
-            let cur_sequence_number = Self::get_account_resource(association_address(), state_db)?
-                .expect("association account resource must exists")
-                .sequence_number();
+            let faucet_sequence_number =
+                Self::get_account_resource(association_address(), state_db)?
+                    .expect("association account resource must exists")
+                    .sequence_number();
             // add some randomness too.
             let mut rng = rand::thread_rng();
             let amount_to_transfer = rng.gen_range(5000u64, 10000u64);
 
             // transfer will create account if it not exists.
-            let transfer_txn = Self::build_mint_txn(
-                cur_sequence_number,
+            let txn = <E as TransactionExecutor>::build_mint_txn(
                 to_mint_address,
-                &to_mint_key_pair.public_key,
+                AuthenticationKey::from_public_key(&to_mint_key_pair.public_key)
+                    .prefix()
+                    .to_vec(),
+                faucet_sequence_number,
                 amount_to_transfer,
             );
-            transfer_txn
+            Ok(txn)
         };
         // account already exists
         let account_resource_a = Self::get_account_resource(self.account_a, state_db)?;
         if account_resource_a.is_none() {
             // use faucet to get money
             let mint_txn = mint_function(self.account_a, &self.account_a_keypair);
-            return Ok(mint_txn);
+            return mint_txn;
         }
 
         let account_resource_b = Self::get_account_resource(self.account_b, state_db)?;
         if account_resource_b.is_none() {
             // use faucet to get money
             let mint_txn = mint_function(self.account_b, &self.account_b_keypair);
-            return Ok(mint_txn);
+            return mint_txn;
         }
 
         let account_resource_a = account_resource_a.unwrap();
         let account_resource_b = account_resource_b.unwrap();
 
+        let transfer_function = |a: (AccountAddress, &AccountKeyPair),
+                                 b: (AccountAddress, &AccountKeyPair),
+                                 a_seq_number: u64| {
+            // add some randomness.
+            let mut rng = rand::thread_rng();
+            let amount_to_transfer = rng.gen_range(1000u64, 5000u64);
+            let transfer_txn = <E as TransactionExecutor>::build_transfer_txn(
+                a.0,
+                AuthenticationKey::from_public_key(&a.1.public_key).to_vec(),
+                b.0,
+                AuthenticationKey::from_public_key(&b.1.public_key).to_vec(),
+                a_seq_number,
+                amount_to_transfer,
+            );
+            let signed = transfer_txn
+                .sign(&a.1.private_key, a.1.public_key.clone())?
+                .into_inner();
+            Ok(Transaction::UserTransaction(signed))
+        };
+
         // A -> B
         if account_resource_a.balance() > 3000 {
-            // add some randomness.
-            let mut rng = rand::thread_rng();
-            let amount_to_transfer = rng.gen_range(1000u64, 5000u64);
-            let transfer_txn = <E as TransactionExecutor>::build_transfer_txn(
-                self.account_a,
-                AuthenticationKey::from_public_key(&self.account_a_keypair.public_key).to_vec(),
-                self.account_b,
-                AuthenticationKey::from_public_key(&self.account_b_keypair.public_key).to_vec(),
+            transfer_function(
+                (self.account_a, &self.account_a_keypair),
+                (self.account_b, &self.account_b_keypair),
                 account_resource_a.sequence_number(),
-                amount_to_transfer,
-            );
-            let signed = transfer_txn
-                .sign(
-                    &self.account_a_keypair.private_key,
-                    self.account_a_keypair.public_key.clone(),
-                )?
-                .into_inner();
-            Ok(Transaction::UserTransaction(signed))
+            )
         } else if account_resource_b.balance() > 3000 {
             // B -> A
-            // add some randomness.
-            let mut rng = rand::thread_rng();
-            let amount_to_transfer = rng.gen_range(1000u64, 5000u64);
-            let transfer_txn = <E as TransactionExecutor>::build_transfer_txn(
-                self.account_b,
-                AuthenticationKey::from_public_key(&self.account_b_keypair.public_key).to_vec(),
-                self.account_a,
-                AuthenticationKey::from_public_key(&self.account_a_keypair.public_key).to_vec(),
+            transfer_function(
+                (self.account_b, &self.account_b_keypair),
+                (self.account_a, &self.account_a_keypair),
                 account_resource_b.sequence_number(),
-                amount_to_transfer,
-            );
-            let signed = transfer_txn
-                .sign(
-                    &self.account_b_keypair.private_key,
-                    self.account_b_keypair.public_key.clone(),
-                )?
-                .into_inner();
-            Ok(Transaction::UserTransaction(signed))
+            )
         } else {
             // G -> A/B
             let mut rng = rand::thread_rng();
