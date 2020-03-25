@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::protocol::{CustomMessageOutcome, Protocol};
+use crate::protocol::{rpc_handle::RpcHandler, CustomMessageOutcome, Protocol};
 use crate::{
     debug_info, discovery::DiscoveryBehaviour, discovery::DiscoveryOut, protocol::event::DhtEvent,
     protocol::event::Event, DiscoveryNetBehaviour,
@@ -37,6 +37,8 @@ pub struct Behaviour {
     debug_info: debug_info::DebugInfoBehaviour,
     /// Discovers nodes of the network.
     discovery: DiscoveryBehaviour,
+    /// RPC behaviour.
+    rpc_handler: RpcHandler,
     /// Queue of events to produce for the outside.
     #[behaviour(ignore)]
     events: Vec<BehaviourOut>,
@@ -57,6 +59,7 @@ impl Behaviour {
         enable_mdns: bool,
         allow_private_ipv4: bool,
         discovery_only_if_under_num: u64,
+        rpc_handler: RpcHandler,
     ) -> Self {
         Behaviour {
             protocol,
@@ -69,6 +72,7 @@ impl Behaviour {
                 discovery_only_if_under_num,
             )
             .await,
+            rpc_handler,
             events: Vec::new(),
         }
     }

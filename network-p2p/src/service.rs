@@ -54,6 +54,7 @@ use crate::net_error::Error;
 use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
+use crate::protocol;
 use crate::protocol::event::Event;
 use crate::protocol::Protocol;
 use crate::{
@@ -188,6 +189,11 @@ impl NetworkWorker {
                 "{} ({})",
                 params.network_config.client_version, params.network_config.node_name
             );
+            let rpc_handler = {
+                let config = protocol::rpc_handle::Config::new(&params.protocol_id);
+                protocol::rpc_handle::RpcHandler::new(config, peerset_handle.clone())
+            };
+
             let behaviour = futures::executor::block_on(Behaviour::new(
                 protocol,
                 user_agent,
@@ -204,6 +210,7 @@ impl NetworkWorker {
                     } => allow_private_ipv4,
                 },
                 u64::from(params.network_config.out_peers) + 15,
+                rpc_handler,
             ));
             let (transport, bandwidth) = {
                 let (config_mem, config_wasm, flowctrl) = match params.network_config.transport {
