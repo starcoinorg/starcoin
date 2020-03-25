@@ -4,14 +4,18 @@ use actix::prelude::*;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::PacemakerStrategy;
+use consensus::argon_consensus::{ArgonConsensus, ArgonConsensusHeader};
 use consensus::dummy::DummyConsensus;
+use consensus::{Consensus, ConsensusHeader};
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
     Uniform,
 };
-use executor::mock_executor::MockExecutor;
+use executor::executor::Executor;
+use executor::TransactionExecutor;
 use logger::prelude::*;
+use miner::miner_client;
 use miner::MinerActor;
 use network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -39,6 +43,15 @@ struct Args {
 }
 
 fn main() {
+    main_inner::<ArgonConsensus, ArgonConsensusHeader, Executor>();
+}
+
+fn main_inner<C, H, E>()
+where
+    C: Consensus + Sync + Send + 'static,
+    H: ConsensusHeader + Sync + Send + 'static,
+    E: TransactionExecutor + Sync + Send + 'static,
+{
     logger::init();
     let args = Args::from_args();
     let data_dir: PathBuf = match args.data_dir.clone() {
@@ -69,11 +82,9 @@ fn main() {
                 startup_info
             }
             None => {
-                let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
-                    node_config.clone(),
-                    storage.clone(),
-                )
-                .expect("init genesis fail.");
+                let genesis =
+                    Genesis::new::<E, C, StarcoinStorage>(node_config.clone(), storage.clone())
+                        .expect("init genesis fail.");
                 genesis.startup_info().clone()
             }
         };
@@ -93,7 +104,7 @@ fn main() {
         // let mut config = NodeConfig::default();
         // config.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         // let node_config = Arc::new(config);
-        let network = NetworkActor::launch(node_config.clone(), bus.clone(), handle);
+        let network = NetworkActor::launch(node_config.clone(), bus.clone(), handle.clone());
         let chain = ChainActor::launch(
             node_config.clone(),
             startup_info,
@@ -109,13 +120,7 @@ fn main() {
         } else {
             None
         };
-        let _miner = MinerActor::<
-            DummyConsensus,
-            MockExecutor,
-            TxPoolRef,
-            ChainActorRef<MockExecutor, DummyConsensus>,
-            StarcoinStorage,
-        >::launch(
+        let _miner = MinerActor::<C, E, TxPoolRef, ChainActorRef<E, C>, StarcoinStorage, H>::launch(
             node_config.clone(),
             bus.clone(),
             storage.clone(),
@@ -124,7 +129,7 @@ fn main() {
             receiver,
         );
         let peer_info = Arc::new(PeerInfo::random());
-        let process_actor = ProcessActor::<MockExecutor, DummyConsensus>::launch(
+        let process_actor = ProcessActor::<E, C>::launch(
             Arc::clone(&peer_info),
             chain.clone(),
             network.clone(),
@@ -134,6 +139,9 @@ fn main() {
         let download_actor =
             DownloadActor::launch(peer_info, chain, network.clone(), bus.clone()).unwrap();
         let _sync = SyncActor::launch(bus, process_actor, download_actor).unwrap();
+        handle.spawn(miner_client::MinerClient::main_loop(
+            node_config.miner.stratum_server,
+        ));
         let _logger = args.no_logging;
         tokio::signal::ctrl_c().await.unwrap();
         info!("Ctrl-C received, shutting down");

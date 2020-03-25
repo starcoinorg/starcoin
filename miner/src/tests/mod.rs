@@ -6,6 +6,7 @@ use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::argon_consensus::ArgonConsensus;
 use consensus::dummy::DummyConsensus;
+use consensus::dummy::DummyHeader;
 use executor::executor::Executor;
 use executor::mock_executor::MockExecutor;
 use logger::prelude::*;
@@ -57,7 +58,7 @@ fn test_miner_with_schedule_pacemaker() {
                 bus.clone(),
             )
         };
-        let network = NetworkActor::launch(config.clone(), bus.clone(), handle);
+        let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
         let chain = ChainActor::launch(
             config.clone(),
             genesis.startup_info().clone(),
@@ -73,6 +74,7 @@ fn test_miner_with_schedule_pacemaker() {
             TxPoolRef,
             ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
+            DummyHeader,
         >::launch(
             config.clone(),
             bus.clone(),
@@ -157,6 +159,7 @@ fn test_miner_with_ondemand_pacemaker() {
             TxPoolRef,
             ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
+            DummyHeader,
         >::launch(
             config.clone(),
             bus.clone(),

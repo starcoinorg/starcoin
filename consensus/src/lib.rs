@@ -13,16 +13,17 @@ use types::block::{Block, BlockHeader, BlockTemplate};
 pub mod argon_consensus;
 pub mod difficult;
 pub mod dummy;
-pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin {}
 
-pub trait Consensus: std::marker::Unpin {
+pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin + Clone {}
+
+pub trait Consensus: std::marker::Unpin + Clone {
     fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8>;
     fn verify_header(
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,
         header: &BlockHeader,
     ) -> Result<()>;
-    /// Construct block with BlockTemplate
+    /// Construct block with BlockTemplate, Only for test
     fn create_block(
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,

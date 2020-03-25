@@ -24,6 +24,7 @@ use vm_runtime::{
     common_transactions::{create_account_txn_send_with_association_account, peer_to_peer_txn},
 };
 
+#[derive(Clone)]
 pub struct Executor {
     config: VMConfig,
 }

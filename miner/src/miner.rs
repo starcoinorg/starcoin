@@ -5,24 +5,28 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
-use consensus::{argon_consensus, difficult, dummy::DummyHeader, Consensus};
+use consensus::{argon_consensus, difficult, dummy::DummyHeader, Consensus, ConsensusHeader};
+use crypto::HashValue;
 use futures::channel::oneshot;
 use logger::prelude::*;
 use std::convert::TryFrom;
+use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
-
-use crypto::HashValue;
 use traits::ChainReader;
 use types::{
     block::BlockTemplate, system_events::SystemEvents, transaction::SignedUserTransaction,
 };
 
 #[derive(Clone)]
-pub struct Miner {
+pub struct Miner<H>
+where
+    H: ConsensusHeader + Sync + Send + 'static + Clone,
+{
     state: Arc<Mutex<Option<MineCtx>>>,
     bus: Addr<BusActor>,
     config: Arc<NodeConfig>,
+    phantom_h: PhantomData<H>,
 }
 
 #[derive(Clone)]
@@ -68,12 +72,16 @@ where
     Ok(())
 }
 
-impl Miner {
-    pub fn new(bus: Addr<BusActor>, config: Arc<NodeConfig>) -> Miner {
+impl<H> Miner<H>
+where
+    H: ConsensusHeader + Sync + Send + 'static + Clone,
+{
+    pub fn new(bus: Addr<BusActor>, config: Arc<NodeConfig>) -> Miner<H> {
         Self {
             state: Arc::new(Mutex::new(None)),
             bus,
             config,
+            phantom_h: PhantomData,
         }
     }
     pub fn set_mint_job(&mut self, t: MineCtx) {
@@ -96,7 +104,10 @@ impl Miner {
         let state = self.state.lock().unwrap();
         let block_template = state.as_ref().unwrap().block_template.clone();
 
-        let consensus_header = argon_consensus::ArgonConsensusHeader::try_from(payload).unwrap();
+        let consensus_header = match H::try_from(payload) {
+            Ok(header) => header,
+            _ => panic!("failed to parse header"),
+        };
 
         let block = block_template.into_block(consensus_header);
         // notify chain mined block

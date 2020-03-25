@@ -14,6 +14,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
 
+#[derive(Clone, Debug)]
 pub struct DummyHeader {}
 
 impl ConsensusHeader for DummyHeader {}
@@ -31,6 +32,7 @@ impl Into<Vec<u8>> for DummyHeader {
         vec![]
     }
 }
+
 #[derive(Clone)]
 pub struct DummyConsensus {}
 

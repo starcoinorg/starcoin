@@ -128,6 +128,7 @@ fn test_network_actor() {
             TxPoolRef,
             ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
+            consensus::dummy::DummyHeader,
         >::launch(
             node_config_1.clone(),
             bus_1.clone(),
@@ -285,6 +286,7 @@ fn test_network_actor_rpc() {
             TxPoolRef,
             ChainActorRef<MockExecutor, DummyConsensus>,
             StarcoinStorage,
+            consensus::dummy::DummyHeader,
         >::launch(
             node_config_1.clone(),
             bus_1.clone(),

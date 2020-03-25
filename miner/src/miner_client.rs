@@ -4,6 +4,7 @@ use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
 use byteorder::{LittleEndian, WriteBytesExt};
 use futures::channel::mpsc;
 use jsonrpc_core::{MethodCall, Params};
+use logger::prelude::*;
 use rand::Rng;
 use serde_json;
 use std::{net::SocketAddr, sync::Arc};
@@ -103,21 +104,21 @@ impl MinerClient {
                 .await
                 .unwrap();
             // todo::process auth response
-            println!(
-                "{:?}",
+            info!(
+                "Reveive miner auth response: {:?}",
                 String::from_utf8(auth_response).expect("bad auth resp")
             );
             let mut lines = buf_reader.lines();
             while let Some(line) = lines.next().await {
                 let line = line.unwrap();
-                println!("the job:{}", line.clone());
+                info!("Receive the mint job:{}", line.clone());
                 let processed = MinerClient::process_job(line);
                 if processed.is_err() {
                     continue;
                 }
                 let nonce = processed.unwrap();
                 tx.unbounded_send(nonce).unwrap();
-                println!("process nonce:{:o}", nonce);
+                info!("Process nonce:{:o}", nonce);
             }
         };
         let reader_handle = task::spawn(reader_future);
@@ -125,7 +126,7 @@ impl MinerClient {
         let writer_future = async move {
             let mut stream = &*writer_arc_clone;
             while let Some(msg) = rx.next().await {
-                println!("submit nonce is {}", msg);
+                info!("Submit nonce is {}", msg);
                 let request = MinerClient::submit_job_request(msg);
                 stream.write_all(&request).await.unwrap();
             }
@@ -146,6 +147,7 @@ mod test {
     use actix_rt::Runtime;
     use bus::BusActor;
     use config::NodeConfig;
+    use consensus::argon_consensus::ArgonConsensusHeader;
     use futures_timer::Delay;
     use sc_stratum::{PushWorkHandler, Stratum};
     use std::sync::Arc;
@@ -153,8 +155,8 @@ mod test {
     use tokio;
     use types::block::{Block, BlockHeader, BlockTemplate};
     async fn prepare() -> Result<()> {
-        let mut conf = Arc::new(NodeConfig::random_for_test());
-        let mut miner = Miner::new(BusActor::launch(), conf);
+        let conf = Arc::new(NodeConfig::random_for_test());
+        let mut miner = Miner::<ArgonConsensusHeader>::new(BusActor::launch(), conf);
         let stratum = {
             let addr = "127.0.0.1:9000".parse().unwrap();
             let dispatcher = Arc::new(StratumManager::new(miner.clone()));
@@ -168,7 +170,7 @@ mod test {
         };
         Delay::new(Duration::from_millis(3000)).await;
         miner.set_mint_job(mine_ctx);
-        for i in 1..5 {
+        loop {
             stratum.push_work_all(miner.get_mint_job()).unwrap();
             Delay::new(Duration::from_millis(500)).await;
         }
@@ -177,6 +179,7 @@ mod test {
 
     #[test]
     fn test_mine() {
+        ::logger::init_for_test();
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
         let local = tokio::task::LocalSet::new();
         let fut = actix::System::run_in_tokio("test", &local);

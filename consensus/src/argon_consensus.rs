@@ -14,6 +14,7 @@ use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
 use types::{H256, U256};
 
+#[derive(Clone, Debug)]
 pub struct ArgonConsensusHeader {
     nonce: u64,
 }
@@ -36,6 +37,7 @@ impl Into<Vec<u8>> for ArgonConsensusHeader {
     }
 }
 
+#[derive(Clone)]
 pub struct ArgonConsensus {}
 
 impl Consensus for ArgonConsensus {
