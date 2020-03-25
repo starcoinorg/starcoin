@@ -6,8 +6,9 @@ use config::VMConfig;
 use crypto::HashValue;
 use traits::ChainState;
 use types::{
+    account_address::AccountAddress,
     state_set::ChainStateSet,
-    transaction::{SignedUserTransaction, Transaction, TransactionOutput},
+    transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
 
@@ -32,4 +33,20 @@ pub trait TransactionExecutor: std::marker::Unpin + Clone {
         chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus>;
+
+    fn build_mint_txn(
+        addr: AccountAddress,
+        auth_key_prefix: Vec<u8>,
+        seq_num: u64,
+        amount: u64,
+    ) -> Transaction;
+
+    fn build_transfer_txn(
+        sender: AccountAddress,
+        sender_auth_key_prefix: Vec<u8>,
+        receiver: AccountAddress,
+        receiver_auth_key_prefix: Vec<u8>,
+        seq_num: u64,
+        amount: u64,
+    ) -> RawUserTransaction;
 }
