@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    chain_state::StateStore, transaction_helper::TransactionHelper,
+    chain_state::StateStore, system_module_names::*, transaction_helper::TransactionHelper,
     transaction_helper::VerifiedTranscationPayload,
 };
 use config::VMConfig;
 use libra_state_view::StateView;
 use libra_types::{
+    account_address::AccountAddress as LibraAccountAddress,
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
     },
@@ -24,8 +25,15 @@ use move_vm_types::chain_state::ChainState as LibraChainState;
 use move_vm_types::values::Value;
 use std::sync::Arc;
 
+use crypto::ed25519::Ed25519Signature;
 use once_cell::sync::Lazy;
+use std::collections::BTreeMap;
+use std::convert::TryInto;
 use types::{
+    access_path::AccessPath,
+    account_config,
+    account_config::AccountResource,
+    block_metadata::BlockMetadata,
     transaction::{
         SignatureCheckedTransaction, Transaction, TransactionArgument, TransactionOutput,
         TransactionPayload, TransactionStatus,
@@ -156,6 +164,50 @@ impl StarcoinVM {
         output
     }
 
+    fn process_block_metadata(
+        &self,
+        remote_cache: &mut BlockDataCache<'_>,
+        block_metadata: BlockMetadata,
+    ) -> VMResult<LibraTransactionOutput> {
+        let mut txn_data = TransactionMetadata::default();
+        txn_data.sender = account_config::core_code_address().into();
+        txn_data.max_gas_amount = GasUnits::new(std::u64::MAX);
+
+        let mut interpreter_context =
+            TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
+        let gas_schedule = CostTable::zero();
+
+        if let Ok((id, timestamp, author)) = block_metadata.into_inner() {
+            let previous_vote: BTreeMap<LibraAccountAddress, Ed25519Signature> = BTreeMap::new();
+            let vote_maps = scs::to_bytes(&previous_vote).unwrap();
+            let args = vec![
+                Value::u64(timestamp),
+                Value::vector_u8(id.into_inner()),
+                Value::vector_u8(vote_maps),
+                Value::address(author.into()),
+            ];
+            self.move_vm.execute_function(
+                &LIBRA_BLOCK_MODULE,
+                &BLOCK_PROLOGUE,
+                &gas_schedule,
+                &mut interpreter_context,
+                &txn_data,
+                args,
+            )?
+        } else {
+            return Err(LibraVMStatus::new(LibraStatusCode::MALFORMED));
+        };
+        get_transaction_output(
+            &mut interpreter_context,
+            &txn_data,
+            LibraVMStatus::new(LibraStatusCode::EXECUTED),
+        )
+        .map(|output| {
+            remote_cache.push_write_set(output.write_set());
+            output
+        })
+    }
+
     pub fn execute_transaction(
         &mut self,
         chain_state: &dyn traits::ChainState,
@@ -205,28 +257,38 @@ impl StarcoinVM {
                 output
             }
             Transaction::BlockMetadata(block_metadata) => {
-                //                let (_id, _timestamp, author) = block_metadata.into_inner().unwrap();
-                //                let access_path = AccessPath::new_for_account(author);
-                //                let account_resource: AccountResource = state_store
-                //                    .get_from_statedb(&access_path)
-                //                    .and_then(|blob| match blob {
-                //                        Some(blob) => Ok(blob),
-                //                        None => {
-                //                            state_store.create_account(author)?;
-                //                            Ok(state_store
-                //                                .get_from_statedb(&access_path)?
-                //                                .expect("account resource must exist."))
-                //                        }
-                //                    })
-                //                    .and_then(|blob| blob.try_into())?;
-                //
-                //                let new_account_resource = AccountResource::new(
-                //                    account_resource.balance() + 50_00000000,
-                //                    account_resource.sequence_number(),
-                //                    account_resource.authentication_key().clone(),
-                //                );
-                //                state_store.set(access_path, new_account_resource.try_into()?)?;
+                let (_id, _timestamp, author) = block_metadata.into_inner().unwrap();
+                let access_path = AccessPath::new_for_account(author);
+                let account_resource: AccountResource = state_store
+                    .get_from_statedb(&access_path)
+                    .and_then(|blob| match blob {
+                        Some(blob) => Ok(blob),
+                        None => {
+                            state_store.create_account(author).unwrap();
+                            Ok(state_store
+                                .get_from_statedb(&access_path)
+                                .unwrap()
+                                .expect("account resource must exist."))
+                        }
+                    })
+                    .and_then(|blob| blob.try_into())
+                    .unwrap();
+
+                let new_account_resource = AccountResource::new(
+                    account_resource.balance() + 50_00000000,
+                    account_resource.sequence_number(),
+                    account_resource.authentication_key().clone(),
+                );
+                state_store
+                    .set(access_path, new_account_resource.try_into().unwrap())
+                    .unwrap();
                 TransactionOutput::new(vec![], 0, KEEP_STATUS.clone())
+
+                //                let result = self.process_block_metadata(&mut data_cache, block_metadata).unwrap();
+                //                if let LibraTransactionStatus::Keep(_) = result.status() {
+                //                    state_store.add_write_set(result.write_set())
+                //                };
+                //                TransactionHelper::to_starcoin_transaction_output(result)
             }
             Transaction::StateSet(state_set) => {
                 let result_status = match chain_state.apply(state_set) {
