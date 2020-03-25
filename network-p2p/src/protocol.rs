@@ -1,6 +1,7 @@
 pub mod event;
 pub mod generic_proto;
 pub mod message;
+pub mod rpc_handle;
 pub mod util;
 
 use crate::config::ProtocolId;
