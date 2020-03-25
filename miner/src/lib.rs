@@ -212,14 +212,16 @@ where
                 let job = miner.get_mint_job();
                 info!("Push job to worker{:?}", job);
                 stratum.push_work_all(job).unwrap();
-                /*match miner::mint::<C>(config, txns, &block_chain, bus) {
-                    Err(e) => {
-                        error!("mint block err: {:?}", e);
+                if config.miner.dev_mode {
+                    match miner::mint::<C>(config, txns, &block_chain, bus) {
+                        Err(e) => {
+                            error!("mint block err: {:?}", e);
+                        }
+                        Ok(_) => {
+                            info!("mint block success.");
+                        }
                     }
-                    Ok(_) => {
-                        info!("mint block success.");
-                    }
-                };*/
+                };
             });
         }
         .into_actor(self);

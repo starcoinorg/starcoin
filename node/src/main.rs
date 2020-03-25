@@ -70,7 +70,6 @@ where
         }
 
         let node_config = Arc::new(node_config.unwrap());
-
         let bus = BusActor::launch();
         let cache_storage = Arc::new(CacheStorage::new());
         let db_storage = Arc::new(DBStorage::new(node_config.storage.clone().dir()));

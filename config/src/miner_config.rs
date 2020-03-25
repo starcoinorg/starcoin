@@ -10,6 +10,7 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MinerConfig {
+    pub dev_mode: bool,
     pub stratum_server: SocketAddr,
     pub pacemaker_strategy: PacemakerStrategy,
 }
@@ -25,6 +26,7 @@ pub enum PacemakerStrategy {
 impl Default for MinerConfig {
     fn default() -> Self {
         Self {
+            dev_mode: false,
             stratum_server: "127.0.0.1:9000".parse::<SocketAddr>().unwrap(),
             pacemaker_strategy: PacemakerStrategy::Schedule,
         }
@@ -34,6 +36,7 @@ impl Default for MinerConfig {
 impl MinerConfig {
     pub fn random_for_test() -> Self {
         Self {
+            dev_mode: true,
             stratum_server: format!("127.0.0.1:{}", get_available_port())
                 .parse::<SocketAddr>()
                 .unwrap(),
