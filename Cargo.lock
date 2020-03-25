@@ -5893,10 +5893,12 @@ name = "starcoin-storage"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "atomic_refcell",
  "byteorder 1.3.4",
  "chrono",
  "forkable-jellyfish-merkle",
  "libra-temppath",
+ "lru",
  "rocksdb",
  "serde",
  "starcoin-accumulator",
