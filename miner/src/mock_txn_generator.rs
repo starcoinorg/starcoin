@@ -1,12 +1,10 @@
 use anyhow::Result;
 use crypto::ed25519::*;
 use crypto::test_utils::KeyPair;
-use executor::mock_executor::mock_transfer_txn_with_seq_number;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use rand;
 use rand::{Rng, SeedableRng};
-use std::convert::TryInto;
 use traits::ChainStateReader;
 use types::{
     access_path::AccessPath, account_address::AccountAddress, account_address::AuthenticationKey,
@@ -48,7 +46,7 @@ impl MockTxnGenerator {
         let ap = AccessPath::new_for_account(account_address);
         let account_resource: Option<AccountResource> = match state_db.get(&ap)? {
             None => None,
-            Some(b) => Some(b.try_into()?),
+            Some(b) => Some(AccountResource::make_from(&b)?),
         };
         debug!(
             "state: address:{},balance:{:?},seq:{:?}",
