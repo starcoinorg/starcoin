@@ -102,8 +102,8 @@ impl TransactionExecutor for Executor {
             sender_auth_key_prefix,
             receiver,
             receiver_auth_key_prefix,
-            seq_num,
             amount,
+            seq_num,
         )
     }
 }
