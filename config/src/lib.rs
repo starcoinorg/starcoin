@@ -31,6 +31,19 @@ use std::io::Read;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "starcoin", about = "Starcoin")]
+pub struct StarcoinOpt {
+    #[structopt(short = "d", long, parse(from_os_str))]
+    /// Path to data dir
+    pub data_dir: Option<PathBuf>,
+
+    #[structopt(long)]
+    /// Start in dev mode
+    pub dev: bool,
+}
 
 /// Default data dir
 pub static DEFAULT_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
@@ -47,6 +60,22 @@ where
     NodeConfig::load(data_dir)
 }
 
+pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
+    let data_dir: PathBuf = match opt.data_dir.clone() {
+        Some(p) => p,
+        None => {
+            if opt.dev {
+                env::temp_dir()
+            } else {
+                DEFAULT_DATA_DIR.to_path_buf()
+            }
+        }
+    };
+    //TODO handle dev mode
+    load_config_from_dir(&data_dir)
+}
+
+//TODO rename NodeConfig
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
