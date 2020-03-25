@@ -6,6 +6,7 @@ use bus::BusActor;
 use logger::prelude::*;
 use statedb::ChainStateDB;
 use std::convert::TryInto;
+use std::marker::PhantomData;
 use std::sync::Arc;
 use storage::BlockChainStore;
 use traits::TxPoolAsyncService;
@@ -19,18 +20,20 @@ use types::transaction::{SignedUserTransaction, Transaction};
 pub(crate) struct GenTxEvent;
 
 /// generate transaction just for test.
-pub(crate) struct TxFactoryActor<P, TStorage> {
+pub(crate) struct TxFactoryActor<P, TStorage, TExecutor> {
     txpool: P,
     storage: Arc<TStorage>,
     mock_txn_generator: MockTxnGenerator,
     bus: Addr<BusActor>,
     best_block_header: Option<BlockHeader>,
+    phantom: PhantomData<TExecutor>,
 }
 
-impl<P, TStorage> TxFactoryActor<P, TStorage>
+impl<P, TStorage, TExecutor> TxFactoryActor<P, TStorage, TExecutor>
 where
     P: TxPoolAsyncService + 'static,
     TStorage: BlockChainStore + Sync + Send + 'static,
+    TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     pub fn launch(txpool: P, storage: Arc<TStorage>, bus: Addr<BusActor>) -> Result<Addr<Self>> {
         let actor = TxFactoryActor {
@@ -38,7 +41,8 @@ where
             storage,
             bus,
             best_block_header: None,
-            mock_txn_generator: MockTxnGenerator::new(account_config::association_address()),
+            mock_txn_generator: MockTxnGenerator::new(),
+            phantom: PhantomData,
         };
         Ok(actor.start())
     }
@@ -53,15 +57,16 @@ where
         let state_db = ChainStateDB::new(self.storage.clone(), Some(lastest_state_root));
 
         self.mock_txn_generator
-            .generate_mock_txn(&state_db)
+            .generate_mock_txn::<TExecutor>(&state_db)
             .map(|t| Some(t))
     }
 }
 
-impl<P, TStorage> Actor for TxFactoryActor<P, TStorage>
+impl<P, TStorage, TExecutor> Actor for TxFactoryActor<P, TStorage, TExecutor>
 where
     P: TxPoolAsyncService + 'static,
     TStorage: BlockChainStore + Sync + Send + 'static,
+    TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     type Context = Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -84,10 +89,11 @@ where
     }
 }
 
-impl<P, TStorage> actix::Handler<SystemEvents> for TxFactoryActor<P, TStorage>
+impl<P, TStorage, TExecutor> actix::Handler<SystemEvents> for TxFactoryActor<P, TStorage, TExecutor>
 where
     P: TxPoolAsyncService + 'static,
     TStorage: BlockChainStore + Sync + Send + 'static,
+    TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     type Result = ();
 
@@ -106,10 +112,11 @@ where
     }
 }
 
-impl<P, TStorage> Handler<GenTxEvent> for TxFactoryActor<P, TStorage>
+impl<P, TStorage, TExecutor> Handler<GenTxEvent> for TxFactoryActor<P, TStorage, TExecutor>
 where
     P: TxPoolAsyncService + 'static,
     TStorage: BlockChainStore + Sync + Send + 'static,
+    TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
