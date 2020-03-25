@@ -49,6 +49,7 @@ use log::{error, info, trace, warn};
 use parking_lot::Mutex;
 use peerset::{PeersetHandle, ReputationChange};
 
+use crate::behaviour::RpcRequest;
 use crate::config::{Params, TransportConfig};
 use crate::net_error::Error;
 use crate::network_state::{
@@ -259,6 +260,7 @@ impl NetworkWorker {
             service,
             from_worker,
             event_streams: Vec::new(),
+            rpc_streams: Vec::new(),
         })
     }
 
@@ -647,6 +649,7 @@ pub struct NetworkWorker {
     from_worker: mpsc::UnboundedReceiver<ServiceToWorkerMsg>,
     /// Senders for events that happen on the network.
     event_streams: Vec<mpsc::UnboundedSender<Event>>,
+    rpc_streams: Vec<mpsc::UnboundedSender<RpcRequest>>,
 }
 
 impl Future for NetworkWorker {
@@ -724,6 +727,9 @@ impl Future for NetworkWorker {
                 Poll::Pending => break,
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Event(ev))) => this
                     .event_streams
+                    .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Request(ev))) => this
+                    .rpc_streams
                     .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
                 Poll::Ready(SwarmEvent::Connected(peer_id)) => {
                     trace!(target: "sub-libp2p", "Libp2p => Connected({:?})", peer_id)

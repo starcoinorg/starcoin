@@ -131,13 +131,13 @@ struct RequestWrapper {
     /// Remaining retries.
     retries: usize,
     /// The actual request.
-    request: Bytes,
+    request: Vec<u8>,
     /// Peer information, e.g. `PeerId`.
     peer: PeerId,
 
     id: u128,
 
-    sender: oneshot::Sender<Result<Bytes, Error>>,
+    sender: oneshot::Sender<Result<Vec<u8>, Error>>,
 }
 
 /// message from peer
@@ -154,7 +154,7 @@ pub struct Response {
     data: Vec<u8>,
 }
 
-fn send_reply(response: Result<Bytes, Error>, request: RequestWrapper) {
+fn send_reply(response: Result<Vec<u8>, Error>, request: RequestWrapper) {
     let _ = request.sender.send(response);
 }
 
@@ -306,6 +306,28 @@ impl RpcHandler {
         }
         self.peers.remove(peer);
     }
+
+    /// Issue a new light client request.
+    pub fn request(
+        &mut self,
+        peer: PeerId,
+        data: Vec<u8>,
+    ) -> Result<oneshot::Receiver<Result<Vec<u8>, Error>>, Error> {
+        if self.pending_requests.len() >= self.config.max_pending_requests {
+            return Err(Error::TooManyRequests);
+        }
+        let (tx, rx) = oneshot::channel();
+        let rw = RequestWrapper {
+            id: get_id(),
+            timestamp: Instant::now(),
+            retries: 3,
+            request: data,
+            peer,
+            sender: tx,
+        };
+        self.pending_requests.push_back(rw);
+        Ok(rx)
+    }
 }
 
 impl NetworkBehaviour for RpcHandler {
@@ -352,11 +374,16 @@ impl NetworkBehaviour for RpcHandler {
     fn inject_node_event(&mut self, peer: PeerId, event: Event<NegotiatedSubstream>) {
         match event {
             // An incoming request from remote has been received.
-            Event::Request(request, mut stream) => {
+            Event::Request(request, stream) => {
                 log::trace!("incoming request from {}", peer);
             }
             // A response to one of our own requests has been received.
-            Event::Response(response) => {}
+            Event::Response(response) => {
+                let id = response.id;
+                if let Some(rw) = self.outstanding.remove(&id) {
+                    send_reply(Ok(response.data), rw);
+                }
+            }
         }
     }
 
