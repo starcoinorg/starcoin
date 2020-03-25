@@ -11,6 +11,8 @@ use structopt::StructOpt;
 struct GlobalOpts {
     #[structopt(short = "t")]
     test: bool,
+    #[structopt(short = "c", default_value = "0")]
+    counter: usize,
 }
 
 #[derive(Debug, StructOpt)]
@@ -30,8 +32,8 @@ struct AlphaSub1Opts {
 struct Counter(AtomicUsize);
 
 impl Counter {
-    pub fn new() -> Self {
-        Self(AtomicUsize::default())
+    pub fn new(init: usize) -> Self {
+        Self(AtomicUsize::new(init))
     }
 
     pub fn incr(&self) -> usize {
@@ -95,11 +97,12 @@ impl CommandAction for BetaSub1Command {
 }
 
 fn main() -> Result<()> {
-    let state = Counter::new();
-
-    let context = CmdContext::new(state);
+    let context =
+        CmdContext::<Counter, GlobalOpts>::new(Box::new(|global_opt| -> Result<Counter> {
+            Ok(Counter::new(global_opt.counter))
+        }));
     context
-        .add_command(
+        .command(
             Command::with_name("alpha").subcommand(Command::with_action_fn(Box::new(
                 |ctx: &ExecContext<Counter, GlobalOpts, AlphaSub1Opts>| -> Result<()> {
                     println!(
@@ -112,7 +115,7 @@ fn main() -> Result<()> {
                 },
             ))),
         )
-        .add_command(
+        .command(
             BetaCommand {}
                 .into_cmd()
                 .subcommand(BetaSub1Command {}.into_cmd()),
