@@ -36,7 +36,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "starcoin", about = "Starcoin")]
 pub struct StarcoinOpt {
-    #[structopt(short = "d", long, parse(from_os_str))]
+    #[structopt(long, parse(from_os_str))]
     /// Path to data dir
     pub data_dir: Option<PathBuf>,
 
