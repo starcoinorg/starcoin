@@ -4,24 +4,24 @@
 use crate::batch::WriteBatch;
 use crate::storage::{InnerRepository, WriteOp};
 use anyhow::{Error, Result};
-use atomic_refcell::AtomicRefCell;
 use lru::LruCache;
+use parking_lot::Mutex;
 
 const LRU_CACHE_DEFAULT_SIZE: usize = 65535;
 
 pub struct CacheStorage {
-    cache: AtomicRefCell<LruCache<Vec<u8>, Vec<u8>>>,
+    cache: Mutex<LruCache<Vec<u8>, Vec<u8>>>,
 }
 
 impl CacheStorage {
     pub fn new() -> Self {
         CacheStorage {
-            cache: AtomicRefCell::new(LruCache::new(LRU_CACHE_DEFAULT_SIZE)),
+            cache: Mutex::new(LruCache::new(LRU_CACHE_DEFAULT_SIZE)),
         }
     }
     pub fn new_with_capacity(size: usize) -> Self {
         CacheStorage {
-            cache: AtomicRefCell::new(LruCache::new(size)),
+            cache: Mutex::new(LruCache::new(size)),
         }
     }
 }
@@ -29,24 +29,24 @@ impl CacheStorage {
 impl InnerRepository for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         let compose = compose_key(prefix_name.to_string(), key)?;
-        Ok(self.cache.borrow_mut().get(&compose).map(|v| v.to_vec()))
+        Ok(self.cache.lock().get(&compose).map(|v| v.to_vec()))
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         &self
             .cache
-            .borrow_mut()
+            .lock()
             .put(compose_key(prefix_name.to_string(), key)?, value);
         Ok(())
     }
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
         let compose = compose_key(prefix_name.to_string(), key)?;
-        Ok(self.cache.borrow_mut().contains(&compose))
+        Ok(self.cache.lock().contains(&compose))
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         let compose = compose_key(prefix_name.to_string(), key)?;
-        self.cache.borrow_mut().pop(&compose).unwrap();
+        self.cache.lock().pop(&compose).unwrap();
         Ok(())
     }
 
@@ -63,12 +63,12 @@ impl InnerRepository for CacheStorage {
     }
 
     fn get_len(&self) -> Result<u64, Error> {
-        Ok(self.cache.borrow_mut().len() as u64)
+        Ok(self.cache.lock().len() as u64)
     }
 
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         let mut all_keys = vec![];
-        for (key, _) in self.cache.borrow_mut().iter() {
+        for (key, _) in self.cache.lock().iter() {
             all_keys.push(key.to_vec());
         }
         Ok(all_keys)
