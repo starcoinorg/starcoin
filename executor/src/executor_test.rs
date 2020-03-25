@@ -232,3 +232,32 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
 
     Ok(())
 }
+
+#[stest::test]
+fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
+    let config = VMConfig::default();
+    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let storage = MockStateNodeStore::new();
+    let chain_state = ChainStateDB::new(Arc::new(storage), None);
+
+    chain_state
+        .apply(state_set)
+        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 1, // fix me
+        1_000_000,
+    ));
+    let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+
+    let account2 = Account::new();
+
+    let raw_txn = Executor::build_transfer_txn(account1.address().clone(), account1.auth_key_prefix(), account2.address().clone(), account2.auth_key_prefix(),1, 1000);
+    let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
+    let output = Executor::execute_transaction(&config, &chain_state, txn2).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
+
+    Ok(())
+}
