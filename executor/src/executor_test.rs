@@ -49,7 +49,12 @@ fn test_execute_mint_txn() -> Result<()> {
     let receiver_account_address = account.address().clone();
     chain_state.create_account(AccountAddress::default())?;
     chain_state.create_account(receiver_account_address)?;
-    let txn = MockExecutor::build_mint_txn(account.address().clone(), account.auth_key_prefix(), 1, 1000);
+    let txn = MockExecutor::build_mint_txn(
+        account.address().clone(),
+        account.auth_key_prefix(),
+        1,
+        1000,
+    );
 
     let config = VMConfig::default();
     let output = MockExecutor::execute_transaction(&config, &chain_state, txn).unwrap();
@@ -226,7 +231,12 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
 
     let account = Account::new();
 
-    let txn = Executor::build_mint_txn(account.address().clone(), account.auth_key_prefix(), 1, 1000);
+    let txn = Executor::build_mint_txn(
+        account.address().clone(),
+        account.auth_key_prefix(),
+        1,
+        1000,
+    );
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
@@ -254,7 +264,14 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
     let account2 = Account::new();
 
-    let raw_txn = Executor::build_transfer_txn(account1.address().clone(), account1.auth_key_prefix(), account2.address().clone(), account2.auth_key_prefix(),1, 1000);
+    let raw_txn = Executor::build_transfer_txn(
+        account1.address().clone(),
+        account1.auth_key_prefix(),
+        account2.address().clone(),
+        account2.auth_key_prefix(),
+        1,
+        1000,
+    );
     let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
     let output = Executor::execute_transaction(&config, &chain_state, txn2).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
