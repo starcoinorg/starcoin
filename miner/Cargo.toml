@@ -32,11 +32,13 @@ starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumula
 sc_stratum = {path = "./stratum", package ="starcoin-stratum"}
 jsonrpc-core = "12.0.0"
 jsonrpc-tcp-server="12.0.0"
+serde_json = "1.0"
 rust-argon2 = "0.8"
 rand = { version = "0.6.5", default-features = false }
 byteorder = "1.3.1"
 libra-temppath = { package="libra-temppath",  git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
-
+futures-timer = "3.0.1"
+async-std = "1.5.0"
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}

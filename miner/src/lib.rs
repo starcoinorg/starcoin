@@ -9,7 +9,7 @@ use anyhow::Result;
 use bus::BusActor;
 use chain::BlockChain;
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::{difficult, Consensus};
+use consensus::{difficult, Consensus, ConsensusHeader};
 
 use crate::miner::MineCtx;
 use crate::tx_factory::{GenTxEvent, TxFactoryActor};
@@ -31,7 +31,7 @@ mod headblock_pacemaker;
 #[allow(dead_code)]
 mod miner;
 #[allow(dead_code)]
-mod miner_client;
+pub mod miner_client;
 mod mock_txn_generator;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
@@ -46,13 +46,14 @@ pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 #[rtype(result = "Result<()>")]
 pub struct GenerateBlockEvent {}
 
-pub struct MinerActor<C, E, P, CS, S>
+pub struct MinerActor<C, E, P, CS, S, H>
 where
     C: Consensus + Sync + Send + 'static,
     E: TransactionExecutor + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: BlockChainStore + Sync + Send + 'static,
+    H: ConsensusHeader + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -61,17 +62,18 @@ where
     phantom_c: PhantomData<C>,
     phantom_e: PhantomData<E>,
     chain: CS,
-    miner: miner::Miner,
+    miner: miner::Miner<H>,
     stratum: Arc<sc_stratum::Stratum>,
 }
 
-impl<C, E, P, CS, S> MinerActor<C, E, P, CS, S>
+impl<C, E, P, CS, S, H> MinerActor<C, E, P, CS, S, H>
 where
     C: Consensus + Sync + Send + 'static,
     E: TransactionExecutor + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: BlockChainStore + Sync + Send + 'static,
+    H: ConsensusHeader + Sync + Send + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -113,10 +115,10 @@ where
             ctx.run_interval(Duration::from_millis(1000), move |_act, _ctx| {
                 info!("miner call gen_tx.");
                 if let Err(e) = tx_factory.try_send(GenTxEvent) {
-                    warn!("fail to send gen_tx_event, err: {:?}", e);
+                    debug!("fail to send gen_tx_event, err: {:?}", e);
                 }
             });
-            let miner = miner::Miner::new(bus.clone());
+            let miner = miner::Miner::new(bus.clone(), config.clone());
             let stratum = sc_stratum::Stratum::start(
                 &config.miner.stratum_server,
                 Arc::new(stratum::StratumManager::new(miner.clone())),
@@ -140,13 +142,14 @@ where
     }
 }
 
-impl<C, E, P, CS, S> Actor for MinerActor<C, E, P, CS, S>
+impl<C, E, P, CS, S, H> Actor for MinerActor<C, E, P, CS, S, H>
 where
     C: Consensus + Sync + Send + 'static,
     E: TransactionExecutor + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: BlockChainStore + Sync + Send + 'static,
+    H: ConsensusHeader + Sync + Send + 'static,
 {
     type Context = Context<Self>;
 
@@ -155,13 +158,14 @@ where
     }
 }
 
-impl<C, E, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S>
+impl<C, E, P, CS, S, H> Handler<GenerateBlockEvent> for MinerActor<C, E, P, CS, S, H>
 where
     C: Consensus + Sync + Send + 'static,
     E: TransactionExecutor + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: BlockChainStore + Sync + Send + 'static,
+    H: ConsensusHeader + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
@@ -208,15 +212,14 @@ where
                 let job = miner.get_mint_job();
                 info!("Push job to worker{:?}", job);
                 stratum.push_work_all(job).unwrap();
-
-                match miner::mint::<C>(config, txns, &block_chain, bus) {
+                /*match miner::mint::<C>(config, txns, &block_chain, bus) {
                     Err(e) => {
                         error!("mint block err: {:?}", e);
                     }
                     Ok(_) => {
                         info!("mint block success.");
                     }
-                };
+                };*/
             });
         }
         .into_actor(self);

@@ -5,6 +5,7 @@ use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus, Consensus};
 use executor::executor::mock_create_account_txn;
+use executor::executor::Executor;
 use executor::mock_executor::MockExecutor;
 use futures::channel::oneshot;
 use futures_timer::Delay;
@@ -34,7 +35,7 @@ fn gen_txs() -> Vec<SignedUserTransaction> {
     txs
 }
 
-async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<MockExecutor, DummyConsensus> {
+async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<Executor, DummyConsensus> {
     let node_config = NodeConfig::random_for_test();
     let conf = Arc::new(node_config);
     let cache_storage = Arc::new(CacheStorage::new());
@@ -42,11 +43,9 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<MockExecutor, 
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage =
         Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
-    let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
-        conf.clone(),
-        storage.clone(),
-    )
-    .unwrap();
+    let genesis =
+        Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(conf.clone(), storage.clone())
+            .unwrap();
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -57,7 +56,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<MockExecutor, 
             bus.clone(),
         )
     };
-    let chain = ChainActor::<MockExecutor, DummyConsensus>::launch(
+    let chain = ChainActor::<Executor, DummyConsensus>::launch(
         conf.clone(),
         genesis.startup_info().clone(),
         storage.clone(),
@@ -84,7 +83,7 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<MockExecutor, 
             )
             .unwrap();
             let block_chain =
-                BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
+                BlockChain::<Executor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
                     conf.clone(),
                     collection
                         .clone()
@@ -166,10 +165,8 @@ async fn test_chain_apply() -> Result<()> {
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage =
         Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
-    let genesis = Genesis::new::<MockExecutor, DummyConsensus, StarcoinStorage>(
-        config.clone(),
-        storage.clone(),
-    )?;
+    let genesis =
+        Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(config.clone(), storage.clone())?;
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -186,14 +183,13 @@ async fn test_chain_apply() -> Result<()> {
         storage.clone(),
         txpool.clone(),
     )?;
-    let mut block_chain =
-        BlockChain::<MockExecutor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
-            config.clone(),
-            genesis.startup_info().head.clone(),
-            storage,
-            txpool,
-            collection,
-        )?;
+    let mut block_chain = BlockChain::<Executor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
+        config.clone(),
+        genesis.startup_info().head.clone(),
+        storage,
+        txpool,
+        collection,
+    )?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let difficulty = difficult::get_next_work_required(&block_chain);
