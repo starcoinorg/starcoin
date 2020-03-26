@@ -648,47 +648,17 @@ checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 [[package]]
 name = "bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "anyhow",
- "bytecode-verifier 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "codespan 0.2.1",
- "codespan-reporting 0.2.1",
- "ir-to-bytecode-syntax 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "serde",
- "serde_json",
- "structopt",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
-]
-
-[[package]]
-name = "bytecode-source-map"
-version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
- "codespan 0.8.0",
- "codespan-reporting 0.8.0",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "codespan",
+ "codespan-reporting",
+ "libra-types",
  "move-core-types",
  "move-ir-types",
  "serde",
  "serde_json",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
-]
-
-[[package]]
-name = "bytecode-verifier"
-version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "anyhow",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "mirai-annotations",
- "petgraph 0.4.13",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "vm-runtime-types",
+ "vm",
 ]
 
 [[package]]
@@ -698,11 +668,11 @@ source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35
 dependencies = [
  "anyhow",
  "borrow-graph",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
  "mirai-annotations",
  "move-vm-types",
- "petgraph 0.5.0",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "petgraph",
+ "vm",
 ]
 
 [[package]]
@@ -887,18 +857,6 @@ dependencies = [
 
 [[package]]
 name = "codespan"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "004def512a9848b23a68ed110927d102b0e6d9f3dc732e28570879afde051f8c"
-dependencies = [
- "failure",
- "itertools 0.8.2",
- "serde",
- "serde_derive",
-]
-
-[[package]]
-name = "codespan"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52899426b69706219a1aaee2e95868fd01a0bd8006bb163f069578a0af5b5bb2"
@@ -909,21 +867,11 @@ dependencies = [
 
 [[package]]
 name = "codespan-reporting"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab081a14ab8f9598ce826890fe896d0addee68c7a58ab49008369ccbb51510a8"
-dependencies = [
- "codespan 0.2.1",
- "termcolor",
-]
-
-[[package]]
-name = "codespan-reporting"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "600c3317d4705222ff820139aaa76a3a208024ffc41f894da565a4c3b949d4c9"
 dependencies = [
- "codespan 0.8.0",
+ "codespan",
  "termcolor",
  "unicode-width",
 ]
@@ -931,17 +879,18 @@ dependencies = [
 [[package]]
 name = "compiler"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
+source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
- "bytecode-source-map 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "bytecode-verifier 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "ir-to-bytecode 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
+ "bytecode-source-map",
+ "bytecode-verifier",
+ "ir-to-bytecode",
+ "libra-types",
+ "move-ir-types",
  "serde_json",
- "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
+ "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
  "structopt",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
+ "vm",
 ]
 
 [[package]]
@@ -1496,12 +1445,6 @@ dependencies = [
  "rustc-hex 2.1.0",
  "static_assertions 0.2.5",
 ]
-
-[[package]]
-name = "fixedbitset"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86d4de0081402f5e88cdac65c8dcdcc73118c1a7a465e2a05f0da05843a8ea33"
 
 [[package]]
 name = "fixedbitset"
@@ -2204,48 +2147,19 @@ checksum = "a859057dc563d1388c1e816f98a1892629075fc046ed06e845b883bb8b2916fb"
 [[package]]
 name = "ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "anyhow",
- "bytecode-source-map 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "codespan 0.2.1",
- "codespan-reporting 0.2.1",
- "ir-to-bytecode-syntax 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "log 0.4.8",
- "thiserror",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
-]
-
-[[package]]
-name = "ir-to-bytecode"
-version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
- "bytecode-source-map 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "codespan 0.8.0",
- "codespan-reporting 0.8.0",
- "ir-to-bytecode-syntax 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "bytecode-source-map",
+ "codespan",
+ "codespan-reporting",
+ "ir-to-bytecode-syntax",
+ "libra-types",
  "log 0.4.8",
  "move-core-types",
  "move-ir-types",
  "thiserror",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
-]
-
-[[package]]
-name = "ir-to-bytecode-syntax"
-version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "anyhow",
- "codespan 0.2.1",
- "hex 0.3.2",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "once_cell",
- "regex",
+ "vm",
 ]
 
 [[package]]
@@ -2254,9 +2168,9 @@ version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
- "codespan 0.8.0",
+ "codespan",
  "hex 0.4.2",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
  "move-core-types",
  "move-ir-types",
 ]
@@ -3350,48 +3264,10 @@ dependencies = [
 [[package]]
 name = "libra-canonical-serialization"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "libra-canonical-serialization"
-version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "serde",
  "thiserror",
-]
-
-[[package]]
-name = "libra-crypto"
-version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "anyhow",
- "byteorder 1.3.4",
- "bytes 0.5.4",
- "curve25519-dalek 1.2.3 (git+https://github.com/calibra/curve25519-dalek.git?branch=fiat)",
- "digest",
- "ed25519-dalek 1.0.0-pre.1",
- "hex 0.3.2",
- "hmac",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-crypto-derive 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-nibble 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "mirai-annotations",
- "once_cell",
- "pairing",
- "rand 0.6.5",
- "serde",
- "sha2",
- "sha3",
- "thiserror",
- "threshold_crypto",
- "tiny-keccak 1.5.0",
- "x25519-dalek 0.5.2 (git+https://github.com/calibra/x25519-dalek.git?branch=fiat)",
 ]
 
 [[package]]
@@ -3407,9 +3283,9 @@ dependencies = [
  "ed25519-dalek 1.0.0-pre.1",
  "hex 0.4.2",
  "hmac",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-crypto-derive 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-nibble 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-canonical-serialization",
+ "libra-crypto-derive",
+ "libra-nibble",
  "mirai-annotations",
  "once_cell",
  "pairing",
@@ -3422,16 +3298,6 @@ dependencies = [
  "threshold_crypto",
  "tiny-keccak 2.0.1",
  "x25519-dalek 0.5.2 (git+https://github.com/calibra/x25519-dalek.git?branch=fiat)",
-]
-
-[[package]]
-name = "libra-crypto-derive"
-version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "proc-macro2 1.0.9",
- "quote 1.0.3",
- "syn 1.0.16",
 ]
 
 [[package]]
@@ -3457,14 +3323,6 @@ dependencies = [
 [[package]]
 name = "libra-nibble"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "libra-nibble"
-version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "serde",
@@ -3476,7 +3334,7 @@ version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
 ]
 
 [[package]]
@@ -3491,35 +3349,6 @@ dependencies = [
 [[package]]
 name = "libra-types"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "anyhow",
- "bech32",
- "byteorder 1.3.4",
- "bytes 0.5.4",
- "chrono",
- "hex 0.3.2",
- "itertools 0.8.2",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-crypto-derive 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "mirai-annotations",
- "num_enum",
- "once_cell",
- "parity-multiaddr 0.6.0",
- "prost",
- "prost-build",
- "radix_trie",
- "rand 0.6.5",
- "ref-cast",
- "serde",
- "thiserror",
- "tiny-keccak 1.5.0",
-]
-
-[[package]]
-name = "libra-types"
-version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
@@ -3527,9 +3356,9 @@ dependencies = [
  "chrono",
  "hex 0.4.2",
  "itertools 0.9.0",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-crypto-derive 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-canonical-serialization",
+ "libra-crypto",
+ "libra-crypto-derive",
  "mirai-annotations",
  "move-core-types",
  "once_cell",
@@ -3844,7 +3673,7 @@ version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-canonical-serialization",
  "ref-cast",
  "serde",
 ]
@@ -3855,9 +3684,9 @@ version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
- "codespan 0.8.0",
+ "codespan",
  "hex 0.4.2",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
  "move-core-types",
  "once_cell",
  "serde",
@@ -3869,20 +3698,20 @@ version = "0.0.1"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "borrow-graph",
- "bytecode-source-map 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "bytecode-verifier 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "codespan 0.8.0",
- "codespan-reporting 0.8.0",
+ "bytecode-source-map",
+ "bytecode-verifier",
+ "codespan",
+ "codespan-reporting",
  "datatest-stable",
  "difference",
  "hex 0.4.2",
- "ir-to-bytecode 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "ir-to-bytecode",
+ "libra-types",
  "move-ir-types",
- "petgraph 0.5.0",
+ "petgraph",
  "regex",
  "structopt",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "vm",
 ]
 
 [[package]]
@@ -3898,17 +3727,17 @@ name = "move-vm-runtime"
 version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
- "bytecode-verifier 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "bytecode-verifier",
+ "libra-crypto",
  "libra-logger",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
  "mirai-annotations",
  "move-core-types",
  "move-vm-cache",
  "move-vm-types",
  "once_cell",
  "rental",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "vm",
 ]
 
 [[package]]
@@ -3918,9 +3747,9 @@ source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35
 dependencies = [
  "libra-logger",
  "libra-state-view",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
  "move-vm-types",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "vm",
 ]
 
 [[package]]
@@ -3929,14 +3758,14 @@ version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "bit-vec 0.6.1",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-canonical-serialization",
+ "libra-crypto",
+ "libra-types",
  "move-core-types",
  "once_cell",
  "serde",
  "sha2",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "vm",
 ]
 
 [[package]]
@@ -4224,12 +4053,6 @@ dependencies = [
  "pkg-config",
  "vcpkg",
 ]
-
-[[package]]
-name = "ordermap"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a86ed3f5f244b372d6b1a00b72ef7f8876d0bc6a78a4c9985c53614041512063"
 
 [[package]]
 name = "owning_ref"
@@ -4553,21 +4376,11 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "petgraph"
-version = "0.4.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c3659d1ee90221741f65dd128d9998311b0e40c5d3c23a62445938214abce4f"
-dependencies = [
- "fixedbitset 0.1.9",
- "ordermap",
-]
-
-[[package]]
-name = "petgraph"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29c127eea4a29ec6c85d153c59dc1213f33ec74cead30fe4730aecc88cc1fd92"
 dependencies = [
- "fixedbitset 0.2.0",
+ "fixedbitset",
  "indexmap",
 ]
 
@@ -4750,7 +4563,7 @@ dependencies = [
  "itertools 0.8.2",
  "log 0.4.8",
  "multimap",
- "petgraph 0.5.0",
+ "petgraph",
  "prost",
  "prost-types",
  "tempfile",
@@ -5660,7 +5473,7 @@ name = "starcoin-canonical-serialization"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-canonical-serialization",
  "serde",
 ]
 
@@ -5778,7 +5591,7 @@ dependencies = [
 name = "starcoin-crypto"
 version = "0.1.0"
 dependencies = [
- "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-crypto",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto-macro",
@@ -5801,7 +5614,7 @@ dependencies = [
  "anyhow",
  "env_logger 0.7.1",
  "libra-temppath",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
  "once_cell",
  "starcoin-canonical-serialization",
  "starcoin-compiler",
@@ -6229,7 +6042,7 @@ dependencies = [
  "hex 0.3.2",
  "itertools 0.8.2",
  "libp2p 0.16.1",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
  "mirai-annotations",
  "move-core-types",
  "num_enum",
@@ -6255,10 +6068,10 @@ name = "starcoin-vm-runtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bytecode-verifier 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "bytecode-verifier",
  "env_logger 0.7.1",
  "libra-state-view",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-types",
  "move-core-types",
  "move-vm-runtime",
  "move-vm-state",
@@ -6274,7 +6087,7 @@ dependencies = [
  "starcoin-types",
  "stdlib 0.1.0",
  "stest",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "vm",
 ]
 
 [[package]]
@@ -6342,27 +6155,30 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "stdlib"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
+source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
- "bytecode-source-map 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "bytecode-verifier 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "ir-to-bytecode 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
+ "bytecode-verifier",
+ "datatest-stable",
+ "include_dir",
+ "libra-canonical-serialization",
+ "libra-types",
+ "move-lang",
  "once_cell",
+ "vm",
 ]
 
 [[package]]
 name = "stdlib"
 version = "0.1.0"
 dependencies = [
- "bytecode-verifier 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "bytecode-verifier",
  "datatest-stable",
  "include_dir",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-canonical-serialization",
+ "libra-types",
  "move-lang",
  "once_cell",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "vm",
 ]
 
 [[package]]
@@ -7205,52 +7021,20 @@ checksum = "078775d0255232fb988e6fccf26ddc9d1ac274299aaedcedce21c6f72cc533ce"
 [[package]]
 name = "vm"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "anyhow",
- "byteorder 1.3.4",
- "hex 0.3.2",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "mirai-annotations",
- "once_cell",
- "ref-cast",
- "serde",
-]
-
-[[package]]
-name = "vm"
-version = "0.1.0"
 source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
 dependencies = [
  "anyhow",
  "byteorder 1.3.4",
  "hex 0.4.2",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
+ "libra-canonical-serialization",
+ "libra-crypto",
+ "libra-types",
  "mirai-annotations",
  "move-core-types",
  "num-variants",
  "once_cell",
  "ref-cast",
  "serde",
-]
-
-[[package]]
-name = "vm-runtime-types"
-version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050#3193ec4b7afff05e9476fd923f331f18fb7f3050"
-dependencies = [
- "bit-vec 0.6.1",
- "libra-canonical-serialization 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-crypto 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "libra-types 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
- "once_cell",
- "serde",
- "sha2",
- "vm 0.1.0 (git+https://github.com/libra/libra?rev=3193ec4b7afff05e9476fd923f331f18fb7f3050)",
 ]
 
 [[package]]
