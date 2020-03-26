@@ -65,7 +65,9 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
         Some(p) => p,
         None => {
             if opt.dev {
-                env::temp_dir()
+                let tempdir = libra_temppath::TempPath::new();
+                tempdir.create_as_dir()?;
+                tempdir.path().to_path_buf()
             } else {
                 DEFAULT_DATA_DIR.to_path_buf()
             }

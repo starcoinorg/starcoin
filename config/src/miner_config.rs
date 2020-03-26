@@ -44,7 +44,7 @@ impl MinerConfig {
         }
     }
 
-    pub fn load(&mut self, data_dir: &PathBuf) -> Result<()> {
+    pub fn load(&mut self, _data_dir: &PathBuf) -> Result<()> {
         Ok(())
     }
 }

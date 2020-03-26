@@ -171,7 +171,7 @@ impl BlockStore {
         }
     }
     pub fn save(&self, block: Block) -> Result<()> {
-        println!(
+        debug!(
             "insert block:{:?}, block:{:?}",
             block.header().id(),
             block.header().parent_hash()
@@ -189,7 +189,7 @@ impl BlockStore {
         let mut key_hashes = vec![];
         for hash in self.header_store.keys().unwrap() {
             let hashval = HashValue::from_slice(hash.as_slice()).unwrap();
-            println!("header key:{}", hashval.to_hex());
+            debug!("header key:{}", hashval.to_hex());
             key_hashes.push(hashval)
         }
         Ok(key_hashes)
@@ -265,7 +265,7 @@ impl BlockStore {
         let mut vev_hash = Vec::new();
         let mut temp_block_id = block_id;
         loop {
-            println!("block_id: {}", temp_block_id.to_hex());
+            debug!("block_id: {}", temp_block_id.to_hex());
             //get header by block_id
             match self.get_block_header_by_hash(temp_block_id)? {
                 Some(header) => {
