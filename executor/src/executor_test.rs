@@ -37,18 +37,26 @@ use vm_runtime::mock_vm::{
 };
 use vm_runtime::{
     account::Account,
-    common_transactions::{create_account_txn_send_with_association_account, peer_to_peer_txn},
+    common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn},
 };
 
 #[stest::test]
 fn test_execute_mint_txn() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
-    let receiver_account_address = AccountAddress::random();
+    let account = Account::new();
+
+    let receiver_account_address = account.address().clone();
+    chain_state.create_account(AccountAddress::default())?;
     chain_state.create_account(receiver_account_address)?;
-    let txn = encode_mint_transaction(receiver_account_address, 100);
+    let txn = MockExecutor::build_mint_txn(
+        account.address().clone(),
+        account.auth_key_prefix(),
+        1,
+        1000,
+    );
+
     let config = VMConfig::default();
-    info!("invoke Executor::execute_transaction");
     let output = MockExecutor::execute_transaction(&config, &chain_state, txn).unwrap();
 
     assert_eq!(KEEP_STATUS.clone(), *output.status());
@@ -63,15 +71,10 @@ fn test_execute_transfer_txn() -> Result<()> {
     let receiver_account_address = AccountAddress::random();
     chain_state.create_account(sender_account_address)?;
     chain_state.create_account(receiver_account_address)?;
-    info!(
-        "create account: sender: {:?}, receiver: {:?}",
-        sender_account_address, receiver_account_address
-    );
     let mint_txn = encode_mint_transaction(sender_account_address, 10000);
     let transfer_txn =
         encode_transfer_transaction(sender_account_address, receiver_account_address, 100);
     let config = VMConfig::default();
-    info!("invoke Executor::execute_transaction");
     let output1 = MockExecutor::execute_transaction(&config, &chain_state, mint_txn).unwrap();
     let output2 = MockExecutor::execute_transaction(&config, &chain_state, transfer_txn).unwrap();
 
@@ -99,10 +102,6 @@ fn test_validate_txn() -> Result<()> {
     // now we create the account
     chain_state.create_account(sender_account_address)?;
     chain_state.create_account(receiver_account_address)?;
-    info!(
-        "create account: sender: {:?}, receiver: {:?}",
-        sender_account_address, receiver_account_address
-    );
     let (private_key, public_key) = compat::generate_keypair(None);
     let program = encode_transfer_program(receiver_account_address, 100);
     let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
@@ -115,7 +114,6 @@ fn test_validate_txn() -> Result<()> {
     let transfer_txn =
         encode_transfer_transaction(sender_account_address, receiver_account_address, 100);
     let config = VMConfig::default();
-    info!("invoke Executor::execute_transaction");
     let output1 = MockExecutor::execute_transaction(&config, &chain_state, mint_txn).unwrap();
     let output2 = MockExecutor::execute_transaction(&config, &chain_state, transfer_txn).unwrap();
 
@@ -160,7 +158,6 @@ fn test_execute_txn_with_starcoin_vm() -> Result<()> {
 
     let txn = mock_txn();
     let config = VMConfig::default();
-    info!("invoke Executor::execute_transaction");
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
 
     assert_eq!(KEEP_STATUS.clone(), *output.status());
@@ -196,7 +193,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
     let account1 = Account::new();
-    let txn1 = Transaction::UserTransaction(create_account_txn_send_with_association_account(
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1, 1, // fix me
         1_000,
     ));
@@ -204,7 +201,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let account2 = Account::new();
-    let txn2 = Transaction::UserTransaction(create_account_txn_send_with_association_account(
+    let txn2 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account2, 2, // fix me
         1_000,
     ));
@@ -222,7 +219,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
 }
 
 #[stest::test]
-fn test_execute_mock_txn_with_starcoin_vm() -> Result<()> {
+fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
     let config = VMConfig::default();
     let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
     let storage = MockStateNodeStore::new();
@@ -232,8 +229,51 @@ fn test_execute_mock_txn_with_starcoin_vm() -> Result<()> {
         .apply(state_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
-    let txn = mock_create_account_txn();
+    let account = Account::new();
+
+    let txn = Executor::build_mint_txn(
+        account.address().clone(),
+        account.auth_key_prefix(),
+        1,
+        1000,
+    );
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
+    let config = VMConfig::default();
+    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let storage = MockStateNodeStore::new();
+    let chain_state = ChainStateDB::new(Arc::new(storage), None);
+
+    chain_state
+        .apply(state_set)
+        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 1, // fix me
+        1_000_000,
+    ));
+    let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+
+    let account2 = Account::new();
+
+    let raw_txn = Executor::build_transfer_txn(
+        account1.address().clone(),
+        account1.auth_key_prefix(),
+        account2.address().clone(),
+        account2.auth_key_prefix(),
+        1,
+        1000,
+    );
+    let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
+    let output = Executor::execute_transaction(&config, &chain_state, txn2).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
     Ok(())

@@ -53,3 +53,7 @@ pub static GAS_SCHEDULE_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
 // Names for special functions and structs
 pub static CREATE_ACCOUNT_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("create_account").unwrap());
+pub static PROLOGUE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("prologue").unwrap());
+pub static EPILOGUE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unwrap());
+pub static BLOCK_PROLOGUE: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("block_prologue").unwrap());

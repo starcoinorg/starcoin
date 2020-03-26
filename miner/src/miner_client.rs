@@ -144,7 +144,6 @@ mod test {
     use crate::miner::{MineCtx, Miner};
     use crate::miner_client::{verify, MinerClient};
     use crate::stratum::StratumManager;
-    use actix_rt::Runtime;
     use bus::BusActor;
     use config::NodeConfig;
     use consensus::argon_consensus::ArgonConsensusHeader;

@@ -269,6 +269,22 @@ pub fn mock_transaction_with_seq_number(
     )
 }
 
+pub fn mock_raw_transfer_txn(
+    sender: AccountAddress,
+    receiver: AccountAddress,
+    amount: u64,
+    seq_number: u64,
+) -> RawUserTransaction {
+    RawUserTransaction::new_script(
+        sender,
+        seq_number,
+        encode_transfer_program(receiver, amount),
+        0,
+        0,
+        std::time::Duration::from_secs(0),
+    )
+}
+
 fn decode_transaction(txn: &SignedUserTransaction) -> MockTransaction {
     let sender = txn.sender();
     match txn.payload() {

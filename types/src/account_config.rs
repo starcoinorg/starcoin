@@ -9,7 +9,6 @@ use crate::{
     language_storage::StructTag,
 };
 use anyhow::Result;
-use logger::prelude::*;
 use move_core_types::identifier::{IdentStr, Identifier};
 use once_cell::sync::Lazy;
 use scs::SCSCodec;
@@ -131,6 +130,11 @@ impl AccountResource {
     }
 
     /// Given an account map (typically from storage) retrieves the Account resource associated.
+    pub fn make_from_starcoin_blob(bytes: &[u8]) -> Result<Self> {
+        Self::decode(bytes)
+    }
+
+    /// Given an account map (typically from storage) retrieves the Account resource associated.
     pub fn make_from(bytes: &[u8]) -> Result<Self> {
         // make from libra data blob
         let libra_account_res = libra_types::account_config::AccountResource::decode(bytes)?;
@@ -165,7 +169,7 @@ impl TryFrom<Vec<u8>> for AccountResource {
     type Error = anyhow::Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
-        AccountResource::make_from(value.as_slice())
+        AccountResource::make_from_starcoin_blob(value.as_slice())
     }
 }
 

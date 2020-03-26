@@ -1,14 +1,11 @@
-use crate::miner_client::MinerClient;
 use crate::MinerActor;
 use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::argon_consensus::ArgonConsensus;
 use consensus::dummy::DummyConsensus;
 use consensus::dummy::DummyHeader;
 use executor::executor::Executor;
-use executor::mock_executor::MockExecutor;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -72,7 +69,7 @@ fn test_miner_with_schedule_pacemaker() {
             DummyConsensus,
             Executor,
             TxPoolRef,
-            ChainActorRef<MockExecutor, DummyConsensus>,
+            ChainActorRef<Executor, DummyConsensus>,
             StarcoinStorage,
             DummyHeader,
         >::launch(
@@ -83,8 +80,6 @@ fn test_miner_with_schedule_pacemaker() {
             chain.clone(),
             None,
         );
-
-        handle.spawn(MinerClient::main_loop(config.miner.stratum_server.clone()));
         let process_actor = ProcessActor::launch(
             Arc::clone(&peer_info),
             chain.clone(),
@@ -157,7 +152,7 @@ fn test_miner_with_ondemand_pacemaker() {
             DummyConsensus,
             Executor,
             TxPoolRef,
-            ChainActorRef<MockExecutor, DummyConsensus>,
+            ChainActorRef<Executor, DummyConsensus>,
             StarcoinStorage,
             DummyHeader,
         >::launch(

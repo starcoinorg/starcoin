@@ -23,7 +23,7 @@ pub struct RpcClient {
 }
 
 impl RpcClient {
-    pub fn new(inner: RpcClientInner, rt: Runtime) -> Self {
+    pub(crate) fn new(inner: RpcClientInner, rt: Runtime) -> Self {
         Self {
             inner,
             rt: RefCell::new(rt),
@@ -102,7 +102,7 @@ impl AsRef<RpcClientInner> for RpcClient {
     }
 }
 
-pub struct RpcClientInner {
+pub(crate) struct RpcClientInner {
     status_client: StatusClient,
     txpool_client: TxPoolClient,
 }

@@ -132,6 +132,16 @@ impl Account {
             .into_inner()
     }
 
+    pub fn create_user_txn_from_raw_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+    ) -> SignedUserTransaction {
+        raw_txn
+            .sign(&self.privkey, self.pubkey.clone())
+            .unwrap()
+            .into_inner()
+    }
+
     /// Returns a [`SignedUserTransaction`] with the arguments defined in `args` and this account as
     /// the sender.
     pub fn create_signed_txn_with_args(
