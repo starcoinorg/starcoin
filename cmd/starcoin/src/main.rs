@@ -27,10 +27,9 @@ where
     H: ConsensusHeader + Sync + Send + 'static,
     E: TransactionExecutor + Sync + Send + 'static,
 {
-    starcoin_logger::init();
-
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         Box::new(|opt| -> Result<CliState> {
+            let logger_handle = starcoin_logger::init();
             info!("Starcoin opts: {:?}", opt);
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
             let node = Node::<C, H, E>::new(config.clone());
@@ -40,13 +39,18 @@ where
             helper::wait_until_file_created(&ipc_file)?;
             info!("Try to connect node by ipc: {:?}", ipc_file);
             let client = RpcClient::connect_ipc(ipc_file)?;
-            let state = CliState::new(config, client, Some(handle));
+            let file_log_path = config.data_dir.join("starcoin.log");
+            info!("Redirect log to file: {:?}", file_log_path);
+            logger_handle.enable_file(false, file_log_path);
+            let state = CliState::new(config, client, logger_handle, Some(handle));
             Ok(state)
         }),
         Box::new(|_, _, state| -> Result<()> {
-            let (_, _, handle) = state.into_inner();
+            let (_, _, logger_handle, handle) = state.into_inner();
             match handle {
                 Some(handle) => {
+                    // if start node server and no subcommand, wait server and output logger to stderr.
+                    logger_handle.enable_stderr();
                     handle.join().expect("Join thread error.");
                 }
                 None => {}
