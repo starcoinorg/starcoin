@@ -689,6 +689,7 @@ impl Future for NetworkWorker {
                         .network_service
                         .user_protocol_mut()
                         .register_notifications_protocol(protocol_name);
+                    info!("events is {:?}",events);
                     for event in events {
                         this.event_streams
                             .retain(|sender| sender.unbounded_send(event.clone()).is_ok());

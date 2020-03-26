@@ -32,6 +32,7 @@ mod tests {
         ))
         .unwrap();
         let service1 = worker1.service().clone();
+        let mut stream = service1.event_stream();
         service1.register_notifications_protocol(PROTOCOL_NAME);
 
         handle.spawn(worker1);
@@ -54,7 +55,6 @@ mod tests {
 
         thread::sleep(Duration::from_secs(1));
 
-        let mut stream = service1.event_stream();
 
         service2.write_notification(
             service1.peer_id().clone(),
@@ -74,7 +74,8 @@ mod tests {
                         remote,
                         mut messages,
                     } => {
-                        info!("len is {:?}", messages.remove(0));
+                        info!("len is {:?}", messages.remove(0).to_vec());
+                        break;
                     }
                     _ => {
                         info!("event is {:?}", event);
