@@ -278,3 +278,50 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
     Ok(())
 }
+
+#[stest::test]
+fn test_sequence_number() -> Result<()> {
+    let config = VMConfig::default();
+    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let storage = MockStateNodeStore::new();
+    let chain_state = ChainStateDB::new(Arc::new(storage), None);
+
+    chain_state
+        .apply(state_set)
+        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+
+    let access_path = AccessPath::new_for_account(account_config::association_address());
+    let old_state = chain_state
+        .get(&access_path)
+        .expect("read account state should ok");
+    let old_sequence_number = match old_state {
+        None => 0u64,
+        Some(s) => AccountResource::make_from(&s)
+            .expect("account resource decode ok")
+            .sequence_number(),
+    };
+
+    let account = Account::new();
+    let txn = Executor::build_mint_txn(
+        account.address().clone(),
+        account.auth_key_prefix(),
+        1,
+        1000,
+    );
+    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
+
+    let new_state = chain_state
+        .get(&access_path)
+        .expect("read account state should ok");
+    let new_sequence_number = match new_state {
+        None => 0u64,
+        Some(s) => AccountResource::make_from(&s)
+            .expect("account resource decode ok")
+            .sequence_number(),
+    };
+
+    assert_eq!(new_sequence_number, old_sequence_number + 1);
+
+    Ok(())
+}
