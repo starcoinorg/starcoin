@@ -4,6 +4,7 @@ members = [
     "commons/stest",
     "commons/scs",
     "commons/crypto",
+    "commons/decrypt",
     "commons/logger",
     "commons/transaction-pool",
     "commons/scmd",
