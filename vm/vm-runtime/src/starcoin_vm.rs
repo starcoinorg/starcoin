@@ -149,6 +149,7 @@ impl StarcoinVM {
         .and_then(|_| {
             failed_gas_left = ctx.remaining_gas();
             let mut gas_free_ctx = SystemExecutionContext::from(ctx);
+            self.run_epilogue(&mut gas_free_ctx, txn_data);
             get_transaction_output(
                 &mut gas_free_ctx,
                 txn_data,
@@ -157,11 +158,40 @@ impl StarcoinVM {
         })
         .unwrap_or_else(|err| {
             let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
+            self.run_epilogue(&mut gas_free_ctx, txn_data);
             failed_transaction_output(&mut gas_free_ctx, txn_data, err)
         });
         // TODO convert to starcoin type
         info!("{:?}", output);
         output
+    }
+
+    fn run_epilogue<T: LibraChainState>(
+        &self,
+        chain_state: &mut T,
+        txn_data: &TransactionMetadata,
+    ) -> VMResult<()> {
+        let txn_sequence_number = txn_data.sequence_number();
+        let txn_gas_price = txn_data.gas_unit_price().get();
+        let txn_max_gas_units = txn_data.max_gas_amount().get();
+        let gas_remaining = chain_state.remaining_gas().get();
+        let gas_schedule = match self.get_gas_schedule() {
+            Ok(s) => s,
+            Err(e) => return Err(TransactionHelper::to_libra_vmstatus(e)),
+        };
+        self.move_vm.execute_function(
+            &ACCOUNT_MODULE,
+            &EPILOGUE_NAME,
+            gas_schedule,
+            chain_state,
+            &txn_data,
+            vec![
+                Value::u64(txn_sequence_number),
+                Value::u64(txn_gas_price),
+                Value::u64(txn_max_gas_units),
+                Value::u64(gas_remaining),
+            ],
+        )
     }
 
     fn process_block_metadata(
