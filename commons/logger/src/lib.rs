@@ -91,6 +91,10 @@ impl LoggerHandle {
             self.handle.set_config(config);
         }
     }
+
+    pub fn log_path(&self) -> Option<PathBuf> {
+        self.arg.borrow().log_path.as_ref().cloned()
+    }
 }
 
 const LOG_PATTERN: &str = "{d} {l} {M}::{f}::{L} - {m}{n}";
