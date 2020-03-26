@@ -13,7 +13,7 @@ use consensus::{difficult, Consensus, ConsensusHeader};
 
 use crate::miner::MineCtx;
 use crate::tx_factory::{GenTxEvent, TxFactoryActor};
-use chain::{to_block_chain_collection, BlockChainCollection};
+use chain::to_block_chain_collection;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
@@ -36,8 +36,6 @@ mod mock_txn_generator;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 mod stratum;
-#[cfg(test)]
-mod tests;
 mod tx_factory;
 
 pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;

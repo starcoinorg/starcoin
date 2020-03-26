@@ -5957,7 +5957,6 @@ dependencies = [
  "hex 0.4.2",
  "itertools 0.8.2",
  "libra-temppath",
- "log 0.4.8",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",

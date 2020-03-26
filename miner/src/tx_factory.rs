@@ -9,7 +9,6 @@ use std::convert::TryInto;
 use std::sync::Arc;
 use storage::BlockChainStore;
 use traits::TxPoolAsyncService;
-use types::account_address::AccountAddress;
 use types::account_config;
 use types::block::BlockHeader;
 use types::system_events::SystemEvents;

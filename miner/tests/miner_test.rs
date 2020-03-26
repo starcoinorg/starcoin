@@ -1,4 +1,3 @@
-use crate::MinerActor;
 use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
@@ -9,6 +8,7 @@ use executor::executor::Executor;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
+use starcoin_miner::MinerActor;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
