@@ -7,12 +7,12 @@ publish = false
 edition = "2018"
 
 [dependencies]
-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/libra/libra", version = "0.1.0",rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
-move-lang = { package="move-lang", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
-libra-types = { package="libra-types", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
-datatest-stable = { package="datatest-stable", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
-vm = { package="vm", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/libra", version = "0.1.0",rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
+libra-types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
+datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
+vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
 #scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 once_cell = "1.3.1"
 include_dir = "0.5.0"
-lcs = { package="libra-canonical-serialization", git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
