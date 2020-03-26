@@ -7,7 +7,6 @@ use scmd::{CmdContext, Command, CommandAction};
 use starcoin_logger::prelude::*;
 use starcoin_node::Node;
 
-use crate::account::account_new_cmd::AccountNewCommand;
 pub use starcoin_config::StarcoinOpt;
 use starcoin_consensus::{
     argon_consensus::{ArgonConsensus, ArgonConsensusHeader},
@@ -17,7 +16,9 @@ use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 
-pub mod account;
+mod account;
+mod debug;
+
 mod helper;
 pub mod state;
 
@@ -59,7 +60,8 @@ where
         }),
     );
     context
-        .command(Command::with_name("account").subcommand(AccountNewCommand {}.into_cmd()))
+        .command(Command::with_name("account").subcommand(account::NewCommand {}.into_cmd()))
+        .command(Command::with_name("debug").subcommand(debug::LogLevelCommand {}.into_cmd()))
         .exec()
 }
 

@@ -14,9 +14,9 @@ pub struct NewOpt {
     password: String,
 }
 
-pub struct AccountNewCommand {}
+pub struct NewCommand {}
 
-impl CommandAction for AccountNewCommand {
+impl CommandAction for NewCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = NewOpt;
