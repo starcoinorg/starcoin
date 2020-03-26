@@ -134,7 +134,8 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
 }
 
 fn env_log_level(default_level: &str) -> LevelFilter {
-    let level = option_env!("RUST_LOG").unwrap_or(default_level);
+    let level = std::env::var("RUST_LOG").unwrap_or(default_level.to_string());
+    println!("Log level: {:?}", level);
     level
         .parse()
         .expect(format!("Unexpect log level: {}", level).as_str())
@@ -170,7 +171,7 @@ mod tests {
     #[test]
     fn test_log() {
         super::init_for_test();
-        debug!("debug message.");
+        debug!("debug message2.");
         info!("info message.");
         warn!("warn message.");
         error!("error message.");
