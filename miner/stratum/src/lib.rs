@@ -12,8 +12,6 @@ extern crate parking_lot;
 extern crate log;
 
 #[cfg(test)]
-extern crate env_logger;
-#[cfg(test)]
 extern crate tokio;
 #[cfg(test)]
 extern crate tokio_io;
@@ -377,7 +375,7 @@ mod tests {
 
     #[test]
     fn records_subscriber() {
-        let _ = ::env_logger::try_init();
+        starcoin_logger::init_for_test();
 
         let addr = "127.0.0.1:19985".parse().unwrap();
         let stratum = Stratum::start(&addr, Arc::new(VoidManager), None).unwrap();
@@ -461,7 +459,7 @@ mod tests {
 
     #[test]
     fn can_push_work() {
-        let _ = ::env_logger::try_init();
+        starcoin_logger::init_for_test();
 
         let addr = "127.0.0.1:19995".parse().unwrap();
         let stratum = Stratum::start(

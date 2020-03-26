@@ -18,4 +18,3 @@ starcoin-logger = {path = "../../commons/logger"}
 stest = {path = "../../commons/stest"}
 
 [dev-dependencies]
-env_logger = "0.7.1"

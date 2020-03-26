@@ -22,7 +22,6 @@ starcoin-crypto = { path = "../../commons/crypto"}
 rand = "0.6.5"
 
 [dev-dependencies]
-env_logger = "0.7.1"
 
 [features]
 mock = []

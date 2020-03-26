@@ -30,5 +30,4 @@ bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev="e99da91
 
 
 [dev-dependencies]
-env_logger = "0.7.1"
 
