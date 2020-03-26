@@ -43,6 +43,10 @@ zeroize = "1.0.0"
 hex="0.4.2"
 wasm-timer = "0.2"
 peerset = {  path = "peerset" }
+tokio = { version = "0.2", features = ["full"] }
+sg_config = {path = "../config", package="starcoin-config"}
+logger = {path = "../commons/logger",package="starcoin-logger"}
+
 
 [dev-dependencies]
 async-std = "1.5"

@@ -379,15 +379,8 @@ impl ProtocolsHandler for NotifsHandler {
                     }
                 }
 
-                // let message = GenericMessage::<(), (), (), ()>::Consensus(ConsensusMessage {
-                //     engine_id,
-                //     data: message,
-                // });
-                //
-                // self.legacy
-                //     .inject_event(LegacyProtoHandlerIn::SendCustomMessage {
-                //         message: message.encode(),
-                //     });
+                self.legacy
+                    .inject_event(LegacyProtoHandlerIn::SendCustomMessage { message });
             }
         }
     }

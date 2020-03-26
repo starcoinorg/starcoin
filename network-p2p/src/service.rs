@@ -684,15 +684,15 @@ impl Future for NetworkWorker {
                     protocol_name,
                     message,
                 ),
-                ServiceToWorkerMsg::RegisterNotifProtocol { protocol_name: _ } => {
-                    // let events = this
-                    //     .network_service
-                    //     .user_protocol_mut()
-                    //     .register_notifications_protocol(protocol_name);
-                    // for event in events {
-                    //     this.event_streams
-                    //         .retain(|sender| sender.unbounded_send(event.clone()).is_ok());
-                    // }
+                ServiceToWorkerMsg::RegisterNotifProtocol { protocol_name } => {
+                    let events = this
+                        .network_service
+                        .user_protocol_mut()
+                        .register_notifications_protocol(protocol_name);
+                    for event in events {
+                        this.event_streams
+                            .retain(|sender| sender.unbounded_send(event.clone()).is_ok());
+                    }
                 }
                 ServiceToWorkerMsg::DisconnectPeer(who) => this
                     .network_service
