@@ -154,7 +154,7 @@ pub fn test_state_dump() -> Result<()> {
 }
 
 /// change the `n`th nibble to `nibble`
-fn update_nibble(original_key: &HashValue, n: usize, nibble: u8) -> HashValue {
+pub fn update_nibble(original_key: &HashValue, n: usize, nibble: u8) -> HashValue {
     assert!(nibble < 16);
     let mut key = original_key.to_vec();
     key[n / 2] = if n % 2 == 0 {
