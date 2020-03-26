@@ -9,7 +9,6 @@ use crate::{
     language_storage::StructTag,
 };
 use anyhow::Result;
-use logger::prelude::*;
 use move_core_types::identifier::{IdentStr, Identifier};
 use once_cell::sync::Lazy;
 use scs::SCSCodec;

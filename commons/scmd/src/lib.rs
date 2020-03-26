@@ -138,14 +138,28 @@ where
 {
     app: App<'static, 'static>,
     commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
-    state: Arc<State>,
+    default_action: Box<dyn Fn(App, GlobalOpt, State) -> Result<()>>,
+    state_initializer: Box<dyn Fn(&GlobalOpt) -> Result<State>>,
 }
 
 impl<State, GlobalOpt> CmdContext<State, GlobalOpt>
 where
     GlobalOpt: StructOpt,
 {
-    pub fn new(state: State) -> Self {
+    pub fn new(state_initializer: Box<dyn Fn(&GlobalOpt) -> Result<State>>) -> Self {
+        Self::with_default_action(
+            state_initializer,
+            Box::new(|mut app, _opt, _state| -> Result<()> {
+                app.print_long_help().expect("print help should success.");
+                Ok(())
+            }),
+        )
+    }
+
+    pub fn with_default_action(
+        state_initializer: Box<dyn Fn(&GlobalOpt) -> Result<State>>,
+        default_action: Box<dyn Fn(App, GlobalOpt, State) -> Result<()>>,
+    ) -> Self {
         //insert console command
         let mut app = GlobalOpt::clap();
         app = app.subcommand(
@@ -154,14 +168,12 @@ where
         Self {
             app,
             commands: HashMap::new(),
-            state: Arc::new(state),
+            default_action,
+            state_initializer,
         }
     }
 
-    pub fn add_command<Opt, Action>(
-        mut self,
-        command: Command<State, GlobalOpt, Opt, Action>,
-    ) -> Self
+    pub fn command<Opt, Action>(mut self, command: Command<State, GlobalOpt, Opt, Action>) -> Self
     where
         Opt: StructOpt + 'static,
         Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt> + 'static,
@@ -188,21 +200,20 @@ where
                 return Ok(());
             }
         };
-
-        let global_opt = Arc::new(GlobalOpt::from_clap(&matches));
+        let (global_opt, state) = self.init_global_opt(&matches)?;
         let (cmd_name, arg_matches) = matches.subcommand();
         match cmd_name {
             "console" => {
-                self.console_inner(global_opt);
+                self.console_inner(global_opt, state);
             }
             "" => {
-                self.print_help();
+                self.default_action.as_ref()(self.app, global_opt, state)?;
             }
             cmd_name => {
                 let cmd = self.commands.get_mut(cmd_name);
                 match (cmd, arg_matches) {
                     (Some(cmd), Some(arg_matches)) => {
-                        cmd.exec(self.state.clone(), global_opt, arg_matches)?;
+                        cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)?;
                     }
                     _ => {
                         println!("Unknown command: {:?}", cmd_name);
@@ -215,7 +226,8 @@ where
         Ok(())
     }
 
-    fn console_inner(mut self, global_opt: Arc<GlobalOpt>) {
+    fn console_inner(mut self, global_opt: GlobalOpt, state: State) {
+        //TODO support use custom config
         let config = Config::builder()
             .history_ignore_space(true)
             .completion_type(CompletionType::List)
@@ -228,9 +240,13 @@ where
                 .help("Quit from console."),
         );
         let app_name = self.app.get_name().to_string();
+        let global_opt = Arc::new(global_opt);
+        let state = Arc::new(state);
+
         let mut rl = Editor::<()>::with_config(config);
+        let prompt = format!("{}% ", app_name);
         loop {
-            let readline = rl.readline("starcoin% ");
+            let readline = rl.readline(prompt.as_str());
             match readline {
                 Ok(line) => {
                     let mut params: Vec<&str> = line.trim().split(' ').map(str::trim).collect();
@@ -253,11 +269,7 @@ where
                             let cmd = self.commands.get_mut(cmd_name);
                             match (cmd, arg_matches) {
                                 (Some(cmd), Some(arg_matches)) => {
-                                    match cmd.exec(
-                                        self.state.clone(),
-                                        global_opt.clone(),
-                                        arg_matches,
-                                    ) {
+                                    match cmd.exec(state.clone(), global_opt.clone(), arg_matches) {
                                         Ok(()) => {}
                                         Err(e) => println!("Execute error:{:?}", e),
                                     };
@@ -283,6 +295,12 @@ where
         }
     }
 
+    fn init_global_opt(&self, matches: &ArgMatches) -> Result<(GlobalOpt, State)> {
+        let global_opt = GlobalOpt::from_clap(&matches);
+        let state = self.state_initializer.as_ref()(&global_opt)?;
+        Ok((global_opt, state))
+    }
+
     pub fn console(mut self) -> Result<()> {
         let matches = match self
             .app
@@ -295,8 +313,8 @@ where
                 return Ok(());
             }
         };
-        let global_opt = Arc::new(GlobalOpt::from_clap(&matches));
-        self.console_inner(global_opt);
+        let (global_opt, state) = self.init_global_opt(&matches)?;
+        self.console_inner(global_opt, state);
         Ok(())
     }
 }
