@@ -33,4 +33,4 @@ types = {path = "../types", package="starcoin-types" }
 sync = {path = "../sync", package="starcoin-sync" }
 traits = {path = "../core/traits", package="starcoin-traits" }
 starcoin-genesis = { path = "../core/genesis"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
+libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }

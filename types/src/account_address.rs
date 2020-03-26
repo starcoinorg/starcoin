@@ -252,8 +252,9 @@ impl<'de> Deserialize<'de> for AccountAddress {
         D: Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
-            let s = <&str>::deserialize(deserializer)?;
-            AccountAddress::from_str(s).map_err(D::Error::custom)
+            let s = serde::private::de::borrow_cow_str(deserializer)?;
+            // let s = <&str>::deserialize(deserializer)?;
+            AccountAddress::from_str(s.as_ref()).map_err(D::Error::custom)
         } else {
             let b = <[u8; ADDRESS_LENGTH]>::deserialize(deserializer)?;
             Ok(AccountAddress::new(b))

@@ -46,8 +46,6 @@ mod tests {
     use tokio01::prelude::Future;
     use traits::mock::MockTxPoolService;
 
-    //FIXME
-    #[ignore]
     #[test]
     fn test_submit_transaction() {
         let txn = SignedUserTransaction::mock();
