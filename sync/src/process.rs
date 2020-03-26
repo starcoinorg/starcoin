@@ -8,6 +8,7 @@ use crypto::hash::CryptoHash;
 use executor::TransactionExecutor;
 use futures::sink::SinkExt;
 use futures_timer::Delay;
+use logger::prelude::*;
 /// Sync message which inbound
 use network::sync_messages::{
     BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,

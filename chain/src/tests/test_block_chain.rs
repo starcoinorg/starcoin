@@ -6,7 +6,6 @@ use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus, Consensus};
 use executor::executor::mock_create_account_txn;
 use executor::executor::Executor;
-use executor::mock_executor::MockExecutor;
 use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
@@ -17,7 +16,6 @@ use storage::db_storage::DBStorage;
 use storage::StarcoinStorage;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
-use types::account_address::AccountAddress;
 use types::transaction::SignedUserTransaction;
 
 #[test]

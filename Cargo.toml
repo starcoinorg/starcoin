@@ -25,6 +25,7 @@ members = [
     "chain",
     "node",
     "sync",
+    "sync/state-sync",
     "miner",
     "miner/stratum",
     "node",

@@ -4,11 +4,6 @@ mod download_header;
 mod pool;
 mod process;
 mod sync;
-#[cfg(test)]
-mod tests;
-
-#[macro_use]
-extern crate log;
 
 pub use download::DownloadActor;
 pub use process::ProcessActor;
