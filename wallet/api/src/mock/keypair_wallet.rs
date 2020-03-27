@@ -14,21 +14,28 @@ use starcoin_types::{
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
 use std::convert::TryFrom;
-use std::sync::Arc;
 
 type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
 /// Save raw key, ignore password, just for test.
-pub struct KeyPairWallet {
-    store: Arc<dyn WalletStore>,
+pub struct KeyPairWallet<S>
+where
+    S: WalletStore,
+{
+    store: S,
 }
 
-impl KeyPairWallet {
+impl KeyPairWallet<MemWalletStore> {
     pub fn new() -> Result<Self> {
-        Self::new_with_store(Arc::new(MemWalletStore::new()))
+        Self::new_with_store(MemWalletStore::new())
     }
+}
 
-    pub fn new_with_store(store: Arc<dyn WalletStore>) -> Result<Self> {
+impl<S> KeyPairWallet<S>
+where
+    S: WalletStore,
+{
+    pub fn new_with_store(store: S) -> Result<Self> {
         let wallet = Self { store };
         if wallet.get_accounts()?.is_empty() {
             wallet.create_account("")?;
@@ -63,7 +70,10 @@ impl KeyPairWallet {
 
 const KEY_NAME_PRIVATE_KEY: &str = "private_key";
 
-impl Wallet for KeyPairWallet {
+impl<S> Wallet for KeyPairWallet<S>
+where
+    S: WalletStore,
+{
     fn create_account(&self, _password: &str) -> Result<WalletAccount> {
         let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
         let seed_buf: [u8; 32] = seed_rng.gen();

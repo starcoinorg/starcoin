@@ -7,3 +7,4 @@ mod mock_wallet_service;
 
 pub use keypair_wallet::KeyPairWallet;
 pub use mem_wallet_store::MemWalletStore;
+pub use mock_wallet_service::MockWalletService;
