@@ -151,6 +151,7 @@ fn test_validate_txn() -> Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[stest::test]
 fn test_execute_txn_with_starcoin_vm() -> Result<()> {
     let storage = MockStateNodeStore::new();
@@ -164,6 +165,7 @@ fn test_execute_txn_with_starcoin_vm() -> Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[stest::test]
 fn test_generate_genesis_state_set() -> Result<()> {
     let config = VMConfig::default();
@@ -192,24 +194,31 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         .apply(state_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
+    let sequence_number1 = get_sequence_number(account_config::association_address(), &chain_state);
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 1, // fix me
-        1_000,
+        &account1,
+        sequence_number1, // fix me
+        1_000_000,
     ));
     let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
+    let sequence_number2 = get_sequence_number(account_config::association_address(), &chain_state);
     let account2 = Account::new();
     let txn2 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account2, 2, // fix me
+        &account2,
+        sequence_number2, // fix me
         1_000,
     ));
     let output2 = Executor::execute_transaction(&config, &chain_state, txn2).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output2.status());
 
+    let sequence_number3 = get_sequence_number(account1.address().clone(), &chain_state);
     let txn3 = Transaction::UserTransaction(peer_to_peer_txn(
-        &account1, &account2, 1, // fix me
+        &account1,
+        &account2,
+        sequence_number3, // fix me
         100,
     ));
     let output3 = Executor::execute_transaction(&config, &chain_state, txn3).unwrap();
@@ -269,7 +278,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         account1.auth_key_prefix(),
         account2.address().clone(),
         account2.auth_key_prefix(),
-        1,
+        0,
         1000,
     );
     let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
@@ -290,16 +299,8 @@ fn test_sequence_number() -> Result<()> {
         .apply(state_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
-    let access_path = AccessPath::new_for_account(account_config::association_address());
-    let old_state = chain_state
-        .get(&access_path)
-        .expect("read account state should ok");
-    let old_sequence_number = match old_state {
-        None => 0u64,
-        Some(s) => AccountResource::make_from(&s)
-            .expect("account resource decode ok")
-            .sequence_number(),
-    };
+    let old_sequence_number =
+        get_sequence_number(account_config::association_address(), &chain_state);
 
     let account = Account::new();
     let txn = Executor::build_mint_txn(
@@ -311,17 +312,23 @@ fn test_sequence_number() -> Result<()> {
     let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
-    let new_state = chain_state
-        .get(&access_path)
-        .expect("read account state should ok");
-    let new_sequence_number = match new_state {
-        None => 0u64,
-        Some(s) => AccountResource::make_from(&s)
-            .expect("account resource decode ok")
-            .sequence_number(),
-    };
+    let new_sequence_number =
+        get_sequence_number(account_config::association_address(), &chain_state);
 
     assert_eq!(new_sequence_number, old_sequence_number + 1);
 
     Ok(())
+}
+
+fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
+    let access_path = AccessPath::new_for_account(addr);
+    let state = chain_state
+        .get(&access_path)
+        .expect("read account state should ok");
+    match state {
+        None => 0u64,
+        Some(s) => AccountResource::make_from(&s)
+            .expect("account resource decode ok")
+            .sequence_number(),
+    }
 }
