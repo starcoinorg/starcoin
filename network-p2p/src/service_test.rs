@@ -55,7 +55,6 @@ mod tests {
 
         thread::sleep(Duration::from_secs(1));
 
-
         service2.write_notification(
             service1.peer_id().clone(),
             PROTOCOL_NAME.into(),
