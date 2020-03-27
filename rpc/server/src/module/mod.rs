@@ -7,6 +7,7 @@ mod account_rpc;
 mod status_rpc;
 mod txpool_rpc;
 
+pub(crate) use self::account_rpc::AccountRpcImpl;
 pub(crate) use self::status_rpc::StatusRpcImpl;
 pub(crate) use self::txpool_rpc::TxPoolRpcImpl;
 

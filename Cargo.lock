@@ -5811,6 +5811,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",
+ "starcoin-wallet-service",
  "structopt",
  "tokio 0.2.13",
 ]
