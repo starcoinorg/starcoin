@@ -1,6 +1,7 @@
 pub mod event;
 pub mod generic_proto;
 pub mod message;
+pub mod rpc_handle;
 pub mod util;
 
 use crate::config::ProtocolId;
@@ -21,6 +22,7 @@ use log::Level;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::pin::Pin;
+use std::str;
 use std::task::Poll;
 use std::time;
 use wasm_timer::Instant;
@@ -441,5 +443,23 @@ impl Protocol {
 
     pub fn send_notification(&mut self, target: PeerId, message: impl Into<Vec<u8>>) {
         self.behaviour.send_packet(&target, message.into());
+    }
+
+    pub fn register_notifications_protocol(
+        &mut self,
+        protocol_name: impl Into<Cow<'static, [u8]>>,
+    ) -> Vec<event::Event> {
+        let protocol_name = protocol_name.into();
+        self.behaviour
+            .register_notif_protocol(protocol_name.clone(), Vec::new());
+
+        info!("register protocol {:?}", str::from_utf8(&protocol_name));
+        self.context_data
+            .peers
+            .iter()
+            .map(|(peer_id, peer)| event::Event::NotificationStreamOpened {
+                remote: peer_id.clone(),
+            })
+            .collect()
     }
 }

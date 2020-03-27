@@ -428,13 +428,13 @@ impl GenericProto {
             return;
         }
 
-        debug!(
+        trace!(
             target: "sub-libp2p",
             "External API => Notification for {:?} with protocol {:?}",
             target,
             str::from_utf8(&protocol_name)
         );
-        debug!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
+        trace!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
 
         self.events.push(NetworkBehaviourAction::SendEvent {
             peer_id: target.clone(),
@@ -1147,14 +1147,7 @@ impl NetworkBehaviour for GenericProto {
                 trace!(target: "sub-libp2p", "External API <= Message({:?})", source);
                 let event = GenericProtoOut::CustomMessage {
                     peer_id: source,
-                    message: {
-                        let message = Message::Consensus(ConsensusMessage {
-                            data: message.to_vec(),
-                        });
-
-                        // Note that we clone `message` here.
-                        From::from(&message.encode().unwrap()[..])
-                    },
+                    message,
                 };
 
                 self.events

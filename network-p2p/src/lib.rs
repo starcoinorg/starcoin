@@ -30,6 +30,8 @@ mod service;
 mod transport;
 mod utils;
 
+mod service_test;
+
 use serde::Serialize;
 use std::{
     collections::{HashMap, HashSet},
