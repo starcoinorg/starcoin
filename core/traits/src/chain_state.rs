@@ -4,9 +4,10 @@
 use anyhow::Result;
 use crypto::HashValue;
 
+use std::convert::TryFrom;
 use types::{
-    access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
-    state_set::ChainStateSet,
+    access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
+    account_state::AccountState, state_set::ChainStateSet,
 };
 
 pub trait ChainStateReader {
@@ -19,6 +20,27 @@ pub trait ChainStateReader {
             .iter()
             .map(|access_path| self.get(access_path))
             .collect()
+    }
+
+    /// Get AccountResource by address
+    fn get_account_resource(&self, address: &AccountAddress) -> Result<Option<AccountResource>> {
+        self.get(&AccessPath::new_for_account(*address))
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(AccountResource::make_from(bytes.as_slice())?)),
+                None => Ok(None),
+            })
+    }
+
+    /// Get starcoin account balance by address
+    fn get_account_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
+        //TODO read BalanceResource after refactor AccountResource.
+        Ok(self
+            .get(&AccessPath::new_for_account(*address))
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(AccountResource::make_from(bytes.as_slice())?)),
+                None => Ok(None),
+            })?
+            .map(|resource| resource.balance()))
     }
 
     /// Gets account state

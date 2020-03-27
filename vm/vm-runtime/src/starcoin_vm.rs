@@ -307,7 +307,7 @@ impl StarcoinVM {
                 let new_account_resource = AccountResource::new(
                     account_resource.balance() + 50_00000000,
                     account_resource.sequence_number(),
-                    account_resource.authentication_key().clone(),
+                    account_resource.authentication_key().to_vec(),
                 );
                 state_store
                     .set(access_path, new_account_resource.try_into().unwrap())
