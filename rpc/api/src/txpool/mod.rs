@@ -9,6 +9,6 @@ pub use self::gen_client::Client as TxPoolClient;
 
 #[rpc]
 pub trait TxPoolApi {
-    #[rpc(name = "submit_transaction")]
+    #[rpc(name = "txpool.submit_transaction")]
     fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<bool>;
 }

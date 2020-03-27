@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use futures::future::TryFutureExt;
-use jsonrpc_core::Error;
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_types::transaction::SignedUserTransaction;
 use traits::TxPoolAsyncService;
 
+use crate::module::map_err;
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;
 
@@ -31,10 +31,7 @@ where
     S: TxPoolAsyncService,
 {
     fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<bool> {
-        let fut = self.service.clone().add(txn).map_err(|_err| {
-            //TODO
-            Error::internal_error()
-        });
+        let fut = self.service.clone().add(txn).map_err(map_err);
         Box::new(fut.compat())
     }
 }
