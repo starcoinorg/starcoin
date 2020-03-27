@@ -3324,6 +3324,15 @@ dependencies = [
 [[package]]
 name = "libra-temppath"
 version = "0.1.0"
+source = "git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483#76d43b08fd6b42e30fa3792787b8b35308588483"
+dependencies = [
+ "hex 0.4.2",
+ "rand 0.6.5",
+]
+
+[[package]]
+name = "libra-temppath"
+version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a#e99da91f7c4c2e9928d64085e10d19674d76c28a"
 dependencies = [
  "hex 0.4.2",
@@ -5536,7 +5545,7 @@ dependencies = [
  "atomic_refcell",
  "futures 0.3.4",
  "futures-timer 3.0.2",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "parking_lot 0.9.0",
  "starcoin-accumulator",
  "starcoin-bus",
@@ -5595,7 +5604,7 @@ dependencies = [
  "dirs 2.0.2",
  "hex 0.4.2",
  "libp2p 0.15.0",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "once_cell",
  "rand 0.6.5",
  "serde",
@@ -5659,7 +5668,7 @@ name = "starcoin-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "libra-types",
  "once_cell",
  "starcoin-canonical-serialization",
@@ -5682,7 +5691,7 @@ name = "starcoin-genesis"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "serde",
  "starcoin-accumulator",
  "starcoin-config",
@@ -5721,7 +5730,7 @@ dependencies = [
  "futures-timer 3.0.2",
  "jsonrpc-core 12.2.0",
  "jsonrpc-tcp-server 12.2.0",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "rand 0.6.5",
  "rust-argon2 0.8.1",
  "serde_json",
@@ -5793,7 +5802,7 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "actix-rt",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "rand 0.6.5",
  "starcoin-bus",
  "starcoin-chain",
@@ -5967,7 +5976,7 @@ dependencies = [
  "byteorder 1.3.4",
  "chrono",
  "forkable-jellyfish-merkle",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "lru",
  "parking_lot 0.10.0",
  "rocksdb",
@@ -6008,7 +6017,7 @@ dependencies = [
  "futures-timer 3.0.2",
  "hex 0.4.2",
  "itertools 0.8.2",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",
@@ -6058,7 +6067,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.4",
  "futures-channel",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/starcoinorg/libra?rev=e99da91f7c4c2e9928d64085e10d19674d76c28a)",
  "linked-hash-map",
  "log 0.4.8",
  "parking_lot 0.9.0",
@@ -6166,7 +6175,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.4",
- "libra-temppath",
+ "libra-temppath 0.1.0 (git+https://github.com/libra/libra?rev=76d43b08fd6b42e30fa3792787b8b35308588483)",
  "starcoin-canonical-serialization",
  "starcoin-logger",
  "starcoin-types",
