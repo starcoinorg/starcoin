@@ -119,7 +119,7 @@ impl MockVM {
                     let new_account_resource = AccountResource::new(
                         amount,
                         1,
-                        account_resource.authentication_key().clone(),
+                        account_resource.authentication_key().to_vec(),
                     );
                     state_store
                         .set(access_path, new_account_resource.try_into()?)
@@ -164,12 +164,12 @@ impl MockVM {
                     let new_account_resource_sender = AccountResource::new(
                         balance_sender - deduction,
                         account_resource_sender.sequence_number() + 1,
-                        account_resource_sender.authentication_key().clone(),
+                        account_resource_sender.authentication_key().to_vec(),
                     );
                     let new_account_resource_receiver = AccountResource::new(
                         balance_receiver + deduction,
                         account_resource_sender.sequence_number(),
-                        account_resource_receiver.authentication_key().clone(),
+                        account_resource_receiver.authentication_key().to_vec(),
                     );
                     state_store.set(access_path_sender, new_account_resource_sender.try_into()?)?;
                     state_store.set(
@@ -202,7 +202,7 @@ impl MockVM {
                 let new_account_resource = AccountResource::new(
                     account_resource.balance() + 50_00000000,
                     account_resource.sequence_number(),
-                    account_resource.authentication_key().clone(),
+                    account_resource.authentication_key().to_vec(),
                 );
                 state_store.set(access_path, new_account_resource.try_into()?)?;
                 output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());

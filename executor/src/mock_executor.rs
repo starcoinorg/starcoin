@@ -135,7 +135,7 @@ impl MockExecutor {
         let new_account_resource = AccountResource::new(
             account_resource.balance() + amount,
             account_resource.sequence_number(),
-            account_resource.authentication_key().clone(),
+            account_resource.authentication_key().to_vec(),
         );
         chain_state.set(&access_path, new_account_resource.try_into()?);
         Ok(())

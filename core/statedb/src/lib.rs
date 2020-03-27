@@ -299,11 +299,12 @@ impl ChainStateWriter for ChainStateDB {
         Ok(())
     }
 
+    //TODO pass authentication_key
     fn create_account(&self, account_address: AccountAddress) -> Result<()> {
         let account_state_object =
             AccountStateObject::new_account(account_address, self.store.clone());
 
-        let account_resource = AccountResource::new(0, 0, ByteArray::new(account_address.to_vec()));
+        let account_resource = AccountResource::new(0, 0, account_address.to_vec());
         debug!(
             "create account: {:?} with address: {:?}",
             account_resource, account_address
@@ -404,16 +405,26 @@ mod tests {
         let account_address = AccountAddress::random();
         chain_state_db.create_account(account_address)?;
         let state_root = chain_state_db.commit()?;
-
         let access_path = AccessPath::new_for_account(account_address);
+
         let account_resource: AccountResource = chain_state_db
-            .get(&access_path)?
-            .expect("before create account must exist.")
-            .try_into()?;
-        assert_eq!(0, account_resource.balance(), "new account balance error");
+            .get_account_resource(&account_address)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            0,
+            account_resource.sequence_number(),
+            "new account balance error"
+        );
+
+        let balance = chain_state_db
+            .get_account_balance(&account_address)
+            .unwrap()
+            .unwrap();
+        assert_eq!(0, balance, "new account balance error");
 
         let new_account_resource =
-            AccountResource::new(10, 1, account_resource.authentication_key().clone());
+            AccountResource::new(10, 1, account_resource.authentication_key().to_vec());
         chain_state_db.set(&access_path, new_account_resource.try_into()?)?;
 
         let account_resource2: AccountResource =

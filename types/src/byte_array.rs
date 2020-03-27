@@ -7,6 +7,7 @@
 use hex;
 use serde::{Deserialize, Serialize};
 
+///TODO remove this type.
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Default, Clone, Serialize, Deserialize)]
 /// A struct that represents a ByteArray in Move.
 pub struct ByteArray(Vec<u8>);
