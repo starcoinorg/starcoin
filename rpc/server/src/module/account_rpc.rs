@@ -7,7 +7,7 @@ use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::{WalletAccount, WalletAsyncService};
 
-pub(crate) struct AccountRpcImpl<S>
+pub struct AccountRpcImpl<S>
 where
     S: WalletAsyncService + 'static,
 {
