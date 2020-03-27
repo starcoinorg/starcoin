@@ -24,7 +24,6 @@ use crypto::{test_utils::KeyPair, Uniform};
 use dirs;
 use once_cell::sync::Lazy;
 use rand::prelude::*;
-use std::env;
 use std::fs::create_dir;
 use std::fs::File;
 use std::io::Read;
@@ -65,9 +64,7 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
         Some(p) => p,
         None => {
             if opt.dev {
-                let tempdir = libra_temppath::TempPath::new();
-                tempdir.create_as_dir()?;
-                tempdir.path().to_path_buf()
+                temp_dir()
             } else {
                 DEFAULT_DATA_DIR.to_path_buf()
             }
@@ -75,6 +72,12 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
     };
     //TODO handle dev mode
     load_config_from_dir(&data_dir)
+}
+
+pub fn temp_dir() -> PathBuf {
+    let tempdir = libra_temppath::TempPath::new();
+    //tempdir.create_as_dir().expect("Create temp dir fail.");
+    tempdir.path().to_path_buf()
 }
 
 //TODO rename NodeConfig
@@ -100,7 +103,11 @@ pub struct NodeConfig {
 impl NodeConfig {
     pub fn random_for_test() -> Self {
         let mut config = NodeConfig::default();
-        config.data_dir = env::temp_dir();
+        let data_dir = temp_dir();
+        if !data_dir.exists() {
+            create_dir(data_dir.as_path()).unwrap();
+        }
+        config.data_dir = data_dir;
         config.network = NetworkConfig::random_for_test();
         config.tx_pool = TxPoolConfig::random_for_test();
         config.rpc = RpcConfig::random_for_test();
@@ -114,7 +121,7 @@ impl NodeConfig {
         }
         ensure!(
             data_dir.as_ref().is_dir(),
-            "pelase pass in a dir as data_dir"
+            "please pass in a dir as data_dir"
         );
 
         let base_dir = PathBuf::from(data_dir.as_ref());
@@ -205,16 +212,30 @@ pub fn gen_keypair() -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
 }
 
 pub fn get_available_port() -> u16 {
-    const MAX_PORT_RETRIES: u32 = 30000;
-    const MIN_PORT_RETRIES: u32 = 1024;
-
-    for _ in MIN_PORT_RETRIES..MAX_PORT_RETRIES {
+    for _ in 0..3 {
         if let Ok(port) = get_ephemeral_port() {
             return port;
         }
     }
-
     panic!("Error: could not find an available port");
+}
+
+pub fn get_available_port_multi(num: usize) -> Vec<u16> {
+    let mut ports = vec![0u16; num];
+
+    for i in 0..num {
+        let mut port = get_available_port();
+        let mut retry_times = 0;
+        while ports.contains(&port) {
+            port = get_available_port();
+            retry_times = retry_times + 1;
+            if retry_times > 3 {
+                panic!("Error: could not find an available port");
+            }
+        }
+        ports[i] = port;
+    }
+    return ports;
 }
 
 fn get_ephemeral_port() -> ::std::io::Result<u16> {

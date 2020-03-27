@@ -15,8 +15,8 @@ use std::cell::RefCell;
 use std::sync::Arc;
 use traits::TxPoolAsyncService;
 
-mod module;
-mod server;
+pub mod module;
+pub mod server;
 
 pub struct JSONRpcActor {
     config: Arc<NodeConfig>,
@@ -36,33 +36,35 @@ impl JSONRpcActor {
     {
         Self::launch_with_apis(
             config,
-            Some(StatusRpcImpl::new()),
             Some(TxPoolRpcImpl::new(txpool_service)),
             Some(AccountRpcImpl::new(account_service)),
         )
     }
 
-    pub fn launch_with_apis<S, TS, AS>(
+    pub fn launch_with_apis<T, A>(
         config: Arc<NodeConfig>,
-        status_api: Option<S>,
-        txpool_api: Option<TS>,
-        account_api: Option<AS>,
+        txpool_api: Option<T>,
+        account_api: Option<A>,
     ) -> Result<(Addr<Self>, IoHandler)>
     where
-        S: StatusApi,
-        TS: TxPoolApi,
-        AS: AccountApi,
+        T: TxPoolApi,
+        A: AccountApi,
     {
         let mut io_handler = IoHandler::new();
-        if let Some(status_api) = status_api {
-            io_handler.extend_with(StatusApi::to_delegate(status_api));
-        }
+        io_handler.extend_with(StatusApi::to_delegate(StatusRpcImpl::new()));
         if let Some(txpool_api) = txpool_api {
             io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
         }
         if let Some(account_api) = account_api {
             io_handler.extend_with(AccountApi::to_delegate(account_api));
         }
+        Self::launch_with_handler(config, io_handler)
+    }
+
+    pub fn launch_with_handler(
+        config: Arc<NodeConfig>,
+        io_handler: IoHandler,
+    ) -> Result<(Addr<Self>, IoHandler)> {
         let actor = JSONRpcActor {
             config,
             server: RefCell::new(None),

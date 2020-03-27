@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::get_available_port;
+use crate::get_available_port_multi;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
@@ -39,18 +39,19 @@ impl Default for RpcConfig {
 impl RpcConfig {
     pub fn random_for_test() -> Self {
         let mut config = Self::default();
+        let ports = get_available_port_multi(3);
         config.http_address = Some(
-            format!("127.0.0.1:{}", get_available_port())
+            format!("127.0.0.1:{}", ports[0])
                 .parse::<SocketAddr>()
                 .unwrap(),
         );
         config.tcp_address = Some(
-            format!("127.0.0.1:{}", get_available_port())
+            format!("127.0.0.1:{}", ports[1])
                 .parse::<SocketAddr>()
                 .unwrap(),
         );
         config.ws_address = Some(
-            format!("127.0.0.1:{}", get_available_port())
+            format!("127.0.0.1:{}", ports[2])
                 .parse::<SocketAddr>()
                 .unwrap(),
         );

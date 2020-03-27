@@ -10,7 +10,7 @@ use crate::module::map_err;
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;
 
-pub(crate) struct TxPoolRpcImpl<S>
+pub struct TxPoolRpcImpl<S>
 where
     S: TxPoolAsyncService + 'static,
 {

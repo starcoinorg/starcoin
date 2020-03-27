@@ -7,7 +7,7 @@ use starcoin_rpc_api::status::StatusApi;
 /// Re-export the API
 pub use starcoin_rpc_api::status::*;
 
-pub(crate) struct StatusRpcImpl {}
+pub struct StatusRpcImpl {}
 
 impl StatusRpcImpl {
     pub fn new() -> Self {
