@@ -6290,6 +6290,7 @@ dependencies = [
  "async-trait",
  "env_logger 0.7.1",
  "futures 0.3.4",
+ "libra-temppath",
  "starcoin-canonical-serialization",
  "starcoin-logger",
  "starcoin-types",

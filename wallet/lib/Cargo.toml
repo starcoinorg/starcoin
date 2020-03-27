@@ -18,6 +18,7 @@ starcoin-logger = {path = "../../commons/logger"}
 stest = {path = "../../commons/stest"}
 wallet-api = {package = "starcoin-wallet-api", path = "../api"}
 scs ={package= "starcoin-canonical-serialization", path = "../../commons/scs"}
+libra-temppath = { package="libra-temppath",  git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
 starcoin-types = { path = "../../types"}
 [dev-dependencies]
 env_logger = "0.7.1"
