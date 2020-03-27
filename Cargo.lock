@@ -5836,6 +5836,7 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-types",
+ "starcoin-wallet-api",
  "thiserror",
 ]
 
@@ -5868,6 +5869,7 @@ dependencies = [
  "starcoin-rpc-server",
  "starcoin-traits",
  "starcoin-types",
+ "starcoin-wallet-api",
  "stest",
  "thiserror",
  "tokio 0.1.22",
@@ -5900,9 +5902,12 @@ dependencies = [
  "starcoin-config",
  "starcoin-logger",
  "starcoin-rpc-api",
+ "starcoin-rpc-client",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",
+ "starcoin-wallet-api",
+ "starcoin-wallet-service",
  "stest",
  "thiserror",
  "tokio 0.1.22",

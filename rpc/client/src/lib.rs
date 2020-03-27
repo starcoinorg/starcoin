@@ -7,8 +7,9 @@ use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, RpcChannel};
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::{status::StatusClient, txpool::TxPoolClient};
-use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_rpc_api::{account::AccountClient, status::StatusClient, txpool::TxPoolClient};
+use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_wallet_api::WalletAccount;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::path::Path;
@@ -63,6 +64,16 @@ impl RpcClient {
         Self::new(client, rt)
     }
 
+    pub fn connect_ipc<P: AsRef<Path>>(sock_path: P) -> anyhow::Result<Self> {
+        let mut rt = Runtime::new().unwrap();
+        let reactor = Reactor::new().unwrap();
+
+        let fut = ipc::connect(sock_path, &reactor.handle())?;
+        let client_inner = rt.block_on(fut.map_err(map_err))?;
+
+        Ok(Self::new(client_inner, rt))
+    }
+
     pub fn status(&self) -> anyhow::Result<bool> {
         self.rt.borrow_mut().block_on_std(async {
             self.inner
@@ -84,15 +95,42 @@ impl RpcClient {
                 .await
         })
     }
+    //TODO should split client for different api ?
+    // such as  RpcClient().account().create()
+    pub fn account_create(&self, password: String) -> anyhow::Result<WalletAccount> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .create(password)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
 
-    pub fn connect_ipc<P: AsRef<Path>>(sock_path: P) -> anyhow::Result<Self> {
-        let mut rt = Runtime::new().unwrap();
-        let reactor = Reactor::new().unwrap();
+    pub fn account_list(&self) -> anyhow::Result<Vec<WalletAccount>> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .list()
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
 
-        let fut = ipc::connect(sock_path, &reactor.handle())?;
-        let client_inner = rt.block_on(fut.map_err(map_err))?;
-
-        Ok(Self::new(client_inner, rt))
+    pub fn account_sign_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+    ) -> anyhow::Result<SignedUserTransaction> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .sign_txn(raw_txn)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
     }
 }
 
@@ -105,13 +143,15 @@ impl AsRef<RpcClientInner> for RpcClient {
 pub(crate) struct RpcClientInner {
     status_client: StatusClient,
     txpool_client: TxPoolClient,
+    account_client: AccountClient,
 }
 
 impl RpcClientInner {
     pub fn new(channel: RpcChannel) -> Self {
         Self {
             status_client: channel.clone().into(),
-            txpool_client: channel.into(),
+            txpool_client: channel.clone().into(),
+            account_client: channel.into(),
         }
     }
 }
@@ -189,7 +229,6 @@ mod tests {
         Ok(())
     }
 
-    //FIXME
     #[ignore]
     #[stest::test]
     async fn test_txpool() -> Result<()> {
