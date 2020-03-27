@@ -12,6 +12,7 @@ use futures_locks::RwLock;
 // use itertools;
 use consensus::Consensus;
 use executor::TransactionExecutor;
+use logger::prelude::*;
 use network::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,

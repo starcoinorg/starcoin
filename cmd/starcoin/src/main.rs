@@ -7,7 +7,6 @@ use scmd::{CmdContext, Command, CommandAction};
 use starcoin_logger::prelude::*;
 use starcoin_node::Node;
 
-use crate::account::account_new_cmd::AccountNewCommand;
 pub use starcoin_config::StarcoinOpt;
 use starcoin_consensus::{
     argon_consensus::{ArgonConsensus, ArgonConsensusHeader},
@@ -17,7 +16,9 @@ use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 
-pub mod account;
+mod account;
+mod debug;
+
 mod helper;
 pub mod state;
 
@@ -27,10 +28,9 @@ where
     H: ConsensusHeader + Sync + Send + 'static,
     E: TransactionExecutor + Sync + Send + 'static,
 {
-    starcoin_logger::init();
-
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         Box::new(|opt| -> Result<CliState> {
+            let logger_handle = starcoin_logger::init();
             info!("Starcoin opts: {:?}", opt);
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
             let node = Node::<C, H, E>::new(config.clone());
@@ -40,13 +40,18 @@ where
             helper::wait_until_file_created(&ipc_file)?;
             info!("Try to connect node by ipc: {:?}", ipc_file);
             let client = RpcClient::connect_ipc(ipc_file)?;
-            let state = CliState::new(config, client, Some(handle));
+            let file_log_path = config.data_dir.join("starcoin.log");
+            info!("Redirect log to file: {:?}", file_log_path);
+            logger_handle.enable_file(false, file_log_path);
+            let state = CliState::new(config, client, logger_handle, Some(handle));
             Ok(state)
         }),
         Box::new(|_, _, state| -> Result<()> {
-            let (_, _, handle) = state.into_inner();
+            let (_, _, logger_handle, handle) = state.into_inner();
             match handle {
                 Some(handle) => {
+                    // if start node server and no subcommand, wait server and output logger to stderr.
+                    logger_handle.enable_stderr();
                     handle.join().expect("Join thread error.");
                 }
                 None => {}
@@ -55,7 +60,13 @@ where
         }),
     );
     context
-        .command(Command::with_name("account").subcommand(AccountNewCommand {}.into_cmd()))
+        .command(
+            Command::with_name("account")
+                .subcommand(account::CreateCommand {}.into_cmd())
+                .subcommand(account::ListCommand {}.into_cmd())
+                .subcommand(account::SignTxnCommand {}.into_cmd()),
+        )
+        .command(Command::with_name("debug").subcommand(debug::LogLevelCommand {}.into_cmd()))
         .exec()
 }
 

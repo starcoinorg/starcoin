@@ -6,22 +6,30 @@ use anyhow::Result;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::{Wallet, WalletAccount, WalletService};
-use std::sync::Arc;
 
-pub struct WalletServiceImpl {
+pub struct WalletServiceImpl<W>
+where
+    W: Wallet,
+{
     //TODO support multi wallet.
-    wallet: Arc<dyn Wallet>,
+    wallet: W,
 }
 
-impl WalletServiceImpl {
-    pub fn new(wallet: Arc<dyn Wallet>) -> Self {
+impl<W> WalletServiceImpl<W>
+where
+    W: Wallet,
+{
+    pub fn new(wallet: W) -> Self {
         Self { wallet }
     }
 }
 
-impl WalletService for WalletServiceImpl {}
+impl<W> WalletService for WalletServiceImpl<W> where W: Wallet {}
 
-impl Wallet for WalletServiceImpl {
+impl<W> Wallet for WalletServiceImpl<W>
+where
+    W: Wallet,
+{
     fn create_account(&self, password: &str) -> Result<WalletAccount> {
         self.wallet.create_account(password)
     }

@@ -442,6 +442,11 @@ impl InternalNode {
         }
         unreachable!("Impossible to get here without returning even at the lowest level.")
     }
+
+    /// Get all child hash
+    pub fn all_child(&self) -> Vec<HashValue> {
+        self.children.iter().map(|(n, c)| c.hash.clone()).collect()
+    }
 }
 
 /// Given a nibble, computes the start position of its `child_half_start` and `sibling_half_start`

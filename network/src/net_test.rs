@@ -140,7 +140,7 @@ mod tests {
             loop {
                 futures::select! {
                     message = rx1.select_next_some()=>{
-                        info!("recevie message {:?}",message);
+                        info!("receive message ");
                     },
                     complete => {
                         info!("complete");
@@ -176,7 +176,7 @@ mod tests {
             loop {
                 futures::select! {
                     message = rx1.select_next_some()=>{
-                        info!("recevie message {:?}",message);
+                        info!("receive message");
                     },
                     complete => {
                         info!("complete");

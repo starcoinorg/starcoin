@@ -7,8 +7,9 @@ use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, RpcChannel};
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::{status::StatusClient, txpool::TxPoolClient};
-use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_rpc_api::{account::AccountClient, status::StatusClient, txpool::TxPoolClient};
+use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_wallet_api::WalletAccount;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::path::Path;
@@ -63,6 +64,16 @@ impl RpcClient {
         Self::new(client, rt)
     }
 
+    pub fn connect_ipc<P: AsRef<Path>>(sock_path: P) -> anyhow::Result<Self> {
+        let mut rt = Runtime::new().unwrap();
+        let reactor = Reactor::new().unwrap();
+
+        let fut = ipc::connect(sock_path, &reactor.handle())?;
+        let client_inner = rt.block_on(fut.map_err(map_err))?;
+
+        Ok(Self::new(client_inner, rt))
+    }
+
     pub fn status(&self) -> anyhow::Result<bool> {
         self.rt.borrow_mut().block_on_std(async {
             self.inner
@@ -84,15 +95,42 @@ impl RpcClient {
                 .await
         })
     }
+    //TODO should split client for different api ?
+    // such as  RpcClient().account().create()
+    pub fn account_create(&self, password: String) -> anyhow::Result<WalletAccount> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .create(password)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
 
-    pub fn connect_ipc<P: AsRef<Path>>(sock_path: P) -> anyhow::Result<Self> {
-        let mut rt = Runtime::new().unwrap();
-        let reactor = Reactor::new().unwrap();
+    pub fn account_list(&self) -> anyhow::Result<Vec<WalletAccount>> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .list()
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
 
-        let fut = ipc::connect(sock_path, &reactor.handle())?;
-        let client_inner = rt.block_on(fut.map_err(map_err))?;
-
-        Ok(Self::new(client_inner, rt))
+    pub fn account_sign_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+    ) -> anyhow::Result<SignedUserTransaction> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .sign_txn(raw_txn)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
     }
 }
 
@@ -105,13 +143,15 @@ impl AsRef<RpcClientInner> for RpcClient {
 pub(crate) struct RpcClientInner {
     status_client: StatusClient,
     txpool_client: TxPoolClient,
+    account_client: AccountClient,
 }
 
 impl RpcClientInner {
     pub fn new(channel: RpcChannel) -> Self {
         Self {
             status_client: channel.clone().into(),
-            txpool_client: channel.into(),
+            txpool_client: channel.clone().into(),
+            account_client: channel.into(),
         }
     }
 }
@@ -123,100 +163,5 @@ fn map_err(rpc_err: jsonrpc_client_transports::RpcError) -> anyhow::Error {
 impl From<RpcChannel> for RpcClientInner {
     fn from(channel: RpcChannel) -> Self {
         Self::new(channel)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use actix::prelude::*;
-    use anyhow::Result;
-    use futures::channel::oneshot;
-    use starcoin_config::NodeConfig;
-    use starcoin_rpc_server::JSONRpcActor;
-    use starcoin_traits::mock::MockTxPoolService;
-    use starcoin_traits::TxPoolAsyncService;
-    use std::sync::Arc;
-    use std::time::Duration;
-
-    #[test]
-    fn test_multi_client() -> Result<()> {
-        starcoin_logger::init_for_test();
-        let mut system = System::new("test");
-
-        let config = Arc::new(NodeConfig::random_for_test());
-        let http_address = config.rpc.http_address.as_ref().unwrap();
-        let ipc_file = config.rpc.get_ipc_file(config.data_dir.as_path());
-        let url = format!("http://{}", http_address.to_string());
-        info!("url:{}", url);
-
-        system.block_on(async {
-            let (stop_sender, stop_receiver) = oneshot::channel::<bool>();
-            let txpool = MockTxPoolService::new();
-            let (_rpc_actor, iohandler) = JSONRpcActor::launch(config, txpool).unwrap();
-
-            let client_task = move || {
-                info!("client thread start.");
-                std::thread::sleep(Duration::from_millis(500));
-
-                let http_client = RpcClient::connect_http(url.as_str()).unwrap();
-                let status = http_client.status().unwrap();
-                info!("http_client status: {}", status);
-                assert!(status);
-
-                let ipc_client = RpcClient::connect_ipc(ipc_file).unwrap();
-                let status1 = ipc_client.status().unwrap();
-                info!("ipc_client status: {}", status1);
-                assert_eq!(status, status1);
-
-                let local_client = RpcClient::connect_local(iohandler);
-                let status2 = local_client.status().unwrap();
-                info!("local_client status: {}", status2);
-                assert!(status2);
-
-                drop(stop_sender);
-            };
-
-            let handle = std::thread::spawn(client_task);
-
-            debug!("wait server stop");
-            debug!("stop receiver: {}", stop_receiver.await.is_ok());
-            handle.join().unwrap();
-            debug!("server stop.");
-        });
-
-        Ok(())
-    }
-
-    //FIXME
-    #[ignore]
-    #[stest::test]
-    async fn test_txpool() -> Result<()> {
-        let config = Arc::new(NodeConfig::random_for_test());
-        let ipc_file = config.rpc.get_ipc_file(config.data_dir.as_path());
-
-        let (stop_sender, stop_receiver) = oneshot::channel::<bool>();
-        let txpool = MockTxPoolService::new();
-        let (_rpc_actor, _iohandler) = JSONRpcActor::launch(config, txpool.clone()).unwrap();
-
-        let client_task = move || {
-            info!("client thread start.");
-            std::thread::sleep(Duration::from_millis(500));
-
-            let ipc_client = RpcClient::connect_ipc(ipc_file).unwrap();
-            let result = ipc_client
-                .submit_transaction(SignedUserTransaction::mock())
-                .unwrap();
-            info!("ipc_client submit_transaction result: {}", result);
-            assert!(result);
-
-            drop(stop_sender);
-        };
-
-        let handle = std::thread::spawn(client_task);
-        debug!("stop receiver: {}", stop_receiver.await.is_ok());
-        handle.join().unwrap();
-        assert_eq!(1, txpool.get_pending_txns(None).await?.len());
-        Ok(())
     }
 }

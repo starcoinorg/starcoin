@@ -16,5 +16,4 @@ syn = { version = "^1", features = ["full"] }
 [dev-dependencies]
 log = "0.4.8"
 actix-rt = { version = "1.0.0" }
-env_logger = "0.7.1"
 stest = { path = "../../stest"}

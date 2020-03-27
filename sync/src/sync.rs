@@ -5,9 +5,11 @@ use anyhow::Result;
 use bus::{BusActor, Subscription};
 use consensus::Consensus;
 use executor::TransactionExecutor;
+use logger::prelude::*;
 use network::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
 use network::PeerEvent;
 use types::peer_info::PeerInfo;
+
 pub struct SyncActor<E, C>
 where
     E: TransactionExecutor + Sync + Send + 'static + Clone,

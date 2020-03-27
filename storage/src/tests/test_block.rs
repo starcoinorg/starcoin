@@ -8,6 +8,7 @@ use crypto::HashValue;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::StarcoinStorage;
+use logger::prelude::*;
 use std::sync::Arc;
 use types::account_address::AccountAddress;
 use types::block::{Block, BlockBody, BlockHeader};
@@ -246,7 +247,7 @@ fn test_block_branch_hashes() {
         .save_header(block_header1.clone())
         .unwrap();
     let block_id = block_header1.id();
-    println!("header1: {}", block_id.to_hex());
+    debug!("header1: {}", block_id.to_hex());
     let block_header2 = BlockHeader::new(
         parent_hash,
         dt.timestamp_nanos() as u64,
@@ -263,7 +264,7 @@ fn test_block_branch_hashes() {
         .block_store
         .save_header(block_header2.clone())
         .unwrap();
-    println!("header2: {}", block_header2.clone().id().to_hex());
+    debug!("header2: {}", block_header2.clone().id().to_hex());
 
     let block_header3 = BlockHeader::new(
         block_id,
@@ -281,7 +282,7 @@ fn test_block_branch_hashes() {
         .block_store
         .save_header(block_header3.clone())
         .unwrap();
-    println!("header3: {}", block_header3.clone().id().to_hex());
+    debug!("header3: {}", block_header3.clone().id().to_hex());
 
     let block_header4 = BlockHeader::new(
         block_header3.id(),
@@ -299,7 +300,7 @@ fn test_block_branch_hashes() {
         .block_store
         .save_header(block_header4.clone())
         .unwrap();
-    println!("header4: {}", block_header4.clone().id().to_hex());
+    debug!("header4: {}", block_header4.clone().id().to_hex());
     let hashes = storage
         .block_store
         .get_branch_hashes(block_header4.id())

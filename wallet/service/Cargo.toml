@@ -22,4 +22,3 @@ starcoin-wallet-api = { path = "../api", features = ["mock"]}
 starcoin-wallet-lib = { path = "../lib"}
 
 [dev-dependencies]
-env_logger = "0.7.1"

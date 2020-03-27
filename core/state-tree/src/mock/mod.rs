@@ -20,6 +20,14 @@ impl MockStateNodeStore {
         // instance.put(*SPARSE_MERKLE_PLACEHOLDER_HASH, Node::new_null().into());
         instance
     }
+
+    pub fn all_nodes(&self) -> Vec<(HashValue, StateNode)> {
+        self.nodes
+            .borrow()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
 }
 
 impl StateNodeStore for MockStateNodeStore {

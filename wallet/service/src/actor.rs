@@ -7,17 +7,17 @@ use actix::{Actor, Addr, Context, Handler};
 use anyhow::{Error, Result};
 use starcoin_config::NodeConfig;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::mock::KeyPairWallet;
+use starcoin_wallet_api::mock::{KeyPairWallet, MemWalletStore};
 use starcoin_wallet_api::{Wallet, WalletAccount, WalletAsyncService};
 use std::sync::Arc;
 
 pub struct WalletActor {
-    service: WalletServiceImpl,
+    service: WalletServiceImpl<KeyPairWallet<MemWalletStore>>,
 }
 
 impl WalletActor {
     pub fn launch(_config: Arc<NodeConfig>) -> Result<WalletActorRef> {
-        let wallet = Arc::new(KeyPairWallet::new()?);
+        let wallet = KeyPairWallet::new()?;
         let actor = WalletActor {
             service: WalletServiceImpl::new(wallet),
         };
@@ -68,12 +68,12 @@ impl Into<WalletActorRef> for Addr<WalletActor> {
     }
 }
 
-#[async_trait::async_trait(? Send)]
+#[async_trait::async_trait]
 impl WalletAsyncService for WalletActorRef {
-    async fn create_account(self, password: &str) -> Result<WalletAccount> {
+    async fn create_account(self, password: String) -> Result<WalletAccount> {
         let response = self
             .0
-            .send(WalletRequest::CreateAccount(password.to_string()))
+            .send(WalletRequest::CreateAccount(password))
             .await
             .map_err(|e| Into::<Error>::into(e))??;
         if let WalletResponse::WalletAccount(account) = response {

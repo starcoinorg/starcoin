@@ -116,9 +116,8 @@ where
 
         let block = block_template.into_block(consensus_header);
         // notify chain mined block
-        println!("Miner new block: {:?}", block);
+        info!("Miner new block: {:?}", block);
         // fire SystemEvents::MinedBlock.
-        info!("Broadcast new block: {:?}.", block.header().id());
         self.bus.do_send(Broadcast {
             msg: SystemEvents::MinedBlock(block),
         });

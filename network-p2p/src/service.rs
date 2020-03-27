@@ -49,11 +49,13 @@ use log::{error, info, trace, warn};
 use parking_lot::Mutex;
 use peerset::{PeersetHandle, ReputationChange};
 
+use crate::behaviour::RpcRequest;
 use crate::config::{Params, TransportConfig};
 use crate::net_error::Error;
 use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
+use crate::protocol;
 use crate::protocol::event::Event;
 use crate::protocol::Protocol;
 use crate::{
@@ -188,6 +190,11 @@ impl NetworkWorker {
                 "{} ({})",
                 params.network_config.client_version, params.network_config.node_name
             );
+            let rpc_handler = {
+                let config = protocol::rpc_handle::Config::new(&params.protocol_id);
+                protocol::rpc_handle::RpcHandler::new(config, peerset_handle.clone())
+            };
+
             let behaviour = futures::executor::block_on(Behaviour::new(
                 protocol,
                 user_agent,
@@ -204,6 +211,7 @@ impl NetworkWorker {
                     } => allow_private_ipv4,
                 },
                 u64::from(params.network_config.out_peers) + 15,
+                rpc_handler,
             ));
             let (transport, bandwidth) = {
                 let (config_mem, config_wasm, flowctrl) = match params.network_config.transport {
@@ -252,6 +260,7 @@ impl NetworkWorker {
             service,
             from_worker,
             event_streams: Vec::new(),
+            rpc_streams: Vec::new(),
         })
     }
 
@@ -640,6 +649,7 @@ pub struct NetworkWorker {
     from_worker: mpsc::UnboundedReceiver<ServiceToWorkerMsg>,
     /// Senders for events that happen on the network.
     event_streams: Vec<mpsc::UnboundedSender<Event>>,
+    rpc_streams: Vec<mpsc::UnboundedSender<RpcRequest>>,
 }
 
 impl Future for NetworkWorker {
@@ -674,15 +684,15 @@ impl Future for NetworkWorker {
                     protocol_name,
                     message,
                 ),
-                ServiceToWorkerMsg::RegisterNotifProtocol { protocol_name: _ } => {
-                    // let events = this
-                    //     .network_service
-                    //     .user_protocol_mut()
-                    //     .register_notifications_protocol(protocol_name);
-                    // for event in events {
-                    //     this.event_streams
-                    //         .retain(|sender| sender.unbounded_send(event.clone()).is_ok());
-                    // }
+                ServiceToWorkerMsg::RegisterNotifProtocol { protocol_name } => {
+                    let events = this
+                        .network_service
+                        .user_protocol_mut()
+                        .register_notifications_protocol(protocol_name);
+                    for event in events {
+                        this.event_streams
+                            .retain(|sender| sender.unbounded_send(event.clone()).is_ok());
+                    }
                 }
                 ServiceToWorkerMsg::DisconnectPeer(who) => this
                     .network_service
@@ -717,6 +727,9 @@ impl Future for NetworkWorker {
                 Poll::Pending => break,
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Event(ev))) => this
                     .event_streams
+                    .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Request(ev))) => this
+                    .rpc_streams
                     .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
                 Poll::Ready(SwarmEvent::Connected(peer_id)) => {
                     trace!(target: "sub-libp2p", "Libp2p => Connected({:?})", peer_id)

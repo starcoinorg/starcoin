@@ -14,6 +14,5 @@ starcoin-crypto = { path = "../../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0" }
 logger = {path = "../../commons/logger", package="starcoin-logger"}
-env_logger = "0.7.1"
 stest = {path = "../../commons/stest"}
 forkable-jellyfish-merkle = { path = "../forkable-jellyfish-merkle"}
