@@ -14,7 +14,8 @@ mod test {
 
     #[test]
     fn test_file_store() {
-        let wallet = FileWalletStore::new("./www");
+        let tmpdir = libra_temppath::TempPath::new();
+        let wallet = FileWalletStore::new(tmpdir.path());
         let account = AccountAddress::random();
         let wallet_account = WalletAccount::new(account, true);
         wallet.save_account(wallet_account.clone()).unwrap();
@@ -36,7 +37,8 @@ mod test {
 
     #[test]
     fn test_get_accounts() {
-        let wallet = FileWalletStore::new("./www");
+        let tmpdir = libra_temppath::TempPath::new();
+        let wallet = FileWalletStore::new(tmpdir.path());
         let mut account_map = HashMap::new();
         for _i in 0..10 {
             let account = AccountAddress::random();
@@ -55,7 +57,8 @@ mod test {
 
     #[test]
     fn test_remove_account() {
-        let wallet = FileWalletStore::new("./www");
+        let tmpdir = libra_temppath::TempPath::new();
+        let wallet = FileWalletStore::new(tmpdir.path());
         let account = AccountAddress::random();
         let wallet_account = WalletAccount::new(account, true);
         wallet.save_account(wallet_account.clone()).unwrap();

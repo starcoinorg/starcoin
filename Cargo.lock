@@ -6166,6 +6166,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.4",
+ "libra-temppath",
  "starcoin-canonical-serialization",
  "starcoin-logger",
  "starcoin-types",
