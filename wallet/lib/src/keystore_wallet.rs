@@ -11,25 +11,26 @@ use starcoin_types::{
     account_address::AccountAddress,
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
-use starcoin_wallet_api::{Wallet, WalletAccount, WalletStore};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::ops::Add;
 use std::sync::{Mutex, RwLock};
 use std::time::Duration;
 use std::time::Instant;
+use wallet_api::{Wallet, WalletAccount, WalletStore};
 
 type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
 /// Wallet base KeyStore
 /// encrypt account's key by a password.
+#[derive(Default, Debug)]
 pub struct KeyStoreWallet<TKeyStore> {
     store: TKeyStore,
     default_account: Mutex<Option<AccountAddress>>,
     key_cache: RwLock<KeyCache>,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq, Eq)]
 struct KeyCache {
     cache: HashMap<AccountAddress, (Instant, KeyPair)>,
 }
@@ -233,14 +234,16 @@ where
     }
 }
 
-#[cfg(all(test))]
+#[cfg(test)]
 mod tests {
     use super::*;
-    use starcoin_wallet_api::mock::MemWalletStore;
+    use crate::file_wallet_store::FileWalletStore;
+    // use wallet_api::mock::MemWalletStore;
 
     #[test]
     fn test_wallet() -> Result<()> {
-        let wallet_store = MemWalletStore::new();
+        let tmp_path = tempfile::tempdir()?;
+        let wallet_store = FileWalletStore::new(tmp_path.path());
         let wallet = KeyStoreWallet::new(wallet_store)?;
         let account = wallet.get_default_account()?;
         assert!(account.is_none());
@@ -262,7 +265,8 @@ mod tests {
     }
     #[test]
     fn test_wallet_import_account_and_sign() -> Result<()> {
-        let wallet_store = MemWalletStore::new();
+        let tmp_path = tempfile::tempdir()?;
+        let wallet_store = FileWalletStore::new(tmp_path.path());
         let wallet = KeyStoreWallet::new(wallet_store)?;
         let keypair = gen_keypair();
 

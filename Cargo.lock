@@ -6247,7 +6247,6 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.4",
- "libra-temppath",
  "rand 0.6.5",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -6256,6 +6255,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "stest",
+ "tempfile",
 ]
 
 [[package]]

@@ -17,10 +17,10 @@ async-trait = "0.1"
 rand="0.6"
 starcoin-logger = {path = "../../commons/logger"}
 stest = {path = "../../commons/stest"}
-wallet-api = {path = "../api",package = "starcoin-wallet-api", features=["mock"]}
+wallet-api = {path = "../api",package = "starcoin-wallet-api"}
 scs ={package= "starcoin-canonical-serialization", path = "../../commons/scs"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
 starcoin-types = { path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-decrypt = {path = "../../commons/decrypt"}
 [dev-dependencies]
+tempfile="3"
