@@ -5,7 +5,6 @@ pub mod file_wallet_store;
 pub mod keystore_wallet;
 
 #[cfg(test)]
-
 mod test {
     use crate::file_wallet_store::FileWalletStore;
     use starcoin_types::account_address::AccountAddress;
@@ -14,7 +13,7 @@ mod test {
 
     #[test]
     fn test_file_store() {
-        let tmpdir = libra_temppath::TempPath::new();
+        let tmpdir = tempfile::tempdir().unwrap();
         let wallet = FileWalletStore::new(tmpdir.path());
         let account = AccountAddress::random();
         let wallet_account = WalletAccount::new(account, true);
@@ -37,7 +36,7 @@ mod test {
 
     #[test]
     fn test_get_accounts() {
-        let tmpdir = libra_temppath::TempPath::new();
+        let tmpdir = tempfile::tempdir().unwrap();
         let wallet = FileWalletStore::new(tmpdir.path());
         let mut account_map = HashMap::new();
         for _i in 0..10 {
@@ -57,7 +56,7 @@ mod test {
 
     #[test]
     fn test_remove_account() {
-        let tmpdir = libra_temppath::TempPath::new();
+        let tmpdir = tempfile::tempdir().unwrap();
         let wallet = FileWalletStore::new(tmpdir.path());
         let account = AccountAddress::random();
         let wallet_account = WalletAccount::new(account, true);

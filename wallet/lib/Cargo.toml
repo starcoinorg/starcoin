@@ -14,10 +14,13 @@ futures = "0.3"
 actix = "0.9"
 actix-rt = "1.0"
 async-trait = "0.1"
+rand="0.6"
 starcoin-logger = {path = "../../commons/logger"}
 stest = {path = "../../commons/stest"}
-wallet-api = {package = "starcoin-wallet-api", path = "../api"}
+wallet-api = {path = "../api",package = "starcoin-wallet-api"}
 scs ={package= "starcoin-canonical-serialization", path = "../../commons/scs"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/libra/libra", rev="76d43b08fd6b42e30fa3792787b8b35308588483" }
 starcoin-types = { path = "../../types"}
+starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-decrypt = {path = "../../commons/decrypt"}
 [dev-dependencies]
+tempfile="3"

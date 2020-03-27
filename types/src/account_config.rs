@@ -12,7 +12,7 @@ use anyhow::Result;
 use move_core_types::identifier::{IdentStr, Identifier};
 use once_cell::sync::Lazy;
 use scs::SCSCodec;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::HashValue;
 use std::convert::{TryFrom, TryInto};
 
@@ -109,56 +109,81 @@ pub fn received_payment_tag() -> StructTag {
 
 /// A Rust representation of an Account resource.
 /// This is not how the Account is represented in the VM but it's a convenient representation.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AccountResource {
-    authentication_key: ByteArray,
-    balance: u64,
-    sequence_number: u64,
+#[derive(Debug)]
+pub struct AccountResource(libra_types::account_config::AccountResource);
+
+impl Serialize for AccountResource {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for AccountResource {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(AccountResource(
+            libra_types::account_config::AccountResource::deserialize(deserializer)?,
+        ))
+    }
 }
 
 impl AccountResource {
     /// Constructs an Account resource.
-    pub fn new(balance: u64, sequence_number: u64, authentication_key: ByteArray) -> Self {
-        AccountResource {
+    pub fn new(balance: u64, sequence_number: u64, authentication_key: Vec<u8>) -> Self {
+        AccountResource(libra_types::account_config::AccountResource::new(
+            balance,
+            sequence_number,
             authentication_key,
-            balance,
-            sequence_number,
-        }
-    }
-
-    pub fn new_by_address(balance: u64, sequence_number: u64, address: AccountAddress) -> Self {
-        AccountResource {
-            authentication_key: ByteArray::new(address.to_vec()),
-            balance,
-            sequence_number,
-        }
+            false,
+            false,
+            //TODO eventKey as arguemnt.
+            libra_types::event::EventHandle::new(
+                libra_types::event::EventKey::new_from_address(
+                    &libra_types::account_address::AccountAddress::DEFAULT,
+                    0,
+                ),
+                0,
+            ),
+            libra_types::event::EventHandle::new(
+                libra_types::event::EventKey::new_from_address(
+                    &libra_types::account_address::AccountAddress::DEFAULT,
+                    1,
+                ),
+                0,
+            ),
+            0,
+        ))
     }
 
     /// Given an account map (typically from storage) retrieves the Account resource associated.
+    //TODO remove
     pub fn make_from_starcoin_blob(bytes: &[u8]) -> Result<Self> {
         Self::decode(bytes)
     }
 
     /// Given an account map (typically from storage) retrieves the Account resource associated.
     pub fn make_from(bytes: &[u8]) -> Result<Self> {
-        // make from libra data blob
-        let libra_account_res = libra_types::account_config::AccountResource::decode(bytes)?;
-        Ok(AccountResource::from(libra_account_res))
+        Self::decode(bytes)
     }
 
     /// Return the sequence_number field for the given AccountResource
     pub fn sequence_number(&self) -> u64 {
-        self.sequence_number
+        self.0.sequence_number()
     }
 
     /// Return the balance field for the given AccountResource
     pub fn balance(&self) -> u64 {
-        self.balance
+        self.0.balance()
     }
 
     /// Return the authentication_key field for the given AccountResource
-    pub fn authentication_key(&self) -> &ByteArray {
-        &self.authentication_key
+    pub fn authentication_key(&self) -> &[u8] {
+        self.0.authentication_key()
     }
 }
 
@@ -180,17 +205,13 @@ impl TryFrom<Vec<u8>> for AccountResource {
 
 impl Into<libra_types::account_config::AccountResource> for AccountResource {
     fn into(self) -> libra_types::account_config::AccountResource {
-        unimplemented!()
+        self.0
     }
 }
 
 impl From<libra_types::account_config::AccountResource> for AccountResource {
     fn from(libra_account_res: libra_types::account_config::AccountResource) -> Self {
-        AccountResource::new(
-            libra_account_res.balance(),
-            libra_account_res.sequence_number(),
-            ByteArray::new(libra_account_res.authentication_key().to_vec()),
-        )
+        AccountResource(libra_account_res)
     }
 }
 
