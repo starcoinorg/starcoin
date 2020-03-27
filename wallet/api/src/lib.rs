@@ -75,9 +75,9 @@ pub trait WalletStore {
 
 pub trait WalletService: Wallet {}
 
-#[async_trait::async_trait(? Send)]
-pub trait WalletAsyncService {
-    async fn create_account(self, password: &str) -> Result<WalletAccount>;
+#[async_trait::async_trait]
+pub trait WalletAsyncService: Clone + std::marker::Unpin + Send + Sync {
+    async fn create_account(self, password: String) -> Result<WalletAccount>;
 
     async fn get_default_account(self) -> Result<Option<WalletAccount>>;
 
