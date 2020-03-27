@@ -13,6 +13,7 @@ use miner::MinerActor;
 use network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_server::JSONRpcActor;
+use starcoin_wallet_service::WalletActor;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -105,7 +106,9 @@ where
                 txpool.clone(),
             )
             .unwrap();
-            let _json_rpc = JSONRpcActor::launch(node_config.clone(), txpool.clone());
+            let account_service = WalletActor::launch(node_config.clone()).unwrap();
+            let _json_rpc =
+                JSONRpcActor::launch(node_config.clone(), txpool.clone(), account_service);
             let receiver = if node_config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
                 Some(txpool.clone().subscribe_txns().await.unwrap())
             } else {
