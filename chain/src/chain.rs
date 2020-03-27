@@ -176,12 +176,12 @@ where
 
     pub fn create_block_template_inner(
         &self,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         previous_header: BlockHeader,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        //TODO read address from config
-        let author = AccountAddress::random();
         //TODO calculate gas limit etc.
         let mut txns = user_txns
             .iter()
@@ -189,11 +189,15 @@ where
             .map(|user_txn| Transaction::UserTransaction(user_txn))
             .collect::<Vec<Transaction>>();
 
-        //TODO refactor BlockMetadata to Coinbase transaction.
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         txns.push(Transaction::BlockMetadata(BlockMetadata::new(
-            HashValue::zero(),
-            0,
+            previous_header.id(),
+            timestamp,
             author,
+            auth_key_prefix.clone(),
         )));
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
@@ -237,15 +241,13 @@ where
             proof.verify(accumulator_root, *hash, leaf_index).unwrap();
         });
         //TODO execute txns and computer state.
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+
         Ok(BlockTemplate::new(
             previous_header.id(),
             timestamp,
             previous_header.number() + 1,
             author,
+            auth_key_prefix,
             accumulator_root,
             state_root,
             0,
@@ -351,6 +353,8 @@ where
 
     fn create_block_template(
         &self,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
@@ -361,7 +365,13 @@ where
         };
         assert!(self.exist_block(block_id));
         let previous_header = self.get_header(block_id).unwrap().unwrap();
-        self.create_block_template_inner(previous_header, difficulty, user_txns)
+        self.create_block_template_inner(
+            author,
+            auth_key_prefix,
+            previous_header,
+            difficulty,
+            user_txns,
+        )
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

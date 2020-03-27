@@ -26,10 +26,6 @@ use types::{
     peer_info::{PeerId, PeerInfo},
 };
 
-fn _genesis_block_for_test() -> Block {
-    Block::new_nil_block_for_test(BlockHeader::genesis_block_header_for_test())
-}
-
 fn gen_network(
     node_config: Arc<NodeConfig>,
     bus: Addr<BusActor>,

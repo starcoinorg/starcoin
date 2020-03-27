@@ -184,7 +184,7 @@ impl MockVM {
                 }
             },
             Transaction::BlockMetadata(block_metadata) => {
-                let (_id, _timestamp, author) = block_metadata.into_inner().unwrap();
+                let (_id, _timestamp, author, _auth) = block_metadata.into_inner().unwrap();
                 let access_path = AccessPath::new_for_account(author);
                 let account_resource: AccountResource = state_store
                     .get_from_statedb(&access_path)

@@ -13,7 +13,7 @@ use consensus::{difficult, Consensus, ConsensusHeader};
 
 use crate::miner::MineCtx;
 use crate::tx_factory::{GenTxEvent, TxFactoryActor};
-use chain::{to_block_chain_collection, BlockChainCollection};
+use chain::to_block_chain_collection;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
@@ -206,7 +206,13 @@ where
                 .unwrap();
                 let difficulty = difficult::get_next_work_required(&block_chain);
                 let block_template = block_chain
-                    .create_block_template(None, difficulty, txns.clone())
+                    .create_block_template(
+                        config.miner.account_address(),
+                        Some(config.miner.auth_key()),
+                        None,
+                        difficulty,
+                        txns.clone(),
+                    )
                     .unwrap();
                 miner.set_mint_job(MineCtx::new(block_template));
                 let job = miner.get_mint_job();

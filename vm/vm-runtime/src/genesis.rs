@@ -34,6 +34,7 @@ const GENESIS_SEED: [u8; 32] = [42; 32];
 
 /// The initial balance of the association account.
 pub const ASSOCIATION_INIT_BALANCE: u64 = 1_000_000_000_000_000;
+pub const SUBSIDY_BALANCE: u64 = ASSOCIATION_INIT_BALANCE / 2;
 
 pub static GENESIS_KEYPAIR: Lazy<(Ed25519PrivateKey, Ed25519PublicKey)> = Lazy::new(|| {
     let mut rng = StdRng::from_seed(GENESIS_SEED);
@@ -48,6 +49,10 @@ static MINT_TO_ADDRESS: Lazy<Identifier> =
 static EPILOGUE: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unwrap());
 static ROTATE_AUTHENTICATION_KEY: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("rotate_authentication_key").unwrap());
+
+static SUBSIDY_CONF: Lazy<Identifier> = Lazy::new(|| Identifier::new("subsidy").unwrap());
+static SUBSIDY_INIT: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("initialize_subsidy_info").unwrap());
 
 pub fn generate_genesis_state_set(
     _private_key: &Ed25519PrivateKey,
@@ -153,6 +158,22 @@ fn create_and_initialize_main_accounts(
             )
         });
 
+    // create the mint account
+    let mint_address = TransactionHelper::to_libra_account_address(account_config::mint_address());
+    move_vm
+        .execute_function(
+            &ACCOUNT_MODULE,
+            &CREATE_ACCOUNT_NAME,
+            gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![
+                Value::address(mint_address),
+                Value::vector_u8(mint_address.to_vec()),
+            ],
+        )
+        .unwrap_or_else(|e| panic!("Failure creating mint account {:?}: {}", mint_address, e));
+
     move_vm
         .execute_function(
             &COIN_MODULE,
@@ -163,6 +184,35 @@ fn create_and_initialize_main_accounts(
             vec![],
         )
         .expect("Failure initializing LibraCoin");
+
+    // init subsidy config
+    txn_data.sender = mint_address;
+    move_vm
+        .execute_function(
+            &SUBSIDY_CONF_MODULE,
+            &INITIALIZE,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![],
+        )
+        .expect("Failure initializing SubsidyConfig");
+
+    move_vm
+        .execute_function(
+            &SUBSIDY_CONF_MODULE,
+            &SUBSIDY_CONF,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![
+                Value::u64(1000 as u64),
+                Value::u64(50_000_000 as u64),
+                Value::u64(2 as u64),
+            ],
+        )
+        .unwrap();
+    txn_data.sender = association_addr;
 
     move_vm
         .execute_function(
@@ -211,6 +261,36 @@ fn create_and_initialize_main_accounts(
             ],
         )
         .expect("Failure minting to association");
+
+    // mint coins to mint address
+    move_vm
+        .execute_function(
+            &ACCOUNT_MODULE,
+            &MINT_TO_ADDRESS,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![
+                Value::address(mint_address),
+                Value::vector_u8(mint_address.to_vec()),
+                Value::u64(SUBSIDY_BALANCE),
+            ],
+        )
+        .unwrap();
+
+    // init subsidy.
+    txn_data.sender = mint_address;
+    move_vm
+        .execute_function(
+            &LIBRA_BLOCK_MODULE,
+            &SUBSIDY_INIT,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![],
+        )
+        .unwrap();
+    txn_data.sender = association_addr;
 
     let genesis_auth_key = AuthenticationKey::from_public_key(public_key).to_vec();
     move_vm

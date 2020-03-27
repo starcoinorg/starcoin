@@ -19,6 +19,7 @@ use std::sync::Arc;
 use storage::BlockChainStore;
 use traits::{ChainReader, ChainService, ChainWriter, TxPoolAsyncService};
 use types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
@@ -123,6 +124,8 @@ where
 
     pub fn create_block_template(
         &self,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         block_id: HashValue,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
@@ -138,12 +141,21 @@ where
                 .borrow()
                 .get(0)
                 .expect("master is none.")
-                .create_block_template(Some(block_id), difficulty, user_txns)
+                .create_block_template(
+                    author,
+                    auth_key_prefix,
+                    Some(block_id),
+                    difficulty,
+                    user_txns,
+                )
         } else {
+            // just for test
             let mut tmp = None;
             for branch in self.branches.read().values() {
                 if branch.exist_block(block_id) {
                     tmp = Some(branch.create_block_template(
+                        author,
+                        auth_key_prefix.clone(),
                         Some(block_id),
                         difficulty,
                         user_txns.clone(),
@@ -483,6 +495,8 @@ where
 
     fn create_block_template(
         &self,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
@@ -500,8 +514,13 @@ where
         };
 
         if let Ok(Some(_)) = self.get_block_by_hash(block_id) {
-            self.collection
-                .create_block_template(block_id, difficulty, user_txns)
+            self.collection.create_block_template(
+                author,
+                auth_key_prefix,
+                block_id,
+                difficulty,
+                user_txns,
+            )
         } else {
             Err(format_err!("Block {:?} not exist.", block_id))
         }

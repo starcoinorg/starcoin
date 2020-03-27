@@ -27,6 +27,7 @@ use storage::StarcoinStorage;
 use traits::{ChainAsyncService, ChainService};
 use txpool::TxPoolRef;
 use types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     startup_info::StartupInfo,
     system_events::SystemEvents,
@@ -110,10 +111,16 @@ where
             ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(
                 self.service.master_block_by_number(number)?.unwrap(),
             )),
-            ChainRequest::CreateBlockTemplate(parent_hash, txs) => {
+            ChainRequest::CreateBlockTemplate(author, auth_key_prefix, parent_hash, txs) => {
                 Ok(ChainResponse::BlockTemplate(
                     self.service
-                        .create_block_template(parent_hash, types::U256::zero(), txs)
+                        .create_block_template(
+                            author,
+                            auth_key_prefix,
+                            parent_hash,
+                            types::U256::zero(),
+                            txs,
+                        )
                         .unwrap(),
                 ))
             }
@@ -278,13 +285,20 @@ where
 
     async fn create_block_template(
         self,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
     ) -> Option<BlockTemplate> {
         let address = self.address.clone();
         drop(self);
         if let ChainResponse::BlockTemplate(block_template) = address
-            .send(ChainRequest::CreateBlockTemplate(parent_hash, txs))
+            .send(ChainRequest::CreateBlockTemplate(
+                author,
+                auth_key_prefix,
+                parent_hash,
+                txs,
+            ))
             .await
             .unwrap()
             .unwrap()

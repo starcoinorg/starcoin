@@ -58,7 +58,13 @@ where
     C: Consensus,
 {
     let difficulty = difficult::get_next_work_required(chain);
-    let block_template = chain.create_block_template(None, difficulty, txns)?;
+    let block_template = chain.create_block_template(
+        config.miner.account_address(),
+        Some(config.miner.auth_key()),
+        None,
+        difficulty,
+        txns,
+    )?;
     let (_sender, receiver) = oneshot::channel();
     // spawn a async task, maintain a task list, when new task coming, cancel old task.
     let block = C::create_block(config, chain, block_template, receiver)?;

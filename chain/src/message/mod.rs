@@ -3,6 +3,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
 use types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockTemplate},
     startup_info::StartupInfo,
     transaction::SignedUserTransaction,
@@ -14,7 +15,12 @@ pub enum ChainRequest {
     GetHeaderByHash(HashValue),
     HeadBlock(),
     GetBlockByNumber(u64),
-    CreateBlockTemplate(Option<HashValue>, Vec<SignedUserTransaction>), // just fot test
+    CreateBlockTemplate(
+        AccountAddress,
+        Option<Vec<u8>>,
+        Option<HashValue>,
+        Vec<SignedUserTransaction>,
+    ), // just fot test
     GetBlockByHash(HashValue),
     ConnectBlock(Block),
     GetStartupInfo(),

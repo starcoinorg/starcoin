@@ -27,21 +27,28 @@ pub struct BlockMetadata {
     id: HashValue,
     timestamp: u64,
     author: AccountAddress,
+    auth_key_prefix: Option<Vec<u8>>,
     //TODO add more field.
 }
 
 impl BlockMetadata {
-    pub fn new(id: HashValue, timestamp: u64, author: AccountAddress) -> Self {
+    pub fn new(
+        id: HashValue,
+        timestamp: u64,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
+    ) -> Self {
         Self {
             id,
             timestamp,
             author,
+            auth_key_prefix,
         }
     }
 
-    pub fn into_inner(self) -> Result<(ByteArray, u64, AccountAddress)> {
+    pub fn into_inner(self) -> Result<(ByteArray, u64, AccountAddress, Option<Vec<u8>>)> {
         let id = ByteArray::new(self.id.to_vec());
-        Ok((id, self.timestamp, self.author))
+        Ok((id, self.timestamp, self.author, self.auth_key_prefix))
     }
 }
 

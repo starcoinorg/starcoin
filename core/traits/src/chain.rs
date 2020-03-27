@@ -5,6 +5,7 @@ use crate::chain_state::{ChainState, ChainStateReader};
 use anyhow::Result;
 use crypto::HashValue;
 use types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
@@ -23,6 +24,8 @@ pub trait ChainReader {
     fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn create_block_template(
         &self,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,

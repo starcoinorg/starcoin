@@ -75,6 +75,11 @@ pub fn transaction_fee_address() -> AccountAddress {
         .expect("Parsing valid hex literal should always succeed")
 }
 
+pub fn mint_address() -> AccountAddress {
+    AccountAddress::from_hex_literal("0x6d696e74")
+        .expect("Parsing valid hex literal should always succeed")
+}
+
 pub fn account_struct_tag() -> StructTag {
     StructTag {
         address: core_code_address(),

@@ -30,6 +30,8 @@ pub struct BlockHeader {
     number: BlockNumber,
     /// Block author.
     author: AccountAddress,
+    /// auth_key_prefix for create_account
+    auth_key_prefix: Option<Vec<u8>>,
     /// The accumulator root hash after executing this block.
     accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
@@ -60,11 +62,43 @@ impl BlockHeader {
     where
         H: Into<Vec<u8>>,
     {
+        Self::new_with_auth(
+            parent_hash,
+            timestamp,
+            number,
+            author,
+            None,
+            accumulator_root,
+            state_root,
+            gas_used,
+            gas_limit,
+            difficult,
+            consensus_header,
+        )
+    }
+
+    pub fn new_with_auth<H>(
+        parent_hash: HashValue,
+        timestamp: u64,
+        number: BlockNumber,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
+        accumulator_root: HashValue,
+        state_root: HashValue,
+        gas_used: u64,
+        gas_limit: u64,
+        difficult: U256,
+        consensus_header: H,
+    ) -> BlockHeader
+    where
+        H: Into<Vec<u8>>,
+    {
         BlockHeader {
             parent_hash,
             number,
             timestamp,
             author,
+            auth_key_prefix,
             accumulator_root,
             state_root,
             gas_used,
@@ -115,33 +149,15 @@ impl BlockHeader {
     }
 
     pub fn into_metadata(self) -> BlockMetadata {
-        BlockMetadata::new(self.id(), self.timestamp, self.author)
+        BlockMetadata::new(
+            self.parent_hash(),
+            self.timestamp,
+            self.author,
+            self.auth_key_prefix,
+        )
     }
     pub fn difficult(&self) -> U256 {
         self.difficult
-    }
-    //#[cfg(test)]
-    pub fn genesis_block_header_for_test() -> Self {
-        BlockHeader {
-            parent_hash: HashValue::zero(),
-            timestamp: 0,
-            /// Block number.
-            number: 0,
-            /// Block author.
-            author: AccountAddress::random(),
-            /// The accumulator root hash after executing this block.
-            accumulator_root: HashValue::zero(),
-            /// The last transaction state_root of this block after execute.
-            state_root: HashValue::zero(),
-            /// Gas used for contracts execution.
-            gas_used: 0,
-            /// Block gas limit.
-            gas_limit: std::u64::MAX,
-            /// Block difficult
-            difficult: U256::zero(),
-            /// Block proof of work extend field.
-            consensus_header: HashValue::zero().to_vec(),
-        }
     }
 
     pub fn genesis_block_header(
@@ -156,6 +172,7 @@ impl BlockHeader {
             timestamp: 0,
             number: 0,
             author: AccountAddress::default(),
+            auth_key_prefix: None,
             accumulator_root,
             state_root,
             gas_used: 0,
@@ -163,29 +180,6 @@ impl BlockHeader {
             gas_limit: 0,
             difficult: U256::zero(),
             consensus_header,
-        }
-    }
-
-    //#[cfg(test)]
-    pub fn new_block_header_for_test(parent_hash: HashValue, parent_number: BlockNumber) -> Self {
-        BlockHeader {
-            parent_hash,
-            timestamp: 0,
-            /// Block number.
-            number: parent_number + 1,
-            /// Block author.
-            author: AccountAddress::random(),
-            /// The accumulator root hash after executing this block.
-            accumulator_root: HashValue::random(),
-            /// The last transaction state_root of this block after execute.
-            state_root: HashValue::random(),
-            /// Gas used for contracts execution.
-            gas_used: 0,
-            /// Block gas limit.
-            gas_limit: std::u64::MAX,
-            /// Block proof of work extend field.
-            difficult: U256::zero(),
-            consensus_header: HashValue::random().to_vec(),
         }
     }
 }
@@ -255,14 +249,6 @@ impl Block {
     }
     pub fn into_inner(self) -> (BlockHeader, BlockBody) {
         (self.header, self.body)
-    }
-
-    //#[cfg(test)]
-    pub fn new_nil_block_for_test(header: BlockHeader) -> Self {
-        Block {
-            header,
-            body: BlockBody::default(),
-        }
     }
 
     pub fn genesis_block(
@@ -342,6 +328,8 @@ pub struct BlockTemplate {
     pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
+    /// auth_key_prefix
+    pub auth_key_prefix: Option<Vec<u8>>,
     /// The accumulator root hash after executing this block.
     pub accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
@@ -363,6 +351,7 @@ impl BlockTemplate {
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         accumulator_root: HashValue,
         state_root: HashValue,
         gas_used: u64,
@@ -375,6 +364,7 @@ impl BlockTemplate {
             timestamp,
             number,
             author,
+            auth_key_prefix,
             accumulator_root,
             state_root,
             gas_used,
@@ -388,11 +378,12 @@ impl BlockTemplate {
     where
         H: Into<Vec<u8>>,
     {
-        let header = BlockHeader::new(
+        let header = BlockHeader::new_with_auth(
             self.parent_hash,
             self.timestamp,
             self.number,
             self.author,
+            self.auth_key_prefix,
             self.accumulator_root,
             self.state_root,
             self.gas_used,
@@ -409,11 +400,12 @@ impl BlockTemplate {
     where
         H: Into<Vec<u8>>,
     {
-        let header = BlockHeader::new(
+        let header = BlockHeader::new_with_auth(
             self.parent_hash,
             self.timestamp,
             self.number,
             self.author,
+            self.auth_key_prefix,
             self.accumulator_root,
             self.state_root,
             self.gas_used,
@@ -430,6 +422,7 @@ impl BlockTemplate {
             timestamp: block.header().timestamp,
             number: block.header().number,
             author: block.header().author,
+            auth_key_prefix: block.header().auth_key_prefix.clone(),
             accumulator_root: block.header().accumulator_root,
             state_root: block.header().state_root,
             gas_used: block.header().gas_used,
@@ -438,16 +431,5 @@ impl BlockTemplate {
             difficult: block.header().difficult,
             body: block.body,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_block_hash() {
-        let block = Block::new_nil_block_for_test(BlockHeader::genesis_block_header_for_test());
-        let _hash = block.crypto_hash();
     }
 }
