@@ -35,11 +35,12 @@ use types::{
     account_config::AccountResource,
     block_metadata::BlockMetadata,
     transaction::{
-        SignatureCheckedTransaction, Transaction, TransactionArgument, TransactionOutput,
-        TransactionPayload, TransactionStatus,
+        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
+        TransactionOutput, TransactionPayload, TransactionStatus,
     },
     vm_error::{StatusCode, VMStatus},
 };
+use vm::errors::convert_prologue_runtime_error;
 use vm::{
     errors::VMResult,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
@@ -85,32 +86,70 @@ impl StarcoinVM {
             .ok_or_else(|| VMStatus::new(StatusCode::VM_STARTUP_FAILURE))
     }
 
-    fn verify_transaction(
-        &self,
+    fn verify_transaction_impl(
+        &mut self,
         transaction: &SignatureCheckedTransaction,
         _state_view: &dyn StateView,
         remote_cache: &dyn RemoteCache,
-        _txn_data: &TransactionMetadata,
+        txn_data: &TransactionMetadata,
     ) -> Result<VerifiedTranscationPayload, VMStatus> {
         info!("very transaction");
-        let _ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
+        let mut ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
         // ToDo: check gas
+        self.load_gas_schedule(remote_cache);
+        let gas_schedule = self.get_gas_schedule()?;
         match transaction.payload() {
             TransactionPayload::Script(script) => {
-                // ToDo: run prologue?
-                Ok(VerifiedTranscationPayload::Script(
-                    script.code().to_vec(),
-                    script.args().to_vec(),
-                ))
+                let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
+                match result {
+                    Ok(_) => Ok(VerifiedTranscationPayload::Script(
+                        script.code().to_vec(),
+                        script.args().to_vec(),
+                    )),
+                    Err(e) => return Err(TransactionHelper::to_starcoin_vmstatus(e)),
+                }
             }
             TransactionPayload::Module(module) => {
-                // ToDo: run prologue?
-                Ok(VerifiedTranscationPayload::Module(module.code().to_vec()))
+                let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
+                match result {
+                    Ok(_) => Ok(VerifiedTranscationPayload::Module(module.code().to_vec())),
+                    Err(e) => return Err(TransactionHelper::to_starcoin_vmstatus(e)),
+                }
             }
             _ => Err(VMStatus::new(StatusCode::UNREACHABLE)),
         }
     }
 
+    pub fn verify_transaction(
+        &mut self,
+        chain_state: &dyn traits::ChainState,
+        txn: SignedUserTransaction,
+    ) -> Option<VMStatus> {
+        let mut state_store = StateStore::new(chain_state);
+        let data_cache = BlockDataCache::new(&state_store);
+        let mut ctx = SystemExecutionContext::new(&data_cache, GasUnits::new(0));
+        let libra_txn = TransactionHelper::to_libra_signed_transaction(&txn);
+        let txn_data = TransactionMetadata::new(&libra_txn);
+        let signature_verified_txn = match txn.check_signature() {
+            Ok(t) => t,
+            Err(_) => return Some(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
+        };
+        match self.verify_transaction_impl(
+            &signature_verified_txn,
+            &state_store,
+            &data_cache,
+            &txn_data,
+        ) {
+            Ok(_) => None,
+            Err(err) => {
+                if err.major_status == StatusCode::SEQUENCE_NUMBER_TOO_NEW {
+                    None
+                } else {
+                    Some(err)
+                }
+            }
+        }
+    }
     fn execute_verified_payload(
         &mut self,
         remote_cache: &mut BlockDataCache<'_>,
@@ -164,6 +203,35 @@ impl StarcoinVM {
         // TODO convert to starcoin type
         info!("{:?}", output);
         output
+    }
+
+    fn run_prologue<T: LibraChainState>(
+        &self,
+        gas_schedule: &CostTable,
+        chain_state: &mut T,
+        txn_data: &TransactionMetadata,
+    ) -> VMResult<()> {
+        let txn_sequence_number = txn_data.sequence_number();
+        let txn_public_key = txn_data.public_key().to_bytes().to_vec();
+        let txn_gas_price = txn_data.gas_unit_price().get();
+        let txn_max_gas_units = txn_data.max_gas_amount().get();
+        let txn_expiration_time = txn_data.expiration_time();
+        self.move_vm
+            .execute_function(
+                &ACCOUNT_MODULE,
+                &PROLOGUE_NAME,
+                gas_schedule,
+                chain_state,
+                &txn_data,
+                vec![
+                    Value::u64(txn_sequence_number),
+                    Value::vector_u8(txn_public_key),
+                    Value::u64(txn_gas_price),
+                    Value::u64(txn_max_gas_units),
+                    Value::u64(txn_expiration_time),
+                ],
+            )
+            .map_err(|err| convert_prologue_runtime_error(&err, &txn_data.sender))
     }
 
     fn run_epilogue<T: LibraChainState>(
@@ -261,8 +329,12 @@ impl StarcoinVM {
 
                 let output = match signature_checked_txn {
                     Ok(txn) => {
-                        let verified_payload =
-                            self.verify_transaction(&txn, &state_store, &data_cache, &txn_data);
+                        let verified_payload = self.verify_transaction_impl(
+                            &txn,
+                            &state_store,
+                            &data_cache,
+                            &txn_data,
+                        );
 
                         let result = match verified_payload {
                             Ok(payload) => {
