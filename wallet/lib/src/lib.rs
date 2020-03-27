@@ -9,10 +9,11 @@ pub mod keystore_wallet;
 mod test {
     use crate::file_wallet_store::FileWalletStore;
     use starcoin_types::account_address::AccountAddress;
+    use std::collections::HashMap;
     use wallet_api::{WalletAccount, WalletStore};
 
     #[test]
-    fn file_store_test() {
+    fn test_file_store() {
         let wallet = FileWalletStore::new("./www");
         let account = AccountAddress::random();
         let wallet_account = WalletAccount::new(account, true);
@@ -31,5 +32,38 @@ mod test {
             .unwrap()
             .unwrap();
         assert_eq!(value2, value.as_bytes().to_vec());
+    }
+
+    #[test]
+    fn test_get_accounts() {
+        let wallet = FileWalletStore::new("./www");
+        let mut account_map = HashMap::new();
+        for _i in 0..10 {
+            let account = AccountAddress::random();
+            let wallet_account = WalletAccount::new(account, true);
+            wallet.save_account(wallet_account.clone()).unwrap();
+            account_map.insert(account, wallet_account);
+        }
+        let accounts = wallet.get_accounts().unwrap();
+        assert_eq!(accounts.len(), 10);
+        for account in accounts {
+            let wac = account_map.get(&account.address);
+            assert!(wac.is_some());
+            wallet.remove_account(&account.address).unwrap();
+        }
+    }
+
+    #[test]
+    fn test_remove_account() {
+        let wallet = FileWalletStore::new("./www");
+        let account = AccountAddress::random();
+        let wallet_account = WalletAccount::new(account, true);
+        wallet.save_account(wallet_account.clone()).unwrap();
+        wallet
+            .save_to_account(&account, String::from("key1"), "value1".as_bytes().to_vec())
+            .unwrap();
+        wallet.remove_account(&account).unwrap();
+        let test_account = wallet.get_account(&account);
+        assert!(test_account.is_err());
     }
 }

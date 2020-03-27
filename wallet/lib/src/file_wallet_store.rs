@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use scs::SCSCodec;
 use starcoin_types::account_address::AccountAddress;
 use std::fs::OpenOptions;
@@ -27,7 +27,6 @@ impl FileWalletStore {
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
         if !path.as_ref().is_dir() {
             fs::create_dir(path.as_ref()).unwrap();
-            println!("create root path ok :{:?}", path.as_ref());
         }
 
         Self {
@@ -35,23 +34,13 @@ impl FileWalletStore {
         }
     }
 
-    fn get_account_path(&self, address: &AccountAddress) -> Result<PathBuf> {
+    fn get_path(&self, address: &AccountAddress, key: &str, is_create: bool) -> Result<PathBuf> {
         let path_str = address.to_string();
         let path = self.root_path.join(path_str);
-        if !path.is_dir() {
+        if !path.is_dir() && is_create {
             fs::create_dir(path.as_path()).unwrap();
         }
-        let path = path.join(DEFAULT_ACCOUNT_FILE_NAME);
-        Ok(path)
-    }
-
-    fn get_key_path(&self, address: &AccountAddress, key: String) -> Result<PathBuf> {
-        let path_str = address.to_string();
-        let path = self.root_path.join(path_str);
-        if !path.is_dir() {
-            fs::create_dir(path.as_path()).unwrap();
-        }
-        let path = path.join(&key);
+        let path = path.join(key);
         Ok(path)
     }
 
@@ -62,7 +51,9 @@ impl FileWalletStore {
         match fs::read_dir(root_dir) {
             Ok(paths) => {
                 for path in paths {
-                    result.push(path.unwrap().path());
+                    let tmp_path = path.unwrap().path();
+                    let tmp_path = tmp_path.join(DEFAULT_ACCOUNT_FILE_NAME);
+                    result.push(tmp_path);
                 }
             }
             _ => {}
@@ -73,30 +64,43 @@ impl FileWalletStore {
 
 impl WalletStore for FileWalletStore {
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>> {
-        let path = self.get_account_path(address).unwrap();
+        let path = self
+            .get_path(address, DEFAULT_ACCOUNT_FILE_NAME, false)
+            .unwrap();
         if !path.as_os_str().is_empty() {
-            let mut file = File::open(&path)?;
-            let mut buffer = vec![];
-            file.read_to_end(&mut buffer)?;
-            let wallnet_account = WalletAccount::decode(buffer.as_slice()).unwrap();
-            Ok(Some(wallnet_account))
+            let file = File::open(&path);
+            match file {
+                Ok(mut file) => {
+                    let mut buffer = vec![];
+                    file.read_to_end(&mut buffer)?;
+                    let wallnet_account = WalletAccount::decode(buffer.as_slice()).unwrap();
+                    Ok(Some(wallnet_account))
+                }
+                Err(e) => {
+                    bail!("open file err: {}", e);
+                }
+            }
         } else {
             Ok(None)
         }
     }
 
     fn save_account(&self, account: WalletAccount) -> Result<()> {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(self.get_account_path(&account.address).unwrap())?;
+        let mut file = OpenOptions::new().write(true).create(true).open(
+            self.get_path(&account.address, DEFAULT_ACCOUNT_FILE_NAME, true)
+                .unwrap(),
+        )?;
         file.write_all(&scs::to_bytes(&account)?)?;
         file.flush()?;
         Ok(())
     }
 
     fn remove_account(&self, address: &AccountAddress) -> Result<()> {
-        fs::remove_dir_all(self.get_account_path(address).unwrap())?;
+        let path_str = address.to_string();
+        let path = self.root_path.join(path_str);
+        if path.is_dir() {
+            fs::remove_dir_all(path)?;
+        }
         Ok(())
     }
 
@@ -117,14 +121,14 @@ impl WalletStore for FileWalletStore {
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
-            .open(self.get_key_path(address, key).unwrap())?;
+            .open(self.get_path(address, &key, true).unwrap())?;
         file.write_all(value.as_slice())?;
         file.flush()?;
         Ok(())
     }
 
     fn get_from_account(&self, address: &AccountAddress, key: &str) -> Result<Option<Vec<u8>>> {
-        let path = self.get_key_path(address, key.parse().unwrap()).unwrap();
+        let path = self.get_path(address, key, false).unwrap();
 
         if !path.as_os_str().is_empty() {
             let mut file = File::open(&path)?;
