@@ -5,7 +5,6 @@ use anyhow::Result;
 use crypto::HashValue;
 use serde::{Deserialize, Serialize};
 
-use std::convert::TryFrom;
 use types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
     account_state::AccountState, state_set::ChainStateSet,

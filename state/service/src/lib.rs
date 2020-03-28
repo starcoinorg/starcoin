@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-mod account_proof;
+mod actor;
+mod message;
+mod service;
 
-pub use account_proof::AccountProof;
+pub use actor::*;

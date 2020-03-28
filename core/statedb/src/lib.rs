@@ -12,7 +12,6 @@ use starcoin_types::{
     account_address::AccountAddress,
     account_config::{account_struct_tag, AccountResource},
     account_state::AccountState,
-    byte_array::ByteArray,
     state_set::{AccountStateSet, ChainStateSet},
 };
 use std::cell::RefCell;
@@ -167,11 +166,19 @@ pub struct ChainStateDB {
 }
 
 impl ChainStateDB {
-    // create empty chain state
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
         Self {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
+            cache: RefCell::new(HashMap::new()),
+        }
+    }
+
+    //TODO implements a change_root ChainStateReader
+    pub fn change_root(&self, root_hash: HashValue) -> Self {
+        Self {
+            store: self.store.clone(),
+            state_tree: StateTree::new(self.store.clone(), Some(root_hash)),
             cache: RefCell::new(HashMap::new()),
         }
     }

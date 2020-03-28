@@ -7,7 +7,6 @@ use forkable_jellyfish_merkle::{
     JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
     SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
-use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
 use starcoin_types::state_set::StateSet;
 use std::collections::BTreeMap;
