@@ -319,7 +319,8 @@ impl StarcoinVM {
                 //     .unwrap();
                 // TransactionOutput::new(vec![], 0, KEEP_STATUS.clone())
                 let result = self
-                    .process_block_metadata(&mut data_cache, block_metadata).unwrap();
+                    .process_block_metadata(&mut data_cache, block_metadata)
+                    .unwrap();
                 if let LibraTransactionStatus::Keep(_) = result.status() {
                     state_store.add_write_set(result.write_set())
                 };
