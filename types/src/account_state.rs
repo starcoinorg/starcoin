@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::convert::{TryFrom, TryInto};
 
-#[derive(Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHash)]
 pub struct AccountState {
     storage_roots: Vec<Option<HashValue>>,
 }

@@ -68,7 +68,7 @@ impl MockTxnGenerator {
                     .sequence_number();
             // add some randomness too.
             let mut rng = rand::thread_rng();
-            let amount_to_transfer = rng.gen_range(5000u64, 10000u64);
+            let amount_to_transfer = rng.gen_range(500000000u64, 1000000000u64);
 
             // transfer will create account if it not exists.
             let txn = <E as TransactionExecutor>::build_mint_txn(

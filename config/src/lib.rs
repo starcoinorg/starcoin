@@ -253,3 +253,18 @@ fn get_ephemeral_port() -> ::std::io::Result<u16> {
 
     Ok(addr.port())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serialize() {
+        let config = NodeConfig::default();
+        let path = libra_temppath::TempPath::new();
+        path.create_as_file().unwrap();
+        save_config(&config, path.path()).unwrap();
+        let config2: NodeConfig = load_config(path.path()).unwrap();
+        assert_eq!(config.rpc, config2.rpc);
+    }
+}

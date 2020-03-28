@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use jsonrpc_core::Result;
-use starcoin_rpc_api::status::StatusApi;
+use starcoin_rpc_api::node::NodeApi;
 
 /// Re-export the API
-pub use starcoin_rpc_api::status::*;
+pub use starcoin_rpc_api::node::*;
 
-pub struct StatusRpcImpl {}
+pub struct NodeRpcImpl {}
 
-impl StatusRpcImpl {
+impl NodeRpcImpl {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl StatusApi for StatusRpcImpl {
+impl NodeApi for NodeRpcImpl {
     fn status(&self) -> Result<bool> {
         //TODO check service status.
         Ok(true)

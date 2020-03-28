@@ -5,38 +5,37 @@ use crate::{StateNode, StateNodeStore};
 use anyhow::{Error, Result};
 
 use starcoin_crypto::HashValue;
-use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
+use std::sync::Mutex;
 
 pub struct MockStateNodeStore {
-    nodes: RefCell<HashMap<HashValue, StateNode>>,
+    nodes: Mutex<HashMap<HashValue, StateNode>>,
 }
 
 impl MockStateNodeStore {
     pub fn new() -> Self {
         let instance = Self {
-            nodes: RefCell::new(HashMap::new()),
+            nodes: Mutex::new(HashMap::new()),
         };
         // instance.put(*SPARSE_MERKLE_PLACEHOLDER_HASH, Node::new_null().into());
         instance
     }
 
     pub fn all_nodes(&self) -> Vec<(HashValue, StateNode)> {
-        self.nodes
-            .borrow()
-            .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect()
+        let nodes = self.nodes.lock().unwrap();
+        nodes.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
     }
 }
 
 impl StateNodeStore for MockStateNodeStore {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        Ok(self.nodes.borrow().get(hash).cloned())
+        let nodes = self.nodes.lock().unwrap();
+        Ok(nodes.get(hash).cloned())
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
-        self.nodes.borrow_mut().insert(key, node);
+        let mut nodes = self.nodes.lock().unwrap();
+        nodes.insert(key, node);
         Ok(())
     }
 

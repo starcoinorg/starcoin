@@ -15,11 +15,14 @@ scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 structopt = "0.3.2"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
+starcoin-types = { path = "../../types"}
 starcoin-rpc-client = { path = "../../rpc/client"}
 starcoin-node = { path = "../../node"}
 starcoin-consensus = {path = "../../consensus"}
 starcoin-executor = {path = "../../executor"}
+starcoin-state-api = {path = "../../state/api"}
 scmd = { path = "../../commons/scmd" }
+hex = { version = "0.3.2", default-features = false }
 
 [[bin]]
 name = "starcoin"

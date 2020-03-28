@@ -15,6 +15,8 @@ members = [
     "core/forkable-jellyfish-merkle",
     "core/statedb",
     "core/genesis",
+    "state/api",
+    "state/service",
     "config",
     "config/config-generator",
     "bus",

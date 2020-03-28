@@ -6,10 +6,17 @@ use futures::{future::FutureExt, select, stream::StreamExt};
 use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, RpcChannel};
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::{account::AccountClient, status::StatusClient, txpool::TxPoolClient};
+use starcoin_rpc_api::{
+    account::AccountClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
+};
+use starcoin_state_api::StateWithProof;
+use starcoin_types::access_path::AccessPath;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_state::AccountState;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::WalletAccount;
+use starcoin_wallet_api::{AccountWithKey, WalletAccount};
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::path::Path;
@@ -17,6 +24,10 @@ use std::time::Duration;
 use tokio01::reactor::Reactor;
 use tokio_compat::prelude::*;
 use tokio_compat::runtime::Runtime;
+
+mod remote_state_reader;
+
+pub use crate::remote_state_reader::RemoteStateReader;
 
 pub struct RpcClient {
     inner: RpcClientInner,
@@ -74,10 +85,10 @@ impl RpcClient {
         Ok(Self::new(client_inner, rt))
     }
 
-    pub fn status(&self) -> anyhow::Result<bool> {
+    pub fn node_status(&self) -> anyhow::Result<bool> {
         self.rt.borrow_mut().block_on_std(async {
             self.inner
-                .status_client
+                .node_client
                 .status()
                 .map_err(map_err)
                 .compat()
@@ -119,6 +130,17 @@ impl RpcClient {
         })
     }
 
+    pub fn account_get(&self, address: AccountAddress) -> anyhow::Result<Option<AccountWithKey>> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .get(address)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
+
     pub fn account_sign_txn(
         &self,
         raw_txn: RawUserTransaction,
@@ -127,6 +149,53 @@ impl RpcClient {
             self.inner
                 .account_client
                 .sign_txn(raw_txn)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
+
+    pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .state_client
+                .get(access_path)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
+
+    pub fn state_get_with_proof(&self, access_path: AccessPath) -> anyhow::Result<StateWithProof> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .state_client
+                .get_with_proof(access_path)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
+
+    pub fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .state_client
+                .get_state_root()
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
+
+    pub fn state_get_account_state(
+        &self,
+        address: AccountAddress,
+    ) -> anyhow::Result<Option<AccountState>> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .state_client
+                .get_account_state(address)
                 .map_err(map_err)
                 .compat()
                 .await
@@ -141,17 +210,19 @@ impl AsRef<RpcClientInner> for RpcClient {
 }
 
 pub(crate) struct RpcClientInner {
-    status_client: StatusClient,
+    node_client: NodeClient,
     txpool_client: TxPoolClient,
     account_client: AccountClient,
+    state_client: StateClient,
 }
 
 impl RpcClientInner {
     pub fn new(channel: RpcChannel) -> Self {
         Self {
-            status_client: channel.clone().into(),
+            node_client: channel.clone().into(),
             txpool_client: channel.clone().into(),
-            account_client: channel.into(),
+            account_client: channel.clone().into(),
+            state_client: channel.clone().into(),
         }
     }
 }

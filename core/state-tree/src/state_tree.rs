@@ -7,7 +7,6 @@ use forkable_jellyfish_merkle::{
     JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
     SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
-use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
 use starcoin_types::state_set::StateSet;
 use std::collections::BTreeMap;
@@ -30,10 +29,7 @@ impl From<Node> for StateNode {
     }
 }
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
-pub struct StateProof {}
-
-pub trait StateNodeStore {
+pub trait StateNodeStore: std::marker::Send + std::marker::Sync {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>>;
     fn put(&self, key: HashValue, node: StateNode) -> Result<()>;
     fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()>;

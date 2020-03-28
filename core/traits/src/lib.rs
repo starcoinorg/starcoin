@@ -9,5 +9,7 @@ mod txpool_service;
 
 pub use chain::{Chain, ChainReader, ChainWriter};
 pub use chain_service::{ChainAsyncService, ChainService};
-pub use chain_state::{ChainState, ChainStateReader, ChainStateWriter};
+pub use chain_state::{
+    AccountStateReader, ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
+};
 pub use txpool_service::TxPoolAsyncService;

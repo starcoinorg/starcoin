@@ -5,8 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    access_path::AccessPath, account_address::AccountAddress, byte_array::ByteArray,
-    language_storage::StructTag,
+    access_path::AccessPath, account_address::AccountAddress, language_storage::StructTag,
 };
 use anyhow::Result;
 use move_core_types::identifier::{IdentStr, Identifier};

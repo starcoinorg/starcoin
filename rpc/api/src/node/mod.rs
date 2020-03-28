@@ -4,10 +4,10 @@
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 
-pub use self::gen_client::Client as StatusClient;
+pub use self::gen_client::Client as NodeClient;
 
 #[rpc]
-pub trait StatusApi {
-    #[rpc(name = "status")]
+pub trait NodeApi {
+    #[rpc(name = "node.status")]
     fn status(&self) -> Result<bool>;
 }

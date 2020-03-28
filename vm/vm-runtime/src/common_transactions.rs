@@ -11,7 +11,8 @@ use types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
 };
 
-pub const TXN_RESERVED: u64 = 500_000;
+//TODO
+pub const TXN_RESERVED: u64 = 50_000;
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 
 /// Returns a transaction to create a new account with the given arguments.

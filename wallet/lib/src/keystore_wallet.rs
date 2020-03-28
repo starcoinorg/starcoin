@@ -17,7 +17,7 @@ use std::ops::Add;
 use std::sync::{Mutex, RwLock};
 use std::time::Duration;
 use std::time::Instant;
-use wallet_api::{Wallet, WalletAccount, WalletStore};
+use wallet_api::{AccountWithKey, Wallet, WalletAccount, WalletStore};
 
 type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
@@ -75,6 +75,11 @@ where
         let account = WalletAccount::new(address, is_default);
         self.save_account(account.clone(), keypair, password.to_string())?;
         Ok(account)
+    }
+
+    fn get_account_with_key(&self, _address: &AccountAddress) -> Result<Option<AccountWithKey>> {
+        //TODO
+        unimplemented!()
     }
 
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>, Error> {

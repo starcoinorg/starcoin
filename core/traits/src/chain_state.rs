@@ -3,16 +3,37 @@
 
 use anyhow::Result;
 use crypto::HashValue;
+use serde::{Deserialize, Serialize};
 
-use std::convert::TryFrom;
 use types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
     account_state::AccountState, state_set::ChainStateSet,
 };
 
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize)]
+pub struct StateProof {}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize)]
+pub struct StateWithProof {
+    pub state: Option<Vec<u8>>,
+    pub proof: StateProof,
+}
+
+impl StateWithProof {
+    pub fn new(state: Option<Vec<u8>>, proof: StateProof) -> Self {
+        Self { state, proof }
+    }
+}
+
 pub trait ChainStateReader {
     /// Gets the state data for a single access path.
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>>;
+
+    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
+        //TODO implements proof.
+        self.get(access_path)
+            .map(|state| StateWithProof::new(state, StateProof {}))
+    }
 
     /// Gets state data for a list of access paths.
     fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
@@ -20,27 +41,6 @@ pub trait ChainStateReader {
             .iter()
             .map(|access_path| self.get(access_path))
             .collect()
-    }
-
-    /// Get AccountResource by address
-    fn get_account_resource(&self, address: &AccountAddress) -> Result<Option<AccountResource>> {
-        self.get(&AccessPath::new_for_account(*address))
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(AccountResource::make_from(bytes.as_slice())?)),
-                None => Ok(None),
-            })
-    }
-
-    /// Get starcoin account balance by address
-    fn get_account_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
-        //TODO read BalanceResource after refactor AccountResource.
-        Ok(self
-            .get(&AccessPath::new_for_account(*address))
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(AccountResource::make_from(bytes.as_slice())?)),
-                None => Ok(None),
-            })?
-            .map(|resource| resource.balance()))
     }
 
     /// Gets account state
@@ -74,3 +74,41 @@ pub trait ChainStateWriter {
 
 /// `ChainState` is a trait that defines chain's global state.
 pub trait ChainState: ChainStateReader + ChainStateWriter {}
+
+/// `AccountStateReader` is a helper struct for read account state.
+pub struct AccountStateReader<'a> {
+    //TODO add a cache.
+    reader: &'a dyn ChainStateReader,
+}
+
+impl<'a> AccountStateReader<'a> {
+    pub fn new(reader: &'a dyn ChainStateReader) -> Self {
+        Self { reader }
+    }
+
+    /// Get AccountResource by address
+    pub fn get_account_resource(
+        &self,
+        address: &AccountAddress,
+    ) -> Result<Option<AccountResource>> {
+        self.reader
+            .get(&AccessPath::new_for_account(*address))
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(AccountResource::make_from(bytes.as_slice())?)),
+                None => Ok(None),
+            })
+    }
+
+    /// Get starcoin account balance by address
+    pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
+        //TODO read BalanceResource after refactor AccountResource.
+        Ok(self
+            .reader
+            .get(&AccessPath::new_for_account(*address))
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(AccountResource::make_from(bytes.as_slice())?)),
+                None => Ok(None),
+            })?
+            .map(|resource| resource.balance()))
+    }
+}

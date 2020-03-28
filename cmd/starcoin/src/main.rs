@@ -18,6 +18,7 @@ use std::sync::Arc;
 
 mod account;
 mod debug;
+mod txn;
 
 mod helper;
 pub mod state;
@@ -63,9 +64,11 @@ where
         .command(
             Command::with_name("account")
                 .subcommand(account::CreateCommand {}.into_cmd())
+                .subcommand(account::ShowCommand {}.into_cmd())
                 .subcommand(account::ListCommand {}.into_cmd())
                 .subcommand(account::SignTxnCommand {}.into_cmd()),
         )
+        .command(Command::with_name("txn").subcommand(txn::TransferCommand {}.into_cmd()))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand {}.into_cmd()))
         .exec()
 }
