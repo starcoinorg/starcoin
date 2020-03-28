@@ -13,6 +13,7 @@ use miner::MinerActor;
 use network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_server::JSONRpcActor;
+use starcoin_state_service::ChainStateActor;
 use starcoin_wallet_service::WalletActor;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -92,11 +93,21 @@ where
                 )
             };
 
-            // node config
-            // let mut config = NodeConfig::default();
-            // config.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
-            // let node_config = Arc::new(config);
             let network = NetworkActor::launch(node_config.clone(), bus.clone(), handle.clone());
+
+            let head_block = storage
+                .get_block(startup_info.head.get_head())
+                .unwrap()
+                .expect("Head block must exist.");
+
+            let chain_state_service = ChainStateActor::launch(
+                node_config.clone(),
+                bus.clone(),
+                storage.clone(),
+                Some(head_block.header().state_root()),
+            )
+            .unwrap();
+
             let chain = ChainActor::launch(
                 node_config.clone(),
                 startup_info,
@@ -106,9 +117,15 @@ where
                 txpool.clone(),
             )
             .unwrap();
+
             let account_service = WalletActor::launch(node_config.clone()).unwrap();
-            let _json_rpc =
-                JSONRpcActor::launch(node_config.clone(), txpool.clone(), account_service);
+
+            let _json_rpc = JSONRpcActor::launch(
+                node_config.clone(),
+                txpool.clone(),
+                account_service,
+                chain_state_service,
+            );
             let receiver = if node_config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
                 Some(txpool.clone().subscribe_txns().await.unwrap())
             } else {

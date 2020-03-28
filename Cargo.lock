@@ -5632,6 +5632,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "crossbeam-channel",
+ "hex 0.3.2",
  "notify",
  "scmd",
  "serde",
@@ -5642,6 +5643,8 @@ dependencies = [
  "starcoin-logger",
  "starcoin-node",
  "starcoin-rpc-client",
+ "starcoin-state-api",
+ "starcoin-types",
  "structopt",
 ]
 
@@ -5887,6 +5890,7 @@ dependencies = [
  "starcoin-miner",
  "starcoin-network",
  "starcoin-rpc-server",
+ "starcoin-state-service",
  "starcoin-storage",
  "starcoin-sync",
  "starcoin-traits",
@@ -5917,6 +5921,8 @@ dependencies = [
  "jsonrpc-ws-server",
  "serde",
  "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-state-api",
  "starcoin-types",
  "starcoin-wallet-api",
  "thiserror",
@@ -5946,9 +5952,11 @@ dependencies = [
  "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-config",
+ "starcoin-crypto",
  "starcoin-logger",
  "starcoin-rpc-api",
  "starcoin-rpc-server",
+ "starcoin-state-api",
  "starcoin-traits",
  "starcoin-types",
  "starcoin-wallet-api",
@@ -5982,9 +5990,14 @@ dependencies = [
  "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-config",
+ "starcoin-crypto",
  "starcoin-logger",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
+ "starcoin-state-api",
+ "starcoin-state-service",
+ "starcoin-state-tree",
+ "starcoin-statedb",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",
@@ -5993,6 +6006,46 @@ dependencies = [
  "stest",
  "thiserror",
  "tokio 0.1.22",
+]
+
+[[package]]
+name = "starcoin-state-api"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures 0.3.4",
+ "serde",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-state-tree",
+ "starcoin-statedb",
+ "starcoin-traits",
+ "starcoin-types",
+ "stest",
+]
+
+[[package]]
+name = "starcoin-state-service"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures 0.3.4",
+ "starcoin-bus",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-state-api",
+ "starcoin-statedb",
+ "starcoin-traits",
+ "starcoin-types",
+ "stest",
 ]
 
 [[package]]
