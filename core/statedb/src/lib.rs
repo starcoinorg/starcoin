@@ -18,7 +18,7 @@ use starcoin_types::{
 use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::StateError::AccountNotExist;
 use thiserror::Error;
@@ -32,7 +32,10 @@ pub enum StateError {
 /// represent AccountState in runtime memory.
 struct AccountStateObject {
     address: AccountAddress,
-    trees: RefCell<Vec<Option<StateTree>>>,
+    //TODO if use RefCell at here, compile error for ActorRef async interface
+    // the trait `std::marker::Sync` is not implemented for AccountStateObject
+    // refactor AccountStateObject to a readonly object.
+    trees: Mutex<Vec<Option<StateTree>>>,
     store: Arc<dyn StateNodeStore>,
 }
 
@@ -52,7 +55,7 @@ impl AccountStateObject {
             .collect();
         Self {
             address,
-            trees: RefCell::new(trees),
+            trees: Mutex::new(trees),
             store,
         }
     }
@@ -62,20 +65,21 @@ impl AccountStateObject {
         trees[0] = Some(StateTree::new(store.clone(), None));
         Self {
             address,
-            trees: RefCell::new(trees),
+            trees: Mutex::new(trees),
             store,
         }
     }
 
     pub fn get(&self, data_type: DataType, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
-        match self.trees.borrow()[data_type.storage_index()].as_ref() {
+        let trees = self.trees.lock().unwrap();
+        match trees[data_type.storage_index()].as_ref() {
             Some(tree) => tree.get(key_hash),
             None => Ok(None),
         }
     }
 
     pub fn set(&self, data_type: DataType, key_hash: HashValue, value: Vec<u8>) {
-        let mut trees = self.trees.borrow_mut();
+        let mut trees = self.trees.lock().unwrap();
         if trees[data_type.storage_index()].as_ref().is_none() {
             trees[data_type.storage_index()] = Some(StateTree::new(self.store.clone(), None));
         }
@@ -89,7 +93,7 @@ impl AccountStateObject {
         if data_type.is_code() {
             bail!("Not supported remove code currently.");
         }
-        let trees = self.trees.borrow();
+        let trees = self.trees.lock().unwrap();
         let tree = trees[data_type.storage_index()].as_ref();
         match tree {
             Some(tree) => tree.remove(key_hash),
@@ -103,7 +107,8 @@ impl AccountStateObject {
     }
 
     pub fn is_dirty(&self) -> bool {
-        for tree in self.trees.borrow().iter() {
+        let trees = self.trees.lock().unwrap();
+        for tree in trees.iter() {
             if let Some(tree) = tree {
                 if tree.is_dirty() {
                     return true;
@@ -114,7 +119,8 @@ impl AccountStateObject {
     }
 
     pub fn commit(&self) -> Result<AccountState> {
-        for tree in self.trees.borrow().iter() {
+        let trees = self.trees.lock().unwrap();
+        for tree in trees.iter() {
             if let Some(tree) = tree {
                 if tree.is_dirty() {
                     tree.commit()?;
@@ -122,11 +128,12 @@ impl AccountStateObject {
             }
         }
 
-        Ok(self.to_state())
+        Ok(Self::build_state(trees))
     }
 
     pub fn flush(&self) -> Result<()> {
-        for tree in self.trees.borrow().iter() {
+        let trees = self.trees.lock().unwrap();
+        for tree in trees.iter() {
             if let Some(tree) = tree {
                 tree.flush()?;
             }
@@ -134,10 +141,8 @@ impl AccountStateObject {
         Ok(())
     }
 
-    fn to_state(&self) -> AccountState {
-        let storage_roots = self
-            .trees
-            .borrow()
+    fn build_state(trees: MutexGuard<Vec<Option<StateTree>>>) -> AccountState {
+        let storage_roots = trees
             .iter()
             .map(|tree| match tree {
                 Some(tree) => Some(tree.root_hash()),
@@ -146,6 +151,11 @@ impl AccountStateObject {
             .collect();
 
         AccountState::new(storage_roots)
+    }
+
+    fn to_state(&self) -> AccountState {
+        let trees = self.trees.lock().unwrap();
+        Self::build_state(trees)
     }
 }
 
@@ -397,6 +407,7 @@ impl ChainStateWriter for ChainStateDB {
 mod tests {
     use super::*;
     use starcoin_state_tree::mock::MockStateNodeStore;
+    use starcoin_traits::AccountStateReader;
 
     #[test]
     fn test_state_db() -> Result<()> {
@@ -407,7 +418,8 @@ mod tests {
         let state_root = chain_state_db.commit()?;
         let access_path = AccessPath::new_for_account(account_address);
 
-        let account_resource: AccountResource = chain_state_db
+        let account_state_reader = AccountStateReader::new(&chain_state_db);
+        let account_resource: AccountResource = account_state_reader
             .get_account_resource(&account_address)
             .unwrap()
             .unwrap();
@@ -417,8 +429,8 @@ mod tests {
             "new account balance error"
         );
 
-        let balance = chain_state_db
-            .get_account_balance(&account_address)
+        let balance = account_state_reader
+            .get_balance(&account_address)
             .unwrap()
             .unwrap();
         assert_eq!(0, balance, "new account balance error");
