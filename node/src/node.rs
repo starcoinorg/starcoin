@@ -14,6 +14,7 @@ use network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_server::JSONRpcActor;
 use starcoin_state_service::ChainStateActor;
+use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -83,6 +84,29 @@ where
             };
             info!("Start chain with startup info: {:?}", startup_info);
 
+            let account_service = WalletActor::launch(node_config.clone()).unwrap();
+
+            //TODO refactor miner config.
+            let mut miner_config = (&*node_config).clone();
+            let default_account = account_service
+                .clone()
+                .get_default_account()
+                .await
+                .unwrap()
+                .expect("default account should exist.");
+            let account_with_key = account_service
+                .clone()
+                .get_account(default_account.address)
+                .await
+                .unwrap()
+                .unwrap();
+            miner_config.miner.set_default_account((
+                account_with_key.account.address,
+                account_with_key.get_auth_key(),
+            ));
+
+            let node_config = Arc::new(miner_config);
+
             let txpool = {
                 let best_block_id = startup_info.head.get_head();
                 TxPoolRef::start(
@@ -117,8 +141,6 @@ where
                 txpool.clone(),
             )
             .unwrap();
-
-            let account_service = WalletActor::launch(node_config.clone()).unwrap();
 
             let _json_rpc = JSONRpcActor::launch(
                 node_config.clone(),

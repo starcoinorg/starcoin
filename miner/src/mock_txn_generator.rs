@@ -104,7 +104,7 @@ impl MockTxnGenerator {
                                  a_seq_number: u64| {
             // add some randomness.
             let mut rng = rand::thread_rng();
-            let amount_to_transfer = rng.gen_range(1000u64, 5000u64);
+            let amount_to_transfer = rng.gen_range(10000000u64, 50000000u64);
             let transfer_txn = <E as TransactionExecutor>::build_transfer_txn(
                 a.0,
                 AuthenticationKey::from_public_key(&a.1.public_key).to_vec(),
