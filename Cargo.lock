@@ -5727,6 +5727,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-faucet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "starcoin-config",
+ "starcoin-logger",
+ "starcoin-rpc-client",
+ "starcoin-types",
+ "starcoin-wallet-api",
+]
+
+[[package]]
 name = "starcoin-genesis"
 version = "0.1.0"
 dependencies = [
