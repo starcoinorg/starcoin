@@ -4,7 +4,7 @@ use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus, Consensus};
-use executor::executor::mock_create_account_txn;
+// use executor::executor::mock_create_account_txn;
 use executor::executor::Executor;
 use futures::channel::oneshot;
 use futures_timer::Delay;
@@ -16,24 +16,44 @@ use storage::db_storage::DBStorage;
 use storage::StarcoinStorage;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
-use types::transaction::SignedUserTransaction;
+// use types::account_address::AccountAddress;
+// use types::transaction::{SignedUserTransaction, Transaction};
+// use starcoin_statedb::ChainStateDB;
+// use crypto::HashValue;
+// use types::{account_config, access_path::AccessPath};
+// use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
 
 #[test]
 fn it_works() {
     assert_eq!(2 + 2, 4);
 }
 
-fn gen_txs() -> Vec<SignedUserTransaction> {
-    let tx = mock_create_account_txn()
-        .as_signed_user_txn()
-        .unwrap()
-        .clone();
-    let mut txs = Vec::new();
-    txs.push(tx);
-    txs
-}
+// fn gen_txs(storage: Arc<StarcoinStorage>, root:HashValue) -> Vec<SignedUserTransaction> {
+//     let chain_state = ChainStateDB::new(storage, Some(root));
+//     let address = account_config::association_address();
+//     let access_path = AccessPath::new_for_account(address);
+//     let state = chain_state
+//         .get(&access_path)
+//         .expect("read account state should ok");
+//     let sequence_number = match state {
+//         None => 0u64,
+//         Some(s) => account_config::AccountResource::make_from(&s)
+//             .expect("account resource decode ok")
+//             .sequence_number(),
+//     };
+//     let mut txs = Vec::new();
+//     if let Transaction::UserTransaction(tx) = TransactionExecutor::build_mint_txn(address, Value::vector_u8(address.to_vec()).into(),
+//                                                  sequence_number, 100) {
+//         txs.push(tx);
+//     }
+//
+//     txs
+// }
 
-async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<Executor, DummyConsensus> {
+async fn gen_head_chain(
+    times: u64,
+    delay: bool,
+) -> (ChainActorRef<Executor, DummyConsensus>, Arc<NodeConfig>) {
     let node_config = NodeConfig::random_for_test();
     let conf = Arc::new(node_config);
     let cache_storage = Arc::new(CacheStorage::new());
@@ -67,7 +87,12 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<Executor, Dumm
         for _i in 0..times {
             let block_template = chain
                 .clone()
-                .create_block_template(None, gen_txs())
+                .create_block_template(
+                    conf.miner.account_address(),
+                    Some(conf.miner.auth_key()),
+                    None,
+                    Vec::new(),
+                )
                 .await
                 .unwrap();
             let (_sender, receiver) = oneshot::channel();
@@ -105,20 +130,22 @@ async fn gen_head_chain(times: u64, delay: bool) -> ChainActorRef<Executor, Dumm
         }
     }
 
-    chain
+    (chain, conf)
 }
 
 #[actix_rt::test]
 async fn test_block_chain_head() {
-    let times = 5;
-    let chain = gen_head_chain(times, false).await;
+    ::logger::init_for_test();
+    let times = 10;
+    let (chain, _) = gen_head_chain(times, false).await;
     assert_eq!(chain.master_head_header().await.unwrap().number(), times);
 }
 
 #[actix_rt::test]
 async fn test_block_chain_forks() {
+    ::logger::init_for_test();
     let times = 5;
-    let chain = gen_head_chain(times, true).await;
+    let (chain, conf) = gen_head_chain(times, true).await;
     let mut parent_hash = chain
         .clone()
         .master_startup_info()
@@ -132,11 +159,16 @@ async fn test_block_chain_forks() {
             Delay::new(Duration::from_millis(1000)).await;
             let block = chain
                 .clone()
-                .create_block_template(Some(parent_hash), gen_txs())
+                .create_block_template(
+                    conf.miner.account_address(),
+                    Some(conf.miner.auth_key()),
+                    Some(parent_hash),
+                    Vec::new(),
+                )
                 .await
                 .unwrap()
                 .into_block(DummyHeader {});
-            println!(
+            info!(
                 "{}:{:?}:{:?}:{:?}",
                 i,
                 parent_hash,
@@ -191,7 +223,13 @@ async fn test_chain_apply() -> Result<()> {
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let difficulty = difficult::get_next_work_required(&block_chain);
-    let block_template = block_chain.create_block_template(None, difficulty, vec![])?;
+    let block_template = block_chain.create_block_template(
+        config.miner.account_address(),
+        Some(config.miner.auth_key()),
+        None,
+        difficulty,
+        vec![],
+    )?;
     let (_sender, receiver) = futures::channel::oneshot::channel();
     let new_block =
         DummyConsensus::create_block(config.clone(), &block_chain, block_template, receiver)?;

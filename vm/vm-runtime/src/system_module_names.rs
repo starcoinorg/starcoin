@@ -33,6 +33,15 @@ pub static COIN_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
     module_id.into()
 });
 
+/// The ModuleId for the subsidy config module
+pub static SUBSIDY_CONF_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
+    let module_id = ModuleId::new(
+        account_config::mint_address(),
+        Identifier::new("SubsidyConfig").unwrap(),
+    );
+    module_id.into()
+});
+
 /// The ModuleId for the libra block module
 pub static LIBRA_BLOCK_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
     let module_id = ModuleId::new(

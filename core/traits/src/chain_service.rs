@@ -4,6 +4,7 @@
 use anyhow::Result;
 use crypto::HashValue;
 use types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     startup_info::StartupInfo,
     transaction::SignedUserTransaction,
@@ -26,6 +27,8 @@ pub trait ChainService {
     /////////////////////////////////////////////// just for test
     fn create_block_template(
         &self,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
@@ -52,6 +55,8 @@ pub trait ChainAsyncService: Clone + std::marker::Unpin {
     async fn gen_tx(&self) -> Result<()>;
     async fn create_block_template(
         self,
+        author: AccountAddress,
+        auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
     ) -> Option<BlockTemplate>;

@@ -152,7 +152,7 @@ mod test {
     use std::sync::Arc;
     use std::time::Duration;
     use tokio;
-    use types::block::{Block, BlockHeader, BlockTemplate};
+    use types::block::{Block, BlockBody, BlockHeader, BlockTemplate};
     async fn prepare() -> Result<()> {
         let conf = Arc::new(NodeConfig::random_for_test());
         let mut miner = Miner::<ArgonConsensusHeader>::new(BusActor::launch(), conf);
@@ -162,7 +162,9 @@ mod test {
             Stratum::start(&addr, dispatcher, None).unwrap()
         };
         let mine_ctx = {
-            let block = Block::new_nil_block_for_test(BlockHeader::genesis_block_header_for_test());
+            let header = BlockHeader::default();
+            let body = BlockBody::default();
+            let block = Block::new(header, body);
             let mut block_template = BlockTemplate::from_block(block);
             block_template.difficult = U256::max_value();
             MineCtx::new(block_template)
