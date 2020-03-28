@@ -12,7 +12,7 @@ use types::transaction::{
 };
 
 //TODO
-pub const TXN_RESERVED: u64 = 1;
+pub const TXN_RESERVED: u64 = 50_000;
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 
 /// Returns a transaction to create a new account with the given arguments.
