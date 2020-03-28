@@ -4,11 +4,11 @@
 use starcoin_logger::prelude::*;
 
 mod account_rpc;
-mod status_rpc;
+mod node_rpc;
 mod txpool_rpc;
 
 pub use self::account_rpc::AccountRpcImpl;
-pub use self::status_rpc::StatusRpcImpl;
+pub use self::node_rpc::NodeRpcImpl;
 pub use self::txpool_rpc::TxPoolRpcImpl;
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {

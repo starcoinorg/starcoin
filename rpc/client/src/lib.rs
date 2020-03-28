@@ -7,7 +7,7 @@ use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, RpcChannel};
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::{account::AccountClient, status::StatusClient, txpool::TxPoolClient};
+use starcoin_rpc_api::{account::AccountClient, node::NodeClient, txpool::TxPoolClient};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
 use std::cell::RefCell;
@@ -74,10 +74,10 @@ impl RpcClient {
         Ok(Self::new(client_inner, rt))
     }
 
-    pub fn status(&self) -> anyhow::Result<bool> {
+    pub fn node_status(&self) -> anyhow::Result<bool> {
         self.rt.borrow_mut().block_on_std(async {
             self.inner
-                .status_client
+                .node_client
                 .status()
                 .map_err(map_err)
                 .compat()
@@ -141,7 +141,7 @@ impl AsRef<RpcClientInner> for RpcClient {
 }
 
 pub(crate) struct RpcClientInner {
-    status_client: StatusClient,
+    node_client: NodeClient,
     txpool_client: TxPoolClient,
     account_client: AccountClient,
 }
@@ -149,7 +149,7 @@ pub(crate) struct RpcClientInner {
 impl RpcClientInner {
     pub fn new(channel: RpcChannel) -> Self {
         Self {
-            status_client: channel.clone().into(),
+            node_client: channel.clone().into(),
             txpool_client: channel.clone().into(),
             account_client: channel.into(),
         }

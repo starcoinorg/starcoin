@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::module::{AccountRpcImpl, StatusRpcImpl, TxPoolRpcImpl};
+use crate::module::{AccountRpcImpl, NodeRpcImpl, TxPoolRpcImpl};
 use crate::server::RpcServer;
 use actix::prelude::*;
 use anyhow::Result;
@@ -9,7 +9,7 @@ use config::NodeConfig;
 use jsonrpc_core::IoHandler;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::account::AccountApi;
-use starcoin_rpc_api::{status::StatusApi, txpool::TxPoolApi};
+use starcoin_rpc_api::{node::NodeApi, txpool::TxPoolApi};
 use starcoin_wallet_api::WalletAsyncService;
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -51,7 +51,7 @@ impl JSONRpcActor {
         A: AccountApi,
     {
         let mut io_handler = IoHandler::new();
-        io_handler.extend_with(StatusApi::to_delegate(StatusRpcImpl::new()));
+        io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new()));
         if let Some(txpool_api) = txpool_api {
             io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
         }
