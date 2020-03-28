@@ -6,9 +6,10 @@ use crate::service::WalletServiceImpl;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::{Error, Result};
 use starcoin_config::NodeConfig;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::mock::{KeyPairWallet, MemWalletStore};
-use starcoin_wallet_api::{Wallet, WalletAccount, WalletAsyncService};
+use starcoin_wallet_api::{AccountWithKey, Wallet, WalletAccount, WalletAsyncService};
 use std::sync::Arc;
 
 pub struct WalletActor {
@@ -40,11 +41,12 @@ impl Handler<WalletRequest> for WalletActor {
             WalletRequest::GetDefaultAccount() => {
                 WalletResponse::WalletAccountOption(self.service.get_default_account()?)
             }
-
             WalletRequest::GetAccounts() => {
                 WalletResponse::AccountList(self.service.get_accounts()?)
             }
-
+            WalletRequest::GetAccount(address) => {
+                WalletResponse::Account(self.service.get_account_with_key(&address)?)
+            }
             WalletRequest::SignTxn(raw_txn) => {
                 WalletResponse::SignedTxn(self.service.sign_txn(raw_txn)?)
             }
@@ -104,6 +106,19 @@ impl WalletAsyncService for WalletActorRef {
             .map_err(|e| Into::<Error>::into(e))??;
         if let WalletResponse::AccountList(accounts) = response {
             Ok(accounts)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn get_account(self, address: AccountAddress) -> Result<Option<AccountWithKey>, Error> {
+        let response = self
+            .0
+            .send(WalletRequest::GetAccount(address))
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        if let WalletResponse::Account(account) = response {
+            Ok(account)
         } else {
             panic!("Unexpect response type.")
         }
