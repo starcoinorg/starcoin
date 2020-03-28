@@ -14,6 +14,7 @@ use starcoin_rpc_server::JSONRpcActor;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[ignore]
 #[test]
 fn test_multi_client() -> Result<()> {
     starcoin_logger::init_for_test();

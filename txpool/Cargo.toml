@@ -36,4 +36,4 @@ starcoin-state-tree={path="../core/state-tree"}
 starcoin-executor={path="../executor"}
 starcoin-config={path="../config"}
 tx-relay = {path="./tx-relay", package="starcoin-tx-relay"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
+libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }

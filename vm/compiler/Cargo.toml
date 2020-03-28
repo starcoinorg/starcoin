@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 types = { package="starcoin-types", path = "../../types"}
-compiler = { package="compiler", git = "https://github.com/starcoinorg/libra", rev="e99da91f7c4c2e9928d64085e10d19674d76c28a" }
+compiler = { package="compiler", git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
 logger = {path = "../../commons/logger", package="starcoin-logger"}
 stest = {path = "../../commons/stest"}
 
