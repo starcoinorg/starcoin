@@ -4,8 +4,9 @@
 use crate::module::map_err;
 use futures::future::TryFutureExt;
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::{WalletAccount, WalletAsyncService};
+use starcoin_wallet_api::{AccountWithKey, WalletAccount, WalletAsyncService};
 
 pub struct AccountRpcImpl<S>
 where
@@ -38,6 +39,11 @@ where
 
     fn list(&self) -> FutureResult<Vec<WalletAccount>> {
         let fut = self.service.clone().get_accounts().map_err(map_err);
+        Box::new(fut.compat())
+    }
+
+    fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountWithKey>> {
+        let fut = self.service.clone().get_account(address).map_err(map_err);
         Box::new(fut.compat())
     }
 

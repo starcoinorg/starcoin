@@ -4,7 +4,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::time::Duration;
 
@@ -42,6 +42,14 @@ impl AccountWithKey {
             account,
             public_key,
         }
+    }
+
+    pub fn get_auth_key(&self) -> AuthenticationKey {
+        AuthenticationKey::from_public_key(&self.public_key)
+    }
+
+    pub fn address(&self) -> &AccountAddress {
+        &self.account.address
     }
 }
 

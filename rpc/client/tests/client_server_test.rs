@@ -7,9 +7,9 @@ use futures::channel::oneshot;
 use jsonrpc_core::IoHandler;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::status::StatusApi;
+use starcoin_rpc_api::node::NodeApi;
 use starcoin_rpc_client::RpcClient;
-use starcoin_rpc_server::module::StatusRpcImpl;
+use starcoin_rpc_server::module::NodeRpcImpl;
 use starcoin_rpc_server::JSONRpcActor;
 use std::sync::Arc;
 use std::time::Duration;
@@ -30,7 +30,7 @@ fn test_multi_client() -> Result<()> {
         let (stop_sender, stop_receiver) = oneshot::channel::<bool>();
         let mut io_handler = IoHandler::new();
         //io_handler.add_method("status", |_params: Params| Ok(Value::Bool(true)));
-        io_handler.extend_with(StatusApi::to_delegate(StatusRpcImpl::new()));
+        io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new()));
         let (_rpc_actor, iohandler) =
             JSONRpcActor::launch_with_handler(config, io_handler).unwrap();
 
@@ -39,17 +39,17 @@ fn test_multi_client() -> Result<()> {
             std::thread::sleep(Duration::from_millis(300));
 
             let http_client = RpcClient::connect_http(url.as_str()).unwrap();
-            let status = http_client.status().unwrap();
+            let status = http_client.node_status().unwrap();
             info!("http_client status: {}", status);
             assert!(status);
 
             let ipc_client = RpcClient::connect_ipc(ipc_file).unwrap();
-            let status1 = ipc_client.status().unwrap();
+            let status1 = ipc_client.node_status().unwrap();
             info!("ipc_client status: {}", status1);
             assert_eq!(status, status1);
 
             let local_client = RpcClient::connect_local(iohandler);
-            let status2 = local_client.status().unwrap();
+            let status2 = local_client.node_status().unwrap();
             info!("local_client status: {}", status2);
             assert!(status2);
 

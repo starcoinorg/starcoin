@@ -7,4 +7,5 @@ pub type FutureResult<T> = Box<dyn jsonrpc_core::futures::Future<Item = T, Error
 
 pub mod account;
 pub mod node;
+pub mod state;
 pub mod txpool;

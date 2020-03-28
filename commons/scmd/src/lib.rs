@@ -178,9 +178,12 @@ where
         Opt: StructOpt + 'static,
         Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt> + 'static,
     {
-        let name = command.name().to_string();
+        let name = command.name();
+        if self.commands.contains_key(name) {
+            panic!("Command with name {} exist.", name);
+        }
         self.app = self.app.subcommand(command.app().clone());
-        self.commands.insert(name, Box::new(command));
+        self.commands.insert(name.to_string(), Box::new(command));
         self
     }
 
@@ -408,9 +411,13 @@ where
         SubOpt: StructOpt + 'static,
         SubAction: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = SubOpt>,
     {
+        let name = subcommand.name();
+        if self.subcommands.contains_key(name) {
+            panic!("Subcommand with name {} exist.", name);
+        }
         self.app = self.app.subcommand(subcommand.app().clone());
         self.subcommands
-            .insert(subcommand.name().to_string(), Box::new(subcommand));
+            .insert(name.to_string(), Box::new(subcommand));
         self
     }
 
@@ -448,13 +455,21 @@ where
         let ctx = ExecContext::new(state, global_opt, opt);
         if self.has_subcommand() {
             let (subcmd_name, subcmd_matches) = arg_matches.subcommand();
-            let subcmd = self.subcommands.get_mut(subcmd_name);
-            match (subcmd, subcmd_matches) {
-                (Some(subcmd), Some(subcmd_matches)) => {
-                    subcmd.exec(ctx.state, ctx.global_opt, subcmd_matches)?;
-                }
-                _ => {
+            match subcmd_name {
+                "" => {
                     self.exec_action(&ctx)?;
+                }
+                subcmd_name => {
+                    let subcmd = self.subcommands.get_mut(subcmd_name);
+                    match (subcmd, subcmd_matches) {
+                        (Some(subcmd), Some(subcmd_matches)) => {
+                            subcmd.exec(ctx.state, ctx.global_opt, subcmd_matches)?;
+                        }
+                        _ => {
+                            println!("Can not find subcomamnd: {}", subcmd_name);
+                            self.exec_action(&ctx)?;
+                        }
+                    }
                 }
             }
         } else {
