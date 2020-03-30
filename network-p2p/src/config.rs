@@ -3,6 +3,7 @@
 
 //! Libp2p network configuration.
 
+use crypto::HashValue;
 use libp2p::{
     core::Multiaddr,
     identity::{ed25519, Keypair},
@@ -55,7 +56,7 @@ impl Params {
 }
 
 /// Network service configuration.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NetworkConfiguration {
     /// Directory path to store general network configuration. None means nothing will be saved.
     pub config_path: Option<String>,
@@ -83,6 +84,8 @@ pub struct NetworkConfiguration {
     pub node_name: String,
 
     pub transport: TransportConfig,
+
+    pub genesis_hash: HashValue,
 }
 
 /// Configuration for the transport layer.
@@ -136,6 +139,7 @@ impl Default for NetworkConfiguration {
                 wasm_external_transport: None,
                 use_yamux_flow_control: false,
             },
+            genesis_hash: HashValue::default(),
         }
     }
 }

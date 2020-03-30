@@ -19,10 +19,14 @@ use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
 
+use crate::protocol::message::generic::{Message, Status};
+use crypto::HashValue;
+use scs::SCSCodec;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::pin::Pin;
 use std::str;
+use std::sync::Arc;
 use std::task::Poll;
 use std::time;
 use wasm_timer::Instant;
@@ -31,9 +35,9 @@ const REQUEST_TIMEOUT_SEC: u64 = 40;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
 /// Current protocol version.
-pub(crate) const CURRENT_VERSION: u32 = 6;
+pub(crate) const CURRENT_VERSION: u32 = 1;
 /// Lowest version we support
-pub(crate) const MIN_VERSION: u32 = 3;
+pub(crate) const MIN_VERSION: u32 = 1;
 
 mod rep {
     use peerset::ReputationChange as Rep;
@@ -111,20 +115,22 @@ struct PacketStats {
 struct ContextData {
     // All connected peers
     peers: HashMap<PeerId, Peer>,
-    stats: HashMap<&'static str, PacketStats>,
 }
 
 pub struct Protocol {
     /// Interval at which we call `tick`.
     tick_timeout: Pin<Box<dyn Stream<Item = ()> + Send>>,
     important_peers: HashSet<PeerId>,
-    // Connected peers pending Status message.
+    /// Connected peers pending Status message.
     handshaking_peers: HashMap<PeerId, HandshakingPeer>,
     /// Used to report reputation changes.
     peerset_handle: peerset::PeersetHandle,
     /// Handles opening the unique substream and sending and receiving raw messages.
     behaviour: GenericProto,
     context_data: ContextData,
+    genesis_hash: HashValue,
+    /// The `PeerId`'s of all boot nodes.
+    boot_node_ids: Arc<HashSet<PeerId>>,
 }
 
 impl NetworkBehaviour for Protocol {
@@ -189,7 +195,7 @@ impl NetworkBehaviour for Protocol {
         let outcome = match event {
             GenericProtoOut::CustomProtocolOpen { peer_id, .. } => {
                 self.on_peer_connected(peer_id.clone());
-                CustomMessageOutcome::NotificationStreamOpened { remote: peer_id }
+                CustomMessageOutcome::None
             }
             GenericProtoOut::CustomProtocolClosed { peer_id, .. } => {
                 self.on_peer_disconnected(peer_id.clone());
@@ -282,6 +288,8 @@ impl Protocol {
     pub fn new(
         peerset_config: peerset::PeersetConfig,
         protocol_id: ProtocolId,
+        genesis_hash: HashValue,
+        boot_node_ids: Arc<HashSet<PeerId>>,
     ) -> crate::net_error::Result<(Protocol, peerset::PeersetHandle)> {
         let important_peers = {
             let mut imp_p = HashSet::new();
@@ -304,8 +312,9 @@ impl Protocol {
             behaviour,
             context_data: ContextData {
                 peers: HashMap::new(),
-                stats: HashMap::new(),
             },
+            genesis_hash,
+            boot_node_ids,
         };
 
         Ok((protocol, peerset_handle))
@@ -337,40 +346,114 @@ impl Protocol {
     }
 
     pub fn on_custom_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
-        CustomMessageOutcome::NotificationsReceived {
-            remote: who,
-            messages: vec![data.freeze()],
+        info!("receive custom message from {}", who);
+        let message = match Message::decode(&mut &data[..]) {
+            Ok(message) => message,
+            Err(err) => {
+                info!(target: "sync", "Couldn't decode packet sent by {}: {:?}: {}", who, data, err);
+                self.peerset_handle
+                    .report_peer(who.clone(), rep::BAD_MESSAGE);
+                return CustomMessageOutcome::None;
+            }
+        };
+
+        match message {
+            Message::Consensus(msg) => CustomMessageOutcome::NotificationsReceived {
+                remote: who,
+                messages: vec![Bytes::from(msg.data)],
+            },
+            Message::Status(status) => self.on_status_message(who, status),
         }
     }
 
-    // fn send_request(&mut self, who: &PeerId, message: Message<B>) {
-    //     send_request::<B, H>(
-    //         &mut self.behaviour,
-    //         &mut self.context_data.stats,
-    //         &mut self.context_data.peers,
-    //         who,
-    //         message,
-    //     );
-    // }
-    //
-    // fn send_message(&mut self, who: &PeerId, message: Message<B>) {
-    //     send_message::<B>(
-    //         &mut self.behaviour,
-    //         &mut self.context_data.stats,
-    //         who,
-    //         message,
-    //     );
-    // }
+    /// Called by peer to report status
+    fn on_status_message(&mut self, who: PeerId, status: Status) -> CustomMessageOutcome {
+        trace!(target: "sync", "New peer {} {:?}", who, status);
+        let _protocol_version = {
+            if self.context_data.peers.contains_key(&who) {
+                log!(
+                    target: "sync",
+                    if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
+                    "Unexpected status packet from {}", who
+                );
+                self.peerset_handle.report_peer(who, rep::UNEXPECTED_STATUS);
+                return CustomMessageOutcome::None;
+            }
+            if status.genesis_hash != self.genesis_hash {
+                info!(
+                    "Peer is on different chain (our genesis: {} theirs: {})",
+                    self.genesis_hash, status.genesis_hash
+                );
+                self.peerset_handle
+                    .report_peer(who.clone(), rep::GENESIS_MISMATCH);
+                self.behaviour.disconnect_peer(&who);
+
+                if self.boot_node_ids.contains(&who) {
+                    error!(
+                        target: "sync",
+                        "Bootnode with peer id `{}` is on a different chain (our genesis: {} theirs: {})",
+                        who,
+                        self.genesis_hash,
+                        status.genesis_hash,
+                    );
+                }
+
+                return CustomMessageOutcome::None;
+            }
+            if status.version < MIN_VERSION && CURRENT_VERSION < status.min_supported_version {
+                log!(
+                    target: "sync",
+                    if self.important_peers.contains(&who) { Level::Warn } else { Level::Trace },
+                    "Peer {:?} using unsupported protocol version {}", who, status.version
+                );
+                self.peerset_handle
+                    .report_peer(who.clone(), rep::BAD_PROTOCOL);
+                self.behaviour.disconnect_peer(&who);
+                return CustomMessageOutcome::None;
+            }
+
+            let _info = match self.handshaking_peers.remove(&who) {
+                Some(_handshaking) => PeerInfo {
+                    protocol_version: status.version,
+                },
+                None => {
+                    error!(target: "sync", "Received status from previously unconnected node {}", who);
+                    return CustomMessageOutcome::None;
+                }
+            };
+
+            debug!(target: "sync", "Connected {}", who);
+            status.version
+        };
+        // Notify all the notification protocols as open.
+        CustomMessageOutcome::NotificationStreamOpened { remote: who }
+    }
+
+    fn send_message(&mut self, who: &PeerId, message: Message) {
+        send_message(&mut self.behaviour, who, message);
+    }
 
     /// Called when a new peer is connected
     pub fn on_peer_connected(&mut self, who: PeerId) {
         info!(target: "sync", "Connecting {}", who);
-        // self.handshaking_peers.insert(
-        //     who.clone(),
-        //     HandshakingPeer {
-        //         timestamp: Instant::now(),
-        //     },
-        // );
+        self.handshaking_peers.insert(
+            who.clone(),
+            HandshakingPeer {
+                timestamp: Instant::now(),
+            },
+        );
+        self.send_status(who);
+    }
+
+    /// Send Status message
+    fn send_status(&mut self, who: PeerId) {
+        let status = message::generic::Status {
+            version: CURRENT_VERSION,
+            min_supported_version: MIN_VERSION,
+            genesis_hash: self.genesis_hash,
+        };
+
+        self.send_message(&who, Message::Status(status))
     }
 
     /// Called by peer when it is disconnecting
@@ -441,10 +524,6 @@ impl Protocol {
             .write_notification(&target, protocol_name, message);
     }
 
-    pub fn send_notification(&mut self, target: PeerId, message: impl Into<Vec<u8>>) {
-        self.behaviour.send_packet(&target, message.into());
-    }
-
     pub fn register_notifications_protocol(
         &mut self,
         protocol_name: impl Into<Cow<'static, [u8]>>,
@@ -457,9 +536,19 @@ impl Protocol {
         self.context_data
             .peers
             .iter()
-            .map(|(peer_id, peer)| event::Event::NotificationStreamOpened {
+            .map(|(peer_id, _peer)| event::Event::NotificationStreamOpened {
                 remote: peer_id.clone(),
             })
             .collect()
     }
+}
+
+fn send_message(
+    behaviour: &mut GenericProto,
+    who: &PeerId,
+    message: Message,
+) -> anyhow::Result<()> {
+    let encoded = message.encode()?;
+    behaviour.send_packet(who, encoded);
+    Ok(())
 }

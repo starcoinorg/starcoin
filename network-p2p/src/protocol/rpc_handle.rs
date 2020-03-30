@@ -374,7 +374,7 @@ impl NetworkBehaviour for RpcHandler {
     fn inject_node_event(&mut self, peer: PeerId, event: Event<NegotiatedSubstream>) {
         match event {
             // An incoming request from remote has been received.
-            Event::Request(request, stream) => {
+            Event::Request(_request, _stream) => {
                 log::trace!("incoming request from {}", peer);
             }
             // A response to one of our own requests has been received.

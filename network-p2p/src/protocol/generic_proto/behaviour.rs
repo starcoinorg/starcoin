@@ -1145,6 +1145,11 @@ impl NetworkBehaviour for GenericProto {
                     str::from_utf8(&protocol_name)
                 );
                 trace!(target: "sub-libp2p", "External API <= Message({:?})", source);
+                let msg = Message::Consensus(ConsensusMessage {
+                    data: message.to_vec(),
+                });
+
+                let message = From::from(&msg.encode().unwrap()[..]);
                 let event = GenericProtoOut::CustomMessage {
                     peer_id: source,
                     message,

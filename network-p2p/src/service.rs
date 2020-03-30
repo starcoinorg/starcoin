@@ -128,6 +128,7 @@ impl NetworkWorker {
         let mut known_addresses = Vec::new();
         let mut bootnodes = Vec::new();
         let mut reserved_nodes = Vec::new();
+        let boot_node_ids = HashSet::new();
 
         // Process the bootnodes.
         for bootnode in params.network_config.boot_nodes.iter() {
@@ -139,6 +140,8 @@ impl NetworkWorker {
                 Err(_) => warn!(target: "sub-libp2p", "Not a valid bootnode address: {}", bootnode),
             }
         }
+
+        let boot_node_ids = Arc::new(boot_node_ids);
 
         // Check for duplicate bootnodes.
         known_addresses.iter().try_for_each(|(peer_id, addr)| {
@@ -182,7 +185,12 @@ impl NetworkWorker {
 
         let num_connected = Arc::new(AtomicUsize::new(0));
         let is_major_syncing = Arc::new(AtomicBool::new(false));
-        let (protocol, peerset_handle) = Protocol::new(peerset_config, params.protocol_id.clone())?;
+        let (protocol, peerset_handle) = Protocol::new(
+            peerset_config,
+            params.protocol_id.clone(),
+            params.network_config.genesis_hash,
+            boot_node_ids.clone(),
+        )?;
 
         // Build the swarm.
         let (mut swarm, bandwidth): (Swarm, _) = {
@@ -407,18 +415,12 @@ impl NetworkService {
             });
     }
 
-    pub fn send_notification(&self, target: PeerId, message: Vec<u8>) {
-        let _ = self
-            .to_worker
-            .unbounded_send(ServiceToWorkerMsg::SendNotification { target, message });
-    }
-
-    pub async fn broadcast_message(&self, message: Vec<u8>) {
+    pub async fn broadcast_message(&self, protocol_name: Cow<'static, [u8]>, message: Vec<u8>) {
         debug!("start send broadcast message");
 
         let peers = self.connected_peers().await;
         for peer_id in peers {
-            self.send_notification(peer_id, message.clone());
+            self.write_notification(peer_id, protocol_name.clone(), message.clone());
         }
         debug!("finish send broadcast message");
     }
@@ -621,10 +623,6 @@ enum ServiceToWorkerMsg {
     RegisterNotifProtocol {
         protocol_name: Cow<'static, [u8]>,
     },
-    SendNotification {
-        message: Vec<u8>,
-        target: PeerId,
-    },
     DisconnectPeer(PeerId),
     IsConnected(PeerId, oneshot::Sender<bool>),
     ConnectedPeers(oneshot::Sender<HashSet<PeerId>>),
@@ -708,11 +706,6 @@ impl Future for NetworkWorker {
                         result.insert(peer.clone());
                     }
                     tx.send(result);
-                }
-                ServiceToWorkerMsg::SendNotification { target, message } => {
-                    this.network_service
-                        .user_protocol_mut()
-                        .send_notification(target, message);
                 }
             }
         }

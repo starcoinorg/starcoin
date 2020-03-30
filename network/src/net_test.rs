@@ -261,7 +261,7 @@ mod tests {
         let mut node_config1 = config::NetworkConfig::random_for_test();
         node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
 
-        let (service1, net_tx1, net_rx1, event_rx1, command_tx1) =
+        let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
             build_network_service(&node_config1, rt.handle().clone());
 
         thread::sleep(Duration::from_secs(1));
@@ -271,7 +271,7 @@ mod tests {
         let seed = format!("{}/p2p/{}", &node_config1.listen, addr1_hex);
         node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         node_config2.seeds = vec![seed.clone()];
-        let (service2, net_tx2, net_rx2, event_rx2, command_tx2) =
+        let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) =
             build_network_service(&node_config2, rt.handle().clone());
 
         thread::sleep(Duration::from_secs(1));
@@ -279,7 +279,7 @@ mod tests {
         let mut node_config3 = config::NetworkConfig::random_for_test();
         node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         node_config3.seeds = vec![seed];
-        let (service3, net_tx3, net_rx3, event_rx3, command_tx3) =
+        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
             build_network_service(&node_config3, rt.handle().clone());
 
         thread::sleep(Duration::from_secs(1));
@@ -310,12 +310,12 @@ mod tests {
 
         thread::sleep(Duration::from_secs(10));
 
-        let (service2, net_tx2, net_rx2, event_tx2, command_tx2) =
+        let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) =
             build_network_service(&node_config2, rt.handle().clone());
 
         thread::sleep(Duration::from_secs(1));
 
-        let (service3, net_tx3, net_rx3, event_rx3, command_tx3) =
+        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
             build_network_service(&node_config3, rt.handle().clone());
 
         thread::sleep(Duration::from_secs(1));
