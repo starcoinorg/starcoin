@@ -7,7 +7,7 @@ pub use self::gen_client::Client as AccountClient;
 use crate::FutureResult;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::{AccountWithKey, WalletAccount};
+use starcoin_wallet_api::{AccountDetail, WalletAccount};
 
 #[rpc]
 pub trait AccountApi {
@@ -16,7 +16,7 @@ pub trait AccountApi {
     #[rpc(name = "account.list")]
     fn list(&self) -> FutureResult<Vec<WalletAccount>>;
     #[rpc(name = "account.get")]
-    fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountWithKey>>;
+    fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountDetail>>;
     #[rpc(name = "account.sign_txn")]
     fn sign_txn(&self, raw_txn: RawUserTransaction) -> FutureResult<SignedUserTransaction>;
 }

@@ -1,7 +1,6 @@
 use super::*;
 use crate::mock::MockStateNodeStore;
 use anyhow::Result;
-
 use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::hash::*;
 use std::sync::Arc;
@@ -151,16 +150,4 @@ pub fn test_state_dump() -> Result<()> {
     let state_set = state.dump()?;
     assert_eq!(1, state_set.len());
     Ok(())
-}
-
-/// change the `n`th nibble to `nibble`
-pub fn update_nibble(original_key: &HashValue, n: usize, nibble: u8) -> HashValue {
-    assert!(nibble < 16);
-    let mut key = original_key.to_vec();
-    key[n / 2] = if n % 2 == 0 {
-        key[n / 2] & 0x0f | nibble << 4
-    } else {
-        key[n / 2] & 0xf0 | nibble
-    };
-    HashValue::from_slice(&key).unwrap()
 }

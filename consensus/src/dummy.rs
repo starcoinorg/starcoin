@@ -6,7 +6,7 @@ use anyhow::{Error, Result};
 use config::NodeConfig;
 use futures::channel::oneshot::Receiver;
 use logger::prelude::*;
-use rand::{Rng, SeedableRng, StdRng};
+use rand::prelude::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use std::thread;
