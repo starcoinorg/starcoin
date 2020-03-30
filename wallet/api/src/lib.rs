@@ -31,12 +31,12 @@ impl WalletAccount {
 }
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct AccountWithKey {
+pub struct AccountDetail {
     pub account: WalletAccount,
     pub public_key: Ed25519PublicKey,
 }
 
-impl AccountWithKey {
+impl AccountDetail {
     pub fn new(account: WalletAccount, public_key: Ed25519PublicKey) -> Self {
         Self {
             account,
@@ -56,7 +56,7 @@ impl AccountWithKey {
 pub trait Wallet {
     fn create_account(&self, password: &str) -> Result<WalletAccount>;
 
-    fn get_account_with_key(&self, address: &AccountAddress) -> Result<Option<AccountWithKey>>;
+    fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<AccountDetail>>;
 
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>>;
 
@@ -109,7 +109,7 @@ pub trait WalletAsyncService: Clone + std::marker::Unpin + Send + Sync {
 
     async fn get_accounts(self) -> Result<Vec<WalletAccount>>;
 
-    async fn get_account(self, address: AccountAddress) -> Result<Option<AccountWithKey>>;
+    async fn get_account(self, address: AccountAddress) -> Result<Option<AccountDetail>>;
 
     async fn sign_txn(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction>;
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::mock::{KeyPairWallet, MemWalletStore};
-use crate::{AccountWithKey, Wallet, WalletAccount, WalletAsyncService};
+use crate::{AccountDetail, Wallet, WalletAccount, WalletAsyncService};
 use anyhow::Result;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -35,8 +35,8 @@ impl WalletAsyncService for MockWalletService {
         self.wallet.get_accounts()
     }
 
-    async fn get_account(self, address: AccountAddress) -> Result<Option<AccountWithKey>> {
-        self.wallet.get_account_with_key(&address)
+    async fn get_account(self, address: AccountAddress) -> Result<Option<AccountDetail>> {
+        self.wallet.get_account_detail(&address)
     }
 
     async fn sign_txn(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
