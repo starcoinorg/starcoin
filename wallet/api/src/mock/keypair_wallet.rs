@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::mock::MemWalletStore;
-use crate::{AccountWithKey, Wallet, WalletAccount, WalletStore};
+use crate::{AccountDetail, Wallet, WalletAccount, WalletStore};
 use actix::clock::Duration;
 use anyhow::{ensure, format_err, Result};
 use rand::prelude::*;
@@ -87,13 +87,13 @@ where
         Ok(account)
     }
 
-    fn get_account_with_key(&self, address: &AccountAddress) -> Result<Option<AccountWithKey>> {
+    fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<AccountDetail>> {
         self.store
             .get_account(address)
             .and_then(|account| match account {
                 Some(account) => {
                     let keypair = self.get_key_pair(address)?;
-                    Ok(Some(AccountWithKey::new(
+                    Ok(Some(AccountDetail::new(
                         account,
                         keypair.public_key.clone(),
                     )))

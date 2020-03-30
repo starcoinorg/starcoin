@@ -6,7 +6,7 @@ use futures::future::TryFutureExt;
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::{AccountWithKey, WalletAccount, WalletAsyncService};
+use starcoin_wallet_api::{AccountDetail, WalletAccount, WalletAsyncService};
 
 pub struct AccountRpcImpl<S>
 where
@@ -42,7 +42,7 @@ where
         Box::new(fut.compat())
     }
 
-    fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountWithKey>> {
+    fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountDetail>> {
         let fut = self.service.clone().get_account(address).map_err(map_err);
         Box::new(fut.compat())
     }

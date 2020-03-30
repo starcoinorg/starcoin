@@ -5,7 +5,7 @@ use actix::Message;
 use anyhow::Result;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::{AccountWithKey, WalletAccount};
+use starcoin_wallet_api::{AccountDetail, WalletAccount};
 
 #[derive(Debug, Clone)]
 pub enum WalletRequest {
@@ -26,6 +26,6 @@ pub enum WalletResponse {
     WalletAccountOption(Option<WalletAccount>),
     AccountList(Vec<WalletAccount>),
     SignedTxn(SignedUserTransaction),
-    Account(Option<AccountWithKey>),
+    Account(Option<AccountDetail>),
     None,
 }

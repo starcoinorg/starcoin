@@ -17,7 +17,7 @@ use std::ops::Add;
 use std::sync::{Mutex, RwLock};
 use std::time::Duration;
 use std::time::Instant;
-use wallet_api::{AccountWithKey, Wallet, WalletAccount, WalletStore};
+use wallet_api::{AccountDetail, Wallet, WalletAccount, WalletStore};
 
 type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
@@ -77,9 +77,21 @@ where
         Ok(account)
     }
 
-    fn get_account_with_key(&self, _address: &AccountAddress) -> Result<Option<AccountWithKey>> {
-        //TODO
-        unimplemented!()
+    fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<AccountDetail>> {
+        let account = self.store.get_account(address)?;
+        match account {
+            None => Ok(None),
+            Some(account) => {
+                let public_key = self.store.get_from_account(address, KEY_NAME_PUBLIC_KEY)?;
+                ensure!(
+                    public_key.is_some(),
+                    "no public key exists in account {}",
+                    address
+                );
+                let public_key = Ed25519PublicKey::try_from(public_key.unwrap().as_slice())?;
+                Ok(Some(AccountDetail::new(account, public_key)))
+            }
+        }
     }
 
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>, Error> {
@@ -207,6 +219,7 @@ fn gen_keypair() -> KeyPair {
 }
 
 const KEY_NAME_ENCRYPTED_PRIVATE_KEY: &str = "encrypted_private_key";
+const KEY_NAME_PUBLIC_KEY: &str = "public_key";
 
 impl<TKeyStore> KeyStoreWallet<TKeyStore>
 where
@@ -230,6 +243,11 @@ where
         let address = account.address;
         self.store.save_account(account)?;
         let encrypted_prikey = encrypt(password.as_bytes(), &key_pair.private_key.to_bytes());
+        self.store.save_to_account(
+            &address,
+            KEY_NAME_PUBLIC_KEY.to_string(),
+            key_pair.public_key.to_bytes().to_vec(),
+        )?;
         self.store.save_to_account(
             &address,
             KEY_NAME_ENCRYPTED_PRIVATE_KEY.to_string(),
@@ -284,6 +302,20 @@ mod tests {
             .into_inner();
         let txn = wallet.sign_txn(raw_txn)?;
         assert_eq!(signed_txn, txn);
+        Ok(())
+    }
+
+    #[test]
+    fn test_wallet_get_account_details() -> Result<()> {
+        let tmp_path = tempfile::tempdir()?;
+        let wallet_store = FileWalletStore::new(tmp_path.path());
+        let wallet = KeyStoreWallet::new(wallet_store)?;
+        let account = wallet.create_account("hello")?;
+        let account_detail = wallet.get_account_detail(&account.address)?;
+        assert!(account_detail.is_some());
+        let account_detail = account_detail.unwrap();
+        let address = AccountAddress::from_public_key(&account_detail.public_key);
+        assert_eq!(&address, account_detail.address());
         Ok(())
     }
 }
