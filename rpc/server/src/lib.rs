@@ -121,7 +121,6 @@ impl Supervised for JSONRpcActor {
 mod tests {
     use super::*;
     use starcoin_state_api::mock::MockChainStateService;
-    use starcoin_state_tree::mock::MockStateNodeStore;
     use starcoin_traits::mock::MockTxPoolService;
     use starcoin_wallet_api::mock::MockWalletService;
 
