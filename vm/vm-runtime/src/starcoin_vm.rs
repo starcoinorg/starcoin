@@ -12,7 +12,7 @@ use libra_types::{
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
     },
-    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
+    vm_error::{sub_status, StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
     write_set::WriteSet as LibraWriteSet,
 };
 use logger::prelude::*;
@@ -22,6 +22,7 @@ use move_vm_state::{
     execution_context::{ExecutionContext, SystemExecutionContext, TransactionExecutionContext},
 };
 use move_vm_types::chain_state::ChainState as LibraChainState;
+use move_vm_types::identifier::create_access_path;
 use move_vm_types::values::Value;
 use std::sync::Arc;
 
@@ -43,7 +44,7 @@ use types::{
 use vm::errors::convert_prologue_runtime_error;
 use vm::{
     errors::VMResult,
-    gas_schedule::{CostTable, GasAlgebra, GasUnits},
+    gas_schedule::{CostTable, GasAlgebra, GasUnits, GAS_SCHEDULE_NAME},
     transaction_metadata::TransactionMetadata,
 };
 
@@ -76,8 +77,37 @@ impl StarcoinVM {
     fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
         info!("load gas schedule");
         let _ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
-        //        self.gas_schedule = self.move_vm.load_gas_schedule(&mut ctx, data_cache).ok();
-        self.gas_schedule = Some(CostTable::zero());
+        self.gas_schedule = self.fetch_gas_schedule(data_cache).ok();
+    }
+
+    fn fetch_gas_schedule(&mut self, data_cache: &dyn RemoteCache) -> VMResult<CostTable> {
+        let address = account_config::association_address();
+        let mut ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
+        let gas_struct_tag = self
+            .move_vm
+            .resolve_struct_tag_by_name(&GAS_SCHEDULE_MODULE, &GAS_SCHEDULE_NAME, &mut ctx)
+            .map_err(|_| {
+                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_MODULE)
+            })?;
+
+        let access_path = create_access_path(&address.into(), gas_struct_tag);
+
+        let data_blob = data_cache
+            .get(&access_path)
+            .map_err(|_| {
+                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_RESOURCE)
+            })?
+            .ok_or_else(|| {
+                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_RESOURCE)
+            })?;
+        let table: CostTable = scs::from_bytes(&data_blob).map_err(|_| {
+            LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+                .with_sub_status(sub_status::GSE_UNABLE_TO_DESERIALIZE)
+        })?;
+        Ok(table)
     }
 
     fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
