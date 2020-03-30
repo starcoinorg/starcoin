@@ -39,3 +39,4 @@ starcoin-genesis = {path = "../core/genesis"}
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
 
 [dev-dependencies]
+starcoin-wallet-api = { path = "../wallet/api"}

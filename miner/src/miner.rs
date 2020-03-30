@@ -9,6 +9,7 @@ use consensus::{difficult, dummy::DummyHeader, Consensus, ConsensusHeader};
 use crypto::HashValue;
 use futures::channel::oneshot;
 use logger::prelude::*;
+use starcoin_wallet_api::AccountDetail;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -50,6 +51,7 @@ impl MineCtx {
 
 pub fn mint<C>(
     config: Arc<NodeConfig>,
+    miner_account: AccountDetail,
     txns: Vec<SignedUserTransaction>,
     chain: &dyn ChainReader,
     bus: Addr<BusActor>,
@@ -59,8 +61,8 @@ where
 {
     let difficulty = difficult::get_next_work_required(chain);
     let block_template = chain.create_block_template(
-        config.miner.account_address(),
-        Some(config.miner.auth_key()),
+        *miner_account.address(),
+        Some(miner_account.get_auth_key().prefix().to_vec()),
         None,
         difficulty,
         txns,

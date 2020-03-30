@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
+use starcoin_crypto::{test_utils::KeyPair, Uniform};
 use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::time::Duration;
@@ -50,6 +52,21 @@ impl AccountDetail {
 
     pub fn address(&self) -> &AccountAddress {
         &self.account.address
+    }
+
+    pub fn random() -> Self {
+        let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
+        let seed_buf: [u8; 32] = seed_rng.gen();
+        let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
+        let key_pair = KeyPair::generate_for_testing(&mut rng);
+        let address = AccountAddress::from_public_key(&key_pair.public_key);
+        AccountDetail {
+            account: WalletAccount {
+                address,
+                is_default: false,
+            },
+            public_key: key_pair.public_key,
+        }
     }
 }
 

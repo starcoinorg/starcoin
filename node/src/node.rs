@@ -4,13 +4,13 @@
 use actix::prelude::*;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
-use config::{NodeConfig, PacemakerStrategy};
 use consensus::{Consensus, ConsensusHeader};
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use miner::miner_client;
 use miner::MinerActor;
 use network::NetworkActor;
+use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_genesis::Genesis;
 use starcoin_rpc_server::JSONRpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -70,6 +70,7 @@ where
             let db_storage = Arc::new(DBStorage::new(node_config.storage.clone().dir()));
             let storage =
                 Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
+
             let startup_info = match storage.get_startup_info().unwrap() {
                 Some(startup_info) => {
                     info!("return from db");
@@ -86,26 +87,31 @@ where
 
             let account_service = WalletActor::launch(node_config.clone()).unwrap();
 
-            //TODO refactor miner config.
-            let mut miner_config = (&*node_config).clone();
-            let default_account = account_service
-                .clone()
-                .get_default_account()
-                .await
-                .unwrap()
-                .expect("default account should exist.");
-            let account_with_key = account_service
-                .clone()
-                .get_account(default_account.address)
-                .await
-                .unwrap()
-                .unwrap();
-            miner_config.miner.set_default_account((
-                account_with_key.account.address,
-                account_with_key.get_auth_key(),
-            ));
-
-            let node_config = Arc::new(miner_config);
+            //init default account
+            let default_account = match account_service.clone().get_default_account().await.unwrap()
+            {
+                Some(account) => account_service
+                    .clone()
+                    .get_account(account.address)
+                    .await
+                    .unwrap()
+                    .unwrap(),
+                None => {
+                    //TODO only in dev mod ?
+                    let wallet_account = account_service
+                        .clone()
+                        .create_account("".to_string())
+                        .await
+                        .unwrap();
+                    info!("Create default account: {}", wallet_account.address);
+                    account_service
+                        .clone()
+                        .get_account(wallet_account.address)
+                        .await
+                        .unwrap()
+                        .unwrap()
+                }
+            };
 
             let txpool = {
                 let best_block_id = startup_info.head.get_head();
@@ -161,6 +167,7 @@ where
                     txpool.clone(),
                     chain.clone(),
                     receiver,
+                    default_account,
                 );
             let peer_info = Arc::new(PeerInfo::random());
             let process_actor = ProcessActor::<E, C>::launch(

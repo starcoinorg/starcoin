@@ -1,10 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::ensure;
-use anyhow::Result;
+use anyhow::{ensure, format_err, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::convert::TryFrom;
+
+use dirs;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+use once_cell::sync::Lazy;
+use rand::prelude::*;
+use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use starcoin_crypto::{test_utils::KeyPair, Uniform};
+use std::fs::create_dir;
+use std::fs::File;
+use std::io::Read;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use std::sync::Arc;
+use structopt::StructOpt;
+
 mod miner_config;
 mod network_config;
 mod rpc_config;
@@ -18,31 +33,6 @@ pub use rpc_config::RpcConfig;
 pub use storage_config::StorageConfig;
 pub use txpool_config::TxPoolConfig;
 pub use vm_config::VMConfig;
-
-use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use crypto::{test_utils::KeyPair, Uniform};
-use dirs;
-use once_cell::sync::Lazy;
-use rand::prelude::*;
-use std::fs::create_dir;
-use std::fs::File;
-use std::io::Read;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use structopt::StructOpt;
-
-#[derive(Debug, StructOpt)]
-#[structopt(name = "starcoin", about = "Starcoin")]
-pub struct StarcoinOpt {
-    #[structopt(long, parse(from_os_str))]
-    /// Path to data dir
-    pub data_dir: Option<PathBuf>,
-
-    #[structopt(long)]
-    /// Start in dev mode
-    pub dev: bool,
-}
 
 /// Default data dir
 pub static DEFAULT_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
@@ -63,7 +53,7 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
     let data_dir: PathBuf = match opt.data_dir.clone() {
         Some(p) => p,
         None => {
-            if opt.dev {
+            if opt.net.is_dev() {
                 temp_dir()
             } else {
                 DEFAULT_DATA_DIR.to_path_buf()
@@ -80,7 +70,81 @@ pub fn temp_dir() -> PathBuf {
     tempdir.path().to_path_buf()
 }
 
-//TODO rename NodeConfig
+#[derive(Debug, Clone, StructOpt)]
+#[structopt(name = "starcoin", about = "Starcoin")]
+pub struct StarcoinOpt {
+    #[structopt(long, short = "d", parse(from_os_str))]
+    /// Path to data dir
+    pub data_dir: Option<PathBuf>,
+
+    #[structopt(long, short = "n")]
+    /// Network
+    pub net: ChainNetwork,
+}
+
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    IntoPrimitive,
+    TryFromPrimitive,
+    Deserialize,
+    Serialize,
+)]
+#[repr(u64)]
+pub enum ChainNetwork {
+    /// A ephemeral network just for developer test.
+    Dev = 1024,
+    /// Starcoin test network,
+    /// The data on the chain will be cleaned up periodically。
+    /// Comet Halley, officially designated 1P/Halley, is a short-period comet visible from Earth every 75–76 years.
+    Halley = 3,
+    /// Starcoin long-running test network,
+    /// Use network upgrade strategy to upgrade chain protocol.
+    /// Proxima Centauri is a small, low-mass star located 4.244 light-years (1.301 pc) away from the Sun in the southern constellation of Centaurus.
+    /// Its Latin name means the "nearest [star] of Centaurus".
+    Proxima = 2,
+    /// Starcoin main net.
+    Main = 1,
+}
+
+impl FromStr for ChainNetwork {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "dev" => Ok(ChainNetwork::Dev),
+            "halley" => Ok(ChainNetwork::Halley),
+            "proxima" => Ok(ChainNetwork::Proxima),
+            _ => Err(format_err!("")),
+        }
+    }
+}
+
+impl ChainNetwork {
+    pub fn chain_id(&self) -> u64 {
+        (*self).into()
+    }
+    pub fn is_dev(&self) -> bool {
+        match self {
+            ChainNetwork::Dev => true,
+            _ => false,
+        }
+    }
+}
+
+impl Default for ChainNetwork {
+    fn default() -> Self {
+        ChainNetwork::Dev
+    }
+}
+
+//TODO rename NodeConfig to Config.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {

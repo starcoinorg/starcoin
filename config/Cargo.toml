@@ -17,11 +17,12 @@ serde = { version = "1.0", features = ["derive"] }
 toml = { version = "0.5.3", default-features = false }
 libp2p = "0.15.0"
 structopt = "0.3.2"
-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-crypto = { path = "../commons/crypto"}
 rand = "0.6.5"
 traits = { package = "starcoin-traits", path = "../core/traits"}
 once_cell="1.3"
 hex="0.4"
-types = {path = "../types", package="starcoin-types"}
+num_enum = "0.4.1"
+starcoin-types = { path = "../types" }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 libra-temppath = { git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
