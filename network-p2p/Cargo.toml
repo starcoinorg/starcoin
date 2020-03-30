@@ -7,6 +7,8 @@ publish = false
 edition = "2018"
 
 [dependencies]
+anyhow = "1.0"
+
 bitflags = "1.2.0"
 bytes = "0.5.0"
 codec = { package = "parity-scale-codec", version = "1.0.0", features = ["derive"] }
@@ -46,6 +48,7 @@ peerset = {  path = "peerset" }
 tokio = { version = "0.2", features = ["full"] }
 sg_config = {path = "../config", package="starcoin-config"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 
 
 [dev-dependencies]

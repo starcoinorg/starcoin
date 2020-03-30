@@ -25,6 +25,8 @@ use parking_lot::Mutex;
 use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Handle;
 
+const PROTOCOL_NAME: &[u8] = b"/starcoin/consensus/1";
+
 #[derive(Clone)]
 pub struct SNetworkService {
     handle: Handle,
@@ -46,6 +48,7 @@ impl SNetworkService {
         let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
         let service = worker.service().clone();
         let worker = worker;
+        service.register_notifications_protocol(PROTOCOL_NAME);
 
         let acks = Arc::new(Mutex::new(HashMap::new()));
 
@@ -130,16 +133,12 @@ impl SNetworkService {
 
         info!("Send message to {} with ack", peer_id);
         self.service
-            .send_notification(peer_id, protocol_msg.into_bytes());
+            .write_notification(peer_id, PROTOCOL_NAME.into(), protocol_msg.into_bytes());
         //self.waker.wake();
         self.inner.acks.lock().insert(message_id, tx);
         rx.await?;
 
         Ok(())
-    }
-
-    pub(crate) fn service(&self) -> Arc<NetworkService> {
-        self.service.clone()
     }
 
     pub async fn broadcast_message(&mut self, message: Vec<u8>) {
@@ -148,7 +147,9 @@ impl SNetworkService {
 
         let message_bytes = protocol_msg.into_bytes();
 
-        self.service.broadcast_message(message_bytes).await;
+        self.service
+            .broadcast_message(PROTOCOL_NAME.into(), message_bytes)
+            .await;
     }
 
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
@@ -210,8 +211,9 @@ impl NetworkInner {
                     };
                     net_tx.unbounded_send(user_msg)?;
                     if payload.id != 0 {
-                        self.service.send_notification(
+                        self.service.write_notification(
                             peer_id.clone(),
+                            PROTOCOL_NAME.into(),
                             Message::ACK(payload.id).into_bytes(),
                         );
                     }
@@ -234,8 +236,9 @@ impl NetworkInner {
 
     async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
         let account_addr = message.peer_id.clone();
-        self.service.send_notification(
+        self.service.write_notification(
             account_addr.into(),
+            PROTOCOL_NAME.into(),
             Message::new_payload(message.data).0.into_bytes(),
         );
         Ok(())

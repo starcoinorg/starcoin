@@ -3893,6 +3893,7 @@ dependencies = [
 name = "network-p2p"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_matches",
  "async-std",
  "bitflags",
@@ -3926,6 +3927,7 @@ dependencies = [
  "smallvec 0.6.13",
  "starcoin-canonical-serialization",
  "starcoin-config",
+ "starcoin-crypto",
  "starcoin-logger",
  "tempfile",
  "thiserror",
