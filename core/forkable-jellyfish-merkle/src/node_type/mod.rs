@@ -445,7 +445,7 @@ impl InternalNode {
 
     /// Get all child hash
     pub fn all_child(&self) -> Vec<HashValue> {
-        self.children.iter().map(|(n, c)| c.hash.clone()).collect()
+        self.children.iter().map(|(_, c)| c.hash.clone()).collect()
     }
 }
 
