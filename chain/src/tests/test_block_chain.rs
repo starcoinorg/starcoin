@@ -10,6 +10,7 @@ use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
+use starcoin_wallet_api::AccountDetail;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
@@ -83,13 +84,14 @@ async fn gen_head_chain(
         txpool.clone(),
     )
     .unwrap();
+    let miner_account = AccountDetail::random();
     if times > 0 {
         for _i in 0..times {
             let block_template = chain
                 .clone()
                 .create_block_template(
-                    conf.miner.account_address(),
-                    Some(conf.miner.auth_key()),
+                    *miner_account.address(),
+                    Some(miner_account.get_auth_key().prefix().to_vec()),
                     None,
                     Vec::new(),
                 )
@@ -145,7 +147,7 @@ async fn test_block_chain_head() {
 async fn test_block_chain_forks() {
     ::logger::init_for_test();
     let times = 5;
-    let (chain, conf) = gen_head_chain(times, true).await;
+    let (chain, _conf) = gen_head_chain(times, true).await;
     let mut parent_hash = chain
         .clone()
         .master_startup_info()
@@ -153,15 +155,15 @@ async fn test_block_chain_forks() {
         .unwrap()
         .head
         .branch_id();
-
+    let miner_account = AccountDetail::random();
     if times > 0 {
         for i in 0..(times + 1) {
             Delay::new(Duration::from_millis(1000)).await;
             let block = chain
                 .clone()
                 .create_block_template(
-                    conf.miner.account_address(),
-                    Some(conf.miner.auth_key()),
+                    *miner_account.address(),
+                    Some(miner_account.get_auth_key().prefix().to_vec()),
                     Some(parent_hash),
                     Vec::new(),
                 )
@@ -223,9 +225,10 @@ async fn test_chain_apply() -> Result<()> {
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let difficulty = difficult::get_next_work_required(&block_chain);
+    let miner_account = AccountDetail::random();
     let block_template = block_chain.create_block_template(
-        config.miner.account_address(),
-        Some(config.miner.auth_key()),
+        *miner_account.address(),
+        Some(miner_account.get_auth_key().prefix().to_vec()),
         None,
         difficulty,
         vec![],

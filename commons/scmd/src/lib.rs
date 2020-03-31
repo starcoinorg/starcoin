@@ -93,6 +93,8 @@ where
         global_opt: Arc<GlobalOpt>,
         arg_matches: &ArgMatches<'_>,
     ) -> Result<()>;
+
+    fn get_app(&mut self) -> &mut App<'static, 'static>;
 }
 
 pub struct ExecContext<State, GlobalOpt, Opt>
@@ -252,30 +254,35 @@ where
             let readline = rl.readline(prompt.as_str());
             match readline {
                 Ok(line) => {
-                    let mut params: Vec<&str> = line.trim().split(' ').map(str::trim).collect();
-                    // insert the app name to first, for match env args style.
-                    params.insert(0, app_name.as_str());
-                    let arg_matches = match self.app.get_matches_from_safe_borrow(params) {
-                        Ok(arg_matches) => arg_matches,
-                        Err(e) => {
-                            //println!("match err: {:?}", e.kind);
-                            println!("{}", e.message);
-                            continue;
-                        }
-                    };
-                    let (cmd_name, arg_matches) = arg_matches.subcommand();
+                    let params: Vec<&str> = line.trim().split(' ').map(str::trim).collect();
+                    let cmd_name = params[0];
                     match cmd_name {
                         "quit" => break,
+                        "help" => {
+                            self.app.print_help().expect("print help should success.");
+                        }
                         "console" => continue,
                         "" => continue,
                         cmd_name => {
                             let cmd = self.commands.get_mut(cmd_name);
-                            match (cmd, arg_matches) {
-                                (Some(cmd), Some(arg_matches)) => {
-                                    match cmd.exec(state.clone(), global_opt.clone(), arg_matches) {
-                                        Ok(()) => {}
-                                        Err(e) => println!("Execute error:{:?}", e),
-                                    };
+                            match cmd {
+                                Some(cmd) => {
+                                    let app = cmd.get_app();
+                                    match app.get_matches_from_safe_borrow(params) {
+                                        Ok(arg_matches) => {
+                                            match cmd.exec(
+                                                state.clone(),
+                                                global_opt.clone(),
+                                                &arg_matches,
+                                            ) {
+                                                Ok(()) => {}
+                                                Err(e) => println!("Execute error:{:?}", e),
+                                            };
+                                        }
+                                        Err(e) => {
+                                            println!("{}", e.message);
+                                        }
+                                    }
                                 }
                                 _ => println!("Unknown command: {:?}", cmd_name),
                             }
@@ -476,6 +483,10 @@ where
             self.exec_action(&ctx)?;
         }
         Ok(())
+    }
+
+    fn get_app(&mut self) -> &mut App<'static, 'static> {
+        &mut self.app
     }
 }
 

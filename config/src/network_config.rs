@@ -3,15 +3,15 @@
 
 use anyhow::ensure;
 use anyhow::Result;
-use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use crypto::test_utils::KeyPair;
+use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use starcoin_crypto::test_utils::KeyPair;
 
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use starcoin_types::peer_info::PeerId;
 use std::path::PathBuf;
 use std::sync::Arc;
-use types::peer_info::PeerId;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]

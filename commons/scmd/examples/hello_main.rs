@@ -13,6 +13,8 @@ struct GlobalOpts {
     test: bool,
     #[structopt(short = "c", default_value = "0")]
     counter: usize,
+    #[structopt(short = "r")]
+    required: String,
 }
 
 #[derive(Debug, StructOpt)]

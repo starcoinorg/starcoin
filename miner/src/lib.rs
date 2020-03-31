@@ -19,6 +19,8 @@ use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use logger::prelude::*;
 use sc_stratum::{self, PushWorkHandler};
+use starcoin_wallet_api::AccountDetail;
+use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
@@ -62,6 +64,7 @@ where
     chain: CS,
     miner: miner::Miner<H>,
     stratum: Arc<sc_stratum::Stratum>,
+    miner_account: AccountDetail,
 }
 
 impl<C, E, P, CS, S, H> MinerActor<C, E, P, CS, S, H>
@@ -80,6 +83,7 @@ where
         txpool: P,
         chain: CS,
         mut transaction_receiver: Option<mpsc::UnboundedReceiver<TransactionStatusEvent>>,
+        miner_account: AccountDetail,
     ) -> Result<Addr<Self>> {
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
@@ -135,6 +139,7 @@ where
                 chain,
                 miner,
                 stratum,
+                miner_account,
             }
         });
         Ok(actor)
@@ -176,6 +181,8 @@ where
         let config = self.config.clone();
         let mut miner = self.miner.clone();
         let stratum = self.stratum.clone();
+        let miner_account = self.miner_account.clone();
+
         let f = async {
             //TODO handle error.
             let txns = txpool
@@ -185,6 +192,7 @@ where
                 .unwrap_or(vec![]);
 
             let startup_info = chain.master_startup_info().await.unwrap();
+
             debug!("head block : {:?}, txn len: {}", startup_info, txns.len());
             std::thread::spawn(move || {
                 let head = startup_info.head.clone();
@@ -206,8 +214,9 @@ where
                 let difficulty = difficult::get_next_work_required(&block_chain);
                 let block_template = block_chain
                     .create_block_template(
-                        config.miner.account_address(),
-                        Some(config.miner.auth_key()),
+                        *miner_account.address(),
+                        //TODO check account is exist, if exist, just pass One.
+                        Some(miner_account.get_auth_key().prefix().to_vec()),
                         None,
                         difficulty,
                         txns.clone(),
@@ -218,7 +227,7 @@ where
                 info!("Push job to worker{:?}", job);
                 stratum.push_work_all(job).unwrap();
                 if config.miner.dev_mode {
-                    match miner::mint::<C>(config, txns, &block_chain, bus) {
+                    match miner::mint::<C>(config, miner_account, txns, &block_chain, bus) {
                         Err(e) => {
                             error!("mint block err: {:?}", e);
                         }
