@@ -10,7 +10,7 @@ use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
-use starcoin_wallet_api::AccountDetail;
+use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
@@ -84,7 +84,7 @@ async fn gen_head_chain(
         txpool.clone(),
     )
     .unwrap();
-    let miner_account = AccountDetail::random();
+    let miner_account = WalletAccount::random();
     if times > 0 {
         for _i in 0..times {
             let block_template = chain
@@ -155,7 +155,7 @@ async fn test_block_chain_forks() {
         .unwrap()
         .head
         .branch_id();
-    let miner_account = AccountDetail::random();
+    let miner_account = WalletAccount::random();
     if times > 0 {
         for i in 0..(times + 1) {
             Delay::new(Duration::from_millis(1000)).await;
@@ -225,7 +225,7 @@ async fn test_chain_apply() -> Result<()> {
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let difficulty = difficult::get_next_work_required(&block_chain);
-    let miner_account = AccountDetail::random();
+    let miner_account = WalletAccount::random();
     let block_template = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),

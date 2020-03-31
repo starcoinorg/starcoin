@@ -5,7 +5,7 @@ use actix::clock::Duration;
 use anyhow::Result;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::{AccountDetail, Wallet, WalletAccount, WalletService};
+use starcoin_wallet_api::{Wallet, WalletAccount, WalletService};
 
 pub struct WalletServiceImpl<W>
 where
@@ -32,10 +32,6 @@ where
 {
     fn create_account(&self, password: &str) -> Result<WalletAccount> {
         self.wallet.create_account(password)
-    }
-
-    fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<AccountDetail>> {
-        self.wallet.get_account_detail(address)
     }
 
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>> {

@@ -17,7 +17,7 @@ use std::ops::Add;
 use std::sync::{Mutex, RwLock};
 use std::time::Duration;
 use std::time::Instant;
-use wallet_api::{AccountDetail, Wallet, WalletAccount, WalletStore};
+use wallet_api::{Wallet, WalletAccount, WalletStore};
 
 type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
@@ -26,7 +26,7 @@ type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519Pu
 #[derive(Default, Debug)]
 pub struct KeyStoreWallet<TKeyStore> {
     store: TKeyStore,
-    default_account: Mutex<Option<AccountAddress>>,
+    default_account: Mutex<Option<WalletAccount>>,
     key_cache: RwLock<KeyCache>,
 }
 
@@ -72,28 +72,28 @@ where
         let existed_accounts = self.store.get_accounts()?;
         //first account is default.
         let is_default = existed_accounts.len() == 0;
-        let account = WalletAccount::new(address, is_default);
+        let account = WalletAccount::new(address, keypair.public_key.clone(), is_default);
         self.save_account(account.clone(), keypair, password.to_string())?;
         Ok(account)
     }
 
-    fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<AccountDetail>> {
-        let account = self.store.get_account(address)?;
-        match account {
-            None => Ok(None),
-            Some(account) => {
-                let public_key = self.store.get_from_account(address, KEY_NAME_PUBLIC_KEY)?;
-                ensure!(
-                    public_key.is_some(),
-                    "no public key exists in account {}",
-                    address
-                );
-                let public_key = Ed25519PublicKey::try_from(public_key.unwrap().as_slice())?;
-                Ok(Some(AccountDetail::new(account, public_key)))
-            }
-        }
-    }
-
+    // fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<WalletAccount>> {
+    //     let account = self.store.get_account(address)?;
+    //     match account {
+    //         None => Ok(None),
+    //         Some(account) => {
+    //             let public_key = self.store.get_from_account(address, KEY_NAME_PUBLIC_KEY)?;
+    //             ensure!(
+    //                 public_key.is_some(),
+    //                 "no public key exists in account {}",
+    //                 address
+    //             );
+    //             let public_key = Ed25519PublicKey::try_from(public_key.unwrap().as_slice())?;
+    //             Ok(Some(WalletAccount::new(account, public_key)))
+    //         }
+    //     }
+    // }
+    //
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>, Error> {
         self.store.get_account(address)
     }
@@ -102,7 +102,7 @@ where
         let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())?;
         let key_pair = KeyPair::from(private_key);
         let address = AccountAddress::from_public_key(&key_pair.public_key);
-        let account = WalletAccount::new(address, false);
+        let account = WalletAccount::new(address, key_pair.public_key.clone(), false);
         self.save_account(account.clone(), key_pair, password.to_string())?;
         Ok(account)
     }
@@ -159,17 +159,16 @@ where
     }
 
     fn get_default_account(&self) -> Result<Option<WalletAccount>, Error> {
-        let default_address = self.default_account.lock().unwrap().as_ref().cloned();
-        match default_address {
-            Some(a) => Ok(Some(WalletAccount::new(a, true))),
+        let default_account = self.default_account.lock().unwrap().as_ref().cloned();
+        match default_account {
+            Some(a) => Ok(Some(a)),
             None => {
                 let default_account = self
                     .store
                     .get_accounts()?
                     .into_iter()
                     .find(|account| account.is_default);
-                *self.default_account.lock().unwrap() =
-                    default_account.as_ref().map(|account| account.address);
+                *self.default_account.lock().unwrap() = default_account.clone();
                 Ok(default_account)
             }
         }
@@ -195,9 +194,9 @@ where
         }
 
         target.is_default = true;
-        self.store.save_account(target)?;
+        self.store.save_account(target.clone())?;
         // save default into cache
-        *self.default_account.lock().unwrap() = Some(address.clone());
+        *self.default_account.lock().unwrap() = Some(target);
         Ok(())
     }
 
@@ -219,7 +218,6 @@ fn gen_keypair() -> KeyPair {
 }
 
 const KEY_NAME_ENCRYPTED_PRIVATE_KEY: &str = "encrypted_private_key";
-const KEY_NAME_PUBLIC_KEY: &str = "public_key";
 
 impl<TKeyStore> KeyStoreWallet<TKeyStore>
 where
@@ -243,11 +241,6 @@ where
         let address = account.address;
         self.store.save_account(account)?;
         let encrypted_prikey = encrypt(password.as_bytes(), &key_pair.private_key.to_bytes());
-        self.store.save_to_account(
-            &address,
-            KEY_NAME_PUBLIC_KEY.to_string(),
-            key_pair.public_key.to_bytes().to_vec(),
-        )?;
         self.store.save_to_account(
             &address,
             KEY_NAME_ENCRYPTED_PRIVATE_KEY.to_string(),
@@ -311,9 +304,9 @@ mod tests {
         let wallet_store = FileWalletStore::new(tmp_path.path());
         let wallet = KeyStoreWallet::new(wallet_store)?;
         let account = wallet.create_account("hello")?;
-        let account_detail = wallet.get_account_detail(&account.address)?;
-        assert!(account_detail.is_some());
-        let account_detail = account_detail.unwrap();
+        let wallet_account = wallet.get_account(&account.address)?;
+        assert!(wallet_account.is_some());
+        let account_detail = wallet_account.unwrap();
         let address = AccountAddress::from_public_key(&account_detail.public_key);
         assert_eq!(&address, account_detail.address());
         Ok(())
