@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::{ChainNetwork, ConfigModule};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
@@ -19,6 +19,12 @@ pub struct TxPoolConfig {
 
 impl Default for TxPoolConfig {
     fn default() -> Self {
+        Self::default_with_net(ChainNetwork::default())
+    }
+}
+
+impl ConfigModule for TxPoolConfig {
+    fn default_with_net(_net: ChainNetwork) -> Self {
         Self {
             max_count: 1024,
             max_per_sender: 16,
@@ -26,16 +32,5 @@ impl Default for TxPoolConfig {
             minimal_gas_price: 0,
             tx_gas_limit: u64::max_value(),
         }
-    }
-}
-
-impl TxPoolConfig {
-    pub fn random_for_test() -> Self {
-        Self::default()
-    }
-
-    pub fn load(&mut self) -> Result<()> {
-        // TODO: add validate logic
-        Ok(())
     }
 }

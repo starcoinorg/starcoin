@@ -1,15 +1,12 @@
-use starcoin_config::NodeConfig;
-
-use clap::Clap;
-#[derive(Clap)]
-#[clap(version = "1.0", author = "starcoin")]
-struct Opts {
-    #[clap(short = "o", long = "output_dir", default_value = "starcoin")]
-    output_file: String,
-}
+use starcoin_config::{NodeConfig, StarcoinOpt};
+use structopt::StructOpt;
 
 fn main() {
-    let opts: Opts = Opts::parse();
-    NodeConfig::load(&opts.output_file).expect("write file should ok");
-    println!("generated config.toml in dir {}", opts.output_file);
+    let opts: StarcoinOpt = StarcoinOpt::from_args();
+    if opts.data_dir.is_none() {
+        println!("please set data_dir to generate config.");
+        return;
+    }
+    let config = NodeConfig::load_with_opt(&opts).expect("write file should ok");
+    println!("generated config.toml in dir {:?}", config.base.data_dir());
 }

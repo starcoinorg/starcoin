@@ -1,14 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::ensure;
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::test_utils::KeyPair;
 
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::{BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
 use starcoin_types::peer_info::PeerId;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -26,6 +26,18 @@ pub struct NetworkConfig {
 
 impl Default for NetworkConfig {
     fn default() -> Self {
+        Self::default_with_net(ChainNetwork::default())
+    }
+}
+
+impl NetworkConfig {
+    pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
+        self.network_keypair.clone().unwrap()
+    }
+}
+
+impl ConfigModule for NetworkConfig {
+    fn default_with_net(_net: ChainNetwork) -> Self {
         Self {
             listen: "/ip4/0.0.0.0/tcp/9840".to_string(),
             seeds: vec![],
@@ -33,17 +45,13 @@ impl Default for NetworkConfig {
             network_keypair: None,
         }
     }
-}
 
-impl NetworkConfig {
-    pub fn random_for_test() -> Self {
-        let mut default_config = Self::default();
+    fn random(&mut self, _base: &BaseConfig) {
         let keypair = crate::gen_keypair();
-        default_config.network_keypair = Some(keypair);
-        default_config
+        self.network_keypair = Some(keypair);
     }
 
-    pub fn load(&mut self, data_dir: &PathBuf) -> Result<()> {
+    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
         ensure!(
             self.network_key_file.is_relative(),
             "network key file should be relative path"
@@ -52,10 +60,17 @@ impl NetworkConfig {
             !self.network_key_file.as_os_str().is_empty(),
             "network key file should not be empty path"
         );
+        if let Some(seeds) = &opt.seeds {
+            self.seeds.extend_from_slice(seeds.as_slice());
+            info!(
+                "Update seeds config from command line opt, seeds: {:?}",
+                self.seeds
+            );
+        }
+        let data_dir = base.data_dir();
         let path = data_dir.join(&self.network_key_file);
         let keypair = if path.exists() {
             // load from file directly
-
             let network_keypair = crate::load_key(&path)?;
             Arc::new(network_keypair)
         } else {
@@ -70,9 +85,5 @@ impl NetworkConfig {
         self.network_keypair = Some(keypair);
 
         Ok(())
-    }
-
-    pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
-        self.network_keypair.clone().unwrap()
     }
 }

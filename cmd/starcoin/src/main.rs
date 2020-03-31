@@ -36,12 +36,12 @@ where
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
             let node = Node::<C, H, E>::new(config.clone());
             let handle = node.start();
-            let ipc_file = config.rpc.get_ipc_file(&config.data_dir);
+            let ipc_file = config.rpc.get_ipc_file();
             info!("Waiting node start...");
-            helper::wait_until_file_created(&ipc_file)?;
+            helper::wait_until_file_created(ipc_file)?;
             info!("Try to connect node by ipc: {:?}", ipc_file);
             let client = RpcClient::connect_ipc(ipc_file)?;
-            let file_log_path = config.data_dir.join("starcoin.log");
+            let file_log_path = config.data_dir().join("starcoin.log");
             info!("Redirect log to file: {:?}", file_log_path);
             logger_handle.enable_file(false, file_log_path);
             let state = CliState::new(config, client, logger_handle, Some(handle));

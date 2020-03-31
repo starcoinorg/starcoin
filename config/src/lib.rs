@@ -11,7 +11,8 @@ use once_cell::sync::Lazy;
 use rand::prelude::*;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::{test_utils::KeyPair, Uniform};
-use std::fs::create_dir;
+use std::fmt::{Display, Formatter};
+use std::fs::create_dir_all;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
@@ -27,6 +28,7 @@ mod storage_config;
 mod txpool_config;
 mod vm_config;
 
+pub use libra_temppath::TempPath;
 pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
@@ -35,51 +37,39 @@ pub use txpool_config::TxPoolConfig;
 pub use vm_config::VMConfig;
 
 /// Default data dir
-pub static DEFAULT_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
+static DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
     dirs::home_dir()
         .expect("read home dir should ok")
         .join(".starcoin")
 });
 pub static CONFIG_FILE_PATH: &str = "config.toml";
 
-pub fn load_config_from_dir<P>(data_dir: P) -> Result<NodeConfig>
-where
-    P: AsRef<Path>,
-{
-    NodeConfig::load(data_dir)
-}
-
 pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
-    let data_dir: PathBuf = match opt.data_dir.clone() {
-        Some(p) => p,
-        None => {
-            if opt.net.is_dev() {
-                temp_dir()
-            } else {
-                DEFAULT_DATA_DIR.to_path_buf()
-            }
-        }
-    };
-    //TODO handle dev mode
-    load_config_from_dir(&data_dir)
+    NodeConfig::load_with_opt(opt)
 }
 
-pub fn temp_dir() -> PathBuf {
-    let tempdir = libra_temppath::TempPath::new();
-    //tempdir.create_as_dir().expect("Create temp dir fail.");
-    tempdir.path().to_path_buf()
+pub fn temp_path() -> TempPath {
+    TempPath::new()
 }
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, StructOpt, Default)]
 #[structopt(name = "starcoin", about = "Starcoin")]
 pub struct StarcoinOpt {
     #[structopt(long, short = "d", parse(from_os_str))]
     /// Path to data dir
     pub data_dir: Option<PathBuf>,
 
-    #[structopt(long, short = "n")]
-    /// Network
+    #[structopt(long, short = "n", default_value = "dev")]
+    /// Chain Network
     pub net: ChainNetwork,
+
+    #[structopt(long)]
+    /// P2P network seeds
+    pub seeds: Option<Vec<String>>,
+
+    #[structopt(long, default_value = "0")]
+    /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
+    pub dev_period: u64,
 }
 
 #[derive(
@@ -97,6 +87,7 @@ pub struct StarcoinOpt {
     Serialize,
 )]
 #[repr(u64)]
+#[serde(tag = "net")]
 pub enum ChainNetwork {
     /// A ephemeral network just for developer test.
     Dev = 1024,
@@ -111,6 +102,17 @@ pub enum ChainNetwork {
     Proxima = 2,
     /// Starcoin main net.
     Main = 1,
+}
+
+impl Display for ChainNetwork {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ChainNetwork::Dev => write!(f, "dev"),
+            ChainNetwork::Halley => write!(f, "halley"),
+            ChainNetwork::Proxima => write!(f, "proxima"),
+            ChainNetwork::Main => write!(f, "main"),
+        }
+    }
 }
 
 impl FromStr for ChainNetwork {
@@ -144,12 +146,96 @@ impl Default for ChainNetwork {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum DataDirPath {
+    PathBuf(PathBuf),
+    TempPath(Arc<TempPath>),
+}
+
+impl AsRef<Path> for DataDirPath {
+    fn as_ref(&self) -> &Path {
+        match self {
+            DataDirPath::PathBuf(path) => path.as_ref(),
+            DataDirPath::TempPath(path) => path.as_ref().as_ref(),
+        }
+    }
+}
+
+impl Default for DataDirPath {
+    fn default() -> Self {
+        DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct BaseConfig {
+    #[serde(default)]
+    net: ChainNetwork,
+    #[serde(skip)]
+    base_data_dir: DataDirPath,
+    #[serde(skip)]
+    data_dir: PathBuf,
+}
+
+impl BaseConfig {
+    pub fn new(net: ChainNetwork, base_data_dir: Option<PathBuf>) -> Self {
+        let base_data_dir = match base_data_dir {
+            Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
+            None => {
+                if net.is_dev() {
+                    DataDirPath::TempPath(Arc::new(temp_path()))
+                } else {
+                    DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
+                }
+            }
+        };
+        let data_dir = base_data_dir.as_ref().join(net.to_string());
+        Self {
+            net,
+            base_data_dir,
+            data_dir,
+        }
+    }
+
+    pub fn net(&self) -> ChainNetwork {
+        self.net
+    }
+    pub fn data_dir(&self) -> &Path {
+        self.data_dir.as_path()
+    }
+    pub fn base_data_dir(&self) -> &Path {
+        self.base_data_dir.as_ref()
+    }
+    pub fn random_for_test() -> Self {
+        Self::new(ChainNetwork::Dev, None)
+    }
+}
+
+impl Default for BaseConfig {
+    fn default() -> Self {
+        let net = ChainNetwork::default();
+        BaseConfig::new(net, None)
+    }
+}
+
+pub trait ConfigModule {
+    /// Generate default config by ChainNetWork
+    fn default_with_net(net: ChainNetwork) -> Self;
+    /// Init config with random for test, such as ports.
+    fn random(&mut self, _base: &BaseConfig) {}
+    /// Init config with load, read or generate additional config for file
+    /// and overwrite config by global command line option.
+    fn load(&mut self, _base: &BaseConfig, _opt: &StarcoinOpt) -> Result<()> {
+        Ok(())
+    }
+}
+
 //TODO rename NodeConfig to Config.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
-    #[serde(skip)]
-    pub data_dir: PathBuf,
+    #[serde(default)]
+    pub base: BaseConfig,
     #[serde(default)]
     pub network: NetworkConfig,
     #[serde(default)]
@@ -166,58 +252,84 @@ pub struct NodeConfig {
 
 impl NodeConfig {
     pub fn random_for_test() -> Self {
-        let mut config = NodeConfig::default();
-        let data_dir = temp_dir();
-        if !data_dir.exists() {
-            create_dir(data_dir.as_path()).unwrap();
-        }
-        config.data_dir = data_dir;
-        config.network = NetworkConfig::random_for_test();
-        config.tx_pool = TxPoolConfig::random_for_test();
-        config.rpc = RpcConfig::random_for_test();
-        config.miner = MinerConfig::random_for_test();
+        let mut config = NodeConfig::default_with_net(ChainNetwork::Dev);
+        let base = BaseConfig::random_for_test();
+        config.random(&base);
         config
     }
 
-    pub fn load<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
-        if !data_dir.as_ref().exists() {
-            create_dir(data_dir.as_ref())?;
+    pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
+        let base = BaseConfig::new(opt.net, opt.data_dir.clone());
+        let data_dir = base.data_dir();
+        if !data_dir.exists() {
+            create_dir_all(data_dir)?;
         }
-        ensure!(
-            data_dir.as_ref().is_dir(),
-            "please pass in a dir as data_dir"
-        );
+        ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
 
-        let base_dir = PathBuf::from(data_dir.as_ref());
-        let config_file_path = base_dir.join(CONFIG_FILE_PATH);
+        let config_file_path = data_dir.join(CONFIG_FILE_PATH);
 
-        let mut node_config: NodeConfig = if config_file_path.exists() {
+        let mut config: NodeConfig = if config_file_path.exists() {
             load_config(&config_file_path)?
         } else {
-            let default_config = NodeConfig::default();
+            let default_config = NodeConfig::default_with_net(base.net);
             save_config(&default_config, &config_file_path)?;
             default_config
         };
-        node_config.data_dir = base_dir.clone();
-        //TODO every config should know the data_dir self.
-        node_config.network.load(&base_dir)?;
-        node_config.tx_pool.load()?;
-        node_config.miner.load(&base_dir)?;
-        node_config.storage.load(&base_dir)?;
-        // NOTICE: if there is more load case, make it here.
-        // such as: node_config.storage.load(&base_dir)?;
-        Ok(node_config)
+        config.load(&base, opt)?;
+        Ok(config)
     }
 
-    pub fn load_or_random(config_path: Option<&Path>) -> Self {
-        // Load the config
-        let node_config = match config_path {
-            Some(path) => NodeConfig::load(path).expect("Failed to load node config."),
-            None => NodeConfig::random_for_test(),
-        };
-        node_config
+    pub fn data_dir(&self) -> &Path {
+        self.base.data_dir()
+    }
+
+    pub fn net(&self) -> ChainNetwork {
+        self.base.net
     }
 }
+
+impl Default for NodeConfig {
+    fn default() -> Self {
+        Self::default_with_net(ChainNetwork::default())
+    }
+}
+
+impl ConfigModule for NodeConfig {
+    fn default_with_net(net: ChainNetwork) -> Self {
+        let base = BaseConfig::new(net, None);
+        Self {
+            base,
+            network: NetworkConfig::default_with_net(net),
+            rpc: RpcConfig::default_with_net(net),
+            vm: VMConfig::default_with_net(net),
+            miner: MinerConfig::default_with_net(net),
+            storage: StorageConfig::default_with_net(net),
+            tx_pool: TxPoolConfig::default_with_net(net),
+        }
+    }
+
+    fn random(&mut self, base: &BaseConfig) {
+        self.base = base.clone();
+        self.network.random(base);
+        self.rpc.random(base);
+        self.vm.random(base);
+        self.miner.random(base);
+        self.storage.random(base);
+        self.tx_pool.random(base);
+    }
+
+    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
+        self.base = base.clone();
+        self.network.load(base, opt)?;
+        self.rpc.load(base, opt)?;
+        self.miner.load(base, opt)?;
+        self.storage.load(base, opt)?;
+        self.tx_pool.load(base, opt)?;
+        Ok(())
+    }
+}
+
+impl NodeConfig {}
 
 pub(crate) fn save_config<T, P>(c: &T, output_file: P) -> Result<()>
 where
@@ -323,12 +435,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_serialize() {
-        let config = NodeConfig::default();
-        let path = libra_temppath::TempPath::new();
-        path.create_as_file().unwrap();
-        save_config(&config, path.path()).unwrap();
-        let config2: NodeConfig = load_config(path.path()).unwrap();
-        assert_eq!(config.rpc, config2.rpc);
+    fn test_serialize() -> Result<()> {
+        let mut opt = StarcoinOpt::default();
+        let config = NodeConfig::load_with_opt(&opt)?;
+        opt.data_dir = Some(config.base.base_data_dir().to_path_buf());
+
+        let config2 = NodeConfig::load_with_opt(&opt)?;
+        let config3 = NodeConfig::load_with_opt(&opt)?;
+        assert_eq!(config2, config3);
+        Ok(())
     }
 }
