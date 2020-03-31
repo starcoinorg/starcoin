@@ -12,7 +12,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 actix-rt = "1.0"
 starcoin-types = {path = "../../types"}
-starcoin-traits = {path = "../traits"}
+starcoin-state-api = {path = "../api"}
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-logger = {path = "../../commons/logger"}
 starcoin-state-tree = {path = "../state-tree"}

@@ -16,8 +16,8 @@ network = {path = "../network", package="starcoin-network"}
 chain = {path = "../chain", package="starcoin-chain" }
 types = {path = "../types", package="starcoin-types" }
 traits = {path = "../core/traits", package="starcoin-traits" }
-statedb = {path = "../core/statedb", package="starcoin-statedb" }
-state_tree = {path = "../core/state-tree", package="starcoin-state-tree" }
+statedb = {path = "../state/statedb", package="starcoin-statedb" }
+state_tree = {path = "../state/state-tree", package="starcoin-state-tree" }
 consensus = {path = "../consensus", package="starcoin-consensus" }
 bus = {path = "../bus", package="starcoin-bus" }
 storage = {path = "../storage", package="starcoin-storage" }

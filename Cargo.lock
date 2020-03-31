@@ -1520,9 +1520,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.6.5",
  "serde",
- "starcoin-canonical-serialization",
  "starcoin-crypto",
- "starcoin-types",
  "thiserror",
  "tiny-keccak 1.5.0",
 ]
@@ -5676,7 +5674,6 @@ dependencies = [
  "serde",
  "starcoin-crypto",
  "starcoin-logger",
- "starcoin-traits",
  "starcoin-types",
  "structopt",
  "thiserror",
@@ -6019,20 +6016,13 @@ dependencies = [
 name = "starcoin-state-api"
 version = "0.1.0"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
- "futures 0.3.4",
+ "forkable-jellyfish-merkle",
  "serde",
- "starcoin-config",
  "starcoin-crypto",
- "starcoin-logger",
  "starcoin-state-tree",
- "starcoin-statedb",
- "starcoin-traits",
  "starcoin-types",
- "stest",
 ]
 
 [[package]]
@@ -6076,12 +6066,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
- "serde",
- "starcoin-canonical-serialization",
  "starcoin-crypto",
- "starcoin-logger",
  "starcoin-types",
- "stest",
 ]
 
 [[package]]
@@ -6095,8 +6081,8 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-state-api",
  "starcoin-state-tree",
- "starcoin-traits",
  "starcoin-types",
  "thiserror",
 ]
@@ -6176,10 +6162,10 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
- "forkable-jellyfish-merkle",
  "futures-channel",
  "serde",
  "starcoin-crypto",
+ "starcoin-state-api",
  "starcoin-types",
 ]
 
@@ -6289,11 +6275,8 @@ dependencies = [
 name = "starcoin-wallet-api"
 version = "0.1.0"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
- "futures 0.3.4",
  "rand 0.6.5",
  "serde",
  "starcoin-crypto",

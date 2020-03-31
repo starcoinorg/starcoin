@@ -10,9 +10,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-futures = "0.3"
-actix = "0.9"
-actix-rt = "1.0"
 async-trait = "0.1"
 serde = { version = "1.0", default-features = false }
 starcoin-logger = {path = "../../commons/logger"}

@@ -7,8 +7,10 @@ use merkle_tree::proof::SparseMerkleProof;
 use scs::SCSCodec;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_logger::prelude::*;
+use starcoin_state_api::{
+    ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
+};
 use starcoin_state_tree::{StateNodeStore, StateTree};
-use starcoin_traits::{ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
 use starcoin_types::{
     access_path::{AccessPath, DataType},
     account_address::AccountAddress,
@@ -465,8 +467,8 @@ impl ChainStateWriter for ChainStateDB {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_state_api::AccountStateReader;
     use starcoin_state_tree::mock::MockStateNodeStore;
-    use starcoin_traits::AccountStateReader;
 
     #[test]
     fn test_state_proof() -> Result<()> {

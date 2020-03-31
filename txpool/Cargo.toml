@@ -30,9 +30,9 @@ common_crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
 #transaction-pool = {path = "../commons/transaction-pool", package="tx-pool"}
 transaction-pool = "2.0.2"
 storage = {path = "../storage", package="starcoin-storage"}
-starcoin-statedb={ path="../core/statedb" }
+starcoin-statedb={ path="../state/statedb" }
 forkable-jellyfish-merkle = {path="../core/forkable-jellyfish-merkle"}
-starcoin-state-tree={path="../core/state-tree"}
+starcoin-state-tree={path="../state/state-tree"}
 starcoin-executor={path="../executor"}
 starcoin-config={path="../config"}
 tx-relay = {path="./tx-relay", package="starcoin-tx-relay"}

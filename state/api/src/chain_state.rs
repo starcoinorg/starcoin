@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, Result};
-use crypto::{hash::CryptoHash, HashValue};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
-use types::{
+use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
     account_state::AccountState, state_set::ChainStateSet,
 };
+use std::convert::TryFrom;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateProof {

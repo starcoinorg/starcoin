@@ -18,7 +18,7 @@ chrono = "0.4"
 byteorder = "1.3.2"
 lru = "0.4.3"
 parking_lot = "0.10.0"
-state-tree = { package="starcoin-state-tree", path = "../core/state-tree"}
+state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
 logger = {path = "../commons/logger", package="starcoin-logger"}
