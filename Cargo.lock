@@ -6232,6 +6232,7 @@ dependencies = [
  "bytes 0.5.4",
  "chrono",
  "ethereum-types 0.2.3",
+ "futures 0.3.4",
  "hex 0.3.2",
  "itertools 0.8.2",
  "libp2p 0.16.1",

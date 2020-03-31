@@ -1,13 +1,13 @@
-use actix::prelude::*;
-use anyhow::Result;
-use crypto::{hash::CryptoHash, HashValue};
-use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
-use types::{
+use crate::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
     transaction::SignedUserTransaction,
 };
+use actix::prelude::*;
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use starcoin_crypto::{hash::CryptoHash, HashValue};
+use std::cmp::Ordering;
 
 #[derive(Message, Clone)]
 #[rtype(result = "()")]

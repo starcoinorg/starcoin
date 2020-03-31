@@ -6,12 +6,10 @@ use anyhow::Result;
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
-use network::{
-    sync_messages::{DataType, GetDataByHashMsg, ProcessMessage},
-    NetworkAsyncService, RPCRequest, RPCResponse,
-};
+use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use std::sync::Arc;
 use types::peer_info::PeerInfo;
+use types::sync_messages::{DataType, GetDataByHashMsg, ProcessMessage};
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]

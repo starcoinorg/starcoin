@@ -3,7 +3,6 @@
 
 use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
-use crate::sync_messages::{DownloadMessage, SyncMessage};
 use crate::{NetworkMessage, PeerEvent, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use actix::prelude::*;
 use anyhow::Result;
@@ -16,6 +15,7 @@ use scs::SCSCodec;
 use std::sync::Arc;
 use tx_relay::*;
 use types::peer_info::PeerInfo;
+use types::sync_messages::{DownloadMessage, SyncMessage};
 use types::system_events::SystemEvents;
 
 use crate::helper::get_unix_ts;
