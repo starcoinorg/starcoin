@@ -36,15 +36,17 @@ use types::{
     account_config::AccountResource,
     block_metadata::BlockMetadata,
     transaction::{
-        MAX_TRANSACTION_SIZE_IN_BYTES, SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus,
+        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
+        TransactionOutput, TransactionPayload, TransactionStatus, MAX_TRANSACTION_SIZE_IN_BYTES,
     },
     vm_error::{StatusCode, VMStatus},
 };
 use vm::errors::convert_prologue_runtime_error;
 use vm::{
     errors::VMResult,
-    gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits, GAS_SCHEDULE_NAME},
+    gas_schedule::{
+        self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits, GAS_SCHEDULE_NAME,
+    },
     transaction_metadata::TransactionMetadata,
 };
 
@@ -53,13 +55,14 @@ pub static KEEP_STATUS: Lazy<TransactionStatus> =
 
 // We use 10 as the assertion error code for insufficient balance within the Libra coin contract.
 pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
-    TransactionStatus::Discard(VMStatus::new(StatusCode::ABORTED).with_sub_status(StatusCode::REJECTED_WRITE_SET.into()))
+    TransactionStatus::Discard(
+        VMStatus::new(StatusCode::ABORTED).with_sub_status(StatusCode::REJECTED_WRITE_SET.into()),
+    )
 });
 
 // The value should be tuned carefully
-pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> = Lazy::new(|| {
-    GasUnits::new(50_000_000)
-});
+pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
+    Lazy::new(|| GasUnits::new(50_000_000));
 
 #[derive(Clone)]
 /// Wrapper of MoveVM
@@ -189,7 +192,7 @@ impl StarcoinVM {
         // NB: MIN_PRICE_PER_GAS_UNIT may equal zero, but need not in the future. Hence why
         // we turn off the clippy warning.
         #[allow(clippy::absurd_extreme_comparisons)]
-            let below_min_bound = txn.gas_unit_price() < gas_schedule::MIN_PRICE_PER_GAS_UNIT.get();
+        let below_min_bound = txn.gas_unit_price() < gas_schedule::MIN_PRICE_PER_GAS_UNIT.get();
         if below_min_bound {
             let error_str = format!(
                 "gas unit min price: {}, submitted price: {}",
