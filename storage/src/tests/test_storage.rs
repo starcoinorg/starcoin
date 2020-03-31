@@ -29,7 +29,7 @@ fn test_storage() {
     let id = transaction_info1.crypto_hash();
     storage
         .transaction_info_store
-        .save(transaction_info1.clone())
+        .save(id, transaction_info1.clone())
         .unwrap();
     let transaction_info2 = storage.transaction_info_store.get(id).unwrap();
     assert!(transaction_info2.is_some());
@@ -51,7 +51,7 @@ fn test_two_level_storage() {
     let id = transaction_info1.crypto_hash();
     storage
         .transaction_info_store
-        .save(transaction_info1.clone())
+        .save(id, transaction_info1.clone())
         .unwrap();
     let transaction_info2 = storage.transaction_info_store.get(id).unwrap();
     assert!(transaction_info2.is_some());

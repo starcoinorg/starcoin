@@ -9,6 +9,7 @@ use crate::storage::{ColumnFamilyName, InnerRepository, Repository, Storage};
 use crate::transaction_info::TransactionInfoStore;
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
+use once_cell::sync::Lazy;
 use starcoin_accumulator::{
     node_index::NodeIndex, AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore,
     AccumulatorNodeWriter,
@@ -32,6 +33,8 @@ pub mod state_node;
 pub mod storage;
 mod tests;
 pub mod transaction_info;
+#[macro_use]
+pub mod storage_macros;
 
 pub const ACCUMULATOR_INDEX_PREFIX_NAME: ColumnFamilyName = "acc_index";
 pub const ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node";
@@ -44,6 +47,23 @@ pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "startup_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction_info";
+///db storage use prefix_name vec to init
+/// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
+pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    vec![
+        ACCUMULATOR_INDEX_PREFIX_NAME,
+        ACCUMULATOR_NODE_PREFIX_NAME,
+        BLOCK_PREFIX_NAME,
+        BLOCK_HEADER_PREFIX_NAME,
+        BLOCK_SONS_PREFIX_NAME,
+        BLOCK_BODY_PREFIX_NAME,
+        BLOCK_NUM_PREFIX_NAME,
+        BLOCK_INFO_PREFIX_NAME,
+        STATE_NODE_PREFIX_NAME,
+        STARTUP_INFO_PREFIX_NAME,
+        TRANSACTION_PREFIX_NAME,
+    ]
+});
 
 pub trait BlockStorageOp {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
