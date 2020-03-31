@@ -18,14 +18,20 @@ struct StateSyncTask {
     root: AtomicRefCell<HashValue>,
     pub state_node_storage: Arc<dyn StateNodeStore>,
     syncing: RwLock<HashSet<HashValue>>,
+    network_service: NetworkAsyncService,
 }
 
 impl StateSyncTask {
-    pub fn new(root: HashValue, state_node_storage: Arc<dyn StateNodeStore>) -> StateSyncTask {
+    pub fn new(
+        root: HashValue,
+        state_node_storage: Arc<dyn StateNodeStore>,
+        network_service: NetworkAsyncService,
+    ) -> StateSyncTask {
         Self {
             root: AtomicRefCell::new(root),
             state_node_storage,
             syncing: RwLock::new(HashSet::new()),
+            network_service,
         }
     }
 
@@ -61,6 +67,11 @@ impl StateSyncTask {
     pub fn reset(&self, root: &HashValue) {
         self.syncing.write().clear();
         std::mem::swap(self.root.borrow_mut().deref_mut(), &mut root.clone());
+    }
+
+    fn state_sync_from_peer(&self) {
+        //self.network_service.send_request()
+        unimplemented!()
     }
 }
 
@@ -120,12 +131,12 @@ fn test_state_node_cache_not_complete() {
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
-struct StateSyncEvent {}
+struct StateSyncEvent {
+    root: HashValue,
+}
 
 struct StateSyncActor {
     sync_task: Arc<StateSyncTask>,
-    network: NetworkAsyncService,
-    //state_node_storage: Arc<dyn StateNodeStore>,
 }
 
 impl StateSyncActor {
@@ -135,8 +146,7 @@ impl StateSyncActor {
         state_node_storage: Arc<dyn StateNodeStore>,
     ) -> Result<Addr<StateSyncActor>> {
         let state_sync_actor = StateSyncActor::create(move |ctx| Self {
-            sync_task: Arc::new(StateSyncTask::new(root, state_node_storage)),
-            network,
+            sync_task: Arc::new(StateSyncTask::new(root, state_node_storage, network)),
         });
         Ok(state_sync_actor)
     }
