@@ -36,7 +36,7 @@ use types::{
     account_config::AccountResource,
     block_metadata::BlockMetadata,
     transaction::{
-        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
+        MAX_TRANSACTION_SIZE_IN_BYTES, SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
         TransactionOutput, TransactionPayload, TransactionStatus,
     },
     vm_error::{StatusCode, VMStatus},
@@ -44,7 +44,7 @@ use types::{
 use vm::errors::convert_prologue_runtime_error;
 use vm::{
     errors::VMResult,
-    gas_schedule::{CostTable, GasAlgebra, GasUnits, GAS_SCHEDULE_NAME},
+    gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits, GAS_SCHEDULE_NAME},
     transaction_metadata::TransactionMetadata,
 };
 
@@ -53,7 +53,12 @@ pub static KEEP_STATUS: Lazy<TransactionStatus> =
 
 // We use 10 as the assertion error code for insufficient balance within the Libra coin contract.
 pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
-    TransactionStatus::Discard(VMStatus::new(StatusCode::ABORTED).with_sub_status(10))
+    TransactionStatus::Discard(VMStatus::new(StatusCode::ABORTED).with_sub_status(StatusCode::REJECTED_WRITE_SET.into()))
+});
+
+// The value should be tuned carefully
+pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> = Lazy::new(|| {
+    GasUnits::new(50_000_000)
 });
 
 #[derive(Clone)]
@@ -116,6 +121,110 @@ impl StarcoinVM {
             .ok_or_else(|| VMStatus::new(StatusCode::VM_STARTUP_FAILURE))
     }
 
+    fn check_gas(&self, txn: &SignedUserTransaction) -> Result<(), VMStatus> {
+        // Do not check gas limit for StateSet transaction.
+        if let TransactionPayload::StateSet(_) = txn.payload() {
+            return Ok(());
+        }
+
+        let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as GasCarrier);
+        // The transaction is too large.
+        if txn.raw_txn_bytes_len() > MAX_TRANSACTION_SIZE_IN_BYTES {
+            let error_str = format!(
+                "max size: {}, txn size: {}",
+                MAX_TRANSACTION_SIZE_IN_BYTES,
+                raw_bytes_len.get()
+            );
+            warn!(
+                "[VM] Transaction size too big {} (max {})",
+                raw_bytes_len.get(),
+                MAX_TRANSACTION_SIZE_IN_BYTES
+            );
+            return Err(
+                VMStatus::new(StatusCode::EXCEEDED_MAX_TRANSACTION_SIZE).with_message(error_str)
+            );
+        }
+
+        // The submitted max gas units that the transaction can consume is greater than the
+        // maximum number of gas units bound
+        if txn.max_gas_amount() > MAXIMUM_NUMBER_OF_GAS_UNITS.get() {
+            let error_str = format!(
+                "max gas units: {}, gas units submitted: {}",
+                MAXIMUM_NUMBER_OF_GAS_UNITS.get(),
+                txn.max_gas_amount()
+            );
+            warn!(
+                "[VM] Gas unit error; max {}, submitted {}",
+                MAXIMUM_NUMBER_OF_GAS_UNITS.get(),
+                txn.max_gas_amount()
+            );
+            return Err(
+                VMStatus::new(StatusCode::MAX_GAS_UNITS_EXCEEDS_MAX_GAS_UNITS_BOUND)
+                    .with_message(error_str),
+            );
+        }
+
+        // The submitted transactions max gas units needs to be at least enough to cover the
+        // intrinsic cost of the transaction as calculated against the size of the
+        // underlying `RawTransaction`
+        let min_txn_fee = gas_schedule::calculate_intrinsic_gas(raw_bytes_len);
+        if txn.max_gas_amount() < min_txn_fee.get() {
+            let error_str = format!(
+                "min gas required for txn: {}, gas submitted: {}",
+                min_txn_fee.get(),
+                txn.max_gas_amount()
+            );
+            warn!(
+                "[VM] Gas unit error; min {}, submitted {}",
+                min_txn_fee.get(),
+                txn.max_gas_amount()
+            );
+            return Err(
+                VMStatus::new(StatusCode::MAX_GAS_UNITS_BELOW_MIN_TRANSACTION_GAS_UNITS)
+                    .with_message(error_str),
+            );
+        }
+
+        // The submitted gas price is less than the minimum gas unit price set by the VM.
+        // NB: MIN_PRICE_PER_GAS_UNIT may equal zero, but need not in the future. Hence why
+        // we turn off the clippy warning.
+        #[allow(clippy::absurd_extreme_comparisons)]
+            let below_min_bound = txn.gas_unit_price() < gas_schedule::MIN_PRICE_PER_GAS_UNIT.get();
+        if below_min_bound {
+            let error_str = format!(
+                "gas unit min price: {}, submitted price: {}",
+                gas_schedule::MIN_PRICE_PER_GAS_UNIT.get(),
+                txn.gas_unit_price()
+            );
+            warn!(
+                "[VM] Gas unit error; min {}, submitted {}",
+                gas_schedule::MIN_PRICE_PER_GAS_UNIT.get(),
+                txn.gas_unit_price()
+            );
+            return Err(
+                VMStatus::new(StatusCode::GAS_UNIT_PRICE_BELOW_MIN_BOUND).with_message(error_str)
+            );
+        }
+
+        // The submitted gas price is greater than the maximum gas unit price set by the VM.
+        if txn.gas_unit_price() > gas_schedule::MAX_PRICE_PER_GAS_UNIT.get() {
+            let error_str = format!(
+                "gas unit max price: {}, submitted price: {}",
+                gas_schedule::MAX_PRICE_PER_GAS_UNIT.get(),
+                txn.gas_unit_price()
+            );
+            warn!(
+                "[VM] Gas unit error; min {}, submitted {}",
+                gas_schedule::MAX_PRICE_PER_GAS_UNIT.get(),
+                txn.gas_unit_price()
+            );
+            return Err(
+                VMStatus::new(StatusCode::GAS_UNIT_PRICE_ABOVE_MAX_BOUND).with_message(error_str)
+            );
+        }
+        Ok(())
+    }
+
     fn verify_transaction_impl(
         &mut self,
         transaction: &SignatureCheckedTransaction,
@@ -125,7 +234,7 @@ impl StarcoinVM {
     ) -> Result<VerifiedTranscationPayload, VMStatus> {
         info!("very transaction");
         let mut ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
-        // ToDo: check gas
+        self.check_gas(transaction)?;
         self.load_gas_schedule(remote_cache);
         let gas_schedule = self.get_gas_schedule()?;
         match transaction.payload() {
