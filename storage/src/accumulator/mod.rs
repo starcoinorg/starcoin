@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::storage::{CodecStorage, InnerRepository, KeyCodec, Repository, Storage, ValueCodec};
+use crate::storage::{CodecStorage, InnerStore, KeyCodec, Repository, Storage, ValueCodec};
 use crate::{ensure_slice_len_eq, ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Error;
 use anyhow::{bail, ensure, Result};
@@ -28,10 +28,7 @@ impl AccumulatorStore {
             node_store: CodecStorage::new(storage.clone()),
         }
     }
-    pub fn two_new(
-        cache_storage: Arc<dyn InnerRepository>,
-        db_storage: Arc<dyn InnerRepository>,
-    ) -> Self {
+    pub fn two_new(cache_storage: Arc<dyn InnerStore>, db_storage: Arc<dyn InnerStore>) -> Self {
         Self {
             index_storage: CodecStorage::new(Arc::new(Storage::new(
                 cache_storage.clone(),

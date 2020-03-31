@@ -4,7 +4,7 @@
 use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::{DBStorage, DEFAULT_CF_NAME};
-use crate::storage::{InnerRepository, ValueCodec};
+use crate::storage::{InnerStore, ValueCodec};
 use crypto::{hash::CryptoHash, HashValue};
 use std::sync::Arc;
 use types::transaction::TransactionInfo;

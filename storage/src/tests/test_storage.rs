@@ -7,7 +7,7 @@ use crypto::{hash::CryptoHash, HashValue};
 
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{InnerRepository, ValueCodec};
+use crate::storage::{InnerStore, ValueCodec};
 use crate::{StarcoinStorage, TRANSACTION_PREFIX_NAME};
 use std::sync::Arc;
 use types::transaction::TransactionInfo;

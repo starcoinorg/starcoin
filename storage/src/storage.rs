@@ -27,7 +27,7 @@ pub trait Repository: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
 
-pub trait InnerRepository: Send + Sync {
+pub trait InnerStore: Send + Sync {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool>;
@@ -38,12 +38,12 @@ pub trait InnerRepository: Send + Sync {
 }
 
 /// Define simple storage package for one storage
-pub struct StorageDelegated {
-    repository: Arc<dyn InnerRepository>,
+pub struct InnerStorage {
+    repository: Arc<dyn InnerStore>,
     pub prefix_name: ColumnFamilyName,
 }
-impl StorageDelegated {
-    pub fn new(repository: Arc<dyn InnerRepository>, prefix_name: ColumnFamilyName) -> Self {
+impl InnerStorage {
+    pub fn new(repository: Arc<dyn InnerStore>, prefix_name: ColumnFamilyName) -> Self {
         Self {
             repository,
             prefix_name,
@@ -51,7 +51,7 @@ impl StorageDelegated {
     }
 }
 
-impl Repository for StorageDelegated {
+impl Repository for InnerStorage {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
         self.repository.clone().get(self.prefix_name, key.to_vec())
     }
@@ -83,15 +83,15 @@ impl Repository for StorageDelegated {
 
 /// two level storage package
 pub struct Storage {
-    cache: Arc<dyn InnerRepository>,
-    db: Arc<dyn InnerRepository>,
+    cache: Arc<dyn InnerStore>,
+    db: Arc<dyn InnerStore>,
     pub prefix_name: ColumnFamilyName,
 }
 
 impl Storage {
     pub fn new(
-        cache: Arc<dyn InnerRepository>,
-        db: Arc<dyn InnerRepository>,
+        cache: Arc<dyn InnerStore>,
+        db: Arc<dyn InnerStore>,
         prefix_name: ColumnFamilyName,
     ) -> Self {
         Storage {

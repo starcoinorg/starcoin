@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::storage::{ColumnFamilyName, InnerRepository, WriteOp};
+use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::VEC_PREFIX_NAME;
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
@@ -173,7 +173,7 @@ impl DBStorage {
     }
 }
 
-impl InnerRepository for DBStorage {
+impl InnerStore for DBStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         let cf_handle = self.get_cf_handle(prefix_name)?;
         match self

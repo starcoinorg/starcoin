@@ -5,7 +5,7 @@ use crate::accumulator::AccumulatorStore;
 use crate::block::BlockStore;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
 use crate::state_node::StateNodeStorage;
-use crate::storage::{ColumnFamilyName, InnerRepository, Repository, Storage};
+use crate::storage::{ColumnFamilyName, InnerStore, Repository, Storage};
 use crate::transaction_info::TransactionInfoStore;
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
@@ -142,8 +142,8 @@ pub struct StarcoinStorage {
 
 impl StarcoinStorage {
     pub fn new(
-        cache_storage: Arc<dyn InnerRepository>,
-        db_storage: Arc<dyn InnerRepository>,
+        cache_storage: Arc<dyn InnerStore>,
+        db_storage: Arc<dyn InnerStore>,
     ) -> Result<Self> {
         Ok(Self {
             transaction_info_store: TransactionInfoStore::new(Arc::new(Storage::new(

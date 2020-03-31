@@ -3,7 +3,7 @@
 
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::storage::{CodecStorage, InnerRepository, KeyCodec, Repository, Storage, ValueCodec};
+use crate::storage::{CodecStorage, InnerStore, KeyCodec, Repository, Storage, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
     BLOCK_SONS_PREFIX_NAME,
@@ -133,10 +133,7 @@ impl BlockStore {
         }
     }
 
-    pub fn two_new(
-        cache_storage: Arc<dyn InnerRepository>,
-        db_storage: Arc<dyn InnerRepository>,
-    ) -> Self {
+    pub fn two_new(cache_storage: Arc<dyn InnerStore>, db_storage: Arc<dyn InnerStore>) -> Self {
         BlockStore {
             block_store: CodecStorage::new(Arc::new(Storage::new(
                 cache_storage.clone(),
