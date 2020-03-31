@@ -8,7 +8,4 @@ mod txpool_service;
 pub use chain::{Chain, ChainReader, ChainWriter};
 pub use chain_service::{ChainAsyncService, ChainService};
 
-pub use starcoin_state_api::{
-    AccountStateReader, ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
-};
 pub use txpool_service::TxPoolAsyncService;

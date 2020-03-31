@@ -6,6 +6,7 @@ use crate::{
     transaction_helper::VerifiedTranscationPayload,
 };
 use config::VMConfig;
+use crypto::ed25519::Ed25519Signature;
 use libra_state_view::StateView;
 use libra_types::{
     account_address::AccountAddress as LibraAccountAddress,
@@ -24,12 +25,11 @@ use move_vm_state::{
 use move_vm_types::chain_state::ChainState as LibraChainState;
 use move_vm_types::identifier::create_access_path;
 use move_vm_types::values::Value;
-use std::sync::Arc;
-
-use crypto::ed25519::Ed25519Signature;
 use once_cell::sync::Lazy;
+use starcoin_state_api::ChainState;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+use std::sync::Arc;
 use types::{
     access_path::AccessPath,
     account_config,
@@ -264,7 +264,7 @@ impl StarcoinVM {
 
     pub fn verify_transaction(
         &mut self,
-        chain_state: &dyn traits::ChainState,
+        chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         let mut state_store = StateStore::new(chain_state);
@@ -455,7 +455,7 @@ impl StarcoinVM {
 
     pub fn execute_transaction(
         &mut self,
-        chain_state: &dyn traits::ChainState,
+        chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> TransactionOutput {
         let mut state_store = StateStore::new(chain_state);

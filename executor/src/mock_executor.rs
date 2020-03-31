@@ -10,11 +10,11 @@ use crypto::{ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 
+use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use stdlib::transaction_scripts::EMPTY_TXN;
-use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,

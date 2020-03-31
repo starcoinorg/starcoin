@@ -25,6 +25,7 @@ linked-hash-map = "0.5"
 trace-time = "0.1"
 types = { package = "starcoin-types", path = "../types"}
 traits = { package = "starcoin-traits", path = "../core/traits"}
+starcoin-state-api = {path = "../state/api"}
 starcoin_bus = {path = "../bus", package="starcoin-bus"}
 common_crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
 #transaction-pool = {path = "../commons/transaction-pool", package="tx-pool"}
