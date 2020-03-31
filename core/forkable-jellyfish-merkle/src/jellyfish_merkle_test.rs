@@ -518,7 +518,7 @@ fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
     for (k, v) in &kvs {
         let (value, proof) = tree.get_with_proof(root, *k).unwrap();
         assert_eq!(value.unwrap(), *v);
-        assert!(proof.verify(root, *k, Some(v.as_ref())).is_ok());
+        assert!(proof.verify(root, *k, Some(v)).is_ok());
     }
 }
 
@@ -572,7 +572,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
         let history_root = roots[random_version];
         let (value, proof) = tree.get_with_proof(history_root, *k).unwrap();
         assert_eq!(value.unwrap(), *v);
-        assert!(proof.verify(history_root, *k, Some(v.as_ref())).is_ok());
+        assert!(proof.verify(history_root, *k, Some(v)).is_ok());
     }
 
     for (i, (k, _, v)) in kvs.iter().enumerate() {
@@ -580,7 +580,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
         let history_root = roots[random_version];
         let (value, proof) = tree.get_with_proof(history_root, *k).unwrap();
         assert_eq!(value.unwrap(), *v);
-        assert!(proof.verify(history_root, *k, Some(v.as_ref())).is_ok());
+        assert!(proof.verify(history_root, *k, Some(v)).is_ok());
     }
 }
 

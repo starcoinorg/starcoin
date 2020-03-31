@@ -285,7 +285,7 @@ impl ChainStateReader for ChainStateDB {
         let state_with_proof = match account_state {
             None => StateWithProof::new(
                 None,
-                StateProof::new(account_proof, SparseMerkleProof::default()),
+                StateProof::new(None, account_proof, SparseMerkleProof::default()),
             ),
             Some(account_state) => {
                 let account_state_object =
@@ -306,7 +306,7 @@ impl ChainStateReader for ChainStateDB {
                     account_state_object.get_with_proof(data_type, &hash)?;
                 StateWithProof::new(
                     resource_value,
-                    StateProof::new(account_proof, resource_proof),
+                    StateProof::new(Some(account_state.encode()?), account_proof, resource_proof),
                 )
             }
         };
@@ -484,7 +484,6 @@ mod tests {
         let state_with_proof = chain_state_db.get_with_proof(&access_path)?;
         state_with_proof.proof.verify(
             state_root,
-            account_state.as_ref().map(|s| s.as_slice()),
             access_path,
             state_with_proof.state.as_ref().map(|s| s.as_slice()),
         )?;

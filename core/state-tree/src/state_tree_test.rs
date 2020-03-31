@@ -99,12 +99,8 @@ pub fn test_state_proof() -> Result<()> {
     let (value, proof) = state.get_with_proof(&account1)?;
     assert!(value.is_some());
     assert_eq!(value.unwrap(), vec![0, 0, 0]);
-    let expected_value = Some(vec![0u8, 0, 0]);
-    proof.verify(
-        new_root_hash,
-        account1,
-        expected_value.as_ref().map(|v| v.as_slice()),
-    )?;
+    let expected_value = Some(vec![0u8, 0, 0].into());
+    proof.verify(new_root_hash, account1, expected_value.as_ref())?;
 
     let _ = state.remove(&account1);
     let new_root_hash = state.commit()?;

@@ -54,7 +54,7 @@ impl SparseMerkleProof {
         &self,
         expected_root_hash: HashValue,
         element_key: HashValue,
-        element_blob: Option<&[u8]>,
+        element_blob: Option<&Blob>,
     ) -> Result<()> {
         ensure!(
             self.siblings.len() <= HashValue::LENGTH_IN_BITS,
@@ -74,7 +74,7 @@ impl SparseMerkleProof {
                     proof_key,
                     element_key
                 );
-                let hash = Blob::from(blob.to_vec()).crypto_hash();
+                let hash = blob.crypto_hash();
                 ensure!(
                     hash == proof_value_hash,
                     "Value hashes do not match. Value hash in proof: {:x}. \

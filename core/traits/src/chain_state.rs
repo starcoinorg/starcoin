@@ -3,7 +3,7 @@
 
 use anyhow::{ensure, Result};
 use crypto::{hash::CryptoHash, HashValue};
-use merkle_tree::proof::SparseMerkleProof;
+use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use types::{
@@ -13,13 +13,19 @@ use types::{
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateProof {
+    account_state: Option<Blob>,
     account_proof: SparseMerkleProof,
     account_state_proof: SparseMerkleProof,
 }
 
 impl StateProof {
-    pub fn new(account_proof: SparseMerkleProof, account_state_proof: SparseMerkleProof) -> Self {
+    pub fn new(
+        account_state: Option<Vec<u8>>,
+        account_proof: SparseMerkleProof,
+        account_state_proof: SparseMerkleProof,
+    ) -> Self {
         Self {
+            account_state: account_state.map(|data| Blob::from(data)),
             account_proof,
             account_state_proof,
         }
@@ -29,13 +35,11 @@ impl StateProof {
     pub fn verify(
         &self,
         expected_root_hash: HashValue,
-        state_blob: Option<&[u8]>,
         access_path: AccessPath,
         access_resource_blob: Option<&[u8]>,
     ) -> Result<()> {
         let (account_address, data_type, ap_hash) = access_path.into();
-
-        match state_blob {
+        match self.account_state.as_ref() {
             None => {
                 ensure!(
                     access_resource_blob.is_none(),
@@ -43,7 +47,7 @@ impl StateProof {
                 );
             }
             Some(s) => {
-                let account_state = AccountState::try_from(s)?;
+                let account_state = AccountState::try_from(s.as_ref())?;
                 match account_state.storage_roots()[data_type.storage_index()] {
                     None => {
                         ensure!(
@@ -52,18 +56,19 @@ impl StateProof {
                         );
                     }
                     Some(expected_hash) => {
-                        self.account_state_proof.verify(
-                            expected_hash,
-                            ap_hash,
-                            access_resource_blob,
-                        )?;
+                        let blob = access_resource_blob.map(|data| Blob::from(data.to_vec()));
+                        self.account_state_proof
+                            .verify(expected_hash, ap_hash, blob.as_ref())?;
                     }
                 }
             }
         }
         let address_hash = account_address.crypto_hash();
-        self.account_proof
-            .verify(expected_root_hash, address_hash, state_blob)
+        self.account_proof.verify(
+            expected_root_hash,
+            address_hash,
+            self.account_state.as_ref(),
+        )
     }
 }
 
