@@ -15,7 +15,7 @@ use network::{
 };
 use starcoin_genesis::Genesis;
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
-use starcoin_wallet_api::AccountDetail;
+use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
@@ -105,7 +105,7 @@ fn test_network_actor_rpc() {
         .unwrap();
         let _first_sync_actor =
             SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
-        let miner_account = AccountDetail::random();
+        let miner_account = WalletAccount::random();
         // miner
         let _miner_1 = MinerActor::<
             DummyConsensus,

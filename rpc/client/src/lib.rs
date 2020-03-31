@@ -16,7 +16,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::{AccountDetail, WalletAccount};
+use starcoin_wallet_api::WalletAccount;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::path::Path;
@@ -130,7 +130,7 @@ impl RpcClient {
         })
     }
 
-    pub fn account_get(&self, address: AccountAddress) -> anyhow::Result<Option<AccountDetail>> {
+    pub fn account_get(&self, address: AccountAddress) -> anyhow::Result<Option<WalletAccount>> {
         self.rt.borrow_mut().block_on_std(async {
             self.inner
                 .account_client

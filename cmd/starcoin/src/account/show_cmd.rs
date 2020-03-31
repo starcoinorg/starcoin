@@ -31,8 +31,8 @@ impl CommandAction for ShowCommand {
         match account {
             Some(account) => {
                 let auth_key = AuthenticationKey::from_public_key(&account.public_key);
-                println!("account: {}", account.account.address);
-                println!("is_default: {}", account.account.is_default);
+                println!("account: {}", account.address);
+                println!("is_default: {}", account.is_default);
                 println!("public_key: {}", account.public_key);
                 println!("authentication_key: {}", auth_key);
                 println!(

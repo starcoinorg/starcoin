@@ -9,7 +9,7 @@ use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_miner::MinerActor;
-use starcoin_wallet_api::AccountDetail;
+use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
@@ -66,7 +66,7 @@ fn test_miner_with_schedule_pacemaker() {
             txpool.clone(),
         )
         .unwrap();
-        let miner_account = AccountDetail::random();
+        let miner_account = WalletAccount::random();
         let _miner = MinerActor::<
             DummyConsensus,
             Executor,
@@ -150,7 +150,7 @@ fn test_miner_with_ondemand_pacemaker() {
         )
         .unwrap();
         let receiver = txpool.clone().subscribe_txns().await.unwrap();
-        let miner_account = AccountDetail::random();
+        let miner_account = WalletAccount::random();
         let _miner = MinerActor::<
             DummyConsensus,
             Executor,

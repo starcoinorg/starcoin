@@ -13,7 +13,7 @@ use std::time::Duration;
 #[cfg(any(test, feature = "mock"))]
 pub mod mock;
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct WalletAccount {
     //TODO should contains a unique local name?
     //name: String,
@@ -21,28 +21,15 @@ pub struct WalletAccount {
     /// This account is default at current wallet.
     /// Every wallet must has one default account.
     pub is_default: bool,
-}
-
-impl WalletAccount {
-    pub fn new(address: AccountAddress, is_default: bool) -> Self {
-        Self {
-            address,
-            is_default,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct AccountDetail {
-    pub account: WalletAccount,
     pub public_key: Ed25519PublicKey,
 }
 
-impl AccountDetail {
-    pub fn new(account: WalletAccount, public_key: Ed25519PublicKey) -> Self {
+impl WalletAccount {
+    pub fn new(address: AccountAddress, public_key: Ed25519PublicKey, is_default: bool) -> Self {
         Self {
-            account,
+            address,
             public_key,
+            is_default,
         }
     }
 
@@ -51,7 +38,7 @@ impl AccountDetail {
     }
 
     pub fn address(&self) -> &AccountAddress {
-        &self.account.address
+        &self.address
     }
 
     pub fn random() -> Self {
@@ -60,11 +47,9 @@ impl AccountDetail {
         let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
         let key_pair = KeyPair::generate_for_testing(&mut rng);
         let address = AccountAddress::from_public_key(&key_pair.public_key);
-        AccountDetail {
-            account: WalletAccount {
-                address,
-                is_default: false,
-            },
+        WalletAccount {
+            address,
+            is_default: false,
             public_key: key_pair.public_key,
         }
     }
@@ -72,8 +57,6 @@ impl AccountDetail {
 
 pub trait Wallet {
     fn create_account(&self, password: &str) -> Result<WalletAccount>;
-
-    fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<AccountDetail>>;
 
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>>;
 
@@ -126,7 +109,7 @@ pub trait WalletAsyncService: Clone + std::marker::Unpin + Send + Sync {
 
     async fn get_accounts(self) -> Result<Vec<WalletAccount>>;
 
-    async fn get_account(self, address: AccountAddress) -> Result<Option<AccountDetail>>;
+    async fn get_account(self, address: AccountAddress) -> Result<Option<WalletAccount>>;
 
     async fn sign_txn(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction>;
 }

@@ -6,7 +6,7 @@ use futures::future::TryFutureExt;
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::{AccountDetail, WalletAccount, WalletAsyncService};
+use starcoin_wallet_api::{WalletAccount, WalletAsyncService};
 
 pub struct AccountRpcImpl<S>
 where
@@ -42,7 +42,7 @@ where
         Box::new(fut.compat())
     }
 
-    fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountDetail>> {
+    fn get(&self, address: AccountAddress) -> FutureResult<Option<WalletAccount>> {
         let fut = self.service.clone().get_account(address).map_err(map_err);
         Box::new(fut.compat())
     }
@@ -69,7 +69,11 @@ mod tests {
         let account = client.account_create("passwd".to_string()).unwrap();
         let accounts = client.account_list().unwrap();
         assert!(accounts.len() >= 1);
-        assert!(accounts.contains(&account));
+        assert!(accounts
+            .iter()
+            .find(|a| a.address() == account.address())
+            .is_some());
+        // assert!(accounts.contains(&account));
         let raw_txn = RawUserTransaction::mock_by_sender(account.address);
         let signed_txn = client.account_sign_txn(raw_txn).unwrap();
         assert!(signed_txn.check_signature().is_ok())

@@ -7,7 +7,7 @@ pub mod keystore_wallet;
 #[cfg(test)]
 mod test {
     use crate::file_wallet_store::FileWalletStore;
-    use starcoin_types::account_address::AccountAddress;
+    // use starcoin_types::account_address::AccountAddress;
     use std::collections::HashMap;
     use wallet_api::{WalletAccount, WalletStore};
 
@@ -15,12 +15,12 @@ mod test {
     fn test_file_store() {
         let tmpdir = tempfile::tempdir().unwrap();
         let wallet = FileWalletStore::new(tmpdir.path());
-        let account = AccountAddress::random();
-        let wallet_account = WalletAccount::new(account, true);
+        let wallet_account = WalletAccount::random();
+        let account = wallet_account.address().clone();
         wallet.save_account(wallet_account.clone()).unwrap();
         assert_eq!(
-            wallet_account.clone(),
-            wallet.get_account(&account).unwrap().unwrap()
+            wallet_account.clone().address,
+            wallet.get_account(&account).unwrap().unwrap().address
         );
         let key = String::from("mytest");
         let value = "my first test";
@@ -40,8 +40,8 @@ mod test {
         let wallet = FileWalletStore::new(tmpdir.path());
         let mut account_map = HashMap::new();
         for _i in 0..10 {
-            let account = AccountAddress::random();
-            let wallet_account = WalletAccount::new(account, true);
+            let wallet_account = WalletAccount::random();
+            let account = wallet_account.address().clone();
             wallet.save_account(wallet_account.clone()).unwrap();
             account_map.insert(account, wallet_account);
         }
@@ -58,8 +58,8 @@ mod test {
     fn test_remove_account() {
         let tmpdir = tempfile::tempdir().unwrap();
         let wallet = FileWalletStore::new(tmpdir.path());
-        let account = AccountAddress::random();
-        let wallet_account = WalletAccount::new(account, true);
+        let wallet_account = WalletAccount::random();
+        let account = wallet_account.address().clone();
         wallet.save_account(wallet_account.clone()).unwrap();
         wallet
             .save_to_account(&account, String::from("key1"), "value1".as_bytes().to_vec())
