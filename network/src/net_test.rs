@@ -14,13 +14,12 @@ mod tests {
     use futures_timer::Delay;
 
     use network_p2p::PeerId;
-    use types::peer_info::PeerId as SPeerId;
 
     use crate::{helper::convert_boot_nodes, PeerEvent};
 
     use crate::net::{build_network_service, SNetworkService};
 
-    use crate::messages::NetworkMessage;
+    use crate::NetworkMessage;
 
     pub type NetworkComponent = (
         SNetworkService,
@@ -121,12 +120,12 @@ mod tests {
 
                 match if count % 2 == 0 {
                     tx2.unbounded_send(NetworkMessage {
-                        peer_id: SPeerId::from(msg_peer_id_1.clone()),
+                        peer_id: msg_peer_id_1.clone(),
                         data: random_bytes,
                     })
                 } else {
                     tx1.unbounded_send(NetworkMessage {
-                        peer_id: SPeerId::from(msg_peer_id_2.clone()),
+                        peer_id: msg_peer_id_2.clone(),
                         data: random_bytes,
                     })
                 } {

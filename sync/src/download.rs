@@ -13,16 +13,16 @@ use futures_locks::RwLock;
 use consensus::Consensus;
 use executor::TransactionExecutor;
 use logger::prelude::*;
-use network::sync_messages::{
-    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
-    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
-};
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
+use types::sync_messages::{
+    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
+    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+};
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,

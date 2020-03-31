@@ -9,15 +9,15 @@ use executor::TransactionExecutor;
 use futures::sink::SinkExt;
 use futures_timer::Delay;
 use logger::prelude::*;
-/// Sync message which inbound
-use network::sync_messages::{
-    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
-    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
-};
 use network::{NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
+/// Sync message which inbound
+use types::sync_messages::{
+    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
+    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+};
 use types::{block::Block, peer_info::PeerInfo};
 
 pub struct ProcessActor<E, C>

@@ -8,11 +8,7 @@ use executor::executor::Executor;
 use futures_timer::Delay;
 use logger::prelude::*;
 use miner::MinerActor;
-use network::{
-    network::NetworkAsyncService,
-    sync_messages::{GetHashByNumberMsg, ProcessMessage},
-    NetworkActor, RPCRequest, RPCResponse,
-};
+use network::{network::NetworkAsyncService, NetworkActor, RPCRequest, RPCResponse};
 use starcoin_genesis::Genesis;
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
 use starcoin_wallet_api::WalletAccount;
@@ -24,6 +20,7 @@ use tokio::runtime::Handle;
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::peer_info::{PeerId, PeerInfo};
+use types::sync_messages::{GetHashByNumberMsg, ProcessMessage};
 
 fn gen_network(
     node_config: Arc<NodeConfig>,
