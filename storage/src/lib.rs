@@ -1,18 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::accumulator::AccumulatorStore;
-use crate::block::BlockStore;
+use crate::accumulator::AccumulatorStorage;
+use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
-use crate::state_node::StateNodeStorage;
-use crate::storage::{ColumnFamilyName, InnerStore, Repository, Storage};
-use crate::transaction_info::TransactionInfoStore;
+use crate::state_node::StateStorage;
+use crate::storage::{ColumnFamilyName, InnerStorage, KVStore, StorageInstance};
+use crate::transaction_info::TransactionInfoStorage;
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    node_index::NodeIndex, AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore,
-    AccumulatorNodeWriter,
+    node_index::NodeIndex, AccumulatorNode, AccumulatorReader, AccumulatorTreeStore,
+    AccumulatorWriter,
 };
 use state_tree::{StateNode, StateNodeStore};
 use std::collections::BTreeMap;
@@ -132,40 +132,24 @@ pub trait BlockStorageOp {
 }
 
 pub struct StarcoinStorage {
-    transaction_info_store: TransactionInfoStore,
-    pub block_store: BlockStore,
-    state_node_store: StateNodeStorage,
-    accumulator_store: AccumulatorStore,
-    block_info_store: BlockInfoStore,
-    startup_info_store: Arc<dyn Repository>,
+    transaction_info_store: TransactionInfoStorage,
+    pub block_store: BlockStorage,
+    state_node_store: StateStorage,
+    accumulator_store: AccumulatorStorage,
+    block_info_store: BlockInfoStorage,
+    startup_info_store: Arc<dyn KVStore>,
 }
 
 impl StarcoinStorage {
-    pub fn new(
-        cache_storage: Arc<dyn InnerStore>,
-        db_storage: Arc<dyn InnerStore>,
-    ) -> Result<Self> {
+    pub fn new(instance: StorageInstance) -> Result<Self> {
         Ok(Self {
-            transaction_info_store: TransactionInfoStore::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                TRANSACTION_PREFIX_NAME,
-            ))),
-            block_store: BlockStore::two_new(cache_storage.clone(), db_storage.clone()),
-            state_node_store: StateNodeStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                STATE_NODE_PREFIX_NAME,
-            ))),
-            accumulator_store: AccumulatorStore::two_new(cache_storage.clone(), db_storage.clone()),
-            block_info_store: BlockInfoStore::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                BLOCK_INFO_PREFIX_NAME,
-            ))),
-            startup_info_store: Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
+            transaction_info_store: TransactionInfoStorage::new(instance.clone()),
+            block_store: BlockStorage::new(instance.clone()),
+            state_node_store: StateStorage::new(instance.clone()),
+            accumulator_store: AccumulatorStorage::new(instance.clone()),
+            block_info_store: BlockInfoStorage::new(instance.clone()),
+            startup_info_store: Arc::new(InnerStorage::new(
+                instance.clone(),
                 STARTUP_INFO_PREFIX_NAME,
             )),
         })
@@ -174,7 +158,8 @@ impl StarcoinStorage {
 
 impl StateNodeStore for StarcoinStorage {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        self.state_node_store.get(hash)
+        // self.state_node_store.get(hash)
+        unimplemented!()
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
@@ -182,7 +167,8 @@ impl StateNodeStore for StarcoinStorage {
     }
 
     fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
-        self.state_node_store.write_batch(nodes)
+        // self.state_node_store.write_batch(nodes)
+        unimplemented!()
     }
 }
 
@@ -316,8 +302,8 @@ impl BlockStorageOp for StarcoinStorage {
     }
 }
 
-impl AccumulatorNodeStore for StarcoinStorage {}
-impl AccumulatorNodeReader for StarcoinStorage {
+impl AccumulatorTreeStore for StarcoinStorage {}
+impl AccumulatorReader for StarcoinStorage {
     ///get node by node_index
     fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>> {
         self.accumulator_store.get(index)
@@ -328,7 +314,7 @@ impl AccumulatorNodeReader for StarcoinStorage {
     }
 }
 
-impl AccumulatorNodeWriter for StarcoinStorage {
+impl AccumulatorWriter for StarcoinStorage {
     /// save node index
     fn save(&self, index: NodeIndex, hash: HashValue) -> Result<()> {
         self.accumulator_store.save(index, hash)
@@ -347,9 +333,9 @@ impl AccumulatorNodeWriter for StarcoinStorage {
     }
 }
 
-impl BlockInfoStorage for StarcoinStorage {
+impl BlockInfoStore for StarcoinStorage {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<(), Error> {
-        self.block_info_store.save(block_info)
+        self.block_info_store.put(block_info.block_id, block_info)
     }
 
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>, Error> {
@@ -360,7 +346,7 @@ impl BlockInfoStorage for StarcoinStorage {
 //TODO should move this traits to traits crate?
 /// Chain storage define
 pub trait BlockChainStore:
-    StateNodeStore + BlockStorageOp + AccumulatorNodeStore + BlockInfoStorage
+    StateNodeStore + BlockStorageOp + AccumulatorTreeStore + BlockInfoStore
 {
 }
 

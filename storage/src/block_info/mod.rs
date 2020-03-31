@@ -1,21 +1,27 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{CodecStorage, Repository, ValueCodec};
+use crate::batch::WriteBatch;
+use crate::define_storage;
+use crate::storage::{CodecStorage, ValueCodec};
+use crate::BLOCK_INFO_PREFIX_NAME;
 use anyhow::Result;
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::sync::Arc;
 use types::block::BlockInfo;
 
-pub trait BlockInfoStorage {
+pub trait BlockInfoStore {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<()>;
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>>;
 }
 
-pub struct BlockInfoStore {
-    store: CodecStorage<HashValue, BlockInfo>,
-}
+define_storage!(
+    BlockInfoStorage,
+    HashValue,
+    BlockInfo,
+    BLOCK_INFO_PREFIX_NAME
+);
 
 impl ValueCodec for BlockInfo {
     fn encode_value(&self) -> Result<Vec<u8>> {
@@ -24,21 +30,5 @@ impl ValueCodec for BlockInfo {
 
     fn decode_value(data: &[u8]) -> Result<Self> {
         Self::decode(data)
-    }
-}
-
-impl BlockInfoStore {
-    pub fn new(kv_store: Arc<dyn Repository>) -> Self {
-        BlockInfoStore {
-            store: CodecStorage::new(kv_store),
-        }
-    }
-
-    pub fn save(&self, block_info: BlockInfo) -> Result<()> {
-        self.store.put(block_info.block_id, block_info)
-    }
-
-    pub fn get(&self, hash_value: HashValue) -> Result<Option<BlockInfo>> {
-        self.store.get(hash_value)
     }
 }

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::storage::{CodecStorage, InnerStore, KeyCodec, Repository, Storage, ValueCodec};
+use crate::define_storage;
+use crate::storage::{CodecStorage, KeyCodec, StorageInstance, ValueCodec};
 use crate::{ensure_slice_len_eq, ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Error;
 use anyhow::{bail, ensure, Result};
@@ -11,35 +12,37 @@ use crypto::hash::HashValue;
 use scs::SCSCodec;
 use starcoin_accumulator::node_index::NodeIndex;
 use starcoin_accumulator::{
-    AccumulatorNode, AccumulatorNodeReader, AccumulatorNodeStore, AccumulatorNodeWriter,
+    AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter,
 };
 use std::mem::size_of;
 use std::sync::Arc;
 
-pub struct AccumulatorStore {
-    index_storage: CodecStorage<NodeIndex, HashValue>,
-    node_store: CodecStorage<HashValue, AccumulatorNode>,
+define_storage!(
+    AccumulatorIndexStore,
+    NodeIndex,
+    HashValue,
+    ACCUMULATOR_INDEX_PREFIX_NAME
+);
+
+define_storage!(
+    AccumulatorNodeStore,
+    HashValue,
+    AccumulatorNode,
+    ACCUMULATOR_NODE_PREFIX_NAME
+);
+
+pub struct AccumulatorStorage {
+    index_store: AccumulatorIndexStore,
+    node_store: AccumulatorNodeStore,
 }
 
-impl AccumulatorStore {
-    pub fn new(storage: Arc<dyn Repository>) -> Self {
+impl AccumulatorStorage {
+    pub fn new(instance: StorageInstance) -> Self {
+        let index_store = AccumulatorIndexStore::new(instance.clone());
+        let node_store = AccumulatorNodeStore::new(instance.clone());
         Self {
-            index_storage: CodecStorage::new(storage.clone()),
-            node_store: CodecStorage::new(storage.clone()),
-        }
-    }
-    pub fn two_new(cache_storage: Arc<dyn InnerStore>, db_storage: Arc<dyn InnerStore>) -> Self {
-        Self {
-            index_storage: CodecStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                ACCUMULATOR_INDEX_PREFIX_NAME,
-            ))),
-            node_store: CodecStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                ACCUMULATOR_NODE_PREFIX_NAME,
-            ))),
+            index_store,
+            node_store,
         }
     }
 }
@@ -66,10 +69,10 @@ impl ValueCodec for AccumulatorNode {
     }
 }
 
-impl AccumulatorNodeStore for AccumulatorStore {}
-impl AccumulatorNodeReader for AccumulatorStore {
+impl AccumulatorTreeStore for AccumulatorStorage {}
+impl AccumulatorReader for AccumulatorStorage {
     fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>, Error> {
-        let node_index = self.index_storage.get(index).unwrap();
+        let node_index = self.index_store.get(index).unwrap();
         match node_index {
             Some(hash) => self.node_store.get(hash),
             None => bail!("get accumulator node index is null {:?}", node_index),
@@ -81,9 +84,9 @@ impl AccumulatorNodeReader for AccumulatorStore {
     }
 }
 
-impl AccumulatorNodeWriter for AccumulatorStore {
+impl AccumulatorWriter for AccumulatorStorage {
     fn save(&self, index: NodeIndex, hash: HashValue) -> Result<(), Error> {
-        self.index_storage.put(index, hash)
+        self.index_store.put(index, hash)
     }
 
     fn save_node(&self, node: AccumulatorNode) -> Result<()> {
@@ -108,6 +111,6 @@ impl AccumulatorNodeWriter for AccumulatorStore {
         for index in vec_index {
             batch.delete(ACCUMULATOR_INDEX_PREFIX_NAME, index).unwrap();
         }
-        self.index_storage.write_batch(batch)
+        self.index_store.write_batch(batch)
     }
 }

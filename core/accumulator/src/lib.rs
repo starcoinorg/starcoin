@@ -115,14 +115,14 @@ pub trait Accumulator {
     fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>>;
 }
 
-pub trait AccumulatorNodeReader {
+pub trait AccumulatorReader {
     ///get node by node_index
     fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>>;
     ///get node by node hash
     fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>>;
 }
 
-pub trait AccumulatorNodeWriter {
+pub trait AccumulatorWriter {
     /// save node index
     fn save(&self, index: NodeIndex, hash: HashValue) -> Result<()>;
     /// save node
@@ -133,13 +133,13 @@ pub trait AccumulatorNodeWriter {
     fn delete_nodes_index(&self, index_vec: Vec<NodeIndex>) -> Result<()>;
 }
 
-pub trait AccumulatorNodeStore: AccumulatorNodeReader + AccumulatorNodeWriter {}
+pub trait AccumulatorTreeStore: AccumulatorReader + AccumulatorWriter {}
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
 pub struct MerkleAccumulator {
     cache: Mutex<AccumulatorCache>,
 
-    node_store: Arc<dyn AccumulatorNodeStore>,
+    node_store: Arc<dyn AccumulatorTreeStore>,
 }
 
 pub struct AccumulatorCache {
@@ -154,7 +154,7 @@ pub struct AccumulatorCache {
     /// The root hash of this accumulator.
     root_hash: HashValue,
 
-    node_store: Arc<dyn AccumulatorNodeStore>,
+    node_store: Arc<dyn AccumulatorTreeStore>,
 }
 
 impl AccumulatorCache {
@@ -163,7 +163,7 @@ impl AccumulatorCache {
         num_leaves: LeafCount,
         num_nodes: NodeCount,
         root_hash: HashValue,
-        node_store: Arc<dyn AccumulatorNodeStore>,
+        node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
         Self {
             frozen_subtree_roots: RefCell::new(frozen_subtree_roots),
@@ -550,7 +550,7 @@ impl MerkleAccumulator {
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: LeafCount,
         num_notes: NodeCount,
-        node_store: Arc<dyn AccumulatorNodeStore>,
+        node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<Self> {
         let root_hash = Self::compute_root_hash(&frozen_subtree_roots, num_leaves);
 
@@ -736,8 +736,8 @@ impl MockAccumulatorStore {
     }
 }
 
-impl AccumulatorNodeStore for MockAccumulatorStore {}
-impl AccumulatorNodeReader for MockAccumulatorStore {
+impl AccumulatorTreeStore for MockAccumulatorStore {}
+impl AccumulatorReader for MockAccumulatorStore {
     fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>, Error> {
         match self.index_store.borrow().get(&index) {
             Some(node_index) => match self.node_store.borrow().get(node_index) {
@@ -755,7 +755,7 @@ impl AccumulatorNodeReader for MockAccumulatorStore {
         }
     }
 }
-impl AccumulatorNodeWriter for MockAccumulatorStore {
+impl AccumulatorWriter for MockAccumulatorStore {
     fn save(&self, index: NodeIndex, hash: HashValue) -> Result<(), Error> {
         self.index_store.borrow_mut().insert(index, hash);
         Ok(())

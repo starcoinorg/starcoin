@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-use crate::storage::{CodecStorage, InnerStore, KeyCodec, Repository, Storage, ValueCodec};
+use crate::batch::WriteBatch;
+use crate::define_storage;
+use crate::storage::{CodecStorage, KeyCodec, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
     BLOCK_SONS_PREFIX_NAME,
@@ -18,14 +17,46 @@ use std::mem::size_of;
 use std::sync::{Arc, RwLock};
 use types::block::{Block, BlockBody, BlockHeader, BlockNumber, BranchNumber};
 
-pub struct BlockStore {
-    block_store: CodecStorage<HashValue, Block>,
-    header_store: CodecStorage<HashValue, BlockHeader>,
+define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
+define_storage!(
+    BlockHeaderStorage,
+    HashValue,
+    BlockHeader,
+    BLOCK_HEADER_PREFIX_NAME
+);
+define_storage!(
+    BlockSonsStorage,
+    HashValue,
+    Vec<HashValue>,
+    BLOCK_SONS_PREFIX_NAME
+);
+define_storage!(
+    BlockBodyStorage,
+    HashValue,
+    BlockBody,
+    BLOCK_BODY_PREFIX_NAME
+);
+define_storage!(
+    BlockNumberStorage,
+    BlockNumber,
+    HashValue,
+    BLOCK_NUM_PREFIX_NAME
+);
+define_storage!(
+    BranchNumberStorage,
+    BranchNumber,
+    HashValue,
+    BLOCK_NUM_PREFIX_NAME
+);
+
+pub struct BlockStorage {
+    block_store: BlockInnerStorage,
+    header_store: BlockHeaderStorage,
     //store parents relationship
-    sons_store: RwLock<CodecStorage<HashValue, Vec<HashValue>>>,
-    body_store: CodecStorage<HashValue, BlockBody>,
-    number_store: CodecStorage<BlockNumber, HashValue>,
-    branch_number_store: CodecStorage<BranchNumber, HashValue>,
+    sons_store: RwLock<BlockSonsStorage>,
+    body_store: BlockBodyStorage,
+    number_store: BlockNumberStorage,
+    branch_number_store: BranchNumberStorage,
 }
 
 impl ValueCodec for Block {
@@ -114,57 +145,15 @@ impl KeyCodec for BranchNumber {
     }
 }
 
-impl BlockStore {
-    pub fn new(
-        block_store: Arc<dyn Repository>,
-        header_store: Arc<dyn Repository>,
-        sons_store: Arc<dyn Repository>,
-        body_store: Arc<dyn Repository>,
-        number_store: Arc<dyn Repository>,
-        branch_number_store: Arc<dyn Repository>,
-    ) -> Self {
-        BlockStore {
-            block_store: CodecStorage::new(block_store),
-            header_store: CodecStorage::new(header_store),
-            sons_store: RwLock::new(CodecStorage::new(sons_store)),
-            body_store: CodecStorage::new(body_store),
-            number_store: CodecStorage::new(number_store),
-            branch_number_store: CodecStorage::new(branch_number_store),
-        }
-    }
-
-    pub fn two_new(cache_storage: Arc<dyn InnerStore>, db_storage: Arc<dyn InnerStore>) -> Self {
-        BlockStore {
-            block_store: CodecStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                BLOCK_PREFIX_NAME,
-            ))),
-            header_store: CodecStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                BLOCK_HEADER_PREFIX_NAME,
-            ))),
-            sons_store: RwLock::new(CodecStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                BLOCK_SONS_PREFIX_NAME,
-            )))),
-            body_store: CodecStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                BLOCK_BODY_PREFIX_NAME,
-            ))),
-            number_store: CodecStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                BLOCK_NUM_PREFIX_NAME,
-            ))),
-            branch_number_store: CodecStorage::new(Arc::new(Storage::new(
-                cache_storage.clone(),
-                db_storage.clone(),
-                BLOCK_NUM_PREFIX_NAME,
-            ))),
+impl BlockStorage {
+    pub fn new(instance: StorageInstance) -> Self {
+        BlockStorage {
+            block_store: BlockInnerStorage::new(instance.clone()),
+            header_store: BlockHeaderStorage::new(instance.clone()),
+            sons_store: RwLock::new(BlockSonsStorage::new(instance.clone())),
+            body_store: BlockBodyStorage::new(instance.clone()),
+            number_store: BlockNumberStorage::new(instance.clone()),
+            branch_number_store: BranchNumberStorage::new(instance.clone()),
         }
     }
     pub fn save(&self, block: Block) -> Result<()> {

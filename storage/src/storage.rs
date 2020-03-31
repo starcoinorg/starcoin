@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
+use crate::cache_storage::CacheStorage;
+use crate::db_storage::DBStorage;
 use anyhow::{bail, Error, Result};
 use crypto::HashValue;
 use std::fmt::Debug;
@@ -17,7 +19,7 @@ pub enum WriteOp {
     Deletion,
 }
 
-pub trait Repository: Send + Sync {
+pub trait KVStore: Send + Sync {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, key: Vec<u8>) -> Result<bool>;
@@ -37,47 +39,167 @@ pub trait InnerStore: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
 
-/// Define simple storage package for one storage
-pub struct InnerStorage {
-    repository: Arc<dyn InnerStore>,
-    pub prefix_name: ColumnFamilyName,
+///Storage instance type define
+//#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)]
+pub enum StorageInstance {
+    CACHE {
+        cache: Arc<dyn InnerStore>,
+    },
+    DB {
+        db: Arc<dyn InnerStore>,
+    },
+    CacheAndDb {
+        cache: Arc<dyn InnerStore>,
+        db: Arc<dyn InnerStore>,
+    },
 }
+impl StorageInstance {
+    pub fn new_cache_instance(cache: CacheStorage) -> Self {
+        StorageInstance::CACHE {
+            cache: Arc::new(cache),
+        }
+    }
+    pub fn new_db_instance(db: DBStorage) -> Self {
+        Self::DB { db: Arc::new(db) }
+    }
+    pub fn new_cache_and_db_instance(cache: CacheStorage, db: DBStorage) -> Self {
+        Self::CacheAndDb {
+            cache: Arc::new(cache),
+            db: Arc::new(db),
+        }
+    }
+}
+impl InnerStore for StorageInstance {
+    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.get(prefix_name, key.clone()),
+            StorageInstance::DB { db } => db.get(prefix_name, key.clone()),
+            StorageInstance::CacheAndDb { cache, db } => {
+                // first get from cache
+                if let Ok(Some(v)) = cache.get(prefix_name, key.clone()) {
+                    Ok(Some(v))
+                } else {
+                    db.get(prefix_name, key.clone())
+                }
+            }
+            _ => bail!("error StorageInstance type."),
+        }
+    }
+
+    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
+            StorageInstance::DB { db } => db.put(prefix_name, key, value),
+            StorageInstance::CacheAndDb { cache, db } => {
+                db.put(prefix_name, key.clone(), value.clone()).unwrap();
+                cache.put(prefix_name, key, value)
+            }
+            _ => bail!("error StorageInstance type."),
+        }
+    }
+
+    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool, Error> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.contains_key(prefix_name, key),
+            StorageInstance::DB { db } => db.contains_key(prefix_name, key),
+            StorageInstance::CacheAndDb { cache, db } => {
+                match cache.contains_key(prefix_name, key.clone()) {
+                    Err(_) => db.contains_key(prefix_name, key.clone()),
+                    Ok(is_contains) => Ok(is_contains),
+                }
+            }
+            _ => bail!("error StorageInstance type."),
+        }
+    }
+
+    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<(), Error> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.remove(prefix_name, key),
+            StorageInstance::DB { db } => db.remove(prefix_name, key),
+            StorageInstance::CacheAndDb { cache, db } => {
+                match db.remove(prefix_name, key.clone()) {
+                    Ok(_) => cache.remove(prefix_name, key),
+                    _ => bail!("db storage remove error."),
+                }
+            }
+            _ => bail!("error StorageInstance type."),
+        }
+    }
+
+    fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.write_batch(batch),
+            StorageInstance::DB { db } => db.write_batch(batch),
+            StorageInstance::CacheAndDb { cache, db } => match db.write_batch(batch.clone()) {
+                Ok(_) => cache.write_batch(batch),
+                Err(err) => bail!("write batch db error: {}", err),
+            },
+            _ => bail!("error StorageInstance type."),
+        }
+    }
+
+    fn get_len(&self) -> Result<u64, Error> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.get_len(),
+            StorageInstance::DB { db } => unimplemented!(),
+            StorageInstance::CacheAndDb { cache, db } => cache.get_len(),
+            _ => bail!("error StorageInstance type."),
+        }
+    }
+
+    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.keys(),
+            StorageInstance::DB { db } => unimplemented!(),
+            StorageInstance::CacheAndDb { cache, db } => cache.keys(),
+            _ => bail!("error StorageInstance type."),
+        }
+    }
+}
+
+/// Define inner storage implement
+pub struct InnerStorage {
+    pub prefix_name: ColumnFamilyName,
+    instance: StorageInstance,
+}
+
 impl InnerStorage {
-    pub fn new(repository: Arc<dyn InnerStore>, prefix_name: ColumnFamilyName) -> Self {
+    pub fn new(instance: StorageInstance, prefix_name: ColumnFamilyName) -> Self {
         Self {
-            repository,
+            instance,
             prefix_name,
         }
     }
 }
 
-impl Repository for InnerStorage {
+impl KVStore for InnerStorage {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
-        self.repository.clone().get(self.prefix_name, key.to_vec())
+        self.instance.get(self.prefix_name, key.to_vec())
     }
 
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
-        self.repository.clone().put(self.prefix_name, key, value)
+        self.instance.put(self.prefix_name, key, value)
     }
 
     fn contains_key(&self, key: Vec<u8>) -> Result<bool, Error> {
-        self.repository.clone().contains_key(self.prefix_name, key)
+        self.instance.contains_key(self.prefix_name, key)
     }
 
     fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
-        self.repository.clone().remove(self.prefix_name, key)
+        self.instance.remove(self.prefix_name, key)
     }
 
     fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
-        self.repository.write_batch(batch)
+        self.instance.write_batch(batch)
     }
 
     fn get_len(&self) -> Result<u64, Error> {
-        self.repository.clone().get_len()
+        self.instance.get_len()
     }
 
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
-        self.repository.clone().keys()
+        self.instance.keys()
     }
 }
 
@@ -102,7 +224,7 @@ impl Storage {
     }
 }
 
-impl Repository for Storage {
+impl KVStore for Storage {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
         // first get from cache
         let key_vec = key.to_vec();
@@ -167,7 +289,7 @@ where
     K: KeyCodec,
     V: ValueCodec,
 {
-    store: Arc<dyn Repository>,
+    store: Arc<dyn KVStore>,
     k: PhantomData<K>,
     v: PhantomData<V>,
 }
@@ -177,7 +299,7 @@ where
     K: KeyCodec,
     V: ValueCodec,
 {
-    pub fn new(store: Arc<dyn Repository>) -> Self {
+    pub fn new(store: Arc<dyn KVStore>) -> Self {
         Self {
             store,
             k: PhantomData,
