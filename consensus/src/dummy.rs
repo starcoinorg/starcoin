@@ -50,23 +50,11 @@ impl Consensus for DummyConsensus {
     }
 
     fn create_block(
-        config: Arc<NodeConfig>,
+        _config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
         block_template: BlockTemplate,
         _cancel: Receiver<()>,
     ) -> Result<Block> {
-        if config.miner.dev_mode == true {
-            let start = SystemTime::now();
-            let since_the_epoch = start
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards");
-            let mut rng: StdRng = SeedableRng::seed_from_u64(since_the_epoch.as_secs());
-            let time: u64 = rng.gen_range(5, 15);
-            info!("rand time : {}", time);
-            thread::sleep(Duration::from_secs(time));
-            Ok(block_template.into_block(DummyHeader {}))
-        } else {
-            unimplemented!()
-        }
+        Ok(block_template.into_block(DummyHeader {}))
     }
 }
