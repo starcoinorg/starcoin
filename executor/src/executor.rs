@@ -3,45 +3,38 @@
 
 use crate::TransactionExecutor;
 use anyhow::Result;
-
 use config::VMConfig;
 use crypto::HashValue;
 use starcoin_state_api::ChainState;
 use statedb::ChainStateDB;
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
-use storage::db_storage::DBStorage;
-use storage::StarcoinStorage;
+use storage::{cache_storage::CacheStorage, db_storage::DBStorage, StarcoinStorage};
 use types::{
     account_address::AccountAddress,
     state_set::ChainStateSet,
     transaction::{
-        RawUserTransaction, SignedUserTransaction, Transaction, TransactionArgument,
+        RawUserTransaction, SignedUserTransaction, Transaction,
         TransactionOutput,
     },
     vm_error::VMStatus,
 };
 use vm_runtime::genesis::{generate_genesis_state_set, GENESIS_KEYPAIR};
-use vm_runtime::starcoin_vm::StarcoinVM;
 use vm_runtime::{
     account::Account,
     common_transactions::{
         create_account_txn_sent_as_association, peer_to_peer_txn_sent_as_association,
         raw_peer_to_peer_txn,
     },
+    starcoin_vm::StarcoinVM,
 };
 
 #[derive(Clone)]
-pub struct Executor {
-    config: VMConfig,
-}
+pub struct Executor {}
 
 impl Executor {
     /// Creates an executor in which no genesis state has been applied yet.
     pub fn new() -> Self {
-        Executor {
-            config: VMConfig::default(),
-        }
+        Executor {}
     }
 }
 
