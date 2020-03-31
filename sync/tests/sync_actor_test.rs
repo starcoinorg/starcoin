@@ -15,6 +15,7 @@ use network::{
 };
 use starcoin_genesis::Genesis;
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
+use starcoin_wallet_api::AccountDetail;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
@@ -22,10 +23,7 @@ use storage::StarcoinStorage;
 use tokio::runtime::Handle;
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
-use types::{
-    block::{Block, BlockHeader},
-    peer_info::{PeerId, PeerInfo},
-};
+use types::peer_info::{PeerId, PeerInfo};
 
 fn gen_network(
     node_config: Arc<NodeConfig>,
@@ -107,6 +105,7 @@ fn test_network_actor_rpc() {
         .unwrap();
         let _first_sync_actor =
             SyncActor::launch(bus_1.clone(), first_p_actor, first_d_actor.clone()).unwrap();
+        let miner_account = AccountDetail::random();
         // miner
         let _miner_1 = MinerActor::<
             DummyConsensus,
@@ -122,6 +121,7 @@ fn test_network_actor_rpc() {
             txpool_1.clone(),
             first_chain.clone(),
             None,
+            miner_account,
         );
         Delay::new(Duration::from_secs(1 * 60)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
