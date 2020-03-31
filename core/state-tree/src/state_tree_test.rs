@@ -89,6 +89,9 @@ pub fn test_state_proof() -> Result<()> {
     let hash_value = HashValue::random();
 
     let account1 = update_nibble(&hash_value, 0, 1);
+    // re-update to make sure account2 never equal to account1
+    let account1 = update_nibble(&account1, 2, 1);
+
     let account2 = update_nibble(&account1, 2, 2);
     for (k, v) in vec![(account1, vec![0, 0, 0]), (account2, vec![1, 1, 1])] {
         state.put(k, v);
