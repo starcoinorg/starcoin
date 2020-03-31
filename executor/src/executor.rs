@@ -61,11 +61,12 @@ impl TransactionExecutor for Executor {
     }
 
     fn validate_transaction(
-        _config: &VMConfig,
-        _chain_state: &dyn ChainState,
-        _txn: SignedUserTransaction,
+        config: &VMConfig,
+        chain_state: &dyn ChainState,
+        txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
-        None
+        let mut vm = StarcoinVM::new(config);
+        vm.verify_transaction(chain_state, txn)
     }
 
     fn build_mint_txn(
