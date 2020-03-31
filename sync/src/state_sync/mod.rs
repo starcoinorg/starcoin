@@ -1,36 +1,42 @@
+use actix::prelude::*;
+use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, ResponseActFuture};
 use anyhow::Result;
+use atomic_refcell::AtomicRefCell;
+use crypto::hash::HashValue;
 use forkable_jellyfish_merkle::{node_type::Node, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use logger::prelude::*;
+use network::NetworkAsyncService;
 use parking_lot::RwLock;
-use starcoin_crypto::hash::HashValue;
-use starcoin_network::NetworkAsyncService;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::{StateNode, StateNodeStore, StateTree};
 use std::collections::hash_map::HashMap;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
+use std::ops::DerefMut;
 use std::sync::Arc;
 
-struct StateNodeCache {
-    root: HashValue,
-    state_nodes: RwLock<HashMap<HashValue, StateNode>>,
+struct StateSyncTask {
+    root: AtomicRefCell<HashValue>,
+    pub state_node_storage: Arc<dyn StateNodeStore>,
+    syncing: RwLock<HashSet<HashValue>>,
 }
 
-impl StateNodeCache {
-    pub fn new(root: HashValue) -> StateNodeCache {
+impl StateSyncTask {
+    pub fn new(root: HashValue, state_node_storage: Arc<dyn StateNodeStore>) -> StateSyncTask {
         Self {
-            root,
-            state_nodes: RwLock::new(HashMap::new()),
+            root: AtomicRefCell::new(root),
+            state_node_storage,
+            syncing: RwLock::new(HashSet::new()),
         }
     }
 
     fn all_son_exist(&self, node_key: &HashValue) -> bool {
-        if let Some(current_node) = self.get(node_key).unwrap() {
+        if let Some(current_node) = self.state_node_storage.get(node_key).unwrap() {
             let node = current_node.0;
             match node {
                 Node::Leaf(_) => true,
                 Node::Internal(n) => {
                     for child in n.all_child() {
-                        if !self.state_nodes.read().contains_key(&child) {
+                        if !self.all_son_exist(&child) {
                             warn!("node {:?} child {:?} not exist.", node_key, child);
                             return false;
                         }
@@ -49,26 +55,12 @@ impl StateNodeCache {
     }
 
     pub fn is_complete(&self) -> bool {
-        self.all_son_exist(&self.root)
-    }
-}
-
-impl StateNodeStore for StateNodeCache {
-    fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        if let Some(node) = self.state_nodes.read().get(hash) {
-            Ok(Some(node.clone()))
-        } else {
-            Ok(None)
-        }
+        self.all_son_exist(&self.root.borrow())
     }
 
-    fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
-        self.state_nodes.write().insert(key, node);
-        Ok(())
-    }
-
-    fn write_batch(&self, _nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
-        unimplemented!()
+    pub fn reset(&self, root: &HashValue) {
+        self.syncing.write().clear();
+        std::mem::swap(self.root.borrow_mut().deref_mut(), &mut root.clone());
     }
 }
 
@@ -126,16 +118,63 @@ fn test_state_node_cache_not_complete() {
     assert_eq!(state_node_cache.is_complete(), false);
 }
 
+#[derive(Default, Debug, Message)]
+#[rtype(result = "Result<()>")]
+struct StateSyncEvent {}
+
 struct StateSyncActor {
-    cache: Arc<StateNodeCache>,
+    sync_task: Arc<StateSyncTask>,
     network: NetworkAsyncService,
+    //state_node_storage: Arc<dyn StateNodeStore>,
 }
 
 impl StateSyncActor {
-    pub fn _launch(root: HashValue, network: NetworkAsyncService) -> StateSyncActor {
-        Self {
-            cache: Arc::new(StateNodeCache::new(root)),
+    pub fn _launch(
+        root: HashValue,
+        network: NetworkAsyncService,
+        state_node_storage: Arc<dyn StateNodeStore>,
+    ) -> Result<Addr<StateSyncActor>> {
+        let state_sync_actor = StateSyncActor::create(move |ctx| Self {
+            sync_task: Arc::new(StateSyncTask::new(root, state_node_storage)),
             network,
+        });
+        Ok(state_sync_actor)
+    }
+
+    fn state_nodes(
+        &self,
+        nodes_hash: Vec<HashValue>,
+    ) -> Result<Vec<(HashValue, Option<StateNode>)>> {
+        // let mut state_nodes = Vec::new();
+        // nodes_hash.iter().for_each(|node_key| {
+        //     let node = self.state_node_storage.get(node_key).unwrap();
+        //     state_nodes.push((node_key.clone(), node));
+        // });
+        //
+        // Ok(state_nodes)
+        unimplemented!()
+    }
+
+    fn put_nodes(&self, state_nodes: Vec<(HashValue, StateNode)>) {
+        for (node_key, state_node) in state_nodes {
+            let _ = self.sync_task.state_node_storage.put(node_key, state_node);
         }
+    }
+}
+
+impl Actor for StateSyncActor {
+    type Context = Context<Self>;
+
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        info!("{:?}", "state sync actor started.");
+    }
+}
+
+impl Handler<StateSyncEvent> for StateSyncActor {
+    type Result = Result<()>;
+
+    /// This method is called for every message received by this actor.
+    fn handle(&mut self, _msg: StateSyncEvent, _ctx: &mut Self::Context) -> Self::Result {
+        unimplemented!()
     }
 }

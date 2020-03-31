@@ -6056,21 +6056,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-state-sync"
-version = "0.1.0"
-dependencies = [
- "actix",
- "anyhow",
- "forkable-jellyfish-merkle",
- "parking_lot 0.9.0",
- "starcoin-crypto",
- "starcoin-logger",
- "starcoin-network",
- "starcoin-state-tree",
- "starcoin-types",
-]
-
-[[package]]
 name = "starcoin-state-tree"
 version = "0.1.0"
 dependencies = [
@@ -6144,12 +6129,14 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "atomic_refcell",
+ "forkable-jellyfish-merkle",
  "futures 0.3.4",
  "futures-locks",
  "futures-timer 3.0.2",
  "hex 0.4.2",
  "itertools 0.8.2",
  "libra-temppath",
+ "parking_lot 0.9.0",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",
@@ -6160,6 +6147,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-miner",
  "starcoin-network",
+ "starcoin-state-tree",
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-txpool",
