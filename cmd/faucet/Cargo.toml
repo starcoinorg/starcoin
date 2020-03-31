@@ -8,11 +8,20 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+tiny_http = "0.6"
+futures = { version = "0.3.2"}
+hex = { version = "0.3.2", default-features = false }
+tokio = { version = "0.2", features = ["full"] }
+tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
+futures-timer = "3.0"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
-starcoin-wallet-api = {path = "../../wallet/api"}
+starcoin-state-api = {path = "../../state/api"}
 starcoin-types = {path = "../../types"}
 starcoin-rpc-client = { path = "../../rpc/client"}
+starcoin-wallet-api = {path = "../../wallet/api"}
+starcoin-executor = {path = "../../executor"}
+
 [[bin]]
 name = "faucet"
 path = "src/main.rs"
