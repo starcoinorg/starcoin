@@ -3,10 +3,10 @@ use anyhow::Result;
 use parking_lot::RwLock;
 use starcoin_config::VMConfig;
 use starcoin_executor::{executor::Executor, TransactionExecutor};
+use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 use storage::StarcoinStorage;
-use traits::ChainStateReader;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,

@@ -37,9 +37,9 @@ stest = { path = "../../commons/stest"}
 starcoin-rpc-api = { path = "../api"}
 starcoin-wallet-api = { path = "../../wallet/api"}
 starcoin-wallet-service = { path = "../../wallet/service"}
-starcoin-statedb = { path = "../../core/statedb"}
+starcoin-statedb = { path = "../../state/statedb"}
 starcoin-traits = { path = "../../core/traits"}
-starcoin-state-tree = { path = "../../core/state-tree"}
+starcoin-state-tree = { path = "../../state/state-tree"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-state-service = { path = "../../state/service"}

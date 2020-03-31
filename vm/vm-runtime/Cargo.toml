@@ -17,6 +17,7 @@ move-vm-types = {git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb79
 move-vm-state = {git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
 vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
 traits = {package="starcoin-traits", path = "../../core/traits"}
+starcoin-state-api = {path="../../state/api"}
 config = { package="starcoin-config", path = "../../config"}
 libra_types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
 logger = {path = "../../commons/logger", package="starcoin-logger"}

@@ -4,7 +4,7 @@
 use anyhow::Result;
 use config::VMConfig;
 use crypto::HashValue;
-use traits::ChainState;
+use starcoin_state_api::ChainState;
 use types::{
     account_address::AccountAddress,
     state_set::ChainStateSet,

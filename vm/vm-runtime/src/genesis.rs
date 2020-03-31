@@ -19,8 +19,8 @@ use move_vm_state::{
 use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
+use starcoin_state_api::ChainState;
 use stdlib::{stdlib_modules, StdLibOptions};
-use traits::ChainState;
 use types::{account_config, state_set::ChainStateSet};
 use vm::{
     access::ModuleAccess,

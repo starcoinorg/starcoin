@@ -15,7 +15,7 @@ serde = { version = "1.0" }
 starcoin-config = { path = "../../config"}
 starcoin-executor = { path = "../../executor"}
 starcoin-storage = { path = "../../storage"}
-starcoin-statedb = { path = "../statedb"}
+starcoin-statedb = { path = "../../state/statedb"}
 starcoin-accumulator = { path = "../accumulator"}
 stest = { path = "../../commons/stest"}
 starcoin-logger = { path = "../../commons/logger"}

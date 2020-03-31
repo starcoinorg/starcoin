@@ -9,9 +9,8 @@ use logger::prelude::*;
 
 use once_cell::sync::Lazy;
 
+use starcoin_state_api::ChainState;
 use std::convert::TryInto;
-
-use traits::ChainState;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,

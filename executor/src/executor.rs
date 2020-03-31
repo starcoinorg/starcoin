@@ -6,12 +6,12 @@ use anyhow::Result;
 
 use config::VMConfig;
 use crypto::HashValue;
+use starcoin_state_api::ChainState;
 use statedb::ChainStateDB;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
 use storage::StarcoinStorage;
-use traits::ChainState;
 use types::{
     account_address::AccountAddress,
     state_set::ChainStateSet,

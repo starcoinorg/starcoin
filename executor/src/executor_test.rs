@@ -15,6 +15,7 @@ use libra_types::{
     access_path::AccessPath as LibraAccessPath, account_config as Libraaccount_config,
 };
 use logger::prelude::*;
+use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
 use state_tree::StateNodeStore;
 use statedb::ChainStateDB;
@@ -22,7 +23,6 @@ use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::Duration;
 use stdlib::transaction_scripts::EMPTY_TXN;
-use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},

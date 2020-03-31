@@ -10,18 +10,14 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-futures = "0.3"
-actix = "0.9"
-actix-rt = "1.0"
 async-trait = "0.1"
 serde = { version = "1.0", features = ["derive"] }
-starcoin-logger = {path = "../../commons/logger"}
+#starcoin-logger = {path = "../../commons/logger"}
 starcoin-crypto = {path = "../../commons/crypto"}
-stest = {path = "../../commons/stest"}
+#stest = {path = "../../commons/stest"}
 starcoin-types = { path = "../../types"}
-starcoin-config = { path = "../../config"}
-starcoin-traits = { path = "../../core/traits"}
-starcoin-state-tree = { path = "../../core/state-tree"}
-starcoin-statedb = { path = "../../core/statedb"}
+#starcoin-traits = { path = "../../core/traits"}
+merkle-tree = {package = "forkable-jellyfish-merkle", path = "../../core/forkable-jellyfish-merkle"}
+starcoin-state-tree = {package = "starcoin-state-tree", path = "../state-tree"}
 
 [dev-dependencies]
