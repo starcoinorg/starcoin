@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::StateError::AccountNotExist;
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use merkle_tree::proof::SparseMerkleProof;
 use scs::SCSCodec;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
@@ -289,7 +289,19 @@ impl ChainStateReader for ChainStateDB {
             ),
             Some(account_state) => {
                 let account_state_object =
-                    AccountStateObject::new(account_address, account_state, self.store.clone());
+                    self.get_account_state_object(&account_address, false)?;
+                ensure!(
+                    !account_state_object.is_dirty(),
+                    "account {} has uncommitted modification",
+                    &account_address
+                );
+
+                ensure!(
+                    account_state == account_state_object.to_state(),
+                    "global state tree is not synced with account {} state",
+                    &account_address,
+                );
+
                 let (resource_value, resource_proof) =
                     account_state_object.get_with_proof(data_type, &hash)?;
                 StateWithProof::new(
@@ -455,6 +467,29 @@ mod tests {
     use super::*;
     use starcoin_state_tree::mock::MockStateNodeStore;
     use starcoin_traits::AccountStateReader;
+
+    #[test]
+    fn test_state_proof() -> Result<()> {
+        let storage = MockStateNodeStore::new();
+        let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
+        let account_address = AccountAddress::random();
+        chain_state_db.create_account(account_address)?;
+        let state_root = chain_state_db.commit()?;
+        let account_state = chain_state_db
+            .get_account_state(&account_address)?
+            .map(|s| s.encode())
+            .transpose()?;
+        assert!(account_state.is_some());
+        let access_path = AccessPath::new_for_account(account_address);
+        let state_with_proof = chain_state_db.get_with_proof(&access_path)?;
+        state_with_proof.proof.verify(
+            state_root,
+            account_state.as_ref().map(|s| s.as_slice()),
+            access_path,
+            state_with_proof.state.as_ref().map(|s| s.as_slice()),
+        )?;
+        Ok(())
+    }
 
     #[test]
     fn test_state_db() -> Result<()> {

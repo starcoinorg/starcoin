@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::blob::Blob;
 use crate::{
     node_type::{SparseMerkleInternalNode, SparseMerkleLeafNode},
     SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -73,7 +74,7 @@ impl SparseMerkleProof {
                     proof_key,
                     element_key
                 );
-                let hash = blob.as_ref().crypto_hash();
+                let hash = Blob::from(blob.to_vec()).crypto_hash();
                 ensure!(
                     hash == proof_value_hash,
                     "Value hashes do not match. Value hash in proof: {:x}. \
