@@ -62,7 +62,7 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
 
 // The value should be tuned carefully
 pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
-    Lazy::new(|| GasUnits::new(50_000_000));
+    Lazy::new(|| GasUnits::new(100_000_000));
 
 #[derive(Clone)]
 /// Wrapper of MoveVM
