@@ -2,14 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::TransactionExecutor;
-use anyhow::{Error, Result};
-
+use anyhow::Result;
 use config::VMConfig;
 use crypto::{ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
-
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
-
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -19,7 +16,6 @@ use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{association_address, AccountResource},
-    account_state::AccountState,
     state_set::ChainStateSet,
     transaction::{
         RawUserTransaction, Script, SignedUserTransaction, Transaction, TransactionOutput,
@@ -34,88 +30,13 @@ use vm_runtime::mock_vm::{
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
 
-pub struct MockChainState {
-    //    state_tree: SparseMerkleTree,
-}
-
-impl MockChainState {
-    // create empty chain state
-    pub fn new() -> Self {
-        MockChainState {
-//            state_tree: empty_tree(),
-        }
-    }
-    /// Commit and calculate new state root
-    pub fn commit(&self) -> Result<HashValue> {
-        unimplemented!()
-    }
-
-    /// flush data to db.
-    pub fn flush(&self) -> Result<()> {
-        unimplemented!()
-    }
-}
-
-impl ChainState for MockChainState {}
-
-impl ChainStateReader for MockChainState {
-    fn get(&self, _access_path: &AccessPath) -> Result<Option<Vec<u8>>, Error> {
-        Ok(None)
-    }
-
-    fn get_account_state(&self, _address: &AccountAddress) -> Result<Option<AccountState>> {
-        Ok(None)
-    }
-
-    fn is_genesis(&self) -> bool {
-        unimplemented!()
-    }
-
-    fn state_root(&self) -> HashValue {
-        unimplemented!()
-    }
-
-    fn dump(&self) -> Result<ChainStateSet> {
-        unimplemented!()
-    }
-}
-
-impl ChainStateWriter for MockChainState {
-    fn set(&self, _access_path: &AccessPath, _value: Vec<u8>) -> Result<()> {
-        Ok(())
-    }
-
-    fn remove(&self, _access_path: &AccessPath) -> Result<()> {
-        unimplemented!()
-    }
-
-    fn create_account(&self, _account_address: AccountAddress) -> Result<(), Error> {
-        unimplemented!()
-    }
-
-    fn apply(&self, _state_set: ChainStateSet) -> Result<(), Error> {
-        unimplemented!()
-    }
-    fn commit(&self) -> Result<HashValue> {
-        unimplemented!()
-    }
-
-    fn flush(&self) -> Result<()> {
-        unimplemented!()
-    }
-}
-
 #[derive(Clone)]
-pub struct MockExecutor {
-    config: VMConfig,
-}
+pub struct MockExecutor {}
 
 impl MockExecutor {
     /// Creates an executor in which no genesis state has been applied yet.
     pub fn new() -> Self {
-        MockExecutor {
-            config: VMConfig::default(),
-        }
+        MockExecutor {}
     }
 
     fn mint_for(chain_state: &dyn ChainState, account: AccountAddress, amount: u64) -> Result<()> {
@@ -137,7 +58,7 @@ impl MockExecutor {
             account_resource.sequence_number(),
             account_resource.authentication_key().to_vec(),
         );
-        chain_state.set(&access_path, new_account_resource.try_into()?);
+        chain_state.set(&access_path, new_account_resource.try_into()?)?;
         Ok(())
     }
 }
@@ -173,8 +94,8 @@ impl TransactionExecutor for MockExecutor {
 
     fn build_mint_txn(
         addr: AccountAddress,
-        auth_key_prefix: Vec<u8>,
-        seq_num: u64,
+        _auth_key_prefix: Vec<u8>,
+        _seq_num: u64,
         amount: u64,
     ) -> Transaction {
         let from = AccountAddress::default();
@@ -183,9 +104,9 @@ impl TransactionExecutor for MockExecutor {
 
     fn build_transfer_txn(
         sender: AccountAddress,
-        sender_auth_key_prefix: Vec<u8>,
+        _sender_auth_key_prefix: Vec<u8>,
         receiver: AccountAddress,
-        receiver_auth_key_prefix: Vec<u8>,
+        _receiver_auth_key_prefix: Vec<u8>,
         seq_num: u64,
         amount: u64,
     ) -> RawUserTransaction {

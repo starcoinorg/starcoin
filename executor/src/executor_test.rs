@@ -4,7 +4,7 @@
 use crate::{
     executor::{mock_create_account_txn, Executor},
     mock_executor::{
-        get_signed_txn, mock_mint_txn, mock_transfer_txn, mock_txn, MockChainState, MockExecutor,
+        get_signed_txn, mock_mint_txn, mock_transfer_txn, mock_txn, MockExecutor,
     },
     TransactionExecutor,
 };
@@ -148,38 +148,6 @@ fn test_validate_txn() -> Result<()> {
     );
     let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
     assert_eq!(output, None);
-    Ok(())
-}
-
-#[ignore]
-#[stest::test]
-fn test_execute_txn_with_starcoin_vm() -> Result<()> {
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    let txn = mock_txn();
-    let config = VMConfig::default();
-    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
-
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
-    Ok(())
-}
-
-#[ignore]
-#[stest::test]
-fn test_generate_genesis_state_set() -> Result<()> {
-    let config = VMConfig::default();
-    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply(state_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
-    let txn = mock_txn();
-    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
-
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
     Ok(())
 }
 
