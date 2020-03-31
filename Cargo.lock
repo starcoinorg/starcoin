@@ -6090,6 +6090,7 @@ version = "0.1.0"
 dependencies = [
  "actix-rt",
  "anyhow",
+ "forkable-jellyfish-merkle",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -6175,6 +6176,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
+ "forkable-jellyfish-merkle",
  "futures-channel",
  "serde",
  "starcoin-crypto",

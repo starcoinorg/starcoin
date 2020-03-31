@@ -1,12 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, Result};
+use crate::StateError::AccountNotExist;
+use anyhow::{bail, ensure, Result};
+use merkle_tree::proof::SparseMerkleProof;
 use scs::SCSCodec;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_logger::prelude::*;
 use starcoin_state_tree::{StateNodeStore, StateTree};
-use starcoin_traits::{ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_traits::{ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
 use starcoin_types::{
     access_path::{AccessPath, DataType},
     account_address::AccountAddress,
@@ -18,8 +20,6 @@ use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
 use std::sync::{Arc, Mutex, MutexGuard};
-
-use crate::StateError::AccountNotExist;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -74,6 +74,20 @@ impl AccountStateObject {
         match trees[data_type.storage_index()].as_ref() {
             Some(tree) => tree.get(key_hash),
             None => Ok(None),
+        }
+    }
+
+    /// return value with it proof.
+    /// NOTICE: Any un-committed modification will not visible to the method.
+    pub fn get_with_proof(
+        &self,
+        data_type: DataType,
+        key_hash: &HashValue,
+    ) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
+        let trees = self.trees.lock().unwrap();
+        match trees[data_type.storage_index()].as_ref() {
+            Some(tree) => tree.get_with_proof(key_hash),
+            None => Ok((None, SparseMerkleProof::new(None, vec![]))),
         }
     }
 
@@ -261,6 +275,44 @@ impl ChainStateReader for ChainStateDB {
             })
     }
 
+    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
+        let (account_address, data_type, hash) = access_path.clone().into();
+        let address_hash = account_address.crypto_hash();
+        let (account_state, account_proof) = self.state_tree.get_with_proof(&address_hash)?;
+        let account_state = account_state
+            .map(|v| AccountState::decode(v.as_slice()))
+            .transpose()?;
+        let state_with_proof = match account_state {
+            None => StateWithProof::new(
+                None,
+                StateProof::new(None, account_proof, SparseMerkleProof::default()),
+            ),
+            Some(account_state) => {
+                let account_state_object =
+                    self.get_account_state_object(&account_address, false)?;
+                ensure!(
+                    !account_state_object.is_dirty(),
+                    "account {} has uncommitted modification",
+                    &account_address
+                );
+
+                ensure!(
+                    account_state == account_state_object.to_state(),
+                    "global state tree is not synced with account {} state",
+                    &account_address,
+                );
+
+                let (resource_value, resource_proof) =
+                    account_state_object.get_with_proof(data_type, &hash)?;
+                StateWithProof::new(
+                    resource_value,
+                    StateProof::new(Some(account_state.encode()?), account_proof, resource_proof),
+                )
+            }
+        };
+        Ok(state_with_proof)
+    }
+
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
         Ok(self
             .get_account_state_object_option(address)?
@@ -415,6 +467,28 @@ mod tests {
     use super::*;
     use starcoin_state_tree::mock::MockStateNodeStore;
     use starcoin_traits::AccountStateReader;
+
+    #[test]
+    fn test_state_proof() -> Result<()> {
+        let storage = MockStateNodeStore::new();
+        let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
+        let account_address = AccountAddress::random();
+        chain_state_db.create_account(account_address)?;
+        let state_root = chain_state_db.commit()?;
+        let account_state = chain_state_db
+            .get_account_state(&account_address)?
+            .map(|s| s.encode())
+            .transpose()?;
+        assert!(account_state.is_some());
+        let access_path = AccessPath::new_for_account(account_address);
+        let state_with_proof = chain_state_db.get_with_proof(&access_path)?;
+        state_with_proof.proof.verify(
+            state_root,
+            access_path,
+            state_with_proof.state.as_ref().map(|s| s.as_slice()),
+        )?;
+        Ok(())
+    }
 
     #[test]
     fn test_state_db() -> Result<()> {

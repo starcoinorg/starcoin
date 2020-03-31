@@ -1,19 +1,78 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
-use crypto::HashValue;
+use anyhow::{ensure, Result};
+use crypto::{hash::CryptoHash, HashValue};
+use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
-
+use std::convert::TryFrom;
 use types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
     account_state::AccountState, state_set::ChainStateSet,
 };
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize)]
-pub struct StateProof {}
+#[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub struct StateProof {
+    account_state: Option<Blob>,
+    account_proof: SparseMerkleProof,
+    account_state_proof: SparseMerkleProof,
+}
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize)]
+impl StateProof {
+    pub fn new(
+        account_state: Option<Vec<u8>>,
+        account_proof: SparseMerkleProof,
+        account_state_proof: SparseMerkleProof,
+    ) -> Self {
+        Self {
+            account_state: account_state.map(|data| Blob::from(data)),
+            account_proof,
+            account_state_proof,
+        }
+    }
+    /// verify the resource blob with `access_path`,
+    /// given expected_root_hash, and expected account state blob.
+    pub fn verify(
+        &self,
+        expected_root_hash: HashValue,
+        access_path: AccessPath,
+        access_resource_blob: Option<&[u8]>,
+    ) -> Result<()> {
+        let (account_address, data_type, ap_hash) = access_path.into();
+        match self.account_state.as_ref() {
+            None => {
+                ensure!(
+                    access_resource_blob.is_none(),
+                    "accessed resource should not exists"
+                );
+            }
+            Some(s) => {
+                let account_state = AccountState::try_from(s.as_ref())?;
+                match account_state.storage_roots()[data_type.storage_index()] {
+                    None => {
+                        ensure!(
+                            access_resource_blob.is_none(),
+                            "accessed resource should not exists"
+                        );
+                    }
+                    Some(expected_hash) => {
+                        let blob = access_resource_blob.map(|data| Blob::from(data.to_vec()));
+                        self.account_state_proof
+                            .verify(expected_hash, ap_hash, blob.as_ref())?;
+                    }
+                }
+            }
+        }
+        let address_hash = account_address.crypto_hash();
+        self.account_proof.verify(
+            expected_root_hash,
+            address_hash,
+            self.account_state.as_ref(),
+        )
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateWithProof {
     pub state: Option<Vec<u8>>,
     pub proof: StateProof,
@@ -32,7 +91,7 @@ pub trait ChainStateReader {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
         //TODO implements proof.
         self.get(access_path)
-            .map(|state| StateWithProof::new(state, StateProof {}))
+            .map(|state| StateWithProof::new(state, StateProof::default()))
     }
 
     /// Gets state data for a list of access paths.

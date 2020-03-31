@@ -18,3 +18,4 @@ starcoin-logger = {path = "../../commons/logger"}
 starcoin-state-tree = {path = "../state-tree"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0" }
+merkle-tree = {package = "forkable-jellyfish-merkle", path = "../../core/forkable-jellyfish-merkle"}
