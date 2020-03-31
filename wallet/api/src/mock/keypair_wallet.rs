@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::mock::MemWalletStore;
-use crate::{AccountDetail, Wallet, WalletAccount, WalletStore};
+use crate::{Wallet, WalletAccount, WalletStore};
 use actix::clock::Duration;
 use anyhow::{ensure, format_err, Result};
 use rand::prelude::*;
@@ -82,24 +82,9 @@ where
         let address = AccountAddress::from_public_key(&key_pair.public_key);
         //first account is default.
         let is_default = self.get_accounts()?.len() == 0;
-        let account = WalletAccount::new(address, is_default);
+        let account = WalletAccount::new(address, key_pair.public_key.clone(), is_default);
         self.save_account(account.clone(), key_pair)?;
         Ok(account)
-    }
-
-    fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<AccountDetail>> {
-        self.store
-            .get_account(address)
-            .and_then(|account| match account {
-                Some(account) => {
-                    let keypair = self.get_key_pair(address)?;
-                    Ok(Some(AccountDetail::new(
-                        account,
-                        keypair.public_key.clone(),
-                    )))
-                }
-                None => Ok(None),
-            })
     }
 
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>> {
@@ -110,7 +95,7 @@ where
         let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())?;
         let key_pair = KeyPair::from(private_key);
         let address = AccountAddress::from_public_key(&key_pair.public_key);
-        let account = WalletAccount::new(address, false);
+        let account = WalletAccount::new(address, key_pair.public_key.clone(), false);
         self.save_account(account.clone(), key_pair)?;
         Ok(account)
     }

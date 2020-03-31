@@ -9,7 +9,7 @@ use starcoin_config::NodeConfig;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::mock::{KeyPairWallet, MemWalletStore};
-use starcoin_wallet_api::{AccountDetail, Wallet, WalletAccount, WalletAsyncService};
+use starcoin_wallet_api::{Wallet, WalletAccount, WalletAsyncService};
 use std::sync::Arc;
 
 pub struct WalletActor {
@@ -45,7 +45,7 @@ impl Handler<WalletRequest> for WalletActor {
                 WalletResponse::AccountList(self.service.get_accounts()?)
             }
             WalletRequest::GetAccount(address) => {
-                WalletResponse::Account(self.service.get_account_detail(&address)?)
+                WalletResponse::Account(self.service.get_account(&address)?)
             }
             WalletRequest::SignTxn(raw_txn) => {
                 WalletResponse::SignedTxn(self.service.sign_txn(raw_txn)?)
@@ -111,7 +111,7 @@ impl WalletAsyncService for WalletActorRef {
         }
     }
 
-    async fn get_account(self, address: AccountAddress) -> Result<Option<AccountDetail>, Error> {
+    async fn get_account(self, address: AccountAddress) -> Result<Option<WalletAccount>, Error> {
         let response = self
             .0
             .send(WalletRequest::GetAccount(address))

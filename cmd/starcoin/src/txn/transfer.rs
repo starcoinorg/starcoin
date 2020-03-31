@@ -60,7 +60,7 @@ impl CommandAction for TransferCommand {
                 sender.address()
             ))?;
         let raw_txn = Executor::build_transfer_txn(
-            sender.account.address,
+            sender.address,
             sender.get_auth_key().prefix().to_vec(),
             to,
             to_auth_key_prefix,

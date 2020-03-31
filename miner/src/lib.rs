@@ -19,7 +19,7 @@ use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use logger::prelude::*;
 use sc_stratum::{self, PushWorkHandler};
-use starcoin_wallet_api::AccountDetail;
+use starcoin_wallet_api::WalletAccount;
 use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -64,7 +64,7 @@ where
     chain: CS,
     miner: miner::Miner<H>,
     stratum: Arc<sc_stratum::Stratum>,
-    miner_account: AccountDetail,
+    miner_account: WalletAccount,
 }
 
 impl<C, E, P, CS, S, H> MinerActor<C, E, P, CS, S, H>
@@ -83,7 +83,7 @@ where
         txpool: P,
         chain: CS,
         mut transaction_receiver: Option<mpsc::UnboundedReceiver<TransactionStatusEvent>>,
-        miner_account: AccountDetail,
+        miner_account: WalletAccount,
     ) -> Result<Addr<Self>> {
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
