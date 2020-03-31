@@ -13,6 +13,7 @@ pub struct MinerConfig {
     pub dev_mode: bool,
     pub stratum_server: SocketAddr,
     /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
+    /// The real use time is a random value between 0 and dev_period.
     pub dev_period: u64,
     pub pacemaker_strategy: PacemakerStrategy,
 }
@@ -50,6 +51,8 @@ impl ConfigModule for MinerConfig {
         self.stratum_server = format!("127.0.0.1:{}", get_available_port())
             .parse::<SocketAddr>()
             .unwrap();
+        self.pacemaker_strategy = PacemakerStrategy::Schedule;
+        self.dev_period = 1;
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
