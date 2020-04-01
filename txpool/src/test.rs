@@ -39,6 +39,7 @@ impl AccountSeqNumberClient for MockNonceClient {
     }
 }
 
+#[ignore]
 #[actix_rt::test]
 async fn test_tx_pool() {
     let pool = gen_pool_for_test();
@@ -56,6 +57,7 @@ async fn test_subscribe_txns() {
     let _ = pool.subscribe_txns().await.unwrap();
 }
 
+#[ignore]
 #[actix_rt::test]
 async fn test_rollback() {
     let pool = gen_pool_for_test();
