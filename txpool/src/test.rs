@@ -4,11 +4,11 @@ use forkable_jellyfish_merkle::node_type::Node;
 use parking_lot::RwLock;
 use starcoin_bus::BusActor;
 use starcoin_state_tree::StateNodeStore;
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::{collections::HashMap, sync::Arc};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
 use storage::StarcoinStorage;
-use traits::TxPoolAsyncService;
 use types::{
     account_address::AccountAddress, block::BlockHeader, transaction::SignedUserTransaction,
 };

@@ -5669,6 +5669,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-txpool",
+ "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
  "stest",
@@ -5901,6 +5902,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-tx-relay",
  "starcoin-txpool",
+ "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
  "tokio 0.2.13",
@@ -5972,6 +5974,7 @@ dependencies = [
  "starcoin-sync",
  "starcoin-traits",
  "starcoin-txpool",
+ "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
@@ -6078,6 +6081,8 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-traits",
  "starcoin-txpool",
+ "starcoin-txpool-api",
+ "starcoin-txpool-mock-service",
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
@@ -6223,11 +6228,8 @@ dependencies = [
 name = "starcoin-traits"
 version = "0.1.0"
 dependencies = [
- "actix-rt",
  "anyhow",
  "async-trait",
- "futures-channel",
- "serde",
  "starcoin-crypto",
  "starcoin-state-api",
  "starcoin-types",
@@ -6269,9 +6271,34 @@ dependencies = [
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-tx-relay",
+ "starcoin-txpool-api",
  "starcoin-types",
  "trace-time",
  "transaction-pool",
+]
+
+[[package]]
+name = "starcoin-txpool-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures-channel",
+ "starcoin-crypto",
+ "starcoin-types",
+]
+
+[[package]]
+name = "starcoin-txpool-mock-service"
+version = "0.1.0"
+dependencies = [
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures-channel",
+ "starcoin-crypto",
+ "starcoin-txpool-api",
+ "starcoin-types",
 ]
 
 [[package]]

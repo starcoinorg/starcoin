@@ -43,6 +43,7 @@ starcoin-state-tree = { path = "../../state/state-tree"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-state-service = { path = "../../state/service"}
-
+starcoin-txpool-api = {path = "../../txpool/api"}
 [dev-dependencies]
 starcoin-rpc-client = { path = "../client"}
+starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}

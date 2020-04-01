@@ -20,9 +20,9 @@ use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use starcoin_bus::BusActor;
 use starcoin_config::TxPoolConfig;
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::{fmt::Debug, sync::Arc};
 use storage::StarcoinStorage;
-use traits::TxPoolAsyncService;
 #[cfg(test)]
 use types::block::BlockHeader;
 use types::{block::Block, transaction, transaction::SignedUserTransaction};
