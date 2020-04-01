@@ -24,6 +24,7 @@ members = [
     "consensus",
     "txpool",
     "txpool/api",
+    "txpool/mock-service",
     "txpool/tx-relay",
     "executor",
     "chain",

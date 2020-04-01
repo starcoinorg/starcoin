@@ -6078,6 +6078,8 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-traits",
  "starcoin-txpool",
+ "starcoin-txpool-api",
+ "starcoin-txpool-mock-service",
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
@@ -6284,6 +6286,19 @@ dependencies = [
  "async-trait",
  "futures-channel",
  "starcoin-crypto",
+ "starcoin-types",
+]
+
+[[package]]
+name = "starcoin-txpool-mock-service"
+version = "0.1.0"
+dependencies = [
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures-channel",
+ "starcoin-crypto",
+ "starcoin-txpool-api",
  "starcoin-types",
 ]
 

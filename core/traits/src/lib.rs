@@ -3,7 +3,6 @@
 
 mod chain;
 mod chain_service;
-pub mod mock;
 pub use chain::{Chain, ChainReader, ChainWriter};
 pub use chain_service::{ChainAsyncService, ChainService};
 
