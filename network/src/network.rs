@@ -11,11 +11,11 @@ use config::NodeConfig;
 use futures::lock::Mutex;
 use futures::{channel::mpsc, stream::StreamExt};
 use libp2p::PeerId;
+use network_p2p_api::sync_messages::{DownloadMessage, SyncMessage};
 use scs::SCSCodec;
 use std::sync::Arc;
 use tx_relay::*;
 use types::peer_info::PeerInfo;
-use types::sync_messages::{DownloadMessage, SyncMessage};
 use types::system_events::SystemEvents;
 
 use crate::helper::get_unix_ts;

@@ -4,20 +4,21 @@ use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
 use consensus::Consensus;
-use crypto::hash::CryptoHash;
+use crypto::hash::{CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures::sink::SinkExt;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network::{NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
-use std::sync::Arc;
-use std::time::Duration;
-use traits::ChainAsyncService;
 /// Sync message which inbound
-use types::sync_messages::{
+use network_p2p_api::sync_messages::{
     BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
+use starcoin_state_tree::{StateNode, StateNodeStore};
+use std::sync::Arc;
+use std::time::Duration;
+use traits::ChainAsyncService;
 use types::{block::Block, peer_info::PeerInfo};
 
 pub struct ProcessActor<E, C>
@@ -41,9 +42,10 @@ where
         chain_reader: ChainActorRef<E, C>,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
+        state_node_storage: Arc<dyn StateNodeStore>,
     ) -> Result<Addr<ProcessActor<E, C>>> {
         let process_actor = ProcessActor {
-            processor: Arc::new(Processor::new(chain_reader)),
+            processor: Arc::new(Processor::new(chain_reader, state_node_storage)),
             peer_info,
             network,
             bus,
@@ -180,6 +182,7 @@ where
                 }
                 ProcessMessage::NewPeerMsg(_) => unreachable!(),
             },
+            _ => {}
         }
 
         Ok(())
@@ -193,6 +196,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     chain_reader: ChainActorRef<E, C>,
+    state_node_storage: Arc<dyn StateNodeStore>,
 }
 
 impl<E, C> Processor<E, C>
@@ -200,8 +204,14 @@ where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    pub fn new(chain_reader: ChainActorRef<E, C>) -> Self {
-        Processor { chain_reader }
+    pub fn new(
+        chain_reader: ChainActorRef<E, C>,
+        state_node_storage: Arc<dyn StateNodeStore>,
+    ) -> Self {
+        Processor {
+            chain_reader,
+            state_node_storage,
+        }
     }
 
     pub async fn head_block(processor: Arc<Processor<E, C>>) -> Block {
@@ -294,5 +304,18 @@ where
             bodies.push(body);
         }
         BatchBodyMsg { bodies }
+    }
+
+    pub async fn state_nodes(
+        &self,
+        nodes_hash: Vec<HashValue>,
+    ) -> Result<Vec<(HashValue, Option<StateNode>)>> {
+        let mut state_nodes = Vec::new();
+        nodes_hash.iter().for_each(|node_key| {
+            let node = self.state_node_storage.get(node_key).unwrap();
+            state_nodes.push((node_key.clone(), node));
+        });
+
+        Ok(state_nodes)
     }
 }
