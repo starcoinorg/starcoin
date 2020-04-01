@@ -131,24 +131,24 @@ pub trait BlockStorageOp {
     ) -> Result<Option<HashValue>>;
 }
 
-pub struct StarcoinStorage {
-    transaction_info_store: TransactionInfoStorage,
-    pub block_store: BlockStorage,
-    state_node_store: StateStorage,
-    accumulator_store: AccumulatorStorage,
-    block_info_store: BlockInfoStorage,
-    startup_info_store: Arc<dyn KVStore>,
+pub struct Storage {
+    transaction_info_storage: TransactionInfoStorage,
+    block_storage: BlockStorage,
+    state_node_storage: StateStorage,
+    accumulator_storage: AccumulatorStorage,
+    block_info_storage: BlockInfoStorage,
+    startup_info_storage: Arc<dyn KVStore>,
 }
 
-impl StarcoinStorage {
+impl Storage {
     pub fn new(instance: StorageInstance) -> Result<Self> {
         Ok(Self {
-            transaction_info_store: TransactionInfoStorage::new(instance.clone()),
-            block_store: BlockStorage::new(instance.clone()),
-            state_node_store: StateStorage::new(instance.clone()),
-            accumulator_store: AccumulatorStorage::new(instance.clone()),
-            block_info_store: BlockInfoStorage::new(instance.clone()),
-            startup_info_store: Arc::new(InnerStorage::new(
+            transaction_info_storage: TransactionInfoStorage::new(instance.clone()),
+            block_storage: BlockStorage::new(instance.clone()),
+            state_node_storage: StateStorage::new(instance.clone()),
+            accumulator_storage: AccumulatorStorage::new(instance.clone()),
+            block_info_storage: BlockInfoStorage::new(instance.clone()),
+            startup_info_storage: Arc::new(InnerStorage::new(
                 instance.clone(),
                 STARTUP_INFO_PREFIX_NAME,
             )),
@@ -156,14 +156,14 @@ impl StarcoinStorage {
     }
 }
 
-impl StateNodeStore for StarcoinStorage {
+impl StateNodeStore for Storage {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
         // self.state_node_store.get(hash)
         unimplemented!()
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
-        self.state_node_store.put(key, node)
+        self.state_node_storage.put(key, node)
     }
 
     fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
@@ -172,9 +172,9 @@ impl StateNodeStore for StarcoinStorage {
     }
 }
 
-impl BlockStorageOp for StarcoinStorage {
+impl BlockStorageOp for Storage {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
-        self.startup_info_store
+        self.startup_info_storage
             .get(STARTUP_INFO_PREFIX_NAME.as_bytes())
             .and_then(|bytes| match bytes {
                 Some(bytes) => Ok(Some(bytes.try_into()?)),
@@ -183,30 +183,30 @@ impl BlockStorageOp for StarcoinStorage {
     }
 
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
-        self.startup_info_store.put(
+        self.startup_info_storage.put(
             STARTUP_INFO_PREFIX_NAME.as_bytes().to_vec(),
             startup_info.try_into()?,
         )
     }
 
     fn save(&self, block: Block) -> Result<()> {
-        self.block_store.save(block)
+        self.block_storage.save(block)
     }
 
     fn save_header(&self, header: BlockHeader) -> Result<()> {
-        self.block_store.save_header(header)
+        self.block_storage.save_header(header)
     }
 
     fn get_headers(&self) -> Result<Vec<HashValue>> {
-        self.block_store.get_headers()
+        self.block_storage.get_headers()
     }
 
     fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()> {
-        self.block_store.save_body(block_id, body)
+        self.block_storage.save_body(block_id, body)
     }
 
     fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()> {
-        self.block_store.save_number(number, block_id)
+        self.block_storage.save_number(number, block_id)
     }
 
     fn save_branch_number(
@@ -215,16 +215,16 @@ impl BlockStorageOp for StarcoinStorage {
         number: u64,
         block_id: HashValue,
     ) -> Result<(), Error> {
-        self.block_store
+        self.block_storage
             .save_branch_number(branch_id, number, block_id)
     }
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
-        self.block_store.get(block_id)
+        self.block_storage.get(block_id)
     }
 
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
-        self.block_store.get_body(block_id)
+        self.block_storage.get_body(block_id)
     }
 
     fn get_branch_number(
@@ -232,43 +232,43 @@ impl BlockStorageOp for StarcoinStorage {
         branch_id: HashValue,
         number: u64,
     ) -> Result<Option<HashValue>, Error> {
-        self.block_store.get_branch_number(branch_id, number)
+        self.block_storage.get_branch_number(branch_id, number)
     }
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>> {
-        self.block_store.get_number(number)
+        self.block_storage.get_number(number)
     }
 
     fn commit_block(&self, block: Block) -> Result<()> {
-        self.block_store.commit_block(block)
+        self.block_storage.commit_block(block)
     }
 
     fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()> {
-        self.block_store.commit_branch_block(branch_id, block)
+        self.block_storage.commit_branch_block(branch_id, block)
     }
 
     fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
-        self.block_store.get_branch_hashes(block_id)
+        self.block_storage.get_branch_hashes(block_id)
     }
 
     fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
-        self.block_store.get_latest_block_header()
+        self.block_storage.get_latest_block_header()
     }
 
     fn get_latest_block(&self) -> Result<Block> {
-        self.block_store.get_latest_block()
+        self.block_storage.get_latest_block()
     }
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
-        self.block_store.get_block_header_by_hash(block_id)
+        self.block_storage.get_block_header_by_hash(block_id)
     }
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
-        self.block_store.get_block_by_hash(block_id)
+        self.block_storage.get_block_by_hash(block_id)
     }
 
     fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        self.block_store.get_block_header_by_number(number)
+        self.block_storage.get_block_header_by_number(number)
     }
 
     fn get_header_by_branch_number(
@@ -276,12 +276,12 @@ impl BlockStorageOp for StarcoinStorage {
         branch_id: HashValue,
         number: u64,
     ) -> Result<Option<BlockHeader>, Error> {
-        self.block_store
+        self.block_storage
             .get_header_by_branch_number(branch_id, number)
     }
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
-        self.block_store.get_block_by_number(number)
+        self.block_storage.get_block_by_number(number)
     }
 
     fn get_block_by_branch_number(
@@ -289,7 +289,7 @@ impl BlockStorageOp for StarcoinStorage {
         branch_id: HashValue,
         number: u64,
     ) -> Result<Option<Block>, Error> {
-        self.block_store
+        self.block_storage
             .get_block_by_branch_number(branch_id, number)
     }
 
@@ -298,48 +298,48 @@ impl BlockStorageOp for StarcoinStorage {
         block_id1: HashValue,
         block_id2: HashValue,
     ) -> Result<Option<HashValue>> {
-        self.block_store.get_common_ancestor(block_id1, block_id2)
+        self.block_storage.get_common_ancestor(block_id1, block_id2)
     }
 }
 
-impl AccumulatorTreeStore for StarcoinStorage {}
-impl AccumulatorReader for StarcoinStorage {
+impl AccumulatorTreeStore for Storage {}
+impl AccumulatorReader for Storage {
     ///get node by node_index
     fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>> {
-        self.accumulator_store.get(index)
+        self.accumulator_storage.get(index)
     }
     ///get node by node hash
     fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
-        self.accumulator_store.get_node(hash)
+        self.accumulator_storage.get_node(hash)
     }
 }
 
-impl AccumulatorWriter for StarcoinStorage {
+impl AccumulatorWriter for Storage {
     /// save node index
     fn save(&self, index: NodeIndex, hash: HashValue) -> Result<()> {
-        self.accumulator_store.save(index, hash)
+        self.accumulator_storage.save(index, hash)
     }
     /// save node
     fn save_node(&self, node: AccumulatorNode) -> Result<()> {
-        self.accumulator_store.save_node(node)
+        self.accumulator_storage.save_node(node)
     }
     ///delete node
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()> {
-        self.accumulator_store.delete_nodes(node_hash_vec)
+        self.accumulator_storage.delete_nodes(node_hash_vec)
     }
     ///delete larger index than one
     fn delete_nodes_index(&self, vec_index: Vec<NodeIndex>) -> Result<()> {
-        self.accumulator_store.delete_nodes_index(vec_index)
+        self.accumulator_storage.delete_nodes_index(vec_index)
     }
 }
 
-impl BlockInfoStore for StarcoinStorage {
+impl BlockInfoStore for Storage {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<(), Error> {
-        self.block_info_store.put(block_info.block_id, block_info)
+        self.block_info_storage.put(block_info.block_id, block_info)
     }
 
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>, Error> {
-        self.block_info_store.get(hash_value)
+        self.block_info_storage.get(hash_value)
     }
 }
 
@@ -350,7 +350,7 @@ pub trait BlockChainStore:
 {
 }
 
-impl BlockChainStore for StarcoinStorage {}
+impl BlockChainStore for Storage {}
 
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {

@@ -21,7 +21,7 @@ use std::sync::Arc;
 use std::thread::JoinHandle;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
-use storage::{BlockStorageOp, StarcoinStorage};
+use storage::{BlockStorageOp, Storage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use traits::TxPoolAsyncService;
 use txpool::TxPoolRef;
@@ -69,7 +69,7 @@ where
             let cache_storage = Arc::new(CacheStorage::new());
             let db_storage = Arc::new(DBStorage::new(node_config.storage.clone().dir()));
             let storage =
-                Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
+                Arc::new(Storage::new(cache_storage.clone(), db_storage.clone()).unwrap());
 
             let startup_info = match storage.get_startup_info().unwrap() {
                 Some(startup_info) => {
@@ -78,7 +78,7 @@ where
                 }
                 None => {
                     let genesis =
-                        Genesis::new::<E, C, StarcoinStorage>(node_config.clone(), storage.clone())
+                        Genesis::new::<E, C, Storage>(node_config.clone(), storage.clone())
                             .expect("init genesis fail.");
                     genesis.startup_info().clone()
                 }
@@ -159,16 +159,15 @@ where
             } else {
                 None
             };
-            let _miner =
-                MinerActor::<C, E, TxPoolRef, ChainActorRef<E, C>, StarcoinStorage, H>::launch(
-                    node_config.clone(),
-                    bus.clone(),
-                    storage.clone(),
-                    txpool.clone(),
-                    chain.clone(),
-                    receiver,
-                    default_account,
-                );
+            let _miner = MinerActor::<C, E, TxPoolRef, ChainActorRef<E, C>, Storage, H>::launch(
+                node_config.clone(),
+                bus.clone(),
+                storage.clone(),
+                txpool.clone(),
+                chain.clone(),
+                receiver,
+                default_account,
+            );
             let peer_info = Arc::new(PeerInfo::random());
             let process_actor = ProcessActor::<E, C>::launch(
                 Arc::clone(&peer_info),

@@ -14,7 +14,7 @@ use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
-use storage::StarcoinStorage;
+use storage::Storage;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
 // use types::account_address::AccountAddress;
@@ -60,11 +60,9 @@ async fn gen_head_chain(
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage =
-        Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
+    let storage = Arc::new(Storage::new(cache_storage.clone(), db_storage.clone()).unwrap());
     let genesis =
-        Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(conf.clone(), storage.clone())
-            .unwrap();
+        Genesis::new::<Executor, DummyConsensus, Storage>(conf.clone(), storage.clone()).unwrap();
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -107,21 +105,20 @@ async fn gen_head_chain(
                 txpool.clone(),
             )
             .unwrap();
-            let block_chain =
-                BlockChain::<Executor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
-                    conf.clone(),
-                    collection
-                        .clone()
-                        .get_master()
-                        .borrow()
-                        .get(0)
-                        .unwrap()
-                        .get_chain_info(),
-                    storage.clone(),
-                    txpool.clone(),
-                    collection,
-                )
-                .unwrap();
+            let block_chain = BlockChain::<Executor, DummyConsensus, Storage, TxPoolRef>::new(
+                conf.clone(),
+                collection
+                    .clone()
+                    .get_master()
+                    .borrow()
+                    .get(0)
+                    .unwrap()
+                    .get_chain_info(),
+                storage.clone(),
+                txpool.clone(),
+                collection,
+            )
+            .unwrap();
             let block =
                 DummyConsensus::create_block(conf.clone(), &block_chain, block_template, receiver)
                     .unwrap();
@@ -195,10 +192,9 @@ async fn test_chain_apply() -> Result<()> {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage =
-        Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
+    let storage = Arc::new(Storage::new(cache_storage.clone(), db_storage.clone()).unwrap());
     let genesis =
-        Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(config.clone(), storage.clone())?;
+        Genesis::new::<Executor, DummyConsensus, Storage>(config.clone(), storage.clone())?;
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = genesis.startup_info().head.get_head();
@@ -215,7 +211,7 @@ async fn test_chain_apply() -> Result<()> {
         storage.clone(),
         txpool.clone(),
     )?;
-    let mut block_chain = BlockChain::<Executor, DummyConsensus, StarcoinStorage, TxPoolRef>::new(
+    let mut block_chain = BlockChain::<Executor, DummyConsensus, Storage, TxPoolRef>::new(
         config.clone(),
         genesis.startup_info().head.clone(),
         storage,

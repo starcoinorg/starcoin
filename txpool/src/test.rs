@@ -7,7 +7,7 @@ use starcoin_state_tree::StateNodeStore;
 use std::{collections::HashMap, sync::Arc};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
-use storage::StarcoinStorage;
+use storage::Storage;
 use traits::TxPoolAsyncService;
 use types::{
     account_address::AccountAddress, block::BlockHeader, transaction::SignedUserTransaction,
@@ -80,7 +80,7 @@ fn gen_pool_for_test() -> TxPoolRef {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
+    let storage = Arc::new(Storage::new(cache_storage, db_storage).unwrap());
     let _ = storage.put(HashValue::zero(), Node::new_null().into());
     let header = BlockHeader::genesis_block_header(HashValue::random(), HashValue::zero(), vec![]);
     let bus = BusActor::launch();

@@ -21,7 +21,7 @@ use futures_channel::mpsc;
 use starcoin_bus::BusActor;
 use starcoin_config::TxPoolConfig;
 use std::{fmt::Debug, sync::Arc};
-use storage::StarcoinStorage;
+use storage::Storage;
 use traits::TxPoolAsyncService;
 #[cfg(test)]
 use types::block::BlockHeader;
@@ -44,11 +44,11 @@ pub struct TxPoolRef {
 impl TxPoolRef {
     pub fn start(
         pool_config: TxPoolConfig,
-        storage: Arc<StarcoinStorage>,
+        storage: Arc<Storage>,
         best_block_hash: HashValue,
         bus: actix::Addr<BusActor>,
     ) -> TxPoolRef {
-        let best_block = match storage.block_store.get_block_by_hash(best_block_hash) {
+        let best_block = match storage.block_storage.get_block_by_hash(best_block_hash) {
             Err(e) => panic!("fail to read storage, {}", e),
             Ok(None) => panic!(
                 "best block id {} should exists in storage",
@@ -64,7 +64,7 @@ impl TxPoolRef {
 
     #[cfg(test)]
     pub fn start_with_best_block_header(
-        storage: Arc<StarcoinStorage>,
+        storage: Arc<Storage>,
         best_block_header: BlockHeader,
         bus: actix::Addr<BusActor>,
     ) -> TxPoolRef {
@@ -148,7 +148,7 @@ impl BlockReader for NoneBlockReader {
 }
 
 struct StorageBlockReader {
-    storage: Arc<StarcoinStorage>,
+    storage: Arc<Storage>,
 }
 
 /// TODO: enhance me when storage impl Debug
@@ -168,6 +168,6 @@ impl Clone for StorageBlockReader {
 
 impl BlockReader for StorageBlockReader {
     fn get_block_by_hash(&self, block_hash: HashValue) -> Result<Option<Block>> {
-        self.storage.block_store.get_block_by_hash(block_hash)
+        self.storage.block_storage.get_block_by_hash(block_hash)
     }
 }

@@ -134,16 +134,16 @@ impl InnerStore for StorageInstance {
     fn get_len(&self) -> Result<u64, Error> {
         match self {
             StorageInstance::CACHE { cache } => cache.get_len(),
-            StorageInstance::DB { db } => unimplemented!(),
             StorageInstance::CacheAndDb { cache, db } => cache.get_len(),
+            _ => bail!("DB instance not support get length method!"),
         }
     }
 
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         match self {
             StorageInstance::CACHE { cache } => cache.keys(),
-            StorageInstance::DB { db } => unimplemented!(),
             StorageInstance::CacheAndDb { cache, db } => cache.keys(),
+            _ => bail!("DB instance not support keys method!"),
         }
     }
 }
@@ -190,73 +190,6 @@ impl KVStore for InnerStorage {
 
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         self.instance.keys()
-    }
-}
-
-/// two level storage package
-pub struct Storage {
-    cache: Arc<dyn InnerStore>,
-    db: Arc<dyn InnerStore>,
-    pub prefix_name: ColumnFamilyName,
-}
-
-impl Storage {
-    pub fn new(
-        cache: Arc<dyn InnerStore>,
-        db: Arc<dyn InnerStore>,
-        prefix_name: ColumnFamilyName,
-    ) -> Self {
-        Storage {
-            cache,
-            db,
-            prefix_name,
-        }
-    }
-}
-
-impl KVStore for Storage {
-    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
-        // first get from cache
-        let key_vec = key.to_vec();
-        if let Ok(Some(v)) = self.cache.clone().get(self.prefix_name, key_vec.clone()) {
-            Ok(Some(v))
-        } else {
-            self.db.clone().get(self.prefix_name, key_vec.clone())
-        }
-    }
-
-    fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
-        self.db
-            .clone()
-            .put(self.prefix_name, key.clone(), value.clone())
-            .unwrap();
-        self.cache.clone().put(self.prefix_name, key, value)
-    }
-
-    fn contains_key(&self, key: Vec<u8>) -> Result<bool, Error> {
-        self.cache.clone().contains_key(self.prefix_name, key)
-    }
-
-    fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
-        match self.db.clone().remove(self.prefix_name, key.clone()) {
-            Ok(_) => self.cache.clone().remove(self.prefix_name, key),
-            Err(err) => bail!("remove persistence error: {}", err),
-        }
-    }
-
-    fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
-        match self.db.write_batch(batch.clone()) {
-            Ok(_) => self.cache.write_batch(batch),
-            Err(err) => bail!("write batch db error: {}", err),
-        }
-    }
-
-    fn get_len(&self) -> Result<u64, Error> {
-        self.cache.get_len()
-    }
-
-    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
-        self.cache.keys()
     }
 }
 
