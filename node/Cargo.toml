@@ -37,3 +37,4 @@ starcoin-wallet-service = { path = "../wallet/service"}
 starcoin-state-api = { path = "../state/api"}
 starcoin-state-service = { path = "../state/service"}
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
+starcoin-txpool-api = {path = "../txpool/api"}

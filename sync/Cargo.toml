@@ -28,6 +28,11 @@ logger = {path = "../commons/logger",package="starcoin-logger"}
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
 consensus = {path = "../consensus", package="starcoin-consensus" }
 executor = {path = "../executor", package="starcoin-executor" }
+starcoin-state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
+parking_lot = "0.9"
+forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
+network-p2p-api = {package="network-p2p-api", path="../network-p2p/api"}
+
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
 actix-rt = "1.0"

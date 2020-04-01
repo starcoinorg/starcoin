@@ -9,6 +9,7 @@ use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_miner::MinerActor;
+use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -16,7 +17,7 @@ use storage::db_storage::DBStorage;
 use storage::StarcoinStorage;
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
-use traits::{ChainAsyncService, TxPoolAsyncService};
+use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::{account_address::AccountAddress, peer_info::PeerInfo};
 
@@ -91,6 +92,7 @@ fn test_miner_with_schedule_pacemaker() {
             chain.clone(),
             network.clone(),
             bus.clone(),
+            storage.clone(),
         )
         .unwrap();
         let download_actor =
@@ -176,6 +178,7 @@ fn test_miner_with_ondemand_pacemaker() {
             chain.clone(),
             network.clone(),
             bus.clone(),
+            storage.clone(),
         )
         .unwrap();
         let download_actor =

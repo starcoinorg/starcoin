@@ -1,15 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::TxPoolAsyncService;
 use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
-
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
 use types::transaction;
 use types::transaction::SignedUserTransaction;
+
 #[derive(Clone)]
 pub struct MockTxPoolService {
     pool: Arc<Mutex<Vec<SignedUserTransaction>>>,

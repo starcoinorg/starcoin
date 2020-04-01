@@ -3,6 +3,7 @@ mod download_body;
 mod download_header;
 mod pool;
 mod process;
+mod state_sync;
 mod sync;
 
 pub use download::DownloadActor;

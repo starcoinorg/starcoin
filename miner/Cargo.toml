@@ -41,6 +41,7 @@ libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoin
 futures-timer = "3.0.1"
 async-std = "1.5.0"
 starcoin-wallet-api = { path = "../wallet/api"}
+starcoin-txpool-api = {path = "../txpool/api"}
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}

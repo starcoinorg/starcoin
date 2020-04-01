@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Starcoin TestNet Faucet</title>
+
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css"
+	      rel="stylesheet"/>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+	      rel="stylesheet"/>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script
+	    src="https://cdnjs.cloudflare.com/ajax/libs/jquery-noty/2.4.1/packaged/jquery.noty.packaged.min.js"></script>
+	<script
+	    src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.0/moment.min.js"></script>
+
+	<style>
+	    .vertical-center {
+	    min-height: 100%;
+	    min-height: 100vh;
+	    display: flex;
+	    align-items: center;
+	    }
+	    .progress {
+	    position: relative;
+	    }
+	    .progress span {
+	    position: absolute;
+	    display: block;
+	    width: 100%;
+	    color: white;
+	    }
+	    pre {
+	    padding: 6px;
+	    margin: 0;
+	    }
+
+	</style>
+    </head>
+
+    <body>
+	<div class="vertical-center">
+	    <div class="container">
+		<div class="row" style="margin-bottom: 16px;">
+		    <div class="col-lg-12">
+			<h1 style="text-align: center;"><i class="fa fa-bath" aria-hidden="true"></i> StarCoin Network Faucet</h1>
+		    </div>
+		</div>
+		<div class="row">
+		    <div class="col-lg-8 col-lg-offset-2">
+			<div class="input-group">
+			    <input id="url" name="url" type="text" class="form-control"
+				   placeholder="Your Starcoin address">
+			    <span class="input-group-btn">
+				<button class="btn btn-default" type="button">
+				    Give me StarCoin
+				</button>
+			    </span>
+			</div>
+		    </div>
+		</div>
+	    </div>
+	</div>
+
+	<script>
+	    const api = "http://"+window.location.host+"/api/fund";
+	    $('.btn').click(function(){
+
+	    input = $("#url")[0].value;
+	    url = api+"?"+input;
+	    $.ajax({
+	    type: "GET",
+	    url:  url,
+	    error: function(response) {
+	    noty({layout: 'bottomCenter', text: "Faild to fund, reason: "+response.responseText+" status code: "+response.status, type: 'error', timeout: 5000, progressBar: true});
+            },
+	    success: function() {
+            noty({layout: 'bottomCenter', text: "Fund success", type: 'success', timeout: 5000, progressBar: true});
+            }
+	    })
+	    
+	    });
+	</script>
+    </body>
+</html>

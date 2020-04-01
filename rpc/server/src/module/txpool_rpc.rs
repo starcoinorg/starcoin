@@ -3,7 +3,7 @@
 
 use futures::future::TryFutureExt;
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
-use starcoin_traits::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::transaction::SignedUserTransaction;
 
 use crate::module::map_err;
@@ -40,7 +40,7 @@ where
 mod tests {
     use super::*;
     use jsonrpc_core::IoHandler;
-    use starcoin_traits::mock::MockTxPoolService;
+    use starcoin_txpool_mock_service::MockTxPoolService;
     use tokio01::prelude::Future;
 
     #[test]

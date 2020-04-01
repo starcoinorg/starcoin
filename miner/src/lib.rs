@@ -19,14 +19,15 @@ use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use logger::prelude::*;
 use sc_stratum::{self, PushWorkHandler};
+use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::BlockChainStore;
+use traits::ChainAsyncService;
 use traits::ChainReader;
-use traits::{ChainAsyncService, TxPoolAsyncService};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;

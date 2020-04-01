@@ -14,6 +14,7 @@ use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_genesis::Genesis;
 use starcoin_rpc_server::JSONRpcActor;
 use starcoin_state_service::ChainStateActor;
+use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::marker::PhantomData;
@@ -23,7 +24,6 @@ use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
 use storage::{BlockStorageOp, StarcoinStorage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
-use traits::TxPoolAsyncService;
 use txpool::TxPoolRef;
 use types::peer_info::PeerInfo;
 
@@ -175,6 +175,7 @@ where
                 chain.clone(),
                 network.clone(),
                 bus.clone(),
+                storage.clone(),
             )
             .unwrap();
             let download_actor =
