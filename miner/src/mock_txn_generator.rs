@@ -5,7 +5,7 @@ use executor::TransactionExecutor;
 use logger::prelude::*;
 use rand;
 use rand::{Rng, SeedableRng};
-use traits::ChainStateReader;
+use starcoin_state_api::ChainStateReader;
 use types::{
     access_path::AccessPath, account_address::AccountAddress, account_address::AuthenticationKey,
     account_config::association_address, account_config::AccountResource, transaction::Transaction,

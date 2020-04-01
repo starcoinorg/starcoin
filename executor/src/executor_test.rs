@@ -15,6 +15,7 @@ use libra_types::{
     access_path::AccessPath as LibraAccessPath, account_config as Libraaccount_config,
 };
 use logger::prelude::*;
+use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
 use state_tree::StateNodeStore;
 use statedb::ChainStateDB;
@@ -22,7 +23,6 @@ use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::Duration;
 use stdlib::transaction_scripts::EMPTY_TXN;
-use traits::{ChainState, ChainStateReader, ChainStateWriter};
 use types::{
     access_path::AccessPath,
     account_address::{AccountAddress, ADDRESS_LENGTH},
@@ -199,7 +199,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1,
         sequence_number1, // fix me
-        1_000_000,
+        50_000_000,
     ));
     let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
@@ -266,7 +266,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1, 1, // fix me
-        1_000_000,
+        50_000_000,
     ));
     let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
@@ -299,6 +299,9 @@ fn test_sequence_number() -> Result<()> {
         .apply(state_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
+    let old_balance = get_balance(account_config::association_address(), &chain_state);
+    info!("old balance: {:?}", old_balance);
+
     let old_sequence_number =
         get_sequence_number(account_config::association_address(), &chain_state);
 
@@ -330,5 +333,18 @@ fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u6
         Some(s) => AccountResource::make_from(&s)
             .expect("account resource decode ok")
             .sequence_number(),
+    }
+}
+
+fn get_balance(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
+    let access_path = AccessPath::new_for_account(addr);
+    let state = chain_state
+        .get(&access_path)
+        .expect("read account state should ok");
+    match state {
+        None => 0u64,
+        Some(s) => AccountResource::make_from(&s)
+            .expect("account resource decode ok")
+            .balance(),
     }
 }

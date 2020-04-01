@@ -6,13 +6,14 @@ use crate::{
     transaction_helper::VerifiedTranscationPayload,
 };
 use config::VMConfig;
+use crypto::ed25519::Ed25519Signature;
 use libra_state_view::StateView;
 use libra_types::{
     account_address::AccountAddress as LibraAccountAddress,
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
     },
-    vm_error::{StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
+    vm_error::{sub_status, StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
     write_set::WriteSet as LibraWriteSet,
 };
 use logger::prelude::*;
@@ -22,13 +23,13 @@ use move_vm_state::{
     execution_context::{ExecutionContext, SystemExecutionContext, TransactionExecutionContext},
 };
 use move_vm_types::chain_state::ChainState as LibraChainState;
+use move_vm_types::identifier::create_access_path;
 use move_vm_types::values::Value;
-use std::sync::Arc;
-
-use crypto::ed25519::Ed25519Signature;
 use once_cell::sync::Lazy;
+use starcoin_state_api::ChainState;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+use std::sync::Arc;
 use types::{
     access_path::AccessPath,
     account_config,
@@ -36,14 +37,16 @@ use types::{
     block_metadata::BlockMetadata,
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus,
+        TransactionOutput, TransactionPayload, TransactionStatus, MAX_TRANSACTION_SIZE_IN_BYTES,
     },
     vm_error::{StatusCode, VMStatus},
 };
 use vm::errors::convert_prologue_runtime_error;
 use vm::{
     errors::VMResult,
-    gas_schedule::{CostTable, GasAlgebra, GasUnits},
+    gas_schedule::{
+        self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits, GAS_SCHEDULE_NAME,
+    },
     transaction_metadata::TransactionMetadata,
 };
 
@@ -52,8 +55,14 @@ pub static KEEP_STATUS: Lazy<TransactionStatus> =
 
 // We use 10 as the assertion error code for insufficient balance within the Libra coin contract.
 pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
-    TransactionStatus::Discard(VMStatus::new(StatusCode::ABORTED).with_sub_status(10))
+    TransactionStatus::Discard(
+        VMStatus::new(StatusCode::ABORTED).with_sub_status(StatusCode::REJECTED_WRITE_SET.into()),
+    )
 });
+
+// The value should be tuned carefully
+pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
+    Lazy::new(|| GasUnits::new(100_000_000));
 
 #[derive(Clone)]
 /// Wrapper of MoveVM
@@ -76,14 +85,147 @@ impl StarcoinVM {
     fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
         info!("load gas schedule");
         let _ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
-        //        self.gas_schedule = self.move_vm.load_gas_schedule(&mut ctx, data_cache).ok();
-        self.gas_schedule = Some(CostTable::zero());
+        self.gas_schedule = self.fetch_gas_schedule(data_cache).ok();
+    }
+
+    fn fetch_gas_schedule(&mut self, data_cache: &dyn RemoteCache) -> VMResult<CostTable> {
+        let address = account_config::association_address();
+        let mut ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
+        let gas_struct_tag = self
+            .move_vm
+            .resolve_struct_tag_by_name(&GAS_SCHEDULE_MODULE, &GAS_SCHEDULE_NAME, &mut ctx)
+            .map_err(|_| {
+                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_MODULE)
+            })?;
+
+        let access_path = create_access_path(&address.into(), gas_struct_tag);
+
+        let data_blob = data_cache
+            .get(&access_path)
+            .map_err(|_| {
+                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_RESOURCE)
+            })?
+            .ok_or_else(|| {
+                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_RESOURCE)
+            })?;
+        let table: CostTable = scs::from_bytes(&data_blob).map_err(|_| {
+            LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+                .with_sub_status(sub_status::GSE_UNABLE_TO_DESERIALIZE)
+        })?;
+        Ok(table)
     }
 
     fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
         self.gas_schedule
             .as_ref()
             .ok_or_else(|| VMStatus::new(StatusCode::VM_STARTUP_FAILURE))
+    }
+
+    fn check_gas(&self, txn: &SignedUserTransaction) -> Result<(), VMStatus> {
+        // Do not check gas limit for StateSet transaction.
+        if let TransactionPayload::StateSet(_) = txn.payload() {
+            return Ok(());
+        }
+
+        let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as GasCarrier);
+        // The transaction is too large.
+        if txn.raw_txn_bytes_len() > MAX_TRANSACTION_SIZE_IN_BYTES {
+            let error_str = format!(
+                "max size: {}, txn size: {}",
+                MAX_TRANSACTION_SIZE_IN_BYTES,
+                raw_bytes_len.get()
+            );
+            warn!(
+                "[VM] Transaction size too big {} (max {})",
+                raw_bytes_len.get(),
+                MAX_TRANSACTION_SIZE_IN_BYTES
+            );
+            return Err(
+                VMStatus::new(StatusCode::EXCEEDED_MAX_TRANSACTION_SIZE).with_message(error_str)
+            );
+        }
+
+        // The submitted max gas units that the transaction can consume is greater than the
+        // maximum number of gas units bound
+        if txn.max_gas_amount() > MAXIMUM_NUMBER_OF_GAS_UNITS.get() {
+            let error_str = format!(
+                "max gas units: {}, gas units submitted: {}",
+                MAXIMUM_NUMBER_OF_GAS_UNITS.get(),
+                txn.max_gas_amount()
+            );
+            warn!(
+                "[VM] Gas unit error; max {}, submitted {}",
+                MAXIMUM_NUMBER_OF_GAS_UNITS.get(),
+                txn.max_gas_amount()
+            );
+            return Err(
+                VMStatus::new(StatusCode::MAX_GAS_UNITS_EXCEEDS_MAX_GAS_UNITS_BOUND)
+                    .with_message(error_str),
+            );
+        }
+
+        // The submitted transactions max gas units needs to be at least enough to cover the
+        // intrinsic cost of the transaction as calculated against the size of the
+        // underlying `RawTransaction`
+        let min_txn_fee = gas_schedule::calculate_intrinsic_gas(raw_bytes_len);
+        if txn.max_gas_amount() < min_txn_fee.get() {
+            let error_str = format!(
+                "min gas required for txn: {}, gas submitted: {}",
+                min_txn_fee.get(),
+                txn.max_gas_amount()
+            );
+            warn!(
+                "[VM] Gas unit error; min {}, submitted {}",
+                min_txn_fee.get(),
+                txn.max_gas_amount()
+            );
+            return Err(
+                VMStatus::new(StatusCode::MAX_GAS_UNITS_BELOW_MIN_TRANSACTION_GAS_UNITS)
+                    .with_message(error_str),
+            );
+        }
+
+        // The submitted gas price is less than the minimum gas unit price set by the VM.
+        // NB: MIN_PRICE_PER_GAS_UNIT may equal zero, but need not in the future. Hence why
+        // we turn off the clippy warning.
+        #[allow(clippy::absurd_extreme_comparisons)]
+        let below_min_bound = txn.gas_unit_price() < gas_schedule::MIN_PRICE_PER_GAS_UNIT.get();
+        if below_min_bound {
+            let error_str = format!(
+                "gas unit min price: {}, submitted price: {}",
+                gas_schedule::MIN_PRICE_PER_GAS_UNIT.get(),
+                txn.gas_unit_price()
+            );
+            warn!(
+                "[VM] Gas unit error; min {}, submitted {}",
+                gas_schedule::MIN_PRICE_PER_GAS_UNIT.get(),
+                txn.gas_unit_price()
+            );
+            return Err(
+                VMStatus::new(StatusCode::GAS_UNIT_PRICE_BELOW_MIN_BOUND).with_message(error_str)
+            );
+        }
+
+        // The submitted gas price is greater than the maximum gas unit price set by the VM.
+        if txn.gas_unit_price() > gas_schedule::MAX_PRICE_PER_GAS_UNIT.get() {
+            let error_str = format!(
+                "gas unit max price: {}, submitted price: {}",
+                gas_schedule::MAX_PRICE_PER_GAS_UNIT.get(),
+                txn.gas_unit_price()
+            );
+            warn!(
+                "[VM] Gas unit error; min {}, submitted {}",
+                gas_schedule::MAX_PRICE_PER_GAS_UNIT.get(),
+                txn.gas_unit_price()
+            );
+            return Err(
+                VMStatus::new(StatusCode::GAS_UNIT_PRICE_ABOVE_MAX_BOUND).with_message(error_str)
+            );
+        }
+        Ok(())
     }
 
     fn verify_transaction_impl(
@@ -95,7 +237,7 @@ impl StarcoinVM {
     ) -> Result<VerifiedTranscationPayload, VMStatus> {
         info!("very transaction");
         let mut ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
-        // ToDo: check gas
+        self.check_gas(transaction)?;
         self.load_gas_schedule(remote_cache);
         let gas_schedule = self.get_gas_schedule()?;
         match transaction.payload() {
@@ -122,7 +264,7 @@ impl StarcoinVM {
 
     pub fn verify_transaction(
         &mut self,
-        chain_state: &dyn traits::ChainState,
+        chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         let mut state_store = StateStore::new(chain_state);
@@ -313,7 +455,7 @@ impl StarcoinVM {
 
     pub fn execute_transaction(
         &mut self,
-        chain_state: &dyn traits::ChainState,
+        chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> TransactionOutput {
         let mut state_store = StateStore::new(chain_state);

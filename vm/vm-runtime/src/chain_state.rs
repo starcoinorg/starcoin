@@ -11,7 +11,7 @@ use logger::prelude::*;
 use move_vm_state::data_cache::RemoteCache;
 
 use crypto::HashValue;
-use traits::ChainState;
+use starcoin_state_api::ChainState;
 use types::{access_path::AccessPath, account_address::AccountAddress};
 use vm::errors::VMResult;
 

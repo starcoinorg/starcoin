@@ -34,7 +34,10 @@ fn test_miner_with_schedule_pacemaker() {
 
     let fut = async move {
         let peer_info = Arc::new(PeerInfo::random());
-        let config = Arc::new(NodeConfig::random_for_test());
+        let mut config = NodeConfig::random_for_test();
+        config.miner.pacemaker_strategy = PacemakerStrategy::Schedule;
+        config.miner.dev_period = 1;
+        let config = Arc::new(config);
         let bus = BusActor::launch();
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
@@ -96,7 +99,7 @@ fn test_miner_with_schedule_pacemaker() {
                 .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
-        delay_for(Duration::from_millis(6 * 10 * 1000)).await;
+        delay_for(Duration::from_millis(6 * 1000)).await;
         let number = chain.clone().master_head_header().await.unwrap().number();
         info!("current block number: {}", number);
         assert!(number > 1);

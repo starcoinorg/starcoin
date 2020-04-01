@@ -9,9 +9,9 @@ use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
 
+mod chain_state;
 pub mod mock;
-
-pub use starcoin_traits::{
+pub use chain_state::{
     AccountStateReader, ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
 };
 
