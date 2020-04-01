@@ -23,6 +23,7 @@ members = [
     "storage",
     "consensus",
     "txpool",
+    "txpool/api",
     "txpool/tx-relay",
     "executor",
     "chain",

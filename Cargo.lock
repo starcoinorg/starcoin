@@ -6230,6 +6230,7 @@ dependencies = [
  "serde",
  "starcoin-crypto",
  "starcoin-state-api",
+ "starcoin-txpool-api",
  "starcoin-types",
 ]
 
@@ -6269,9 +6270,21 @@ dependencies = [
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-tx-relay",
+ "starcoin-txpool-api",
  "starcoin-types",
  "trace-time",
  "transaction-pool",
+]
+
+[[package]]
+name = "starcoin-txpool-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures-channel",
+ "starcoin-crypto",
+ "starcoin-types",
 ]
 
 [[package]]
