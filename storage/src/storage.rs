@@ -63,11 +63,8 @@ impl StorageInstance {
     pub fn new_db_instance(db: DBStorage) -> Self {
         Self::DB { db: Arc::new(db) }
     }
-    pub fn new_cache_and_db_instance(cache: CacheStorage, db: DBStorage) -> Self {
-        Self::CacheAndDb {
-            cache: Arc::new(cache),
-            db: Arc::new(db),
-        }
+    pub fn new_cache_and_db_instance(cache: Arc<CacheStorage>, db: Arc<DBStorage>) -> Self {
+        Self::CacheAndDb { cache, db }
     }
 }
 impl InnerStore for StorageInstance {
@@ -83,7 +80,6 @@ impl InnerStore for StorageInstance {
                     db.get(prefix_name, key.clone())
                 }
             }
-            _ => bail!("error StorageInstance type."),
         }
     }
 
@@ -95,7 +91,6 @@ impl InnerStore for StorageInstance {
                 db.put(prefix_name, key.clone(), value.clone()).unwrap();
                 cache.put(prefix_name, key, value)
             }
-            _ => bail!("error StorageInstance type."),
         }
     }
 
@@ -109,7 +104,6 @@ impl InnerStore for StorageInstance {
                     Ok(is_contains) => Ok(is_contains),
                 }
             }
-            _ => bail!("error StorageInstance type."),
         }
     }
 
@@ -123,7 +117,6 @@ impl InnerStore for StorageInstance {
                     _ => bail!("db storage remove error."),
                 }
             }
-            _ => bail!("error StorageInstance type."),
         }
     }
 
@@ -135,7 +128,6 @@ impl InnerStore for StorageInstance {
                 Ok(_) => cache.write_batch(batch),
                 Err(err) => bail!("write batch db error: {}", err),
             },
-            _ => bail!("error StorageInstance type."),
         }
     }
 
@@ -144,7 +136,6 @@ impl InnerStore for StorageInstance {
             StorageInstance::CACHE { cache } => cache.get_len(),
             StorageInstance::DB { db } => unimplemented!(),
             StorageInstance::CacheAndDb { cache, db } => cache.get_len(),
-            _ => bail!("error StorageInstance type."),
         }
     }
 
@@ -153,7 +144,6 @@ impl InnerStore for StorageInstance {
             StorageInstance::CACHE { cache } => cache.keys(),
             StorageInstance::DB { db } => unimplemented!(),
             StorageInstance::CacheAndDb { cache, db } => cache.keys(),
-            _ => bail!("error StorageInstance type."),
         }
     }
 }

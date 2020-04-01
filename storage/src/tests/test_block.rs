@@ -18,9 +18,9 @@ use types::U256;
 
 #[test]
 fn test_block() {
-    let cache_storage = CacheStorage::new();
+    let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
-    let db_storage = DBStorage::new(tmpdir.path());
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = StarcoinStorage::new(StorageInstance::new_cache_and_db_instance(
         cache_storage,
         db_storage,
@@ -77,9 +77,9 @@ fn test_block() {
 
 #[test]
 fn test_block_number() {
-    let cache_storage = CacheStorage::new();
+    let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
-    let db_storage = DBStorage::new(tmpdir.path());
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = StarcoinStorage::new(StorageInstance::new_cache_and_db_instance(
         cache_storage,
         db_storage,
@@ -149,9 +149,9 @@ fn test_block_number() {
 
 #[test]
 fn test_branch_number() {
-    let cache_storage = CacheStorage::new();
+    let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
-    let db_storage = DBStorage::new(tmpdir.path());
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = StarcoinStorage::new(StorageInstance::new_cache_and_db_instance(
         cache_storage,
         db_storage,
@@ -218,9 +218,9 @@ fn test_branch_number() {
 
 #[test]
 fn test_block_branch_hashes() {
-    let cache_storage = CacheStorage::new();
+    let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
-    let db_storage = DBStorage::new(tmpdir.path());
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = StarcoinStorage::new(StorageInstance::new_cache_and_db_instance(
         cache_storage,
         db_storage,
