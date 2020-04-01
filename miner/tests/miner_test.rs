@@ -94,9 +94,14 @@ fn test_miner_with_schedule_pacemaker() {
             storage.clone(),
         )
         .unwrap();
-        let download_actor =
-            DownloadActor::launch(peer_info, chain.clone(), network.clone(), bus.clone())
-                .expect("launch DownloadActor failed.");
+        let download_actor = DownloadActor::launch(
+            peer_info,
+            chain.clone(),
+            network.clone(),
+            bus.clone(),
+            storage.clone(),
+        )
+        .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
         delay_for(Duration::from_millis(6 * 1000)).await;
@@ -180,9 +185,14 @@ fn test_miner_with_ondemand_pacemaker() {
             storage.clone(),
         )
         .unwrap();
-        let download_actor =
-            DownloadActor::launch(peer_info, chain.clone(), network.clone(), bus.clone())
-                .expect("launch DownloadActor failed.");
+        let download_actor = DownloadActor::launch(
+            peer_info,
+            chain.clone(),
+            network.clone(),
+            bus.clone(),
+            storage.clone(),
+        )
+        .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
         delay_for(Duration::from_millis(6 * 10 * 1000)).await;

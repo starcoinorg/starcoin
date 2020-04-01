@@ -178,8 +178,14 @@ where
                 storage.clone(),
             )
             .unwrap();
-            let download_actor =
-                DownloadActor::launch(peer_info, chain, network.clone(), bus.clone()).unwrap();
+            let download_actor = DownloadActor::launch(
+                peer_info,
+                chain,
+                network.clone(),
+                bus.clone(),
+                storage.clone(),
+            )
+            .unwrap();
             let _sync = SyncActor::launch(bus, process_actor, download_actor).unwrap();
             handle.spawn(miner_client::MinerClient::main_loop(
                 node_config.miner.stratum_server,

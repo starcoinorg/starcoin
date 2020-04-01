@@ -99,6 +99,7 @@ fn test_network_actor_rpc() {
             first_chain.clone(),
             network_1.clone(),
             bus_1.clone(),
+            storage_1.clone(),
         )
         .unwrap();
         let _first_sync_actor =
@@ -190,6 +191,7 @@ fn test_network_actor_rpc() {
             second_chain.clone(),
             network_2.clone(),
             bus_2.clone(),
+            storage_2.clone(),
         )
         .unwrap();
         let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
@@ -284,6 +286,7 @@ fn test_network_actor_rpc_2() {
             first_chain.clone(),
             network_1.clone(),
             bus_1.clone(),
+            storage_1.clone(),
         )
         .unwrap();
         let _first_sync_actor =
@@ -355,6 +358,7 @@ fn test_network_actor_rpc_2() {
             second_chain.clone(),
             network_2.clone(),
             bus_2.clone(),
+            storage_2.clone(),
         )
         .unwrap();
         let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(

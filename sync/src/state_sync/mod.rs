@@ -240,7 +240,7 @@ struct StateSyncEvent {
     root: HashValue,
 }
 
-struct StateSyncActor<E, C>
+pub struct StateSyncActor<E, C>
 where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
