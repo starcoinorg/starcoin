@@ -35,8 +35,8 @@ impl<'de> Deserialize<'de> for StateNode {
     where
         D: Deserializer<'de>,
     {
-        let bytes = serde::private::de::borrow_cow_bytes(deserializer)?;
-        let node = Node::decode(bytes.as_ref()).unwrap();
+        let bytes = <&[u8]>::deserialize(deserializer)?;
+        let node = Node::decode(bytes).unwrap();
         Ok(StateNode::from(node))
     }
 }
