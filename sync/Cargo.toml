@@ -32,6 +32,7 @@ starcoin-state-tree = { package="starcoin-state-tree", path = "../state/state-tr
 parking_lot = "0.9"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 network-p2p-api = {package="network-p2p-api", path="../network-p2p/api"}
+async-std = "1.5.0"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

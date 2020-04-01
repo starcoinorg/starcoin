@@ -182,7 +182,22 @@ where
                 }
                 ProcessMessage::NewPeerMsg(_) => unreachable!(),
             },
-            _ => {}
+            RPCRequest::GetStateNodeByNodeHash(state_node_key) => {
+                Arbiter::spawn(async move {
+                    let mut keys = Vec::new();
+                    keys.push(state_node_key);
+                    let mut state_nodes =
+                        Processor::handle_state_node_msg(processor.clone(), keys).await;
+                    let resp = RPCResponse::GetStateNodeByNodeHash(
+                        state_nodes
+                            .pop()
+                            .expect("state_nodes is none.")
+                            .1
+                            .expect("state_node is none."),
+                    );
+                    responder.send(resp).await.unwrap();
+                });
+            }
         }
 
         Ok(())
@@ -306,16 +321,19 @@ where
         BatchBodyMsg { bodies }
     }
 
-    pub async fn state_nodes(
-        &self,
+    pub async fn handle_state_node_msg(
+        processor: Arc<Processor<E, C>>,
         nodes_hash: Vec<HashValue>,
-    ) -> Result<Vec<(HashValue, Option<StateNode>)>> {
+    ) -> Vec<(HashValue, Option<StateNode>)> {
         let mut state_nodes = Vec::new();
         nodes_hash.iter().for_each(|node_key| {
-            let node = self.state_node_storage.get(node_key).unwrap();
+            let node = processor
+                .state_node_storage
+                .get(node_key)
+                .expect("Get state node err.");
             state_nodes.push((node_key.clone(), node));
         });
 
-        Ok(state_nodes)
+        state_nodes
     }
 }

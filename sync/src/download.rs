@@ -7,8 +7,7 @@ use anyhow::Result;
 use bus::BusActor;
 use chain::ChainActorRef;
 use futures::channel::mpsc;
-use futures::compat::Future01CompatExt;
-use futures_locks::RwLock;
+use parking_lot::RwLock;
 // use itertools;
 use consensus::Consensus;
 use executor::TransactionExecutor;
@@ -244,6 +243,10 @@ where
                 debug!("hash_with_number:{:?}", hash_with_number);
                 match hash_with_number {
                     Some(hash_number) => {
+                        // 1. pivot
+                        // 2. StateSyncActor
+
+                        // 3. sync block
                         begin_number = hash_number.number + 1;
                         loop {
                             //1. sync hash
@@ -377,7 +380,7 @@ where
         // };
         //        self.hash_pool
         //            .insert(peer.clone(), latest_state_msg.header.number(), hash_num);
-        let mut lock = downloader.peers.write().compat().await.unwrap();
+        let mut lock = downloader.peers.write();
         if lock.get(&peer).is_none()
             || (lock.get(&peer).unwrap().header.number() < latest_state_msg.header.number())
         {
@@ -392,7 +395,7 @@ where
     }
 
     pub async fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerInfo> {
-        let lock = downloader.peers.read().compat().await.unwrap();
+        let lock = downloader.peers.read();
         for p in lock.keys() {
             return Some(p.clone());
         }
@@ -412,9 +415,6 @@ where
         let number = downloader
             .peers
             .read()
-            .compat()
-            .await
-            .unwrap()
             .get(&peer)
             .expect("Latest state is none.")
             .header
@@ -460,9 +460,6 @@ where
         let number = downloader
             .peers
             .read()
-            .compat()
-            .await
-            .unwrap()
             .get(&peer)
             .expect("Latest state is none.")
             .header
@@ -613,7 +610,7 @@ where
     }
 
     pub async fn close_peer(downloader: Arc<Downloader<E, C>>, peer: PeerInfo) {
-        let mut lock = downloader.peers.write().compat().await.unwrap();
+        let mut lock = downloader.peers.write();
         let _ = lock.remove(&peer);
     }
 }
