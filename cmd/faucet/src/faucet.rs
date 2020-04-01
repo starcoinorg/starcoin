@@ -5,7 +5,7 @@ use starcoin_types::{
     account_address::AccountAddress,
     transaction::RawUserTransaction,
 };
-use starcoin_wallet_api::AccountWithKey;
+use starcoin_wallet_api::WalletAccount;
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
 use starcoin_state_api::AccountStateReader;
@@ -13,12 +13,12 @@ use starcoin_state_api::AccountStateReader;
 pub struct Faucet
 {
     client: RpcClient,
-    faucet_account: AccountWithKey,
+    faucet_account: WalletAccount,
 }
 
 impl Faucet
 {
-    pub fn new(client: RpcClient, faucet_account: AccountWithKey) -> Self {
+    pub fn new(client: RpcClient, faucet_account: WalletAccount) -> Self {
         Faucet {
             client,
             faucet_account,
@@ -45,19 +45,18 @@ impl Faucet
         let signed_tx = self.client.account_sign_txn(raw_tx)?;
         let ret = self.client.submit_transaction(signed_tx)?;
         return Ok(ret);
-
     }
 }
 
 fn transfer_tx(
-    sender: &AccountWithKey,
+    sender: &WalletAccount,
     amount: u64,
     receiver: AccountAddress,
     seq_num: u64,
     receiver_auth_key_prefix: Vec<u8>,
 ) -> RawUserTransaction {
     let raw_txn = Executor::build_transfer_txn(
-        sender.account.address,
+        sender.address,
         sender.get_auth_key().prefix().to_vec(),
         receiver,
         receiver_auth_key_prefix,
