@@ -9,6 +9,7 @@ use futures_timer::Delay;
 use logger::prelude::*;
 use miner::MinerActor;
 use network::{network::NetworkAsyncService, NetworkActor, RPCRequest, RPCResponse};
+use network_p2p_api::sync_messages::{GetHashByNumberMsg, ProcessMessage};
 use starcoin_genesis::Genesis;
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
 use starcoin_wallet_api::WalletAccount;
@@ -20,7 +21,6 @@ use tokio::runtime::Handle;
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::peer_info::{PeerId, PeerInfo};
-use types::sync_messages::{GetHashByNumberMsg, ProcessMessage};
 
 fn gen_network(
     node_config: Arc<NodeConfig>,
@@ -91,6 +91,7 @@ fn test_network_actor_rpc() {
             first_chain.clone(),
             network_1.clone(),
             bus_1.clone(),
+            storage_1.clone(),
         )
         .unwrap();
         let first_d_actor = DownloadActor::launch(
@@ -181,6 +182,7 @@ fn test_network_actor_rpc() {
             second_chain.clone(),
             network_2.clone(),
             bus_2.clone(),
+            storage_2.clone(),
         )
         .unwrap();
         let second_d_actor = DownloadActor::<Executor, DummyConsensus>::launch(
@@ -274,6 +276,7 @@ fn test_network_actor_rpc_2() {
             first_chain.clone(),
             network_1.clone(),
             bus_1.clone(),
+            storage_1.clone(),
         )
         .unwrap();
         let first_d_actor = DownloadActor::<Executor, DummyConsensus>::launch(
@@ -344,6 +347,7 @@ fn test_network_actor_rpc_2() {
             second_chain.clone(),
             network_2.clone(),
             bus_2.clone(),
+            storage_2.clone(),
         )
         .unwrap();
         let second_d_actor = DownloadActor::launch(

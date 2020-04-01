@@ -14,15 +14,15 @@ use consensus::Consensus;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
+use network_p2p_api::sync_messages::{
+    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
+    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
-use types::sync_messages::{
-    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
-    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
-};
 use types::{
     block::{Block, BlockHeader},
     peer_info::PeerInfo,
@@ -391,7 +391,7 @@ where
         }
     }
 
-    async fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerInfo> {
+    pub async fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerInfo> {
         let lock = downloader.peers.read().compat().await.unwrap();
         for p in lock.keys() {
             return Some(p.clone());

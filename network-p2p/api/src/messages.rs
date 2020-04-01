@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::sync_messages::*;
-use crate::transaction::SignedUserTransaction;
-use crate::{block::Block, peer_info::PeerId};
 use actix::prelude::*;
 use anyhow::*;
 use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_state_tree::StateNode;
+use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_types::{block::Block, peer_info::PeerId};
 
 #[derive(Message)]
 #[rtype(result = "u64")]
@@ -38,6 +39,7 @@ pub enum RPCRequest {
     TestRequest(TestRequest),
     GetHashByNumberMsg(ProcessMessage),
     GetDataByHashMsg(ProcessMessage),
+    GetStateNodeByNodeHash(HashValue),
 }
 
 #[rtype(result = "Result<()>")]
@@ -60,6 +62,7 @@ pub enum RPCResponse {
     TestResponse(TestResponse),
     BatchHashByNumberMsg(BatchHashByNumberMsg),
     BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
+    GetStateNodeByNodeHash(StateNode),
 }
 
 #[rtype(result = "Result<()>")]

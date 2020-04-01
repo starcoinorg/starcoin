@@ -7,6 +7,7 @@ use forkable_jellyfish_merkle::{
     JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
     SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::*;
 use starcoin_types::state_set::StateSet;
 use std::collections::BTreeMap;
@@ -26,6 +27,27 @@ impl StateNode {
 impl From<Node> for StateNode {
     fn from(n: Node) -> Self {
         StateNode(n)
+    }
+}
+
+impl<'de> Deserialize<'de> for StateNode {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let bytes = serde::private::de::borrow_cow_bytes(deserializer)?;
+        let node = Node::decode(bytes.as_ref()).unwrap();
+        Ok(StateNode::from(node))
+    }
+}
+
+impl Serialize for StateNode {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let bytes = Node::encode(self.inner()).unwrap();
+        bytes.serialize(serializer)
     }
 }
 

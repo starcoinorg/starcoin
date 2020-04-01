@@ -3939,6 +3939,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "network-p2p-api"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "anyhow",
+ "futures 0.3.4",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-state-tree",
+ "starcoin-types",
+]
+
+[[package]]
 name = "nibble_vec"
 version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5854,6 +5868,7 @@ dependencies = [
  "log 0.4.8",
  "lru",
  "network-p2p",
+ "network-p2p-api",
  "parity-codec",
  "parking_lot 0.10.0",
  "rand 0.6.5",
@@ -6136,6 +6151,7 @@ dependencies = [
  "hex 0.4.2",
  "itertools 0.8.2",
  "libra-temppath",
+ "network-p2p-api",
  "parking_lot 0.9.0",
  "starcoin-bus",
  "starcoin-chain",

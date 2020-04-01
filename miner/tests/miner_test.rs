@@ -88,6 +88,7 @@ fn test_miner_with_schedule_pacemaker() {
             chain.clone(),
             network.clone(),
             bus.clone(),
+            storage.clone(),
         )
         .unwrap();
         let download_actor =
@@ -173,6 +174,7 @@ fn test_miner_with_ondemand_pacemaker() {
             chain.clone(),
             network.clone(),
             bus.clone(),
+            storage.clone(),
         )
         .unwrap();
         let download_actor =

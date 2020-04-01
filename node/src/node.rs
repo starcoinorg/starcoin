@@ -175,6 +175,7 @@ where
                 chain.clone(),
                 network.clone(),
                 bus.clone(),
+                storage.clone(),
             )
             .unwrap();
             let download_actor =
