@@ -17,8 +17,8 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{BlockStorageOp, StarcoinStorage};
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
-use starcoin_traits::TxPoolAsyncService;
 use starcoin_txpool::TxPoolRef;
+use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
@@ -133,6 +133,7 @@ where
         chain.clone(),
         network.clone(),
         bus.clone(),
+        storage.clone(),
     )?;
     let download_actor = DownloadActor::launch(peer_info, chain, network.clone(), bus.clone())?;
     let _sync = SyncActor::launch(bus, process_actor, download_actor)?;
