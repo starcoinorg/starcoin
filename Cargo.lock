@@ -5844,7 +5844,9 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "actix-rt",
- "libra-temppath",
+ "anyhow",
+ "async-trait",
+ "futures 0.3.4",
  "rand 0.6.5",
  "starcoin-bus",
  "starcoin-chain",
@@ -5866,7 +5868,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
- "structopt",
  "tokio 0.2.13",
 ]
 
