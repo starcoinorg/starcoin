@@ -282,6 +282,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ansi_term"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d52a9bb7ec0cf484c551830a7ce27bd20d67eac647e1befb56b0be4ee39a55d2"
+dependencies = [
+ "winapi 0.3.8",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -506,7 +515,7 @@ dependencies = [
  "cexpr",
  "cfg-if",
  "clang-sys",
- "clap",
+ "clap 2.33.0",
  "env_logger 0.6.2",
  "lazy_static",
  "log 0.4.8",
@@ -815,13 +824,42 @@ version = "2.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5067f5bb2d80ef5d68b4c87db81601f0b75bca627bc2ef76b141d7b846a3c6d9"
 dependencies = [
- "ansi_term",
+ "ansi_term 0.11.0",
  "atty",
  "bitflags",
- "strsim",
+ "strsim 0.8.0",
  "textwrap",
  "unicode-width",
  "vec_map",
+]
+
+[[package]]
+name = "clap"
+version = "3.0.0-beta.1"
+source = "git+https://github.com/clap-rs/clap/#bc738e12c223666ac84fe29c74c21b4e276c5e59"
+dependencies = [
+ "ansi_term 0.12.1",
+ "atty",
+ "bitflags",
+ "clap_derive",
+ "indexmap",
+ "lazy_static",
+ "strsim 0.9.3",
+ "textwrap",
+ "unicode-width",
+ "vec_map",
+]
+
+[[package]]
+name = "clap_derive"
+version = "3.0.0-beta.1"
+source = "git+https://github.com/clap-rs/clap/#bc738e12c223666ac84fe29c74c21b4e276c5e59"
+dependencies = [
+ "heck",
+ "proc-macro-error",
+ "proc-macro2 1.0.9",
+ "quote 1.0.3",
+ "syn 1.0.16",
 ]
 
 [[package]]
@@ -1482,7 +1520,9 @@ dependencies = [
  "proptest-derive",
  "rand 0.6.5",
  "serde",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-types",
  "thiserror",
  "tiny-keccak 1.5.0",
 ]
@@ -5226,7 +5266,7 @@ name = "scmd"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clap",
+ "clap 2.33.0",
  "rustyline",
  "serde",
  "structopt",
@@ -5592,7 +5632,6 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-network",
- "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
@@ -5651,6 +5690,7 @@ dependencies = [
  "serde",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-traits",
  "starcoin-types",
  "structopt",
  "thiserror",
@@ -5661,8 +5701,8 @@ dependencies = [
 name = "starcoin-config-generator"
 version = "0.1.0"
 dependencies = [
+ "clap 3.0.0-beta.1",
  "starcoin-config",
- "structopt",
 ]
 
 [[package]]
@@ -5729,7 +5769,6 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
- "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
@@ -5798,7 +5837,6 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-network",
- "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
@@ -5996,13 +6034,20 @@ dependencies = [
 name = "starcoin-state-api"
 version = "0.1.0"
 dependencies = [
+ "actix",
+ "actix-rt",
  "anyhow",
  "async-trait",
- "forkable-jellyfish-merkle",
+ "futures 0.3.4",
  "serde",
+ "starcoin-config",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-state-tree",
+ "starcoin-statedb",
+ "starcoin-traits",
  "starcoin-types",
+ "stest",
 ]
 
 [[package]]
@@ -6031,8 +6076,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
+ "serde",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-types",
+ "stest",
 ]
 
 [[package]]
@@ -6041,13 +6090,12 @@ version = "0.1.0"
 dependencies = [
  "actix-rt",
  "anyhow",
- "forkable-jellyfish-merkle",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-logger",
- "starcoin-state-api",
  "starcoin-state-tree",
+ "starcoin-traits",
  "starcoin-types",
  "thiserror",
 ]
@@ -6134,7 +6182,6 @@ dependencies = [
  "futures-channel",
  "serde",
  "starcoin-crypto",
- "starcoin-state-api",
  "starcoin-types",
 ]
 
@@ -6168,7 +6215,6 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-executor",
- "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
@@ -6234,7 +6280,6 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
- "starcoin-state-api",
  "starcoin-traits",
  "starcoin-types",
  "stdlib 0.1.0",
@@ -6246,8 +6291,11 @@ dependencies = [
 name = "starcoin-wallet-api"
 version = "0.1.0"
 dependencies = [
+ "actix",
+ "actix-rt",
  "anyhow",
  "async-trait",
+ "futures 0.3.4",
  "rand 0.6.5",
  "serde",
  "starcoin-crypto",
@@ -6379,12 +6427,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
+name = "strsim"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
+
+[[package]]
 name = "structopt"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fe43617218c0805c6eb37160119dc3c548110a67786da7218d1c6555212f073"
 dependencies = [
- "clap",
+ "clap 2.33.0",
  "lazy_static",
  "structopt-derive",
 ]
