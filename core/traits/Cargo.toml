@@ -10,10 +10,6 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-actix-rt = "1.0"
 types = {path = "../../types", package="starcoin-types"}
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 starcoin-state-api = {package = "starcoin-state-api", path = "../../state/api"}
-starcoin-txpool-api = {package = "starcoin-txpool-api", path ="../../txpool/api"}
-serde = { version = "1.0" }
-futures-channel = "0.3"
