@@ -14,10 +14,11 @@ use logger::prelude::*;
 use network::network::NetworkAsyncService;
 use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::collections::HashMap;
 use std::sync::Arc;
 use storage::BlockChainStore;
-use traits::{ChainReader, ChainService, ChainWriter, TxPoolAsyncService};
+use traits::{ChainReader, ChainService, ChainWriter};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},

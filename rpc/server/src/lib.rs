@@ -11,7 +11,7 @@ use starcoin_logger::prelude::*;
 use starcoin_rpc_api::account::AccountApi;
 use starcoin_rpc_api::{node::NodeApi, state::StateApi, txpool::TxPoolApi};
 use starcoin_state_api::ChainStateAsyncService;
-use starcoin_traits::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAsyncService;
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -121,7 +121,7 @@ impl Supervised for JSONRpcActor {
 mod tests {
     use super::*;
     use starcoin_state_api::mock::MockChainStateService;
-    use starcoin_traits::mock::MockTxPoolService;
+    use starcoin_txpool_mock_service::MockTxPoolService;
     use starcoin_wallet_api::mock::MockWalletService;
 
     #[stest::test]
