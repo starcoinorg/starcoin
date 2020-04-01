@@ -50,6 +50,7 @@ impl InnerStore for CacheStorage {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
         for (prefix_name, rows) in &batch.rows {
             for (key, write_op) in rows {

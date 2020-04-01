@@ -130,7 +130,6 @@ impl InnerStore for StorageInstance {
             },
         }
     }
-
     fn get_len(&self) -> Result<u64, Error> {
         match self {
             StorageInstance::CACHE { cache } => cache.get_len(),

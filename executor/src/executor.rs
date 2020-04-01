@@ -10,6 +10,7 @@ use statedb::ChainStateDB;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
+use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::ChainState;
 use types::{
@@ -50,7 +51,13 @@ impl TransactionExecutor for Executor {
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-        let storage = Arc::new(Storage::new(cache_storage, db_storage).unwrap());
+        let storage = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage,
+                db_storage,
+            ))
+            .unwrap(),
+        );
         let chain_state = ChainStateDB::new(storage, None);
 
         // ToDo: load genesis txn from genesis.blob, instead of generating from stdlib

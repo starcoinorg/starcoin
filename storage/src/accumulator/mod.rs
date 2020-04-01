@@ -16,7 +16,6 @@ use starcoin_accumulator::{
 };
 use std::mem::size_of;
 use std::sync::Arc;
-
 define_storage!(
     AccumulatorIndexStore,
     NodeIndex,

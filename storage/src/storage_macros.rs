@@ -9,7 +9,7 @@
 #[macro_export]
 macro_rules! define_storage {
     ($storage_type: ident, $key_type: ty, $value_type: ty, $prefix_name: expr) => {
-        pub(crate) struct $storage_type {
+        pub struct $storage_type {
             store: CodecStorage<$key_type, $value_type>,
         }
 
@@ -24,20 +24,22 @@ macro_rules! define_storage {
             pub fn put(&self, key: $key_type, value: $value_type) -> Result<()> {
                 self.store.put(key, value)
             }
-
             pub fn get(&self, key: $key_type) -> Result<Option<$value_type>> {
                 self.store.get(key)
             }
-
+            #[allow(dead_code)]
             pub fn remove(&self, key: $key_type) -> Result<()> {
                 self.store.remove(key)
             }
+            #[allow(dead_code)]
             pub fn write_batch(&self, batch: WriteBatch) -> Result<()> {
                 self.store.write_batch(batch)
             }
+            #[allow(dead_code)]
             pub fn get_len(&self) -> Result<u64> {
                 self.store.get_len()
             }
+            #[allow(dead_code)]
             pub fn keys(&self) -> Result<Vec<Vec<u8>>> {
                 self.store.keys()
             }

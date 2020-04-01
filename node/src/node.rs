@@ -21,7 +21,7 @@ use std::sync::Arc;
 use std::thread::JoinHandle;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
-use storage::{BlockStorageOp, Storage};
+use storage::{BlockStore, Storage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use traits::TxPoolAsyncService;
 use txpool::TxPoolRef;

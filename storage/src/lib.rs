@@ -65,7 +65,7 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     ]
 });
 
-pub trait BlockStorageOp {
+pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
 
@@ -158,8 +158,7 @@ impl Storage {
 
 impl StateNodeStore for Storage {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        // self.state_node_store.get(hash)
-        unimplemented!()
+        self.state_node_storage.get(hash)
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
@@ -167,12 +166,11 @@ impl StateNodeStore for Storage {
     }
 
     fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
-        // self.state_node_store.write_batch(nodes)
-        unimplemented!()
+        self.state_node_storage.write_batch(nodes)
     }
 }
 
-impl BlockStorageOp for Storage {
+impl BlockStore for Storage {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.startup_info_storage
             .get(STARTUP_INFO_PREFIX_NAME.as_bytes())
@@ -346,11 +344,16 @@ impl BlockInfoStore for Storage {
 //TODO should move this traits to traits crate?
 /// Chain storage define
 pub trait BlockChainStore:
-    StateNodeStore + BlockStorageOp + AccumulatorTreeStore + BlockInfoStore
+    StateNodeStore + BlockStore + AccumulatorTreeStore + BlockInfoStore
 {
+    fn state_store(self) -> StateNodeStore;
 }
 
-impl BlockChainStore for Storage {}
+impl BlockChainStore for Storage {
+    fn state_store(self) -> StateNodeStore {
+        self.state_node_storage
+    }
+}
 
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {
