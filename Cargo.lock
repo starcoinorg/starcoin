@@ -321,6 +321,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cff77d8686867eceff3105329d4698d96c2391c176d5d03adc90c7389162b5b8"
 
 [[package]]
+name = "ascii"
+version = "0.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97be891acc47ca214468e09425d02cef3af2c94d0d82081cd02061f996802f14"
+
+[[package]]
 name = "asn1_der"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -797,6 +803,12 @@ dependencies = [
  "num-traits",
  "time",
 ]
+
+[[package]]
+name = "chunked_transfer"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "498d20a7aaf62625b9bf26e637cf7736417cde1d0c99f1d04d1170229a85cf87"
 
 [[package]]
 name = "clang-sys"
@@ -1560,10 +1572,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "futures-channel-preview"
+version = "0.3.0-alpha.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5e5f4df964fa9c1c2f8bddeb5c3611631cacd93baf810fc8bb2fb4b495c263a"
+dependencies = [
+ "futures-core-preview",
+]
+
+[[package]]
 name = "futures-core"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f25592f769825e89b92358db00d26f965761e094951ac44d3663ef25b7ac464a"
+
+[[package]]
+name = "futures-core-preview"
+version = "0.3.0-alpha.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b35b6263fb1ef523c3056565fa67b1d16f0a8604ff12b11b08c25f28a734c60a"
 
 [[package]]
 name = "futures-cpupool"
@@ -1601,7 +1628,7 @@ checksum = "e4297dd1d9d6268237e4f93aeb9c90fc1bf0d8cec7e1cef22798939e4c43a251"
 dependencies = [
  "futures 0.1.29",
  "tokio-current-thread",
- "tokio-executor",
+ "tokio-executor 0.1.10",
 ]
 
 [[package]]
@@ -1659,6 +1686,18 @@ dependencies = [
  "proc-macro-nested",
  "slab",
  "tokio-io",
+]
+
+[[package]]
+name = "futures-util-preview"
+version = "0.3.0-alpha.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ce968633c17e5f97936bd2797b6e38fb56cf16a7422319f7ec2e30d3c470e8d"
+dependencies = [
+ "futures-channel-preview",
+ "futures-core-preview",
+ "pin-utils",
+ "slab",
 ]
 
 [[package]]
@@ -1980,7 +2019,7 @@ dependencies = [
  "time",
  "tokio 0.1.22",
  "tokio-buf",
- "tokio-executor",
+ "tokio-executor 0.1.10",
  "tokio-io",
  "tokio-reactor",
  "tokio-tcp",
@@ -3899,6 +3938,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "network-p2p-api"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "anyhow",
+ "futures 0.3.4",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-state-tree",
+ "starcoin-types",
+]
+
+[[package]]
 name = "nibble_vec"
 version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5071,6 +5124,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-embed"
+version = "5.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a17890cbd0fae97c2006fa1ecec9554946443c319f4dd8cd8d3b92031725161"
+dependencies = [
+ "rust-embed-impl",
+ "rust-embed-utils",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-embed-impl"
+version = "5.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60cacc306d294556771c6e92737ba7e6be0264144bc46dd713a14ef384b0d6b8"
+dependencies = [
+ "quote 1.0.3",
+ "rust-embed-utils",
+ "syn 1.0.16",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-embed-utils"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97655158074ccb2d2cfb1ccb4c956ef0f4054e43a2c1e71146d4991e6961e105"
+dependencies = [
+ "walkdir",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5584,6 +5669,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-txpool",
+ "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
  "stest",
@@ -5727,6 +5813,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-faucet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ascii",
+ "futures 0.3.4",
+ "futures-timer 3.0.2",
+ "hex 0.3.2",
+ "rust-embed",
+ "starcoin-config",
+ "starcoin-executor",
+ "starcoin-logger",
+ "starcoin-rpc-client",
+ "starcoin-state-api",
+ "starcoin-types",
+ "starcoin-wallet-api",
+ "structopt",
+ "tiny_http",
+ "tokio 0.2.13",
+ "tokio-executor 0.2.0-alpha.6",
+]
+
+[[package]]
 name = "starcoin-genesis"
 version = "0.1.0"
 dependencies = [
@@ -5793,6 +5902,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-tx-relay",
  "starcoin-txpool",
+ "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
  "tokio 0.2.13",
@@ -5816,6 +5926,7 @@ dependencies = [
  "log 0.4.8",
  "lru",
  "network-p2p",
+ "network-p2p-api",
  "parity-codec",
  "parking_lot 0.10.0",
  "rand 0.6.5",
@@ -5865,6 +5976,7 @@ dependencies = [
  "starcoin-sync",
  "starcoin-traits",
  "starcoin-txpool",
+ "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
@@ -5970,6 +6082,8 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-traits",
  "starcoin-txpool",
+ "starcoin-txpool-api",
+ "starcoin-txpool-mock-service",
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
@@ -6012,26 +6126,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-state-sync"
-version = "0.1.0"
-dependencies = [
- "actix",
- "anyhow",
- "forkable-jellyfish-merkle",
- "parking_lot 0.9.0",
- "starcoin-crypto",
- "starcoin-logger",
- "starcoin-network",
- "starcoin-state-tree",
- "starcoin-types",
-]
-
-[[package]]
 name = "starcoin-state-tree"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
+ "serde",
  "starcoin-crypto",
  "starcoin-types",
 ]
@@ -6097,12 +6197,15 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "atomic_refcell",
+ "forkable-jellyfish-merkle",
  "futures 0.3.4",
  "futures-locks",
  "futures-timer 3.0.2",
  "hex 0.4.2",
  "itertools 0.8.2",
  "libra-temppath",
+ "network-p2p-api",
+ "parking_lot 0.9.0",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",
@@ -6113,6 +6216,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-miner",
  "starcoin-network",
+ "starcoin-state-tree",
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-txpool",
@@ -6125,11 +6229,8 @@ dependencies = [
 name = "starcoin-traits"
 version = "0.1.0"
 dependencies = [
- "actix-rt",
  "anyhow",
  "async-trait",
- "futures-channel",
- "serde",
  "starcoin-crypto",
  "starcoin-state-api",
  "starcoin-types",
@@ -6171,9 +6272,34 @@ dependencies = [
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-tx-relay",
+ "starcoin-txpool-api",
  "starcoin-types",
  "trace-time",
  "transaction-pool",
+]
+
+[[package]]
+name = "starcoin-txpool-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures-channel",
+ "starcoin-crypto",
+ "starcoin-types",
+]
+
+[[package]]
+name = "starcoin-txpool-mock-service"
+version = "0.1.0"
+dependencies = [
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures-channel",
+ "starcoin-crypto",
+ "starcoin-txpool-api",
+ "starcoin-types",
 ]
 
 [[package]]
@@ -6587,6 +6713,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tiny_http"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1661fa0a44c95d01604bd05c66732a446c657efb62b5164a7a083a3b552b4951"
+dependencies = [
+ "ascii",
+ "chrono",
+ "chunked_transfer",
+ "log 0.4.8",
+ "url 1.7.2",
+]
+
+[[package]]
 name = "tokio"
 version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6598,11 +6737,11 @@ dependencies = [
  "num_cpus",
  "tokio-codec",
  "tokio-current-thread",
- "tokio-executor",
+ "tokio-executor 0.1.10",
  "tokio-fs",
  "tokio-io",
  "tokio-reactor",
- "tokio-sync",
+ "tokio-sync 0.1.8",
  "tokio-tcp",
  "tokio-threadpool",
  "tokio-timer",
@@ -6668,7 +6807,7 @@ dependencies = [
  "pin-project-lite",
  "tokio 0.2.13",
  "tokio-current-thread",
- "tokio-executor",
+ "tokio-executor 0.1.10",
  "tokio-reactor",
  "tokio-timer",
 ]
@@ -6680,7 +6819,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1de0e32a83f131e002238d7ccde18211c0a5397f60cbfffcb112868c2e0e20e"
 dependencies = [
  "futures 0.1.29",
- "tokio-executor",
+ "tokio-executor 0.1.10",
 ]
 
 [[package]]
@@ -6691,6 +6830,17 @@ checksum = "fb2d1b8f4548dbf5e1f7818512e9c406860678f29c300cdf0ebac72d1a3a1671"
 dependencies = [
  "crossbeam-utils",
  "futures 0.1.29",
+]
+
+[[package]]
+name = "tokio-executor"
+version = "0.2.0-alpha.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ee9ceecf69145923834ea73f32ba40c790fd877b74a7817dd0b089f1eb9c7c8"
+dependencies = [
+ "futures-util-preview",
+ "lazy_static",
+ "tokio-sync 0.2.0-alpha.6",
 ]
 
 [[package]]
@@ -6753,9 +6903,9 @@ dependencies = [
  "num_cpus",
  "parking_lot 0.9.0",
  "slab",
- "tokio-executor",
+ "tokio-executor 0.1.10",
  "tokio-io",
- "tokio-sync",
+ "tokio-sync 0.1.8",
 ]
 
 [[package]]
@@ -6775,6 +6925,17 @@ checksum = "edfe50152bc8164fcc456dab7891fa9bf8beaf01c5ee7e1dd43a397c3cf87dee"
 dependencies = [
  "fnv",
  "futures 0.1.29",
+]
+
+[[package]]
+name = "tokio-sync"
+version = "0.2.0-alpha.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f1aaeb685540f7407ea0e27f1c9757d258c7c6bf4e3eb19da6fc59b747239d2"
+dependencies = [
+ "fnv",
+ "futures-core-preview",
+ "futures-util-preview",
 ]
 
 [[package]]
@@ -6805,7 +6966,7 @@ dependencies = [
  "log 0.4.8",
  "num_cpus",
  "slab",
- "tokio-executor",
+ "tokio-executor 0.1.10",
 ]
 
 [[package]]
@@ -6817,7 +6978,7 @@ dependencies = [
  "crossbeam-utils",
  "futures 0.1.29",
  "slab",
- "tokio-executor",
+ "tokio-executor 0.1.10",
 ]
 
 [[package]]

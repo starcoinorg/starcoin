@@ -7,8 +7,8 @@ use consensus::Consensus;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::PeerEvent;
+use network_p2p_api::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
 use types::peer_info::PeerInfo;
-use types::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
 
 pub struct SyncActor<E, C>
 where

@@ -1,0 +1,17 @@
+[package]
+name = "network-p2p-api"
+version = "0.1.0"
+authors = ["tiangong3624749 <tiangong3624749@163.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+starcoin-types = {path = "../../types"}
+actix = "0.9"
+anyhow = "1.0"
+futures = "0.3.4"
+serde = { version = "1.0.99", default-features = false }
+starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-state-tree={path = "../../state/state-tree"}
+scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}

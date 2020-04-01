@@ -1,15 +1,20 @@
 [package]
-name = "starcoin-traits"
+name = "starcoin-txpool-mock-service"
 version = "0.1.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
 types = {path = "../../types", package="starcoin-types"}
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-starcoin-state-api = {package = "starcoin-state-api", path = "../../state/api"}
+starcoin-txpool-api = {package = "starcoin-txpool-api", path ="../api"}
+futures-channel = "0.3"
+
+[dev-dependencies]
+actix-rt = "1.0"
