@@ -2,38 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    executor::{mock_create_account_txn, Executor},
-    mock_executor::{
-        get_signed_txn, mock_mint_txn, mock_transfer_txn, mock_txn, MockExecutor,
-    },
+    executor::Executor,
+    mock_executor::{get_signed_txn, MockExecutor},
     TransactionExecutor,
 };
-use anyhow::{bail, Result};
+use anyhow::Result;
 use config::VMConfig;
 use crypto::ed25519::compat;
-use libra_types::{
-    access_path::AccessPath as LibraAccessPath, account_config as Libraaccount_config,
-};
 use logger::prelude::*;
-use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{ChainState, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
-use state_tree::StateNodeStore;
 use statedb::ChainStateDB;
-use std::convert::TryInto;
 use std::sync::Arc;
-use std::time::Duration;
-use stdlib::transaction_scripts::EMPTY_TXN;
 use types::{
     access_path::AccessPath,
-    account_address::{AccountAddress, ADDRESS_LENGTH},
+    account_address::AccountAddress,
     account_config,
     account_config::AccountResource,
-    transaction::{SignedUserTransaction, Transaction},
+    transaction::Transaction,
     vm_error::{StatusCode, VMStatus},
 };
 use vm_runtime::mock_vm::{
-    encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, DISCARD_STATUS,
-    KEEP_STATUS,
+    encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, KEEP_STATUS,
 };
 use vm_runtime::{
     account::Account,
@@ -147,6 +137,41 @@ fn test_validate_txn() -> Result<()> {
         program.clone(),
     );
     let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    assert_eq!(output, None);
+    Ok(())
+}
+
+#[stest::test]
+fn test_validate_txn_with_starcoin_vm() -> Result<()> {
+    let config = VMConfig::default();
+    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let storage = MockStateNodeStore::new();
+    let chain_state = ChainStateDB::new(Arc::new(storage), None);
+
+    chain_state
+        .apply(state_set)
+        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 1, // fix me
+        50_000_000,
+    ));
+    let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+
+    let account2 = Account::new();
+
+    let raw_txn = Executor::build_transfer_txn(
+        account1.address().clone(),
+        account1.auth_key_prefix(),
+        account2.address().clone(),
+        account2.auth_key_prefix(),
+        0,
+        1000,
+    );
+    let txn2 = account1.create_user_txn_from_raw_txn(raw_txn);
+    let output = Executor::validate_transaction(&config, &chain_state, txn2);
     assert_eq!(output, None);
     Ok(())
 }
