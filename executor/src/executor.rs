@@ -12,10 +12,7 @@ use storage::{cache_storage::CacheStorage, db_storage::DBStorage, StarcoinStorag
 use types::{
     account_address::AccountAddress,
     state_set::ChainStateSet,
-    transaction::{
-        RawUserTransaction, SignedUserTransaction, Transaction,
-        TransactionOutput,
-    },
+    transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
 use vm_runtime::genesis::{generate_genesis_state_set, GENESIS_KEYPAIR};
