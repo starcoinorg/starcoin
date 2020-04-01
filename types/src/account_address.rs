@@ -240,7 +240,7 @@ impl FromStr for AccountAddress {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        assert!(!s.is_empty());
+        //assert!(!s.is_empty());
         let bytes_out = ::hex::decode(s)?;
         AccountAddress::try_from(bytes_out.as_slice())
     }

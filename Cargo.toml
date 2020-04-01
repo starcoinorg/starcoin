@@ -44,4 +44,5 @@ members = [
     "rpc/client",
     "rpc/server",
     "cmd/starcoin",
+    "cmd/faucet",
 ]
