@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 use starcoin_config::NodeConfig;
 use starcoin_logger::LoggerHandle;
+use starcoin_node::NodeHandle;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
-use std::thread::JoinHandle;
 
 pub struct CliState {
     config: Arc<NodeConfig>,
     client: RpcClient,
     logger_handle: LoggerHandle,
-    join_handler: Option<JoinHandle<()>>,
+    join_handle: Option<NodeHandle>,
 }
 
 impl CliState {
@@ -18,13 +18,13 @@ impl CliState {
         config: Arc<NodeConfig>,
         client: RpcClient,
         logger_handle: LoggerHandle,
-        join_handler: Option<JoinHandle<()>>,
+        join_handle: Option<NodeHandle>,
     ) -> CliState {
         Self {
             config,
             client,
             logger_handle,
-            join_handler,
+            join_handle,
         }
     }
 
@@ -40,19 +40,12 @@ impl CliState {
         &self.logger_handle
     }
 
-    pub fn into_inner(
-        self,
-    ) -> (
-        Arc<NodeConfig>,
-        RpcClient,
-        LoggerHandle,
-        Option<JoinHandle<()>>,
-    ) {
+    pub fn into_inner(self) -> (Arc<NodeConfig>, RpcClient, LoggerHandle, Option<NodeHandle>) {
         (
             self.config,
             self.client,
             self.logger_handle,
-            self.join_handler,
+            self.join_handle,
         )
     }
 }

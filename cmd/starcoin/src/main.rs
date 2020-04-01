@@ -5,16 +5,11 @@ use crate::state::CliState;
 use anyhow::Result;
 use scmd::{CmdContext, Command, CommandAction};
 use starcoin_logger::prelude::*;
-use starcoin_node::Node;
-
-pub use starcoin_config::StarcoinOpt;
-use starcoin_consensus::{
-    argon_consensus::{ArgonConsensus, ArgonConsensusHeader},
-    Consensus, ConsensusHeader,
-};
-use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
+
+use starcoin_config::ChainNetwork;
+pub use starcoin_config::StarcoinOpt;
 
 mod account;
 mod debug;
@@ -23,19 +18,16 @@ mod txn;
 mod helper;
 pub mod state;
 
-fn run<C, H, E>() -> Result<()>
-where
-    C: Consensus + Sync + Send + 'static,
-    H: ConsensusHeader + Sync + Send + 'static,
-    E: TransactionExecutor + Sync + Send + 'static,
-{
+fn run() -> Result<()> {
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         Box::new(|opt| -> Result<CliState> {
             let logger_handle = starcoin_logger::init();
             info!("Starcoin opts: {:?}", opt);
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
-            let node = Node::<C, H, E>::new(config.clone());
-            let handle = node.start();
+            let node_handle = match config.net() {
+                ChainNetwork::Dev => starcoin_node::run_dev_node(config.clone()),
+                _ => starcoin_node::run_normal_node(config.clone()),
+            };
             let ipc_file = config.rpc.get_ipc_file();
             info!("Waiting node start...");
             helper::wait_until_file_created(ipc_file)?;
@@ -44,7 +36,7 @@ where
             let file_log_path = config.data_dir().join("starcoin.log");
             info!("Redirect log to file: {:?}", file_log_path);
             logger_handle.enable_file(false, file_log_path);
-            let state = CliState::new(config, client, logger_handle, Some(handle));
+            let state = CliState::new(config, client, logger_handle, Some(node_handle));
             Ok(state)
         }),
         Box::new(|_, _, state| -> Result<()> {
@@ -53,7 +45,12 @@ where
                 Some(handle) => {
                     // if start node server and no subcommand, wait server and output logger to stderr.
                     logger_handle.enable_stderr();
-                    handle.join().expect("Join thread error.");
+                    match handle.join() {
+                        Err(e) => {
+                            error!("{:?}", e);
+                        }
+                        _ => {}
+                    }
                 }
                 None => {}
             }
@@ -73,9 +70,9 @@ where
         .exec()
 }
 
-//TODO error handle.
+//TODO error and crash handle.
 fn main() {
-    match run::<ArgonConsensus, ArgonConsensusHeader, Executor>() {
+    match run() {
         Ok(()) => {}
         Err(e) => panic!(format!("Unexpect error: {:?}", e)),
     }
