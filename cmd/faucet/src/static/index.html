@@ -48,7 +48,7 @@
 	    <div class="container">
 		<div class="row" style="margin-bottom: 16px;">
 		    <div class="col-lg-12">
-			<h1 style="text-align: center;"><i class="fa fa-bath" aria-hidden="true"></i> StarCoin Test Network Faucet</h1>
+			<h1 style="text-align: center;"><i class="fa fa-bath" aria-hidden="true"></i> StarCoin Network Faucet</h1>
 		    </div>
 		</div>
 		<div class="row">
@@ -68,12 +68,11 @@
 	</div>
 
 	<script>
-	    const api = "http://127.0.0.1:8000/api/fund"
+	    const api = "http://"+window.location.host+"/api/fund";
 	    $('.btn').click(function(){
 
 	    input = $("#url")[0].value;
 	    url = api+"?"+input;
-	    console.log(url);
 	    $.ajax({
 	    type: "GET",
 	    url:  url,

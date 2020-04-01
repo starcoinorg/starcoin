@@ -5110,6 +5110,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-embed"
+version = "5.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a17890cbd0fae97c2006fa1ecec9554946443c319f4dd8cd8d3b92031725161"
+dependencies = [
+ "rust-embed-impl",
+ "rust-embed-utils",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-embed-impl"
+version = "5.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60cacc306d294556771c6e92737ba7e6be0264144bc46dd713a14ef384b0d6b8"
+dependencies = [
+ "quote 1.0.3",
+ "rust-embed-utils",
+ "syn 1.0.16",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-embed-utils"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97655158074ccb2d2cfb1ccb4c956ef0f4054e43a2c1e71146d4991e6961e105"
+dependencies = [
+ "walkdir",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5770,9 +5802,11 @@ name = "starcoin-faucet"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ascii",
  "futures 0.3.4",
  "futures-timer 3.0.2",
  "hex 0.3.2",
+ "rust-embed",
  "starcoin-config",
  "starcoin-executor",
  "starcoin-logger",
@@ -5780,6 +5814,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-types",
  "starcoin-wallet-api",
+ "structopt",
  "tiny_http",
  "tokio 0.2.13",
  "tokio-executor 0.2.0-alpha.6",

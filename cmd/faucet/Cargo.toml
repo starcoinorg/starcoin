@@ -14,6 +14,10 @@ hex = { version = "0.3.2", default-features = false }
 tokio = { version = "0.2", features = ["full"] }
 tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
 futures-timer = "3.0"
+ascii = "0.8"
+rust-embed = "5.5.1"
+structopt = "0.3.2"
+
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
 starcoin-state-api = {path = "../../state/api"}

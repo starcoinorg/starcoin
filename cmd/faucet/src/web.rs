@@ -1,13 +1,24 @@
-use tiny_http::{Server, Response, Header};
+use crate::{faucet::Faucet, unwrap_or_return};
 use anyhow::Result;
-use std::str::FromStr;
+use ascii::AsciiString;
+use rust_embed::RustEmbed;
 use starcoin_logger::prelude::*;
-use std::io::Cursor;
-use std::fmt::{Debug, Formatter};
-use futures_timer::Delay;
-use crate::{unwrap_or_return, faucet::Faucet};
 use starcoin_types::account_address::AccountAddress;
-use std::time::Duration;
+use std::fmt::{Debug, Formatter};
+use std::io::Cursor;
+use std::str::FromStr;
+use tiny_http::{Header, Response, Server};
+
+#[derive(RustEmbed)]
+#[folder = "src/static/"]
+struct Asset;
+
+fn index_html() -> String {
+    let index_html = Asset::get("index.html").unwrap();
+    std::str::from_utf8(index_html.as_ref())
+        .unwrap()
+        .to_string()
+}
 
 fn response_custom(status_code: u16, data: &str) -> Response<Cursor<String>> {
     let data_len = data.len();
@@ -17,11 +28,17 @@ fn response_custom(status_code: u16, data: &str) -> Response<Cursor<String>> {
 }
 
 async fn handle_fund(faucet: &Faucet, query: &str) -> Response<Cursor<String>> {
-    let query_param = unwrap_or_return!(parse_query(query),response_custom(400,"Invalid request"));
+    let query_param =
+        unwrap_or_return!(parse_query(query), response_custom(400, "Invalid request"));
     info!("Fund query params: {:?}", query_param);
     let ret = unwrap_or_return!(
-        faucet.transfer(query_param.amount, query_param.address, query_param.auth_key),
-        response_custom(500,"Inner error"));
+        faucet.transfer(
+            query_param.amount,
+            query_param.address,
+            query_param.auth_key
+        ),
+        response_custom(500, "Inner error")
+    );
     if !ret {
         return response_custom(400, "Fund too frequently");
     }
@@ -34,13 +51,22 @@ pub async fn run(server: Server, faucet: Faucet) {
         let url = &request.url()[..pos];
         let query = request.url()[pos..].trim_start_matches("?");
         match url {
-            "/index.html" => { request.respond(response_custom(200, "index.html")).unwrap(); }
+            "/" => {
+                let response = Response::from_string(index_html()).with_header(Header {
+                    field: "Content-Type".parse().unwrap(),
+                    value: AsciiString::from_ascii("text/html; charset=utf8").unwrap(),
+                });
+
+                request.respond(response).unwrap();
+            }
             "/api/fund" => {
                 let resp = handle_fund(&faucet, query).await;
                 //todo:: handle io error
                 let _ = request.respond(resp).unwrap();
             }
-            _ => {}
+            _ => {
+                let _ = request.respond(response_custom(404, "Not found"));
+            }
         };
     }
 }
@@ -53,8 +79,13 @@ struct QueryParam {
 
 impl Debug for QueryParam {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "address: {:?}, amount: {:?}, prefix_key: {:?}",
-               self.address, self.amount, hex::encode(&self.auth_key))
+        write!(
+            f,
+            "address: {:?}, amount: {:?}, prefix_key: {:?}",
+            self.address,
+            self.amount,
+            hex::encode(&self.auth_key)
+        )
     }
 }
 

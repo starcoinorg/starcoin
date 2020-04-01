@@ -1,23 +1,18 @@
 use anyhow::{format_err, Result};
 
-use starcoin_rpc_client::{RpcClient, RemoteStateReader};
-use starcoin_types::{
-    account_address::AccountAddress,
-    transaction::RawUserTransaction,
-};
-use starcoin_wallet_api::WalletAccount;
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
+use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
+use starcoin_types::{account_address::AccountAddress, transaction::RawUserTransaction};
+use starcoin_wallet_api::WalletAccount;
 
-pub struct Faucet
-{
+pub struct Faucet {
     client: RpcClient,
     faucet_account: WalletAccount,
 }
 
-impl Faucet
-{
+impl Faucet {
     pub fn new(client: RpcClient, faucet_account: WalletAccount) -> Self {
         Faucet {
             client,
@@ -25,7 +20,12 @@ impl Faucet
         }
     }
 
-    pub fn transfer(&self, amount: u64, receiver: AccountAddress, auth_key: Vec<u8>) -> Result<bool> {
+    pub fn transfer(
+        &self,
+        amount: u64,
+        receiver: AccountAddress,
+        auth_key: Vec<u8>,
+    ) -> Result<bool> {
         let chain_state_reader = RemoteStateReader::new(&self.client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
