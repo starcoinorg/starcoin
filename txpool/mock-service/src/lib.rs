@@ -44,6 +44,14 @@ impl TxPoolAsyncService for MockTxPoolService {
         results.resize_with(len, || Ok(()));
         Ok(results)
     }
+    async fn remove_txn(
+        self,
+        _txn_hash: HashValue,
+        _is_invalid: bool,
+    ) -> Result<Option<SignedUserTransaction>> {
+        unimplemented!()
+    }
+
     async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>> {
         match max_len {
             Some(max) => Ok(self

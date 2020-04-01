@@ -17,6 +17,17 @@ pub trait TxPoolAsyncService: Clone + std::marker::Unpin + Send + Sync {
         self,
         txns: Vec<SignedUserTransaction>,
     ) -> Result<Vec<Result<(), transaction::TransactionError>>>;
+
+    /// Removes transaction from the pool.
+    ///
+    /// Attempts to "cancel" a transaction. If it was not propagated yet (or not accepted by other peers)
+    /// there is a good chance that the transaction will actually be removed.
+    async fn remove_txn(
+        self,
+        txn_hash: HashValue,
+        is_invalid: bool,
+    ) -> Result<Option<SignedUserTransaction>>;
+
     /// Get all pending txns which is ok to be packaged to mining.
     async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>>;
 
