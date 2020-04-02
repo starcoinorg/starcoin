@@ -32,7 +32,7 @@ impl From<Node> for StateNode {
 pub trait StateNodeStore: std::marker::Send + std::marker::Sync {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>>;
     fn put(&self, key: HashValue, node: StateNode) -> Result<()>;
-    fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()>;
+    fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()>;
 }
 
 pub struct StateCache {
@@ -219,7 +219,7 @@ impl StateTree {
         for (nk, n) in change_sets.node_batch.into_iter() {
             node_map.insert(nk, StateNode(n));
         }
-        self.storage.write_batch(node_map).unwrap();
+        self.storage.write_nodes(node_map).unwrap();
         // and then advance the storage root hash
         *self.storage_root_hash.write().unwrap() = root_hash;
         self.cache.lock().unwrap().reset(root_hash);

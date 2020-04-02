@@ -21,11 +21,13 @@ use futures_channel::mpsc;
 use starcoin_bus::BusActor;
 use starcoin_config::TxPoolConfig;
 use std::{fmt::Debug, sync::Arc};
+use storage::BlockStore;
 use storage::Storage;
 use traits::TxPoolAsyncService;
 #[cfg(test)]
 use types::block::BlockHeader;
 use types::{block::Block, transaction, transaction::SignedUserTransaction};
+
 mod pool;
 mod pool_client;
 #[cfg(test)]
@@ -48,7 +50,7 @@ impl TxPoolRef {
         best_block_hash: HashValue,
         bus: actix::Addr<BusActor>,
     ) -> TxPoolRef {
-        let best_block = match storage.block_storage.get_block_by_hash(best_block_hash) {
+        let best_block = match storage.get_block_by_hash(best_block_hash) {
             Err(e) => panic!("fail to read storage, {}", e),
             Ok(None) => panic!(
                 "best block id {} should exists in storage",
@@ -168,6 +170,6 @@ impl Clone for StorageBlockReader {
 
 impl BlockReader for StorageBlockReader {
     fn get_block_by_hash(&self, block_hash: HashValue) -> Result<Option<Block>> {
-        self.storage.block_storage.get_block_by_hash(block_hash)
+        self.storage.get_block_by_hash(block_hash)
     }
 }

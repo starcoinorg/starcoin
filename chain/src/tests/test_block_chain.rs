@@ -14,6 +14,7 @@ use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
+use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
@@ -60,7 +61,13 @@ async fn gen_head_chain(
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Arc::new(Storage::new(cache_storage.clone(), db_storage.clone()).unwrap());
+    let storage = Arc::new(
+        Storage::new(StorageInstance::new_cache_and_db_instance(
+            cache_storage.clone(),
+            db_storage.clone(),
+        ))
+        .unwrap(),
+    );
     let genesis =
         Genesis::new::<Executor, DummyConsensus, Storage>(conf.clone(), storage.clone()).unwrap();
     let bus = BusActor::launch();
@@ -192,7 +199,13 @@ async fn test_chain_apply() -> Result<()> {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Arc::new(Storage::new(cache_storage.clone(), db_storage.clone()).unwrap());
+    let storage = Arc::new(
+        Storage::new(StorageInstance::new_cache_and_db_instance(
+            cache_storage.clone(),
+            db_storage.clone(),
+        ))
+        .unwrap(),
+    );
     let genesis =
         Genesis::new::<Executor, DummyConsensus, Storage>(config.clone(), storage.clone())?;
     let bus = BusActor::launch();

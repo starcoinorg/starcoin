@@ -21,6 +21,7 @@ use std::sync::Arc;
 use std::thread::JoinHandle;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
+use storage::storage::StorageInstance;
 use storage::{BlockStore, Storage};
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use traits::TxPoolAsyncService;
@@ -68,8 +69,13 @@ where
             let bus = BusActor::launch();
             let cache_storage = Arc::new(CacheStorage::new());
             let db_storage = Arc::new(DBStorage::new(node_config.storage.clone().dir()));
-            let storage =
-                Arc::new(Storage::new(cache_storage.clone(), db_storage.clone()).unwrap());
+            let storage = Arc::new(
+                Storage::new(StorageInstance::new_cache_and_db_instance(
+                    cache_storage.clone(),
+                    db_storage.clone(),
+                ))
+                .unwrap(),
+            );
 
             let startup_info = match storage.get_startup_info().unwrap() {
                 Some(startup_info) => {

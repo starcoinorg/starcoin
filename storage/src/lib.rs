@@ -133,7 +133,7 @@ pub trait BlockStore {
 
 pub struct Storage {
     transaction_info_storage: TransactionInfoStorage,
-    block_storage: BlockStorage,
+    pub block_storage: BlockStorage,
     state_node_storage: StateStorage,
     accumulator_storage: AccumulatorStorage,
     block_info_storage: BlockInfoStorage,
@@ -158,15 +158,15 @@ impl Storage {
 
 impl StateNodeStore for Storage {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        self.state_node_storage.get(hash)
+        self.state_node_storage.get(hash.clone())
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
         self.state_node_storage.put(key, node)
     }
 
-    fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
-        self.state_node_storage.write_batch(nodes)
+    fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
+        self.state_node_storage.write_nodes(nodes)
     }
 }
 
@@ -346,13 +346,13 @@ impl BlockInfoStore for Storage {
 pub trait BlockChainStore:
     StateNodeStore + BlockStore + AccumulatorTreeStore + BlockInfoStore
 {
-    fn state_store(self) -> StateNodeStore;
+    // fn state_store(self) -> StateNodeStore;
 }
 
 impl BlockChainStore for Storage {
-    fn state_store(self) -> StateNodeStore {
-        self.state_node_storage
-    }
+    // fn state_store(self) -> StateNodeStore {
+    //     self.state_node_storage
+    // }
 }
 
 ///ensure slice length

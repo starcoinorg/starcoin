@@ -39,7 +39,7 @@ impl StateNodeStore for MockStateNodeStore {
         Ok(())
     }
 
-    fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
+    fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
         for (node_key, node) in nodes.iter() {
             self.put(*node_key, node.clone()).unwrap();
         }

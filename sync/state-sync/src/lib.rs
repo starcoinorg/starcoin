@@ -67,7 +67,7 @@ impl StateNodeStore for StateNodeCache {
         Ok(())
     }
 
-    fn write_batch(&self, _nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
+    fn write_nodes(&self, _nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
         unimplemented!()
     }
 }

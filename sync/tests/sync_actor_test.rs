@@ -19,6 +19,7 @@ use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
+use storage::storage::StorageInstance;
 use storage::Storage;
 use tokio::runtime::Handle;
 use traits::ChainAsyncService;
@@ -51,7 +52,13 @@ fn test_network_actor_rpc() {
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-        let storage_1 = Arc::new(Storage::new(cache_storage, db_storage).unwrap());
+        let storage_1 = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage,
+                db_storage,
+            ))
+            .unwrap(),
+        );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
@@ -137,7 +144,13 @@ fn test_network_actor_rpc() {
         let cache_storage2 = Arc::new(CacheStorage::new());
         let tmpdir2 = libra_temppath::TempPath::new();
         let db_storage2 = Arc::new(DBStorage::new(tmpdir2.path()));
-        let storage_2 = Arc::new(Storage::new(cache_storage2, db_storage2).unwrap());
+        let storage_2 = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage2,
+                db_storage2,
+            ))
+            .unwrap(),
+        );
 
         // node config
         let mut config_2 = NodeConfig::random_for_test();
@@ -236,7 +249,13 @@ fn test_network_actor_rpc_2() {
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-        let storage_1 = Arc::new(Storage::new(cache_storage, db_storage).unwrap());
+        let storage_1 = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage,
+                db_storage,
+            ))
+            .unwrap(),
+        );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
@@ -302,7 +321,13 @@ fn test_network_actor_rpc_2() {
         let cache_storage2 = Arc::new(CacheStorage::new());
         let tmpdir2 = libra_temppath::TempPath::new();
         let db_storage2 = Arc::new(DBStorage::new(tmpdir2.path()));
-        let storage_2 = Arc::new(Storage::new(cache_storage2, db_storage2).unwrap());
+        let storage_2 = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage2,
+                db_storage2,
+            ))
+            .unwrap(),
+        );
         // node config
         let mut config_2 = NodeConfig::random_for_test();
         let addr_1_hex = network_1.identify().to_base58();
