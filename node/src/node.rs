@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use actix::prelude::*;
 use anyhow::Result;
 use starcoin_bus::BusActor;
 use starcoin_chain::{ChainActor, ChainActorRef};
@@ -26,7 +27,17 @@ use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use tokio::runtime::Handle;
 
-pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<()>
+pub struct NodeStartHandle<C, H>
+where
+    C: Consensus + 'static,
+    H: ConsensusHeader + 'static,
+{
+    _miner_actor: Addr<MinerActor<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>>,
+    _sync_actor: Addr<SyncActor<Executor, C>>,
+    _rpc_actor: Addr<JSONRpcActor>,
+}
+
+pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<NodeStartHandle<C, H>>
 where
     C: Consensus + 'static,
     H: ConsensusHeader + 'static,
@@ -103,18 +114,18 @@ where
         txpool.clone(),
     )?;
 
-    let _json_rpc = JSONRpcActor::launch(
+    let (json_rpc, _io_handler) = JSONRpcActor::launch(
         config.clone(),
         txpool.clone(),
         account_service,
         chain_state_service,
-    );
+    )?;
     let receiver = if config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
         Some(txpool.clone().subscribe_txns().await?)
     } else {
         None
     };
-    let _miner =
+    let miner =
         MinerActor::<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>::launch(
             config.clone(),
             bus.clone(),
@@ -123,7 +134,7 @@ where
             chain.clone(),
             receiver,
             default_account,
-        );
+        )?;
     let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
     let process_actor = ProcessActor::<Executor, C>::launch(
         Arc::clone(&peer_info),
@@ -139,9 +150,13 @@ where
         bus.clone(),
         storage.clone(),
     )?;
-    let _sync = SyncActor::launch(bus, process_actor, download_actor)?;
+    let sync = SyncActor::launch(bus, process_actor, download_actor)?;
     //TODO manager MinerClient by actor.
     let stratum_server = config.miner.stratum_server;
     handle.spawn(miner_client::MinerClient::main_loop(stratum_server));
-    Ok(())
+    Ok(NodeStartHandle {
+        _miner_actor: miner,
+        _sync_actor: sync,
+        _rpc_actor: json_rpc,
+    })
 }

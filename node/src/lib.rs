@@ -76,8 +76,18 @@ where
         let handle = rt.handle().clone();
         let mut system = System::new("main");
         system.block_on(async {
-            let node_actor = NodeActor::<C, H>::new(config, handle);
-            let _node_ref = node_actor.start();
+            //let node_actor = NodeActor::<C, H>::new(config, handle);
+            //let _node_ref = node_actor.start();
+            //TODO fix me, this just a work around method.
+            let _handle = match node::start::<C, H>(config, handle).await {
+                Err(e) => {
+                    error!("Node start fail: {}, exist.", e);
+                    System::current().stop();
+                    return;
+                }
+                Ok(handle) => handle,
+            };
+
             stop_receiver.await.unwrap();
             info!("Receive stop signal, try to stop system.");
             System::current().stop();
