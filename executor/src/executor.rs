@@ -8,7 +8,9 @@ use crypto::HashValue;
 use starcoin_state_api::ChainState;
 use statedb::ChainStateDB;
 use std::sync::Arc;
-use storage::{cache_storage::CacheStorage, db_storage::DBStorage, StarcoinStorage};
+use storage::{
+    cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage,
+};
 use types::{
     account_address::AccountAddress,
     state_set::ChainStateSet,
@@ -40,7 +42,13 @@ impl TransactionExecutor for Executor {
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-        let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
+        let storage = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage.clone(),
+                db_storage.clone(),
+            ))
+            .unwrap(),
+        );
         let chain_state = ChainStateDB::new(storage, None);
 
         // ToDo: load genesis txn from genesis.blob, instead of generating from stdlib

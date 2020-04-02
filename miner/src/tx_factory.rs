@@ -10,7 +10,7 @@ use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use storage::BlockChainStore;
+use storage::Store;
 use types::block::BlockHeader;
 use types::system_events::SystemEvents;
 use types::transaction::{SignedUserTransaction, Transaction};
@@ -32,7 +32,7 @@ pub(crate) struct TxFactoryActor<P, TStorage, TExecutor> {
 impl<P, TStorage, TExecutor> TxFactoryActor<P, TStorage, TExecutor>
 where
     P: TxPoolAsyncService + 'static,
-    TStorage: BlockChainStore + Sync + Send + 'static,
+    TStorage: Store + Sync + Send + 'static,
     TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     pub fn launch(txpool: P, storage: Arc<TStorage>, bus: Addr<BusActor>) -> Result<Addr<Self>> {
@@ -69,7 +69,7 @@ where
 impl<P, TStorage, TExecutor> Actor for TxFactoryActor<P, TStorage, TExecutor>
 where
     P: TxPoolAsyncService + 'static,
-    TStorage: BlockChainStore + Sync + Send + 'static,
+    TStorage: Store + Sync + Send + 'static,
     TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     type Context = Context<Self>;
@@ -96,7 +96,7 @@ where
 impl<P, TStorage, TExecutor> actix::Handler<SystemEvents> for TxFactoryActor<P, TStorage, TExecutor>
 where
     P: TxPoolAsyncService + 'static,
-    TStorage: BlockChainStore + Sync + Send + 'static,
+    TStorage: Store + Sync + Send + 'static,
     TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     type Result = ();
@@ -119,7 +119,7 @@ where
 impl<P, TStorage, TExecutor> Handler<GenTxEvent> for TxFactoryActor<P, TStorage, TExecutor>
 where
     P: TxPoolAsyncService + 'static,
-    TStorage: BlockChainStore + Sync + Send + 'static,
+    TStorage: Store + Sync + Send + 'static,
     TExecutor: TransactionExecutor + Sync + Send + 'static,
 {
     type Result = Result<()>;

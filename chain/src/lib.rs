@@ -23,7 +23,7 @@ use logger::prelude::*;
 use message::ChainRequest;
 use network::network::NetworkAsyncService;
 use std::sync::Arc;
-use storage::StarcoinStorage;
+use storage::Storage;
 use traits::{ChainAsyncService, ChainService};
 use txpool::TxPoolRef;
 use types::{
@@ -41,7 +41,7 @@ where
     C: Consensus,
 {
     //TODO use Generic Parameter for Executor and Consensus.
-    service: ChainServiceImpl<E, C, StarcoinStorage, TxPoolRef>,
+    service: ChainServiceImpl<E, C, Storage, TxPoolRef>,
     bus: Addr<BusActor>,
 }
 
@@ -53,7 +53,7 @@ where
     pub fn launch(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
-        storage: Arc<StarcoinStorage>,
+        storage: Arc<Storage>,
         network: Option<NetworkAsyncService>,
         bus: Addr<BusActor>,
         txpool: TxPoolRef,

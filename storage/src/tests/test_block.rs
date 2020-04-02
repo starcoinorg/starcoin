@@ -7,7 +7,8 @@ use crypto::HashValue;
 
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::StarcoinStorage;
+use crate::storage::StorageInstance;
+use crate::Storage;
 use logger::prelude::*;
 use std::sync::Arc;
 use types::account_address::AccountAddress;
@@ -20,7 +21,11 @@ fn test_block() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+        cache_storage,
+        db_storage,
+    ))
+    .unwrap();
     let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
@@ -37,33 +42,33 @@ fn test_block() {
         consensus_header,
     );
     storage
-        .block_store
+        .block_storage
         .save_header(block_header1.clone())
         .unwrap();
     let block_id = block_header1.id();
     assert_eq!(
         block_header1,
         storage
-            .block_store
+            .block_storage
             .get_block_header_by_hash(block_id.clone())
             .unwrap()
             .unwrap()
     );
     let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()]);
     storage
-        .block_store
+        .block_storage
         .save_body(block_id.clone(), block_body1.clone())
         .unwrap();
     let block1 = Block::new(block_header1.clone(), block_body1);
     // save block1
-    storage.block_store.save(block1.clone()).unwrap();
+    storage.block_storage.save(block1.clone()).unwrap();
     //read to block2
-    let block2 = storage.block_store.get(block_id.clone()).unwrap();
+    let block2 = storage.block_storage.get(block_id.clone()).unwrap();
     assert!(block2.is_some());
     assert_eq!(block1, block2.unwrap());
     //get header to block3
     let block_header3 = storage
-        .block_store
+        .block_storage
         .get_block_header_by_hash(block_id)
         .unwrap()
         .unwrap();
@@ -75,7 +80,11 @@ fn test_block_number() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+        cache_storage,
+        db_storage,
+    ))
+    .unwrap();
     let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
@@ -92,13 +101,13 @@ fn test_block_number() {
         consensus_header,
     );
     storage
-        .block_store
+        .block_storage
         .save_header(block_header1.clone())
         .unwrap();
     let block_id = block_header1.id();
     assert_eq!(
         storage
-            .block_store
+            .block_storage
             .get_block_header_by_hash(block_id)
             .unwrap()
             .unwrap(),
@@ -106,32 +115,32 @@ fn test_block_number() {
     );
     let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()]);
     storage
-        .block_store
+        .block_storage
         .save_body(block_id, block_body1.clone())
         .unwrap();
     let block1 = Block::new(block_header1.clone(), block_body1.clone());
 
     // save block1
-    storage.block_store.save(block1.clone()).unwrap();
+    storage.block_storage.save(block1.clone()).unwrap();
     let block_number1 = block_header1.number();
     storage
-        .block_store
+        .block_storage
         .save_number(block_number1, block_id)
         .unwrap();
     //read to block2
-    let block2 = storage.block_store.get(block_id).unwrap();
+    let block2 = storage.block_storage.get(block_id).unwrap();
     assert!(block2.is_some());
     assert_eq!(block1, block2.unwrap());
     //get number to block3
     let block3 = storage
-        .block_store
+        .block_storage
         .get_block_by_number(block_number1)
         .unwrap()
         .unwrap();
     assert_eq!(block1, block3);
     //get header by number
     let block4_header = storage
-        .block_store
+        .block_storage
         .get_block_header_by_number(block_number1)
         .unwrap()
         .unwrap();
@@ -143,7 +152,11 @@ fn test_branch_number() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+        cache_storage,
+        db_storage,
+    ))
+    .unwrap();
     let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
@@ -160,28 +173,28 @@ fn test_branch_number() {
         consensus_header,
     );
     storage
-        .block_store
+        .block_storage
         .save_header(block_header1.clone())
         .unwrap();
     let block_id = block_header1.id();
     let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()]);
     storage
-        .block_store
+        .block_storage
         .save_body(block_id, block_body1.clone())
         .unwrap();
     let block1 = Block::new(block_header1.clone(), block_body1.clone());
 
     // save block1
-    storage.block_store.save(block1.clone()).unwrap();
+    storage.block_storage.save(block1.clone()).unwrap();
     let block_number1 = block_header1.number();
     let branch_id = HashValue::random();
     storage
-        .block_store
+        .block_storage
         .save_branch_number(branch_id, block_number1, block_id)
         .unwrap();
     //read to branch number
     let block_id2 = storage
-        .block_store
+        .block_storage
         .get_branch_number(branch_id, block_number1)
         .unwrap()
         .unwrap();
@@ -189,14 +202,14 @@ fn test_branch_number() {
 
     //get branch number to block3
     let block3 = storage
-        .block_store
+        .block_storage
         .get_block_by_branch_number(branch_id, block_number1)
         .unwrap()
         .unwrap();
     assert_eq!(block1, block3);
     //get header by branch number
     let block4_header = storage
-        .block_store
+        .block_storage
         .get_header_by_branch_number(branch_id, block_number1)
         .unwrap()
         .unwrap();
@@ -208,7 +221,11 @@ fn test_block_branch_hashes() {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap();
+    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+        cache_storage,
+        db_storage,
+    ))
+    .unwrap();
     let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
@@ -225,7 +242,7 @@ fn test_block_branch_hashes() {
         consensus_header.clone(),
     );
     storage
-        .block_store
+        .block_storage
         .save_header(block_header0.clone())
         .unwrap();
 
@@ -243,7 +260,7 @@ fn test_block_branch_hashes() {
         consensus_header.clone(),
     );
     storage
-        .block_store
+        .block_storage
         .save_header(block_header1.clone())
         .unwrap();
     let block_id = block_header1.id();
@@ -261,7 +278,7 @@ fn test_block_branch_hashes() {
         consensus_header.clone(),
     );
     storage
-        .block_store
+        .block_storage
         .save_header(block_header2.clone())
         .unwrap();
     debug!("header2: {}", block_header2.clone().id().to_hex());
@@ -279,7 +296,7 @@ fn test_block_branch_hashes() {
         consensus_header.clone(),
     );
     storage
-        .block_store
+        .block_storage
         .save_header(block_header3.clone())
         .unwrap();
     debug!("header3: {}", block_header3.clone().id().to_hex());
@@ -297,18 +314,18 @@ fn test_block_branch_hashes() {
         consensus_header,
     );
     storage
-        .block_store
+        .block_storage
         .save_header(block_header4.clone())
         .unwrap();
     debug!("header4: {}", block_header4.clone().id().to_hex());
     let hashes = storage
-        .block_store
+        .block_storage
         .get_branch_hashes(block_header4.id())
         .unwrap();
     let desert_vec = vec![block_header3.clone().id(), block_id];
     assert_eq!(hashes, desert_vec);
     let comm_hash = storage
-        .block_store
+        .block_storage
         .get_common_ancestor(block_header1.id(), block_header2.id())
         .unwrap()
         .unwrap();

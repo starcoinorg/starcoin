@@ -14,7 +14,8 @@ use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
-use storage::StarcoinStorage;
+use storage::storage::StorageInstance;
+use storage::Storage;
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
 use traits::ChainAsyncService;
@@ -43,14 +44,18 @@ fn test_miner_with_schedule_pacemaker() {
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-        let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
+        let storage = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage,
+                db_storage,
+            ))
+            .unwrap(),
+        );
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
-        let genesis = Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(
-            config.clone(),
-            storage.clone(),
-        )
-        .unwrap();
+        let genesis =
+            Genesis::new::<Executor, DummyConsensus, Storage>(config.clone(), storage.clone())
+                .unwrap();
         let txpool = {
             let best_block_id = genesis.startup_info().head.get_head();
             TxPoolRef::start(
@@ -76,7 +81,7 @@ fn test_miner_with_schedule_pacemaker() {
             Executor,
             TxPoolRef,
             ChainActorRef<Executor, DummyConsensus>,
-            StarcoinStorage,
+            Storage,
             DummyHeader,
         >::launch(
             config.clone(),
@@ -131,15 +136,19 @@ fn test_miner_with_ondemand_pacemaker() {
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-        let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
+        let storage = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage,
+                db_storage,
+            ))
+            .unwrap(),
+        );
 
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
-        let genesis = Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(
-            config.clone(),
-            storage.clone(),
-        )
-        .unwrap();
+        let genesis =
+            Genesis::new::<Executor, DummyConsensus, Storage>(config.clone(), storage.clone())
+                .unwrap();
         let txpool = {
             let best_block_id = genesis.startup_info().head.get_head();
             TxPoolRef::start(
@@ -166,7 +175,7 @@ fn test_miner_with_ondemand_pacemaker() {
             Executor,
             TxPoolRef,
             ChainActorRef<Executor, DummyConsensus>,
-            StarcoinStorage,
+            Storage,
             DummyHeader,
         >::launch(
             config.clone(),

@@ -17,7 +17,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::collections::HashMap;
 use std::sync::Arc;
-use storage::BlockChainStore;
+use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter};
 use types::{
     account_address::AccountAddress,
@@ -33,7 +33,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
-    S: BlockChainStore + 'static,
+    S: Store + 'static,
 {
     master: AtomicRefCell<Vec<BlockChain<E, C, S, P>>>,
     branches: RwLock<HashMap<HashValue, BlockChain<E, C, S, P>>>,
@@ -44,7 +44,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
-    S: BlockChainStore + 'static,
+    S: Store + 'static,
 {
     pub fn new() -> Self {
         BlockChainCollection {
@@ -188,7 +188,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
-    S: BlockChainStore + 'static,
+    S: Store + 'static,
 {
     config: Arc<NodeConfig>,
     collection: Arc<BlockChainCollection<E, C, S, P>>,
@@ -203,7 +203,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
-    S: BlockChainStore + 'static,
+    S: Store + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -436,7 +436,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
-    S: BlockChainStore,
+    S: Store,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
@@ -555,7 +555,7 @@ where
     E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
-    S: BlockChainStore + 'static,
+    S: Store + 'static,
 {
     let collection = Arc::new(BlockChainCollection::new());
     let master = BlockChain::new(

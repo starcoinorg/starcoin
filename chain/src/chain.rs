@@ -18,7 +18,7 @@ use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use storage::BlockChainStore;
+use storage::Store;
 use traits::{ChainReader, ChainWriter};
 use types::{
     account_address::AccountAddress,
@@ -33,7 +33,7 @@ pub struct BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: BlockChainStore + 'static,
+    S: Store + 'static,
     P: TxPoolAsyncService + 'static,
 {
     pub config: Arc<NodeConfig>,
@@ -53,7 +53,7 @@ impl<E, C, S, P> BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: BlockChainStore,
+    S: Store,
     P: TxPoolAsyncService,
 {
     pub fn new(
@@ -283,7 +283,7 @@ impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: BlockChainStore,
+    S: Store,
     P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
@@ -429,7 +429,7 @@ impl<E, C, S, P> ChainWriter for BlockChain<E, C, S, P>
 where
     E: TransactionExecutor,
     C: Consensus,
-    S: BlockChainStore,
+    S: Store,
     P: TxPoolAsyncService,
 {
     fn apply(&mut self, block: Block) -> Result<()> {

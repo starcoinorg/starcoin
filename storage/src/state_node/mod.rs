@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::storage::{CodecStorage, Repository, ValueCodec};
+use crate::define_storage;
+use crate::storage::{CodecStorage, ValueCodec};
 use crate::STATE_NODE_PREFIX_NAME;
 use anyhow::{Error, Result};
 use crypto::HashValue;
@@ -11,17 +12,7 @@ use state_tree::{StateNode, StateNodeStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-pub struct StateNodeStorage {
-    storage: CodecStorage<HashValue, StateNode>,
-}
-
-impl StateNodeStorage {
-    pub fn new(storage: Arc<dyn Repository>) -> Self {
-        Self {
-            storage: CodecStorage::new(storage),
-        }
-    }
-}
+define_storage!(StateStorage, HashValue, StateNode, STATE_NODE_PREFIX_NAME);
 
 impl ValueCodec for StateNode {
     fn encode_value(&self) -> Result<Vec<u8>> {
@@ -33,23 +24,23 @@ impl ValueCodec for StateNode {
     }
 }
 
-impl StateNodeStore for StateNodeStorage {
+impl StateNodeStore for StateStorage {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
         //TODO use ref as key
-        self.storage.get(hash.clone())
+        self.store.get(hash.clone())
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
-        self.storage.put(key, node)
+        self.store.put(key, node)
     }
 
-    fn write_batch(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
+    fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for (key, node) in nodes.iter() {
             batch
                 .put::<HashValue, StateNode>(STATE_NODE_PREFIX_NAME, *key, node.clone())
                 .unwrap();
         }
-        self.storage.write_batch(batch)
+        self.store.write_batch(batch)
     }
 }

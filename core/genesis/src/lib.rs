@@ -9,7 +9,7 @@ use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_executor::TransactionExecutor;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{BlockChainStore, BlockStorageOp};
+use starcoin_storage::{BlockStore, Store};
 use starcoin_types::block::BlockInfo;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::TransactionInfo;
@@ -29,7 +29,7 @@ impl Genesis {
     where
         E: TransactionExecutor + 'static,
         C: Consensus + 'static,
-        S: BlockChainStore + 'static,
+        S: Store + 'static,
     {
         info!("Init genesis");
         //TODO init genesis by network
@@ -53,7 +53,7 @@ impl Genesis {
         assert_eq!(block.header().number(), 0);
         info!("Genesis block id : {:?}", block.header().id());
         let chain_info = ChainInfo::new(None, block.header().id(), block.header());
-        BlockStorageOp::commit_branch_block(storage.as_ref(), block.header().id(), block.clone())?;
+        BlockStore::commit_branch_block(storage.as_ref(), block.header().id(), block.clone())?;
         let startup_info = StartupInfo::new(chain_info, vec![]);
         //save block info for accumulator init
         storage.save_block_info(BlockInfo::new(
@@ -96,7 +96,8 @@ mod tests {
     use starcoin_executor::executor::Executor;
     use starcoin_storage::cache_storage::CacheStorage;
     use starcoin_storage::db_storage::DBStorage;
-    use starcoin_storage::StarcoinStorage;
+    use starcoin_storage::storage::StorageInstance;
+    use starcoin_storage::Storage;
 
     #[stest::test]
     pub fn test_genesis() -> Result<()> {
@@ -104,9 +105,14 @@ mod tests {
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-        let storage =
-            Arc::new(StarcoinStorage::new(cache_storage.clone(), db_storage.clone()).unwrap());
-        let genesis = Genesis::new::<Executor, DummyConsensus, StarcoinStorage>(config, storage)
+        let storage = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                cache_storage.clone(),
+                db_storage.clone(),
+            ))
+            .unwrap(),
+        );
+        let genesis = Genesis::new::<Executor, DummyConsensus, Storage>(config, storage)
             .expect("init genesis must success.");
         info!("genesis: {:?}", genesis);
         Ok(())

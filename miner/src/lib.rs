@@ -25,7 +25,7 @@ use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
-use storage::BlockChainStore;
+use storage::Store;
 use traits::ChainAsyncService;
 use traits::ChainReader;
 use types::transaction::TxStatus;
@@ -53,7 +53,7 @@ where
     E: TransactionExecutor + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
-    S: BlockChainStore + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
     H: ConsensusHeader + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
@@ -74,7 +74,7 @@ where
     E: TransactionExecutor + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
-    S: BlockChainStore + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
     H: ConsensusHeader + Sync + Send + 'static,
 {
     pub fn launch(
@@ -154,7 +154,7 @@ where
     E: TransactionExecutor + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
-    S: BlockChainStore + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
     H: ConsensusHeader + Sync + Send + 'static,
 {
     type Context = Context<Self>;
@@ -170,7 +170,7 @@ where
     E: TransactionExecutor + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
-    S: BlockChainStore + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
     H: ConsensusHeader + Sync + Send + 'static,
 {
     type Result = Result<()>;

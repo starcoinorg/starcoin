@@ -2,13 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::storage::{ColumnFamilyName, InnerRepository, WriteOp};
-use crate::{
-    ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME,
-    BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_SONS_PREFIX_NAME, STARTUP_INFO_PREFIX_NAME, STATE_NODE_PREFIX_NAME,
-    TRANSACTION_PREFIX_NAME,
-};
+use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
+use crate::VEC_PREFIX_NAME;
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
 use rocksdb::{
@@ -36,29 +31,12 @@ impl DBStorage {
         readonly: bool,
         log_dir: Option<P>,
     ) -> Result<Self> {
-        let cf_opts_map: ColumnFamilyOptionsMap = [
-            (
-                /* LedgerInfo CF = */ DEFAULT_CF_NAME,
-                ColumnFamilyOptions::default(),
-            ),
-            (
-                ACCUMULATOR_INDEX_PREFIX_NAME,
-                ColumnFamilyOptions::default(),
-            ),
-            (ACCUMULATOR_NODE_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_HEADER_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_SONS_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_BODY_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_NUM_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (BLOCK_INFO_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (STATE_NODE_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (TRANSACTION_PREFIX_NAME, ColumnFamilyOptions::default()),
-            (STARTUP_INFO_PREFIX_NAME, ColumnFamilyOptions::default()),
-        ]
-        .iter()
-        .cloned()
-        .collect();
+        let mut cf_opts_map = ColumnFamilyOptionsMap::new();
+        for prefix_name in &VEC_PREFIX_NAME.to_vec() {
+            cf_opts_map.insert(prefix_name, ColumnFamilyOptions::default());
+        }
+        cf_opts_map.insert(DEFAULT_CF_NAME, ColumnFamilyOptions::default());
+
         let path = db_root_path.as_ref().join("starcoindb");
 
         let db = if readonly {
@@ -161,21 +139,7 @@ impl DBStorage {
     }
 
     pub fn drop_cf(&mut self) -> Result<(), Error> {
-        let vec_cf = vec![
-            DEFAULT_CF_NAME,
-            ACCUMULATOR_INDEX_PREFIX_NAME,
-            ACCUMULATOR_NODE_PREFIX_NAME,
-            BLOCK_PREFIX_NAME,
-            BLOCK_HEADER_PREFIX_NAME,
-            BLOCK_SONS_PREFIX_NAME,
-            BLOCK_BODY_PREFIX_NAME,
-            BLOCK_NUM_PREFIX_NAME,
-            BLOCK_INFO_PREFIX_NAME,
-            STATE_NODE_PREFIX_NAME,
-            TRANSACTION_PREFIX_NAME,
-            STARTUP_INFO_PREFIX_NAME,
-        ];
-        for cf in vec_cf {
+        for cf in &VEC_PREFIX_NAME.to_vec() {
             self.db
                 .drop_cf(cf)
                 .map_err(Self::convert_rocksdb_err)
@@ -209,7 +173,7 @@ impl DBStorage {
     }
 }
 
-impl InnerRepository for DBStorage {
+impl InnerStore for DBStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         let cf_handle = self.get_cf_handle(prefix_name)?;
         match self

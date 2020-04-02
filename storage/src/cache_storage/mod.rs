@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::storage::{InnerRepository, WriteOp};
+use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
 use parking_lot::Mutex;
@@ -26,7 +26,7 @@ impl CacheStorage {
     }
 }
 
-impl InnerRepository for CacheStorage {
+impl InnerStore for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         let compose = compose_key(prefix_name.to_string(), key)?;
         Ok(self.cache.lock().get(&compose).map(|v| v.to_vec()))
@@ -54,8 +54,10 @@ impl InnerRepository for CacheStorage {
         for (prefix_name, rows) in &batch.rows {
             for (key, write_op) in rows {
                 match write_op {
-                    WriteOp::Value(value) => self.put(prefix_name, key.to_vec(), value.to_vec()),
-                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()),
+                    WriteOp::Value(value) => {
+                        self.put(prefix_name, key.to_vec(), value.to_vec()).unwrap()
+                    }
+                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
                 };
             }
         }

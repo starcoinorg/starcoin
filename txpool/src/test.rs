@@ -1,7 +1,9 @@
+use crate::pool::AccountSeqNumberClient;
 use crate::TxPoolRef;
 use anyhow::Result;
 use common_crypto::ed25519;
 use common_crypto::hash::CryptoHash;
+use parking_lot::RwLock;
 use starcoin_bus::BusActor;
 use starcoin_config::{NodeConfig, TxPoolConfig};
 use starcoin_consensus::argon_consensus::ArgonConsensus;
@@ -9,11 +11,39 @@ use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
 use starcoin_genesis::Genesis;
 use starcoin_txpool_api::TxPoolAsyncService;
+use std::collections::HashMap;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
-use storage::StarcoinStorage;
+use storage::storage::StorageInstance;
+use storage::Storage;
 use types::account_address::AccountAddress;
+
+#[derive(Clone, Debug)]
+struct MockNonceClient {
+    cache: Arc<RwLock<HashMap<AccountAddress, u64>>>,
+}
+
+impl Default for MockNonceClient {
+    fn default() -> Self {
+        Self {
+            cache: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+}
+
+impl AccountSeqNumberClient for MockNonceClient {
+    fn account_seq_number(&self, address: &AccountAddress) -> u64 {
+        let cached = self.cache.read().get(address).cloned();
+        match cached {
+            Some(v) => v,
+            None => {
+                self.cache.write().insert(address.clone(), 0);
+                0
+            }
+        }
+    }
+}
 
 #[actix_rt::test]
 async fn test_tx_pool() -> Result<()> {
@@ -80,16 +110,19 @@ fn gen_pool_for_test() -> TxPoolRef {
     let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = tempfile::tempdir().unwrap();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Arc::new(StarcoinStorage::new(cache_storage, db_storage).unwrap());
+    let storage = Arc::new(
+        Storage::new(StorageInstance::new_cache_and_db_instance(
+            cache_storage,
+            db_storage,
+        ))
+        .unwrap(),
+    );
     let node_config = NodeConfig::random_for_test();
 
-    let genesis = Genesis::new::<Executor, ArgonConsensus, StarcoinStorage>(
-        Arc::new(node_config),
-        storage.clone(),
-    )
-    .expect("init gensis fail");
+    let genesis =
+        Genesis::new::<Executor, ArgonConsensus, Storage>(Arc::new(node_config), storage.clone())
+            .expect("init gensis fail");
     let startup_info = genesis.startup_info().clone();
-
     let bus = BusActor::launch();
     let pool = TxPoolRef::start(
         TxPoolConfig::default(),

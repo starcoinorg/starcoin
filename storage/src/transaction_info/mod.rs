@@ -1,17 +1,22 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{CodecStorage, Repository, ValueCodec};
+use crate::batch::WriteBatch;
+use crate::define_storage;
+use crate::storage::{CodecStorage, ValueCodec};
+use crate::TRANSACTION_PREFIX_NAME;
 use anyhow::Result;
-use crypto::hash::CryptoHash;
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::sync::Arc;
 use types::transaction::TransactionInfo;
 
-pub struct TransactionInfoStore {
-    store: CodecStorage<HashValue, TransactionInfo>,
-}
+define_storage!(
+    TransactionInfoStorage,
+    HashValue,
+    TransactionInfo,
+    TRANSACTION_PREFIX_NAME
+);
 
 impl ValueCodec for TransactionInfo {
     fn encode_value(&self) -> Result<Vec<u8>> {
@@ -20,25 +25,5 @@ impl ValueCodec for TransactionInfo {
 
     fn decode_value(data: &[u8]) -> Result<Self> {
         Self::decode(data)
-    }
-}
-
-impl TransactionInfoStore {
-    pub fn new(kv_store: Arc<dyn Repository>) -> Self {
-        TransactionInfoStore {
-            store: CodecStorage::new(kv_store),
-        }
-    }
-
-    pub fn save(&self, txn_info: TransactionInfo) -> Result<()> {
-        self.store.put(txn_info.crypto_hash(), txn_info)
-    }
-
-    pub fn get(&self, hash_value: HashValue) -> Result<Option<TransactionInfo>> {
-        self.store.get(hash_value)
-    }
-
-    pub fn remove(&self, transaction_id: HashValue) -> Result<()> {
-        self.store.remove(transaction_id)
     }
 }
