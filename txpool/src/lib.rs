@@ -23,7 +23,7 @@ use starcoin_config::TxPoolConfig;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::{fmt::Debug, sync::Arc};
 use storage::Storage;
-use storage::{BlockChainStore, BlockStore};
+use storage::{BlockStore, Store};
 #[cfg(test)]
 use types::block::BlockHeader;
 use types::{block::Block, transaction, transaction::SignedUserTransaction};
@@ -45,7 +45,7 @@ pub struct TxPoolRef {
 impl TxPoolRef {
     pub fn start(
         pool_config: TxPoolConfig,
-        storage: Arc<dyn BlockChainStore>,
+        storage: Arc<dyn Store>,
         best_block_hash: HashValue,
         bus: actix::Addr<BusActor>,
     ) -> TxPoolRef {

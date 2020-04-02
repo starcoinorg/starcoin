@@ -9,7 +9,7 @@ use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_executor::TransactionExecutor;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{BlockChainStore, BlockStore};
+use starcoin_storage::{BlockStore, Store};
 use starcoin_types::block::BlockInfo;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::TransactionInfo;
@@ -29,7 +29,7 @@ impl Genesis {
     where
         E: TransactionExecutor + 'static,
         C: Consensus + 'static,
-        S: BlockChainStore + 'static,
+        S: Store + 'static,
     {
         info!("Init genesis");
         //TODO init genesis by network

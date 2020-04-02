@@ -17,7 +17,7 @@ use futures_channel::mpsc;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_config::TxPoolConfig;
 use std::sync::Arc;
-use storage::BlockChainStore;
+use storage::Store;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
 use types::{
     block::BlockHeader, system_events::SystemEvents, transaction,
@@ -29,7 +29,7 @@ type TxnQueue = pool::TransactionQueue;
 pub(crate) struct TxPoolActor {
     queue: Arc<TxnQueue>,
     chain_header: BlockHeader,
-    storage: Arc<dyn BlockChainStore>,
+    storage: Arc<dyn Store>,
     sequence_number_cache: NonceCache,
     bus: actix::Addr<BusActor>,
 }
@@ -48,7 +48,7 @@ impl std::fmt::Debug for TxPoolActor {
 impl TxPoolActor {
     pub fn new(
         pool_config: TxPoolConfig,
-        storage: Arc<dyn BlockChainStore>,
+        storage: Arc<dyn Store>,
         chain_header: BlockHeader,
         bus: actix::Addr<BusActor>,
     ) -> Self {

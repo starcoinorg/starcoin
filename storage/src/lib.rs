@@ -342,9 +342,8 @@ impl BlockInfoStore for Storage {
     }
 }
 
-//TODO should move this traits to traits crate?
 /// Chain storage define
-pub trait BlockChainStore:
+pub trait Store:
     StateNodeStore + BlockStore + AccumulatorTreeStore + BlockInfoStore + IntoSuper<dyn StateNodeStore>
 {
 }
@@ -371,11 +370,7 @@ impl<'a, T: 'a + StateNodeStore> IntoSuper<dyn StateNodeStore + 'a> for T {
     }
 }
 
-impl BlockChainStore for Storage {
-    // fn state_store(self) -> StateNodeStore {
-    //     self.state_node_storage
-    // }
-}
+impl Store for Storage {}
 
 ///ensure slice length
 fn ensure_slice_len_eq(data: &[u8], len: usize) -> Result<()> {

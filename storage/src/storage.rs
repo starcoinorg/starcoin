@@ -40,7 +40,6 @@ pub trait InnerStore: Send + Sync {
 }
 
 ///Storage instance type define
-//#[derive(Debug, Clone, PartialEq, Eq)]
 #[derive(Clone)]
 pub enum StorageInstance {
     CACHE {
