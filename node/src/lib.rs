@@ -18,8 +18,10 @@ pub use actor::{NodeActor, NodeRef};
 use starcoin_consensus::argon_consensus::{ArgonConsensus, ArgonConsensusHeader};
 use starcoin_consensus::dummy::{DummyConsensus, DummyHeader};
 use std::thread::JoinHandle;
+use tokio::runtime::Runtime;
 
 pub struct NodeHandle {
+    runtime: Runtime,
     thread_handle: JoinHandle<()>,
     stop_sender: oneshot::Sender<()>,
 }
@@ -30,13 +32,15 @@ impl NodeHandle {
         stop_sender: oneshot::Sender<()>,
     ) -> Self {
         Self {
+            runtime: Runtime::new().unwrap(),
             thread_handle,
             stop_sender,
         }
     }
 
-    pub fn join(self) -> Result<()> {
-        block_on(async {
+    pub fn join(mut self) -> Result<()> {
+        //TODO use a more light method.
+        self.runtime.block_on(async {
             tokio::signal::ctrl_c().await.unwrap();
             println!("Ctrl-C received, shutting down");
         });
@@ -69,6 +73,7 @@ where
     C: Consensus + 'static,
     H: ConsensusHeader + 'static,
 {
+    let (start_sender, start_receiver) = oneshot::channel();
     let (stop_sender, stop_receiver) = oneshot::channel();
     let thread_handle = std::thread::spawn(move || {
         //TODO actix and tokio use same runtime, and config thread pool.
@@ -87,11 +92,18 @@ where
                 }
                 Ok(handle) => handle,
             };
-
-            stop_receiver.await.unwrap();
+            if start_sender.send(()).is_err() {
+                info!("Start send error.");
+            }
+            if stop_receiver.await.is_err() {
+                info!("Stop receiver await error.");
+            }
             info!("Receive stop signal, try to stop system.");
             System::current().stop();
         });
     });
+    if block_on(async { start_receiver.await }).is_err() {
+        info!("Wait start receiver error.");
+    }
     NodeHandle::new(thread_handle, stop_sender)
 }
