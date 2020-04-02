@@ -9,7 +9,7 @@ use starcoin_state_api::ChainState;
 use statedb::ChainStateDB;
 use std::sync::Arc;
 use storage::{
-    cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, StarcoinStorage,
+    cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage,
 };
 use types::{
     account_address::AccountAddress,
@@ -44,8 +44,8 @@ impl TransactionExecutor for Executor {
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage,
-                db_storage,
+                cache_storage.clone(),
+                db_storage.clone(),
             ))
             .unwrap(),
         );

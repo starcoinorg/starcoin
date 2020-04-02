@@ -15,7 +15,7 @@ use starcoin_rpc_server::JSONRpcActor;
 use starcoin_state_service::ChainStateActor;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::{BlockStorageOp, StarcoinStorage};
+use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
@@ -23,7 +23,6 @@ use starcoin_types::peer_info::PeerInfo;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
-use storage::storage::StorageInstance;
 use tokio::runtime::Handle;
 
 pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<()>

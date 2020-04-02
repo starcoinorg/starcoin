@@ -1,7 +1,9 @@
+use crate::pool::AccountSeqNumberClient;
 use crate::TxPoolRef;
 use anyhow::Result;
 use common_crypto::ed25519;
 use common_crypto::hash::CryptoHash;
+use parking_lot::RwLock;
 use starcoin_bus::BusActor;
 use starcoin_config::{NodeConfig, TxPoolConfig};
 use starcoin_consensus::argon_consensus::ArgonConsensus;
@@ -9,6 +11,7 @@ use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
 use starcoin_genesis::Genesis;
 use starcoin_txpool_api::TxPoolAsyncService;
+use std::collections::HashMap;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
@@ -116,11 +119,9 @@ fn gen_pool_for_test() -> TxPoolRef {
     );
     let node_config = NodeConfig::random_for_test();
 
-    let genesis = Genesis::new::<Executor, ArgonConsensus, StarcoinStorage>(
-        Arc::new(node_config),
-        storage.clone(),
-    )
-    .expect("init gensis fail");
+    let genesis =
+        Genesis::new::<Executor, ArgonConsensus, Storage>(Arc::new(node_config), storage.clone())
+            .expect("init gensis fail");
     let startup_info = genesis.startup_info().clone();
     let bus = BusActor::launch();
     let pool = TxPoolRef::start(
