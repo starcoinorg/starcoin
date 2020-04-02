@@ -70,15 +70,7 @@ pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
 
-    fn save(&self, block: Block) -> Result<()>;
-
-    fn save_header(&self, header: BlockHeader) -> Result<()>;
-
     fn get_headers(&self) -> Result<Vec<HashValue>>;
-
-    fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()>;
-
-    fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()>;
 
     fn save_branch_number(
         &self,
@@ -94,8 +86,6 @@ pub trait BlockStore {
     fn get_branch_number(&self, branch_id: HashValue, number: u64) -> Result<Option<HashValue>>;
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>>;
-
-    fn commit_block(&self, block: Block) -> Result<()>;
 
     fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()>;
 
@@ -188,24 +178,8 @@ impl BlockStore for Storage {
         )
     }
 
-    fn save(&self, block: Block) -> Result<()> {
-        self.block_storage.save(block)
-    }
-
-    fn save_header(&self, header: BlockHeader) -> Result<()> {
-        self.block_storage.save_header(header)
-    }
-
     fn get_headers(&self) -> Result<Vec<HashValue>> {
         self.block_storage.get_headers()
-    }
-
-    fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()> {
-        self.block_storage.save_body(block_id, body)
-    }
-
-    fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()> {
-        self.block_storage.save_number(number, block_id)
     }
 
     fn save_branch_number(
@@ -236,10 +210,6 @@ impl BlockStore for Storage {
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>> {
         self.block_storage.get_number(number)
-    }
-
-    fn commit_block(&self, block: Block) -> Result<()> {
-        self.block_storage.commit_block(block)
     }
 
     fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()> {

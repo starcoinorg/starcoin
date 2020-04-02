@@ -116,7 +116,7 @@ where
         Ok(())
     }
 
-    fn save_block(&self, block: &Block) {
+    pub fn save_block(&self, block: &Block) {
         if let Err(e) = self
             .storage
             .commit_branch_block(self.get_chain_info().branch_id(), block.clone())
@@ -137,7 +137,7 @@ where
         };
         block_info
     }
-    fn save_block_info(&self, block_info: BlockInfo) {
+    pub fn save_block_info(&self, block_info: BlockInfo) {
         if let Err(e) = self.storage.save_block_info(block_info) {
             warn!("err : {:?}", e);
         }
@@ -153,7 +153,7 @@ where
         });
     }
 
-    pub fn latest_blocks(&self) {
+    pub fn latest_blocks(&self, size: u64) {
         let mut count = 0;
         let mut last = self.head.header().clone();
         loop {
@@ -162,7 +162,7 @@ where
                 last.number(),
                 last.id()
             );
-            if last.number() == 0 || count >= 10 {
+            if last.number() == 0 || count >= size {
                 break;
             }
             last = self
@@ -276,6 +276,10 @@ where
     pub fn get_branch_id(&self, number: BlockNumber) -> Option<HashValue> {
         self.block_chain_collection
             .get_branch_id(&self.chain_info.branch_id(), number)
+    }
+
+    pub fn update_head(&mut self, latest_block: BlockHeader) {
+        self.chain_info.update_head(latest_block)
     }
 }
 
@@ -487,20 +491,28 @@ where
         if let Err(e) = self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx) {
             warn!("err : {:?}", e);
         }
-        self.save_block(&block);
         if let Err(e) = chain_state.flush() {
             warn!("err : {:?}", e);
         }
-        self.chain_info.update_head(block.header().clone());
-        self.head = block.clone();
-        self.save_block_info(BlockInfo::new(
+        let block_info = BlockInfo::new(
             header.id(),
             self.accumulator.get_frozen_subtree_roots().unwrap(),
             self.accumulator.num_leaves(),
             self.accumulator.num_nodes(),
-        ));
-        debug!("save block {:?} succ.", block.header().id());
-        //todo
+        );
+        if let Err(e) = self.commit(block, block_info) {
+            warn!("err : {:?}", e);
+        }
+        Ok(())
+    }
+
+    fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()> {
+        let block_id = block.header().id();
+        self.save_block(&block);
+        self.chain_info.update_head(block.header().clone());
+        self.head = block;
+        self.save_block_info(block_info);
+        debug!("save block {:?} succ.", block_id);
         Ok(())
     }
 
