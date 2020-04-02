@@ -135,7 +135,7 @@ where
         bus.clone(),
         storage.clone(),
     )?;
-    let download_actor = DownloadActor::launch(peer_info, chain, network.clone(), bus.clone())?;
+    let download_actor = DownloadActor::launch(peer_info, chain, network.clone(), bus.clone(), storage.clone())?;
     let _sync = SyncActor::launch(bus, process_actor, download_actor)?;
     //TODO manager MinerClient by actor.
     let stratum_server = config.miner.stratum_server;
