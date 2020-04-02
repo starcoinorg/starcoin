@@ -218,7 +218,7 @@ mod tests {
         let mut _rt = Runtime::new().unwrap();
         let (service1, _service2) =
             build_test_network_pair("127.0.0.1".to_string(), _rt.handle().clone());
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(2));
         let fut = async move {
             assert_eq!(
                 service1

@@ -3926,7 +3926,9 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "anyhow",
+ "async-trait",
  "futures 0.3.4",
+ "libp2p 0.16.1",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -5887,6 +5889,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "async-trait",
  "bitflags",
  "bytes 0.5.4",
  "derive_more",

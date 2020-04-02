@@ -15,3 +15,5 @@ serde = { version = "1.0.99", default-features = false }
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-tree={path = "../../state/state-tree"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+async-trait = "0.1.13"
+libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
