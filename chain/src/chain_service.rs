@@ -317,16 +317,7 @@ where
                     .await;
             });
 
-            if let Some(network) = self.network.clone() {
-                Arbiter::spawn(async move {
-                    info!("broadcast system event : {:?}", block.header().id());
-                    network
-                        .clone()
-                        .broadcast_system_event(SystemEvents::NewHeadBlock(block))
-                        .await
-                        .expect("broadcast new head block failed.");
-                });
-            };
+            self.broadcast_2_network(block);
         } else {
             self.collection.insert_branch(new_branch);
         }
@@ -424,6 +415,19 @@ where
             tx_retracted.len()
         );
         (tx_enacted, tx_retracted)
+    }
+
+    pub fn broadcast_2_network(&self, block: Block) {
+        if let Some(network) = self.network.clone() {
+            Arbiter::spawn(async move {
+                info!("broadcast system event : {:?}", block.header().id());
+                network
+                    .clone()
+                    .broadcast_system_event(SystemEvents::NewHeadBlock(block))
+                    .await
+                    .expect("broadcast new head block failed.");
+            });
+        };
     }
 }
 

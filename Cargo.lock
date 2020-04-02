@@ -6168,6 +6168,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "async-std",
  "atomic_refcell",
  "forkable-jellyfish-merkle",
  "futures 0.3.4",

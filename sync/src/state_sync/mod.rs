@@ -1,20 +1,22 @@
 use crate::download::Downloader;
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
-use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, ResponseActFuture};
+use actix::{Actor, Addr, Context, Handler};
 use anyhow::{format_err, Result};
 use atomic_refcell::AtomicRefCell;
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use forkable_jellyfish_merkle::{node_type::Node, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use futures::channel::mpsc::{unbounded, UnboundedSender};
+use futures::sink::SinkExt;
+use futures::stream::StreamExt;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use parking_lot::RwLock;
 use starcoin_state_tree::mock::MockStateNodeStore;
-use starcoin_state_tree::{StateNode, StateNodeStore, StateTree};
-use std::collections::hash_map::HashMap;
-use std::collections::{BTreeMap, HashSet};
+use starcoin_state_tree::{StateNode, StateNodeStore};
+use std::collections::HashSet;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -50,14 +52,14 @@ where
         }
     }
 
-    fn all_son_exist(&self, node_key: &HashValue) -> bool {
+    fn _all_son_exist(&self, node_key: &HashValue) -> bool {
         if let Some(current_node) = self.state_node_storage.get(node_key).unwrap() {
             let node = current_node.0;
             match node {
                 Node::Leaf(_) => true,
                 Node::Internal(n) => {
                     for child in n.all_child() {
-                        if !self.all_son_exist(&child) {
+                        if !self._all_son_exist(&child) {
                             warn!("node {:?} child {:?} not exist.", node_key, child);
                             return false;
                         }
@@ -75,77 +77,111 @@ where
         }
     }
 
-    pub fn is_complete(&self) -> bool {
-        self.all_son_exist(&self.root.borrow())
+    pub fn _is_complete(&self) -> bool {
+        self._all_son_exist(&self.root.borrow())
     }
 
-    pub fn reset(&self, root: &HashValue) {
+    pub fn _reset(&self, root: &HashValue) {
         self.syncing.write().clear();
         std::mem::swap(self.root.borrow_mut().deref_mut(), &mut root.clone());
     }
 
-    async fn sync_state_node(&self, node_key: HashValue) -> Result<StateNode> {
-        match self.state_node_storage.get(&node_key)? {
-            Some(node) => return Ok(node),
-            None => {
-                let _ = self.syncing.write().insert(node_key);
-                let best_peer = Downloader::best_peer(self.downloader.clone())
-                    .await
-                    .unwrap();
-                let get_state_node_by_node_hash_req = RPCRequest::GetStateNodeByNodeHash(node_key);
-                match self
-                    .network_service
-                    .clone()
-                    .send_request(
-                        best_peer.id.clone().into(),
-                        get_state_node_by_node_hash_req.clone(),
-                        do_duration(DELAY_TIME),
-                    )
-                    .await
-                    .unwrap()
-                {
-                    RPCResponse::GetStateNodeByNodeHash(state_node) => {
+    fn sync_state_node(
+        sync_task: Arc<StateSyncTask<E, C>>,
+        node_key: HashValue,
+        sender: UnboundedSender<Result<StateNode>>,
+    ) {
+        Arbiter::spawn(async move {
+            let state_node = match sync_task.state_node_storage.get(&node_key).unwrap() {
+                Some(node) => Ok(node),
+                None => {
+                    let _ = sync_task.syncing.write().insert(node_key);
+                    let best_peer = Downloader::best_peer(sync_task.downloader.clone())
+                        .await
+                        .unwrap();
+                    let get_state_node_by_node_hash_req =
+                        RPCRequest::GetStateNodeByNodeHash(node_key);
+                    if let RPCResponse::GetStateNodeByNodeHash(state_node) = sync_task
+                        .network_service
+                        .clone()
+                        .send_request(
+                            best_peer.id.clone().into(),
+                            get_state_node_by_node_hash_req.clone(),
+                            do_duration(DELAY_TIME),
+                        )
+                        .await
+                        .unwrap()
+                    {
                         debug!("get_state_node_by_node_hash_resp:{:?}", state_node);
-                        let _ = self.syncing.write().remove(&node_key);
-                        return Ok(state_node);
+                        let _ = sync_task.syncing.write().remove(&node_key);
+                        Ok(state_node)
+                    } else {
+                        Err(format_err!("{:?}", "error RPCResponse type."))
                     }
-                    _ => return Err(format_err!("{:?}", "error RPCResponse type.")),
-                };
-            }
-        };
+                }
+            };
+
+            let _ = sender.clone().send(state_node);
+            ()
+        });
     }
 
-    async fn sync_state(&self, node_key: &HashValue) {
-        let node = match self.state_node_storage.get(node_key).unwrap() {
+    fn sync_state(sync_task: Arc<StateSyncTask<E, C>>, node_key: &HashValue) {
+        let node = match sync_task.clone().state_node_storage.get(node_key).unwrap() {
             Some(node) => node,
-            None => self.sync_state_node(node_key.clone()).await.unwrap(),
+            None => {
+                let (sender, mut receiver) = unbounded();
+                Self::sync_state_node(sync_task.clone(), node_key.clone(), sender);
+
+                async_std::task::block_on(async move {
+                    let mut tmp = None;
+                    loop {
+                        ::futures::select! {
+                            result = receiver.select_next_some() => {
+                                match result {
+                                    Ok(sync_state) => {
+                                        tmp = Some(sync_state);
+                                        break;
+                                    },
+                                    Err(err) => {
+                                        warn!("error: {:?}", err);
+                                    },
+                                }
+                            },
+                            complete => {
+                               break;
+                            }
+                        }
+                    }
+                    tmp.unwrap()
+                })
+            }
         };
 
         match node.inner() {
-            Node::Leaf(_) => {}
+            Node::Leaf(_) => return,
             Node::Internal(n) => {
                 for child in n.all_child() {
-                    self.sync_state(&child);
+                    Self::sync_state(sync_task.clone(), &child);
                 }
             }
             _ => {
                 warn!("node {:?} is null.", node_key);
+                return;
             }
         }
     }
 
-    async fn state_sync(&self) {
-        let root = &*self.root.borrow();
-        self.sync_state(root).await;
-        // Arbiter::spawn(move {
-        //
-        // })
+    fn state_sync(sync_task: Arc<StateSyncTask<E, C>>) {
+        let root = &*sync_task.root.borrow();
+        Self::sync_state(sync_task.clone(), root);
     }
 }
 
 #[test]
 fn test_state_node_cache_complete() {
     use starcoin_state_tree::update_nibble;
+    use starcoin_state_tree::StateTree;
 
     let s = Arc::new(MockStateNodeStore::new());
     let store = Arc::clone(&s);
@@ -176,6 +212,7 @@ fn test_state_node_cache_complete() {
 #[test]
 fn test_state_node_cache_not_complete() {
     use starcoin_state_tree::update_nibble;
+    use starcoin_state_tree::StateTree;
 
     let s = MockStateNodeStore::new();
     let state = StateTree::new(Arc::new(s), None);
@@ -203,7 +240,7 @@ struct StateSyncEvent {
     root: HashValue,
 }
 
-struct StateSyncActor<E, C>
+pub struct StateSyncActor<E, C>
 where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
@@ -216,13 +253,13 @@ where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    pub fn _launch(
+    pub fn launch(
         root: HashValue,
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
         downloader: Arc<Downloader<E, C>>,
     ) -> Result<Addr<StateSyncActor<E, C>>> {
-        let state_sync_actor = StateSyncActor::create(move |ctx| Self {
+        let state_sync_actor = StateSyncActor::create(move |_ctx| Self {
             sync_task: Arc::new(StateSyncTask::new(
                 root,
                 state_node_storage,
@@ -231,12 +268,6 @@ where
             )),
         });
         Ok(state_sync_actor)
-    }
-
-    fn put_nodes(&self, state_nodes: Vec<(HashValue, StateNode)>) {
-        for (node_key, state_node) in state_nodes {
-            let _ = self.sync_task.state_node_storage.put(node_key, state_node);
-        }
     }
 }
 
@@ -248,6 +279,10 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
+        let sync_task = self.sync_task.clone();
+        Arbiter::spawn(async move {
+            StateSyncTask::state_sync(sync_task);
+        });
         info!("{:?}", "state sync actor started.");
     }
 }
