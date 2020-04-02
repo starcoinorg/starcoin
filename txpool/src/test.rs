@@ -8,11 +8,11 @@ use starcoin_consensus::argon_consensus::ArgonConsensus;
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
 use starcoin_genesis::Genesis;
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::db_storage::DBStorage;
 use storage::StarcoinStorage;
-use traits::TxPoolAsyncService;
 use types::account_address::AccountAddress;
 
 #[ignore]
