@@ -51,10 +51,14 @@ fn main() {
             let txn = txn_generator
                 .generate_mock_txn::<Executor>(&account_state_reader)
                 .expect("generate ok");
-            let success = client
-                .submit_transaction(txn.as_signed_user_txn().unwrap().clone())
-                .unwrap();
-            println!("success: {}", success);
+            let user_txn = txn.as_signed_user_txn().unwrap();
+            let success = client.submit_transaction(user_txn.clone()).unwrap();
+            info!(
+                "submit txn, sender:{},seq:{},success:{}",
+                user_txn.sender(),
+                user_txn.sequence_number(),
+                success
+            );
             std::thread::sleep(interval);
         }
     });
