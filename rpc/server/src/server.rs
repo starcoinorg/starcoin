@@ -54,7 +54,7 @@ impl RpcServer {
     pub fn close(self) {
         self.ipc.close();
         if let Some(http) = self.http {
-            http.close()
+            http.close();
         }
         if let Some(tcp) = self.tcp {
             tcp.close();
@@ -62,5 +62,6 @@ impl RpcServer {
         if let Some(ws) = self.ws {
             ws.close();
         }
+        info!("Rpc Sever is closed.");
     }
 }
