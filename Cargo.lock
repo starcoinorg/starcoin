@@ -885,23 +885,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "compiler"
-version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=7a35ed6edb7921ab096028aed91b8e5ff11cc74d#7a35ed6edb7921ab096028aed91b8e5ff11cc74d"
-dependencies = [
- "anyhow",
- "bytecode-source-map",
- "bytecode-verifier",
- "ir-to-bytecode",
- "libra-types",
- "move-ir-types",
- "serde_json",
- "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=7a35ed6edb7921ab096028aed91b8e5ff11cc74d)",
- "structopt",
- "vm",
-]
-
-[[package]]
 name = "const-random"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5699,16 +5682,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-compiler"
-version = "0.1.0"
-dependencies = [
- "compiler",
- "starcoin-logger",
- "starcoin-types",
- "stest",
-]
-
-[[package]]
 name = "starcoin-config"
 version = "0.1.0"
 dependencies = [
@@ -5797,7 +5770,6 @@ dependencies = [
  "libra-types",
  "once_cell",
  "starcoin-canonical-serialization",
- "starcoin-compiler",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
@@ -5808,7 +5780,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-runtime",
- "stdlib 0.1.0",
+ "stdlib",
  "stest",
 ]
 
@@ -6255,7 +6227,6 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.4",
  "futures-channel",
- "libra-temppath",
  "linked-hash-map",
  "log 0.4.8",
  "parking_lot 0.9.0",
@@ -6264,8 +6235,10 @@ dependencies = [
  "serde_derive",
  "starcoin-bus",
  "starcoin-config",
+ "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-genesis",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
@@ -6274,6 +6247,7 @@ dependencies = [
  "starcoin-tx-relay",
  "starcoin-txpool-api",
  "starcoin-types",
+ "tempfile",
  "trace-time",
  "transaction-pool",
 ]
@@ -6360,7 +6334,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-traits",
  "starcoin-types",
- "stdlib 0.1.0",
+ "stdlib",
  "stest",
  "vm",
 ]
@@ -6427,21 +6401,6 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-
-[[package]]
-name = "stdlib"
-version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=7a35ed6edb7921ab096028aed91b8e5ff11cc74d#7a35ed6edb7921ab096028aed91b8e5ff11cc74d"
-dependencies = [
- "bytecode-verifier",
- "datatest-stable",
- "include_dir",
- "libra-canonical-serialization",
- "libra-types",
- "move-lang",
- "once_cell",
- "vm",
-]
 
 [[package]]
 name = "stdlib"
