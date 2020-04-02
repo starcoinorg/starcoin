@@ -6,6 +6,8 @@ use libp2p::multihash;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 
+use crate::{block::BlockNumber, U256};
+use starcoin_crypto::HashValue;
 use std::fmt;
 use std::str::FromStr;
 
@@ -123,27 +125,37 @@ impl fmt::Display for PeerId {
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
-    pub id: PeerId,
+    peer_id: PeerId,
+    block_number: BlockNumber,
+    total_difficult: U256,
+    block_id: HashValue,
 }
 
 impl PeerInfo {
-    pub fn new(id: PeerId) -> Self {
-        PeerInfo { id }
-    }
-
-    pub fn random() -> Self {
+    pub fn new(peer_id: PeerId) -> Self {
         PeerInfo {
-            id: PeerId::random(),
+            peer_id,
+            block_number: 0,
+            total_difficult: U256::zero(),
+            block_id: HashValue::random(),
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    pub fn _new(
+        peer_id: PeerId,
+        block_number: BlockNumber,
+        total_difficult: U256,
+        block_id: HashValue,
+    ) -> Self {
+        PeerInfo {
+            peer_id,
+            block_number,
+            total_difficult,
+            block_id,
+        }
+    }
 
-    #[test]
-    fn test_peer_info() {
-        let _peer_info = PeerInfo::random();
+    pub fn get_peer_id(&self) -> PeerId {
+        self.peer_id.clone()
     }
 }

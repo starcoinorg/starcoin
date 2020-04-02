@@ -81,7 +81,7 @@ where
                 if let RPCResponse::BatchHeaderAndBodyMsg(headers, _bodies) = network
                     .clone()
                     .send_request(
-                        peer.id.clone().into(),
+                        peer.get_peer_id().clone().into(),
                         get_data_by_hash_req.clone(),
                         do_duration(DELAY_TIME),
                     )

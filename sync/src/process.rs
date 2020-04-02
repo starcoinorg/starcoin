@@ -91,7 +91,9 @@ where
                 ProcessMessage::NewPeerMsg(peer_info) => {
                     info!(
                         "send latest_state_msg to peer : {:?}:{:?}, message id is {:?}",
-                        peer_info.id, my_peer_info.id, id
+                        peer_info.get_peer_id(),
+                        my_peer_info.get_peer_id(),
+                        id
                     );
                     let latest_state_msg =
                         Processor::send_latest_state_msg(processor.clone()).await;
@@ -99,7 +101,7 @@ where
                     if let Err(e) = network
                         .clone()
                         .send_peer_message(
-                            peer_info.id.into(),
+                            peer_info.get_peer_id().into(),
                             PeerMessage::LatestStateMsg(latest_state_msg),
                         )
                         .await

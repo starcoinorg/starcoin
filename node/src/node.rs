@@ -19,6 +19,7 @@ use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
@@ -123,7 +124,7 @@ where
             receiver,
             default_account,
         );
-    let peer_info = Arc::new(PeerInfo::random());
+    let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
     let process_actor = ProcessActor::<Executor, C>::launch(
         Arc::clone(&peer_info),
         chain.clone(),
