@@ -25,6 +25,8 @@ use std::time::Duration;
 use tokio::runtime::Handle;
 
 use crypto::{hash::CryptoHash, HashValue};
+use network_p2p_api::messages::RawRpcRequestMessage;
+use network_p2p_api::Network;
 use std::collections::HashMap;
 use types::transaction::SignedUserTransaction;
 
@@ -34,6 +36,7 @@ const LRU_CACHE_SIZE: usize = 1024;
 pub struct NetworkAsyncService {
     addr: Addr<NetworkActor>,
     message_processor: MessageProcessor<u128, RPCResponse>,
+    raw_message_processor: MessageProcessor<u128, Vec<u8>>,
     tx: mpsc::UnboundedSender<NetworkMessage>,
     peer_id: PeerId,
     handle: Handle,
@@ -44,6 +47,7 @@ struct Inner {
     network_service: SNetworkService,
     bus: Addr<BusActor>,
     message_processor: MessageProcessor<u128, RPCResponse>,
+    raw_message_processor: MessageProcessor<u128, Vec<u8>>,
     handle: Handle,
     peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
 }
@@ -84,11 +88,6 @@ impl NetworkAsyncService {
         Ok(())
     }
 
-    #[cfg(test)]
-    pub fn network_actor_addr(&self) -> Addr<NetworkActor> {
-        self.addr.clone()
-    }
-
     pub async fn send_request(
         &self,
         peer_id: PeerId,
@@ -127,6 +126,48 @@ impl NetworkAsyncService {
     pub fn identify(&self) -> &PeerId {
         &self.peer_id
     }
+
+    pub async fn send_request_bytes(
+        &self,
+        peer_id: PeerId,
+        message: Vec<u8>,
+        time_out: Duration,
+    ) -> Result<Vec<u8>> {
+        let request_id = get_unix_ts();
+        let peer_msg = PeerMessage::RawRPCRequest(request_id, message);
+        let data = peer_msg.encode()?;
+        let network_message = NetworkMessage {
+            peer_id: peer_id.clone().into(),
+            data,
+        };
+        self.tx.unbounded_send(network_message)?;
+        let (tx, rx) = futures::channel::mpsc::channel(1);
+        let message_future = MessageFuture::new(rx);
+        self.raw_message_processor.add_future(request_id, tx).await;
+        info!("send request to {} with id {}", peer_id, request_id);
+        let processor = self.message_processor.clone();
+        let peer_id_clone = peer_id.clone();
+        let task = async move {
+            Delay::new(time_out).await;
+            processor.remove_future(request_id).await;
+            warn!(
+                "send request to {} with id {} timeout",
+                peer_id_clone, request_id
+            );
+        };
+
+        self.handle.spawn(task);
+        let response = message_future.await;
+        info!("receive response from {} with id {}", peer_id, request_id);
+        response
+    }
+}
+
+impl NetworkAsyncService {
+    #[cfg(test)]
+    pub fn network_actor_addr(&self) -> Addr<NetworkActor> {
+        self.addr.clone()
+    }
 }
 
 pub struct NetworkActor {
@@ -155,6 +196,10 @@ impl NetworkActor {
         );
         let message_processor = MessageProcessor::new();
         let message_processor_clone = message_processor.clone();
+
+        let raw_message_processor = MessageProcessor::new();
+        let raw_message_processor_clone = raw_message_processor.clone();
+
         let peer_id = service.identify().clone();
 
         let service_clone = service.clone();
@@ -171,6 +216,7 @@ impl NetworkActor {
             bus,
             handle: handle.clone(),
             message_processor: message_processor_clone,
+            raw_message_processor: raw_message_processor_clone,
             peers,
         };
         let inner = Arc::new(inner);
@@ -178,6 +224,7 @@ impl NetworkActor {
         NetworkAsyncService {
             addr,
             message_processor,
+            raw_message_processor,
             tx,
             peer_id,
             inner,
@@ -294,6 +341,33 @@ impl Inner {
             PeerMessage::RPCResponse(id, response) => {
                 info!("do response.");
                 self.message_processor.send_response(id, response).await?;
+            }
+            PeerMessage::RawRPCRequest(id, request) => {
+                info!("do request.");
+                let (tx, mut rx) = mpsc::channel(1);
+                self.bus
+                    .send(Broadcast {
+                        msg: RawRpcRequestMessage {
+                            responder: tx,
+                            request,
+                        },
+                    })
+                    .await?;
+                let network_service = self.network_service.clone();
+                let task = async move {
+                    let response = rx.next().await.unwrap();
+                    let peer_msg = PeerMessage::RawRPCResponse(id, response);
+                    let data = peer_msg.encode().unwrap();
+                    network_service.send_message(peer_id, data).await.unwrap();
+                };
+                self.handle.spawn(task);
+                info!("receive rpc request");
+            }
+            PeerMessage::RawRPCResponse(id, response) => {
+                info!("do response.");
+                self.raw_message_processor
+                    .send_response(id, response)
+                    .await?;
             }
         }
         Ok(())

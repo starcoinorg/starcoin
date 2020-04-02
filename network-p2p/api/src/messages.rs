@@ -24,6 +24,8 @@ pub enum PeerMessage {
     LatestStateMsg(LatestStateMsg),
     RPCRequest(u128, RPCRequest),
     RPCResponse(u128, RPCResponse),
+    RawRPCRequest(u128, Vec<u8>),
+    RawRPCResponse(u128, Vec<u8>),
 }
 
 #[rtype(result = "Result<()>")]
@@ -47,6 +49,13 @@ pub enum RPCRequest {
 pub struct RpcRequestMessage {
     pub request: RPCRequest,
     pub responder: Sender<RPCResponse>,
+}
+
+#[rtype(result = "Result<()>")]
+#[derive(Debug, Message, Clone)]
+pub struct RawRpcRequestMessage {
+    pub request: Vec<u8>,
+    pub responder: Sender<Vec<u8>>,
 }
 
 #[rtype(result = "Result<()>")]
