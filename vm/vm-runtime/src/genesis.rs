@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::genesis_gas_schedule::initial_gas_schedule;
-use crate::transaction_helper::TransactionHelper;
 use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
@@ -27,8 +26,6 @@ use vm::{
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
-
-//use std::str::FromStr;
 
 const GENESIS_SEED: [u8; 32] = [42; 32];
 
@@ -111,8 +108,8 @@ fn create_and_initialize_main_accounts(
     public_key: &Ed25519PublicKey,
     initial_gas_schedule: Value,
 ) {
-    let association_addr =
-        TransactionHelper::to_libra_account_address(account_config::association_address());
+    let association_addr: libra_types::account_address::AccountAddress =
+        account_config::association_address().into();
     let mut txn_data = TransactionMetadata::default();
     txn_data.sender = association_addr;
 
@@ -137,8 +134,8 @@ fn create_and_initialize_main_accounts(
         });
 
     // create the transaction fee account
-    let transaction_fee_address =
-        TransactionHelper::to_libra_account_address(account_config::transaction_fee_address());
+    let transaction_fee_address: libra_types::account_address::AccountAddress =
+        account_config::transaction_fee_address().into();
     move_vm
         .execute_function(
             &ACCOUNT_MODULE,
@@ -159,7 +156,7 @@ fn create_and_initialize_main_accounts(
         });
 
     // create the mint account
-    let mint_address = TransactionHelper::to_libra_account_address(account_config::mint_address());
+    let mint_address: libra_types::account_address::AccountAddress = account_config::mint_address().into();
     move_vm
         .execute_function(
             &ACCOUNT_MODULE,

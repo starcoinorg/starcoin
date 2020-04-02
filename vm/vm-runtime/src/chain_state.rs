@@ -7,9 +7,7 @@ use libra_types::{
     access_path::AccessPath as LibraAccessPath,
     write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet},
 };
-use logger::prelude::*;
 use move_vm_state::data_cache::RemoteCache;
-
 use crypto::HashValue;
 use starcoin_state_api::ChainState;
 use types::{access_path::AccessPath, account_address::AccountAddress};
@@ -72,6 +70,7 @@ impl<'txn> StateStore<'txn> {
     }
 }
 
+/// read-only snapshot of the global state, to construct remote cache
 impl<'txn> StateView for StateStore<'txn> {
     fn get(&self, access_path: &LibraAccessPath) -> Result<Option<Vec<u8>>> {
         ChainState::get(self.chain_state, &AccessPath::from(access_path.clone()))
@@ -86,7 +85,7 @@ impl<'txn> StateView for StateStore<'txn> {
     }
 }
 
-// This is used by the `process_transaction` API.
+/// data cache, to construct transaction execution context
 impl<'txn> RemoteCache for StateStore<'txn> {
     fn get(&self, access_path: &LibraAccessPath) -> VMResult<Option<Vec<u8>>> {
         Ok(StateView::get(self, access_path).expect("it should not error"))

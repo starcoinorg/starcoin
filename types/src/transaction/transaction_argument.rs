@@ -110,6 +110,21 @@ pub fn parse_as_transaction_argument(s: &str) -> Result<TransactionArgument> {
     Err(ErrorKind::ParseError(format!("cannot parse \"{}\" as transaction argument", s)).into())
 }
 
+//======================= libra type converter ============================
+
+impl Into<libra_types::transaction::TransactionArgument> for TransactionArgument {
+    fn into(self) -> libra_types::transaction::TransactionArgument {
+        match self {
+            TransactionArgument::U64(value) => libra_types::transaction::TransactionArgument::U64(value),
+            TransactionArgument::Bool(boolean) => libra_types::transaction::TransactionArgument::Bool(boolean),
+            TransactionArgument::Address(address) => {
+                libra_types::transaction::TransactionArgument::Address(address.into())
+            }
+            TransactionArgument::U8Vector(vec) => libra_types::transaction::TransactionArgument::U8Vector(vec.clone()),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test_transaction_argument {
     use crate::transaction::transaction_argument::*;
