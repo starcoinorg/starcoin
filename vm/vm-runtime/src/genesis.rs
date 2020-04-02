@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::genesis_gas_schedule::initial_gas_schedule;
+use crate::gas::initial_gas_schedule;
 use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
@@ -156,7 +156,8 @@ fn create_and_initialize_main_accounts(
         });
 
     // create the mint account
-    let mint_address: libra_types::account_address::AccountAddress = account_config::mint_address().into();
+    let mint_address: libra_types::account_address::AccountAddress =
+        account_config::mint_address().into();
     move_vm
         .execute_function(
             &ACCOUNT_MODULE,

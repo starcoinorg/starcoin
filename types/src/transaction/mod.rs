@@ -667,9 +667,7 @@ impl Into<libra_types::transaction::TransactionPayload> for TransactionPayload {
             TransactionPayload::Module(m) => {
                 libra_types::transaction::TransactionPayload::Module(m.into())
             }
-            TransactionPayload::StateSet(_) => {
-                unimplemented!()
-            }
+            TransactionPayload::StateSet(_) => unimplemented!(),
         }
     }
 }
@@ -684,10 +682,13 @@ impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction
             self.gas_unit_price(),
             self.expiration_time(),
         );
-        libra_types::transaction::SignedTransaction::new(raw_txn, self.public_key(), self.signature())
+        libra_types::transaction::SignedTransaction::new(
+            raw_txn,
+            self.public_key(),
+            self.signature(),
+        )
     }
 }
-
 
 impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
     fn from(status: libra_types::transaction::TransactionStatus) -> Self {
@@ -714,4 +715,3 @@ impl From<libra_types::transaction::TransactionOutput> for TransactionOutput {
         )
     }
 }
-
