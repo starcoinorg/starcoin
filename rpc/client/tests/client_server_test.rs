@@ -22,10 +22,10 @@ fn test_multi_client() -> Result<()> {
 
     let config = Arc::new(NodeConfig::random_for_test());
     let http_address = config.rpc.http_address.as_ref().unwrap();
-    let ipc_file = config.rpc.get_ipc_file(config.data_dir.as_path());
+    let ipc_file = config.rpc.get_ipc_file().to_path_buf();
     let url = format!("http://{}", http_address.to_string());
     debug!("url:{}", url);
-    debug!("data_dir:{:?}", config.data_dir);
+    debug!("data_dir:{:?}", config.data_dir());
 
     system.block_on(async {
         let (stop_sender, stop_receiver) = oneshot::channel::<bool>();

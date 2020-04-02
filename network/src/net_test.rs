@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod tests {
-    use config::get_available_port;
+    use config::{get_available_port, NodeConfig};
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
         stream::StreamExt,
@@ -14,13 +14,12 @@ mod tests {
     use futures_timer::Delay;
 
     use network_p2p::PeerId;
-    use types::peer_info::PeerId as SPeerId;
 
     use crate::{helper::convert_boot_nodes, PeerEvent};
 
     use crate::net::{build_network_service, SNetworkService};
 
-    use crate::messages::NetworkMessage;
+    use crate::NetworkMessage;
 
     pub type NetworkComponent = (
         SNetworkService,
@@ -70,7 +69,7 @@ mod tests {
                     result[0].0.identify().to_base58()
                 ));
             }
-            let mut config = config::NetworkConfig::random_for_test();
+            let mut config = NodeConfig::random_for_test().network.clone();
 
             config.listen = format!("/ip4/{}/tcp/{}", host, base_port + index as u16);
             config.seeds = boot_nodes;
@@ -121,12 +120,12 @@ mod tests {
 
                 match if count % 2 == 0 {
                     tx2.unbounded_send(NetworkMessage {
-                        peer_id: SPeerId::from(msg_peer_id_1.clone()),
+                        peer_id: msg_peer_id_1.clone(),
                         data: random_bytes,
                     })
                 } else {
                     tx1.unbounded_send(NetworkMessage {
-                        peer_id: SPeerId::from(msg_peer_id_2.clone()),
+                        peer_id: msg_peer_id_2.clone(),
                         data: random_bytes,
                     })
                 } {
@@ -258,7 +257,7 @@ mod tests {
         ::logger::init_for_test();
 
         let mut rt = Runtime::new().unwrap();
-        let mut node_config1 = config::NetworkConfig::random_for_test();
+        let mut node_config1 = NodeConfig::random_for_test().network.clone();
         node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
 
         let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
@@ -266,7 +265,7 @@ mod tests {
 
         thread::sleep(Duration::from_secs(1));
 
-        let mut node_config2 = config::NetworkConfig::random_for_test();
+        let mut node_config2 = NodeConfig::random_for_test().network.clone();
         let addr1_hex = service1.identify().to_base58();
         let seed = format!("{}/p2p/{}", &node_config1.listen, addr1_hex);
         node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
@@ -276,7 +275,7 @@ mod tests {
 
         thread::sleep(Duration::from_secs(1));
 
-        let mut node_config3 = config::NetworkConfig::random_for_test();
+        let mut node_config3 = NodeConfig::random_for_test().network.clone();
         node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         node_config3.seeds = vec![seed];
         let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =

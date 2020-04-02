@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{helper::convert_boot_nodes, PeerEvent};
+use crate::{helper::convert_boot_nodes, Message, NetworkMessage, PeerEvent};
 
-use crate::messages::{Message, NetworkMessage};
 use anyhow::*;
 use futures::{
     channel::{

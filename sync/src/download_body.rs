@@ -4,10 +4,8 @@ use actix::prelude::*;
 use anyhow::Result;
 use consensus::Consensus;
 use executor::TransactionExecutor;
-use network::{
-    sync_messages::{DataType, GetDataByHashMsg, ProcessMessage},
-    NetworkAsyncService, RPCRequest, RPCResponse,
-};
+use network::{NetworkAsyncService, RPCRequest, RPCResponse};
+use network_p2p_api::sync_messages::{DataType, GetDataByHashMsg, ProcessMessage};
 use std::sync::Arc;
 use types::{block::BlockHeader, peer_info::PeerInfo};
 

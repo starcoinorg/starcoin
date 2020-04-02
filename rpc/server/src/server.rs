@@ -20,11 +20,11 @@ pub struct RpcServer {
 
 impl RpcServer {
     pub fn new(config: Arc<NodeConfig>, io_handler: IoHandler) -> RpcServer {
-        let ipc_file = config.rpc.get_ipc_file(config.data_dir.as_path());
+        let ipc_file = config.rpc.get_ipc_file();
         let ipc = jsonrpc_ipc_server::ServerBuilder::new(io_handler.clone())
             .start(ipc_file.to_str().expect("Path to string should success."))
             .expect("Unable to start IPC server.");
-        info!("Ipc rpc server start at :{:?}", ipc_file.as_path());
+        info!("Ipc rpc server start at :{:?}", ipc_file);
         let http = match &config.rpc.http_address {
             Some(address) => {
                 let http = jsonrpc_http_server::ServerBuilder::new(io_handler)

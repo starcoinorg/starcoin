@@ -14,10 +14,11 @@ use logger::prelude::*;
 use network::network::NetworkAsyncService;
 use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::collections::HashMap;
 use std::sync::Arc;
 use storage::BlockChainStore;
-use traits::{ChainReader, ChainService, ChainWriter, TxPoolAsyncService};
+use traits::{ChainReader, ChainService, ChainWriter};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockNumber, BlockTemplate},
@@ -316,16 +317,7 @@ where
                     .await;
             });
 
-            if let Some(network) = self.network.clone() {
-                Arbiter::spawn(async move {
-                    info!("broadcast system event : {:?}", block.header().id());
-                    network
-                        .clone()
-                        .broadcast_system_event(SystemEvents::NewHeadBlock(block))
-                        .await
-                        .expect("broadcast new head block failed.");
-                });
-            };
+            self.broadcast_2_network(block);
         } else {
             self.collection.insert_branch(new_branch);
         }
@@ -423,6 +415,19 @@ where
             tx_retracted.len()
         );
         (tx_enacted, tx_retracted)
+    }
+
+    pub fn broadcast_2_network(&self, block: Block) {
+        if let Some(network) = self.network.clone() {
+            Arbiter::spawn(async move {
+                info!("broadcast system event : {:?}", block.header().id());
+                network
+                    .clone()
+                    .broadcast_system_event(SystemEvents::NewHeadBlock(block))
+                    .await
+                    .expect("broadcast new head block failed.");
+            });
+        };
     }
 }
 

@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::blob::Blob;
 use crate::{
-    blob::Blob,
     node_type::{SparseMerkleInternalNode, SparseMerkleLeafNode},
     SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
@@ -12,7 +12,7 @@ use starcoin_crypto::hash::*;
 
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
 /// hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SparseMerkleProof {
     /// This proof can be used to authenticate whether a given leaf exists in the tree or not.
     ///     - If this is `Some(HashValue, HashValue)`

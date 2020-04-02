@@ -55,18 +55,17 @@ impl Consensus for DummyConsensus {
         block_template: BlockTemplate,
         _cancel: Receiver<()>,
     ) -> Result<Block> {
-        if config.miner.dev_mode == true {
+        if config.miner.dev_period > 0 {
             let start = SystemTime::now();
             let since_the_epoch = start
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards");
             let mut rng: StdRng = SeedableRng::seed_from_u64(since_the_epoch.as_secs());
-            let time: u64 = rng.gen_range(5, 15);
-            info!("rand time : {}", time);
-            thread::sleep(Duration::from_secs(time));
-            Ok(block_template.into_block(DummyHeader {}))
-        } else {
-            unimplemented!()
+            let time: u64 = rng.gen_range(0, config.miner.dev_period * 1000);
+            debug!("DummyConsensus rand sleep time : {}", time);
+            thread::sleep(Duration::from_millis(time));
+            //TODO use sleep time as difficult
         }
+        Ok(block_template.into_block(DummyHeader {}))
     }
 }

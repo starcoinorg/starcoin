@@ -12,7 +12,7 @@ extern crate transaction_pool as tx_pool;
 
 pub use crate::pool::TxStatus;
 use crate::tx_pool_service_impl::{
-    ChainNewBlock, GetPendingTxns, ImportTxns, SubscribeTxns, TxPoolActor,
+    ChainNewBlock, GetPendingTxns, ImportTxns, RemoveTxn, SubscribeTxns, TxPoolActor,
 };
 use actix::prelude::*;
 use anyhow::Result;
@@ -20,6 +20,7 @@ use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use starcoin_bus::BusActor;
 use starcoin_config::TxPoolConfig;
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::{fmt::Debug, sync::Arc};
 use storage::BlockStore;
 use storage::Storage;
@@ -27,7 +28,6 @@ use traits::TxPoolAsyncService;
 #[cfg(test)]
 use types::block::BlockHeader;
 use types::{block::Block, transaction, transaction::SignedUserTransaction};
-
 mod pool;
 mod pool_client;
 #[cfg(test)]
@@ -92,6 +92,24 @@ impl TxPoolAsyncService for TxPoolRef {
         match request.await {
             Err(e) => Err(e.into()),
             Ok(r) => Ok(r),
+        }
+    }
+
+    async fn remove_txn(
+        self,
+        txn_hash: HashValue,
+        is_invalid: bool,
+    ) -> Result<Option<SignedUserTransaction>> {
+        match self
+            .addr
+            .send(RemoveTxn {
+                txn_hash,
+                is_invalid,
+            })
+            .await
+        {
+            Err(e) => Err(e.into()),
+            Ok(r) => Ok(r.map(|v| v.signed().clone())),
         }
     }
 

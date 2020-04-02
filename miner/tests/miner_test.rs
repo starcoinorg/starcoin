@@ -9,6 +9,7 @@ use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_miner::MinerActor;
+use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -17,7 +18,7 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
-use traits::{ChainAsyncService, TxPoolAsyncService};
+use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::{account_address::AccountAddress, peer_info::PeerInfo};
 
@@ -35,7 +36,10 @@ fn test_miner_with_schedule_pacemaker() {
 
     let fut = async move {
         let peer_info = Arc::new(PeerInfo::random());
-        let config = Arc::new(NodeConfig::random_for_test());
+        let mut config = NodeConfig::random_for_test();
+        config.miner.pacemaker_strategy = PacemakerStrategy::Schedule;
+        config.miner.dev_period = 1;
+        let config = Arc::new(config);
         let bus = BusActor::launch();
         let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = libra_temppath::TempPath::new();
@@ -93,14 +97,20 @@ fn test_miner_with_schedule_pacemaker() {
             chain.clone(),
             network.clone(),
             bus.clone(),
+            storage.clone(),
         )
         .unwrap();
-        let download_actor =
-            DownloadActor::launch(peer_info, chain.clone(), network.clone(), bus.clone())
-                .expect("launch DownloadActor failed.");
+        let download_actor = DownloadActor::launch(
+            peer_info,
+            chain.clone(),
+            network.clone(),
+            bus.clone(),
+            storage.clone(),
+        )
+        .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
-        delay_for(Duration::from_millis(6 * 10 * 1000)).await;
+        delay_for(Duration::from_millis(6 * 1000)).await;
         let number = chain.clone().master_head_header().await.unwrap().number();
         info!("current block number: {}", number);
         assert!(number > 1);
@@ -182,11 +192,17 @@ fn test_miner_with_ondemand_pacemaker() {
             chain.clone(),
             network.clone(),
             bus.clone(),
+            storage.clone(),
         )
         .unwrap();
-        let download_actor =
-            DownloadActor::launch(peer_info, chain.clone(), network.clone(), bus.clone())
-                .expect("launch DownloadActor failed.");
+        let download_actor = DownloadActor::launch(
+            peer_info,
+            chain.clone(),
+            network.clone(),
+            bus.clone(),
+            storage.clone(),
+        )
+        .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
 
         delay_for(Duration::from_millis(6 * 10 * 1000)).await;

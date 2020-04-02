@@ -11,15 +11,15 @@ use executor::executor::mock_create_account_txn;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage::BlockChainStore;
-use traits::{
-    ChainReader, ChainState, ChainStateReader, ChainStateWriter, ChainWriter, TxPoolAsyncService,
-};
+use traits::{ChainReader, ChainWriter};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate, BLOCK_INFO_DEFAULT_ID},

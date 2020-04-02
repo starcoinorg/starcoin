@@ -19,14 +19,15 @@ use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use logger::prelude::*;
 use sc_stratum::{self, PushWorkHandler};
+use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::BlockChainStore;
+use traits::ChainAsyncService;
 use traits::ChainReader;
-use traits::{ChainAsyncService, TxPoolAsyncService};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
@@ -101,7 +102,8 @@ where
                     .start();
                 }
                 PacemakerStrategy::Schedule => {
-                    SchedulePacemaker::new(Duration::from_millis(10 * 1000), sender).start();
+                    SchedulePacemaker::new(Duration::from_secs(config.miner.dev_period), sender)
+                        .start();
                 }
             };
 

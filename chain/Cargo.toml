@@ -14,13 +14,15 @@ thiserror = "1.0"
 actix = "0.9"
 types = {path = "../types", package="starcoin-types"}
 config = {path = "../config", package="starcoin-config"}
-state-tree = {path = "../core/state-tree", package="starcoin-state-tree"}
+state-tree = {path = "../state/state-tree", package="starcoin-state-tree"}
 executor = {path = "../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 consensus = { package="starcoin-consensus", path = "../consensus"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 traits = {path = "../core/traits", package="starcoin-traits"}
+starcoin-state-api = {path = "../state/api"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
+starcoin-txpool-api = {path = "../txpool/api"}
 async-trait = "0.1"
 futures = "0.3"
 parking_lot = "0.9"
@@ -33,7 +35,7 @@ logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
 network = {path = "../network", package="starcoin-network"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
-starcoin-statedb = {path = "../core/statedb"}
+starcoin-statedb = {path = "../state/statedb"}
 bus = {path = "../bus", package="starcoin-bus" }
 starcoin-genesis = {path = "../core/genesis"}
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }

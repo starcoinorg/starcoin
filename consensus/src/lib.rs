@@ -14,9 +14,13 @@ pub mod argon_consensus;
 pub mod difficult;
 pub mod dummy;
 
-pub trait ConsensusHeader: TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin + Clone {}
+pub trait ConsensusHeader:
+    TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin + Clone + Sync + Send
+{
+}
+//TODO merge Consensus and ConsensusHeader to One trait by Trait Associated type.
 
-pub trait Consensus: std::marker::Unpin + Clone {
+pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
     fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8>;
     fn verify_header(
         config: Arc<NodeConfig>,

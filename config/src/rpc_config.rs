@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::get_available_port_multi;
+use crate::{get_available_port_multi, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
@@ -11,6 +12,7 @@ const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024; //10M
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RpcConfig {
+    /// The ipc file name.
     ipc_file: PathBuf,
     /// The address for http rpc.
     pub http_address: Option<SocketAddr>,
@@ -20,45 +22,58 @@ pub struct RpcConfig {
     pub ws_address: Option<SocketAddr>,
     pub max_request_body_size: usize,
     pub threads: Option<usize>,
+    ipc_file_path: Option<PathBuf>,
 }
 
 impl Default for RpcConfig {
     fn default() -> Self {
-        Self {
-            ipc_file: Path::new("starcoin.ipc").to_path_buf(),
-            //TODO http,ws,tcp should be disabled at default.
-            http_address: Some("127.0.0.1:9830".parse::<SocketAddr>().unwrap()),
-            ws_address: Some("127.0.0.1:9831".parse::<SocketAddr>().unwrap()),
-            tcp_address: Some("127.0.0.1:9832".parse::<SocketAddr>().unwrap()),
-            max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
-            threads: None,
-        }
+        Self::default_with_net(ChainNetwork::default())
     }
 }
 
 impl RpcConfig {
-    pub fn random_for_test() -> Self {
-        let mut config = Self::default();
+    pub fn get_ipc_file(&self) -> &Path {
+        self.ipc_file_path
+            .as_ref()
+            .expect("config should init first.")
+    }
+}
+
+impl ConfigModule for RpcConfig {
+    fn default_with_net(_net: ChainNetwork) -> Self {
+        Self {
+            ipc_file: "starcoin.ipc".into(),
+            http_address: None,
+            ws_address: None,
+            tcp_address: None,
+            max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
+            threads: None,
+            ipc_file_path: None,
+        }
+    }
+
+    fn random(&mut self, base: &BaseConfig) {
         let ports = get_available_port_multi(3);
-        config.http_address = Some(
+        self.http_address = Some(
             format!("127.0.0.1:{}", ports[0])
                 .parse::<SocketAddr>()
                 .unwrap(),
         );
-        config.tcp_address = Some(
+        self.tcp_address = Some(
             format!("127.0.0.1:{}", ports[1])
                 .parse::<SocketAddr>()
                 .unwrap(),
         );
-        config.ws_address = Some(
+        self.ws_address = Some(
             format!("127.0.0.1:{}", ports[2])
                 .parse::<SocketAddr>()
                 .unwrap(),
         );
-        config
+        self.ipc_file_path = Some(base.data_dir().join(self.ipc_file.as_path()))
     }
 
-    pub fn get_ipc_file<P: AsRef<Path>>(&self, data_dir: P) -> PathBuf {
-        data_dir.as_ref().join(self.ipc_file.as_path())
+    fn load(&mut self, base: &BaseConfig, _opt: &StarcoinOpt) -> Result<()> {
+        self.ipc_file_path = Some(base.data_dir().join(self.ipc_file.as_path()));
+        Ok(())
     }
 }

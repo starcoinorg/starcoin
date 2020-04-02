@@ -16,8 +16,9 @@ network = {path = "../network", package="starcoin-network"}
 chain = {path = "../chain", package="starcoin-chain" }
 types = {path = "../types", package="starcoin-types" }
 traits = {path = "../core/traits", package="starcoin-traits" }
-statedb = {path = "../core/statedb", package="starcoin-statedb" }
-state_tree = {path = "../core/state-tree", package="starcoin-state-tree" }
+starcoin-state-api = {path = "../state/api"}
+statedb = {path = "../state/statedb", package="starcoin-statedb" }
+state_tree = {path = "../state/state-tree", package="starcoin-state-tree" }
 consensus = {path = "../consensus", package="starcoin-consensus" }
 bus = {path = "../bus", package="starcoin-bus" }
 storage = {path = "../storage", package="starcoin-storage" }
@@ -40,6 +41,7 @@ libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoin
 futures-timer = "3.0.1"
 async-std = "1.5.0"
 starcoin-wallet-api = { path = "../wallet/api"}
+starcoin-txpool-api = {path = "../txpool/api"}
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}

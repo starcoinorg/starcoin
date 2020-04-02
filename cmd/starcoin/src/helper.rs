@@ -3,13 +3,13 @@
 
 use anyhow::Result;
 use starcoin_logger::prelude::*;
-use std::path::PathBuf;
+use std::path::Path;
 use std::time::Duration;
 
 //TODO use notify to implement.
 //TODO move to a suitable crate
 //TODO timeout.
-pub fn wait_until_file_created(file_path: &PathBuf) -> Result<()> {
+pub fn wait_until_file_created(file_path: &Path) -> Result<()> {
     loop {
         debug!("Wait file {:?} create.", file_path);
         if !file_path.exists() {

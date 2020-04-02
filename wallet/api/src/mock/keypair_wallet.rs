@@ -3,7 +3,6 @@
 
 use crate::mock::MemWalletStore;
 use crate::{Wallet, WalletAccount, WalletStore};
-use actix::clock::Duration;
 use anyhow::{ensure, format_err, Result};
 use rand::prelude::*;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
@@ -14,6 +13,7 @@ use starcoin_types::{
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
 use std::convert::TryFrom;
+use std::time::Duration;
 
 type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 

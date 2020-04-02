@@ -3,7 +3,6 @@
 
 use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
-use crate::sync_messages::{DownloadMessage, SyncMessage};
 use crate::{NetworkMessage, PeerEvent, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use actix::prelude::*;
 use anyhow::Result;
@@ -12,6 +11,7 @@ use config::NodeConfig;
 use futures::lock::Mutex;
 use futures::{channel::mpsc, stream::StreamExt};
 use libp2p::PeerId;
+use network_p2p_api::sync_messages::{DownloadMessage, SyncMessage};
 use scs::SCSCodec;
 use std::sync::Arc;
 use tx_relay::*;

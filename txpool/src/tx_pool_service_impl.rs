@@ -234,6 +234,29 @@ impl actix::Handler<ImportTxns> for TxPoolActor {
     }
 }
 
+pub(crate) struct RemoveTxn {
+    pub(crate) txn_hash: HashValue,
+    pub(crate) is_invalid: bool,
+}
+impl actix::Message for RemoveTxn {
+    type Result = Option<Arc<pool::VerifiedTransaction>>;
+}
+impl actix::Handler<RemoveTxn> for TxPoolActor {
+    type Result = actix::MessageResult<RemoveTxn>;
+
+    fn handle(&mut self, msg: RemoveTxn, _ctx: &mut Self::Context) -> Self::Result {
+        let RemoveTxn {
+            txn_hash,
+            is_invalid,
+        } = msg;
+        let mut removed = self.queue.remove(vec![&txn_hash], is_invalid);
+        let removed = removed
+            .pop()
+            .expect("remove should return one result per hash");
+        actix::MessageResult(removed)
+    }
+}
+
 pub(crate) struct GetPendingTxns {
     pub(crate) max_len: u64,
 }
