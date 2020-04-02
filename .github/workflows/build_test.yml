@@ -44,7 +44,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all -j 4
+          args: --all
   test:
     runs-on: ${{matrix.os}}
     strategy:
@@ -64,7 +64,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-targets --no-run -j 4
+          args: --all-targets --no-run
       - name: test
         env:
           RUST_LOG: error
