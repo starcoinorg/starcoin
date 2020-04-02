@@ -6,7 +6,7 @@ use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
-use storage::Storage;
+use storage::BlockChainStore;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -126,9 +126,13 @@ impl std::fmt::Debug for PoolClient {
 }
 
 impl PoolClient {
-    pub fn new(best_block_header: BlockHeader, storage: Arc<Storage>, cache: NonceCache) -> Self {
+    pub fn new(
+        best_block_header: BlockHeader,
+        storage: Arc<dyn BlockChainStore>,
+        cache: NonceCache,
+    ) -> Self {
         let root_hash = best_block_header.state_root();
-        let statedb = ChainStateDB::new(storage, Some(root_hash));
+        let statedb = ChainStateDB::new(storage.into_super_arc(), Some(root_hash));
         let nonce_client = CachedSeqNumberClient::new(statedb, cache);
         Self {
             best_block_header,

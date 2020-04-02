@@ -273,6 +273,7 @@ impl BlockStorage {
         Ok(vev_hash)
     }
     /// Get common ancestor
+    #[allow(dead_code)]
     pub fn get_common_ancestor(
         &self,
         block_id1: HashValue,
@@ -280,7 +281,7 @@ impl BlockStorage {
     ) -> Result<Option<HashValue>> {
         let mut parent_id1 = block_id1;
         let mut parent_id2 = block_id2;
-        let mut found = false;
+        let mut found;
         info!("common ancestor: {:?}, {:?}", block_id1, block_id2);
         match self.get_relationship(block_id1, block_id2) {
             Ok(Some(hash)) => return Ok(Some(hash)),

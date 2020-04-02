@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::node_index::FrozenSubTreeIterator;
 use crate::{
     node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, Accumulator, AccumulatorNode,
     LeafCount, MerkleAccumulator, MockAccumulatorStore,
@@ -94,7 +93,7 @@ fn test_update_left_leaf() {
 
     // update index from 8
     let new_leaves = create_leaves(0..8);
-    let (new_root_hash, first_idx) = accumulator.update(8, &new_leaves).unwrap();
+    let (new_root_hash, _first_idx) = accumulator.update(8, &new_leaves).unwrap();
     proof_verify(&accumulator, new_root_hash, &new_leaves, 4);
     leaves.truncate(4);
     leaves.extend_from_slice(&new_leaves);
@@ -112,7 +111,7 @@ fn test_update_right_leaf() {
 
     // update index from 14
     let new_leaves = create_leaves(0..8);
-    let (new_root_hash, first_idx) = accumulator.update(14, &new_leaves).unwrap();
+    let (new_root_hash, _first_idx) = accumulator.update(14, &new_leaves).unwrap();
     proof_verify(&accumulator, new_root_hash, &new_leaves, 7);
     leaves.truncate(7);
     leaves.extend_from_slice(&new_leaves);

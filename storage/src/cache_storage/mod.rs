@@ -50,13 +50,14 @@ impl InnerStore for CacheStorage {
         Ok(())
     }
 
-    #[allow(dead_code)]
     fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
         for (prefix_name, rows) in &batch.rows {
             for (key, write_op) in rows {
                 match write_op {
-                    WriteOp::Value(value) => self.put(prefix_name, key.to_vec(), value.to_vec()),
-                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()),
+                    WriteOp::Value(value) => {
+                        self.put(prefix_name, key.to_vec(), value.to_vec()).unwrap()
+                    }
+                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
                 };
             }
         }

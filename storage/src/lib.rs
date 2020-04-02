@@ -31,6 +31,7 @@ pub mod cache_storage;
 pub mod db_storage;
 pub mod state_node;
 pub mod storage;
+#[cfg(test)]
 mod tests;
 pub mod transaction_info;
 #[macro_use]
@@ -133,7 +134,7 @@ pub trait BlockStore {
 
 pub struct Storage {
     transaction_info_storage: TransactionInfoStorage,
-    pub block_storage: BlockStorage,
+    block_storage: BlockStorage,
     state_node_storage: StateStorage,
     accumulator_storage: AccumulatorStorage,
     block_info_storage: BlockInfoStorage,
@@ -344,9 +345,30 @@ impl BlockInfoStore for Storage {
 //TODO should move this traits to traits crate?
 /// Chain storage define
 pub trait BlockChainStore:
-    StateNodeStore + BlockStore + AccumulatorTreeStore + BlockInfoStore
+    StateNodeStore + BlockStore + AccumulatorTreeStore + BlockInfoStore + IntoSuper<dyn StateNodeStore>
 {
-    // fn state_store(self) -> StateNodeStore;
+}
+
+pub trait IntoSuper<Super: ?Sized> {
+    fn as_super(&self) -> &Super;
+    fn as_super_mut(&mut self) -> &mut Super;
+    fn into_super(self: Box<Self>) -> Box<Super>;
+    fn into_super_arc(self: Arc<Self>) -> Arc<Super>;
+}
+
+impl<'a, T: 'a + StateNodeStore> IntoSuper<dyn StateNodeStore + 'a> for T {
+    fn as_super(&self) -> &(dyn StateNodeStore + 'a) {
+        self
+    }
+    fn as_super_mut(&mut self) -> &mut (dyn StateNodeStore + 'a) {
+        self
+    }
+    fn into_super(self: Box<Self>) -> Box<dyn StateNodeStore + 'a> {
+        self
+    }
+    fn into_super_arc(self: Arc<Self>) -> Arc<dyn StateNodeStore + 'a> {
+        self
+    }
 }
 
 impl BlockChainStore for Storage {

@@ -133,7 +133,7 @@ impl InnerStore for StorageInstance {
     fn get_len(&self) -> Result<u64, Error> {
         match self {
             StorageInstance::CACHE { cache } => cache.get_len(),
-            StorageInstance::CacheAndDb { cache, db } => cache.get_len(),
+            StorageInstance::CacheAndDb { cache, db: _ } => cache.get_len(),
             _ => bail!("DB instance not support get length method!"),
         }
     }
@@ -141,7 +141,7 @@ impl InnerStore for StorageInstance {
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         match self {
             StorageInstance::CACHE { cache } => cache.keys(),
-            StorageInstance::CacheAndDb { cache, db } => cache.keys(),
+            StorageInstance::CacheAndDb { cache, db: _ } => cache.keys(),
             _ => bail!("DB instance not support keys method!"),
         }
     }
