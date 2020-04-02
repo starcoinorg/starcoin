@@ -47,4 +47,5 @@ members = [
     "rpc/server",
     "cmd/starcoin",
     "cmd/faucet",
+    "cmd/tx-factory",
 ]
