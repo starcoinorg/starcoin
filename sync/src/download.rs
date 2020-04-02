@@ -142,7 +142,7 @@ where
                     info!(
                         "receive new block: {:?} from {:?}",
                         block.header().id(),
-                        peer_info.id
+                        peer_info.get_peer_id()
                     );
                     //1. update latest block
                     let latest_state_msg = LatestStateMsg {
@@ -222,7 +222,7 @@ where
                     if let RPCResponse::BatchHashByNumberMsg(mut batch_hash_by_number_msg) = network
                         .clone()
                         .send_request(
-                            best_peer.id.clone().into(),
+                            best_peer.get_peer_id().clone().into(),
                             get_hash_by_number_req.clone(),
                             do_duration(DELAY_TIME),
                         )
@@ -243,7 +243,7 @@ where
                         if let RPCResponse::BatchHeaderAndBodyMsg(mut headers, bodies) = network
                             .clone()
                             .send_request(
-                                best_peer.id.clone().into(),
+                                best_peer.get_peer_id().clone().into(),
                                 get_data_by_hash_req.clone(),
                                 do_duration(DELAY_TIME),
                             )
@@ -317,7 +317,7 @@ where
                                     ) = network
                                         .clone()
                                         .send_request(
-                                            best_peer.id.clone().into(),
+                                            best_peer.get_peer_id().clone().into(),
                                             get_hash_by_number_req.clone(),
                                             do_duration(DELAY_TIME),
                                         )
@@ -343,7 +343,7 @@ where
                                             network
                                                 .clone()
                                                 .send_request(
-                                                    best_peer.id.clone().into(),
+                                                    best_peer.get_peer_id().clone().into(),
                                                     get_data_by_hash_req.clone(),
                                                     do_duration(DELAY_TIME),
                                                 )
@@ -442,7 +442,7 @@ where
         {
             info!(
                 "peer {:?} : latest number: {} , hash : {:?}",
-                peer.id,
+                peer.get_peer_id(),
                 latest_state_msg.header.number(),
                 latest_state_msg.header.id()
             );
@@ -478,7 +478,9 @@ where
 
         info!(
             "sync with peer {:?} : latest number: {} , begin number : {}",
-            peer.id, number, begin_number
+            peer.get_peer_id(),
+            number,
+            begin_number
         );
         if begin_number < number {
             let mut numbers = Vec::new();
@@ -584,7 +586,7 @@ where
                     if let RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) = network
                         .clone()
                         .send_request(
-                            peer.id.clone().into(),
+                            peer.get_peer_id().clone().into(),
                             get_hash_by_number_req.clone(),
                             do_duration(DELAY_TIME),
                         )

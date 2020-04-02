@@ -105,7 +105,7 @@ where
                         .network_service
                         .clone()
                         .send_request(
-                            best_peer.id.clone().into(),
+                            best_peer.get_peer_id().clone().into(),
                             get_state_node_by_node_hash_req.clone(),
                             do_duration(DELAY_TIME),
                         )

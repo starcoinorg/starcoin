@@ -4,6 +4,7 @@ use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::dummy::DummyConsensus;
 use consensus::dummy::DummyHeader;
+use crypto::HashValue;
 use executor::executor::Executor;
 use logger::prelude::*;
 use network::network::NetworkActor;
@@ -20,7 +21,10 @@ use sync::{DownloadActor, ProcessActor, SyncActor};
 use tokio::time::{delay_for, Duration};
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
-use types::{account_address::AccountAddress, peer_info::PeerInfo};
+use types::{
+    account_address::AccountAddress,
+    peer_info::{PeerId, PeerInfo},
+};
 
 #[test]
 fn it_works() {
@@ -35,7 +39,7 @@ fn test_miner_with_schedule_pacemaker() {
     let mut system = System::new("test");
 
     let fut = async move {
-        let peer_info = Arc::new(PeerInfo::random());
+        let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
         let mut config = NodeConfig::random_for_test();
         config.miner.pacemaker_strategy = PacemakerStrategy::Schedule;
         config.miner.dev_period = 1;
@@ -128,7 +132,7 @@ fn test_miner_with_ondemand_pacemaker() {
     let mut system = System::new("test");
 
     let fut = async move {
-        let peer_info = Arc::new(PeerInfo::random());
+        let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
         let mut conf = NodeConfig::random_for_test();
         conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
         let config = Arc::new(conf);
