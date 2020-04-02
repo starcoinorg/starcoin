@@ -15,6 +15,7 @@ use storage::StarcoinStorage;
 use traits::TxPoolAsyncService;
 use types::account_address::AccountAddress;
 
+#[ignore]
 #[actix_rt::test]
 async fn test_tx_pool() -> Result<()> {
     let pool = gen_pool_for_test();
@@ -39,6 +40,7 @@ async fn test_subscribe_txns() {
     let _ = pool.subscribe_txns().await.unwrap();
 }
 
+#[ignore]
 #[actix_rt::test]
 async fn test_rollback() -> Result<()> {
     let pool = gen_pool_for_test();

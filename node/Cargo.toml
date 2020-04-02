@@ -9,32 +9,31 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-structopt = "0.3.2"
+anyhow = "1.0"
 actix = "0.9"
-#actix_derive = "0.5"
 actix-rt = "1.0"
 tokio = { version = "0.2", features = ["full"] }
 rand = "0.6.5"
-
+futures = "0.3"
+async-trait = "0.1"
 starcoin-config = {path = "../config"}
-bus = {path = "../bus", package="starcoin-bus"}
-consensus = {path = "../consensus", package="starcoin-consensus"}
-executor = {path = "../executor", package="starcoin-executor"}
-network = {path = "../network", package="starcoin-network"}
-txpool = {path = "../txpool", package="starcoin-txpool"}
-chain = {path = "../chain", package="starcoin-chain"}
+starcoin-bus = {path = "../bus"}
+starcoin-consensus = {path = "../consensus"}
+starcoin-executor = {path = "../executor"}
+starcoin-network = {path = "../network"}
+starcoin-txpool = {path = "../txpool"}
+starcoin-chain = {path = "../chain"}
 starcoin-rpc-server = {path = "../rpc/server"}
-storage = {path = "../storage", package="starcoin-storage"}
-miner = {path = "../miner", package="starcoin-miner"}
-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-logger = {path = "../commons/logger", package="starcoin-logger"}
-types = {path = "../types", package="starcoin-types" }
-sync = {path = "../sync", package="starcoin-sync" }
-traits = {path = "../core/traits", package="starcoin-traits" }
+starcoin-storage = {path = "../storage"}
+starcoin-miner = {path = "../miner"}
+starcoin-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-logger = {path = "../commons/logger"}
+starcoin-types = {path = "../types"}
+starcoin-sync = {path = "../sync"}
+starcoin-traits = {path = "../core/traits"}
 starcoin-genesis = { path = "../core/genesis"}
 starcoin-wallet-api = { path = "../wallet/api"}
 starcoin-wallet-service = { path = "../wallet/service"}
 starcoin-state-api = { path = "../state/api"}
 starcoin-state-service = { path = "../state/service"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
 starcoin-txpool-api = {path = "../txpool/api"}
