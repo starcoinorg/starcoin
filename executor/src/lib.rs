@@ -13,6 +13,7 @@ use types::{
 };
 
 pub mod executor;
+#[cfg(test)]
 pub mod executor_test;
 pub mod mock_executor;
 
