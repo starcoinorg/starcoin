@@ -22,7 +22,7 @@ pub struct TxFactoryOpt {
     #[structopt(
         long,
         short = "i",
-        default_value = "1000",
+        default_value = "3000",
         help = "interval(in ms) of txn gen"
     )]
     pub interval: u64,
@@ -48,17 +48,26 @@ fn main() {
         let account_state_reader = AccountStateReader::new(&state_reader);
         let txn_generator = MockTxnGenerator::new(faucet_address);
         while !stopping_signal.load(Ordering::SeqCst) {
-            let txn = txn_generator
+            let success = txn_generator
                 .generate_mock_txn::<Executor>(&account_state_reader)
-                .expect("generate ok");
-            let user_txn = txn.as_signed_user_txn().unwrap();
-            let success = client.submit_transaction(user_txn.clone()).unwrap();
-            info!(
-                "submit txn, sender:{},seq:{},success:{}",
-                user_txn.sender(),
-                user_txn.sequence_number(),
-                success
-            );
+                .and_then(|txn| {
+                    let user_txn = txn.as_signed_user_txn().unwrap();
+                    info!(
+                        "prepare to submit txn, sender:{},seq:{}",
+                        user_txn.sender(),
+                        user_txn.sequence_number(),
+                    );
+                    let success = client.submit_transaction(user_txn.clone());
+                    success
+                });
+            match success {
+                Ok(s) => {
+                    warn!("submit status: {}", s);
+                }
+                Err(e) => {
+                    error!("fail to submit txn, err: {:?}", &e);
+                }
+            }
             std::thread::sleep(interval);
         }
     });
