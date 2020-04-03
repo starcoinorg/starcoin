@@ -10,11 +10,12 @@ on:
     paths-ignore:
       - '**.md'
 jobs:
-  check-fmt:
-    name: check fmt
+  build-and-test:
+    name: build and test
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v1
+      - name: checkout
+        uses: actions/checkout@v1
         with:
           submodules: recursive
       - name: setup rust toolchain
@@ -27,17 +28,6 @@ jobs:
         with:
           command: fmt
           args: -- --check
-  build-all:
-    name: build project
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v1
-        with:
-          submodules: recursive
-      - name: setup rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
       - name: setup environment
         run: bash ./scripts/dev_setup.sh
       - name: build
@@ -45,21 +35,6 @@ jobs:
         with:
           command: build
           args: --all
-  test:
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        os: [linux]
-    steps:
-      - uses: actions/checkout@v1
-        with:
-          submodules: recursive
-      - name: setup rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: dev setup
-        run: bash ./scripts/dev_setup.sh
       - name: build testbin
         uses: actions-rs/cargo@v1
         with:
