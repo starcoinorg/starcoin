@@ -3,7 +3,8 @@
 
 use anyhow::Result;
 use scmd::{CmdContext, Command, CommandAction, ExecContext};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -99,13 +100,24 @@ impl CommandAction for BetaSub1Command {
 }
 
 fn main() -> Result<()> {
-    let context =
-        CmdContext::<Counter, GlobalOpts>::new(Box::new(|global_opt| -> Result<Counter> {
-            Ok(Counter::new(global_opt.counter))
-        }));
+    let context = CmdContext::<Counter, GlobalOpts>::with_default_action(
+        |global_opt| -> Result<Counter> { Ok(Counter::new(global_opt.counter)) },
+        |_app, _opt, _state| {
+            let running = Arc::new(AtomicBool::new(true));
+            let r = running.clone();
+            ctrlc::set_handler(move || {
+                r.store(false, Ordering::SeqCst);
+            })
+            .expect("Error setting Ctrl-C handler");
+            println!("Waiting for Ctrl-C...");
+            while running.load(Ordering::SeqCst) {}
+            println!("Got it! Exiting...");
+        },
+        |_app, _opt, _state| println!("good bye."),
+    );
     context
         .command(
-            Command::with_name("alpha").subcommand(Command::with_action_fn(Box::new(
+            Command::with_name("alpha").subcommand(Command::with_action_fn(
                 |ctx: &ExecContext<Counter, GlobalOpts, AlphaSub1Opts>| -> Result<()> {
                     println!(
                         "hello global_opts:{:?} {:?} state:{:?}",
@@ -115,7 +127,7 @@ fn main() -> Result<()> {
                     );
                     Ok(())
                 },
-            ))),
+            )),
         )
         .command(
             BetaCommand {}

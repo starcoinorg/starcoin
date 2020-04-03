@@ -41,8 +41,13 @@ where
     GlobalOpt: StructOpt,
     Opt: StructOpt,
 {
-    pub fn new(action: Box<dyn Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<()>>) -> Self {
-        Self { action }
+    pub fn new<A>(action: A) -> Self
+    where
+        A: Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<()> + 'static,
+    {
+        Self {
+            action: Box::new(action),
+        }
     }
 }
 
@@ -140,28 +145,43 @@ where
 {
     app: App<'static, 'static>,
     commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
-    default_action: Box<dyn Fn(App, GlobalOpt, State) -> Result<()>>,
+    default_action: Box<dyn Fn(App, GlobalOpt, State)>,
     state_initializer: Box<dyn Fn(&GlobalOpt) -> Result<State>>,
+    quit_action: Box<dyn Fn(App, GlobalOpt, State)>,
 }
 
 impl<State, GlobalOpt> CmdContext<State, GlobalOpt>
 where
     GlobalOpt: StructOpt,
 {
-    pub fn new(state_initializer: Box<dyn Fn(&GlobalOpt) -> Result<State>>) -> Self {
+    pub fn new<I>(state_initializer: I) -> Self
+    where
+        I: Fn(&GlobalOpt) -> Result<State> + 'static,
+    {
         Self::with_default_action(
             state_initializer,
-            Box::new(|mut app, _opt, _state| -> Result<()> {
+            |mut app, _opt, _state| {
                 app.print_long_help().expect("print help should success.");
-                Ok(())
-            }),
+            },
+            |_app, _opt, _state| {
+                println!("quit.");
+            },
         )
     }
 
-    pub fn with_default_action(
-        state_initializer: Box<dyn Fn(&GlobalOpt) -> Result<State>>,
-        default_action: Box<dyn Fn(App, GlobalOpt, State) -> Result<()>>,
-    ) -> Self {
+    /// default_action executed when no subcommand is provided.
+    /// quit_action executed when input quit subcommand at console.
+    /// A and Q's fn signature is same but must use different name.
+    pub fn with_default_action<I, A, Q>(
+        state_initializer: I,
+        default_action: A,
+        quit_action: Q,
+    ) -> Self
+    where
+        I: Fn(&GlobalOpt) -> Result<State> + 'static,
+        A: Fn(App, GlobalOpt, State) + 'static,
+        Q: Fn(App, GlobalOpt, State) + 'static,
+    {
         //insert console command
         let mut app = GlobalOpt::clap();
         app = app.subcommand(
@@ -170,8 +190,9 @@ where
         Self {
             app,
             commands: HashMap::new(),
-            default_action,
-            state_initializer,
+            default_action: Box::new(default_action),
+            state_initializer: Box::new(state_initializer),
+            quit_action: Box::new(quit_action),
         }
     }
 
@@ -212,7 +233,7 @@ where
                 self.console_inner(global_opt, state);
             }
             "" => {
-                self.default_action.as_ref()(self.app, global_opt, state)?;
+                self.default_action.as_ref()(self.app, global_opt, state);
             }
             cmd_name => {
                 let cmd = self.commands.get_mut(cmd_name);
@@ -257,7 +278,16 @@ where
                     let params: Vec<&str> = line.trim().split(' ').map(str::trim).collect();
                     let cmd_name = params[0];
                     match cmd_name {
-                        "quit" => break,
+                        "quit" => {
+                            let global_opt = Arc::try_unwrap(global_opt)
+                                .ok()
+                                .expect("unwrap opt must success when quit.");
+                            let state = Arc::try_unwrap(state)
+                                .ok()
+                                .expect("unwrap state must success when quit.");
+                            self.quit_action.as_ref()(self.app, global_opt, state);
+                            break;
+                        }
                         "help" => {
                             self.app.print_help().expect("print help should success.");
                         }
@@ -363,9 +393,10 @@ where
     GlobalOpt: StructOpt,
     Opt: StructOpt,
 {
-    pub fn with_action_fn(
-        action: Box<dyn Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<()>>,
-    ) -> Self {
+    pub fn with_action_fn<A>(action: A) -> Self
+    where
+        A: Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<()> + 'static,
+    {
         Self {
             app: Opt::clap(),
             action: Some(FnCommandAction::new(action)),

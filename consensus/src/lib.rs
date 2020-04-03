@@ -9,6 +9,7 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
+use types::U256;
 
 pub mod argon_consensus;
 pub mod difficult;
@@ -22,6 +23,11 @@ pub trait ConsensusHeader:
 
 pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
     fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8>;
+
+    fn calculate_next_difficulty(reader: &dyn ChainReader) -> U256 {
+        difficult::get_next_work_required(reader)
+    }
+
     fn verify_header(
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,

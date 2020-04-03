@@ -115,7 +115,6 @@ where
             Ok(header) => header,
             _ => panic!("failed to parse header"),
         };
-
         let block = block_template.into_block(consensus_header);
         // notify chain mined block
         info!("Miner new block: {:?}", block);

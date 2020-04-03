@@ -213,14 +213,13 @@ where
                     collection,
                 )
                 .unwrap();
-                let difficulty = difficult::get_next_work_required(&block_chain);
                 let block_template = block_chain
                     .create_block_template(
                         *miner_account.address(),
                         //TODO check account is exist, if exist, just pass One.
                         Some(miner_account.get_auth_key().prefix().to_vec()),
                         None,
-                        difficulty,
+                        C::calculate_next_difficulty(&block_chain),
                         txns.clone(),
                     )
                     .unwrap();

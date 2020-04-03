@@ -13,5 +13,8 @@ rustyline = "4.1.0"
 structopt = "0.3.2"
 clap = "2.33.0"
 
+[dev-dependencies]
+ctrlc = "3.1.4"
+
 [features]
 default = []

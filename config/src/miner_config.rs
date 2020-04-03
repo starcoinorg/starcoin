@@ -39,7 +39,7 @@ impl ConfigModule for MinerConfig {
             _ => PacemakerStrategy::HeadBlock,
         };
         Self {
-            dev_mode: false,
+            dev_mode: net.is_dev(),
             stratum_server: "127.0.0.1:9000".parse::<SocketAddr>().unwrap(),
             dev_period: 0,
             pacemaker_strategy,
