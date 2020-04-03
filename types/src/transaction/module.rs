@@ -30,3 +30,11 @@ impl fmt::Debug for Module {
             .finish()
     }
 }
+
+//======================= libra type converter ============================
+
+impl Into<libra_types::transaction::Module> for Module {
+    fn into(self) -> libra_types::transaction::Module {
+        libra_types::transaction::Module::new(self.code().to_vec())
+    }
+}

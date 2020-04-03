@@ -1,10 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    chain_state::StateStore, system_module_names::*, transaction_helper::TransactionHelper,
-    transaction_helper::VerifiedTranscationPayload,
-};
+use crate::{chain_state::StateStore, system_module_names::*};
 use config::VMConfig;
 use crypto::ed25519::Ed25519Signature;
 use libra_state_view::StateView;
@@ -28,12 +25,9 @@ use move_vm_types::values::Value;
 use once_cell::sync::Lazy;
 use starcoin_state_api::ChainState;
 use std::collections::BTreeMap;
-use std::convert::TryInto;
 use std::sync::Arc;
 use types::{
-    access_path::AccessPath,
     account_config,
-    account_config::AccountResource,
     block_metadata::BlockMetadata,
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
@@ -248,14 +242,14 @@ impl StarcoinVM {
                         script.code().to_vec(),
                         script.args().to_vec(),
                     )),
-                    Err(e) => return Err(TransactionHelper::to_starcoin_vmstatus(e)),
+                    Err(e) => return Err(e.into()),
                 }
             }
             TransactionPayload::Module(module) => {
                 let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
                 match result {
                     Ok(_) => Ok(VerifiedTranscationPayload::Module(module.code().to_vec())),
-                    Err(e) => return Err(TransactionHelper::to_starcoin_vmstatus(e)),
+                    Err(e) => return Err(e.into()),
                 }
             }
             _ => Err(VMStatus::new(StatusCode::UNREACHABLE)),
@@ -267,10 +261,9 @@ impl StarcoinVM {
         chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
-        let mut state_store = StateStore::new(chain_state);
+        let state_store = StateStore::new(chain_state);
         let data_cache = BlockDataCache::new(&state_store);
-        let mut ctx = SystemExecutionContext::new(&data_cache, GasUnits::new(0));
-        let libra_txn = TransactionHelper::to_libra_signed_transaction(&txn);
+        let libra_txn = txn.clone().into();
         let txn_data = TransactionMetadata::new(&libra_txn);
         let signature_verified_txn = match txn.check_signature() {
             Ok(t) => t,
@@ -298,7 +291,6 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
         payload: VerifiedTranscationPayload,
     ) -> LibraTransactionOutput {
-        info!("execute verified payload");
         let mut ctx = TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
         let mut failed_gas_left = GasUnits::new(0);
         let output = match payload {
@@ -309,11 +301,8 @@ impl StarcoinVM {
                 ////////
                 let gas_schedule = match self.get_gas_schedule() {
                     Ok(s) => s,
-                    Err(e) => {
-                        return discard_libra_error_output(TransactionHelper::to_libra_vmstatus(e))
-                    }
+                    Err(e) => return discard_libra_error_output(e.into()),
                 };
-                info!("invoke MoveVM::execute_script()");
                 self.move_vm.execute_script(
                     s,
                     gas_schedule,
@@ -330,7 +319,7 @@ impl StarcoinVM {
         .and_then(|_| {
             failed_gas_left = ctx.remaining_gas();
             let mut gas_free_ctx = SystemExecutionContext::from(ctx);
-            self.run_epilogue(&mut gas_free_ctx, txn_data);
+            self.run_epilogue(&mut gas_free_ctx, txn_data).ok();
             get_transaction_output(
                 &mut gas_free_ctx,
                 txn_data,
@@ -339,10 +328,9 @@ impl StarcoinVM {
         })
         .unwrap_or_else(|err| {
             let mut gas_free_ctx = SystemExecutionContext::new(remote_cache, failed_gas_left);
-            self.run_epilogue(&mut gas_free_ctx, txn_data);
+            self.run_epilogue(&mut gas_free_ctx, txn_data).ok();
             failed_transaction_output(&mut gas_free_ctx, txn_data, err)
         });
-        // TODO convert to starcoin type
         info!("{:?}", output);
         output
     }
@@ -387,7 +375,7 @@ impl StarcoinVM {
         let gas_remaining = chain_state.remaining_gas().get();
         let gas_schedule = match self.get_gas_schedule() {
             Ok(s) => s,
-            Err(e) => return Err(TransactionHelper::to_libra_vmstatus(e)),
+            Err(e) => return Err(e.into()),
         };
         self.move_vm.execute_function(
             &ACCOUNT_MODULE,
@@ -459,13 +447,12 @@ impl StarcoinVM {
         txn: Transaction,
     ) -> TransactionOutput {
         let mut state_store = StateStore::new(chain_state);
-        info!("new remote cache");
         let mut data_cache = BlockDataCache::new(&state_store);
         self.load_gas_schedule(&data_cache);
 
         match txn {
             Transaction::UserTransaction(txn) => {
-                let libra_txn = TransactionHelper::to_libra_signed_transaction(&txn);
+                let libra_txn = txn.clone().into();
                 let txn_data = TransactionMetadata::new(&libra_txn);
 
                 // check signature
@@ -487,58 +474,26 @@ impl StarcoinVM {
                             Ok(payload) => {
                                 self.execute_verified_payload(&mut data_cache, &txn_data, payload)
                             }
-                            Err(e) => {
-                                info!("we are here!!!");
-                                discard_libra_error_output(TransactionHelper::to_libra_vmstatus(e))
-                            }
+                            Err(e) => discard_libra_error_output(e.into()),
                         };
 
                         if let LibraTransactionStatus::Keep(_) = result.status() {
                             state_store.add_write_set(result.write_set())
                         };
-                        TransactionHelper::to_starcoin_transaction_output(result)
+                        TransactionOutput::from(result)
                     }
-                    Err(e) => {
-                        info!("we are here!!!");
-                        discard_error_output(e)
-                    }
+                    Err(e) => discard_error_output(e),
                 };
                 output
             }
             Transaction::BlockMetadata(block_metadata) => {
-                // let (_id, _timestamp, author, _auth) = block_metadata.into_inner().unwrap();
-                // let access_path = AccessPath::new_for_account(author);
-                // let account_resource: AccountResource = state_store
-                //     .get_from_statedb(&access_path)
-                //     .and_then(|blob| match blob {
-                //         Some(blob) => Ok(blob),
-                //         None => {
-                //             state_store.create_account(author).unwrap();
-                //             Ok(state_store
-                //                 .get_from_statedb(&access_path)
-                //                 .unwrap()
-                //                 .expect("account resource must exist."))
-                //         }
-                //     })
-                //     .and_then(|blob| blob.try_into())
-                //     .unwrap();
-                //
-                // let new_account_resource = AccountResource::new(
-                //     account_resource.balance() + 50_00000000,
-                //     account_resource.sequence_number(),
-                //     account_resource.authentication_key().clone(),
-                // );
-                // state_store
-                //     .set(access_path, new_account_resource.try_into().unwrap())
-                //     .unwrap();
-                // TransactionOutput::new(vec![], 0, KEEP_STATUS.clone())
                 let result = self
                     .process_block_metadata(&mut data_cache, block_metadata)
                     .unwrap();
                 if let LibraTransactionStatus::Keep(_) = result.status() {
                     state_store.add_write_set(result.write_set())
                 };
-                TransactionHelper::to_starcoin_transaction_output(result)
+                TransactionOutput::from(result)
             }
             Transaction::StateSet(state_set) => {
                 let result_status = match chain_state.apply(state_set) {
@@ -573,9 +528,7 @@ fn convert_txn_args(args: Vec<TransactionArgument>) -> Vec<Value> {
     args.into_iter()
         .map(|arg| match arg {
             TransactionArgument::U64(i) => Value::u64(i),
-            TransactionArgument::Address(a) => {
-                Value::address(TransactionHelper::to_libra_account_address(a))
-            }
+            TransactionArgument::Address(a) => Value::address(a.into()),
             TransactionArgument::Bool(b) => Value::bool(b),
             TransactionArgument::U8Vector(v) => Value::vector_u8(v),
         })
@@ -613,4 +566,9 @@ pub fn failed_transaction_output(
         LibraTransactionStatus::Discard(status) => discard_libra_error_output(status),
         _ => unreachable!(),
     }
+}
+
+pub enum VerifiedTranscationPayload {
+    Script(Vec<u8>, Vec<TransactionArgument>),
+    Module(Vec<u8>),
 }

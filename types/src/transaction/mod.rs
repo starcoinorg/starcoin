@@ -655,3 +655,63 @@ pub enum TxStatus {
     /// Culled transaction
     Culled,
 }
+
+//======================= libra type converter ============================
+
+impl Into<libra_types::transaction::TransactionPayload> for TransactionPayload {
+    fn into(self) -> libra_types::transaction::TransactionPayload {
+        match self {
+            TransactionPayload::Script(s) => {
+                libra_types::transaction::TransactionPayload::Script(s.into())
+            }
+            TransactionPayload::Module(m) => {
+                libra_types::transaction::TransactionPayload::Module(m.into())
+            }
+            TransactionPayload::StateSet(_) => unimplemented!(),
+        }
+    }
+}
+
+impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction {
+    fn into(self) -> libra_types::transaction::SignedTransaction {
+        let raw_txn = libra_types::transaction::RawTransaction::new(
+            self.sender().into(),
+            self.sequence_number(),
+            self.payload().clone().into(),
+            self.max_gas_amount(),
+            self.gas_unit_price(),
+            self.expiration_time(),
+        );
+        libra_types::transaction::SignedTransaction::new(
+            raw_txn,
+            self.public_key(),
+            self.signature(),
+        )
+    }
+}
+
+impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
+    fn from(status: libra_types::transaction::TransactionStatus) -> Self {
+        match status {
+            libra_types::transaction::TransactionStatus::Discard(vm_status) => {
+                TransactionStatus::Discard(vm_status.clone().into())
+            }
+            libra_types::transaction::TransactionStatus::Keep(vm_status) => {
+                TransactionStatus::Keep(vm_status.clone().into())
+            }
+            libra_types::transaction::TransactionStatus::Retry => {
+                TransactionStatus::Discard(VMStatus::new(StatusCode::UNKNOWN_VALIDATION_STATUS))
+            }
+        }
+    }
+}
+
+impl From<libra_types::transaction::TransactionOutput> for TransactionOutput {
+    fn from(output: libra_types::transaction::TransactionOutput) -> Self {
+        TransactionOutput::new(
+            vec![], // ToDo: support ContractEvent
+            output.gas_used(),
+            TransactionStatus::from(output.status().clone()),
+        )
+    }
+}

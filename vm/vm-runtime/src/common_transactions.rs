@@ -117,7 +117,7 @@ pub fn peer_to_peer_txn_sent_as_association(
 
 pub fn raw_peer_to_peer_txn(
     sender: AccountAddress,
-    sender_auth_key_prefix: Vec<u8>,
+    _sender_auth_key_prefix: Vec<u8>,
     receiver: AccountAddress,
     receiver_auth_key_prefix: Vec<u8>,
     transfer_amount: u64,

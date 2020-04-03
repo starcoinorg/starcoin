@@ -40,3 +40,12 @@ impl fmt::Debug for Script {
             .finish()
     }
 }
+
+//======================= libra type converter ============================
+
+impl Into<libra_types::transaction::Script> for Script {
+    fn into(self) -> libra_types::transaction::Script {
+        let args = self.args().iter().map(|arg| arg.clone().into()).collect();
+        libra_types::transaction::Script::new(self.code().to_vec(), args)
+    }
+}

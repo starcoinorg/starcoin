@@ -466,3 +466,27 @@ pub mod sub_status {
     pub const GSE_UNABLE_TO_LOAD_RESOURCE: u64 = 1;
     pub const GSE_UNABLE_TO_DESERIALIZE: u64 = 2;
 }
+
+//======================= libra type converter ============================
+
+impl Into<libra_types::vm_error::VMStatus> for VMStatus {
+    fn into(self) -> libra_types::vm_error::VMStatus {
+        let major: u64 = self.major_status.into();
+        libra_types::vm_error::VMStatus {
+            major_status: libra_types::vm_error::StatusCode::try_from(major).unwrap(),
+            sub_status: self.sub_status,
+            message: self.message,
+        }
+    }
+}
+
+impl From<libra_types::vm_error::VMStatus> for VMStatus {
+    fn from(status: libra_types::vm_error::VMStatus) -> Self {
+        let major: u64 = status.major_status.into();
+        VMStatus {
+            major_status: StatusCode::try_from(major).unwrap(),
+            sub_status: status.sub_status,
+            message: status.message,
+        }
+    }
+}
