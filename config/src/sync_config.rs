@@ -1,7 +1,5 @@
-use crate::{get_available_port, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
-use anyhow::Result;
+use crate::{ChainNetwork, ConfigModule};
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
@@ -25,6 +23,7 @@ impl Default for SyncConfig {
     }
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type")]
 pub enum SyncMode {
