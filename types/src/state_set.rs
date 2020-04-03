@@ -100,7 +100,7 @@ impl ChainStateSet {
     }
 
     pub fn into_inner(self) -> Vec<(HashValue, AccountStateSet)> {
-        (self.state_sets)
+        self.state_sets
     }
 
     pub fn state_sets(&self) -> &[(HashValue, AccountStateSet)] {
