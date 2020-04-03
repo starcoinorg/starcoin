@@ -125,10 +125,10 @@ impl fmt::Display for PeerId {
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
-    peer_id: PeerId,
-    block_number: BlockNumber,
-    total_difficult: U256,
-    block_id: HashValue,
+    pub peer_id: PeerId,
+    pub block_number: BlockNumber,
+    pub total_difficult: U256,
+    pub block_id: HashValue,
 }
 
 impl PeerInfo {
