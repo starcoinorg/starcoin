@@ -152,7 +152,7 @@ impl crate::pool::Client for PoolClient {
         let checked_txn = txn
             .clone()
             .check_signature()
-            .map_err(|e| TransactionError::InvalidSignature(e.description().to_string()))?;
+            .map_err(|e| TransactionError::InvalidSignature(e.to_string()))?;
         let vmconfig = VMConfig::default();
         match Executor::validate_transaction(&vmconfig, self.nonce_client.statedb.as_ref(), txn) {
             None => Ok(checked_txn),
