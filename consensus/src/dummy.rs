@@ -13,6 +13,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
+use types::U256;
 
 #[derive(Clone, Debug)]
 pub struct DummyHeader {}
@@ -37,8 +38,14 @@ impl Into<Vec<u8>> for DummyHeader {
 pub struct DummyConsensus {}
 
 impl Consensus for DummyConsensus {
+    type ConsensusHeader = ();
+
     fn init_genesis_header(_config: Arc<NodeConfig>) -> Vec<u8> {
         vec![]
+    }
+
+    fn solve_consensus_header(pow_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
+        unimplemented!()
     }
 
     fn verify_header(
