@@ -433,3 +433,30 @@ impl BlockTemplate {
         }
     }
 }
+
+#[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHash)]
+pub struct BlockDetail {
+    block: Block,
+    total_difficulty: U256,
+}
+
+impl BlockDetail {
+    pub fn new(block: Block, total_difficulty: U256) -> Self {
+        BlockDetail {
+            block,
+            total_difficulty,
+        }
+    }
+
+    pub fn get_total_difficulty(&self) -> U256 {
+        self.total_difficulty
+    }
+
+    pub fn get_block(&self) -> &Block {
+        &self.block
+    }
+
+    pub fn header(&self) -> &BlockHeader {
+        self.block.header()
+    }
+}

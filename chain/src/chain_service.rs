@@ -21,7 +21,7 @@ use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter};
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
     transaction::SignedUserTransaction,
@@ -294,8 +294,8 @@ where
 
     fn select_head(&mut self, new_branch: BlockChain<E, C, S, P>) {
         let block = new_branch.head_block();
-
-        if new_branch.get_total_difficulty()
+        let total_difficulty = new_branch.get_total_difficulty();
+        if total_difficulty
             > self
                 .collection
                 .get_master()
@@ -346,17 +346,10 @@ where
             self.collection.update_master(new_branch);
             self.commit_2_txpool(enacted, retracted);
 
-            let bus = self.bus.clone();
-            let new_head = block.clone();
-            Arbiter::spawn(async move {
-                let _ = bus
-                    .send(Broadcast {
-                        msg: SystemEvents::NewHeadBlock(new_head),
-                    })
-                    .await;
-            });
+            let block_detail = BlockDetail::new(block, total_difficulty);
+            self.broadcast_2_bus(block_detail.clone());
 
-            self.broadcast_2_network(block);
+            self.broadcast_2_network(block_detail);
         } else {
             self.collection.insert_branch(new_branch);
         }
@@ -456,7 +449,18 @@ where
         (tx_enacted, tx_retracted)
     }
 
-    pub fn broadcast_2_network(&self, block: Block) {
+    pub fn broadcast_2_bus(&self, block: BlockDetail) {
+        let bus = self.bus.clone();
+        Arbiter::spawn(async move {
+            let _ = bus
+                .send(Broadcast {
+                    msg: SystemEvents::NewHeadBlock(block),
+                })
+                .await;
+        });
+    }
+
+    pub fn broadcast_2_network(&self, block: BlockDetail) {
         if let Some(network) = self.network.clone() {
             Arbiter::spawn(async move {
                 info!("broadcast system event : {:?}", block.header().id());
@@ -508,7 +512,7 @@ where
         if self.sync.read().is_state_sync() {
             let pivot = self.sync.read().get_pivot();
             if pivot.is_some() && pivot.unwrap() >= block.header().number() {
-                //todo:1. verify block header / verify accumulator / total diffculty
+                //todo:1. verify block header / verify accumulator / total difficulty
                 let mut block_chain = self.collection.get_master().borrow_mut();
                 let master = block_chain.get_mut(0).expect("master is none.");
                 let block_header = block.header().clone();
