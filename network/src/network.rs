@@ -306,6 +306,7 @@ impl Inner {
                 let peer_info = PeerInfo::new(peer_id.clone().into());
                 let block_hash = block.header().id();
                 let block_number = block.header().number();
+
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
                     peer_info.peer_info.block_number = block_number;
                     peer_info.peer_info.block_id = block_hash;
@@ -449,7 +450,7 @@ impl Handler<SystemEvents> for NetworkActor {
                 let block_hash = block.header().id();
                 let block_number = block.header().number();
 
-                let _total_difficulty = block.get_total_difficulty();
+                let total_difficulty = block.get_total_difficulty();
                 let msg = PeerMessage::Block(block.get_block().clone());
                 let bytes = msg.encode().unwrap();
 
@@ -457,6 +458,7 @@ impl Handler<SystemEvents> for NetworkActor {
                     for (peer_id, mut peer_info) in peers.lock().await.iter_mut() {
                         peer_info.peer_info.block_number = block_number;
                         peer_info.peer_info.block_id = block_hash;
+                        peer_info.peer_info.total_difficult = total_difficulty;
 
                         if !peer_info.known_blocks.contains(&id) {
                             peer_info.known_blocks.put(id.clone(), ());
