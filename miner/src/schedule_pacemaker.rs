@@ -46,18 +46,40 @@ impl Actor for SchedulePacemaker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::channel::oneshot;
+    use futures::executor::block_on;
+    use std::thread::sleep;
 
     #[test]
     fn test_schedule_pacemaker() {
+        logger::init_for_test();
         let (sender, mut receiver) = mpsc::channel(100);
         let duration = Duration::from_millis(10);
-        std::thread::spawn(move || {
-            System::run(move || {
+        let (stop_sender, stop_receiver) = oneshot::channel();
+        let handle = std::thread::spawn(move || {
+            let mut system = System::new("test");
+            system.block_on(async move {
                 let _addr = SchedulePacemaker::new(duration, sender).start();
-            })
-            .unwrap();
+                stop_receiver.await.unwrap();
+            });
         });
-        std::thread::sleep(duration * 3);
-        let _result = receiver.try_next().expect("To receive response in time");
+        let mut count = 0;
+        loop {
+            match receiver.try_next() {
+                Err(_) => {
+                    debug!("wait event.");
+                    sleep(duration * 2)
+                }
+                Ok(_event) => {
+                    debug!("receive event");
+                    count = count + 1;
+                    if count > 3 {
+                        stop_sender.send(()).unwrap();
+                        break;
+                    }
+                }
+            }
+        }
+        handle.join().unwrap();
     }
 }
