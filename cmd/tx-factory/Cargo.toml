@@ -1,0 +1,29 @@
+[package]
+name = "starcoin-tx-factory"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[[bin]]
+name = "txfactory"
+path = "src/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+rand = { version = "0.6.5", default-features = false }
+structopt = "0.3.2"
+ctrlc = { version = "3.0", features = ["termination"] }
+futures = { version = "0.3.2"}
+tokio = { version = "0.2", features = ["full"] }
+starcoin-logger = { path = "../../commons/logger" }
+starcoin-config = { path = "../../config"}
+starcoin-crypto = {path = "../../commons/crypto"}
+starcoin-state-api = {path = "../../state/api"}
+starcoin-types = {path = "../../types"}
+starcoin-rpc-client = { path = "../../rpc/client"}
+starcoin-wallet-api = {path = "../../wallet/api"}
+starcoin-executor = {path = "../../executor"}
