@@ -83,7 +83,7 @@ impl MinerClient {
         request
     }
 
-    pub async fn main_loop(addr: SocketAddr) -> Result<()> {
+    pub async fn run(addr: SocketAddr) -> Result<()> {
         let mut auth_request =
             r#"{"jsonrpc": "2.0", "method": "mining.authorize", "params": ["miner1", ""], "id": 2}"#.as_bytes().to_vec();
         auth_request.extend(b"\n");
@@ -190,7 +190,7 @@ mod test {
             Delay::new(Duration::from_millis(500)).await;
             let _ = async_std::future::timeout(
                 Duration::from_secs(7),
-                MinerClient::main_loop("127.0.0.1:9000".parse().unwrap()),
+                MinerClient::run("127.0.0.1:9000".parse().unwrap()),
             )
             .await;
         });

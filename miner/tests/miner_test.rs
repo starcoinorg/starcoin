@@ -4,11 +4,11 @@ use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::dummy::DummyConsensus;
 use consensus::dummy::DummyHeader;
-use crypto::HashValue;
 use executor::executor::Executor;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
+use starcoin_miner::miner_client::MinerClient;
 use starcoin_miner::MinerActor;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
@@ -96,6 +96,7 @@ fn test_miner_with_schedule_pacemaker() {
             None,
             miner_account,
         );
+        handle.spawn(MinerClient::run(config.miner.stratum_server));
         let process_actor = ProcessActor::launch(
             Arc::clone(&peer_info),
             chain.clone(),
@@ -162,7 +163,7 @@ fn test_miner_with_ondemand_pacemaker() {
                 bus.clone(),
             )
         };
-        let network = NetworkActor::launch(config.clone(), bus.clone(), handle);
+        let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
         let chain = ChainActor::launch(
             config.clone(),
             genesis.startup_info().clone(),
@@ -190,7 +191,7 @@ fn test_miner_with_ondemand_pacemaker() {
             Some(receiver),
             miner_account,
         );
-
+        handle.spawn(MinerClient::run(config.miner.stratum_server));
         let process_actor = ProcessActor::launch(
             Arc::clone(&peer_info),
             chain.clone(),

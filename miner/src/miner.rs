@@ -2,21 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::prelude::*;
-use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
-use consensus::{difficult, dummy::DummyHeader, Consensus, ConsensusHeader};
+use consensus::ConsensusHeader;
 use crypto::HashValue;
-use futures::channel::oneshot;
 use logger::prelude::*;
-use starcoin_wallet_api::WalletAccount;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
-use traits::ChainReader;
-use types::{
-    block::BlockTemplate, system_events::SystemEvents, transaction::SignedUserTransaction,
-};
+use types::{block::BlockTemplate, system_events::SystemEvents};
 
 #[derive(Clone)]
 pub struct Miner<H>
@@ -37,46 +31,13 @@ pub struct MineCtx {
 
 impl MineCtx {
     pub fn new(block_template: BlockTemplate) -> MineCtx {
-        let header_hash = block_template
-            .clone()
-            .into_block_header(DummyHeader {})
-            .id();
+        let header_hash = block_template.clone().into_block_header(vec![]).id();
 
         MineCtx {
             header_hash,
             block_template,
         }
     }
-}
-
-pub fn mint<C>(
-    config: Arc<NodeConfig>,
-    miner_account: WalletAccount,
-    txns: Vec<SignedUserTransaction>,
-    chain: &dyn ChainReader,
-    bus: Addr<BusActor>,
-) -> Result<()>
-where
-    C: Consensus,
-{
-    let difficulty = difficult::get_next_work_required(chain);
-    let block_template = chain.create_block_template(
-        *miner_account.address(),
-        Some(miner_account.get_auth_key().prefix().to_vec()),
-        None,
-        difficulty,
-        txns,
-    )?;
-    let (_sender, receiver) = oneshot::channel();
-    // spawn a async task, maintain a task list, when new task coming, cancel old task.
-    let block = C::create_block(config, chain, block_template, receiver)?;
-    // fire SystemEvents::MinedBlock.
-    //TODO handle result.
-    info!("broadcast new block: {:?}.", block.header().id());
-    bus.do_send(Broadcast {
-        msg: SystemEvents::MinedBlock(block),
-    });
-    Ok(())
 }
 
 impl<H> Miner<H>
