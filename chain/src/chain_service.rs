@@ -41,12 +41,12 @@ impl StateSyncMetadata {
         }
     }
 
-    pub fn update_pivot(&mut self, pivot: BlockNumber) {
+    pub fn _update_pivot(&mut self, pivot: BlockNumber) {
         assert!(self.syncing, "chain is not in fast sync mode.");
         self.pivot = Some(pivot);
     }
 
-    pub fn change_2_full(&mut self) {
+    pub fn _change_2_full(&mut self) {
         self.syncing = false;
         self.pivot = None;
     }
@@ -229,7 +229,7 @@ where
     txpool: P,
     bus: Addr<BusActor>,
     sync: RwLock<StateSyncMetadata>,
-    future_blocks: RwLock<HashMap<HashValue, (Block, Option<BlockInfo>)>>, //todo
+    _future_blocks: RwLock<HashMap<HashValue, (Block, Option<BlockInfo>)>>, //todo
 }
 
 impl<E, C, S, P> ChainServiceImpl<E, C, S, P>
@@ -264,7 +264,7 @@ where
             txpool,
             bus,
             sync: RwLock::new(StateSyncMetadata::new(state_sync_flag)),
-            future_blocks,
+            _future_blocks: future_blocks,
         })
     }
 
@@ -510,11 +510,11 @@ where
             if pivot.is_some() && pivot.unwrap() >= block.header().number() {
                 //todo:1. verify block header / verify accumulator / total diffculty
                 let mut block_chain = self.collection.get_master().borrow_mut();
-                let mut master = block_chain.get_mut(0).expect("master is none.");
+                let master = block_chain.get_mut(0).expect("master is none.");
                 let block_header = block.header().clone();
                 if let Ok(_) = C::verify_header(self.config.clone(), master, &block_header) {
                     // 2. save block
-                    master.commit(block, block_info);
+                    let _ = master.commit(block, block_info);
                     // 3. update master
                     self.collection
                         .get_master()

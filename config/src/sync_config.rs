@@ -36,7 +36,7 @@ pub enum SyncMode {
 impl ConfigModule for SyncConfig {
     fn default_with_net(_net: ChainNetwork) -> Self {
         SyncConfig {
-            sync_mode: SyncMode::FAST_SYNC,
+            sync_mode: SyncMode::FULL,
         }
     }
 }
