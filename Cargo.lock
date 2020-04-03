@@ -6238,6 +6238,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-tx-factory"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ctrlc",
+ "futures 0.3.4",
+ "rand 0.6.5",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-executor",
+ "starcoin-logger",
+ "starcoin-rpc-client",
+ "starcoin-state-api",
+ "starcoin-types",
+ "starcoin-wallet-api",
+ "structopt",
+ "tokio 0.2.13",
+]
+
+[[package]]
 name = "starcoin-tx-relay"
 version = "0.1.0"
 dependencies = [
