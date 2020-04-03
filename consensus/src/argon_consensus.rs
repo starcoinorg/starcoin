@@ -6,6 +6,7 @@ use anyhow::{Error, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use config::NodeConfig;
+use crypto::HashValue;
 use futures::channel::oneshot::Receiver;
 use rand::Rng;
 use std::convert::TryFrom;
@@ -41,8 +42,23 @@ impl Into<Vec<u8>> for ArgonConsensusHeader {
 pub struct ArgonConsensus {}
 
 impl Consensus for ArgonConsensus {
+    type ConsensusHeader = ArgonConsensusHeader;
+
     fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8> {
         vec![]
+    }
+
+    fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
+        let mut nonce = generate_nonce();
+        loop {
+            let pow_hash: U256 = calculate_hash(&set_header_nonce(&header_hash, nonce)).into();
+            if pow_hash > difficulty {
+                nonce += 1;
+                continue;
+            }
+            break;
+        }
+        ArgonConsensusHeader { nonce }
     }
 
     fn verify_header(
