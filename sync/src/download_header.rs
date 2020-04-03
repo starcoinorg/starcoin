@@ -78,7 +78,7 @@ where
         let download_body = self.download_body.clone();
         Arbiter::spawn(async move {
             for peer in peers.clone() {
-                if let RPCResponse::BatchHeaderAndBodyMsg(headers, _bodies) = network
+                if let RPCResponse::BatchHeaderAndBodyMsg(headers, _bodies, _infos) = network
                     .clone()
                     .send_request(
                         peer.get_peer_id().clone().into(),

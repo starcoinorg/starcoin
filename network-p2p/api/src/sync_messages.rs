@@ -3,7 +3,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_types::{
-    block::{Block, BlockHeader},
+    block::{Block, BlockHeader, BlockInfo},
     peer_info::PeerInfo,
     transaction::SignedUserTransaction,
 };
@@ -90,6 +90,7 @@ pub struct BatchHashByNumberMsg {
 pub enum DataType {
     HEADER,
     BODY,
+    INFO,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -124,4 +125,9 @@ impl Ord for BlockBody {
 #[derive(Eq, Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct BatchBodyMsg {
     pub bodies: Vec<BlockBody>,
+}
+
+#[derive(Eq, Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct BatchBlockInfo {
+    pub infos: Vec<BlockInfo>,
 }

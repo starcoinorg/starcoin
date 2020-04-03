@@ -76,7 +76,7 @@ where
         let headers = event.headers;
         Arbiter::spawn(async move {
             for peer in peers {
-                if let RPCResponse::BatchHeaderAndBodyMsg(_, bodies) = network
+                if let RPCResponse::BatchHeaderAndBodyMsg(_, bodies, infos) = network
                     .clone()
                     .send_request(
                         peer.get_peer_id().clone().into(),
@@ -86,7 +86,7 @@ where
                     .await
                     .unwrap()
                 {
-                    Downloader::do_blocks(downloader, headers, bodies.bodies).await;
+                    Downloader::do_blocks(downloader, headers, bodies.bodies, infos.infos).await;
                     break;
                 };
             }

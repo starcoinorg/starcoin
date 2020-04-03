@@ -4,7 +4,7 @@ use anyhow::Result;
 use crypto::HashValue;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockTemplate},
     startup_info::StartupInfo,
     transaction::SignedUserTransaction,
 };
@@ -22,7 +22,8 @@ pub enum ChainRequest {
         Vec<SignedUserTransaction>,
     ), // just fot test
     GetBlockByHash(HashValue),
-    ConnectBlock(Block),
+    GetBlockInfoByHash(HashValue),
+    ConnectBlock(Block, Option<BlockInfo>),
     GetStartupInfo(),
     GenTx(), // just for test
 }
@@ -36,6 +37,7 @@ pub enum ChainResponse {
     BlockTemplate(BlockTemplate),
     Block(Block),
     OptionBlock(Option<Block>),
+    OptionBlockInfo(Option<BlockInfo>),
     BlockHeader(BlockHeader),
     HashValue(HashValue),
     StartupInfo(StartupInfo),

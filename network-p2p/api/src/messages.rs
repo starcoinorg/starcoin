@@ -70,7 +70,7 @@ pub struct TestResponse {
 pub enum RPCResponse {
     TestResponse(TestResponse),
     BatchHashByNumberMsg(BatchHashByNumberMsg),
-    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
+    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg, BatchBlockInfo),
     GetStateNodeByNodeHash(StateNode),
 }
 

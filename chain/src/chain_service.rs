@@ -528,9 +528,10 @@ where
                         .latest_blocks(1);
                 }
             }
+            Ok(())
+        } else {
+            self.try_connect(block)
         }
-
-        Ok(())
     }
 
     fn master_head_block(&self) -> Block {
@@ -566,6 +567,10 @@ where
 
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {
         self.storage.get_block_by_hash(hash)
+    }
+
+    fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>> {
+        self.storage.get_block_info(hash)
     }
 
     fn create_block_template(

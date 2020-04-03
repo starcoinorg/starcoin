@@ -12,8 +12,8 @@ use logger::prelude::*;
 use network::{NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 /// Sync message which inbound
 use network_p2p_api::sync_messages::{
-    BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
-    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+    BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
+    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
@@ -163,18 +163,26 @@ where
                                 .await;
                                 let batch_body_msg = Processor::handle_get_body_by_hash_msg(
                                     processor.clone(),
-                                    get_data_by_hash_msg,
+                                    get_data_by_hash_msg.clone(),
                                 )
                                 .await;
+                                let batch_block_info_msg =
+                                    Processor::handle_get_block_info_by_hash_msg(
+                                        processor.clone(),
+                                        get_data_by_hash_msg,
+                                    )
+                                    .await;
                                 debug!(
-                                    "batch block size: {} : {}",
+                                    "batch block size: {} : {} : {}",
                                     batch_header_msg.headers.len(),
-                                    batch_body_msg.bodies.len()
+                                    batch_body_msg.bodies.len(),
+                                    batch_block_info_msg.infos.len()
                                 );
 
                                 let resp = RPCResponse::BatchHeaderAndBodyMsg(
                                     batch_header_msg,
                                     batch_body_msg,
+                                    batch_block_info_msg,
                                 );
                                 responder.send(resp).await.unwrap();
                             }
@@ -321,6 +329,24 @@ where
             bodies.push(body);
         }
         BatchBodyMsg { bodies }
+    }
+
+    pub async fn handle_get_block_info_by_hash_msg(
+        processor: Arc<Processor<E, C>>,
+        get_body_by_hash_msg: GetDataByHashMsg,
+    ) -> BatchBlockInfo {
+        let mut infos = Vec::new();
+        for hash in get_body_by_hash_msg.hashs {
+            if let Some(block_info) = processor
+                .chain_reader
+                .clone()
+                .get_block_info_by_hash(&hash)
+                .await
+            {
+                infos.push(block_info);
+            }
+        }
+        BatchBlockInfo { infos }
     }
 
     pub async fn handle_state_node_msg(

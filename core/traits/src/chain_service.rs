@@ -18,6 +18,7 @@ pub trait ChainService {
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
     fn try_connect_with_block_info(&mut self, block: Block, block_info: BlockInfo) -> Result<()>;
+    fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
 
     /////////////////////////////////////////////// for master
     fn master_head_header(&self) -> BlockHeader;
@@ -45,6 +46,12 @@ pub trait ChainAsyncService: Clone + std::marker::Unpin {
     async fn try_connect(self, block: Block) -> Result<()>;
     async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader>;
     async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block>;
+    async fn try_connect_with_block_info(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+    ) -> Result<()>;
+    async fn get_block_info_by_hash(self, hash: &HashValue) -> Option<BlockInfo>;
 
     /////////////////////////////////////////////// for master
     async fn master_head_header(self) -> Option<BlockHeader>;
