@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::Block;
+use crate::block::{Block, BlockDetail};
 use actix::prelude::*;
 
 //TODO this type should at another crate and avoid starcoin-types dependency actix ?.
@@ -9,7 +9,7 @@ use actix::prelude::*;
 #[rtype(result = "()")]
 pub enum SystemEvents {
     /// Find new head block.
-    NewHeadBlock(Block),
+    NewHeadBlock(BlockDetail),
     /// Mint new Block.
     MinedBlock(Block),
 }

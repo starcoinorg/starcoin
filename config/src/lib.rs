@@ -25,9 +25,11 @@ mod miner_config;
 mod network_config;
 mod rpc_config;
 mod storage_config;
+mod sync_config;
 mod txpool_config;
 mod vm_config;
 
+use crate::sync_config::SyncConfig;
 pub use libra_temppath::TempPath;
 pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
@@ -248,6 +250,8 @@ pub struct NodeConfig {
     pub storage: StorageConfig,
     #[serde(default)]
     pub tx_pool: TxPoolConfig,
+    #[serde(default)]
+    pub sync: SyncConfig,
 }
 
 impl NodeConfig {
@@ -305,6 +309,7 @@ impl ConfigModule for NodeConfig {
             miner: MinerConfig::default_with_net(net),
             storage: StorageConfig::default_with_net(net),
             tx_pool: TxPoolConfig::default_with_net(net),
+            sync: SyncConfig::default_with_net(net),
         }
     }
 
@@ -316,6 +321,7 @@ impl ConfigModule for NodeConfig {
         self.miner.random(base);
         self.storage.random(base);
         self.tx_pool.random(base);
+        self.sync.random(base)
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
@@ -325,6 +331,7 @@ impl ConfigModule for NodeConfig {
         self.miner.load(base, opt)?;
         self.storage.load(base, opt)?;
         self.tx_pool.load(base, opt)?;
+        self.sync.load(base, opt)?;
         Ok(())
     }
 }

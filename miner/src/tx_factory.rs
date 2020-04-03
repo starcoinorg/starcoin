@@ -109,7 +109,7 @@ where
                     block.header().number(),
                     block.header().difficult()
                 );
-                self.best_block_header = Some(block.into_inner().0);
+                self.best_block_header = Some(block.get_block().clone().into_inner().0);
             }
             _ => {}
         }

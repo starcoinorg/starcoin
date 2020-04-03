@@ -12,10 +12,6 @@ use std::convert::{TryFrom, TryInto};
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
     head_block: HashValue,
-    //TODO need keep this fields?
-    //pub head_number: BlockNumber,
-    //pub state_root: HashValue,
-    //pub accumulator_info: AccumulatorInfo,
     branch_id: HashValue,
     start_block_number: BlockNumber,
     parent_branch_id: Option<HashValue>,

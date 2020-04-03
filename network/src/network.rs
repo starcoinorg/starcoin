@@ -449,7 +449,8 @@ impl Handler<SystemEvents> for NetworkActor {
                 let block_hash = block.header().id();
                 let block_number = block.header().number();
 
-                let msg = PeerMessage::Block(block);
+                let _total_difficulty = block.get_total_difficulty();
+                let msg = PeerMessage::Block(block.get_block().clone());
                 let bytes = msg.encode().unwrap();
 
                 Arbiter::spawn(async move {

@@ -5,7 +5,7 @@ use anyhow::Result;
 use crypto::HashValue;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::StartupInfo,
     transaction::SignedUserTransaction,
     U256,
@@ -17,6 +17,7 @@ pub trait ChainService {
     fn try_connect(&mut self, block: Block) -> Result<()>;
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
+    fn try_connect_with_block_info(&mut self, block: Block, block_info: BlockInfo) -> Result<()>;
 
     /////////////////////////////////////////////// for master
     fn master_head_header(&self) -> BlockHeader;
