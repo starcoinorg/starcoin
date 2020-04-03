@@ -26,8 +26,7 @@ use tokio::runtime::Handle;
 
 use crypto::{hash::CryptoHash, HashValue};
 use network_p2p_api::messages::RawRpcRequestMessage;
-use network_p2p_api::Network;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use types::transaction::SignedUserTransaction;
 
 const LRU_CACHE_SIZE: usize = 1024;
@@ -53,18 +52,16 @@ struct Inner {
 }
 
 struct PeerInfoNet {
-    pub protocol_version: u32,
-    pub best_number: u64,
+    peer_info: PeerInfo,
     known_transactions: LruCache<HashValue, ()>,
     /// Holds a set of blocks known to this peer.
     known_blocks: LruCache<HashValue, ()>,
 }
 
 impl PeerInfoNet {
-    fn new() -> Self {
+    fn new(peer_id: PeerId) -> Self {
         Self {
-            protocol_version: 0,
-            best_number: 0,
+            peer_info: PeerInfo::new(peer_id.into()),
             known_blocks: LruCache::new(LRU_CACHE_SIZE),
             known_transactions: LruCache::new(LRU_CACHE_SIZE),
         }
@@ -160,6 +157,15 @@ impl NetworkAsyncService {
         let response = message_future.await;
         info!("receive response from {} with id {}", peer_id, request_id);
         response
+    }
+
+    pub async fn peer_set(&self) -> Result<HashSet<PeerInfo>> {
+        let mut result = HashSet::new();
+
+        for (_, peer) in self.inner.peers.lock().await.iter() {
+            result.insert(peer.peer_info.clone());
+        }
+        Ok(result)
     }
 }
 
@@ -297,7 +303,13 @@ impl Inner {
                     .await?;
             }
             PeerMessage::Block(block) => {
-                let peer_info = PeerInfo::new(peer_id.into());
+                let peer_info = PeerInfo::new(peer_id.clone().into());
+                let block_hash = block.header().id();
+                let block_number = block.header().number();
+                if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
+                    peer_info.peer_info.block_number = block_number;
+                    peer_info.peer_info.block_id = block_hash;
+                }
                 self.bus
                     .send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
@@ -391,7 +403,7 @@ impl Inner {
     async fn on_peer_connected(&self, peer_id: PeerId) {
         let mut peers = self.peers.lock().await;
         if !peers.contains_key(&peer_id) {
-            peers.insert(peer_id, PeerInfoNet::new());
+            peers.insert(peer_id.clone(), PeerInfoNet::new(peer_id));
         };
     }
 
@@ -433,11 +445,18 @@ impl Handler<SystemEvents> for NetworkActor {
                 let id = block.header().id();
                 let peers = self.peers.clone();
                 let network_service = self.network_service.clone();
+
+                let block_hash = block.header().id();
+                let block_number = block.header().number();
+
                 let msg = PeerMessage::Block(block);
                 let bytes = msg.encode().unwrap();
 
                 Arbiter::spawn(async move {
-                    for (peer_id, peer_info) in peers.lock().await.iter_mut() {
+                    for (peer_id, mut peer_info) in peers.lock().await.iter_mut() {
+                        peer_info.peer_info.block_number = block_number;
+                        peer_info.peer_info.block_id = block_hash;
+
                         if !peer_info.known_blocks.contains(&id) {
                             peer_info.known_blocks.put(id.clone(), ());
                         } else {
