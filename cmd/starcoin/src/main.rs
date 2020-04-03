@@ -20,7 +20,7 @@ pub mod state;
 
 fn run() -> Result<()> {
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
-        Box::new(|opt| -> Result<CliState> {
+        |opt| -> Result<CliState> {
             let logger_handle = starcoin_logger::init();
             info!("Starcoin opts: {:?}", opt);
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
@@ -38,8 +38,8 @@ fn run() -> Result<()> {
             logger_handle.enable_file(false, file_log_path);
             let state = CliState::new(config, client, logger_handle, Some(node_handle));
             Ok(state)
-        }),
-        Box::new(|_, _, state| -> Result<()> {
+        },
+        |_, _, state| {
             let (_, _, logger_handle, handle) = state.into_inner();
             match handle {
                 Some(handle) => {
@@ -54,8 +54,19 @@ fn run() -> Result<()> {
                 }
                 None => {}
             }
-            Ok(())
-        }),
+        },
+        |_, _, state| {
+            let (_, _, _, handle) = state.into_inner();
+            match handle {
+                Some(handle) => match handle.stop() {
+                    Err(e) => {
+                        error!("{:?}", e);
+                    }
+                    _ => {}
+                },
+                None => {}
+            }
+        },
     );
     context
         .command(

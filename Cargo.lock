@@ -1031,6 +1031,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctrlc"
+version = "3.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a4ba686dff9fa4c1c9636ce1010b0cf98ceb421361b0bb3d6faeec43bd217a7"
+dependencies = [
+ "nix 0.17.0",
+ "winapi 0.3.8",
+]
+
+[[package]]
 name = "cuckoofilter"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3956,6 +3966,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "nix"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50e4785f2c3b7589a0d0c1dd60285e1188adac4006e8abd6dd578e1567027363"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if",
+ "libc",
+ "void",
+]
+
+[[package]]
 name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5208,7 +5231,7 @@ dependencies = [
  "libc",
  "log 0.4.8",
  "memchr",
- "nix",
+ "nix 0.13.1",
  "unicode-segmentation",
  "unicode-width",
  "utf8parse",
@@ -5283,6 +5306,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "ctrlc",
  "rustyline",
  "serde",
  "structopt",
