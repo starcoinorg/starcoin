@@ -4,30 +4,27 @@
 use crate::headblock_pacemaker::HeadBlockPacemaker;
 use crate::ondemand_pacemaker::OndemandPacemaker;
 use crate::schedule_pacemaker::SchedulePacemaker;
+use crate::stratum::mint;
+use crate::tx_factory::{GenTxEvent, TxFactoryActor};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
+use chain::to_block_chain_collection;
 use chain::BlockChain;
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::{difficult, Consensus, ConsensusHeader};
-
-use crate::miner::MineCtx;
-use crate::tx_factory::{GenTxEvent, TxFactoryActor};
-use chain::to_block_chain_collection;
+use consensus::{Consensus, ConsensusHeader};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
 use logger::prelude::*;
-use sc_stratum::{self, PushWorkHandler};
+use sc_stratum::Stratum;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
-use std::cmp::min;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::Store;
 use traits::ChainAsyncService;
-use traits::ChainReader;
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
@@ -64,7 +61,7 @@ where
     phantom_e: PhantomData<E>,
     chain: CS,
     miner: miner::Miner<H>,
-    stratum: Arc<sc_stratum::Stratum>,
+    stratum: Arc<Stratum>,
     miner_account: WalletAccount,
 }
 
@@ -124,13 +121,13 @@ where
                 }
             });
             let miner = miner::Miner::new(bus.clone(), config.clone());
+
             let stratum = sc_stratum::Stratum::start(
                 &config.miner.stratum_server,
                 Arc::new(stratum::StratumManager::new(miner.clone())),
                 None,
             )
             .unwrap();
-
             MinerActor {
                 config,
                 bus,
@@ -177,14 +174,12 @@ where
 
     fn handle(&mut self, _event: GenerateBlockEvent, ctx: &mut Self::Context) -> Self::Result {
         let txpool = self.txpool.clone();
-        let bus = self.bus.clone();
         let storage = self.storage.clone();
         let chain = self.chain.clone();
         let config = self.config.clone();
-        let mut miner = self.miner.clone();
+        let miner = self.miner.clone();
         let stratum = self.stratum.clone();
         let miner_account = self.miner_account.clone();
-
         let f = async {
             //TODO handle error.
             let txns = txpool
@@ -213,30 +208,7 @@ where
                     collection,
                 )
                 .unwrap();
-                let block_template = block_chain
-                    .create_block_template(
-                        *miner_account.address(),
-                        //TODO check account is exist, if exist, just pass One.
-                        Some(miner_account.get_auth_key().prefix().to_vec()),
-                        None,
-                        C::calculate_next_difficulty(&block_chain),
-                        txns.clone(),
-                    )
-                    .unwrap();
-                miner.set_mint_job(MineCtx::new(block_template));
-                let job = miner.get_mint_job();
-                info!("Push job to worker{:?}", job);
-                stratum.push_work_all(job).unwrap();
-                if config.miner.dev_mode {
-                    match miner::mint::<C>(config, miner_account, txns, &block_chain, bus) {
-                        Err(e) => {
-                            error!("mint block err: {:?}", e);
-                        }
-                        Ok(_) => {
-                            info!("mint block success.");
-                        }
-                    }
-                };
+                let _ = mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain);
             });
         }
         .into_actor(self);

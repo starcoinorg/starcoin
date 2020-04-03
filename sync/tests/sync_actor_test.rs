@@ -7,7 +7,7 @@ use consensus::dummy::DummyConsensus;
 use executor::executor::Executor;
 use futures_timer::Delay;
 use logger::prelude::*;
-use miner::MinerActor;
+use miner::{miner_client::MinerClient, MinerActor};
 use network::{network::NetworkAsyncService, NetworkActor, RPCRequest, RPCResponse};
 use network_p2p_api::sync_messages::{GetHashByNumberMsg, ProcessMessage};
 use starcoin_genesis::Genesis;
@@ -129,6 +129,7 @@ fn test_network_actor_rpc() {
             None,
             miner_account,
         );
+        handle.spawn(MinerClient::run(node_config_1.miner.stratum_server));
         Delay::new(Duration::from_secs(1 * 60)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();
