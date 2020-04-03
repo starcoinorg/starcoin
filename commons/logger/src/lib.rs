@@ -9,7 +9,6 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::Handle;
 use std::cell::RefCell;
-use std::error::Error;
 use std::path::PathBuf;
 use std::sync::Once;
 
@@ -151,7 +150,7 @@ pub fn init_with_default_level(default_level: &str) -> LoggerHandle {
         build_config(LoggerConfigArg::new(true, level, None)).expect("build log config fail.");
     let handle = match log4rs::init_config(config) {
         Ok(handle) => handle,
-        Err(e) => panic!(format!("{}", e.description())),
+        Err(e) => panic!(format!("{}", e.to_string())),
     };
     LoggerHandle::new(true, level, None, handle)
 }
