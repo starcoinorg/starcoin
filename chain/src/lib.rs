@@ -28,7 +28,7 @@ use traits::{ChainAsyncService, ChainService};
 use txpool::TxPoolRef;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::StartupInfo,
     system_events::SystemEvents,
     transaction::SignedUserTransaction,
@@ -127,8 +127,18 @@ where
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
                 self.service.get_block_by_hash(hash).unwrap(),
             )),
-            ChainRequest::ConnectBlock(block) => {
-                self.service.try_connect(block).unwrap();
+            ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(
+                self.service.get_block_info_by_hash(hash).unwrap(),
+            )),
+            ChainRequest::ConnectBlock(block, mut block_info) => {
+                if block_info.is_none() {
+                    self.service.try_connect(block).unwrap();
+                } else {
+                    self.service
+                        .try_connect_with_block_info(block, block_info.take().unwrap())
+                        .unwrap();
+                }
+
                 Ok(ChainResponse::None)
             }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
@@ -200,7 +210,19 @@ where
 {
     async fn try_connect(self, block: Block) -> Result<()> {
         self.address
-            .send(ChainRequest::ConnectBlock(block))
+            .send(ChainRequest::ConnectBlock(block, None))
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        Ok(())
+    }
+
+    async fn try_connect_with_block_info(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+    ) -> Result<()> {
+        self.address
+            .send(ChainRequest::ConnectBlock(block, Some(block_info)))
             .await
             .map_err(|e| Into::<Error>::into(e))??;
         Ok(())
@@ -320,6 +342,24 @@ where
         {
             match block {
                 Some(b) => Some(b),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    async fn get_block_info_by_hash(self, hash: &HashValue) -> Option<BlockInfo> {
+        debug!("hash: {:?}", hash);
+        if let ChainResponse::OptionBlockInfo(block_info) = self
+            .address
+            .send(ChainRequest::GetBlockInfoByHash(hash.clone()))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            match block_info {
+                Some(info) => Some(info),
                 _ => None,
             }
         } else {

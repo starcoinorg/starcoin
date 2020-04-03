@@ -26,7 +26,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
 use types::{
-    block::{Block, BlockHeader, BlockNumber},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerInfo,
 };
 
@@ -208,10 +208,10 @@ where
                 };
 
                 // 2. pivot
-                let latest_number = downloader.get_latest_header_with_peer(&best_peer).number();
-                if (ancestor + MIN_BLOCKS_BEHIND) <= latest_number {
-                    let pivot = latest_number - MIN_BLOCKS_BEHIND;
-                    downloader.update_pivot(pivot);
+                let latest_number = downloader._get_latest_header_with_peer(&best_peer).number();
+                if (ancestor + _MIN_BLOCKS_BEHIND) <= latest_number {
+                    let pivot = latest_number - _MIN_BLOCKS_BEHIND;
+                    downloader._update_pivot(pivot);
 
                     // 3. get pivot hash
                     let mut numbers: Vec<BlockNumber> = Vec::new();
@@ -240,15 +240,16 @@ where
                         let get_data_by_hash_req = RPCRequest::GetDataByHashMsg(
                             ProcessMessage::GetDataByHashMsg(get_header_msg),
                         );
-                        if let RPCResponse::BatchHeaderAndBodyMsg(mut headers, bodies) = network
-                            .clone()
-                            .send_request(
-                                best_peer.get_peer_id().clone().into(),
-                                get_data_by_hash_req.clone(),
-                                do_duration(DELAY_TIME),
-                            )
-                            .await
-                            .expect("send_request 3 err.")
+                        if let RPCResponse::BatchHeaderAndBodyMsg(mut headers, _bodies, _infos) =
+                            network
+                                .clone()
+                                .send_request(
+                                    best_peer.get_peer_id().clone().into(),
+                                    get_data_by_hash_req.clone(),
+                                    do_duration(DELAY_TIME),
+                                )
+                                .await
+                                .expect("send_request 3 err.")
                         {
                             // 5. StateSyncActor
                             let root = headers.headers.pop().unwrap();
@@ -339,21 +340,25 @@ where
                                             ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
                                         );
 
-                                        if let RPCResponse::BatchHeaderAndBodyMsg(headers, bodies) =
-                                            network
-                                                .clone()
-                                                .send_request(
-                                                    best_peer.get_peer_id().clone().into(),
-                                                    get_data_by_hash_req.clone(),
-                                                    do_duration(DELAY_TIME),
-                                                )
-                                                .await
-                                                .expect("send_request 3 err.")
+                                        if let RPCResponse::BatchHeaderAndBodyMsg(
+                                            headers,
+                                            bodies,
+                                            infos,
+                                        ) = network
+                                            .clone()
+                                            .send_request(
+                                                best_peer.get_peer_id().clone().into(),
+                                                get_data_by_hash_req.clone(),
+                                                do_duration(DELAY_TIME),
+                                            )
+                                            .await
+                                            .expect("send_request 3 err.")
                                         {
                                             Downloader::do_blocks(
                                                 downloader.clone(),
                                                 headers.headers,
                                                 bodies.bodies,
+                                                infos.infos,
                                             )
                                             .await;
                                         }
@@ -390,11 +395,11 @@ where
     _body_pool: TTLPool<BlockBody>,
     peers: Arc<RwLock<HashMap<PeerInfo, LatestStateMsg>>>,
     chain_reader: ChainActorRef<E, C>,
-    pivot: RwLock<Option<BlockNumber>>,
+    _pivot: RwLock<Option<BlockNumber>>,
 }
 
 const HEAD_CT: u64 = 10;
-const MIN_BLOCKS_BEHIND: u64 = 100;
+const _MIN_BLOCKS_BEHIND: u64 = 100;
 
 impl<E, C> Downloader<E, C>
 where
@@ -409,20 +414,20 @@ where
             //            _network: network,
             peers: Arc::new(RwLock::new(HashMap::new())),
             chain_reader,
-            pivot: RwLock::new(None),
+            _pivot: RwLock::new(None),
         }
     }
 
-    pub fn get_latest_header_with_peer(&self, peer: &PeerInfo) -> BlockHeader {
+    pub fn _get_latest_header_with_peer(&self, peer: &PeerInfo) -> BlockHeader {
         self.peers.read().get(&peer).unwrap().header.clone()
     }
 
-    pub fn update_pivot(&self, pivot: BlockNumber) {
-        *self.pivot.write() = Some(pivot);
+    pub fn _update_pivot(&self, pivot: BlockNumber) {
+        *self._pivot.write() = Some(pivot);
     }
 
-    pub fn get_pivot(&self) -> BlockNumber {
-        self.pivot.read().clone().unwrap()
+    pub fn _get_pivot(&self) -> BlockNumber {
+        self._pivot.read().clone().unwrap()
     }
 
     pub async fn handle_latest_state_msg(
@@ -713,6 +718,7 @@ where
         downloader: Arc<Downloader<E, C>>,
         headers: Vec<BlockHeader>,
         bodies: Vec<BlockBody>,
+        infos: Vec<BlockInfo>,
     ) {
         assert_eq!(headers.len(), bodies.len());
         for i in 0..headers.len() {
@@ -721,8 +727,24 @@ where
                 bodies.get(i).unwrap().clone().transactions,
             );
             //todo:verify block
-            let _ = Self::do_block(downloader.clone(), block).await;
+            let _ =
+                Self::do_block_with_info(downloader.clone(), block, infos.get(1).unwrap().clone())
+                    .await;
         }
+    }
+
+    pub async fn do_block_with_info(
+        downloader: Arc<Downloader<E, C>>,
+        block: Block,
+        block_info: BlockInfo,
+    ) {
+        info!("do block {:?}", block.header().id());
+        //todo:verify block
+        let _ = downloader
+            .chain_reader
+            .clone()
+            .try_connect_with_block_info(block, block_info)
+            .await;
     }
 
     pub async fn do_block(downloader: Arc<Downloader<E, C>>, block: Block) {
