@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::difficult::difficult_1_target;
 use crate::{Consensus, ConsensusHeader};
 use anyhow::{Error, Result};
 use argon2::{self, Config};
@@ -44,8 +45,8 @@ pub struct ArgonConsensus {}
 impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
-    fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8> {
-        vec![]
+    fn init_genesis_header(config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
+        (vec![], difficult_1_target())
     }
 
     fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {

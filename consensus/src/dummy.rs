@@ -40,8 +40,8 @@ pub struct DummyConsensus {}
 impl Consensus for DummyConsensus {
     type ConsensusHeader = ();
 
-    fn init_genesis_header(_config: Arc<NodeConfig>) -> Vec<u8> {
-        vec![]
+    fn init_genesis_header(_config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
+        (vec![], U256::max_value())
     }
 
     fn solve_consensus_header(pow_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {

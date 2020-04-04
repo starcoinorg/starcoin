@@ -48,7 +48,7 @@ impl Genesis {
         let accumulator = MerkleAccumulator::new(vec![], 0, 0, storage.clone())?;
         let txn_info_hash = transaction_info.crypto_hash();
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
-        let consensus_header = C::init_genesis_header(config.clone());
+        let (consensus_header, difficulty) = C::init_genesis_header(config.clone());
         let block = Block::genesis_block(accumulator_root, state_root, consensus_header);
         assert_eq!(block.header().number(), 0);
         info!("Genesis block id : {:?}", block.header().id());

@@ -24,7 +24,7 @@ pub trait ConsensusHeader:
 pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
     type ConsensusHeader;
 
-    fn init_genesis_header(config: Arc<NodeConfig>) -> Vec<u8>;
+    fn init_genesis_header(config: Arc<NodeConfig>) -> (Vec<u8>, U256);
 
     fn calculate_next_difficulty(reader: &dyn ChainReader) -> U256 {
         difficult::get_next_work_required(reader)
