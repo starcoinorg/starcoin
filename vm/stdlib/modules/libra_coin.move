@@ -33,7 +33,7 @@ module LibraCoin {
         // this is to prevent the market cap's total value from hitting u64_max due to excessive
         // minting. This will not be a problem in the production Libra system because coins will
         // be backed with real-world assets, and thus minting will be correspondingly rarer.
-        Transaction::assert(value <= 1000000000 * 1000000, 11); // * 1000000 because the unit is microlibra
+        //Transaction::assert(value <= 1000000000 * 1000000, 11); // * 1000000 because the unit is microlibra
         // update market cap resource to reflect minting
         let market_cap = borrow_global_mut<MarketCap>(0xA550C18);
         market_cap.total_value = market_cap.total_value + (value as u128);

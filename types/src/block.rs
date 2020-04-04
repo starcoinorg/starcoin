@@ -164,6 +164,7 @@ impl BlockHeader {
     pub fn genesis_block_header(
         accumulator_root: HashValue,
         state_root: HashValue,
+        difficult: U256,
         consensus_header: Vec<u8>,
     ) -> Self {
         Self {
@@ -179,7 +180,7 @@ impl BlockHeader {
             gas_used: 0,
             //TODO
             gas_limit: 0,
-            difficult: U256::zero(),
+            difficult,
             consensus_header,
         }
     }
@@ -255,11 +256,15 @@ impl Block {
     pub fn genesis_block(
         accumulator_root: HashValue,
         state_root: HashValue,
+        difficult: U256,
         consensus_header: Vec<u8>,
     ) -> Self {
-        let header =
-            BlockHeader::genesis_block_header(accumulator_root, state_root, consensus_header);
-        //TODO put Transaction::StateSet txn to block body.
+        let header = BlockHeader::genesis_block_header(
+            accumulator_root,
+            state_root,
+            difficult,
+            consensus_header,
+        );
         Self {
             header,
             body: BlockBody::default(),

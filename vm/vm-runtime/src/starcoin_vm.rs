@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{chain_state::StateStore, system_module_names::*};
-use config::VMConfig;
 use crypto::ed25519::Ed25519Signature;
 use libra_state_view::StateView;
 use libra_types::{
@@ -23,6 +22,7 @@ use move_vm_types::chain_state::ChainState as LibraChainState;
 use move_vm_types::identifier::create_access_path;
 use move_vm_types::values::Value;
 use once_cell::sync::Lazy;
+use starcoin_config::VMConfig;
 use starcoin_state_api::ChainState;
 use std::collections::BTreeMap;
 use std::sync::Arc;

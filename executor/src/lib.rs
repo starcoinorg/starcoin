@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use config::VMConfig;
 use crypto::HashValue;
+use starcoin_config::{ChainConfig, VMConfig};
 use starcoin_state_api::ChainState;
 use types::{
     account_address::AccountAddress,
@@ -19,7 +19,7 @@ pub mod mock_executor;
 
 pub trait TransactionExecutor: std::marker::Unpin + Clone {
     /// Create genesis state, return state root and state set.
-    fn init_genesis(config: &VMConfig) -> Result<(HashValue, ChainStateSet)>;
+    fn init_genesis(config: &ChainConfig) -> Result<(HashValue, ChainStateSet)>;
 
     /// Execute transaction, update state to state_store, and return events and TransactionStatus.
     fn execute_transaction(

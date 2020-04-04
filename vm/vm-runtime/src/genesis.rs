@@ -6,7 +6,6 @@ use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
 use crypto::ed25519::*;
-use crypto::HashValue;
 use libra_state_view::StateView;
 use libra_types::{access_path::AccessPath, account_address::AuthenticationKey};
 use move_core_types::identifier::Identifier;
@@ -18,9 +17,10 @@ use move_vm_state::{
 use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
+use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
 use stdlib::{stdlib_modules, StdLibOptions};
-use types::{account_config, state_set::ChainStateSet};
+use types::account_config;
 use vm::{
     access::ModuleAccess,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
@@ -52,10 +52,9 @@ static SUBSIDY_INIT: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("initialize_subsidy_info").unwrap());
 
 pub fn generate_genesis_state_set(
-    _private_key: &Ed25519PrivateKey,
-    public_key: Ed25519PublicKey,
+    chain_config: &ChainConfig,
     chain_state: &dyn ChainState,
-) -> Result<(HashValue, ChainStateSet)> {
+) -> Result<()> {
     // Compile the needed stdlib modules.
     let modules = stdlib_modules(StdLibOptions::Staged);
 
@@ -83,31 +82,29 @@ pub fn generate_genesis_state_set(
     let mut state_store = StateStore::new(chain_state);
 
     create_and_initialize_main_accounts(
+        chain_config,
         &move_vm,
         &gas_schedule,
         &mut interpreter_context,
-        &public_key,
         initial_gas_schedule(&move_vm, &data_cache),
     );
     publish_stdlib(&mut interpreter_context, modules);
 
     let write_set = interpreter_context.make_write_set()?;
     state_store.add_write_set(&write_set);
-    state_store.commit()?;
-    state_store.flush()?;
-
-    let dump = state_store.state().dump()?;
-    Ok((state_store.state().state_root(), dump))
+    Ok(())
 }
 
 /// Create and initialize Transaction Fee and Core Code accounts.
 fn create_and_initialize_main_accounts(
+    chain_config: &ChainConfig,
     move_vm: &MoveVM,
     gas_schedule: &CostTable,
     interpreter_context: &mut TransactionExecutionContext,
-    public_key: &Ed25519PublicKey,
     initial_gas_schedule: Value,
 ) {
+    let mut miner_reward_balance = chain_config.total_supply;
+
     let association_addr: libra_types::account_address::AccountAddress =
         account_config::association_address().into();
     let mut txn_data = TransactionMetadata::default();
@@ -204,12 +201,24 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![
-                Value::u64(1000 as u64),
-                Value::u64(50_000_000 as u64),
-                Value::u64(2 as u64),
+                Value::u64(chain_config.reward_halving_interval),
+                Value::u64(chain_config.base_block_reward),
+                Value::u64(chain_config.reward_delay),
             ],
         )
-        .unwrap();
+        .expect("Failure set SubsidyConfig");
+
+    move_vm
+        .execute_function(
+            &LIBRA_BLOCK_MODULE,
+            &SUBSIDY_INIT,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![],
+        )
+        .expect("Failure init block reward for block module.");
+
     txn_data.sender = association_addr;
 
     move_vm
@@ -245,20 +254,38 @@ fn create_and_initialize_main_accounts(
         )
         .expect("Failure initializing gas module");
 
-    move_vm
-        .execute_function(
-            &ACCOUNT_MODULE,
-            &MINT_TO_ADDRESS,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![
-                Value::address(association_addr),
-                Value::vector_u8(association_addr.to_vec()),
-                Value::u64(ASSOCIATION_INIT_BALANCE),
-            ],
-        )
-        .expect("Failure minting to association");
+    if let Some(pre_mine_config) = &chain_config.pre_mine_config {
+        let association_balance =
+            chain_config.total_supply * pre_mine_config.pre_mine_percent / 100;
+        miner_reward_balance = miner_reward_balance - association_balance;
+        move_vm
+            .execute_function(
+                &ACCOUNT_MODULE,
+                &MINT_TO_ADDRESS,
+                &gas_schedule,
+                interpreter_context,
+                &txn_data,
+                vec![
+                    Value::address(association_addr),
+                    Value::vector_u8(association_addr.to_vec()),
+                    Value::u64(association_balance),
+                ],
+            )
+            .expect("Failure minting to association");
+
+        let association_auth_key =
+            AuthenticationKey::from_public_key(&pre_mine_config.public_key).to_vec();
+        move_vm
+            .execute_function(
+                &ACCOUNT_MODULE,
+                &ROTATE_AUTHENTICATION_KEY,
+                &gas_schedule,
+                interpreter_context,
+                &txn_data,
+                vec![Value::vector_u8(association_auth_key)],
+            )
+            .expect("Failure rotating association key");
+    }
 
     // mint coins to mint address
     move_vm
@@ -271,36 +298,10 @@ fn create_and_initialize_main_accounts(
             vec![
                 Value::address(mint_address),
                 Value::vector_u8(mint_address.to_vec()),
-                Value::u64(SUBSIDY_BALANCE),
+                Value::u64(miner_reward_balance),
             ],
         )
-        .unwrap();
-
-    // init subsidy.
-    txn_data.sender = mint_address;
-    move_vm
-        .execute_function(
-            &LIBRA_BLOCK_MODULE,
-            &SUBSIDY_INIT,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-        )
-        .unwrap();
-    txn_data.sender = association_addr;
-
-    let genesis_auth_key = AuthenticationKey::from_public_key(public_key).to_vec();
-    move_vm
-        .execute_function(
-            &ACCOUNT_MODULE,
-            &ROTATE_AUTHENTICATION_KEY,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![Value::vector_u8(genesis_auth_key)],
-        )
-        .expect("Failure rotating association key");
+        .expect("Failure minting to mint_address");
 
     // Bump the sequence number for the Association account. If we don't do this and a
     // subsequent transaction (e.g., minting) is sent from the Assocation account, a problem

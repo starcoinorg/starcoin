@@ -3,9 +3,9 @@
 
 use crate::chain_state::StateStore;
 use anyhow::Result;
-use config::VMConfig;
 use crypto::ed25519::compat;
 use logger::prelude::*;
+use starcoin_config::VMConfig;
 
 use once_cell::sync::Lazy;
 

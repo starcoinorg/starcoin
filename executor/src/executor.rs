@@ -3,21 +3,19 @@
 
 use crate::TransactionExecutor;
 use anyhow::Result;
-use config::VMConfig;
 use crypto::HashValue;
-use starcoin_state_api::ChainState;
+use starcoin_config::{ChainConfig, VMConfig};
+use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use statedb::ChainStateDB;
 use std::sync::Arc;
-use storage::{
-    cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage,
-};
+use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use types::{
     account_address::AccountAddress,
     state_set::ChainStateSet,
     transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
-use vm_runtime::genesis::{generate_genesis_state_set, GENESIS_KEYPAIR};
+use vm_runtime::genesis::generate_genesis_state_set;
 use vm_runtime::{
     account::Account,
     common_transactions::{
@@ -38,21 +36,18 @@ impl Executor {
 }
 
 impl TransactionExecutor for Executor {
-    fn init_genesis(_config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
-        let cache_storage = Arc::new(CacheStorage::new());
-        let tmpdir = libra_temppath::TempPath::new();
-        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-        let storage = Arc::new(
-            Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage.clone(),
-                db_storage.clone(),
-            ))
-            .unwrap(),
-        );
-        let chain_state = ChainStateDB::new(storage, None);
+    fn init_genesis(chain_config: &ChainConfig) -> Result<(HashValue, ChainStateSet)> {
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
+            CacheStorage::new(),
+        ))?);
+        let chain_state_db = ChainStateDB::new(storage, None);
 
-        // ToDo: load genesis txn from genesis.blob, instead of generating from stdlib
-        generate_genesis_state_set(&GENESIS_KEYPAIR.0, GENESIS_KEYPAIR.1.clone(), &chain_state)
+        generate_genesis_state_set(&chain_config, &chain_state_db)?;
+        chain_state_db.commit()?;
+        chain_state_db.flush()?;
+
+        let dump = chain_state_db.dump()?;
+        Ok((chain_state_db.state_root(), dump))
     }
 
     fn execute_transaction(
