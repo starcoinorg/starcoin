@@ -20,4 +20,6 @@ starcoin-accumulator = { path = "../accumulator"}
 stest = { path = "../../commons/stest"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-consensus = { path = "../../consensus"}
+starcoin-state-api = { path = "../../state/api"}
+scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }

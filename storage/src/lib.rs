@@ -314,7 +314,12 @@ impl BlockInfoStore for Storage {
 
 /// Chain storage define
 pub trait Store:
-    StateNodeStore + BlockStore + AccumulatorTreeStore + BlockInfoStore + IntoSuper<dyn StateNodeStore>
+    StateNodeStore
+    + BlockStore
+    + AccumulatorTreeStore
+    + BlockInfoStore
+    + IntoSuper<dyn StateNodeStore>
+    + IntoSuper<dyn AccumulatorTreeStore>
 {
 }
 
@@ -336,6 +341,21 @@ impl<'a, T: 'a + StateNodeStore> IntoSuper<dyn StateNodeStore + 'a> for T {
         self
     }
     fn into_super_arc(self: Arc<Self>) -> Arc<dyn StateNodeStore + 'a> {
+        self
+    }
+}
+
+impl<'a, T: 'a + AccumulatorTreeStore> IntoSuper<dyn AccumulatorTreeStore + 'a> for T {
+    fn as_super(&self) -> &(dyn AccumulatorTreeStore + 'a) {
+        self
+    }
+    fn as_super_mut(&mut self) -> &mut (dyn AccumulatorTreeStore + 'a) {
+        self
+    }
+    fn into_super(self: Box<Self>) -> Box<dyn AccumulatorTreeStore + 'a> {
+        self
+    }
+    fn into_super_arc(self: Arc<Self>) -> Arc<dyn AccumulatorTreeStore + 'a> {
         self
     }
 }

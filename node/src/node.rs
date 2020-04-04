@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::prelude::*;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use starcoin_bus::BusActor;
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
@@ -55,13 +55,32 @@ where
 
     let startup_info = match storage.get_startup_info()? {
         Some(startup_info) => {
-            info!("return from db");
+            info!("Get startup info from db");
+            info!("Check genesis file.");
+            // Genesis may be change in dev and halley network.
+            let genesis = Genesis::load(config.data_dir())?
+                .expect("Load genesis file must exist in data_dir.");
+            let expect_genesis = Genesis::build(config.net())?;
+            if genesis.block().header().id() != expect_genesis.block().header().id() {
+                bail!("Genesis version mismatch, please clean you data_dir.")
+            }
+            //TODO verify genesis block in db.
             startup_info
         }
         None => {
-            let genesis = Genesis::new::<Executor, C, Storage>(config.clone(), storage.clone())
-                .expect("init genesis fail.");
-            genesis.startup_info().clone()
+            let genesis = match Genesis::load(config.data_dir())? {
+                Some(genesis) => {
+                    info!("Load genesis from data_dir: {:?}", genesis);
+                    genesis
+                }
+                None => {
+                    let genesis = Genesis::build(config.net())?;
+                    info!("Build genesis: {:?}", genesis);
+                    genesis.save(config.data_dir())?;
+                    genesis
+                }
+            };
+            genesis.execute(storage.clone())?
         }
     };
     info!("Start chain with startup info: {:?}", startup_info);

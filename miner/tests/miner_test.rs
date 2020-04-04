@@ -14,7 +14,6 @@ use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
-use storage::db_storage::DBStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
 use sync::{DownloadActor, ProcessActor, SyncActor};
@@ -25,11 +24,6 @@ use types::{
     account_address::AccountAddress,
     peer_info::{PeerId, PeerInfo},
 };
-
-#[test]
-fn it_works() {
-    assert_eq!(2 + 2, 4);
-}
 
 #[test]
 fn test_miner_with_schedule_pacemaker() {
@@ -45,23 +39,15 @@ fn test_miner_with_schedule_pacemaker() {
         config.miner.dev_period = 1;
         let config = Arc::new(config);
         let bus = BusActor::launch();
-        let cache_storage = Arc::new(CacheStorage::new());
-        let tmpdir = libra_temppath::TempPath::new();
-        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
         let storage = Arc::new(
-            Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage,
-                db_storage,
-            ))
-            .unwrap(),
+            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
-        let genesis =
-            Genesis::new::<Executor, DummyConsensus, Storage>(config.clone(), storage.clone())
-                .unwrap();
+        let genesis = Genesis::build(config.net()).unwrap();
+        let startup_info = genesis.execute(storage.clone()).unwrap();
         let txpool = {
-            let best_block_id = genesis.startup_info().head.get_head();
+            let best_block_id = startup_info.head.get_head();
             TxPoolRef::start(
                 config.tx_pool.clone(),
                 storage.clone(),
@@ -72,7 +58,7 @@ fn test_miner_with_schedule_pacemaker() {
         let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
         let chain = ChainActor::launch(
             config.clone(),
-            genesis.startup_info().clone(),
+            startup_info.clone(),
             storage.clone(),
             Some(network.clone()),
             bus.clone(),
@@ -138,24 +124,17 @@ fn test_miner_with_ondemand_pacemaker() {
         conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
         let config = Arc::new(conf);
         let bus = BusActor::launch();
-        let cache_storage = Arc::new(CacheStorage::new());
-        let tmpdir = libra_temppath::TempPath::new();
-        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
         let storage = Arc::new(
-            Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage,
-                db_storage,
-            ))
-            .unwrap(),
+            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
 
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
-        let genesis =
-            Genesis::new::<Executor, DummyConsensus, Storage>(config.clone(), storage.clone())
-                .unwrap();
+
+        let genesis = Genesis::build(config.net()).unwrap();
+        let startup_info = genesis.execute(storage.clone()).unwrap();
         let txpool = {
-            let best_block_id = genesis.startup_info().head.get_head();
+            let best_block_id = startup_info.head.get_head();
             TxPoolRef::start(
                 config.tx_pool.clone(),
                 storage.clone(),
@@ -166,7 +145,7 @@ fn test_miner_with_ondemand_pacemaker() {
         let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
         let chain = ChainActor::launch(
             config.clone(),
-            genesis.startup_info().clone(),
+            startup_info.clone(),
             storage.clone(),
             Some(network.clone()),
             bus.clone(),

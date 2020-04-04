@@ -4,11 +4,10 @@
 use anyhow::{format_err, Result};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
+use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::ValidKeyStringExt;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config;
+use starcoin_crypto::{ed25519::*, ValidKeyStringExt};
+use starcoin_types::U256;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -86,6 +85,14 @@ impl ChainNetwork {
             ChainNetwork::Main => &MAIN_CHAIN_CONFIG,
         }
     }
+    pub fn networks() -> Vec<ChainNetwork> {
+        vec![
+            ChainNetwork::Dev,
+            ChainNetwork::Halley,
+            ChainNetwork::Proxima,
+            ChainNetwork::Main,
+        ]
+    }
 }
 
 impl Default for ChainNetwork {
@@ -94,16 +101,16 @@ impl Default for ChainNetwork {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct PreMineConfig {
-    pub account: AccountAddress,
     pub public_key: Ed25519PublicKey,
+    pub private_key: Option<Ed25519PrivateKey>,
     /// pre mine percent of total_supply, from 0~100.
     pub pre_mine_percent: u64,
 }
 
 /// ChainConfig is a static hard code config.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ChainConfig {
     /// Starcoin total supply.
     pub total_supply: u64,
@@ -113,49 +120,69 @@ pub struct ChainConfig {
     pub reward_halving_interval: u64,
     /// How many block to delay before rewarding miners.
     pub reward_delay: u64,
-    /// Pre mine accounts
-    pub pre_mine_accounts: Vec<PreMineConfig>,
+    /// Genesis difficult, should match consensus in different ChainNetwork.
+    pub difficult: U256,
+    /// Genesis consensus header.
+    pub consensus_header: Vec<u8>,
+    /// Pre mine to Association account config, if not preset, Not do pre mine, and association account only can be used in genesis.
+    pub pre_mine_config: Option<PreMineConfig>,
 }
 
-static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
-    total_supply: 2_100_000_000 * 1000_000,
-    base_block_reward: 5000 * 1000_000,
-    reward_halving_interval: 100,
-    reward_delay: 1,
-    /// Dev faucet is set when node start.
-    pre_mine_accounts: vec![],
+pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1000_000;
+
+const STATIC_SEED: [u8; 32] = [42; 32];
+static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
+    let mut rng = StdRng::from_seed(STATIC_SEED);
+    let (private_key, public_key) = compat::generate_keypair(&mut rng);
+
+    ChainConfig {
+        total_supply: STARCOIN_TOTAL_SUPPLY,
+        base_block_reward: 5000 * 1000_000,
+        reward_halving_interval: 100,
+        reward_delay: 1,
+        difficult: U256::zero(),
+        consensus_header: vec![],
+        pre_mine_config: Some(PreMineConfig {
+            public_key,
+            private_key: Some(private_key),
+            pre_mine_percent: 20,
+        }),
+    }
 });
 
 static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
-    total_supply: 2_100_000_000 * 1000_000,
+    total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1000_000,
     reward_halving_interval: 1000,
     reward_delay: 3,
-    pre_mine_accounts: vec![
-        /// halley test net faucet account.
-        PreMineConfig {
-            account: account_config::association_address(),
-            public_key: Ed25519PublicKey::from_encoded_string(
-                "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
-            )
-            .unwrap(),
-            pre_mine_percent: 20,
-        },
-    ],
+    difficult: U256::max_value(),
+    consensus_header: vec![],
+    pre_mine_config: Some(PreMineConfig {
+        public_key: Ed25519PublicKey::from_encoded_string(
+            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+        )
+        .expect("decode public key must success."),
+        private_key: None,
+        pre_mine_percent: 20,
+    }),
 });
 
 static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
-    total_supply: 2_100_000_000 * 1000_000,
+    total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1000_000,
     reward_halving_interval: 10000,
     reward_delay: 7,
-    pre_mine_accounts: vec![],
+    difficult: U256::max_value(),
+    consensus_header: vec![],
+    pre_mine_config: None,
 });
 
 static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
-    total_supply: 2_100_000_000 * 1000_000,
+    total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1000_000,
     reward_halving_interval: 52500,
     reward_delay: 7,
-    pre_mine_accounts: vec![],
+    difficult: U256::max_value(),
+    consensus_header: vec![],
+    pre_mine_config: None,
 });

@@ -7,9 +7,9 @@ use crate::{
     TransactionExecutor,
 };
 use anyhow::Result;
-use config::VMConfig;
 use crypto::ed25519::compat;
 use logger::prelude::*;
+use starcoin_config::{ChainNetwork, VMConfig};
 use starcoin_state_api::{ChainState, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
@@ -144,7 +144,7 @@ fn test_validate_txn() -> Result<()> {
 #[stest::test]
 fn test_validate_txn_with_starcoin_vm() -> Result<()> {
     let config = VMConfig::default();
-    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -179,7 +179,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
 #[stest::test]
 fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
     let config = VMConfig::default();
-    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -223,7 +223,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
 #[stest::test]
 fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
     let config = VMConfig::default();
-    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -248,7 +248,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
 #[stest::test]
 fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
     let config = VMConfig::default();
-    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -284,7 +284,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 #[stest::test]
 fn test_sequence_number() -> Result<()> {
     let config = VMConfig::default();
-    let (_hash, state_set) = Executor::init_genesis(&config).unwrap();
+    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 

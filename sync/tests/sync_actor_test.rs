@@ -15,7 +15,6 @@ use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
-use storage::db_storage::DBStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
 use tokio::runtime::Handle;
@@ -46,15 +45,8 @@ fn test_network_actor_rpc() {
         // bus
         let bus_1 = BusActor::launch();
         // storage
-        let cache_storage = Arc::new(CacheStorage::new());
-        let tmpdir = libra_temppath::TempPath::new();
-        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
         let storage_1 = Arc::new(
-            Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage,
-                db_storage,
-            ))
-            .unwrap(),
+            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
@@ -62,13 +54,10 @@ fn test_network_actor_rpc() {
         let node_config_1 = Arc::new(config_1);
 
         // genesis
-        let genesis_1 = Genesis::new::<Executor, DummyConsensus, Storage>(
-            node_config_1.clone(),
-            storage_1.clone(),
-        )
-        .unwrap();
+        let genesis_1 = Genesis::build(node_config_1.net()).unwrap();
+        let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
         let txpool_1 = {
-            let best_block_id = genesis_1.startup_info().head.get_head();
+            let best_block_id = startup_info_1.head.get_head();
             TxPoolRef::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
@@ -84,7 +73,7 @@ fn test_network_actor_rpc() {
         // chain
         let first_chain = ChainActor::launch(
             node_config_1.clone(),
-            genesis_1.startup_info().clone(),
+            startup_info_1.clone(),
             storage_1.clone(),
             Some(network_1.clone()),
             bus_1.clone(),
@@ -141,15 +130,8 @@ fn test_network_actor_rpc() {
         // bus
         let bus_2 = BusActor::launch();
         // storage
-        let cache_storage2 = Arc::new(CacheStorage::new());
-        let tmpdir2 = libra_temppath::TempPath::new();
-        let db_storage2 = Arc::new(DBStorage::new(tmpdir2.path()));
         let storage_2 = Arc::new(
-            Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage2,
-                db_storage2,
-            ))
-            .unwrap(),
+            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
 
         // node config
@@ -160,14 +142,11 @@ fn test_network_actor_rpc() {
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
 
-        let genesis_2 = Genesis::new::<Executor, DummyConsensus, Storage>(
-            node_config_2.clone(),
-            storage_2.clone(),
-        )
-        .unwrap();
+        let genesis_2 = Genesis::build(node_config_2.net()).unwrap();
+        let startup_info_2 = genesis_2.execute(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
-            let best_block_id = genesis_2.startup_info().head.get_head();
+            let best_block_id = startup_info_2.head.get_head();
             TxPoolRef::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
@@ -183,7 +162,7 @@ fn test_network_actor_rpc() {
         // chain
         let second_chain = ChainActor::<Executor, DummyConsensus>::launch(
             node_config_2.clone(),
-            genesis_2.startup_info().clone(),
+            startup_info_2.clone(),
             storage_2.clone(),
             Some(network_2.clone()),
             bus_2.clone(),
@@ -248,27 +227,17 @@ fn test_network_actor_rpc_2() {
         // bus
         let bus_1 = BusActor::launch();
         // storage
-        let cache_storage = Arc::new(CacheStorage::new());
-        let tmpdir = libra_temppath::TempPath::new();
-        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
         let storage_1 = Arc::new(
-            Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage,
-                db_storage,
-            ))
-            .unwrap(),
+            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
         let node_config_1 = Arc::new(config_1);
-        let genesis_1 = Genesis::new::<Executor, DummyConsensus, Storage>(
-            node_config_1.clone(),
-            storage_1.clone(),
-        )
-        .unwrap();
+        let genesis_1 = Genesis::build(node_config_1.net()).unwrap();
+        let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
         let txpool_1 = {
-            let best_block_id = genesis_1.startup_info().head.get_head();
+            let best_block_id = startup_info_1.head.get_head();
             TxPoolRef::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
@@ -284,7 +253,7 @@ fn test_network_actor_rpc_2() {
         // chain
         let first_chain = ChainActor::<Executor, DummyConsensus>::launch(
             node_config_1.clone(),
-            genesis_1.startup_info().clone(),
+            startup_info_1.clone(),
             storage_1.clone(),
             Some(network_1.clone()),
             bus_1.clone(),
@@ -322,15 +291,8 @@ fn test_network_actor_rpc_2() {
         // bus
         let bus_2 = BusActor::launch();
         // storage
-        let cache_storage2 = Arc::new(CacheStorage::new());
-        let tmpdir2 = libra_temppath::TempPath::new();
-        let db_storage2 = Arc::new(DBStorage::new(tmpdir2.path()));
         let storage_2 = Arc::new(
-            Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage2,
-                db_storage2,
-            ))
-            .unwrap(),
+            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
         // node config
         let mut config_2 = NodeConfig::random_for_test();
@@ -339,14 +301,11 @@ fn test_network_actor_rpc_2() {
         config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
-        let genesis_2 = Genesis::new::<Executor, DummyConsensus, Storage>(
-            node_config_2.clone(),
-            storage_2.clone(),
-        )
-        .unwrap();
+        let genesis_2 = Genesis::build(node_config_2.net()).unwrap();
+        let startup_info_2 = genesis_2.execute(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
-            let best_block_id = genesis_2.startup_info().head.get_head();
+            let best_block_id = startup_info_2.head.get_head();
             TxPoolRef::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
@@ -362,7 +321,7 @@ fn test_network_actor_rpc_2() {
         // chain
         let second_chain = ChainActor::launch(
             node_config_2.clone(),
-            genesis_2.startup_info().clone(),
+            startup_info_2.clone(),
             storage_2.clone(),
             Some(network_2.clone()),
             bus_2.clone(),

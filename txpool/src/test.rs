@@ -119,10 +119,8 @@ fn gen_pool_for_test() -> TxPoolRef {
     );
     let node_config = NodeConfig::random_for_test();
 
-    let genesis =
-        Genesis::new::<Executor, ArgonConsensus, Storage>(Arc::new(node_config), storage.clone())
-            .expect("init gensis fail");
-    let startup_info = genesis.startup_info().clone();
+    let genesis = Genesis::build(node_config.net()).unwrap();
+    let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
     let pool = TxPoolRef::start(
         TxPoolConfig::default(),
