@@ -38,14 +38,27 @@ impl Into<Vec<u8>> for DummyHeader {
 pub struct DummyConsensus {}
 
 impl Consensus for DummyConsensus {
-    type ConsensusHeader = ();
+    type ConsensusHeader = DummyHeader;
 
     fn init_genesis_header(_config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
         (vec![], U256::max_value())
     }
 
-    fn solve_consensus_header(_pow_hash: &[u8], _difficulty: U256) -> Self::ConsensusHeader {
-        unimplemented!()
+    fn calculate_next_difficulty(config: Arc<NodeConfig>, _reader: &dyn ChainReader) -> U256 {
+        config.miner.dev_period.into()
+    }
+
+    fn solve_consensus_header(_pow_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
+        let start = SystemTime::now();
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        let mut rng: StdRng = SeedableRng::seed_from_u64(since_the_epoch.as_secs());
+        let df: u64 = difficulty.into();
+        let time: u64 = rng.gen_range(0, df);
+        debug!("DummyConsensus rand sleep time : {}", time);
+        thread::sleep(Duration::from_millis(time));
+        DummyHeader {}
     }
 
     fn verify_header(

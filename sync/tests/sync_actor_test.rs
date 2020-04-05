@@ -118,7 +118,9 @@ fn test_network_actor_rpc() {
             None,
             miner_account,
         );
-        handle.spawn(MinerClient::run(node_config_1.miner.stratum_server));
+        handle.spawn(MinerClient::<DummyConsensus>::run(
+            node_config_1.miner.stratum_server,
+        ));
         Delay::new(Duration::from_secs(1 * 60)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();

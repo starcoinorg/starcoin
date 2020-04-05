@@ -82,7 +82,9 @@ fn test_miner_with_schedule_pacemaker() {
             None,
             miner_account,
         );
-        handle.spawn(MinerClient::run(config.miner.stratum_server));
+        handle.spawn(MinerClient::<DummyConsensus>::run(
+            config.miner.stratum_server,
+        ));
         let process_actor = ProcessActor::launch(
             Arc::clone(&peer_info),
             chain.clone(),
@@ -170,7 +172,9 @@ fn test_miner_with_ondemand_pacemaker() {
             Some(receiver),
             miner_account,
         );
-        handle.spawn(MinerClient::run(config.miner.stratum_server));
+        handle.spawn(MinerClient::<DummyConsensus>::run(
+            config.miner.stratum_server,
+        ));
         let process_actor = ProcessActor::launch(
             Arc::clone(&peer_info),
             chain.clone(),
