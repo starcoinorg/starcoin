@@ -1,65 +1,25 @@
 use anyhow::Result;
-use argon2::{self, Config};
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
-use byteorder::{LittleEndian, WriteBytesExt};
+use consensus::Consensus;
 use futures::channel::mpsc;
 use jsonrpc_core::{MethodCall, Params};
 use logger::prelude::*;
-use rand::Rng;
 use serde_json;
 use std::{net::SocketAddr, sync::Arc};
-use types::{H256, U256};
+use types::U256;
 
-pub fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
-    let pow_header = MinerClient::set_header_nonce(header, nonce);
-    let pow_hash = MinerClient::calculate_hash(&pow_header);
-    let hash_u256: U256 = pow_hash.into();
-    if hash_u256 <= difficulty {
-        return true;
-    }
-    return false;
+pub struct MinerClient<C>
+where
+    C: Consensus + 'static + Send + Sync,
+{
+    c_phantom: std::marker::PhantomData<C>,
 }
 
-pub struct MinerClient {}
-
-impl MinerClient {
-    pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
-        let len = header.len();
-        let mut header = header.to_owned();
-        header.truncate(len - 8);
-        let _ = WriteBytesExt::write_u64::<LittleEndian>(&mut header, nonce);
-        header
-    }
-
-    pub fn calculate_hash(header: &[u8]) -> H256 {
-        let config = Config::default();
-        let output = argon2::hash_raw(header, header, &config).unwrap();
-        let h_256: H256 = output.as_slice().into();
-        h_256
-    }
-
-    pub fn solve(difficulty: U256, header: &[u8]) -> u64 {
-        let mut nonce = MinerClient::generate_nonce();
-        loop {
-            let pow_hash =
-                MinerClient::calculate_hash(&MinerClient::set_header_nonce(header, nonce));
-            let hash_u256: U256 = pow_hash.into();
-            if hash_u256 > difficulty {
-                nonce += 1;
-                continue;
-            }
-            break;
-        }
-        nonce
-    }
-
-    fn generate_nonce() -> u64 {
-        let mut rng = rand::thread_rng();
-        rng.gen::<u64>();
-        rng.gen_range(0, u64::max_value())
-    }
-
-    fn process_job(params: String) -> anyhow::Result<u64> {
+impl<C> MinerClient<C>
+where
+    C: Consensus + 'static + Send + Sync,
+{
+    fn process_job(params: String) -> anyhow::Result<C::ConsensusHeader> {
         let resp: MethodCall = serde_json::from_str(&params)?;
         let params: Params = resp.params.parse()?;
         if let Params::Array(mut values) = params {
@@ -71,14 +31,14 @@ impl MinerClient {
                 .to_string()
                 .parse()?;
             let header = values.pop().unwrap().as_str().unwrap().as_bytes().to_vec();
-            let nonce = MinerClient::solve(difficulty, &header);
+            let nonce = C::solve_consensus_header(&header, difficulty);
             return Ok(nonce);
         };
         Err(anyhow::Error::msg("mining.notify with bad params"))
     }
 
-    fn submit_job_request(nonce: u64) -> Vec<u8> {
-        let mut request = format!(r#"{{"jsonrpc": "2.0", "method": "mining.submit", "params": ["miner1", "", "{:o}"], "id": 7}}"#, nonce).as_bytes().to_vec();
+    fn submit_job_request(nonce: C::ConsensusHeader) -> Vec<u8> {
+        let mut request = format!(r#"{{"jsonrpc": "2.0", "method": "mining.submit", "params": ["miner1", "", "{:?}"], "id": 7}}"#, nonce.into()).as_bytes().to_vec();
         request.extend(b"\n");
         request
     }
@@ -112,13 +72,13 @@ impl MinerClient {
             while let Some(line) = lines.next().await {
                 let line = line.unwrap();
                 info!("Receive the mint job:{}", line.clone());
-                let processed = MinerClient::process_job(line);
+                let processed = MinerClient::<C>::process_job(line);
                 if processed.is_err() {
                     continue;
                 }
                 let nonce = processed.unwrap();
+                info!("Process nonce:{:?}", &nonce);
                 tx.unbounded_send(nonce).unwrap();
-                info!("Process nonce:{:o}", nonce);
             }
         };
         let reader_handle = task::spawn(reader_future);
@@ -126,8 +86,8 @@ impl MinerClient {
         let writer_future = async move {
             let mut stream = &*writer_arc_clone;
             while let Some(msg) = rx.next().await {
-                info!("Submit nonce is {}", msg);
-                let request = MinerClient::submit_job_request(msg);
+                info!("Submit nonce is {:?}", msg);
+                let request = MinerClient::<C>::submit_job_request(msg);
                 stream.write_all(&request).await.unwrap();
             }
         };
@@ -142,10 +102,11 @@ impl MinerClient {
 mod test {
     use super::*;
     use crate::miner::{MineCtx, Miner};
-    use crate::miner_client::{verify, MinerClient};
+    use crate::miner_client::MinerClient;
     use crate::stratum::StratumManager;
     use bus::BusActor;
     use config::NodeConfig;
+    use consensus::argon_consensus::ArgonConsensus;
     use consensus::argon_consensus::ArgonConsensusHeader;
     use futures_timer::Delay;
     use sc_stratum::{PushWorkHandler, Stratum};
@@ -153,6 +114,7 @@ mod test {
     use std::time::Duration;
     use tokio;
     use types::block::{Block, BlockBody, BlockHeader, BlockTemplate};
+
     async fn prepare() {
         let conf = Arc::new(NodeConfig::random_for_test());
         let mut miner = Miner::<ArgonConsensusHeader>::new(BusActor::launch(), conf);
@@ -189,18 +151,9 @@ mod test {
             Delay::new(Duration::from_millis(500)).await;
             let _ = async_std::future::timeout(
                 Duration::from_secs(7),
-                MinerClient::run("127.0.0.1:9000".parse().unwrap()),
+                MinerClient::<ArgonConsensus>::run("127.0.0.1:9000".parse().unwrap()),
             )
             .await;
         });
-    }
-
-    #[test]
-    fn test_hash() {
-        let header = "hellostarcoin".as_bytes();
-        let df = types::U256::max_value() / 2.into();
-        let nonce = MinerClient::solve(df, header.clone());
-        let verified = verify(header, nonce, df);
-        assert_eq!(true, verified);
     }
 }

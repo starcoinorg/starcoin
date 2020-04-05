@@ -5,6 +5,7 @@ use anyhow::Result;
 use config::NodeConfig;
 use futures::channel::oneshot;
 use std::convert::TryFrom;
+use std::fmt::Debug;
 use std::sync::Arc;
 use traits::ChainReader;
 use types::block::{Block, BlockHeader, BlockTemplate};
@@ -15,20 +16,18 @@ pub mod difficult;
 pub mod dummy;
 
 pub trait ConsensusHeader:
-    TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin + Clone + Sync + Send
+    TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin + Clone + Sync + Send + Debug
 {
 }
 
 //TODO merge Consensus and ConsensusHeader to One trait by Trait Associated type.
 
 pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
-    type ConsensusHeader;
+    type ConsensusHeader: ConsensusHeader;
 
     fn init_genesis_header(config: Arc<NodeConfig>) -> (Vec<u8>, U256);
 
-    fn calculate_next_difficulty(reader: &dyn ChainReader) -> U256 {
-        difficult::get_next_work_required(reader)
-    }
+    fn calculate_next_difficulty(config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256;
 
     fn solve_consensus_header(pow_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader;
 

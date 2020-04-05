@@ -172,7 +172,7 @@ where
     let sync = SyncActor::launch(bus, process_actor, download_actor)?;
     //TODO manager MinerClient by actor.
     let stratum_server = config.miner.stratum_server;
-    handle.spawn(miner_client::MinerClient::run(stratum_server));
+    handle.spawn(miner_client::MinerClient::<C>::run(stratum_server));
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,
