@@ -12,10 +12,10 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BranchNumber};
 use std::io::Write;
 use std::mem::size_of;
 use std::sync::{Arc, RwLock};
-use types::block::{Block, BlockBody, BlockHeader, BlockNumber, BranchNumber};
 define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
 define_storage!(
     BlockHeaderStorage,

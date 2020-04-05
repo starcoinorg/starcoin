@@ -7,7 +7,6 @@ use anyhow::{Error, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use config::NodeConfig;
-use crypto::HashValue;
 use futures::channel::oneshot::Receiver;
 use rand::Rng;
 use std::convert::TryFrom;
@@ -45,7 +44,7 @@ pub struct ArgonConsensus {}
 impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
-    fn init_genesis_header(config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
+    fn init_genesis_header(_config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
         (vec![], difficult_1_target())
     }
 
@@ -64,7 +63,7 @@ impl Consensus for ArgonConsensus {
 
     fn verify_header(
         _config: Arc<NodeConfig>,
-        reader: &dyn ChainReader,
+        _reader: &dyn ChainReader,
         header: &BlockHeader,
     ) -> Result<()> {
         let df = header.difficult();
@@ -78,10 +77,10 @@ impl Consensus for ArgonConsensus {
     }
 
     fn create_block(
-        config: Arc<NodeConfig>,
-        reader: &ChainReader,
-        block_template: BlockTemplate,
-        cancel: Receiver<()>,
+        _config: Arc<NodeConfig>,
+        _reader: &dyn ChainReader,
+        _block_template: BlockTemplate,
+        _cancel: Receiver<()>,
     ) -> Result<Block, Error> {
         unimplemented!()
     }

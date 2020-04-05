@@ -17,12 +17,7 @@ extern crate tokio;
 extern crate tokio_io;
 
 use jsonrpc_core::futures::{future, Future};
-use jsonrpc_tcp_server::tokio::{
-    io,
-    net::TcpStream,
-    runtime::Runtime,
-    timer::timeout::{self, Timeout},
-};
+use jsonrpc_tcp_server::tokio::{io, net::TcpStream, runtime::Runtime};
 use std::net::{Shutdown, SocketAddr};
 
 mod traits;
@@ -174,7 +169,7 @@ impl StratumImpl {
     }
 
     /// rpc method `mining.submit`
-    fn submit(&self, params: Params, meta: SocketMetadata) -> RpcResult {
+    fn submit(&self, params: Params, _meta: SocketMetadata) -> RpcResult {
         Ok(match params {
             Params::Array(vals) => {
                 // first two elements are service messages (worker_id & job_id)
@@ -207,7 +202,7 @@ impl StratumImpl {
     }
 
     /// Helper method
-    fn update_peers(&self, tcp_dispatcher: &Dispatcher) {
+    fn _update_peers(&self, tcp_dispatcher: &Dispatcher) {
         if let Some(job) = self.dispatcher.job() {
             if let Err(e) = self.push_work_all(job, tcp_dispatcher) {
                 warn!("Failed to update some of the peers: {:?}", e);
@@ -354,6 +349,7 @@ pub fn dummy_request(addr: &SocketAddr, data: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::timer::{timeout, Timeout};
 
     pub struct VoidManager;
 
