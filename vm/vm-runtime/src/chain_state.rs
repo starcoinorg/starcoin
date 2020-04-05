@@ -67,7 +67,7 @@ impl<'txn> StateStore<'txn> {
         self.chain_state.commit()
     }
 
-    #[allow(dead_code)]
+    //#[allow(dead_code)]
     pub fn flush(&self) -> Result<()> {
         self.chain_state.flush()
     }
