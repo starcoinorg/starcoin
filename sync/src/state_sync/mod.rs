@@ -7,14 +7,13 @@ use atomic_refcell::AtomicRefCell;
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
-use forkable_jellyfish_merkle::{node_type::Node, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use forkable_jellyfish_merkle::node_type::Node;
 use futures::channel::mpsc::{unbounded, UnboundedSender};
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use parking_lot::RwLock;
-use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use std::collections::HashSet;
 use std::ops::DerefMut;
@@ -178,62 +177,6 @@ where
     }
 }
 
-#[test]
-fn test_state_node_cache_complete() {
-    use starcoin_state_tree::update_nibble;
-    use starcoin_state_tree::StateTree;
-
-    let s = Arc::new(MockStateNodeStore::new());
-    let store = Arc::clone(&s);
-    let state = StateTree::new(s, None);
-    assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
-
-    let hash_value = HashValue::random();
-
-    let account1 = update_nibble(&hash_value, 0, 1);
-    let account1 = update_nibble(&account1, 2, 2);
-    state.put(account1, vec![0, 0, 0]);
-
-    assert_eq!(state.get(&account1).unwrap(), Some(vec![0, 0, 0]));
-    assert_eq!(state.get(&update_nibble(&hash_value, 0, 8)).unwrap(), None);
-
-    let new_root_hash = state.commit().unwrap();
-    state.flush().unwrap();
-    assert_eq!(state.root_hash(), new_root_hash);
-
-    // let state_node_cache = StateSyncTask::new(new_root_hash);
-    //
-    // for (k, v) in store.all_nodes() {
-    //     let _ = state_node_cache.put(k, v);
-    // }
-    // assert_eq!(state_node_cache.is_complete(), true);
-}
-
-#[test]
-fn test_state_node_cache_not_complete() {
-    use starcoin_state_tree::update_nibble;
-    use starcoin_state_tree::StateTree;
-
-    let s = MockStateNodeStore::new();
-    let state = StateTree::new(Arc::new(s), None);
-    assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
-
-    let hash_value = HashValue::random();
-
-    let account1 = update_nibble(&hash_value, 0, 1);
-    let account1 = update_nibble(&account1, 2, 2);
-    state.put(account1, vec![0, 0, 0]);
-
-    assert_eq!(state.get(&account1).unwrap(), Some(vec![0, 0, 0]));
-    assert_eq!(state.get(&update_nibble(&hash_value, 0, 8)).unwrap(), None);
-
-    let new_root_hash = state.commit().unwrap();
-    assert_eq!(state.root_hash(), new_root_hash);
-
-    // let state_node_cache = StateSyncTask::new(new_root_hash);
-    // assert_eq!(state_node_cache.is_complete(), false);
-}
-
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
 struct StateSyncEvent {
@@ -297,5 +240,67 @@ where
     /// This method is called for every message received by this actor.
     fn handle(&mut self, _msg: StateSyncEvent, _ctx: &mut Self::Context) -> Self::Result {
         unimplemented!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
+    use starcoin_state_tree::mock::MockStateNodeStore;
+
+    #[test]
+    fn test_state_node_cache_complete() {
+        use starcoin_state_tree::update_nibble;
+        use starcoin_state_tree::StateTree;
+
+        let s = Arc::new(MockStateNodeStore::new());
+        let state = StateTree::new(s, None);
+        assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
+
+        let hash_value = HashValue::random();
+
+        let account1 = update_nibble(&hash_value, 0, 1);
+        let account1 = update_nibble(&account1, 2, 2);
+        state.put(account1, vec![0, 0, 0]);
+
+        assert_eq!(state.get(&account1).unwrap(), Some(vec![0, 0, 0]));
+        assert_eq!(state.get(&update_nibble(&hash_value, 0, 8)).unwrap(), None);
+
+        let new_root_hash = state.commit().unwrap();
+        state.flush().unwrap();
+        assert_eq!(state.root_hash(), new_root_hash);
+
+        // let state_node_cache = StateSyncTask::new(new_root_hash);
+        //
+        // for (k, v) in store.all_nodes() {
+        //     let _ = state_node_cache.put(k, v);
+        // }
+        // assert_eq!(state_node_cache.is_complete(), true);
+    }
+
+    #[test]
+    fn test_state_node_cache_not_complete() {
+        use starcoin_state_tree::update_nibble;
+        use starcoin_state_tree::StateTree;
+
+        let s = MockStateNodeStore::new();
+        let state = StateTree::new(Arc::new(s), None);
+        assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
+
+        let hash_value = HashValue::random();
+
+        let account1 = update_nibble(&hash_value, 0, 1);
+        let account1 = update_nibble(&account1, 2, 2);
+        state.put(account1, vec![0, 0, 0]);
+
+        assert_eq!(state.get(&account1).unwrap(), Some(vec![0, 0, 0]));
+        assert_eq!(state.get(&update_nibble(&hash_value, 0, 8)).unwrap(), None);
+
+        let new_root_hash = state.commit().unwrap();
+        assert_eq!(state.root_hash(), new_root_hash);
+
+        // let state_node_cache = StateSyncTask::new(new_root_hash);
+        // assert_eq!(state_node_cache.is_complete(), false);
     }
 }

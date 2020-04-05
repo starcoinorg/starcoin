@@ -51,7 +51,6 @@ where
     H: ConsensusHeader + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
-    bus: Addr<BusActor>,
     txpool: P,
     storage: Arc<S>,
     phantom_c: PhantomData<C>,
@@ -111,7 +110,6 @@ where
             .unwrap();
             MinerActor {
                 config,
-                bus,
                 txpool,
                 storage,
                 phantom_c: PhantomData,

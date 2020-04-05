@@ -1,6 +1,5 @@
 use futures::executor;
 use starcoin_faucet::{faucet::Faucet, web};
-use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
 use std::path::PathBuf;

@@ -11,7 +11,6 @@ use parking_lot::RwLock;
 // use itertools;
 use crate::state_sync::StateSyncActor;
 use consensus::Consensus;
-use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
@@ -178,7 +177,7 @@ where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    fn sync_state(
+    pub fn sync_state(
         downloader: Arc<Downloader<E, C>>,
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
@@ -186,7 +185,7 @@ where
         Arbiter::spawn(async move {
             if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {
                 //1. ancestor
-                let mut begin_number = downloader
+                let begin_number = downloader
                     .chain_reader
                     .clone()
                     .master_head_header()
@@ -278,7 +277,7 @@ where
                     .unwrap()
                     .number();
 
-                let mut hash_with_number = Downloader::find_ancestor(
+                let hash_with_number = Downloader::find_ancestor(
                     downloader.clone(),
                     best_peer.clone(),
                     network.clone(),

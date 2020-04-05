@@ -44,7 +44,7 @@ impl Consensus for DummyConsensus {
         (vec![], U256::max_value())
     }
 
-    fn solve_consensus_header(pow_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
+    fn solve_consensus_header(_pow_hash: &[u8], _difficulty: U256) -> Self::ConsensusHeader {
         unimplemented!()
     }
 

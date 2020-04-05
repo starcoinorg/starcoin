@@ -153,7 +153,7 @@ mod test {
     use std::time::Duration;
     use tokio;
     use types::block::{Block, BlockBody, BlockHeader, BlockTemplate};
-    async fn prepare() -> Result<()> {
+    async fn prepare() {
         let conf = Arc::new(NodeConfig::random_for_test());
         let mut miner = Miner::<ArgonConsensusHeader>::new(BusActor::launch(), conf);
         let stratum = {
@@ -175,7 +175,6 @@ mod test {
             stratum.push_work_all(miner.get_mint_job()).unwrap();
             Delay::new(Duration::from_millis(500)).await;
         }
-        Ok(())
     }
 
     #[test]

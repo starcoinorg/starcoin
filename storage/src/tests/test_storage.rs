@@ -9,9 +9,9 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{InnerStore, StorageInstance, ValueCodec};
 use crate::{Storage, TRANSACTION_PREFIX_NAME};
+use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;
-use types::transaction::TransactionInfo;
-use types::vm_error::StatusCode;
 
 #[test]
 fn test_storage() {

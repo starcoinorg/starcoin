@@ -3,7 +3,6 @@
 use ethereum_types::H256;
 use jsonrpc_tcp_server::PushMessageError;
 use std;
-use std::error::Error as StdError;
 
 #[derive(Debug, Clone)]
 pub enum Error {

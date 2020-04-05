@@ -8,8 +8,8 @@ use crate::BLOCK_INFO_PREFIX_NAME;
 use anyhow::Result;
 use crypto::HashValue;
 use scs::SCSCodec;
+use starcoin_types::block::BlockInfo;
 use std::sync::Arc;
-use types::block::BlockInfo;
 
 pub trait BlockInfoStore {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<()>;

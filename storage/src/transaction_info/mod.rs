@@ -8,8 +8,8 @@ use crate::TRANSACTION_PREFIX_NAME;
 use anyhow::Result;
 use crypto::HashValue;
 use scs::SCSCodec;
+use starcoin_types::transaction::TransactionInfo;
 use std::sync::Arc;
-use types::transaction::TransactionInfo;
 
 define_storage!(
     TransactionInfoStorage,

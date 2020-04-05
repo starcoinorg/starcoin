@@ -12,7 +12,7 @@ use move_vm_state::data_cache::RemoteCache;
 use starcoin_state_api::ChainState;
 use types::{access_path::AccessPath, account_address::AccountAddress};
 use vm::errors::VMResult;
-
+//TODO this adaptor may be remove?
 /// Adaptor for chain state
 pub struct StateStore<'txn> {
     chain_state: &'txn dyn ChainState,
@@ -57,14 +57,17 @@ impl<'txn> StateStore<'txn> {
         self.chain_state.create_account(account_address)
     }
 
+    #[allow(dead_code)]
     pub fn state(&mut self) -> &'txn dyn ChainState {
         self.chain_state
     }
 
+    #[allow(dead_code)]
     pub fn commit(&self) -> Result<HashValue> {
         self.chain_state.commit()
     }
 
+    #[allow(dead_code)]
     pub fn flush(&self) -> Result<()> {
         self.chain_state.flush()
     }

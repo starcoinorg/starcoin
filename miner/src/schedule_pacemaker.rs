@@ -47,7 +47,6 @@ impl Actor for SchedulePacemaker {
 mod tests {
     use super::*;
     use futures::channel::oneshot;
-    use futures::executor::block_on;
     use std::thread::sleep;
 
     #[test]

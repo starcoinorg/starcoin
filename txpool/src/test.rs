@@ -6,7 +6,6 @@ use common_crypto::hash::CryptoHash;
 use parking_lot::RwLock;
 use starcoin_bus::BusActor;
 use starcoin_config::{NodeConfig, TxPoolConfig};
-use starcoin_consensus::argon_consensus::ArgonConsensus;
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
 use starcoin_genesis::Genesis;
