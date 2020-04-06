@@ -7,13 +7,14 @@ pub use chain::BlockChain;
 
 pub mod chain_service;
 pub mod message;
+
 pub use chain_service::to_block_chain_collection;
 pub use chain_service::BlockChainCollection;
 
 use crate::chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;
 use actix::prelude::*;
-use anyhow::{bail, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use consensus::Consensus;
@@ -22,6 +23,7 @@ use executor::TransactionExecutor;
 use logger::prelude::*;
 use message::ChainRequest;
 use network::network::NetworkAsyncService;
+use parking_lot::RwLock;
 use std::sync::Arc;
 use storage::Storage;
 use traits::{ChainAsyncService, ChainService};
@@ -57,6 +59,7 @@ where
         network: Option<NetworkAsyncService>,
         bus: Addr<BusActor>,
         txpool: TxPoolRef,
+        sync_metadata: SyncMetadata,
     ) -> Result<ChainActorRef<E, C>> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(
@@ -66,6 +69,7 @@ where
                 network,
                 txpool,
                 bus.clone(),
+                sync_metadata,
             )?,
             bus,
         }
@@ -365,6 +369,168 @@ where
         } else {
             None
         }
+    }
+}
+
+// #[derive(Clone)]
+// pub struct SyncMetadataActorRef(pub Addr<SyncMetadataActor>);
+//
+// impl Into<Addr<SyncMetadataActor>> for SyncMetadataActorRef {
+//     fn into(self) -> Addr<SyncMetadataActor> {
+//         self.0
+//     }
+// }
+//
+// impl Into<SyncMetadataActorRef> for Addr<SyncMetadataActor> {
+//     fn into(self) -> SyncMetadataActorRef {
+//         SyncMetadataActorRef(self)
+//     }
+// }
+//
+// #[async_trait::async_trait(? Send)]
+// impl SyncMetadataAsyncService for SyncMetadataActorRef {
+//     async fn update_pivot(&self, pivot: BlockNumber) -> Result<()> {
+//         self.0.try_send(SyncMetadataEvent::UpdatePivot(pivot))?;
+//         Ok(())
+//     }
+//
+//     async fn sync_done(&self) -> Result<()> {
+//         self.0.try_send(SyncMetadataEvent::SyncDone())?;
+//         Ok(())
+//     }
+//
+//     async fn is_state_sync(&self) -> Result<bool> {
+//         if let SyncMetadata::Bool(flag) = self.0.send(SyncMetadataEvent::IsStateSync()).await?? {
+//             Ok(flag)
+//         } else {
+//             Err(format_err!("SyncMetadata type err."))
+//         }
+//     }
+//
+//     async fn get_pivot(&self) -> Result<Option<BlockNumber>> {
+//         if let SyncMetadata::OptionNumber(pivot) = self.0.send(SyncMetadataEvent::Pivot()).await?? {
+//             Ok(pivot)
+//         } else {
+//             Err(format_err!("SyncMetadata type err."))
+//         }
+//     }
+// }
+//
+// #[derive(Clone, Debug)]
+// enum SyncMetadataEvent {
+//     UpdatePivot(BlockNumber),
+//     SyncDone(),
+//     IsStateSync(),
+//     Pivot(),
+// }
+//
+// impl Message for SyncMetadataEvent {
+//     type Result = Result<SyncMetadata>;
+// }
+
+// pub struct SyncMetadataActor {
+//     syncing: bool,
+//     pivot: Option<BlockNumber>,
+// }
+//
+// impl SyncMetadataActor {
+//     pub fn launch(config: Arc<NodeConfig>) -> SyncMetadataActorRef {
+//         info!("is_state_sync : {}", config.sync.is_state_sync());
+//         let actor = SyncMetadataActor {
+//             syncing: config.sync.is_state_sync(),
+//             pivot: None,
+//         }
+//         .start();
+//         actor.into()
+//     }
+//
+//     pub fn update_pivot(&mut self, pivot: BlockNumber) {
+//         assert!(self.syncing, "chain is not in fast sync mode.");
+//         self.pivot = Some(pivot);
+//     }
+//
+//     pub fn change_2_full(&mut self) {
+//         self.syncing = false;
+//         self.pivot = None;
+//     }
+//
+//     pub fn is_state_sync(&self) -> bool {
+//         println!("syncing:{}", self.syncing);
+//         self.syncing
+//     }
+//
+//     pub fn get_pivot(&self) -> Option<BlockNumber> {
+//         self.pivot.clone()
+//     }
+// }
+//
+// impl Actor for SyncMetadataActor {
+//     type Context = Context<Self>;
+//
+//     fn started(&mut self, _ctx: &mut Self::Context) {
+//         info!("SyncMetadataActor actor started");
+//     }
+// }
+//
+// impl Handler<SyncMetadataEvent> for SyncMetadataActor {
+//     type Result = Result<SyncMetadata>;
+//
+//     fn handle(&mut self, msg: SyncMetadataEvent, _ctx: &mut Self::Context) -> Self::Result {
+//         match msg {
+//             SyncMetadataEvent::IsStateSync() => {Ok(SyncMetadata::Bool(self.is_state_sync()))},
+//             SyncMetadataEvent::Pivot() => Ok(SyncMetadata::OptionNumber(self.get_pivot())),
+//             SyncMetadataEvent::SyncDone() => {
+//                 self.change_2_full();
+//                 Ok(SyncMetadata::None)
+//             }
+//             SyncMetadataEvent::UpdatePivot(pivot) => {
+//                 self.update_pivot(pivot);
+//                 Ok(SyncMetadata::None)
+//             }
+//         }
+//     }
+// }
+
+#[derive(Clone)]
+pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
+
+pub struct SyncMetadataInner {
+    syncing: bool,
+    pivot: Option<BlockNumber>,
+}
+
+impl SyncMetadata {
+    pub fn new(config: Arc<NodeConfig>) -> SyncMetadata {
+        info!("is_state_sync : {}", config.sync.is_state_sync());
+        let inner = SyncMetadataInner {
+            syncing: config.sync.is_state_sync(),
+            pivot: None,
+        };
+        SyncMetadata(Arc::new(RwLock::new(inner)))
+    }
+    // }
+    //
+    // impl SyncMetadataService for SyncMetadata {
+
+    pub fn update_pivot(&self, pivot: BlockNumber) -> Result<()> {
+        assert!(self.0.read().syncing, "chain is not in fast sync mode.");
+        self.0.write().pivot = Some(pivot);
+        Ok(())
+    }
+
+    pub fn sync_done(&self) -> Result<()> {
+        let mut lock = self.0.write();
+        lock.syncing = false;
+        lock.pivot = None;
+        Ok(())
+    }
+
+    pub fn is_state_sync(&self) -> Result<bool> {
+        Ok(self.0.read().syncing)
+    }
+
+    pub fn get_pivot(&self) -> Result<Option<BlockNumber>> {
+        Ok(self.0.read().pivot.clone())
     }
 }
 

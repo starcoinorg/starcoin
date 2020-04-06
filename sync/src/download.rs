@@ -10,6 +10,7 @@ use futures::channel::mpsc;
 use parking_lot::RwLock;
 // use itertools;
 use crate::state_sync::StateSyncActor;
+use chain::SyncMetadata;
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
@@ -48,6 +49,7 @@ where
     sync_duration: Duration,
     syncing: Arc<AtomicBool>,
     state_node_storage: Arc<dyn StateNodeStore>,
+    sync_metadata: SyncMetadata,
 }
 
 impl<E, C> DownloadActor<E, C>
@@ -61,6 +63,7 @@ where
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
         state_node_storage: Arc<dyn StateNodeStore>,
+        sync_metadata: SyncMetadata,
     ) -> Result<Addr<DownloadActor<E, C>>> {
         let download_actor = DownloadActor::create(move |ctx| {
             let (sync_event_sender, sync_event_receiver) = mpsc::channel(100);
@@ -74,6 +77,7 @@ where
                 sync_duration: Duration::from_secs(5),
                 syncing: Arc::new(AtomicBool::new(false)),
                 state_node_storage,
+                sync_metadata,
             }
         });
         Ok(download_actor)
@@ -179,10 +183,12 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     fn sync_state(
+        &self,
         downloader: Arc<Downloader<E, C>>,
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
     ) {
+        let sync_metadata = self.sync_metadata.clone();
         Arbiter::spawn(async move {
             if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {
                 //1. ancestor
@@ -258,6 +264,7 @@ where
                                 network.clone(),
                                 state_node_storage,
                                 downloader.clone(),
+                                sync_metadata,
                             );
                         }
                     }

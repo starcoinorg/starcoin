@@ -4,7 +4,7 @@
 use actix::prelude::*;
 use anyhow::Result;
 use starcoin_bus::BusActor;
-use starcoin_chain::{ChainActor, ChainActorRef};
+use starcoin_chain::{ChainActor, ChainActorRef, SyncMetadata};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_consensus::{Consensus, ConsensusHeader};
 use starcoin_executor::executor::Executor;
@@ -52,6 +52,8 @@ where
         ))
         .unwrap(),
     );
+
+    let sync_metadata = SyncMetadata::new(config.clone());
 
     let startup_info = match storage.get_startup_info()? {
         Some(startup_info) => {
@@ -112,6 +114,7 @@ where
         Some(network.clone()),
         bus.clone(),
         txpool.clone(),
+        sync_metadata.clone(),
     )?;
 
     let (json_rpc, _io_handler) = JSONRpcActor::launch(
@@ -149,6 +152,7 @@ where
         network.clone(),
         bus.clone(),
         storage.clone(),
+        sync_metadata.clone(),
     )?;
     let sync = SyncActor::launch(bus, process_actor, download_actor)?;
     //TODO manager MinerClient by actor.

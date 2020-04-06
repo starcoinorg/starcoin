@@ -3,6 +3,7 @@ use crate::process::ProcessActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
+use chain::SyncMetadata;
 use consensus::Consensus;
 use executor::TransactionExecutor;
 use logger::prelude::*;

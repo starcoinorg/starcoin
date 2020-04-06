@@ -4,6 +4,7 @@ use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::{format_err, Result};
 use atomic_refcell::AtomicRefCell;
+use chain::SyncMetadata;
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
@@ -30,6 +31,7 @@ where
     syncing: RwLock<HashSet<HashValue>>,
     network_service: NetworkAsyncService,
     downloader: Arc<Downloader<E, C>>,
+    sync_metadata: SyncMetadata,
 }
 
 impl<E, C> StateSyncTask<E, C>
@@ -42,6 +44,7 @@ where
         state_node_storage: Arc<dyn StateNodeStore>,
         network_service: NetworkAsyncService,
         downloader: Arc<Downloader<E, C>>,
+        sync_metadata: SyncMetadata,
     ) -> StateSyncTask<E, C> {
         Self {
             root: AtomicRefCell::new(root),
@@ -49,6 +52,7 @@ where
             syncing: RwLock::new(HashSet::new()),
             network_service,
             downloader,
+            sync_metadata,
         }
     }
 
@@ -175,6 +179,10 @@ where
     fn state_sync(sync_task: Arc<StateSyncTask<E, C>>) {
         let root = &*sync_task.root.borrow();
         Self::sync_state(sync_task.clone(), root);
+        let sync = sync_task.clone();
+        if let Err(err) = sync.sync_metadata.sync_done() {
+            warn!("err:{:?}", err);
+        }
     }
 }
 
@@ -258,6 +266,7 @@ where
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
         downloader: Arc<Downloader<E, C>>,
+        sync_metadata: SyncMetadata,
     ) -> Result<Addr<StateSyncActor<E, C>>> {
         let state_sync_actor = StateSyncActor::create(move |_ctx| Self {
             sync_task: Arc::new(StateSyncTask::new(
@@ -265,6 +274,7 @@ where
                 state_node_storage,
                 network,
                 downloader,
+                sync_metadata,
             )),
         });
         Ok(state_sync_actor)
