@@ -43,7 +43,7 @@ where
 pub fn mint<H, C>(
     stratum: Arc<Stratum>,
     mut miner: Miner<H>,
-    _config: Arc<NodeConfig>,
+    config: Arc<NodeConfig>,
     miner_account: WalletAccount,
     txns: Vec<SignedUserTransaction>,
     chain: &dyn ChainReader,
@@ -56,7 +56,7 @@ where
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),
         None,
-        C::calculate_next_difficulty(chain),
+        C::calculate_next_difficulty(config, chain),
         txns,
     )?;
     miner.set_mint_job(MineCtx::new(block_template));

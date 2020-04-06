@@ -5,7 +5,6 @@ use crate::headblock_pacemaker::HeadBlockPacemaker;
 use crate::ondemand_pacemaker::OndemandPacemaker;
 use crate::schedule_pacemaker::SchedulePacemaker;
 use crate::stratum::mint;
-use crate::tx_factory::{GenTxEvent, TxFactoryActor};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
@@ -32,11 +31,9 @@ mod headblock_pacemaker;
 mod miner;
 #[allow(dead_code)]
 pub mod miner_client;
-mod mock_txn_generator;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 mod stratum;
-mod tx_factory;
 
 pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 
@@ -54,7 +51,6 @@ where
     H: ConsensusHeader + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
-    bus: Addr<BusActor>,
     txpool: P,
     storage: Arc<S>,
     phantom_c: PhantomData<C>,
@@ -104,22 +100,6 @@ where
                 }
             };
 
-            // let tx_factory = TxFactoryActor::launch(txpool.clone(), Arc::clone(&storage)).unwrap();
-            //
-            // ctx.run_interval(Duration::from_millis(1000), move |act, _ctx| {
-            //     tx_factory.do_send(GenTxEvent {});
-            // });
-
-            let tx_factory =
-                TxFactoryActor::<P, S, E>::launch(txpool.clone(), storage.clone(), bus.clone())
-                    .expect("start txn factory should be ok");
-
-            ctx.run_interval(Duration::from_millis(1000), move |_act, _ctx| {
-                info!("miner call gen_tx.");
-                if let Err(e) = tx_factory.try_send(GenTxEvent) {
-                    debug!("fail to send gen_tx_event, err: {:?}", e);
-                }
-            });
             let miner = miner::Miner::new(bus.clone(), config.clone());
 
             let stratum = sc_stratum::Stratum::start(
@@ -130,7 +110,6 @@ where
             .unwrap();
             MinerActor {
                 config,
-                bus,
                 txpool,
                 storage,
                 phantom_c: PhantomData,

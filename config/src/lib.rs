@@ -1,26 +1,26 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, format_err, Result};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::convert::TryFrom;
-
+use anyhow::{ensure, Result};
 use dirs;
-use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use rand::prelude::*;
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::{test_utils::KeyPair, Uniform};
-use std::fmt::{Display, Formatter};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use starcoin_crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    test_utils::KeyPair,
+    Uniform,
+};
+use std::convert::TryFrom;
 use std::fs::create_dir_all;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::sync::Arc;
 use structopt::StructOpt;
 
+mod chain_config;
 mod miner_config;
 mod network_config;
 mod rpc_config;
@@ -30,6 +30,7 @@ mod txpool_config;
 mod vm_config;
 
 use crate::sync_config::SyncConfig;
+pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig};
 pub use libra_temppath::TempPath;
 pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
@@ -72,80 +73,6 @@ pub struct StarcoinOpt {
     #[structopt(long, default_value = "0")]
     /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
     pub dev_period: u64,
-}
-
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    PartialEq,
-    PartialOrd,
-    Ord,
-    IntoPrimitive,
-    TryFromPrimitive,
-    Deserialize,
-    Serialize,
-)]
-#[repr(u64)]
-#[serde(tag = "net")]
-pub enum ChainNetwork {
-    /// A ephemeral network just for developer test.
-    Dev = 1024,
-    /// Starcoin test network,
-    /// The data on the chain will be cleaned up periodically。
-    /// Comet Halley, officially designated 1P/Halley, is a short-period comet visible from Earth every 75–76 years.
-    Halley = 3,
-    /// Starcoin long-running test network,
-    /// Use network upgrade strategy to upgrade chain protocol.
-    /// Proxima Centauri is a small, low-mass star located 4.244 light-years (1.301 pc) away from the Sun in the southern constellation of Centaurus.
-    /// Its Latin name means the "nearest [star] of Centaurus".
-    Proxima = 2,
-    /// Starcoin main net.
-    Main = 1,
-}
-
-impl Display for ChainNetwork {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ChainNetwork::Dev => write!(f, "dev"),
-            ChainNetwork::Halley => write!(f, "halley"),
-            ChainNetwork::Proxima => write!(f, "proxima"),
-            ChainNetwork::Main => write!(f, "main"),
-        }
-    }
-}
-
-impl FromStr for ChainNetwork {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "dev" => Ok(ChainNetwork::Dev),
-            "halley" => Ok(ChainNetwork::Halley),
-            "proxima" => Ok(ChainNetwork::Proxima),
-            _ => Err(format_err!("")),
-        }
-    }
-}
-
-impl ChainNetwork {
-    pub fn chain_id(&self) -> u64 {
-        (*self).into()
-    }
-    pub fn is_dev(&self) -> bool {
-        match self {
-            ChainNetwork::Dev => true,
-            _ => false,
-        }
-    }
-}
-
-impl Default for ChainNetwork {
-    fn default() -> Self {
-        ChainNetwork::Dev
-    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -451,5 +378,14 @@ mod tests {
         let config3 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(config2, config3);
         Ok(())
+    }
+
+    #[test]
+    fn test_keys() {
+        let key_pair = gen_keypair();
+        println!("{}", key_pair.public_key.to_string());
+        println!("{}", hex::encode(key_pair.private_key.to_bytes()));
+        let config = ChainNetwork::Halley.get_config();
+        println!("{:?}", config)
     }
 }

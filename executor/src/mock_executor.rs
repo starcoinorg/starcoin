@@ -3,8 +3,8 @@
 
 use crate::TransactionExecutor;
 use anyhow::Result;
-use config::VMConfig;
 use crypto::{ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
+use starcoin_config::{ChainConfig, VMConfig};
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
@@ -64,7 +64,7 @@ impl MockExecutor {
 }
 
 impl TransactionExecutor for MockExecutor {
-    fn init_genesis(_config: &VMConfig) -> Result<(HashValue, ChainStateSet)> {
+    fn init_genesis(_config: &ChainConfig) -> Result<(HashValue, ChainStateSet)> {
         let chain_state = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
         Self::mint_for(&chain_state, AccountAddress::default(), 10_0000_0000_0000)?;
         chain_state.create_account(association_address())?;

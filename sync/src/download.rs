@@ -12,7 +12,6 @@ use parking_lot::RwLock;
 use crate::state_sync::StateSyncActor;
 use chain::SyncMetadata;
 use consensus::Consensus;
-use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
@@ -192,7 +191,7 @@ where
         Arbiter::spawn(async move {
             if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {
                 //1. ancestor
-                let mut begin_number = downloader
+                let begin_number = downloader
                     .chain_reader
                     .clone()
                     .master_head_header()
@@ -285,7 +284,7 @@ where
                     .unwrap()
                     .number();
 
-                let mut hash_with_number = Downloader::find_ancestor(
+                let hash_with_number = Downloader::find_ancestor(
                     downloader.clone(),
                     best_peer.clone(),
                     network.clone(),
@@ -734,9 +733,7 @@ where
                 bodies.get(i).unwrap().clone().transactions,
             );
             //todo:verify block
-            let _ =
-                Self::do_block_with_info(downloader.clone(), block, infos.get(1).unwrap().clone())
-                    .await;
+            let _ = Self::do_block(downloader.clone(), block).await;
         }
     }
 

@@ -1,5 +1,5 @@
 address 0x6d696e74:
-
+//TODO move to 0x0 address.
 module SubsidyConfig {
     use 0x0::Transaction;
 

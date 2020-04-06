@@ -6,9 +6,9 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::{DBStorage, DEFAULT_CF_NAME};
 use crate::storage::{InnerStore, ValueCodec};
 use crypto::{hash::CryptoHash, HashValue};
+use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;
-use types::transaction::TransactionInfo;
-use types::vm_error::StatusCode;
 
 #[test]
 fn test_db_batch() {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 extern crate chrono;
+
 use chrono::prelude::*;
 use crypto::HashValue;
 
@@ -10,11 +11,11 @@ use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
 use logger::prelude::*;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_types::U256;
 use std::sync::Arc;
-use types::account_address::AccountAddress;
-use types::block::{Block, BlockBody, BlockHeader};
-use types::transaction::SignedUserTransaction;
-use types::U256;
 
 #[test]
 fn test_block() {

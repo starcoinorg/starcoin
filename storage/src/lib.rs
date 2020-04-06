@@ -14,14 +14,15 @@ use starcoin_accumulator::{
     node_index::NodeIndex, AccumulatorNode, AccumulatorReader, AccumulatorTreeStore,
     AccumulatorWriter,
 };
+use starcoin_types::{
+    block::{Block, BlockBody, BlockHeader, BlockInfo},
+    startup_info::StartupInfo,
+    transaction::TransactionInfo,
+};
 use state_tree::{StateNode, StateNodeStore};
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::sync::Arc;
-use types::{
-    block::{Block, BlockBody, BlockHeader, BlockInfo, BlockNumber},
-    startup_info::StartupInfo,
-};
 
 pub mod accumulator;
 pub mod batch;
@@ -120,6 +121,11 @@ pub trait BlockStore {
         block_id1: HashValue,
         block_id2: HashValue,
     ) -> Result<Option<HashValue>>;
+}
+
+pub trait TransactionInfoStore {
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()>;
 }
 
 pub struct Storage {
@@ -312,9 +318,25 @@ impl BlockInfoStore for Storage {
     }
 }
 
+impl TransactionInfoStore for Storage {
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
+        self.transaction_info_storage.get(txn_hash)
+    }
+
+    fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()> {
+        self.transaction_info_storage
+            .put(txn_info.transaction_hash(), txn_info)
+    }
+}
+
 /// Chain storage define
 pub trait Store:
-    StateNodeStore + BlockStore + AccumulatorTreeStore + BlockInfoStore + IntoSuper<dyn StateNodeStore>
+    StateNodeStore
+    + BlockStore
+    + AccumulatorTreeStore
+    + BlockInfoStore
+    + IntoSuper<dyn StateNodeStore>
+    + IntoSuper<dyn AccumulatorTreeStore>
 {
 }
 
@@ -336,6 +358,21 @@ impl<'a, T: 'a + StateNodeStore> IntoSuper<dyn StateNodeStore + 'a> for T {
         self
     }
     fn into_super_arc(self: Arc<Self>) -> Arc<dyn StateNodeStore + 'a> {
+        self
+    }
+}
+
+impl<'a, T: 'a + AccumulatorTreeStore> IntoSuper<dyn AccumulatorTreeStore + 'a> for T {
+    fn as_super(&self) -> &(dyn AccumulatorTreeStore + 'a) {
+        self
+    }
+    fn as_super_mut(&mut self) -> &mut (dyn AccumulatorTreeStore + 'a) {
+        self
+    }
+    fn into_super(self: Box<Self>) -> Box<dyn AccumulatorTreeStore + 'a> {
+        self
+    }
+    fn into_super_arc(self: Arc<Self>) -> Arc<dyn AccumulatorTreeStore + 'a> {
         self
     }
 }
