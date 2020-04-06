@@ -14,7 +14,7 @@ pub use chain_service::BlockChainCollection;
 use crate::chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;
 use actix::prelude::*;
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{bail, Error, Result};
 use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use consensus::Consensus;

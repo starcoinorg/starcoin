@@ -15,7 +15,6 @@ use starcoin_genesis::Genesis;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
-use storage::db_storage::DBStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::{ChainReader, ChainWriter};
@@ -26,43 +25,35 @@ async fn gen_head_chain(
     delay: bool,
 ) -> (ChainActorRef<Executor, DummyConsensus>, Arc<NodeConfig>) {
     let node_config = NodeConfig::random_for_test();
-    let conf = Arc::new(node_config);
-    let cache_storage = Arc::new(CacheStorage::new());
-    let tmpdir = libra_temppath::TempPath::new();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Arc::new(
-        Storage::new(StorageInstance::new_cache_and_db_instance(
-            cache_storage.clone(),
-            db_storage.clone(),
-        ))
-        .unwrap(),
-    );
-    let genesis =
-        Genesis::new::<Executor, DummyConsensus, Storage>(conf.clone(), storage.clone()).unwrap();
+    let node_config = Arc::new(node_config);
+    let storage =
+        Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
+    let genesis = Genesis::build(node_config.net()).unwrap();
+    let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
     let txpool = {
-        let best_block_id = genesis.startup_info().head.get_head();
+        let best_block_id = startup_info.head.get_head();
         TxPoolRef::start(
-            conf.tx_pool.clone(),
+            node_config.tx_pool.clone(),
             storage.clone(),
             best_block_id,
             bus.clone(),
         )
     };
-    let sync_metadata = SyncMetadata::new(conf.clone());
+    let sync_metadata = SyncMetadata::new(node_config.clone());
     let chain = ChainActor::<Executor, DummyConsensus>::launch(
-        conf.clone(),
-        genesis.startup_info().clone(),
+        node_config.clone(),
+        startup_info.clone(),
         storage.clone(),
         None,
         bus.clone(),
         txpool.clone(),
-        sync_metadata.clone(),
+        sync_metadata,
     )
     .unwrap();
     let miner_account = WalletAccount::random();
     if times > 0 {
-        for i in 0..times {
+        for _i in 0..times {
             let block_template = chain
                 .clone()
                 .create_block_template(
@@ -77,14 +68,14 @@ async fn gen_head_chain(
 
             let startup_info = chain.clone().master_startup_info().await.unwrap();
             let collection = to_block_chain_collection(
-                conf.clone(),
+                node_config.clone(),
                 startup_info,
                 storage.clone(),
                 txpool.clone(),
             )
             .unwrap();
             let block_chain = BlockChain::<Executor, DummyConsensus, Storage, TxPoolRef>::new(
-                conf.clone(),
+                node_config.clone(),
                 collection
                     .clone()
                     .get_master()
@@ -97,19 +88,21 @@ async fn gen_head_chain(
                 collection,
             )
             .unwrap();
-            let block =
-                DummyConsensus::create_block(conf.clone(), &block_chain, block_template, receiver)
-                    .unwrap();
-            info!("{}:{:?}", i, block.header().id());
+            let block = DummyConsensus::create_block(
+                node_config.clone(),
+                &block_chain,
+                block_template,
+                receiver,
+            )
+            .unwrap();
             chain.clone().try_connect(block).await.unwrap();
-            info!("{}", "1111");
             if delay {
                 Delay::new(Duration::from_millis(1000)).await;
             }
         }
     }
 
-    (chain, conf)
+    (chain, node_config)
 }
 
 #[actix_rt::test]
@@ -167,23 +160,14 @@ async fn test_block_chain_forks() {
 
 #[stest::test]
 async fn test_chain_apply() -> Result<()> {
-    let node_config = NodeConfig::random_for_test();
-    let config = Arc::new(node_config);
-    let cache_storage = Arc::new(CacheStorage::new());
-    let tmpdir = libra_temppath::TempPath::new();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Arc::new(
-        Storage::new(StorageInstance::new_cache_and_db_instance(
-            cache_storage.clone(),
-            db_storage.clone(),
-        ))
-        .unwrap(),
-    );
-    let genesis =
-        Genesis::new::<Executor, DummyConsensus, Storage>(config.clone(), storage.clone())?;
+    let config = Arc::new(NodeConfig::random_for_test());
+    let storage =
+        Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
+    let genesis = Genesis::build(config.net()).unwrap();
+    let startup_info = genesis.execute(storage.clone())?;
     let bus = BusActor::launch();
     let txpool = {
-        let best_block_id = genesis.startup_info().head.get_head();
+        let best_block_id = startup_info.head.get_head();
         TxPoolRef::start(
             config.tx_pool.clone(),
             storage.clone(),
@@ -193,13 +177,13 @@ async fn test_chain_apply() -> Result<()> {
     };
     let collection = to_block_chain_collection(
         config.clone(),
-        genesis.startup_info().clone(),
+        startup_info.clone(),
         storage.clone(),
         txpool.clone(),
     )?;
     let mut block_chain = BlockChain::<Executor, DummyConsensus, Storage, TxPoolRef>::new(
         config.clone(),
-        genesis.startup_info().head.clone(),
+        startup_info.head.clone(),
         storage,
         txpool,
         collection,

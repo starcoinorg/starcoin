@@ -181,7 +181,7 @@ where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    fn sync_state(
+    fn _sync_state(
         &self,
         downloader: Arc<Downloader<E, C>>,
         network: NetworkAsyncService,
@@ -724,7 +724,7 @@ where
         downloader: Arc<Downloader<E, C>>,
         headers: Vec<BlockHeader>,
         bodies: Vec<BlockBody>,
-        infos: Vec<BlockInfo>,
+        _infos: Vec<BlockInfo>,
     ) {
         assert_eq!(headers.len(), bodies.len());
         for i in 0..headers.len() {

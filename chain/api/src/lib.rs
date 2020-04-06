@@ -1,5 +1,5 @@
-use anyhow::Result;
-use types::block::BlockNumber;
+// use anyhow::Result;
+// use types::block::BlockNumber;
 
 // pub enum SyncMetadata {
 //     Bool(bool),
