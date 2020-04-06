@@ -9,7 +9,7 @@ use chain::ChainActorRef;
 use futures::channel::mpsc;
 use parking_lot::RwLock;
 // use itertools;
-use crate::state_sync::StateSyncActor;
+use crate::state_sync::StateSyncTaskActor;
 use chain::SyncMetadata;
 use consensus::Consensus;
 use executor::TransactionExecutor;
@@ -258,10 +258,10 @@ where
                         {
                             // 5. StateSyncActor
                             let root = headers.headers.pop().unwrap();
-                            let _ = StateSyncActor::launch(
+                            let _ = StateSyncTaskActor::launch(
                                 root.state_root(),
-                                network.clone(),
                                 state_node_storage,
+                                network.clone(),
                                 downloader.clone(),
                                 sync_metadata,
                             );
