@@ -1,6 +1,6 @@
 use actix_rt::System;
 use bus::BusActor;
-use chain::{ChainActor, ChainActorRef};
+use chain::{ChainActor, ChainActorRef, SyncMetadata};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::dummy::DummyConsensus;
 use consensus::dummy::DummyHeader;
@@ -56,6 +56,7 @@ fn test_miner_with_schedule_pacemaker() {
             )
         };
         let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
+        let sync_metadata = SyncMetadata::new(config.clone());
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),
@@ -63,6 +64,7 @@ fn test_miner_with_schedule_pacemaker() {
             Some(network.clone()),
             bus.clone(),
             txpool.clone(),
+            sync_metadata.clone(),
         )
         .unwrap();
         let miner_account = WalletAccount::random();
@@ -99,6 +101,7 @@ fn test_miner_with_schedule_pacemaker() {
             network.clone(),
             bus.clone(),
             storage.clone(),
+            sync_metadata.clone(),
         )
         .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
@@ -145,6 +148,7 @@ fn test_miner_with_ondemand_pacemaker() {
             )
         };
         let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
+        let sync_metadata = SyncMetadata::new(config.clone());
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),
@@ -152,6 +156,7 @@ fn test_miner_with_ondemand_pacemaker() {
             Some(network.clone()),
             bus.clone(),
             txpool.clone(),
+            sync_metadata.clone(),
         )
         .unwrap();
         let receiver = txpool.clone().subscribe_txns().await.unwrap();
@@ -189,6 +194,7 @@ fn test_miner_with_ondemand_pacemaker() {
             network.clone(),
             bus.clone(),
             storage.clone(),
+            sync_metadata.clone(),
         )
         .expect("launch DownloadActor failed.");
         let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
