@@ -15,6 +15,11 @@ impl SyncConfig {
     pub fn is_light(&self) -> bool {
         self.sync_mode == SyncMode::LIGHT
     }
+
+    //just for test
+    pub fn fast_sync_mode(&mut self) {
+        self.sync_mode = SyncMode::FAST_SYNC;
+    }
 }
 
 impl Default for SyncConfig {
