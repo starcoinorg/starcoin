@@ -24,6 +24,7 @@ async fn sync_state_node<E, C>(
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
+    debug!("sync_state_node : {:?}", node_key);
     let state_node = match state_node_storage.get(&node_key).unwrap() {
         Some(node) => StateSyncTaskEvent {
             node_key,
@@ -174,10 +175,10 @@ where
 
         //2. exe_task
         if self.wait_2_sync.is_empty() {
-            //todo:sync done
             if let Err(e) = self.sync_metadata.sync_done() {
                 warn!("err:{:?}", e);
             } else {
+                info!("sync_done : {:?}", self.sync_metadata.get_pivot());
                 ctx.stop();
             }
         } else {
