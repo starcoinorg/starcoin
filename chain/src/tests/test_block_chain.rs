@@ -1,10 +1,12 @@
-use crate::{to_block_chain_collection, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
+use crate::{
+    to_block_chain_collection, BlockChain, ChainActor, ChainActorRef, ChainAsyncService,
+    SyncMetadata,
+};
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus, Consensus};
-// use executor::executor::mock_create_account_txn;
 use executor::executor::Executor;
 use futures::channel::oneshot;
 use futures_timer::Delay;
@@ -17,28 +19,6 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
-
-// fn gen_txs(storage: Arc<StarcoinStorage>, root:HashValue) -> Vec<SignedUserTransaction> {
-//     let chain_state = ChainStateDB::new(storage, Some(root));
-//     let address = account_config::association_address();
-//     let access_path = AccessPath::new_for_account(address);
-//     let state = chain_state
-//         .get(&access_path)
-//         .expect("read account state should ok");
-//     let sequence_number = match state {
-//         None => 0u64,
-//         Some(s) => account_config::AccountResource::make_from(&s)
-//             .expect("account resource decode ok")
-//             .sequence_number(),
-//     };
-//     let mut txs = Vec::new();
-//     if let Transaction::UserTransaction(tx) = TransactionExecutor::build_mint_txn(address, Value::vector_u8(address.to_vec()).into(),
-//                                                  sequence_number, 100) {
-//         txs.push(tx);
-//     }
-//
-//     txs
-// }
 
 async fn gen_head_chain(
     times: u64,
@@ -60,6 +40,7 @@ async fn gen_head_chain(
             bus.clone(),
         )
     };
+    let sync_metadata = SyncMetadata::new(node_config.clone());
     let chain = ChainActor::<Executor, DummyConsensus>::launch(
         node_config.clone(),
         startup_info.clone(),
@@ -67,6 +48,7 @@ async fn gen_head_chain(
         None,
         bus.clone(),
         txpool.clone(),
+        sync_metadata,
     )
     .unwrap();
     let miner_account = WalletAccount::random();

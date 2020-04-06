@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain::BlockChain;
+use crate::SyncMetadata;
 use actix::prelude::*;
 use anyhow::{format_err, Result};
 use atomic_refcell::AtomicRefCell;
@@ -27,38 +28,6 @@ use types::{
     transaction::SignedUserTransaction,
     U256,
 };
-
-struct StateSyncMetadata {
-    syncing: bool,
-    pivot: Option<BlockNumber>,
-}
-
-impl StateSyncMetadata {
-    pub fn new(state_sync: bool) -> Self {
-        StateSyncMetadata {
-            syncing: state_sync,
-            pivot: None,
-        }
-    }
-
-    pub fn _update_pivot(&mut self, pivot: BlockNumber) {
-        assert!(self.syncing, "chain is not in fast sync mode.");
-        self.pivot = Some(pivot);
-    }
-
-    pub fn _change_2_full(&mut self) {
-        self.syncing = false;
-        self.pivot = None;
-    }
-
-    pub fn is_state_sync(&self) -> bool {
-        self.syncing
-    }
-
-    pub fn get_pivot(&self) -> Option<BlockNumber> {
-        self.pivot.clone()
-    }
-}
 
 pub struct BlockChainCollection<E, C, S, P>
 where
@@ -228,7 +197,7 @@ where
     network: Option<NetworkAsyncService>,
     txpool: P,
     bus: Addr<BusActor>,
-    sync: RwLock<StateSyncMetadata>,
+    sync: SyncMetadata,
     _future_blocks: RwLock<HashMap<HashValue, (Block, Option<BlockInfo>)>>, //todo
 }
 
@@ -246,6 +215,7 @@ where
         network: Option<NetworkAsyncService>,
         txpool: P,
         bus: Addr<BusActor>,
+        sync: SyncMetadata,
     ) -> Result<Self> {
         let collection = to_block_chain_collection(
             config.clone(),
@@ -253,7 +223,6 @@ where
             storage.clone(),
             txpool.clone(),
         )?;
-        let state_sync_flag = config.sync.is_state_sync();
         let future_blocks: RwLock<HashMap<HashValue, (Block, Option<BlockInfo>)>> =
             RwLock::new(HashMap::new());
         Ok(Self {
@@ -263,7 +232,7 @@ where
             network,
             txpool,
             bus,
-            sync: RwLock::new(StateSyncMetadata::new(state_sync_flag)),
+            sync,
             _future_blocks: future_blocks,
         })
     }
@@ -483,7 +452,7 @@ where
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<()> {
-        if !self.sync.read().is_state_sync() {
+        if !self.sync.is_state_sync()? {
             if self
                 .storage
                 .get_block_by_hash(block.header().id())?
@@ -509,23 +478,33 @@ where
     }
 
     fn try_connect_with_block_info(&mut self, block: Block, block_info: BlockInfo) -> Result<()> {
-        if self.sync.read().is_state_sync() {
-            let pivot = self.sync.read().get_pivot();
-            if pivot.is_some() && pivot.unwrap() >= block.header().number() {
-                //todo:1. verify block header / verify accumulator / total difficulty
-                let mut block_chain = self.collection.get_master().borrow_mut();
-                let master = block_chain.get_mut(0).expect("master is none.");
-                let block_header = block.header().clone();
-                if let Ok(_) = C::verify_header(self.config.clone(), master, &block_header) {
-                    // 2. save block
-                    let _ = master.commit(block, block_info);
-                    // 3. update master
-                    self.collection
-                        .get_master()
-                        .borrow()
-                        .get(0)
-                        .expect("master is none.")
-                        .latest_blocks(1);
+        if self.sync.is_state_sync()? {
+            let pivot = self.sync.get_pivot()?;
+            if pivot.is_some() {
+                let pivot_number = pivot.unwrap();
+                let current_block_number = block.header().number();
+                if pivot_number >= current_block_number {
+                    //todo:1. verify block header / verify accumulator / total difficulty
+                    let mut block_chain = self.collection.get_master().borrow_mut();
+                    let master = block_chain.get_mut(0).expect("master is none.");
+                    let block_header = block.header().clone();
+                    if let Ok(_) = C::verify_header(self.config.clone(), master, &block_header) {
+                        // 2. save block
+                        let _ = master.commit(block, block_info);
+                        // 3. update master
+                        self.collection
+                            .get_master()
+                            .borrow()
+                            .get(0)
+                            .expect("master is none.")
+                            .latest_blocks(1);
+                        // 4. update state sync metadata
+                        if pivot_number == current_block_number {
+                            if let Err(err) = self.sync.sync_done() {
+                                warn!("err:{:?}", err);
+                            }
+                        }
+                    }
                 }
             }
             Ok(())

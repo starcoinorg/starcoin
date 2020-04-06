@@ -1,7 +1,7 @@
 use actix::Addr;
 use actix_rt::System;
 use bus::BusActor;
-use chain::{ChainActor, ChainActorRef};
+use chain::{ChainActor, ChainActorRef, SyncMetadata};
 use config::{get_available_port, NodeConfig};
 use consensus::dummy::DummyConsensus;
 use executor::executor::Executor;
@@ -70,6 +70,7 @@ fn test_network_actor_rpc() {
         let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), handle.clone());
         debug!("addr_1 : {:?}", addr_1);
 
+        let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone());
         // chain
         let first_chain = ChainActor::launch(
             node_config_1.clone(),
@@ -78,6 +79,7 @@ fn test_network_actor_rpc() {
             Some(network_1.clone()),
             bus_1.clone(),
             txpool_1.clone(),
+            sync_metadata_actor_1.clone(),
         )
         .unwrap();
         // sync
@@ -96,6 +98,7 @@ fn test_network_actor_rpc() {
             network_1.clone(),
             bus_1.clone(),
             storage_1.clone(),
+            sync_metadata_actor_1.clone(),
         )
         .unwrap();
         let _first_sync_actor =
@@ -161,6 +164,8 @@ fn test_network_actor_rpc() {
         debug!("addr_2 : {:?}", addr_2);
         Delay::new(Duration::from_secs(1)).await;
 
+        let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone());
+
         // chain
         let second_chain = ChainActor::<Executor, DummyConsensus>::launch(
             node_config_2.clone(),
@@ -169,6 +174,7 @@ fn test_network_actor_rpc() {
             Some(network_2.clone()),
             bus_2.clone(),
             txpool_2.clone(),
+            sync_metadata_actor_2.clone(),
         )
         .unwrap();
         // sync
@@ -187,6 +193,7 @@ fn test_network_actor_rpc() {
             network_2.clone(),
             bus_2.clone(),
             storage_2.clone(),
+            sync_metadata_actor_2.clone(),
         )
         .unwrap();
         let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
@@ -252,6 +259,7 @@ fn test_network_actor_rpc_2() {
         let (network_1, addr_1) = gen_network(node_config_1.clone(), bus_1.clone(), handle.clone());
         info!("addr_1 : {:?}", addr_1);
 
+        let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone());
         // chain
         let first_chain = ChainActor::<Executor, DummyConsensus>::launch(
             node_config_1.clone(),
@@ -260,6 +268,7 @@ fn test_network_actor_rpc_2() {
             Some(network_1.clone()),
             bus_1.clone(),
             txpool_1.clone(),
+            sync_metadata_actor_1.clone(),
         )
         .unwrap();
         // sync
@@ -278,6 +287,7 @@ fn test_network_actor_rpc_2() {
             network_1.clone(),
             bus_1.clone(),
             storage_1.clone(),
+            sync_metadata_actor_1.clone(),
         )
         .unwrap();
         let _first_sync_actor =
@@ -320,6 +330,7 @@ fn test_network_actor_rpc_2() {
         Delay::new(Duration::from_secs(1)).await;
         debug!("addr_2 : {:?}", addr_2);
 
+        let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone());
         // chain
         let second_chain = ChainActor::launch(
             node_config_2.clone(),
@@ -328,6 +339,7 @@ fn test_network_actor_rpc_2() {
             Some(network_2.clone()),
             bus_2.clone(),
             txpool_2.clone(),
+            sync_metadata_actor_2.clone(),
         )
         .unwrap();
         // sync
@@ -346,6 +358,7 @@ fn test_network_actor_rpc_2() {
             network_2.clone(),
             bus_2.clone(),
             storage_2.clone(),
+            sync_metadata_actor_2.clone(),
         )
         .unwrap();
         let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
