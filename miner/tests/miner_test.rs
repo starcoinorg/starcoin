@@ -45,6 +45,7 @@ fn test_miner_with_schedule_pacemaker() {
         let key_pair = config.network.network_keypair();
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
         let genesis = Genesis::build(config.net()).unwrap();
+        let genesis_hash = genesis.block().header().id();
         let startup_info = genesis.execute(storage.clone()).unwrap();
         let txpool = {
             let best_block_id = startup_info.head.get_head();
@@ -55,7 +56,8 @@ fn test_miner_with_schedule_pacemaker() {
                 bus.clone(),
             )
         };
-        let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
+        let network =
+            NetworkActor::launch(config.clone(), bus.clone(), handle.clone(), genesis_hash);
         let sync_metadata = SyncMetadata::new(config.clone());
         let chain = ChainActor::launch(
             config.clone(),
@@ -137,6 +139,7 @@ fn test_miner_with_ondemand_pacemaker() {
         let _address = AccountAddress::from_public_key(&key_pair.public_key);
 
         let genesis = Genesis::build(config.net()).unwrap();
+        let genesis_hash = genesis.block().header().id();
         let startup_info = genesis.execute(storage.clone()).unwrap();
         let txpool = {
             let best_block_id = startup_info.head.get_head();
@@ -147,7 +150,8 @@ fn test_miner_with_ondemand_pacemaker() {
                 bus.clone(),
             )
         };
-        let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
+        let network =
+            NetworkActor::launch(config.clone(), bus.clone(), handle.clone(), genesis_hash);
         let sync_metadata = SyncMetadata::new(config.clone());
         let chain = ChainActor::launch(
             config.clone(),
