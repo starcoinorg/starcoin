@@ -10,7 +10,7 @@ use starcoin_consensus::{Consensus, ConsensusHeader};
 use starcoin_executor::executor::Executor;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_miner::{miner_client, MinerActor};
+use starcoin_miner::MinerActor;
 use starcoin_network::NetworkActor;
 use starcoin_rpc_server::JSONRpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -26,11 +26,12 @@ use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use tokio::runtime::Handle;
+use starcoin_miner::miner_client::MinerClientActor;
 
 pub struct NodeStartHandle<C, H>
-where
-    C: Consensus + 'static,
-    H: ConsensusHeader + 'static,
+    where
+        C: Consensus + 'static,
+        H: ConsensusHeader + 'static,
 {
     _miner_actor: Addr<MinerActor<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>>,
     _sync_actor: Addr<SyncActor<Executor, C>>,
@@ -38,9 +39,9 @@ where
 }
 
 pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<NodeStartHandle<C, H>>
-where
-    C: Consensus + 'static,
-    H: ConsensusHeader + 'static,
+    where
+        C: Consensus + 'static,
+        H: ConsensusHeader + 'static,
 {
     let bus = BusActor::launch();
     let cache_storage = Arc::new(CacheStorage::new());
@@ -50,7 +51,7 @@ where
             cache_storage.clone(),
             db_storage.clone(),
         ))
-        .unwrap(),
+            .unwrap(),
     );
 
     let sync_metadata = SyncMetadata::new(config.clone());
@@ -176,9 +177,9 @@ where
         sync_metadata.clone(),
     )?;
     let sync = SyncActor::launch(bus, process_actor, download_actor)?;
-    //TODO manager MinerClient by actor.
     let stratum_server = config.miner.stratum_server;
-    handle.spawn(miner_client::MinerClient::<C>::run(stratum_server));
+    let miner_client = MinerClientActor::<C>::new(stratum_server);
+    miner_client.start();
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,
