@@ -19,4 +19,11 @@ pub trait AccountApi {
     fn get(&self, address: AccountAddress) -> FutureResult<Option<WalletAccount>>;
     #[rpc(name = "account.sign_txn")]
     fn sign_txn(&self, raw_txn: RawUserTransaction) -> FutureResult<SignedUserTransaction>;
+    #[rpc(name = "account.unlock")]
+    fn unlock(
+        &self,
+        address: AccountAddress,
+        password: String,
+        duration: std::time::Duration,
+    ) -> FutureResult<()>;
 }

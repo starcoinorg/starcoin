@@ -155,6 +155,22 @@ impl RpcClient {
         })
     }
 
+    pub fn account_unlock(
+        &self,
+        address: AccountAddress,
+        password: String,
+        duration: std::time::Duration,
+    ) -> anyhow::Result<()> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .unlock(address, password, duration)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
+
     pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
         self.rt.borrow_mut().block_on_std(async {
             self.inner

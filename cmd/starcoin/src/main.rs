@@ -74,7 +74,8 @@ fn run() -> Result<()> {
                 .subcommand(account::CreateCommand {}.into_cmd())
                 .subcommand(account::ShowCommand {}.into_cmd())
                 .subcommand(account::ListCommand {}.into_cmd())
-                .subcommand(account::SignTxnCommand {}.into_cmd()),
+                .subcommand(account::SignTxnCommand {}.into_cmd())
+                .subcommand(account::UnlockCommand.into_cmd()),
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand {}.into_cmd()))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand {}.into_cmd()))

@@ -8,17 +8,21 @@ use anyhow::{Error, Result};
 use starcoin_config::NodeConfig;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::mock::{KeyPairWallet, MemWalletStore};
+// use starcoin_wallet_api::mock::{KeyPairWallet, MemWalletStore};
+use starcoin_wallet_lib::{file_wallet_store::FileWalletStore, keystore_wallet::KeyStoreWallet};
+
 use starcoin_wallet_api::{Wallet, WalletAccount, WalletAsyncService};
 use std::sync::Arc;
 
 pub struct WalletActor {
-    service: WalletServiceImpl<KeyPairWallet<MemWalletStore>>,
+    service: WalletServiceImpl<KeyStoreWallet<FileWalletStore>>,
 }
 
 impl WalletActor {
-    pub fn launch(_config: Arc<NodeConfig>) -> Result<WalletActorRef> {
-        let wallet = KeyPairWallet::new()?;
+    pub fn launch(config: Arc<NodeConfig>) -> Result<WalletActorRef> {
+        let vault_config = &config.vault;
+        let file_store = FileWalletStore::new(vault_config.dir());
+        let wallet = KeyStoreWallet::new(file_store)?;
         let actor = WalletActor {
             service: WalletServiceImpl::new(wallet),
         };
@@ -49,6 +53,11 @@ impl Handler<WalletRequest> for WalletActor {
             }
             WalletRequest::SignTxn(raw_txn) => {
                 WalletResponse::SignedTxn(self.service.sign_txn(raw_txn)?)
+            }
+            WalletRequest::UnlockAccount(address, password, duration) => {
+                self.service
+                    .unlock_account(address, password.as_str(), duration)?;
+                WalletResponse::UnlockAccountResponse
             }
         };
         return Ok(response);
@@ -136,6 +145,24 @@ impl WalletAsyncService for WalletActorRef {
             panic!("Unexpect response type.")
         }
     }
+
+    async fn unlock_account(
+        self,
+        address: AccountAddress,
+        password: String,
+        duration: std::time::Duration,
+    ) -> Result<()> {
+        let response = self
+            .0
+            .send(WalletRequest::UnlockAccount(address, password, duration))
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        if let WalletResponse::UnlockAccountResponse = response {
+            Ok(())
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
 }
 
 #[cfg(test)]
@@ -147,7 +174,7 @@ mod tests {
         let config = Arc::new(NodeConfig::random_for_test());
         let actor = WalletActor::launch(config)?;
         let account = actor.get_default_account().await?;
-        assert!(account.is_some());
+        assert!(account.is_none());
         Ok(())
     }
 }
