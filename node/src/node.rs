@@ -4,7 +4,7 @@
 use actix::prelude::*;
 use anyhow::{bail, Result};
 use starcoin_bus::BusActor;
-use starcoin_chain::{ChainActor, ChainActorRef, SyncMetadata};
+use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_executor::executor::Executor;
 use starcoin_genesis::Genesis;
@@ -18,6 +18,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
+use starcoin_sync_api::SyncMetadata;
 use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;

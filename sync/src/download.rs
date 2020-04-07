@@ -10,7 +10,6 @@ use futures::channel::mpsc;
 use parking_lot::RwLock;
 // use itertools;
 use crate::state_sync::StateSyncTaskActor;
-use chain::SyncMetadata;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
@@ -19,6 +18,7 @@ use network_p2p_api::sync_messages::{
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
 use starcoin_state_tree::StateNodeStore;
+use starcoin_sync_api::SyncMetadata;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;

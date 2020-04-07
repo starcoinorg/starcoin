@@ -1,6 +1,6 @@
 use actix_rt::System;
 use bus::BusActor;
-use chain::{ChainActor, ChainActorRef, SyncMetadata};
+use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::dummy::{DummyConsensus, DummyHeader};
 use executor::executor::Executor;
@@ -9,6 +9,7 @@ use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_miner::miner_client::MinerClient;
 use starcoin_miner::MinerActor;
+use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;

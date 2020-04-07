@@ -1,7 +1,7 @@
 use actix::Addr;
 use actix_rt::System;
 use bus::BusActor;
-use chain::{ChainActor, ChainActorRef, SyncMetadata};
+use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
 use consensus::dummy::DummyConsensus;
 use crypto::hash::HashValue;
@@ -13,6 +13,7 @@ use network::{network::NetworkAsyncService, NetworkActor, RPCRequest, RPCRespons
 use network_p2p_api::sync_messages::{GetHashByNumberMsg, ProcessMessage};
 use starcoin_genesis::Genesis;
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
+use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;

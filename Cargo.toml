@@ -30,6 +30,7 @@ members = [
     "chain",
     "node",
     "sync",
+    "sync/api",
     "miner",
     "miner/stratum",
     "node",

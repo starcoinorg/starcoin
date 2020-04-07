@@ -5676,6 +5676,7 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
+ "starcoin-sync-api",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
@@ -5900,6 +5901,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-stratum",
  "starcoin-sync",
+ "starcoin-sync-api",
  "starcoin-traits",
  "starcoin-tx-relay",
  "starcoin-txpool",
@@ -5976,6 +5978,7 @@ dependencies = [
  "starcoin-state-service",
  "starcoin-storage",
  "starcoin-sync",
+ "starcoin-sync-api",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
@@ -6221,11 +6224,25 @@ dependencies = [
  "starcoin-network",
  "starcoin-state-tree",
  "starcoin-storage",
+ "starcoin-sync-api",
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",
  "starcoin-wallet-api",
  "tokio 0.2.13",
+]
+
+[[package]]
+name = "starcoin-sync-api"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "parking_lot 0.9.0",
+ "starcoin-config",
+ "starcoin-logger",
+ "starcoin-types",
 ]
 
 [[package]]
