@@ -6,11 +6,11 @@ use anyhow::{bail, Result};
 use starcoin_bus::BusActor;
 use starcoin_chain::{ChainActor, ChainActorRef, SyncMetadata};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
-use starcoin_consensus::{Consensus, ConsensusHeader};
 use starcoin_executor::executor::Executor;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_miner::{miner_client, MinerActor};
+use starcoin_miner::miner_client::MinerClientActor;
+use starcoin_miner::MinerActor;
 use starcoin_network::NetworkActor;
 use starcoin_rpc_server::JSONRpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -18,6 +18,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
+use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::peer_info::PeerId;
@@ -55,7 +56,7 @@ where
 
     let sync_metadata = SyncMetadata::new(config.clone());
 
-    let startup_info = match storage.get_startup_info()? {
+    let (startup_info, genesis_hash) = match storage.get_startup_info()? {
         Some(startup_info) => {
             info!("Get startup info from db");
             info!("Check genesis file.");
@@ -67,7 +68,7 @@ where
                 bail!("Genesis version mismatch, please clean you data_dir.")
             }
             //TODO verify genesis block in db.
-            startup_info
+            (startup_info, genesis.block().header().id())
         }
         None => {
             let genesis = match Genesis::load(config.data_dir())? {
@@ -82,7 +83,9 @@ where
                     genesis
                 }
             };
-            genesis.execute(storage.clone())?
+            let genesis_hash = genesis.block().header().id();
+            let startup_info = genesis.execute(storage.clone())?;
+            (startup_info, genesis_hash)
         }
     };
     info!("Start chain with startup info: {:?}", startup_info);
@@ -113,7 +116,7 @@ where
         )
     };
 
-    let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
+    let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone(), genesis_hash);
 
     let head_block = storage
         .get_block(startup_info.head.get_head())?
@@ -174,9 +177,9 @@ where
         sync_metadata.clone(),
     )?;
     let sync = SyncActor::launch(bus, process_actor, download_actor)?;
-    //TODO manager MinerClient by actor.
     let stratum_server = config.miner.stratum_server;
-    handle.spawn(miner_client::MinerClient::<C>::run(stratum_server));
+    let miner_client = MinerClientActor::<C>::new(stratum_server);
+    miner_client.start();
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,

@@ -4,7 +4,6 @@ use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
 use chain::SyncMetadata;
-use consensus::Consensus;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use forkable_jellyfish_merkle::node_type::Node;
@@ -13,6 +12,7 @@ use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use std::collections::VecDeque;
 use std::sync::Arc;
+use traits::Consensus;
 
 async fn sync_state_node<E, C>(
     node_key: HashValue,

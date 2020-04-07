@@ -5850,6 +5850,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-statedb",
  "starcoin-storage",
+ "starcoin-traits",
  "starcoin-types",
  "stest",
 ]
@@ -6233,6 +6234,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-state-api",
  "starcoin-types",
@@ -6438,6 +6440,7 @@ dependencies = [
  "starcoin-wallet-api",
  "starcoin-wallet-lib",
  "stest",
+ "tempfile",
 ]
 
 [[package]]

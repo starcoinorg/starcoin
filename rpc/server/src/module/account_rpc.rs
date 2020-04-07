@@ -51,6 +51,20 @@ where
         let fut = self.service.clone().sign_txn(raw_txn).map_err(map_err);
         Box::new(fut.compat())
     }
+
+    fn unlock(
+        &self,
+        address: AccountAddress,
+        password: String,
+        duration: std::time::Duration,
+    ) -> FutureResult<()> {
+        let fut = self
+            .service
+            .clone()
+            .unlock_account(address, password, duration)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
 }
 
 #[cfg(test)]

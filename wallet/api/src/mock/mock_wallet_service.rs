@@ -3,10 +3,11 @@
 
 use crate::mock::{KeyPairWallet, MemWalletStore};
 use crate::{Wallet, WalletAccount, WalletAsyncService};
-use anyhow::Result;
+use anyhow::{Error, Result};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct MockWalletService {
@@ -41,5 +42,15 @@ impl WalletAsyncService for MockWalletService {
 
     async fn sign_txn(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         self.wallet.sign_txn(raw_txn)
+    }
+
+    async fn unlock_account(
+        self,
+        address: AccountAddress,
+        password: String,
+        duration: Duration,
+    ) -> Result<(), Error> {
+        self.wallet
+            .unlock_account(address, password.as_str(), duration)
     }
 }

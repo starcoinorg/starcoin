@@ -5,7 +5,6 @@ use crate::chain_service::BlockChainCollection;
 use actix::prelude::*;
 use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
-use consensus::Consensus;
 use crypto::{hash::CryptoHash, HashValue};
 use executor::executor::mock_create_account_txn;
 use executor::TransactionExecutor;
@@ -19,6 +18,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage::Store;
+use traits::Consensus;
 use traits::{ChainReader, ChainWriter};
 use types::{
     account_address::AccountAddress,

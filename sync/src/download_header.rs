@@ -3,12 +3,12 @@ use crate::download_body::{DownloadBodyActor, SyncBodyEvent};
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
 use anyhow::Result;
-use consensus::Consensus;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use network_p2p_api::sync_messages::{DataType, GetDataByHashMsg, ProcessMessage};
 use std::sync::Arc;
+use traits::Consensus;
 use types::peer_info::PeerInfo;
 
 #[derive(Default, Debug, Message)]

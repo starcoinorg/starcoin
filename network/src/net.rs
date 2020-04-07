@@ -14,6 +14,7 @@ use futures::{
 
 use bytes::Bytes;
 use config::NetworkConfig;
+use crypto::hash::HashValue;
 use libp2p::PeerId;
 use network_p2p::{
     identity, Event, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig, Params,
@@ -247,6 +248,7 @@ impl NetworkInner {
 pub fn build_network_service(
     cfg: &NetworkConfig,
     handle: Handle,
+    genesis_hash: HashValue,
 ) -> (
     SNetworkService,
     mpsc::UnboundedSender<NetworkMessage>,
@@ -264,6 +266,7 @@ pub fn build_network_service(
             .unwrap();
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
+        genesis_hash,
         ..NetworkConfiguration::default()
     };
     let mut service = SNetworkService::new(config, handle);

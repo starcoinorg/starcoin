@@ -1,17 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::difficult::difficult_1_target;
-use crate::{difficult, Consensus, ConsensusHeader};
+use crate::difficult;
 use anyhow::{Error, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use config::NodeConfig;
-use futures::channel::oneshot::Receiver;
 use rand::Rng;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use traits::ChainReader;
+use traits::{Consensus, ConsensusHeader};
 use types::block::{Block, BlockHeader, BlockTemplate};
 use types::{H256, U256};
 
@@ -44,9 +43,6 @@ pub struct ArgonConsensus {}
 impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
-    fn init_genesis_header(_config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
-        (vec![], difficult_1_target())
-    }
     fn calculate_next_difficulty(_config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256 {
         difficult::get_next_work_required(reader)
     }
@@ -82,7 +78,6 @@ impl Consensus for ArgonConsensus {
         _config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
         _block_template: BlockTemplate,
-        _cancel: Receiver<()>,
     ) -> Result<Block, Error> {
         unimplemented!()
     }

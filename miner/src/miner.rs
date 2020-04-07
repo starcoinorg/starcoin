@@ -4,12 +4,12 @@
 use actix::prelude::*;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
-use consensus::ConsensusHeader;
 use crypto::HashValue;
 use logger::prelude::*;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
+use traits::ConsensusHeader;
 use types::{block::BlockTemplate, system_events::SystemEvents};
 
 #[derive(Clone)]
@@ -67,19 +67,14 @@ where
     }
 
     pub fn submit(&self, payload: Vec<u8>) {
-        // verify payload
-        // create block
         let state = self.state.lock().unwrap();
         let block_template = state.as_ref().unwrap().block_template.clone();
-
         let consensus_header = match H::try_from(payload) {
             Ok(header) => header,
             _ => panic!("failed to parse header"),
         };
         let block = block_template.into_block(consensus_header);
-        // notify chain mined block
         info!("Miner new block: {:?}", block);
-        // fire SystemEvents::MinedBlock.
         self.bus.do_send(Broadcast {
             msg: SystemEvents::MinedBlock(block),
         });

@@ -2,11 +2,11 @@ use crate::download::Downloader;
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
 use anyhow::Result;
-use consensus::Consensus;
 use executor::TransactionExecutor;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use network_p2p_api::sync_messages::{DataType, GetDataByHashMsg, ProcessMessage};
 use std::sync::Arc;
+use traits::Consensus;
 use types::{block::BlockHeader, peer_info::PeerInfo};
 
 #[derive(Default, Debug, Message)]

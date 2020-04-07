@@ -3,11 +3,11 @@ use crate::process::ProcessActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
-use consensus::Consensus;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::PeerEvent;
 use network_p2p_api::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
+use traits::Consensus;
 use types::peer_info::PeerInfo;
 
 pub struct SyncActor<E, C>

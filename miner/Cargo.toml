@@ -45,5 +45,3 @@ starcoin-txpool-api = {path = "../txpool/api"}
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}
-tokio = { version = "0.2", features = ["full"] }
-
