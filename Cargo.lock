@@ -5665,7 +5665,6 @@ dependencies = [
  "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-canonical-serialization",
- "starcoin-chain-api",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -5684,15 +5683,6 @@ dependencies = [
  "starcoin-wallet-api",
  "stest",
  "thiserror",
-]
-
-[[package]]
-name = "starcoin-chain-api"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "starcoin-types",
 ]
 
 [[package]]
@@ -5972,7 +5962,6 @@ dependencies = [
  "rand 0.6.5",
  "starcoin-bus",
  "starcoin-chain",
- "starcoin-chain-api",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -6221,7 +6210,6 @@ dependencies = [
  "parking_lot 0.9.0",
  "starcoin-bus",
  "starcoin-chain",
- "starcoin-chain-api",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",

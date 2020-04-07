@@ -28,7 +28,6 @@ members = [
     "txpool/tx-relay",
     "executor",
     "chain",
-    "chain/api",
     "node",
     "sync",
     "miner",
