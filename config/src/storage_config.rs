@@ -10,6 +10,7 @@ use std::path::PathBuf;
 #[serde(default, deny_unknown_fields)]
 pub struct StorageConfig {
     dir: PathBuf,
+    #[serde(skip)]
     absolute_dir: Option<PathBuf>,
 }
 
