@@ -187,9 +187,10 @@ impl NetworkActor {
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         handle: Handle,
+        genesis_hash: HashValue,
     ) -> NetworkAsyncService {
         let (service, tx, rx, event_rx, tx_command) =
-            build_network_service(&node_config.network, handle.clone());
+            build_network_service(&node_config.network, handle.clone(), genesis_hash);
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -643,7 +644,12 @@ mod tests {
         let bus = BusActor::launch();
         let addr =
             AccountAddress::from_public_key(&node_config.network.network_keypair().public_key);
-        let network = NetworkActor::launch(node_config.clone(), bus.clone(), handle);
+        let network = NetworkActor::launch(
+            node_config.clone(),
+            bus.clone(),
+            handle,
+            HashValue::default(),
+        );
         (network, addr, bus)
     }
 

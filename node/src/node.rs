@@ -55,7 +55,7 @@ where
 
     let sync_metadata = SyncMetadata::new(config.clone());
 
-    let startup_info = match storage.get_startup_info()? {
+    let (startup_info, genesis_hash) = match storage.get_startup_info()? {
         Some(startup_info) => {
             info!("Get startup info from db");
             info!("Check genesis file.");
@@ -67,7 +67,7 @@ where
                 bail!("Genesis version mismatch, please clean you data_dir.")
             }
             //TODO verify genesis block in db.
-            startup_info
+            (startup_info, genesis.block().header().id())
         }
         None => {
             let genesis = match Genesis::load(config.data_dir())? {
@@ -82,7 +82,9 @@ where
                     genesis
                 }
             };
-            genesis.execute(storage.clone())?
+            let genesis_hash = genesis.block().header().id();
+            let startup_info = genesis.execute(storage.clone())?;
+            (startup_info, genesis_hash)
         }
     };
     info!("Start chain with startup info: {:?}", startup_info);
@@ -113,7 +115,7 @@ where
         )
     };
 
-    let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
+    let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone(), genesis_hash);
 
     let head_block = storage
         .get_block(startup_info.head.get_head())?
