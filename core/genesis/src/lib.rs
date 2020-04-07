@@ -20,17 +20,29 @@ use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction, vm_error::StatusCode};
+use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
 use traits::Consensus;
+
 pub static GENESIS_FILE_NAME: &str = "genesis";
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     state: ChainStateSet,
     block: Block,
+}
+
+impl Display for Genesis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Genesis {{")?;
+        write!(f, "state: {{ len={} }}, ", self.state.len())?;
+        write!(f, "block: {:?}", self.block)?;
+        write!(f, "}}")?;
+        Ok(())
+    }
 }
 
 impl Genesis {
@@ -75,7 +87,6 @@ impl Genesis {
             state: chain_state_set,
             block,
         };
-        info!("Genesis : {:?}", genesis);
         Ok(genesis)
     }
 

@@ -73,12 +73,12 @@ where
         None => {
             let genesis = match Genesis::load(config.data_dir())? {
                 Some(genesis) => {
-                    info!("Load genesis from data_dir: {:?}", genesis);
+                    info!("Load genesis from data_dir: {}", genesis);
                     genesis
                 }
                 None => {
                     let genesis = Genesis::build(config.net())?;
-                    info!("Build genesis: {:?}", genesis);
+                    info!("Build genesis: {}", genesis);
                     genesis.save(config.data_dir())?;
                     genesis
                 }

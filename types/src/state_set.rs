@@ -106,6 +106,10 @@ impl ChainStateSet {
     pub fn state_sets(&self) -> &[(HashValue, AccountStateSet)] {
         &self.state_sets
     }
+
+    pub fn len(&self) -> usize {
+        self.state_sets.len()
+    }
 }
 
 impl<'a> IntoIterator for &'a ChainStateSet {
