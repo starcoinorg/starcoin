@@ -9,6 +9,7 @@ use logger::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
+use starcoin_crypto::HashValue;
 use starcoin_types::peer_info::PeerId;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -21,7 +22,8 @@ pub struct NetworkConfig {
     pub seeds: Vec<String>,
     network_key_file: PathBuf,
     #[serde(skip)]
-    network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
+    pub network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
+    pub genesis_hash: Option<HashValue>,
 }
 
 impl Default for NetworkConfig {
@@ -43,6 +45,7 @@ impl ConfigModule for NetworkConfig {
             seeds: vec![],
             network_key_file: PathBuf::from("network_key"),
             network_keypair: None,
+            genesis_hash: None,
         }
     }
 
