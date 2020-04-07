@@ -17,7 +17,6 @@ use actix::prelude::*;
 use anyhow::{bail, Error, Result};
 use bus::{BusActor, Subscription};
 use config::NodeConfig;
-use consensus::Consensus;
 use crypto::HashValue;
 use executor::TransactionExecutor;
 use logger::prelude::*;
@@ -26,6 +25,7 @@ use network::network::NetworkAsyncService;
 use parking_lot::RwLock;
 use std::sync::Arc;
 use storage::Storage;
+use traits::Consensus;
 use traits::{ChainAsyncService, ChainService};
 use txpool::TxPoolRef;
 use types::{

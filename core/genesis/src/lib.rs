@@ -5,7 +5,7 @@ use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::{ChainNetwork, VMConfig};
-use starcoin_consensus::{argon_consensus::ArgonConsensus, dummy::DummyConsensus, Consensus};
+use starcoin_consensus::{argon::ArgonConsensus, dummy::DummyConsensus};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
@@ -24,7 +24,7 @@ use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
-
+use traits::Consensus;
 pub static GENESIS_FILE_NAME: &str = "genesis";
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]

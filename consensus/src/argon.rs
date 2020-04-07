@@ -1,16 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{difficult, Consensus, ConsensusHeader};
+use crate::difficult;
 use anyhow::{Error, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use config::NodeConfig;
-use futures::channel::oneshot::Receiver;
 use rand::Rng;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use traits::ChainReader;
+use traits::{Consensus, ConsensusHeader};
 use types::block::{Block, BlockHeader, BlockTemplate};
 use types::{H256, U256};
 
@@ -78,7 +78,6 @@ impl Consensus for ArgonConsensus {
         _config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
         _block_template: BlockTemplate,
-        _cancel: Receiver<()>,
     ) -> Result<Block, Error> {
         unimplemented!()
     }
