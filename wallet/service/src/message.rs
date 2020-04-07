@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use actix::clock::Duration;
 use actix::Message;
 use anyhow::Result;
 use starcoin_types::account_address::AccountAddress;
@@ -14,6 +15,7 @@ pub enum WalletRequest {
     GetAccounts(),
     GetAccount(AccountAddress),
     SignTxn(RawUserTransaction),
+    UnlockAccount(AccountAddress, String, Duration),
 }
 
 impl Message for WalletRequest {
@@ -27,5 +29,6 @@ pub enum WalletResponse {
     AccountList(Vec<WalletAccount>),
     SignedTxn(SignedUserTransaction),
     Account(Option<WalletAccount>),
+    UnlockAccountResponse,
     None,
 }

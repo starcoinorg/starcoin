@@ -20,6 +20,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use structopt::StructOpt;
 
+mod account_vault_config;
 mod chain_config;
 mod miner_config;
 mod network_config;
@@ -29,6 +30,7 @@ mod sync_config;
 mod txpool_config;
 mod vm_config;
 
+use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig};
 pub use libra_temppath::TempPath;
@@ -179,6 +181,8 @@ pub struct NodeConfig {
     pub tx_pool: TxPoolConfig,
     #[serde(default)]
     pub sync: SyncConfig,
+    #[serde(default)]
+    pub vault: AccountVaultConfig,
 }
 
 impl NodeConfig {
@@ -237,6 +241,7 @@ impl ConfigModule for NodeConfig {
             storage: StorageConfig::default_with_net(net),
             tx_pool: TxPoolConfig::default_with_net(net),
             sync: SyncConfig::default_with_net(net),
+            vault: AccountVaultConfig::default_with_net(net),
         }
     }
 
@@ -248,7 +253,8 @@ impl ConfigModule for NodeConfig {
         self.miner.random(base);
         self.storage.random(base);
         self.tx_pool.random(base);
-        self.sync.random(base)
+        self.sync.random(base);
+        self.vault.random(base);
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
@@ -259,6 +265,7 @@ impl ConfigModule for NodeConfig {
         self.storage.load(base, opt)?;
         self.tx_pool.load(base, opt)?;
         self.sync.load(base, opt)?;
+        self.vault.load(base, opt)?;
         Ok(())
     }
 }

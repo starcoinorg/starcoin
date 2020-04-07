@@ -112,4 +112,10 @@ pub trait WalletAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn get_account(self, address: AccountAddress) -> Result<Option<WalletAccount>>;
 
     async fn sign_txn(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction>;
+    async fn unlock_account(
+        self,
+        address: AccountAddress,
+        password: String,
+        duration: std::time::Duration,
+    ) -> Result<()>;
 }
