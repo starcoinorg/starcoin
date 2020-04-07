@@ -6450,6 +6450,7 @@ dependencies = [
  "starcoin-wallet-api",
  "starcoin-wallet-lib",
  "stest",
+ "tempfile",
 ]
 
 [[package]]
