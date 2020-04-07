@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain::BlockChain;
-use crate::SyncMetadata;
 use actix::prelude::*;
 use anyhow::{format_err, Result};
 use atomic_refcell::AtomicRefCell;
@@ -14,6 +13,7 @@ use logger::prelude::*;
 use network::network::NetworkAsyncService;
 use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
+use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::collections::HashMap;
 use std::sync::Arc;

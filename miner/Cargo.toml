@@ -45,3 +45,4 @@ starcoin-txpool-api = {path = "../txpool/api"}
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}
+starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}

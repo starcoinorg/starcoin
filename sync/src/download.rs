@@ -10,7 +10,7 @@ use futures::channel::mpsc;
 use parking_lot::RwLock;
 // use itertools;
 use crate::state_sync::StateSyncTaskActor;
-use chain::SyncMetadata;
+use config::NodeConfig;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
@@ -19,6 +19,7 @@ use network_p2p_api::sync_messages::{
     GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
 };
 use starcoin_state_tree::StateNodeStore;
+use starcoin_sync_api::SyncMetadata;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -49,6 +50,7 @@ where
     syncing: Arc<AtomicBool>,
     state_node_storage: Arc<dyn StateNodeStore>,
     sync_metadata: SyncMetadata,
+    main_network: bool,
 }
 
 impl<E, C> DownloadActor<E, C>
@@ -57,6 +59,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn launch(
+        node_config: Arc<NodeConfig>,
         peer_info: Arc<PeerInfo>,
         chain_reader: ChainActorRef<E, C>,
         network: NetworkAsyncService,
@@ -77,6 +80,7 @@ where
                 syncing: Arc::new(AtomicBool::new(false)),
                 state_node_storage,
                 sync_metadata,
+                main_network: node_config.base.net().is_main(),
             }
         });
         Ok(download_actor)
@@ -144,6 +148,7 @@ where
                     )
                     .await;
 
+                    //todo:config
                     Self::sync_state(
                         downloader.clone(),
                         network,

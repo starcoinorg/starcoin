@@ -3,10 +3,16 @@ use crate::process::ProcessActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
+use chain::ChainActorRef;
+use config::NodeConfig;
 use executor::TransactionExecutor;
 use logger::prelude::*;
+use network::NetworkAsyncService;
 use network::PeerEvent;
 use network_p2p_api::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
+use starcoin_state_tree::StateNodeStore;
+use starcoin_sync_api::SyncMetadata;
+use std::sync::Arc;
 use traits::Consensus;
 use types::peer_info::PeerInfo;
 
@@ -26,11 +32,30 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn launch(
-        // _node_config: &NodeConfig,
+        node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
-        process_address: Addr<ProcessActor<E, C>>,
-        download_address: Addr<DownloadActor<E, C>>,
+        peer_info: Arc<PeerInfo>,
+        chain: ChainActorRef<E, C>,
+        network: NetworkAsyncService,
+        state_node_storage: Arc<dyn StateNodeStore>,
+        sync_metadata: SyncMetadata,
     ) -> Result<Addr<SyncActor<E, C>>> {
+        let process_address = ProcessActor::launch(
+            Arc::clone(&peer_info),
+            chain.clone(),
+            network.clone(),
+            bus.clone(),
+            state_node_storage.clone(),
+        )?;
+        let download_address = DownloadActor::launch(
+            node_config,
+            peer_info,
+            chain,
+            network.clone(),
+            bus.clone(),
+            state_node_storage.clone(),
+            sync_metadata.clone(),
+        )?;
         let actor = SyncActor {
             download_address,
             process_address,
