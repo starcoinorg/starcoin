@@ -16,7 +16,7 @@ use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
-use sync::{DownloadActor, ProcessActor, SyncActor};
+use sync::SyncActor;
 use tokio::time::{delay_for, Duration};
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
@@ -89,24 +89,16 @@ fn test_miner_with_schedule_pacemaker() {
         handle.spawn(MinerClient::<DummyConsensus>::run(
             config.miner.stratum_server,
         ));
-        let process_actor = ProcessActor::launch(
-            Arc::clone(&peer_info),
-            chain.clone(),
-            network.clone(),
-            bus.clone(),
-            storage.clone(),
-        )
-        .unwrap();
-        let download_actor = DownloadActor::launch(
+        let _sync = SyncActor::launch(
+            config.clone(),
+            bus,
             peer_info,
             chain.clone(),
             network.clone(),
-            bus.clone(),
             storage.clone(),
             sync_metadata.clone(),
         )
-        .expect("launch DownloadActor failed.");
-        let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
+        .unwrap();
 
         delay_for(Duration::from_millis(6 * 1000)).await;
         let number = chain.clone().master_head_header().await.unwrap().number();
@@ -184,24 +176,16 @@ fn test_miner_with_ondemand_pacemaker() {
         handle.spawn(MinerClient::<DummyConsensus>::run(
             config.miner.stratum_server,
         ));
-        let process_actor = ProcessActor::launch(
-            Arc::clone(&peer_info),
-            chain.clone(),
-            network.clone(),
-            bus.clone(),
-            storage.clone(),
-        )
-        .unwrap();
-        let download_actor = DownloadActor::launch(
+        let _sync = SyncActor::launch(
+            config.clone(),
+            bus,
             peer_info,
             chain.clone(),
             network.clone(),
-            bus.clone(),
             storage.clone(),
             sync_metadata.clone(),
         )
-        .expect("launch DownloadActor failed.");
-        let _sync = SyncActor::launch(bus.clone(), process_actor, download_actor).unwrap();
+        .unwrap();
 
         delay_for(Duration::from_millis(6 * 10 * 1000)).await;
 

@@ -17,7 +17,7 @@ use starcoin_state_service::ChainStateActor;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
-use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
+use starcoin_sync::SyncActor;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
@@ -162,22 +162,15 @@ where
             default_account,
         )?;
     let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
-    let process_actor = ProcessActor::<Executor, C>::launch(
-        Arc::clone(&peer_info),
+    let sync = SyncActor::launch(
+        config.clone(),
+        bus,
+        peer_info,
         chain.clone(),
         network.clone(),
-        bus.clone(),
-        storage.clone(),
-    )?;
-    let download_actor = DownloadActor::launch(
-        peer_info,
-        chain,
-        network.clone(),
-        bus.clone(),
         storage.clone(),
         sync_metadata.clone(),
     )?;
-    let sync = SyncActor::launch(bus, process_actor, download_actor)?;
     let stratum_server = config.miner.stratum_server;
     let miner_client = MinerClientActor::<C>::new(stratum_server);
     miner_client.start();
