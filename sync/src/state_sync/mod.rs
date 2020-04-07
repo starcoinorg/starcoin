@@ -3,6 +3,7 @@ use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
+use bus::{Broadcast, BusActor};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use forkable_jellyfish_merkle::node_type::Node;
@@ -13,6 +14,7 @@ use starcoin_sync_api::SyncMetadata;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use traits::Consensus;
+use types::system_events::SystemEvents;
 
 async fn sync_state_node<E, C>(
     node_key: HashValue,
@@ -80,6 +82,7 @@ where
     downloader: Arc<Downloader<E, C>>,
     wait_2_sync: VecDeque<HashValue>,
     sync_metadata: SyncMetadata,
+    bus: Addr<BusActor>,
 }
 
 impl<E, C> StateSyncTaskActor<E, C>
@@ -93,6 +96,7 @@ where
         network_service: NetworkAsyncService,
         downloader: Arc<Downloader<E, C>>,
         sync_metadata: SyncMetadata,
+        bus: Addr<BusActor>,
     ) -> Addr<StateSyncTaskActor<E, C>> {
         let mut wait_2_sync: VecDeque<HashValue> = VecDeque::new();
         wait_2_sync.push_back(root.clone());
@@ -103,6 +107,7 @@ where
             downloader,
             wait_2_sync,
             sync_metadata,
+            bus,
         })
     }
 
@@ -179,6 +184,14 @@ where
                 warn!("err:{:?}", e);
             } else {
                 info!("sync_done : {:?}", self.sync_metadata.get_pivot());
+                let bus = self.bus.clone();
+                Arbiter::spawn(async move {
+                    let _ = bus
+                        .send(Broadcast {
+                            msg: SystemEvents::StateSyncDone(),
+                        })
+                        .await;
+                });
                 ctx.stop();
             }
         } else {
