@@ -203,10 +203,10 @@ impl NodeConfig {
             load_config(&config_file_path)?
         } else {
             let default_config = NodeConfig::default_with_net(base.net);
-            save_config(&default_config, &config_file_path)?;
             default_config
         };
         config.load(&base, opt)?;
+        save_config(&config, &config_file_path)?;
         Ok(config)
     }
 
