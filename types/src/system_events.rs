@@ -12,4 +12,5 @@ pub enum SystemEvents {
     NewHeadBlock(BlockDetail),
     /// Mint new Block.
     MinedBlock(Block),
+    StateSyncDone(),
 }

@@ -35,6 +35,8 @@ use types::{
 #[rtype(result = "Result<()>")]
 struct SyncEvent {}
 
+const MIN_PEER_LEN: usize = 5;
+
 #[derive(Clone)]
 pub struct DownloadActor<E, C>
 where
@@ -134,6 +136,8 @@ where
         let network = self.network.clone();
         let state_node_storage = self.state_node_storage.clone();
         let sync_metadata = self.sync_metadata.clone();
+        let is_main = self.main_network;
+        let bus = self.bus.clone();
         let fut = async move {
             match msg {
                 DownloadMessage::LatestStateMsg(peer_info, latest_state_msg) => {
@@ -148,12 +152,13 @@ where
                     )
                     .await;
 
-                    //todo:config
                     Self::sync_state(
+                        is_main,
                         downloader.clone(),
                         network,
                         state_node_storage,
                         sync_metadata,
+                        bus,
                     )
                     .await;
                 }
@@ -198,93 +203,119 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     async fn sync_state(
+        main_network: bool,
         downloader: Arc<Downloader<E, C>>,
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
         sync_metadata: SyncMetadata,
+        bus: Addr<BusActor>,
     ) {
-        // Arbiter::spawn(async move {
-        if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {
-            //1. ancestor
-            let begin_number = downloader
-                .chain_reader
-                .clone()
-                .master_head_header()
-                .await
-                .unwrap()
-                .number();
-
-            let ancestor = if let Some(hash_with_number) = Downloader::find_ancestor(
-                downloader.clone(),
-                best_peer.clone(),
-                network.clone(),
-                begin_number,
-            )
-            .await
+        if (main_network && Downloader::peer_size(downloader.clone()) >= MIN_PEER_LEN)
+            || !main_network
+        {
+            if sync_metadata
+                .is_state_sync()
+                .expect("Get state_sync failed.")
             {
-                hash_with_number.number
-            } else {
-                0
-            };
+                if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {
+                    //1. ancestor
+                    let begin_number = downloader
+                        .chain_reader
+                        .clone()
+                        .master_head_header()
+                        .await
+                        .unwrap()
+                        .number();
 
-            // 2. pivot
-            let latest_number = downloader._get_latest_header_with_peer(&best_peer).number();
-            if (ancestor + _MIN_BLOCKS_BEHIND) <= latest_number {
-                let pivot = latest_number - _MIN_BLOCKS_BEHIND;
-                downloader._update_pivot(pivot);
-
-                // 3. get pivot hash
-                let mut numbers: Vec<BlockNumber> = Vec::new();
-                numbers.push(pivot);
-                let get_hash_by_number_req = RPCRequest::GetHashByNumberMsg(
-                    ProcessMessage::GetHashByNumberMsg(GetHashByNumberMsg { numbers }),
-                );
-                if let RPCResponse::BatchHashByNumberMsg(mut batch_hash_by_number_msg) = network
-                    .clone()
-                    .send_request(
-                        best_peer.get_peer_id().clone().into(),
-                        get_hash_by_number_req.clone(),
-                        do_duration(DELAY_TIME),
+                    let ancestor = if let Some(hash_with_number) = Downloader::find_ancestor(
+                        downloader.clone(),
+                        best_peer.clone(),
+                        network.clone(),
+                        begin_number,
                     )
                     .await
-                    .expect("send_request 2 err.")
-                {
-                    // 4. get pivot header
-                    let hash_with_number = batch_hash_by_number_msg.hashs.pop().unwrap();
-                    let mut hashs = Vec::new();
-                    hashs.push(hash_with_number.hash);
-                    let get_header_msg = GetDataByHashMsg {
-                        hashs,
-                        data_type: DataType::HEADER,
-                    };
-                    let get_data_by_hash_req = RPCRequest::GetDataByHashMsg(
-                        ProcessMessage::GetDataByHashMsg(get_header_msg),
-                    );
-                    if let RPCResponse::BatchHeaderAndBodyMsg(mut headers, _bodies, _infos) =
-                        network
-                            .clone()
-                            .send_request(
-                                best_peer.get_peer_id().clone().into(),
-                                get_data_by_hash_req.clone(),
-                                do_duration(DELAY_TIME),
-                            )
-                            .await
-                            .expect("send_request 3 err.")
                     {
-                        // 5. StateSyncActor
-                        let root = headers.headers.pop().unwrap();
-                        let _ = StateSyncTaskActor::launch(
-                            root.state_root(),
-                            state_node_storage,
-                            network.clone(),
-                            downloader.clone(),
-                            sync_metadata,
+                        hash_with_number.number
+                    } else {
+                        0
+                    };
+
+                    // 2. pivot
+                    let latest_number = downloader.get_latest_header_with_peer(&best_peer).number();
+                    let min_behind = if main_network {
+                        MAIN_MIN_BLOCKS_BEHIND
+                    } else {
+                        MIN_BLOCKS_BEHIND
+                    };
+                    if (ancestor + min_behind) <= latest_number {
+                        let pivot = latest_number - min_behind;
+
+                        // 3. get pivot hash
+                        let mut numbers: Vec<BlockNumber> = Vec::new();
+                        numbers.push(pivot);
+                        let get_hash_by_number_req = RPCRequest::GetHashByNumberMsg(
+                            ProcessMessage::GetHashByNumberMsg(GetHashByNumberMsg { numbers }),
                         );
+                        if let RPCResponse::BatchHashByNumberMsg(mut batch_hash_by_number_msg) =
+                            network
+                                .clone()
+                                .send_request(
+                                    best_peer.get_peer_id().clone().into(),
+                                    get_hash_by_number_req.clone(),
+                                    do_duration(DELAY_TIME),
+                                )
+                                .await
+                                .expect("send_request 2 err.")
+                        {
+                            // 4. get pivot header
+                            let hash_with_number = batch_hash_by_number_msg.hashs.pop().unwrap();
+                            let mut hashs = Vec::new();
+                            hashs.push(hash_with_number.hash);
+                            let get_header_msg = GetDataByHashMsg {
+                                hashs,
+                                data_type: DataType::HEADER,
+                            };
+                            let get_data_by_hash_req = RPCRequest::GetDataByHashMsg(
+                                ProcessMessage::GetDataByHashMsg(get_header_msg),
+                            );
+                            if let RPCResponse::BatchHeaderAndBodyMsg(
+                                mut headers,
+                                _bodies,
+                                _infos,
+                            ) = network
+                                .clone()
+                                .send_request(
+                                    best_peer.get_peer_id().clone().into(),
+                                    get_data_by_hash_req.clone(),
+                                    do_duration(DELAY_TIME),
+                                )
+                                .await
+                                .expect("send_request 3 err.")
+                            {
+                                // 5. StateSyncActor
+                                let root = headers.headers.pop().unwrap();
+                                let sync_pivot =
+                                    sync_metadata.get_pivot().expect("Get pivot failed.");
+                                if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
+                                    let _ = StateSyncTaskActor::launch(
+                                        root.state_root(),
+                                        state_node_storage,
+                                        network.clone(),
+                                        downloader.clone(),
+                                        sync_metadata,
+                                        bus,
+                                    );
+                                }
+                            }
+                        }
                     }
-                }
+                };
+            } else {
+                warn!("{:?}", "not state sync mode.");
             }
-        };
-        // });
+        } else {
+            warn!("{:?}", "nothing todo when sync state.");
+        }
     }
 
     fn sync_block_from_best_peer(downloader: Arc<Downloader<E, C>>, network: NetworkAsyncService) {
@@ -416,11 +447,11 @@ where
     _body_pool: TTLPool<BlockBody>,
     peers: Arc<RwLock<HashMap<PeerInfo, LatestStateMsg>>>,
     chain_reader: ChainActorRef<E, C>,
-    _pivot: RwLock<Option<BlockNumber>>,
 }
 
 const HEAD_CT: u64 = 10;
-const _MIN_BLOCKS_BEHIND: u64 = 10;
+const MIN_BLOCKS_BEHIND: u64 = 10;
+const MAIN_MIN_BLOCKS_BEHIND: u64 = 100;
 
 impl<E, C> Downloader<E, C>
 where
@@ -435,20 +466,11 @@ where
             //            _network: network,
             peers: Arc::new(RwLock::new(HashMap::new())),
             chain_reader,
-            _pivot: RwLock::new(None),
         }
     }
 
-    pub fn _get_latest_header_with_peer(&self, peer: &PeerInfo) -> BlockHeader {
+    pub fn get_latest_header_with_peer(&self, peer: &PeerInfo) -> BlockHeader {
         self.peers.read().get(&peer).unwrap().header.clone()
-    }
-
-    pub fn _update_pivot(&self, pivot: BlockNumber) {
-        *self._pivot.write() = Some(pivot);
-    }
-
-    pub fn _get_pivot(&self) -> BlockNumber {
-        self._pivot.read().clone().unwrap()
     }
 
     pub async fn handle_latest_state_msg(
@@ -484,6 +506,10 @@ where
 
         info!("best peer return none.");
         None
+    }
+
+    pub fn peer_size(downloader: Arc<Downloader<E, C>>) -> usize {
+        downloader.peers.read().len()
     }
 
     /// for ancestors
