@@ -20,12 +20,8 @@ pub trait ConsensusHeader:
 {
 }
 
-//TODO merge Consensus and ConsensusHeader to One trait by Trait Associated type.
-
 pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
     type ConsensusHeader: ConsensusHeader;
-
-    fn init_genesis_header(config: Arc<NodeConfig>) -> (Vec<u8>, U256);
 
     fn calculate_next_difficulty(config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256;
 
@@ -43,12 +39,4 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
         block_template: BlockTemplate,
         cancel: oneshot::Receiver<()>,
     ) -> Result<Block>;
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
 }

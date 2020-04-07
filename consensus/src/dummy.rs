@@ -40,10 +40,6 @@ pub struct DummyConsensus {}
 impl Consensus for DummyConsensus {
     type ConsensusHeader = DummyHeader;
 
-    fn init_genesis_header(_config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
-        (vec![], U256::max_value())
-    }
-
     fn calculate_next_difficulty(config: Arc<NodeConfig>, _reader: &dyn ChainReader) -> U256 {
         config.miner.dev_period.into()
     }
