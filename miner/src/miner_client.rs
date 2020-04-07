@@ -7,17 +7,20 @@ use logger::prelude::*;
 use serde_json;
 use std::{net::SocketAddr, sync::Arc};
 use types::U256;
+use std::marker::PhantomData;
+use actix::{Actor, Context, System};
+use actix_rt::Arbiter;
 
 pub struct MinerClient<C>
-where
-    C: Consensus + 'static + Send + Sync,
+    where
+        C: Consensus + 'static + Send + Sync,
 {
-    c_phantom: std::marker::PhantomData<C>,
+    c_phantom: PhantomData<C>,
 }
 
 impl<C> MinerClient<C>
-where
-    C: Consensus + 'static + Send + Sync,
+    where
+        C: Consensus + 'static + Send + Sync,
 {
     fn process_job(params: String) -> anyhow::Result<C::ConsensusHeader> {
         let resp: MethodCall = serde_json::from_str(&params)?;
@@ -49,12 +52,13 @@ where
         auth_request.extend(b"\n");
 
         let mut auth_response = Vec::<u8>::new();
-        let stream = TcpStream::connect(&addr).await.unwrap();
+        let stream = TcpStream::connect(
+            &addr).await.unwrap();
         let stream_arc = Arc::new(stream);
         let reader_arc_clone = stream_arc.clone();
         let writer_arc_clone = stream_arc.clone();
         let mut writer = &*writer_arc_clone;
-        writer.write_all(&auth_request).await.unwrap();
+        writer.write_all(&auth_request).await?;
 
         let (tx, mut rx) = mpsc::unbounded();
         let reader_future = async move {
@@ -98,6 +102,36 @@ where
     }
 }
 
+pub struct MinerClientActor<C> where C: Consensus + 'static + Send + Sync {
+    addr: SocketAddr,
+    c_phantom: PhantomData<C>,
+}
+
+impl<C> MinerClientActor<C> where C: Consensus + 'static + Send + Sync {
+    pub fn new(addr: SocketAddr) -> Self {
+        MinerClientActor {
+            addr,
+            c_phantom: PhantomData,
+        }
+    }
+}
+
+impl<C> Actor for MinerClientActor<C> where C: Consensus + 'static + Send + Sync {
+    type Context = Context<Self>;
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        let addr = self.addr.clone();
+        Arbiter::spawn(async move {
+            match MinerClient::<C>::run(addr).await {
+                Err(e) => {
+                    error!("miner client run fail: {}, exist.", e);
+                    System::current().stop();
+                }
+                _ => {}
+            }
+        });
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -114,6 +148,7 @@ mod test {
     use std::time::Duration;
     use tokio;
     use types::block::{Block, BlockBody, BlockHeader, BlockTemplate};
+    use actix_rt::System;
 
     async fn prepare() {
         let conf = Arc::new(NodeConfig::random_for_test());
@@ -153,7 +188,21 @@ mod test {
                 Duration::from_secs(7),
                 MinerClient::<ArgonConsensus>::run("127.0.0.1:9000".parse().unwrap()),
             )
-            .await;
+                .await;
+        });
+    }
+
+    #[test]
+    fn test_miner_client_actor() {
+        ::logger::init_for_test();
+        let mut system = System::new("test");
+        system.block_on(async {
+            let actor = MinerClientActor::<ArgonConsensus>::new("127.0.0.1:9000".parse().unwrap());
+            actor.start();
+            let _ = async_std::future::timeout(
+                Duration::from_secs(7),
+                prepare(),
+            ).await;
         });
     }
 }
