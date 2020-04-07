@@ -7,10 +7,10 @@ use crate::storage::{CodecStorage, KeyCodec, StorageInstance, ValueCodec};
 use crate::{ensure_slice_len_eq, ACCUMULATOR_INDEX_PREFIX_NAME, ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Error;
 use anyhow::{bail, ensure, Result};
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crypto::hash::HashValue;
 use scs::SCSCodec;
-use starcoin_accumulator::node_index::NodeIndex;
+use starcoin_accumulator::node_index::{NodeIndex, NodeStoreIndex};
 use starcoin_accumulator::{
     AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter,
 };
@@ -18,7 +18,7 @@ use std::mem::size_of;
 use std::sync::Arc;
 define_storage!(
     AccumulatorIndexStore,
-    NodeIndex,
+    NodeStoreIndex,
     HashValue,
     ACCUMULATOR_INDEX_PREFIX_NAME
 );
@@ -58,6 +58,21 @@ impl KeyCodec for NodeIndex {
     }
 }
 
+impl KeyCodec for NodeStoreIndex {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        let mut encoded = self.id().to_vec();
+        encoded.write_u64::<BigEndian>(self.index().to_inorder_index())?;
+        Ok(encoded)
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        ensure_slice_len_eq(data, size_of::<Self>())?;
+        let accumulator_id = HashValue::from_slice(&data[..HashValue::LENGTH])?;
+        let index = (&data[HashValue::LENGTH..]).read_u64::<BigEndian>()?;
+        Ok(NodeStoreIndex::new(accumulator_id, NodeIndex::new(index)))
+    }
+}
+
 impl ValueCodec for AccumulatorNode {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
@@ -70,7 +85,7 @@ impl ValueCodec for AccumulatorNode {
 
 impl AccumulatorTreeStore for AccumulatorStorage {}
 impl AccumulatorReader for AccumulatorStorage {
-    fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>, Error> {
+    fn get(&self, index: NodeStoreIndex) -> Result<Option<AccumulatorNode>, Error> {
         let node_index = self.index_store.get(index).unwrap();
         match node_index {
             Some(hash) => self.node_store.get(hash),
@@ -84,7 +99,7 @@ impl AccumulatorReader for AccumulatorStorage {
 }
 
 impl AccumulatorWriter for AccumulatorStorage {
-    fn save(&self, index: NodeIndex, hash: HashValue) -> Result<(), Error> {
+    fn save(&self, index: NodeStoreIndex, hash: HashValue) -> Result<(), Error> {
         self.index_store.put(index, hash)
     }
 
@@ -100,7 +115,7 @@ impl AccumulatorWriter for AccumulatorStorage {
         self.node_store.write_batch(batch)
     }
 
-    fn delete_nodes_index(&self, vec_index: Vec<NodeIndex>) -> Result<(), Error> {
+    fn delete_nodes_index(&self, vec_index: Vec<NodeStoreIndex>) -> Result<(), Error> {
         ensure!(
             vec_index.len() > 0,
             " invalid index len : {}.",

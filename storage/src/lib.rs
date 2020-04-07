@@ -11,7 +11,7 @@ use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    node_index::NodeIndex, AccumulatorNode, AccumulatorReader, AccumulatorTreeStore,
+    node_index::NodeStoreIndex, AccumulatorNode, AccumulatorReader, AccumulatorTreeStore,
     AccumulatorWriter,
 };
 use starcoin_types::{
@@ -280,7 +280,7 @@ impl BlockStore for Storage {
 impl AccumulatorTreeStore for Storage {}
 impl AccumulatorReader for Storage {
     ///get node by node_index
-    fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>> {
+    fn get(&self, index: NodeStoreIndex) -> Result<Option<AccumulatorNode>> {
         self.accumulator_storage.get(index)
     }
     ///get node by node hash
@@ -291,7 +291,7 @@ impl AccumulatorReader for Storage {
 
 impl AccumulatorWriter for Storage {
     /// save node index
-    fn save(&self, index: NodeIndex, hash: HashValue) -> Result<()> {
+    fn save(&self, index: NodeStoreIndex, hash: HashValue) -> Result<()> {
         self.accumulator_storage.save(index, hash)
     }
     /// save node
@@ -303,7 +303,7 @@ impl AccumulatorWriter for Storage {
         self.accumulator_storage.delete_nodes(node_hash_vec)
     }
     ///delete larger index than one
-    fn delete_nodes_index(&self, vec_index: Vec<NodeIndex>) -> Result<()> {
+    fn delete_nodes_index(&self, vec_index: Vec<NodeStoreIndex>) -> Result<()> {
         self.accumulator_storage.delete_nodes_index(vec_index)
     }
 }

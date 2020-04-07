@@ -5,7 +5,21 @@ use crate::LeafCount;
 use mirai_annotations::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::HashValue;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct NodeStoreIndex(HashValue, NodeIndex);
+impl NodeStoreIndex {
+    pub fn new(id: HashValue, index: NodeIndex) -> Self {
+        NodeStoreIndex(id, index)
+    }
+    pub fn index(self) -> NodeIndex {
+        self.1
+    }
+    pub fn id(self) -> HashValue {
+        self.0
+    }
+}
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeIndex(u64);
 pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
