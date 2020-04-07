@@ -185,27 +185,14 @@ fn test_network_actor_rpc() {
         .unwrap();
         // sync
         let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
-        let second_p_actor = ProcessActor::<Executor, DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
+            node_config_2.clone(),
+            bus_2,
             Arc::clone(&second_p),
             second_chain.clone(),
             network_2.clone(),
-            bus_2.clone(),
-            storage_2.clone(),
-        )
-        .unwrap();
-        let second_d_actor = DownloadActor::<Executor, DummyConsensus>::launch(
-            second_p,
-            second_chain.clone(),
-            network_2.clone(),
-            bus_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
-        )
-        .unwrap();
-        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
-            bus_2,
-            second_p_actor,
-            second_d_actor.clone(),
         )
         .unwrap();
 
@@ -349,27 +336,14 @@ fn test_network_actor_rpc_2() {
         .unwrap();
         // sync
         let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
-        let second_p_actor = ProcessActor::launch(
+        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
+            node_config_2.clone(),
+            bus_2,
             Arc::clone(&second_p),
             second_chain.clone(),
             network_2.clone(),
-            bus_2.clone(),
-            storage_2.clone(),
-        )
-        .unwrap();
-        let second_d_actor = DownloadActor::launch(
-            second_p,
-            second_chain.clone(),
-            network_2.clone(),
-            bus_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
-        )
-        .unwrap();
-        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
-            bus_2,
-            second_p_actor,
-            second_d_actor.clone(),
         )
         .unwrap();
 
@@ -559,27 +533,14 @@ fn test_state_sync() {
         .unwrap();
         // sync
         let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
-        let second_p_actor = ProcessActor::<Executor, DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
+            node_config_2.clone(),
+            bus_2,
             Arc::clone(&second_p),
             second_chain.clone(),
             network_2.clone(),
-            bus_2.clone(),
-            storage_2.clone(),
-        )
-        .unwrap();
-        let second_d_actor = DownloadActor::<Executor, DummyConsensus>::launch(
-            second_p,
-            second_chain.clone(),
-            network_2.clone(),
-            bus_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
-        )
-        .unwrap();
-        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
-            bus_2,
-            second_p_actor,
-            second_d_actor.clone(),
         )
         .unwrap();
 
