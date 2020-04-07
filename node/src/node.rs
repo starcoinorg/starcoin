@@ -6,10 +6,10 @@ use anyhow::{bail, Result};
 use starcoin_bus::BusActor;
 use starcoin_chain::{ChainActor, ChainActorRef, SyncMetadata};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
-use starcoin_consensus::{Consensus, ConsensusHeader};
 use starcoin_executor::executor::Executor;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_miner::miner_client::MinerClientActor;
 use starcoin_miner::MinerActor;
 use starcoin_network::NetworkActor;
 use starcoin_rpc_server::JSONRpcActor;
@@ -18,6 +18,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
+use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::peer_info::PeerId;
@@ -26,12 +27,11 @@ use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use tokio::runtime::Handle;
-use starcoin_miner::miner_client::MinerClientActor;
 
 pub struct NodeStartHandle<C, H>
-    where
-        C: Consensus + 'static,
-        H: ConsensusHeader + 'static,
+where
+    C: Consensus + 'static,
+    H: ConsensusHeader + 'static,
 {
     _miner_actor: Addr<MinerActor<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>>,
     _sync_actor: Addr<SyncActor<Executor, C>>,
@@ -39,9 +39,9 @@ pub struct NodeStartHandle<C, H>
 }
 
 pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<NodeStartHandle<C, H>>
-    where
-        C: Consensus + 'static,
-        H: ConsensusHeader + 'static,
+where
+    C: Consensus + 'static,
+    H: ConsensusHeader + 'static,
 {
     let bus = BusActor::launch();
     let cache_storage = Arc::new(CacheStorage::new());
@@ -51,7 +51,7 @@ pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<Node
             cache_storage.clone(),
             db_storage.clone(),
         ))
-            .unwrap(),
+        .unwrap(),
     );
 
     let sync_metadata = SyncMetadata::new(config.clone());

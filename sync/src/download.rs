@@ -11,7 +11,6 @@ use parking_lot::RwLock;
 // use itertools;
 use crate::state_sync::StateSyncTaskActor;
 use chain::SyncMetadata;
-use consensus::Consensus;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
@@ -25,6 +24,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
+use traits::Consensus;
 use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerInfo,

@@ -1,26 +1,26 @@
+use actix::{Actor, Context, System};
+use actix_rt::Arbiter;
 use anyhow::Result;
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
-use consensus::Consensus;
 use futures::channel::mpsc;
 use jsonrpc_core::{MethodCall, Params};
 use logger::prelude::*;
 use serde_json;
-use std::{net::SocketAddr, sync::Arc};
-use types::U256;
 use std::marker::PhantomData;
-use actix::{Actor, Context, System};
-use actix_rt::Arbiter;
+use std::{net::SocketAddr, sync::Arc};
+use traits::Consensus;
+use types::U256;
 
 pub struct MinerClient<C>
-    where
-        C: Consensus + 'static + Send + Sync,
+where
+    C: Consensus + 'static + Send + Sync,
 {
     c_phantom: PhantomData<C>,
 }
 
 impl<C> MinerClient<C>
-    where
-        C: Consensus + 'static + Send + Sync,
+where
+    C: Consensus + 'static + Send + Sync,
 {
     fn process_job(params: String) -> anyhow::Result<C::ConsensusHeader> {
         let resp: MethodCall = serde_json::from_str(&params)?;
@@ -52,8 +52,7 @@ impl<C> MinerClient<C>
         auth_request.extend(b"\n");
 
         let mut auth_response = Vec::<u8>::new();
-        let stream = TcpStream::connect(
-            &addr).await.unwrap();
+        let stream = TcpStream::connect(&addr).await.unwrap();
         let stream_arc = Arc::new(stream);
         let reader_arc_clone = stream_arc.clone();
         let writer_arc_clone = stream_arc.clone();
@@ -102,12 +101,18 @@ impl<C> MinerClient<C>
     }
 }
 
-pub struct MinerClientActor<C> where C: Consensus + 'static + Send + Sync {
+pub struct MinerClientActor<C>
+where
+    C: Consensus + 'static + Send + Sync,
+{
     addr: SocketAddr,
     c_phantom: PhantomData<C>,
 }
 
-impl<C> MinerClientActor<C> where C: Consensus + 'static + Send + Sync {
+impl<C> MinerClientActor<C>
+where
+    C: Consensus + 'static + Send + Sync,
+{
     pub fn new(addr: SocketAddr) -> Self {
         MinerClientActor {
             addr,
@@ -116,7 +121,10 @@ impl<C> MinerClientActor<C> where C: Consensus + 'static + Send + Sync {
     }
 }
 
-impl<C> Actor for MinerClientActor<C> where C: Consensus + 'static + Send + Sync {
+impl<C> Actor for MinerClientActor<C>
+where
+    C: Consensus + 'static + Send + Sync,
+{
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
         let addr = self.addr.clone();
@@ -138,17 +146,17 @@ mod test {
     use crate::miner::{MineCtx, Miner};
     use crate::miner_client::MinerClient;
     use crate::stratum::StratumManager;
+    use actix_rt::System;
     use bus::BusActor;
     use config::NodeConfig;
-    use consensus::argon_consensus::ArgonConsensus;
-    use consensus::argon_consensus::ArgonConsensusHeader;
+    use consensus::argon::ArgonConsensus;
+    use consensus::argon::ArgonConsensusHeader;
     use futures_timer::Delay;
     use sc_stratum::{PushWorkHandler, Stratum};
     use std::sync::Arc;
     use std::time::Duration;
     use tokio;
     use types::block::{Block, BlockBody, BlockHeader, BlockTemplate};
-    use actix_rt::System;
 
     async fn prepare() {
         let conf = Arc::new(NodeConfig::random_for_test());
@@ -188,7 +196,7 @@ mod test {
                 Duration::from_secs(7),
                 MinerClient::<ArgonConsensus>::run("127.0.0.1:9000".parse().unwrap()),
             )
-                .await;
+            .await;
         });
     }
 
@@ -199,10 +207,7 @@ mod test {
         system.block_on(async {
             let actor = MinerClientActor::<ArgonConsensus>::new("127.0.0.1:9000".parse().unwrap());
             actor.start();
-            let _ = async_std::future::timeout(
-                Duration::from_secs(7),
-                prepare(),
-            ).await;
+            let _ = async_std::future::timeout(Duration::from_secs(7), prepare()).await;
         });
     }
 }

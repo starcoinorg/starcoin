@@ -3,11 +3,11 @@
 
 use crate::miner::{MineCtx, Miner};
 use anyhow::{format_err, Result};
-use consensus::{Consensus, ConsensusHeader};
 use sc_stratum::*;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use traits::ChainReader;
+use traits::{Consensus, ConsensusHeader};
 
 use config::NodeConfig;
 use logger::prelude::*;

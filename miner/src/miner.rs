@@ -4,12 +4,12 @@
 use actix::prelude::*;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
-use consensus::ConsensusHeader;
 use crypto::HashValue;
 use logger::prelude::*;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
+use traits::ConsensusHeader;
 use types::{block::BlockTemplate, system_events::SystemEvents};
 
 #[derive(Clone)]

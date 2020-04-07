@@ -3,7 +3,6 @@ use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, Respo
 use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
-use consensus::Consensus;
 use crypto::hash::{CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures::sink::SinkExt;
@@ -19,6 +18,7 @@ use starcoin_state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
+use traits::Consensus;
 use types::{block::Block, peer_info::PeerInfo};
 
 pub struct ProcessActor<E, C>
