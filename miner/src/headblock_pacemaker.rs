@@ -40,6 +40,8 @@ impl Actor for HeadBlockPacemaker {
             .wait(ctx);
 
         info!("{}", "head block pacemaker started.");
+        info!("{}", "Fire first GenerateBlock event");
+        self.send_event();
     }
 }
 
