@@ -40,7 +40,7 @@
 
 use crate::{
     account_address::AccountAddress,
-    account_config::ACCOUNT_RESOURCE_PATH,
+    account_config::{ACCOUNT_RESOURCE_PATH, BALANCE_RESOURCE_PATH},
     language_storage::{ModuleId, ResourceKey, StructTag},
 };
 use move_core_types::identifier::{IdentStr, Identifier};
@@ -262,6 +262,11 @@ impl AccessPath {
     /// Given an address, returns the corresponding access path that stores the Account resource.
     pub fn new_for_account(address: AccountAddress) -> Self {
         Self::new(address, DataType::RESOURCE, ACCOUNT_RESOURCE_PATH.clone())
+    }
+
+    /// Given an address, returns the corresponding access path that stores the Balance resource.
+    pub fn new_for_balance(address: AccountAddress) -> Self {
+        Self::new(address, DataType::RESOURCE, BALANCE_RESOURCE_PATH.clone())
     }
 
     pub fn resource_access_vec(tag: &StructTag) -> HashValue {
