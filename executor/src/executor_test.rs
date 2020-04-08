@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::Result;
 use config::VMConfig;
-use crypto::ed25519::compat;
+use crypto::keygen::KeyGen;
 use logger::prelude::*;
 use starcoin_state_api::{ChainState, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
@@ -19,6 +19,7 @@ use types::{
     account_address::AccountAddress,
     account_config,
     account_config::AccountResource,
+    account_config::BalanceResource,
     transaction::Transaction,
     vm_error::{StatusCode, VMStatus},
 };
@@ -80,7 +81,7 @@ fn test_validate_txn() -> Result<()> {
     let config = VMConfig::default();
     let sender_account_address = AccountAddress::random();
     let receiver_account_address = AccountAddress::random();
-    let (private_key, public_key) = compat::generate_keypair(None);
+    let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let program = encode_transfer_program(receiver_account_address, 100);
     let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
     let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
@@ -92,7 +93,7 @@ fn test_validate_txn() -> Result<()> {
     // now we create the account
     chain_state.create_account(sender_account_address)?;
     chain_state.create_account(receiver_account_address)?;
-    let (private_key, public_key) = compat::generate_keypair(None);
+    let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let program = encode_transfer_program(receiver_account_address, 100);
     let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
     // validate again
@@ -112,7 +113,7 @@ fn test_validate_txn() -> Result<()> {
 
     // after execute, the seq numebr should be 2.
     // and then validate again
-    let (private_key, public_key) = compat::generate_keypair(None);
+    let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let program = encode_transfer_program(receiver_account_address, 100);
     let txn = get_signed_txn(
         sender_account_address,
@@ -329,15 +330,18 @@ fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u6
     }
 }
 
-fn get_balance(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
-    let access_path = AccessPath::new_for_account(addr);
-    let state = chain_state
-        .get(&access_path)
-        .expect("read account state should ok");
-    match state {
+fn get_balance(
+    address: AccountAddress,
+    state_db: &dyn ChainState,
+) -> u64 {
+    let ap = AccessPath::new_for_balance(address);
+    let balance_resource= state_db
+        .get(&ap)
+        .expect("read balance resource should ok");
+    match balance_resource {
         None => 0u64,
-        Some(s) => AccountResource::make_from(&s)
-            .expect("account resource decode ok")
-            .balance(),
+        Some(b) => BalanceResource::make_from(b.as_slice())
+            .expect("decode balance resource should ok")
+            .coin()
     }
 }

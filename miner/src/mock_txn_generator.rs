@@ -1,6 +1,7 @@
 use anyhow::Result;
 use crypto::ed25519::*;
 use crypto::test_utils::KeyPair;
+use crypto::keygen::KeyGen;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use rand;
@@ -8,7 +9,7 @@ use rand::{Rng, SeedableRng};
 use starcoin_state_api::ChainStateReader;
 use types::{
     access_path::AccessPath, account_address::AccountAddress, account_address::AuthenticationKey,
-    account_config::association_address, account_config::AccountResource, transaction::Transaction,
+    account_config::association_address, account_config::AccountResource, account_config::BalanceResource, transaction::Transaction,
 };
 
 type AccountKeyPair = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
@@ -31,11 +32,7 @@ impl MockTxnGenerator {
         }
     }
     fn gen_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
-        let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
-        let seed_buf: [u8; 32] = seed_rng.gen();
-        let mut rng = rand::rngs::StdRng::from_seed(seed_buf);
-
-        compat::generate_keypair(Some(&mut rng))
+        KeyGen::from_os_rng().generate_keypair()
     }
 
     fn get_account_resource(
@@ -49,12 +46,23 @@ impl MockTxnGenerator {
             Some(b) => Some(AccountResource::make_from(&b)?),
         };
         debug!(
-            "state: address:{},balance:{:?},seq:{:?}",
+            "state: address:{},seq:{:?}",
             account_address,
-            account_resource.as_ref().map(|r| r.balance()),
             account_resource.as_ref().map(|r| r.sequence_number())
         );
         Ok(account_resource)
+    }
+
+    fn get_balance(
+        address: AccountAddress,
+        state_db: &dyn ChainStateReader,
+    ) -> Result<Option<u64>> {
+        let ap = AccessPath::new_for_balance(address);
+        let balance_resource= match state_db.get(&ap)? {
+            None => None,
+            Some(b) => Some(BalanceResource::make_from(b.as_slice())?.coin()),
+        };
+        Ok(balance_resource)
     }
 
     pub fn generate_mock_txn<E>(&self, state_db: &dyn ChainStateReader) -> Result<Transaction>
@@ -120,13 +128,15 @@ impl MockTxnGenerator {
         };
 
         // A -> B
-        if account_resource_a.balance() > 3000 {
+        let balance_a = Self::get_balance(self.account_a, state_db)?.unwrap();
+        let balance_b = Self::get_balance(self.account_b, state_db)?.unwrap();
+        if  balance_a > 3000 {
             transfer_function(
                 (self.account_a, &self.account_a_keypair),
                 (self.account_b, &self.account_b_keypair),
                 account_resource_a.sequence_number(),
             )
-        } else if account_resource_b.balance() > 3000 {
+        } else if balance_b > 3000 {
             // B -> A
             transfer_function(
                 (self.account_b, &self.account_b_keypair),
