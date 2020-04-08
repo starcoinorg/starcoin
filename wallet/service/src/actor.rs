@@ -59,6 +59,20 @@ impl Handler<WalletRequest> for WalletActor {
                     .unlock_account(address, password.as_str(), duration)?;
                 WalletResponse::UnlockAccountResponse
             }
+            WalletRequest::ExportAccount { address, password } => {
+                let data = self.service.export_account(&address, password.as_str())?;
+                WalletResponse::ExportAccountResponse(data)
+            }
+            WalletRequest::ImportAccount {
+                address,
+                password,
+                private_key,
+            } => {
+                let account =
+                    self.service
+                        .import_account(address, private_key, password.as_str())?;
+                WalletResponse::ImportAccountResponse(account)
+            }
         };
         return Ok(response);
     }
@@ -159,6 +173,41 @@ impl WalletAsyncService for WalletActorRef {
             .map_err(|e| Into::<Error>::into(e))??;
         if let WalletResponse::UnlockAccountResponse = response {
             Ok(())
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn import_account(
+        self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: String,
+    ) -> Result<WalletAccount> {
+        let response = self
+            .0
+            .send(WalletRequest::ImportAccount {
+                address,
+                password,
+                private_key,
+            })
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        if let WalletResponse::ImportAccountResponse(account) = response {
+            Ok(account)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn export_account(self, address: AccountAddress, password: String) -> Result<Vec<u8>> {
+        let response = self
+            .0
+            .send(WalletRequest::ExportAccount { address, password })
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        if let WalletResponse::ExportAccountResponse(data) = response {
+            Ok(data)
         } else {
             panic!("Unexpect response type.")
         }
