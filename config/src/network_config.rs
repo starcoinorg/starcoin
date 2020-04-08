@@ -39,6 +39,14 @@ impl NetworkConfig {
     pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
         self.network_keypair.clone().unwrap()
     }
+
+    fn set_peer_id(&mut self) {
+        let peer_id = PeerId::from_ed25519_public_key(self.network_keypair().public_key.clone());
+        //TODO use a more robust method to get local best advertise ip
+        let host = self.listen.clone().replace("0.0.0.0", "127.0.0.1");
+        self.self_connect_address = Some(format!("{}/p2p/{}", host, peer_id.to_base58()));
+        self.self_peer_id = Some(peer_id);
+    }
 }
 
 impl ConfigModule for NetworkConfig {
@@ -60,6 +68,7 @@ impl ConfigModule for NetworkConfig {
     fn random(&mut self, _base: &BaseConfig) {
         let keypair = crate::gen_keypair();
         self.network_keypair = Some(keypair);
+        self.set_peer_id();
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
@@ -92,12 +101,8 @@ impl ConfigModule for NetworkConfig {
             keypair
         };
 
-        let peer_id = PeerId::from_ed25519_public_key(keypair.public_key.clone());
-        //TODO use a more robust method to get local best advertise ip
-        let host = self.listen.clone().replace("0.0.0.0", "127.0.0.1");
-        self.self_connect_address = Some(format!("{}/p2p/{}", host, peer_id.to_base58()));
-        self.self_peer_id = Some(peer_id);
         self.network_keypair = Some(keypair);
+        self.set_peer_id();
 
         Ok(())
     }
