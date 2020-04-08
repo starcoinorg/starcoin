@@ -33,11 +33,12 @@ actix = "0.9"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
 starcoin-accumulator = { path = "../core/accumulator"}
-libra-types = { git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
+libra-types = { git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
-move-core-types = {git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
+move-core-types = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 futures = "0.3.4"
+
 
 
 ethereum-types = "0.2.3"
