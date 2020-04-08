@@ -42,10 +42,7 @@ impl WalletAccount {
     }
 
     pub fn random() -> Self {
-        let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
-        let seed_buf: [u8; 32] = seed_rng.gen();
-        let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
-        let key_pair = KeyPair::generate_for_testing(&mut rng);
+        let key_pair = KeyPair::generate_for_testing();
         let address = AccountAddress::from_public_key(&key_pair.public_key);
         WalletAccount {
             address,

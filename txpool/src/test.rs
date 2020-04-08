@@ -3,6 +3,7 @@ use crate::TxPoolRef;
 use anyhow::Result;
 use common_crypto::ed25519;
 use common_crypto::hash::CryptoHash;
+use crypto::keygen::KeyGen;
 use parking_lot::RwLock;
 use starcoin_bus::BusActor;
 use starcoin_config::{NodeConfig, TxPoolConfig};
@@ -48,7 +49,7 @@ impl AccountSeqNumberClient for MockNonceClient {
 #[actix_rt::test]
 async fn test_tx_pool() -> Result<()> {
     let pool = gen_pool_for_test();
-    let (_private_key, public_key) = ed25519::compat::generate_keypair(None);
+    let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = AccountAddress::from_public_key(&public_key);
     let auth_prefix = AccountAddress::authentication_key(&public_key)
         .prefix()
@@ -73,7 +74,7 @@ async fn test_subscribe_txns() {
 async fn test_rollback() -> Result<()> {
     let pool = gen_pool_for_test();
     let txn = {
-        let (_private_key, public_key) = ed25519::compat::generate_keypair(None);
+        let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = AccountAddress::from_public_key(&public_key);
         let auth_prefix = AccountAddress::authentication_key(&public_key)
             .prefix()
@@ -84,7 +85,7 @@ async fn test_rollback() -> Result<()> {
     };
     let _ = pool.clone().add_txns(vec![txn.clone()]).await?;
     let new_txn = {
-        let (_private_key, public_key) = ed25519::compat::generate_keypair(None);
+        let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = AccountAddress::from_public_key(&public_key);
         let auth_prefix = AccountAddress::authentication_key(&public_key)
             .prefix()
