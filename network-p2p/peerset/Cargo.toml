@@ -12,7 +12,7 @@ documentation = "https://docs.rs/sc-peerset"
 
 [dependencies]
 futures = "0.3.1"
-libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
+libp2p = "0.16.2"
 log = "0.4.8"
 serde_json = "1.0.41"
 

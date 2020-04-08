@@ -84,7 +84,8 @@ where
             ctx.add_message_stream(receiver);
             match &config.miner.pacemaker_strategy {
                 PacemakerStrategy::HeadBlock => {
-                    HeadBlockPacemaker::new(bus.clone(), sender).start();
+                    let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender);
+                    pacemaker.start();
                 }
                 PacemakerStrategy::Ondemand => {
                     OndemandPacemaker::new(

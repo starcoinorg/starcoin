@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::prelude::*;
+use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
@@ -31,8 +32,7 @@ pub struct MineCtx {
 
 impl MineCtx {
     pub fn new(block_template: BlockTemplate) -> MineCtx {
-        let header_hash = block_template.clone().into_block_header(vec![]).id();
-
+        let header_hash = block_template.parent_hash;
         MineCtx {
             header_hash,
             block_template,
@@ -66,17 +66,20 @@ where
         )
     }
 
-    pub fn submit(&self, payload: Vec<u8>) {
+    pub fn submit(&self, payload: String) -> Result<()> {
+        //TODO:error handle
         let state = self.state.lock().unwrap();
         let block_template = state.as_ref().unwrap().block_template.clone();
+        let payload = hex::decode(payload).unwrap();
         let consensus_header = match H::try_from(payload) {
-            Ok(header) => header,
-            _ => panic!("failed to parse header"),
+            Ok(h) => h,
+            Err(_e) => panic!("failed to submit payload"),
         };
         let block = block_template.into_block(consensus_header);
         info!("Miner new block: {:?}", block);
         self.bus.do_send(Broadcast {
             msg: SystemEvents::MinedBlock(block),
         });
+        Ok(())
     }
 }

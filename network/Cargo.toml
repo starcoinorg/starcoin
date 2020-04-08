@@ -21,7 +21,7 @@ hex = "0.4.2"
 bytes = "0.5.0"
 
 parity-codec = { version = "3.2", features = ["derive"] }
-libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
+libp2p = "0.16.2"
 
 tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}

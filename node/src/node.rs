@@ -22,7 +22,6 @@ use starcoin_sync_api::SyncMetadata;
 use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
@@ -161,7 +160,21 @@ where
             receiver,
             default_account,
         )?;
-    let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
+    let peer_id = config
+        .network
+        .self_peer_id
+        .clone()
+        .expect("Self peer_id must has been set.");
+    info!("Self peer_id is: {}", peer_id.to_base58());
+    info!(
+        "Self connect address is: {}",
+        config
+            .network
+            .self_connect_address
+            .as_ref()
+            .expect("Self connect address must has been set.")
+    );
+    let peer_info = Arc::new(PeerInfo::new(peer_id));
     let sync = SyncActor::launch(
         config.clone(),
         bus,

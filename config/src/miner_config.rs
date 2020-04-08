@@ -6,6 +6,8 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
+pub static DEFAULT_STRATUM_SERVER_PORT: u16 = 9940;
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MinerConfig {
@@ -36,8 +38,14 @@ impl ConfigModule for MinerConfig {
             ChainNetwork::Dev => PacemakerStrategy::Ondemand,
             _ => PacemakerStrategy::HeadBlock,
         };
+        let port = match net {
+            ChainNetwork::Dev => get_available_port(),
+            _ => DEFAULT_STRATUM_SERVER_PORT,
+        };
         Self {
-            stratum_server: "127.0.0.1:9000".parse::<SocketAddr>().unwrap(),
+            stratum_server: format!("127.0.0.1:{}", port)
+                .parse::<SocketAddr>()
+                .expect("parse address must success."),
             dev_period: 0,
             pacemaker_strategy,
         }
