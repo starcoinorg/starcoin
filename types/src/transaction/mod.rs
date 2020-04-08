@@ -3,8 +3,10 @@
 
 use crate::{
     account_address::AccountAddress,
+    account_config::lbr_type_tag,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
+    language_storage::TypeTag,
     state_set::ChainStateSet,
     vm_error::{StatusCode, StatusType, VMStatus},
 };
@@ -20,6 +22,7 @@ mod module;
 mod pending_transaction;
 mod script;
 mod transaction_argument;
+pub mod authenticator;
 
 pub use error::CallError;
 pub use error::Error as TransactionError;
@@ -49,6 +52,8 @@ pub struct RawUserTransaction {
     max_gas_amount: u64,
     // Maximal price can be paid per gas.
     gas_unit_price: u64,
+
+    gas_specifier: TypeTag,
     // Expiration time for this transaction.  If storage is queried and
     // the time returned is greater than or equal to this time and this
     // transaction has not been included, you can be certain that it will
@@ -102,6 +107,7 @@ impl RawUserTransaction {
         payload: TransactionPayload,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        gas_specifier: TypeTag,
         expiration_time: Duration,
     ) -> Self {
         RawUserTransaction {
@@ -110,6 +116,7 @@ impl RawUserTransaction {
             payload,
             max_gas_amount,
             gas_unit_price,
+            gas_specifier,
             expiration_time,
         }
     }
@@ -123,6 +130,7 @@ impl RawUserTransaction {
         script: Script,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        gas_specifier: TypeTag,
         expiration_time: Duration,
     ) -> Self {
         RawUserTransaction {
@@ -131,6 +139,7 @@ impl RawUserTransaction {
             payload: TransactionPayload::Script(script),
             max_gas_amount,
             gas_unit_price,
+            gas_specifier,
             expiration_time,
         }
     }
@@ -145,6 +154,7 @@ impl RawUserTransaction {
         module: Module,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        gas_specifier: TypeTag,
         expiration_time: Duration,
     ) -> Self {
         RawUserTransaction {
@@ -153,6 +163,7 @@ impl RawUserTransaction {
             payload: TransactionPayload::Module(module),
             max_gas_amount,
             gas_unit_price,
+            gas_specifier,
             expiration_time,
         }
     }
@@ -169,6 +180,7 @@ impl RawUserTransaction {
             // Since write-set transactions bypass the VM, these fields aren't relevant.
             max_gas_amount: 0,
             gas_unit_price: 0,
+            gas_specifier: lbr_type_tag(),
             // Write-set transactions are special and important and shouldn't expire.
             expiration_time: Duration::new(u64::max_value(), 0),
         }
@@ -244,6 +256,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::default()),
             0,
             0,
+	    lbr_type_tag(),
             Duration::new(0, 0),
         )
     }
@@ -252,9 +265,10 @@ impl RawUserTransaction {
         Self::new(
             AccountAddress::default(),
             0,
-            TransactionPayload::Script(Script::new(compiled_script, vec![])),
+            TransactionPayload::Script(Script::new(compiled_script, vec![lbr_type_tag()],vec![])),
             600,
             0,
+	    lbr_type_tag(),
             Duration::new(0, 0),
         )
     }
@@ -413,9 +427,7 @@ impl SignedUserTransaction {
 
     //TODO
     pub fn mock() -> Self {
-        let seed: [u8; 32] = EntropyRng::new().gen();
-        let mut rng = StdRng::from_seed(seed);
-        let key_pair = starcoin_crypto::test_utils::KeyPair::generate_for_testing(&mut rng);
+        let key_pair = starcoin_crypto::test_utils::KeyPair::generate_for_testing();
         let raw_txn = RawUserTransaction::mock();
         raw_txn
             .sign(&key_pair.private_key, key_pair.public_key)
@@ -424,9 +436,7 @@ impl SignedUserTransaction {
     }
 
     pub fn mock_from(compiled_script: Vec<u8>) -> Self {
-        let seed: [u8; 32] = EntropyRng::new().gen();
-        let mut rng = StdRng::from_seed(seed);
-        let key_pair = starcoin_crypto::test_utils::KeyPair::generate_for_testing(&mut rng);
+        let key_pair = starcoin_crypto::test_utils::KeyPair::generate_for_testing();
         let raw_txn = RawUserTransaction::mock_from(compiled_script);
         raw_txn
             .sign(&key_pair.private_key, key_pair.public_key)
@@ -680,6 +690,7 @@ impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction
             self.payload().clone().into(),
             self.max_gas_amount(),
             self.gas_unit_price(),
+            lbr_type_tag(),
             self.expiration_time(),
         );
         libra_types::transaction::SignedTransaction::new(
