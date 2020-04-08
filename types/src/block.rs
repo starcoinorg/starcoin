@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::create_literal_hash;
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Type for block number.
 pub type BlockNumber = u64;
@@ -167,11 +168,15 @@ impl BlockHeader {
         difficult: U256,
         consensus_header: Vec<u8>,
     ) -> Self {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         Self {
             //TODO should use a placeholder hash?
             parent_hash: HashValue::zero(),
             //TODO hard code a genesis block time.
-            timestamp: 0,
+            timestamp,
             number: 0,
             author: AccountAddress::default(),
             auth_key_prefix: None,
