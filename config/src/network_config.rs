@@ -26,6 +26,7 @@ pub struct NetworkConfig {
     pub network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
     #[serde(skip)]
     pub self_peer_id: Option<PeerId>,
+    #[serde(skip)]
     pub self_connect_address: Option<String>,
 }
 
