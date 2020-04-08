@@ -14,3 +14,6 @@ actix-rt = "1.0"
 starcoin-types = {path = "../../types", package="starcoin-types"}
 starcoin-config = {path = "../../config", package="starcoin-config"}
 starcoin-logger = {path = "../../commons/logger", package="starcoin-logger"}
+async-trait = "0.1"
+starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+dyn-clone = "1.0.1"

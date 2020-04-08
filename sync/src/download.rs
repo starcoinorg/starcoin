@@ -28,7 +28,7 @@ use traits::ChainAsyncService;
 use traits::Consensus;
 use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
-    peer_info::PeerInfo,
+    peer_info::{PeerId, PeerInfo},
 };
 
 #[derive(Default, Debug, Message)]
@@ -138,6 +138,7 @@ where
         let sync_metadata = self.sync_metadata.clone();
         let is_main = self.main_network;
         let bus = self.bus.clone();
+        let my_peer_id = self.peer_info.get_peer_id();
         let fut = async move {
             match msg {
                 DownloadMessage::LatestStateMsg(peer_info, latest_state_msg) => {
@@ -153,6 +154,7 @@ where
                     .await;
 
                     Self::sync_state(
+                        my_peer_id,
                         is_main,
                         downloader.clone(),
                         network,
@@ -203,6 +205,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     async fn sync_state(
+        my_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<E, C>>,
         network: NetworkAsyncService,
@@ -217,7 +220,7 @@ where
                 .is_state_sync()
                 .expect("Get state_sync failed.")
             {
-                if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {
+                if let Some(best_peer) = Downloader::best_peer(downloader.clone()) {
                     //1. ancestor
                     let begin_number = downloader
                         .chain_reader
@@ -296,20 +299,54 @@ where
                                 let root = headers.headers.pop().unwrap();
                                 let sync_pivot =
                                     sync_metadata.get_pivot().expect("Get pivot failed.");
-                                if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
-                                    let _ = StateSyncTaskActor::launch(
-                                        root.state_root(),
-                                        state_node_storage,
-                                        network.clone(),
-                                        downloader.clone(),
-                                        sync_metadata,
-                                        bus,
-                                    );
+                                if sync_metadata
+                                    .is_state_sync()
+                                    .expect("Get state_sync failed.")
+                                {
+                                    if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
+                                        if let Err(e) = sync_metadata.clone().update_pivot(pivot) {
+                                            warn!("err: {:?}", e);
+                                        } else {
+                                            if sync_pivot.is_none() {
+                                                let state_sync_task_address =
+                                                    StateSyncTaskActor::launch(
+                                                        my_peer_id,
+                                                        root.state_root(),
+                                                        state_node_storage,
+                                                        network.clone(),
+                                                        downloader.clone(),
+                                                        sync_metadata.clone(),
+                                                        bus,
+                                                    );
+                                                if let Err(e) = sync_metadata
+                                                    .update_address(&state_sync_task_address)
+                                                {
+                                                    warn!("err: {:?}", e);
+                                                }
+                                            } else if sync_pivot.unwrap() < pivot {
+                                                //todo:reset
+                                                if let Some(address) = sync_metadata.get_address() {
+                                                    &address.reset(root.state_root());
+                                                } else {
+                                                    warn!(
+                                                        "{:?}",
+                                                        "state sync reset address is none."
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        warn!("pivot {:?} : {}", sync_pivot, pivot);
+                                    }
+                                } else {
+                                    warn!("{:?}", "not state sync mode.");
                                 }
                             }
                         }
                     }
-                };
+                } else {
+                    warn!("{:?}", "best peer is none.");
+                }
             } else {
                 warn!("{:?}", "not state sync mode.");
             }
@@ -321,7 +358,7 @@ where
     fn sync_block_from_best_peer(downloader: Arc<Downloader<E, C>>, network: NetworkAsyncService) {
         Arbiter::spawn(async move {
             debug!("begin sync.");
-            if let Some(best_peer) = Downloader::best_peer(downloader.clone()).await {
+            if let Some(best_peer) = Downloader::best_peer(downloader.clone()) {
                 let mut begin_number = downloader
                     .chain_reader
                     .clone()
@@ -498,7 +535,7 @@ where
         }
     }
 
-    pub async fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerInfo> {
+    pub fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerInfo> {
         let lock = downloader.peers.read();
         for p in lock.keys() {
             return Some(p.clone());
