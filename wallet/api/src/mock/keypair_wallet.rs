@@ -80,10 +80,7 @@ where
     S: WalletStore,
 {
     fn create_account(&self, _password: &str) -> WalletResult<WalletAccount> {
-        let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
-        let seed_buf: [u8; 32] = seed_rng.gen();
-        let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
-        let key_pair: KeyPair = KeyPair::generate_for_testing(&mut rng);
+        let key_pair: KeyPair = KeyPair::generate_for_testing();
         let address = AccountAddress::from_public_key(&key_pair.public_key);
         //first account is default.
         let is_default = self.get_accounts()?.len() == 0;
