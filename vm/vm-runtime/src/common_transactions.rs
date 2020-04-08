@@ -5,8 +5,9 @@
 
 use crate::{account::create_signed_txn_with_association_account, account::Account};
 use std::time::Duration;
-use stdlib::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TRANSFER_TXN};
+use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN};
 use types::account_address::AccountAddress;
+use types::account_config::lbr_type_tag;
 use types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
 };
@@ -27,7 +28,15 @@ pub fn create_account_txn(
     args.push(TransactionArgument::U8Vector(new_account.auth_key_prefix()));
     args.push(TransactionArgument::U64(initial_amount));
 
-    sender.create_signed_txn_with_args(CREATE_ACCOUNT_TXN.clone(), args, seq_num, TXN_RESERVED, 1)
+    sender.create_signed_txn_with_args(
+        CREATE_ACCOUNT_TXN.clone(),
+        vec![],
+        args,
+        seq_num,
+        TXN_RESERVED,
+        1,
+        lbr_type_tag(),
+    )
 }
 
 /// Returns a transaction to transfer coin from one account to another (possibly new) one, with the
@@ -45,11 +54,13 @@ pub fn peer_to_peer_txn(
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
-        PEER_TO_PEER_TRANSFER_TXN.clone(),
+        PEER_TO_PEER_TXN.clone(),
+        vec![lbr_type_tag()],
         args,
         seq_num,
         TXN_RESERVED, // this is a default for gas
         1,            // this is a default for gas
+        lbr_type_tag(),
     )
 }
 
@@ -68,10 +79,12 @@ pub fn mint_txn(
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
         MINT_TXN.clone(),
+        vec![],
         args,
         seq_num,
         TXN_RESERVED, // this is a default for gas
         1,            // this is a default for gas
+	lbr_type_tag(),
     )
 }
 
@@ -88,10 +101,12 @@ pub fn create_account_txn_sent_as_association(
 
     create_signed_txn_with_association_account(
         CREATE_ACCOUNT_TXN.clone(),
+        vec![],
         args,
         seq_num,
         TXN_RESERVED,
         1,
+        lbr_type_tag(),
     )
 }
 
@@ -107,11 +122,13 @@ pub fn peer_to_peer_txn_sent_as_association(
     args.push(TransactionArgument::U64(amount));
 
     create_signed_txn_with_association_account(
-        PEER_TO_PEER_TRANSFER_TXN.clone(),
+        PEER_TO_PEER_TXN.clone(),
+        vec![lbr_type_tag()],
         args,
         seq_num,
         TXN_RESERVED,
         1,
+        lbr_type_tag(),
     )
 }
 
@@ -131,9 +148,10 @@ pub fn raw_peer_to_peer_txn(
     RawUserTransaction::new(
         sender,
         seq_num,
-        TransactionPayload::Script(Script::new(PEER_TO_PEER_TRANSFER_TXN.clone(), args)),
+        TransactionPayload::Script(Script::new(PEER_TO_PEER_TXN.clone(), vec![lbr_type_tag()], args)),
         TXN_RESERVED,
         1,
+        lbr_type_tag(),
         Duration::from_secs(DEFAULT_EXPIRATION_TIME),
     )
 }

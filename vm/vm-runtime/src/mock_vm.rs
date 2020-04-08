@@ -4,11 +4,10 @@
 use crate::chain_state::StateStore;
 use anyhow::Result;
 use config::VMConfig;
-use crypto::ed25519::compat;
 use logger::prelude::*;
-
 use once_cell::sync::Lazy;
-
+use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use crypto::keygen::KeyGen;
 use starcoin_state_api::ChainState;
 use std::convert::TryInto;
 use types::{
@@ -21,6 +20,9 @@ use types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
+use types::account_config::lbr_type_tag;
+
+type KeyPair = crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
 enum MockTransaction {
     Mint {
@@ -150,31 +152,31 @@ impl MockVM {
                         })
                         .and_then(|blob| blob.try_into())?;
 
-                    let balance_sender = account_resource_sender.balance();
-                    let balance_receiver = account_resource_receiver.balance();
-                    let deduction;
-
-                    if balance_sender < amount {
-                        deduction = balance_sender;
-                    } else {
-                        deduction = amount;
-                    }
-
-                    let new_account_resource_sender = AccountResource::new(
-                        balance_sender - deduction,
-                        account_resource_sender.sequence_number() + 1,
-                        account_resource_sender.authentication_key().to_vec(),
-                    );
-                    let new_account_resource_receiver = AccountResource::new(
-                        balance_receiver + deduction,
-                        account_resource_sender.sequence_number(),
-                        account_resource_receiver.authentication_key().to_vec(),
-                    );
-                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?)?;
-                    state_store.set(
-                        access_path_receiver,
-                        new_account_resource_receiver.try_into()?,
-                    )?;
+//                    let balance_sender = account_resource_sender.balance();
+//                    let balance_receiver = account_resource_receiver.balance();
+//                    let deduction;
+//
+//                    if balance_sender < amount {
+//                        deduction = balance_sender;
+//                    } else {
+//                        deduction = amount;
+//                    }
+//
+//                    let new_account_resource_sender = AccountResource::new(
+//                        balance_sender - deduction,
+//                        account_resource_sender.sequence_number() + 1,
+//                        account_resource_sender.authentication_key().to_vec(),
+//                    );
+//                    let new_account_resource_receiver = AccountResource::new(
+//                        balance_receiver + deduction,
+//                        account_resource_sender.sequence_number(),
+//                        account_resource_receiver.authentication_key().to_vec(),
+//                    );
+//                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?)?;
+//                    state_store.set(
+//                        access_path_receiver,
+//                        new_account_resource_receiver.try_into()?,
+//                    )?;
                     output = TransactionOutput::new(
                         vec![],
                         0,
@@ -198,12 +200,12 @@ impl MockVM {
                     })
                     .and_then(|blob| blob.try_into())?;
 
-                let new_account_resource = AccountResource::new(
-                    account_resource.balance() + 50_00000000,
-                    account_resource.sequence_number(),
-                    account_resource.authentication_key().to_vec(),
-                );
-                state_store.set(access_path, new_account_resource.try_into()?)?;
+//                let new_account_resource = AccountResource::new(
+//                    account_resource.balance() + 50_00000000,
+//                    account_resource.sequence_number(),
+//                    account_resource.authentication_key().to_vec(),
+//                );
+//                state_store.set(access_path, new_account_resource.try_into()?)?;
                 output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
             }
             Transaction::StateSet(state_set) => {
@@ -220,13 +222,13 @@ impl MockVM {
 
 pub fn encode_mint_program(amount: u64) -> Script {
     let argument = TransactionArgument::U64(amount);
-    Script::new(vec![], vec![argument])
+    Script::new(vec![], vec![], vec![argument])
 }
 
 pub fn encode_transfer_program(recipient: AccountAddress, amount: u64) -> Script {
     let argument1 = TransactionArgument::Address(recipient);
     let argument2 = TransactionArgument::U64(amount);
-    Script::new(vec![], vec![argument1, argument2])
+    Script::new(vec![], vec![], vec![argument1, argument2])
 }
 
 pub fn encode_mint_transaction(sender: AccountAddress, amount: u64) -> Transaction {
@@ -256,13 +258,15 @@ pub fn mock_transaction_with_seq_number(
         program,
         0,
         0,
+        lbr_type_tag(),
         std::time::Duration::from_secs(0),
     );
 
-    let (privkey, pubkey) = compat::generate_keypair(None);
+    let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
+
     Transaction::UserTransaction(
         raw_transaction
-            .sign(&privkey, pubkey)
+            .sign(&private_key, public_key)
             .expect("Failed to sign raw transaction.")
             .into_inner(),
     )
@@ -280,6 +284,7 @@ pub fn mock_raw_transfer_txn(
         encode_transfer_program(receiver, amount),
         0,
         0,
+        lbr_type_tag(),
         std::time::Duration::from_secs(0),
     )
 }

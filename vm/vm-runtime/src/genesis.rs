@@ -6,9 +6,13 @@ use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
 use crypto::ed25519::*;
+use crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    PrivateKey, Uniform, ValidKey,
+};
 use crypto::HashValue;
 use libra_state_view::StateView;
-use libra_types::{access_path::AccessPath, account_address::AuthenticationKey};
+use libra_types::{access_path::AccessPath};
 use move_core_types::identifier::Identifier;
 use move_vm_runtime::MoveVM;
 use move_vm_state::{
@@ -21,6 +25,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use starcoin_state_api::ChainState;
 use stdlib::{stdlib_modules, StdLibOptions};
 use types::{account_config, state_set::ChainStateSet};
+use types::transaction::authenticator::AuthenticationKey;
 use vm::{
     access::ModuleAccess,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
@@ -35,7 +40,9 @@ pub const SUBSIDY_BALANCE: u64 = ASSOCIATION_INIT_BALANCE / 2;
 
 pub static GENESIS_KEYPAIR: Lazy<(Ed25519PrivateKey, Ed25519PublicKey)> = Lazy::new(|| {
     let mut rng = StdRng::from_seed(GENESIS_SEED);
-    compat::generate_keypair(&mut rng)
+    let private_key = Ed25519PrivateKey::generate(&mut rng);
+    let public_key = private_key.public_key();
+    (private_key, public_key)
 });
 
 static INITIALIZE: Lazy<Identifier> = Lazy::new(|| Identifier::new("initialize").unwrap());
@@ -121,6 +128,7 @@ fn create_and_initialize_main_accounts(
             gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(association_addr),
                 Value::vector_u8(association_addr.to_vec()),
@@ -143,6 +151,7 @@ fn create_and_initialize_main_accounts(
             gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(transaction_fee_address),
                 Value::vector_u8(transaction_fee_address.to_vec()),
@@ -165,6 +174,7 @@ fn create_and_initialize_main_accounts(
             gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(mint_address),
                 Value::vector_u8(mint_address.to_vec()),
@@ -180,6 +190,7 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .expect("Failure initializing LibraCoin");
 
@@ -193,6 +204,7 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .expect("Failure initializing SubsidyConfig");
 
@@ -203,6 +215,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::u64(1000 as u64),
                 Value::u64(50_000_000 as u64),
@@ -220,6 +233,7 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .expect("Failure initializing LibraTransactionTimeout");
 
@@ -231,6 +245,7 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .expect("Failure initializing block metadata");
 
@@ -241,6 +256,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![initial_gas_schedule],
         )
         .expect("Failure initializing gas module");
@@ -252,6 +268,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(association_addr),
                 Value::vector_u8(association_addr.to_vec()),
@@ -268,6 +285,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(mint_address),
                 Value::vector_u8(mint_address.to_vec()),
@@ -286,11 +304,12 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .unwrap();
     txn_data.sender = association_addr;
 
-    let genesis_auth_key = AuthenticationKey::from_public_key(public_key).to_vec();
+    let genesis_auth_key = AuthenticationKey::ed25519(public_key).to_vec();
     move_vm
         .execute_function(
             &ACCOUNT_MODULE,
@@ -298,6 +317,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![Value::vector_u8(genesis_auth_key)],
         )
         .expect("Failure rotating association key");
@@ -313,6 +333,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::u64(/* txn_sequence_number */ 0),
                 Value::u64(/* txn_gas_price */ 0),
