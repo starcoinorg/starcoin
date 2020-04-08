@@ -183,13 +183,13 @@ mod tests {
         let raw = transaction::RawUserTransaction::new(
             AccountAddress::random(),
             4,
-            TransactionPayload::Script(Script::new(vec![1, 2, 3], vec![])),
+            TransactionPayload::Script(Script::new(vec![1, 2, 3], vec![], vec![])),
             100000,
             10,
+            types::account_config::lbr_type_tag(),
             Duration::from_secs(60),
         );
-        let mut rng = rand::rngs::StdRng::from_seed([0; 32]);
-        let private_key = ed25519::Ed25519PrivateKey::generate_for_testing(&mut rng);
+        let private_key = ed25519::Ed25519PrivateKey::generate_for_testing();
         let public_key = (&private_key).into();
 
         let signed = raw.sign(&private_key, public_key).unwrap().into_inner();

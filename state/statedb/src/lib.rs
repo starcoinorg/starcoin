@@ -522,9 +522,11 @@ mod tests {
             AccountResource::new(10, 1, account_resource.authentication_key().to_vec());
         chain_state_db.set(&access_path, new_account_resource.try_into()?)?;
 
-        let account_resource2: AccountResource =
-            chain_state_db.get(&access_path)?.unwrap().try_into()?;
-        assert_eq!(10, account_resource2.balance());
+        let balance2 = account_state_reader
+            .get_balance(&account_address)
+            .unwrap()
+            .unwrap();
+        assert_eq!(10, balance2);
 
         let new_state_root = chain_state_db.commit()?;
         assert_ne!(state_root, new_state_root);
