@@ -40,9 +40,15 @@ where
         Err(anyhow::Error::msg("mining.notify with bad params"))
     }
 
-    fn submit_job_request(nonce: C::ConsensusHeader) -> Vec<u8> {
-        let mut request = format!(r#"{{"jsonrpc": "2.0", "method": "mining.submit", "params": ["miner1", "", "{:?}"], "id": 7}}"#, nonce.into()).as_bytes().to_vec();
+    fn submit_job_request(consensus_header: C::ConsensusHeader) -> Vec<u8> {
+        let nonce: Vec<u8> = consensus_header.into();
+        let nonce_hex = hex::encode(&nonce);
+        let mut request = format!(r#"{{"jsonrpc": "2.0", "method": "mining.submit", "params": ["miner1", "", {:?}], "id": 7}}"#, nonce_hex).as_bytes().to_vec();
         request.extend(b"\n");
+        info!(
+            "Submit job response: {:?}",
+            &String::from_utf8(request.clone()).unwrap()
+        );
         request
     }
 
@@ -80,16 +86,13 @@ where
                     continue;
                 }
                 let nonce = processed.unwrap();
-                info!("Process nonce:{:?}", &nonce);
                 tx.unbounded_send(nonce).unwrap();
             }
         };
         let reader_handle = task::spawn(reader_future);
-
         let writer_future = async move {
             let mut stream = &*writer_arc_clone;
             while let Some(msg) = rx.next().await {
-                info!("Submit nonce is {:?}", msg);
                 let request = MinerClient::<C>::submit_job_request(msg);
                 stream.write_all(&request).await.unwrap();
             }
