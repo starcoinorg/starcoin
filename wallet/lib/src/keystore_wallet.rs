@@ -323,8 +323,9 @@ mod tests {
         let wallet_store = FileWalletStore::new(tmp_path.path());
         let wallet = KeyStoreWallet::new(wallet_store)?;
         let keypair = gen_keypair();
-
-        let account = wallet.import_account(keypair.private_key.to_bytes().to_vec(), "pass")?;
+        let address = AccountAddress::from_public_key(&keypair.public_key);
+        let account =
+            wallet.import_account(address, keypair.private_key.to_bytes().to_vec(), "pass")?;
         wallet.unlock_account(account.address, "pass", Duration::from_secs(10))?;
         let raw_txn = RawUserTransaction::mock_by_sender(account.address);
         let signed_txn = raw_txn
