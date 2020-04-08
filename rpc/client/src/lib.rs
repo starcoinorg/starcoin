@@ -170,6 +170,35 @@ impl RpcClient {
                 .await
         })
     }
+    pub fn account_export(
+        &self,
+        address: AccountAddress,
+        password: String,
+    ) -> anyhow::Result<Vec<u8>> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .export(address, password)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
+    pub fn account_import(
+        &self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: String,
+    ) -> anyhow::Result<WalletAccount> {
+        self.rt.borrow_mut().block_on_std(async {
+            self.inner
+                .account_client
+                .import(address, private_key, password)
+                .map_err(map_err)
+                .compat()
+                .await
+        })
+    }
 
     pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
         self.rt.borrow_mut().block_on_std(async {

@@ -5699,6 +5699,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-consensus",
+ "starcoin-crypto",
  "starcoin-executor",
  "starcoin-logger",
  "starcoin-node",
