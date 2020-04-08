@@ -67,7 +67,7 @@ impl WalletStore for FileWalletStore {
         let path = self
             .get_path(address, DEFAULT_ACCOUNT_FILE_NAME, false)
             .unwrap();
-        if !path.as_os_str().is_empty() {
+        if path.exists() {
             let file = File::open(&path);
             match file {
                 Ok(mut file) => {
