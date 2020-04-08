@@ -283,7 +283,6 @@ mod tests {
             0,
         );
         let account_res1: AccountResource = AccountResource::from(account_res);
-        assert_eq!(account_res1.balance(), 0);
         assert_eq!(
             account_res1.authentication_key().len(),
             address.to_vec().len()
