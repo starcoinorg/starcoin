@@ -223,7 +223,7 @@ impl NetworkInner {
                     if let Some(tx) = self.acks.lock().remove(&message_id) {
                         let _ = tx.send(());
                     } else {
-                        error!(
+                        debug!(
                             "Receive a invalid ack, message id:{}, peer id:{}",
                             message_id, peer_id
                         );
