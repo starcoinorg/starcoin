@@ -27,7 +27,7 @@ use std::time::Duration;
 use traits::ChainAsyncService;
 use traits::Consensus;
 use types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockDetail},
     peer_info::{PeerId, PeerInfo},
 };
 
@@ -53,6 +53,7 @@ where
     state_node_storage: Arc<dyn StateNodeStore>,
     sync_metadata: SyncMetadata,
     main_network: bool,
+    future_blocks: Arc<RwLock<HashMap<HashValue, BlockDetail>>>
 }
 
 impl<E, C> DownloadActor<E, C>
@@ -820,7 +821,7 @@ where
         block: Block,
         block_info: BlockInfo,
     ) {
-        info!("do block {:?}", block.header().id());
+        info!("do block info {:?}", block.header().id());
         //todo:verify block
         let _ = downloader
             .chain_reader

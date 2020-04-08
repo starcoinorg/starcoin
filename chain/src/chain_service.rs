@@ -198,7 +198,6 @@ where
     txpool: P,
     bus: Addr<BusActor>,
     sync: SyncMetadata,
-    _future_blocks: RwLock<HashMap<HashValue, (Block, Option<BlockInfo>)>>, //todo
 }
 
 impl<E, C, S, P> ChainServiceImpl<E, C, S, P>
@@ -223,8 +222,6 @@ where
             storage.clone(),
             txpool.clone(),
         )?;
-        let future_blocks: RwLock<HashMap<HashValue, (Block, Option<BlockInfo>)>> =
-            RwLock::new(HashMap::new());
         Ok(Self {
             config,
             collection,
@@ -233,7 +230,6 @@ where
             txpool,
             bus,
             sync,
-            _future_blocks: future_blocks,
         })
     }
 
