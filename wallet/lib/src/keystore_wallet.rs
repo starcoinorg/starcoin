@@ -104,6 +104,9 @@ where
         private_key: Vec<u8>,
         password: &str,
     ) -> Result<WalletAccount, Error> {
+        if self.contains(&address)? {
+            bail!("account with address {} already exists", &address);
+        }
         let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())?;
         let key_pair = KeyPair::from(private_key);
         let account = WalletAccount::new(address, key_pair.public_key.clone(), false);
