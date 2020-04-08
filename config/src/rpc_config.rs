@@ -22,6 +22,7 @@ pub struct RpcConfig {
     pub ws_address: Option<SocketAddr>,
     pub max_request_body_size: usize,
     pub threads: Option<usize>,
+    #[serde(skip)]
     ipc_file_path: Option<PathBuf>,
 }
 
