@@ -38,8 +38,17 @@ where
         self.wallet.get_account(address)
     }
 
-    fn import_account(&self, private_key: Vec<u8>, password: &str) -> Result<WalletAccount> {
-        self.wallet.import_account(private_key, password)
+    fn import_account(
+        &self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: &str,
+    ) -> Result<WalletAccount> {
+        self.wallet.import_account(address, private_key, password)
+    }
+
+    fn export_account(&self, address: &AccountAddress, password: &str) -> Result<Vec<u8>> {
+        self.wallet.export_account(address, password)
     }
 
     fn contains(&self, address: &AccountAddress) -> Result<bool> {
