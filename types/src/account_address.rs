@@ -10,6 +10,7 @@ use rand::{rngs::OsRng, Rng};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::{hash::CryptoHash, HashValue, VerifyingKey};
 use std::{convert::TryFrom, fmt, str::FromStr};
+use std::borrow::Cow;
 
 pub const ADDRESS_LENGTH: usize = 16;
 pub const AUTHENTICATION_KEY_LENGTH: usize = ADDRESS_LENGTH * 2;
@@ -252,7 +253,7 @@ impl<'de> Deserialize<'de> for AccountAddress {
         D: Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
-            let s = serde::private::de::borrow_cow_str(deserializer)?;
+            let s: Cow<str> = serde::private::de::borrow_cow_str(deserializer)?;
             // let s = <&str>::deserialize(deserializer)?;
             AccountAddress::from_str(s.as_ref()).map_err(D::Error::custom)
         } else {
