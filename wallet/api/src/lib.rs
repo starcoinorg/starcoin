@@ -60,7 +60,15 @@ pub trait Wallet {
 
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>>;
 
-    fn import_account(&self, private_key: Vec<u8>, password: &str) -> Result<WalletAccount>;
+    fn import_account(
+        &self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: &str,
+    ) -> Result<WalletAccount>;
+
+    /// Return the private key as bytes for `address`
+    fn export_account(&self, address: &AccountAddress, password: &str) -> Result<Vec<u8>>;
 
     fn contains(&self, address: &AccountAddress) -> Result<bool>;
 
