@@ -33,6 +33,7 @@ parking_lot = "0.9"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 network-p2p-api = {package="network-p2p-api", path="../network-p2p/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
+async-trait = "0.1"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

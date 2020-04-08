@@ -1,9 +1,16 @@
 use anyhow::Result;
+use dyn_clone::{clone_box, DynClone};
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockNumber;
 use std::sync::Arc;
+
+#[async_trait::async_trait]
+pub trait StateSyncReset: DynClone + Send + Sync {
+    async fn reset(&self, root: HashValue);
+}
 
 #[derive(Clone)]
 pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
@@ -11,6 +18,7 @@ pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
 pub struct SyncMetadataInner {
     syncing: bool,
     pivot: Option<BlockNumber>,
+    state_sync_address: Option<Box<dyn StateSyncReset>>,
 }
 
 impl SyncMetadata {
@@ -19,6 +27,7 @@ impl SyncMetadata {
         let inner = SyncMetadataInner {
             syncing: config.sync.is_state_sync(),
             pivot: None,
+            state_sync_address: None,
         };
         SyncMetadata(Arc::new(RwLock::new(inner)))
     }
@@ -33,6 +42,7 @@ impl SyncMetadata {
         let mut lock = self.0.write();
         lock.syncing = false;
         lock.pivot = None;
+        lock.state_sync_address = None;
         Ok(())
     }
 
@@ -42,5 +52,20 @@ impl SyncMetadata {
 
     pub fn get_pivot(&self) -> Result<Option<BlockNumber>> {
         Ok(self.0.read().pivot.clone())
+    }
+
+    pub fn update_address(&self, address: &(dyn StateSyncReset + 'static)) -> Result<()> {
+        self.0.write().state_sync_address = Some(clone_box(address));
+        Ok(())
+    }
+
+    pub fn get_address(&self) -> Option<Box<dyn StateSyncReset>> {
+        let lock = self.0.read();
+        if let Some(ssr_ref) = lock.state_sync_address.as_deref() {
+            let ssr_box = clone_box(ssr_ref);
+            Some(ssr_box)
+        } else {
+            None
+        }
     }
 }

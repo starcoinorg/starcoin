@@ -544,7 +544,7 @@ fn test_state_sync() {
         )
         .unwrap();
 
-        Delay::new(Duration::from_secs(1 * 60)).await;
+        Delay::new(Duration::from_secs(2 * 60)).await;
 
         assert!(
             !sync_metadata_actor_2.is_state_sync().unwrap(),
