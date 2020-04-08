@@ -126,4 +126,13 @@ pub trait WalletAsyncService: Clone + std::marker::Unpin + Send + Sync {
         password: String,
         duration: std::time::Duration,
     ) -> Result<()>;
+    async fn import_account(
+        self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: String,
+    ) -> Result<WalletAccount>;
+
+    /// Return the private key as bytes for `address`
+    async fn export_account(self, address: AccountAddress, password: String) -> Result<Vec<u8>>;
 }

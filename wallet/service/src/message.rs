@@ -16,6 +16,15 @@ pub enum WalletRequest {
     GetAccount(AccountAddress),
     SignTxn(RawUserTransaction),
     UnlockAccount(AccountAddress, String, Duration),
+    ImportAccount {
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: String,
+    },
+    ExportAccount {
+        address: AccountAddress,
+        password: String,
+    },
 }
 
 impl Message for WalletRequest {
@@ -30,5 +39,7 @@ pub enum WalletResponse {
     SignedTxn(SignedUserTransaction),
     Account(Option<WalletAccount>),
     UnlockAccountResponse,
+    ImportAccountResponse(WalletAccount),
+    ExportAccountResponse(Vec<u8>),
     None,
 }
