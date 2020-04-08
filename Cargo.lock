@@ -2518,7 +2518,7 @@ dependencies = [
  "libp2p-websocket 0.15.0",
  "libp2p-yamux 0.15.0",
  "parity-multiaddr 0.7.3",
- "parity-multihash 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-multihash",
  "parking_lot 0.10.0",
  "pin-project",
  "smallvec 1.2.0",
@@ -2527,8 +2527,9 @@ dependencies = [
 
 [[package]]
 name = "libp2p"
-version = "0.16.1"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bba17ee9cac4bb89de5812159877d9b4f0a993bf41697a5a875940cd1eb71f24"
 dependencies = [
  "bytes 0.5.4",
  "futures 0.3.4",
@@ -2540,10 +2541,10 @@ dependencies = [
  "libp2p-floodsub 0.16.0",
  "libp2p-gossipsub 0.16.0",
  "libp2p-identify 0.16.0",
- "libp2p-kad 0.16.1",
+ "libp2p-kad 0.16.2",
  "libp2p-mdns 0.16.0",
  "libp2p-mplex 0.16.0",
- "libp2p-noise 0.16.0",
+ "libp2p-noise 0.16.2",
  "libp2p-ping 0.16.0",
  "libp2p-plaintext 0.16.0",
  "libp2p-pnet",
@@ -2551,11 +2552,11 @@ dependencies = [
  "libp2p-swarm 0.16.1",
  "libp2p-tcp 0.16.0",
  "libp2p-uds 0.16.0",
- "libp2p-wasm-ext 0.16.1",
+ "libp2p-wasm-ext 0.16.2",
  "libp2p-websocket 0.16.0",
- "libp2p-yamux 0.16.0",
- "parity-multiaddr 0.7.2",
- "parity-multihash 0.2.3 (git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge)",
+ "libp2p-yamux 0.16.2",
+ "parity-multiaddr 0.7.3",
+ "parity-multihash",
  "parking_lot 0.10.0",
  "pin-project",
  "smallvec 1.2.0",
@@ -2577,9 +2578,9 @@ dependencies = [
  "lazy_static",
  "libsecp256k1",
  "log 0.4.8",
- "multistream-select 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "multistream-select",
  "parity-multiaddr 0.7.3",
- "parity-multihash 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-multihash",
  "parking_lot 0.10.0",
  "pin-project",
  "prost",
@@ -2599,7 +2600,8 @@ dependencies = [
 [[package]]
 name = "libp2p-core"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b874594c4b29de1a29f27871feba8e6cd13aa54a8a1e8f8c7cf3dfac5ca287c"
 dependencies = [
  "asn1_der",
  "bs58",
@@ -2610,9 +2612,9 @@ dependencies = [
  "lazy_static",
  "libsecp256k1",
  "log 0.4.8",
- "multistream-select 0.7.0 (git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge)",
- "parity-multiaddr 0.7.2",
- "parity-multihash 0.2.3 (git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge)",
+ "multistream-select",
+ "parity-multiaddr 0.7.3",
+ "parity-multihash",
  "parking_lot 0.10.0",
  "pin-project",
  "prost",
@@ -2641,7 +2643,8 @@ dependencies = [
 [[package]]
 name = "libp2p-core-derive"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96d472e9d522f588805c77801de10b957be84e10f019ca5f869fa1825b15ea9b"
 dependencies = [
  "quote 1.0.3",
  "syn 1.0.16",
@@ -2661,7 +2664,8 @@ dependencies = [
 [[package]]
 name = "libp2p-deflate"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e25004d4d9837b44b22c5f1a69be1724a5168fef6cff1716b5176a972c3aa62"
 dependencies = [
  "flate2",
  "futures 0.3.4",
@@ -2682,7 +2686,8 @@ dependencies = [
 [[package]]
 name = "libp2p-dns"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b99e552f9939b606eb4b59f7f64d9b01e3f96752f47e350fc3c5fc646ed3f649"
 dependencies = [
  "futures 0.3.4",
  "libp2p-core 0.16.0",
@@ -2710,7 +2715,8 @@ dependencies = [
 [[package]]
 name = "libp2p-floodsub"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d3234f12e44f9a50351a9807b97fe7de11eb9ae4482370392ba10da6dc90722"
 dependencies = [
  "cuckoofilter",
  "fnv",
@@ -2752,7 +2758,8 @@ dependencies = [
 [[package]]
 name = "libp2p-gossipsub"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d46cb3e0841bd951cbf4feae56cdc081e6347836a644fb260c3ec554149b4006"
 dependencies = [
  "base64 0.11.0",
  "byteorder 1.3.4",
@@ -2792,7 +2799,8 @@ dependencies = [
 [[package]]
 name = "libp2p-identify"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfeb935a9bd41263e4f3a24b988e9f4a044f3ae89ac284e83c17fe2f84e0d66b"
 dependencies = [
  "futures 0.3.4",
  "libp2p-core 0.16.0",
@@ -2819,7 +2827,7 @@ dependencies = [
  "libp2p-core 0.15.0",
  "libp2p-swarm 0.5.0",
  "log 0.4.8",
- "parity-multihash 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-multihash",
  "prost",
  "prost-build",
  "rand 0.7.3",
@@ -2833,8 +2841,9 @@ dependencies = [
 
 [[package]]
 name = "libp2p-kad"
-version = "0.16.1"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "464dc8412978d40f0286be72ed9ab5e0e1386a4a06e7f174526739b5c3c1f041"
 dependencies = [
  "arrayvec 0.5.1",
  "bytes 0.5.4",
@@ -2845,7 +2854,7 @@ dependencies = [
  "libp2p-core 0.16.0",
  "libp2p-swarm 0.16.1",
  "log 0.4.8",
- "parity-multihash 0.2.3 (git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge)",
+ "parity-multihash",
  "prost",
  "prost-build",
  "rand 0.7.3",
@@ -2882,7 +2891,8 @@ dependencies = [
 [[package]]
 name = "libp2p-mdns"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "881fcfb360c2822db9f0e6bb6f89529621556ed9a8b038313414eda5107334de"
 dependencies = [
  "async-std",
  "data-encoding",
@@ -2919,7 +2929,8 @@ dependencies = [
 [[package]]
 name = "libp2p-mplex"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8507b37ad0eed275efcde67a023c3d85af6c80768b193845b9288e848e1af95"
 dependencies = [
  "bytes 0.5.4",
  "fnv",
@@ -2953,10 +2964,11 @@ dependencies = [
 
 [[package]]
 name = "libp2p-noise"
-version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b15a8a3d71f898beb6f854c8aae27aa1d198e0d1f2e49412261c2d90ef39675a"
 dependencies = [
- "curve25519-dalek 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "curve25519-dalek 2.0.0",
  "futures 0.3.4",
  "lazy_static",
  "libp2p-core 0.16.0",
@@ -2967,7 +2979,7 @@ dependencies = [
  "sha2",
  "snow",
  "static_assertions 1.1.0",
- "x25519-dalek 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "x25519-dalek 0.6.0",
  "zeroize",
 ]
 
@@ -2989,7 +3001,8 @@ dependencies = [
 [[package]]
 name = "libp2p-ping"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33d22f2f228b3a828dca1cb8aa9fa331e0bc9c36510cb2c1916956e20dc85e8c"
 dependencies = [
  "futures 0.3.4",
  "libp2p-core 0.16.0",
@@ -3021,7 +3034,8 @@ dependencies = [
 [[package]]
 name = "libp2p-plaintext"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56126a204d7b3382bac163143ff4125a14570b3ba76ba979103d1ae1abed1923"
 dependencies = [
  "bytes 0.5.4",
  "futures 0.3.4",
@@ -3038,7 +3052,8 @@ dependencies = [
 [[package]]
 name = "libp2p-pnet"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b916938a8868f75180aeeffcc6a516a922d165e8fa2a90b57bad989d1ccbb57a"
 dependencies = [
  "futures 0.3.4",
  "log 0.4.8",
@@ -3081,7 +3096,8 @@ dependencies = [
 [[package]]
 name = "libp2p-secio"
 version = "0.16.1"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1219e9ecb4945d7331a05f5ffe96a1f6e28051bfa1223d4c60353c251de0354e"
 dependencies = [
  "aes-ctr",
  "ctr",
@@ -3124,7 +3140,8 @@ dependencies = [
 [[package]]
 name = "libp2p-swarm"
 version = "0.16.1"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "275471e7c0e88ae004660866cd54f603bd8bd1f4caef541a27f50dd8640c4d4c"
 dependencies = [
  "futures 0.3.4",
  "libp2p-core 0.16.0",
@@ -3152,7 +3169,8 @@ dependencies = [
 [[package]]
 name = "libp2p-tcp"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9e80ad4e3535345f3d666554ce347d3100453775611c05c60786bf9a1747a10"
 dependencies = [
  "async-std",
  "futures 0.3.4",
@@ -3178,7 +3196,8 @@ dependencies = [
 [[package]]
 name = "libp2p-uds"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76d329564a43da9d0e055a5b938633c4a8ceab1f59cec133fbc4647917c07341"
 dependencies = [
  "async-std",
  "futures 0.3.4",
@@ -3202,8 +3221,9 @@ dependencies = [
 
 [[package]]
 name = "libp2p-wasm-ext"
-version = "0.16.1"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "923581c055bc4b8c5f42d4ce5ef43e52fe5216f1ea4bc26476cb8a966ce6220b"
 dependencies = [
  "futures 0.3.4",
  "js-sys",
@@ -3237,7 +3257,8 @@ dependencies = [
 [[package]]
 name = "libp2p-websocket"
 version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5351ca9eea122081c1c0f9323164d2918cac29b5a6bfe5054d4ba8ec9447cf42"
 dependencies = [
  "async-tls",
  "bytes 0.5.4",
@@ -3270,8 +3291,9 @@ dependencies = [
 
 [[package]]
 name = "libp2p-yamux"
-version = "0.16.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9dac30de24ccde0e67f363d71a125c587bbe6589503f664947e9b084b68a34f1"
 dependencies = [
  "futures 0.3.4",
  "libp2p-core 0.16.0",
@@ -3828,19 +3850,6 @@ checksum = "a97fbd5d00e0e37bfb10f433af8f5aaf631e739368dc9fc28286ca81ca4948dc"
 [[package]]
 name = "multistream-select"
 version = "0.7.0"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
-dependencies = [
- "bytes 0.5.4",
- "futures 0.1.29",
- "log 0.4.8",
- "smallvec 1.2.0",
- "tokio-io",
- "unsigned-varint 0.3.2",
-]
-
-[[package]]
-name = "multistream-select"
-version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f938ffe420493e77c8b6cbcc3f282283f68fc889c5dcbc8e51668d5f3a01ad94"
 dependencies = [
@@ -3898,7 +3907,7 @@ dependencies = [
  "futures-timer 3.0.2",
  "futures_codec",
  "hex 0.4.2",
- "libp2p 0.16.1",
+ "libp2p 0.16.2",
  "linked-hash-map",
  "linked_hash_set",
  "log 0.4.8",
@@ -3938,7 +3947,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.4",
- "libp2p 0.16.1",
+ "libp2p 0.16.2",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -4200,27 +4209,10 @@ dependencies = [
  "byteorder 1.3.4",
  "bytes 0.4.12",
  "data-encoding",
- "parity-multihash 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-multihash",
  "percent-encoding 2.1.0",
  "serde",
  "unsigned-varint 0.2.3",
- "url 2.1.1",
-]
-
-[[package]]
-name = "parity-multiaddr"
-version = "0.7.2"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
-dependencies = [
- "arrayref",
- "bs58",
- "byteorder 1.3.4",
- "data-encoding",
- "parity-multihash 0.2.3 (git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge)",
- "percent-encoding 2.1.0",
- "serde",
- "static_assertions 1.1.0",
- "unsigned-varint 0.3.2",
  "url 2.1.1",
 ]
 
@@ -4234,26 +4226,12 @@ dependencies = [
  "bs58",
  "byteorder 1.3.4",
  "data-encoding",
- "parity-multihash 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-multihash",
  "percent-encoding 2.1.0",
  "serde",
  "static_assertions 1.1.0",
  "unsigned-varint 0.3.2",
  "url 2.1.1",
-]
-
-[[package]]
-name = "parity-multihash"
-version = "0.2.3"
-source = "git+https://github.com/starcoinorg/rust-libp2p?branch=starcoin-merge#b5ec14066a9fc83d8f49284e08f28445fa9fe250"
-dependencies = [
- "blake2",
- "bytes 0.5.4",
- "rand 0.7.3",
- "sha-1",
- "sha2",
- "sha3",
- "unsigned-varint 0.3.2",
 ]
 
 [[package]]
@@ -4464,7 +4442,7 @@ name = "peerset"
 version = "2.0.0-alpha.3"
 dependencies = [
  "futures 0.3.4",
- "libp2p 0.16.1",
+ "libp2p 0.16.2",
  "log 0.4.8",
  "rand 0.7.3",
  "serde_json",
@@ -5926,7 +5904,7 @@ dependencies = [
  "futures 0.3.4",
  "futures-timer 3.0.2",
  "hex 0.4.2",
- "libp2p 0.16.1",
+ "libp2p 0.16.2",
  "log 0.4.8",
  "lru",
  "network-p2p",
@@ -6359,7 +6337,7 @@ dependencies = [
  "futures 0.3.4",
  "hex 0.3.2",
  "itertools 0.8.2",
- "libp2p 0.16.1",
+ "libp2p 0.16.2",
  "libra-types",
  "mirai-annotations",
  "move-core-types",
