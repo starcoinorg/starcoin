@@ -80,7 +80,9 @@ fn run() -> Result<()> {
                 .subcommand(account::ShowCommand {}.into_cmd())
                 .subcommand(account::ListCommand {}.into_cmd())
                 .subcommand(account::SignTxnCommand {}.into_cmd())
-                .subcommand(account::UnlockCommand.into_cmd()),
+                .subcommand(account::UnlockCommand.into_cmd())
+                .subcommand(account::ExportCommand.into_cmd())
+                .subcommand(account::ImportCommand.into_cmd()),
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand {}.into_cmd()))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand {}.into_cmd()))
