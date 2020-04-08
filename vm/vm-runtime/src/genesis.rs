@@ -31,6 +31,7 @@ use vm::{
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
+use logger::prelude::*;
 
 const GENESIS_SEED: [u8; 32] = [42; 32];
 
@@ -119,7 +120,18 @@ fn create_and_initialize_main_accounts(
         account_config::association_address().into();
     let mut txn_data = TransactionMetadata::default();
     txn_data.sender = association_addr;
-
+    // create  the LBR module
+    move_vm
+        .execute_function(
+            &LBR_MODULE,
+            &INITIALIZE,
+            gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![],
+            vec![],
+        )
+        .expect("Failure initializing LBR");
     // create the association account
     move_vm
         .execute_function(
@@ -181,18 +193,6 @@ fn create_and_initialize_main_accounts(
             ],
         )
         .unwrap_or_else(|e| panic!("Failure creating mint account {:?}: {}", mint_address, e));
-
-    move_vm
-        .execute_function(
-            &COIN_MODULE,
-            &INITIALIZE,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![],
-        )
-        .expect("Failure initializing LibraCoin");
 
     // init subsidy config
     txn_data.sender = mint_address;
@@ -294,20 +294,20 @@ fn create_and_initialize_main_accounts(
         )
         .unwrap();
 
-    // init subsidy.
-    txn_data.sender = mint_address;
-    move_vm
-        .execute_function(
-            &LIBRA_BLOCK_MODULE,
-            &SUBSIDY_INIT,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![],
-        )
-        .unwrap();
-    txn_data.sender = association_addr;
+//    // init subsidy.
+//    txn_data.sender = mint_address;
+//    move_vm
+//        .execute_function(
+//            &LIBRA_BLOCK_MODULE,
+//            &SUBSIDY_INIT,
+//            &gas_schedule,
+//            interpreter_context,
+//            &txn_data,
+//            vec![],
+//            vec![],
+//        )
+//        .unwrap();
+//    txn_data.sender = association_addr;
 
     let genesis_auth_key = AuthenticationKey::ed25519(public_key).to_vec();
     move_vm
