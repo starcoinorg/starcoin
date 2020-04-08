@@ -41,29 +41,6 @@ fn test_error_on_bad_parameters() {
 }
 
 #[test]
-fn test_get_siblings() {
-    let leaves = create_leaves(0..100);
-    let mock_store = Arc::new(MockAccumulatorStore::new());
-    let accumulator =
-        MerkleAccumulator::new(HashValue::random(), vec![], 0, 0, mock_store.clone()).unwrap();
-    let (_root_hash, _index) = accumulator.append(&leaves).unwrap();
-
-    let mut index_vec = vec![];
-    for i in 0..100 {
-        let proof = accumulator.get_proof(i).unwrap().unwrap();
-        for index in proof.siblings {
-            match mock_store.clone().get_node(index) {
-                Ok(Some(node)) => index_vec.push(node.index().to_inorder_index()),
-                Err(_) => {}
-                _ => {}
-            }
-        }
-        println!("{} : {:?}", i, index_vec);
-    }
-    assert!(true);
-}
-
-#[test]
 fn test_multiple_chain() {
     let leaves = create_leaves(0..2);
     let mock_store = Arc::new(MockAccumulatorStore::new());

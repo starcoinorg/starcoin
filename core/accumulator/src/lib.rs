@@ -137,11 +137,7 @@ pub trait AccumulatorTreeStore: AccumulatorReader + AccumulatorWriter {}
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
 pub struct MerkleAccumulator {
-    /// Accumulator id
-    id: HashValue,
-
     cache: Mutex<AccumulatorCache>,
-
     node_store: Arc<dyn AccumulatorTreeStore>,
 }
 
@@ -174,11 +170,9 @@ impl AccumulatorCache {
         Self {
             id: accumulator_id,
             frozen_subtree_roots: RefCell::new(frozen_subtree_roots.clone()),
-            index_cache: RefCell::new(AccumulatorCache::restore_into_cache(
-                accumulator_id,
-                frozen_subtree_roots.clone(),
-                node_store.clone(),
-            )),
+            index_cache: RefCell::new(
+                Self::restore_index_cache(root_hash, node_store.clone()).unwrap(),
+            ),
             num_leaves,
             num_nodes,
             root_hash,
@@ -199,7 +193,9 @@ impl AccumulatorCache {
                 return Ok((self.root_hash, Vec::new()));
             }
         }
-
+        for i in 0..self.num_nodes {
+            println!("{:?} xxx: {:?}", self.id, self.get_index(NodeIndex::new(i)));
+        }
         let num_new_leaves = new_leaves.len();
         let last_new_leaf_count = self.num_leaves + num_new_leaves as LeafCount;
         let mut new_num_nodes = self.num_nodes;
@@ -235,10 +231,9 @@ impl AccumulatorCache {
                         // Self::hash_internal_node(left_hash, hash)
                     }
                     None => {
-                        let store_index = NodeStoreIndex::new(self.id, sibling);
                         internal_node = AccumulatorNode::new_internal(
                             pos.parent(),
-                            self.node_store.get(store_index).unwrap().unwrap().hash(),
+                            self.get_index(sibling).unwrap(),
                             hash,
                         );
                         internal_node.hash()
@@ -270,11 +265,7 @@ impl AccumulatorCache {
                     }
                     None => AccumulatorNode::new_internal(
                         pos.parent(),
-                        self.node_store
-                            .get(NodeStoreIndex::new(self.id, sibling))
-                            .unwrap()
-                            .unwrap()
-                            .hash(),
+                        self.get_index(sibling).unwrap(),
                         hash,
                     )
                     .hash(),
@@ -302,24 +293,35 @@ impl AccumulatorCache {
             .collect::<Vec<NodeStoreIndex>>()
     }
 
-    fn restore_into_cache(
-        accumulator_id: HashValue,
-        frozen_node: Vec<HashValue>,
-        store: Arc<dyn AccumulatorTreeStore>,
-    ) -> HashMap<NodeIndex, HashValue> {
-        let mut cache_map = HashMap::new();
-        for node_key in frozen_node {
-            let node = store.get_node(node_key).unwrap().unwrap();
-            println!("restore node:{:?}", node.index());
-            cache_map.insert(node.index(), node.hash());
-            store
-                .save(
-                    NodeStoreIndex::new(accumulator_id, node.index()),
-                    node.hash(),
-                )
-                .unwrap();
+    fn get_index(&self, index: NodeIndex) -> Result<HashValue> {
+        match self.index_cache.borrow().get(&index) {
+            Some(hash) => Ok(*hash),
+            None => bail!("get index from cache error: {:?}", index),
         }
-        cache_map
+    }
+
+    fn restore_index_cache(
+        root_hash: HashValue,
+        store: Arc<dyn AccumulatorTreeStore>,
+    ) -> Result<HashMap<NodeIndex, HashValue>> {
+        let mut cache_map = HashMap::new();
+        if root_hash != *ACCUMULATOR_PLACEHOLDER_HASH {
+            //get node from storage
+            let node = store.get_node(root_hash).unwrap().unwrap();
+            //save index to cache
+            cache_map.insert(node.index(), node.hash());
+            match node {
+                AccumulatorNode::Internal(inter) => {
+                    let right_map =
+                        Self::restore_index_cache(inter.right(), store.clone()).unwrap();
+                    cache_map.extend(right_map.iter());
+                    let left_map = Self::restore_index_cache(inter.left(), store.clone()).unwrap();
+                    cache_map.extend(left_map.iter());
+                }
+                _ => {}
+            }
+        }
+        Ok((cache_map))
     }
 
     ///delete node from leaf_index
@@ -463,12 +465,12 @@ impl AccumulatorCache {
     /// save node index and node object
     fn save_index_and_node(
         &self,
-        index: NodeIndex,
-        node_hash: HashValue,
+        _index: NodeIndex,
+        _node_hash: HashValue,
         node: AccumulatorNode,
     ) -> Result<()> {
-        self.node_store
-            .save(NodeStoreIndex::new(self.id, index), node_hash)?;
+        // self.node_store
+        //     .save(NodeStoreIndex::new(self.id, index), node_hash)?;
         self.node_store.save_node(node)
     }
 
@@ -503,10 +505,8 @@ impl AccumulatorCache {
                 right_index = parent_node.index();
                 right_hash = new_root;
             } else {
-                match self
-                    .node_store
-                    .get(NodeStoreIndex::new(self.id, sibling_index))
-                {
+                let sibling_hash = self.get_index(sibling_index).unwrap();
+                match self.node_store.get_node(sibling_hash) {
                     Ok(Some(node)) => {
                         let left_hash = node.hash();
                         let parent_index = right_index.parent();
@@ -550,20 +550,7 @@ impl AccumulatorCache {
             Ok(*ACCUMULATOR_PLACEHOLDER_HASH)
         } else if node_index.is_freezable(idx) {
             // first read from cache
-            match self.index_cache.borrow().get(&node_index) {
-                Some(hash) => Ok(*hash),
-                None => {
-                    // read from storage
-                    let node = self
-                        .node_store
-                        .get(NodeStoreIndex::new(self.id, node_index))
-                        .unwrap();
-                    match node {
-                        Some(acc_node) => Ok(acc_node.hash()),
-                        None => bail!("node is null: {:?}", node_index),
-                    }
-                }
-            }
+            Ok(self.get_index(node_index).unwrap())
         } else {
             // non-frozen non-placeholder node
             Ok(AccumulatorNode::new_internal(
@@ -607,7 +594,6 @@ impl MerkleAccumulator {
         let root_hash = Self::compute_root_hash(&frozen_subtree_roots, num_leaves);
 
         Ok(Self {
-            id: accumulator_id,
             cache: Mutex::new(AccumulatorCache::new(
                 accumulator_id,
                 frozen_subtree_roots,
@@ -769,13 +755,7 @@ impl Accumulator for MerkleAccumulator {
     fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>, Error> {
         let cache = self.cache.lock().unwrap();
         let result = FrozenSubTreeIterator::new(cache.num_leaves)
-            .map(|p| {
-                self.node_store
-                    .get(NodeStoreIndex::new(self.id, p))
-                    .unwrap()
-                    .unwrap()
-                    .hash()
-            })
+            .map(|p| cache.get_index(p).unwrap())
             .collect::<Vec<_>>();
 
         Ok(result)

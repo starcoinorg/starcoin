@@ -99,6 +99,12 @@ impl InternalNode {
     pub fn index(&self) -> NodeIndex {
         self.index
     }
+    pub fn left(&self) -> HashValue {
+        self.left
+    }
+    pub fn right(&self) -> HashValue {
+        self.right
+    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
