@@ -34,7 +34,7 @@ scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
 starcoin-accumulator = { path = "../core/accumulator"}
 libra-types = { git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
-libp2p = { git ="https://github.com/starcoinorg/rust-libp2p", branch = "starcoin-merge"}
+libp2p = "0.16.2"
 logger = {path = "../commons/logger", package="starcoin-logger"}
 move-core-types = {git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
 futures = "0.3.4"
