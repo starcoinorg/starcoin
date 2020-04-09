@@ -2,6 +2,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo},
     peer_info::PeerInfo,
@@ -18,13 +19,13 @@ pub enum SyncMessage {
 
 #[derive(Clone)]
 pub enum DownloadMessage {
-    ClosePeerMsg(PeerInfo),
-    LatestStateMsg(PeerInfo, LatestStateMsg),
-    BatchHashByNumberMsg(PeerInfo, BatchHashByNumberMsg),
-    BatchHeaderMsg(PeerInfo, BatchHeaderMsg),
+    ClosePeerMsg(PeerId),
+    LatestStateMsg(PeerId, LatestStateMsg),
+    BatchHashByNumberMsg(PeerId, BatchHashByNumberMsg),
+    BatchHeaderMsg(PeerId, BatchHeaderMsg),
     BatchBodyMsg(BatchBodyMsg),
     BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
-    NewHeadBlock(PeerInfo, Block),
+    NewHeadBlock(PeerId, Block),
     // just fo test
     MinedBlock(Block),
 }
@@ -35,7 +36,7 @@ impl Message for DownloadMessage {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ProcessMessage {
-    NewPeerMsg(PeerInfo),
+    NewPeerMsg(PeerId),
     GetHashByNumberMsg(GetHashByNumberMsg),
     GetDataByHashMsg(GetDataByHashMsg),
 }

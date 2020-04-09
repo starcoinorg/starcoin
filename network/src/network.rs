@@ -330,7 +330,6 @@ impl Inner {
                     "receive new block from {:?} with hash {:?}",
                     peer_id, block_hash
                 );
-                let peer_info = PeerInfo::new(peer_id.clone().into());
                 let block_number = block.header().number();
 
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
@@ -340,18 +339,19 @@ impl Inner {
                 self.bus
                     .send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
-                            peer_info, block,
+                            peer_id.into(),
+                            block,
                         )),
                     })
                     .await?;
             }
             PeerMessage::LatestStateMsg(state) => {
                 info!("broadcast LatestStateMsg.");
-                let peer_info = PeerInfo::new(peer_id.into());
                 self.bus
                     .send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
-                            peer_info, state,
+                            peer_id.into(),
+                            state,
                         )),
                     })
                     .await?;

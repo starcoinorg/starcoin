@@ -130,20 +130,18 @@ where
 
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            PeerEvent::Open(open_peer) => {
-                info!("connect new peer:{:?}", open_peer);
-                let peer_info = PeerInfo::new(open_peer);
-                let process_msg = ProcessMessage::NewPeerMsg(peer_info);
+            PeerEvent::Open(open_peer_id) => {
+                info!("connect new peer:{:?}", open_peer_id);
+                let process_msg = ProcessMessage::NewPeerMsg(open_peer_id);
                 self.process_address
                     .send(process_msg)
                     .into_actor(self)
                     .then(|_result, act, _ctx| async {}.into_actor(act))
                     .wait(ctx);
             }
-            PeerEvent::Close(close_peer) => {
-                info!("disconnect new peer: {:?}", close_peer);
-                let peer_info = PeerInfo::new(close_peer);
-                let download_msg = DownloadMessage::ClosePeerMsg(peer_info);
+            PeerEvent::Close(close_peer_id) => {
+                info!("disconnect peer: {:?}", close_peer_id);
+                let download_msg = DownloadMessage::ClosePeerMsg(close_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)

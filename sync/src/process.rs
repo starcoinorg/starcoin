@@ -88,10 +88,10 @@ where
         let fut = async move {
             let id = msg.crypto_hash();
             match msg {
-                ProcessMessage::NewPeerMsg(peer_info) => {
+                ProcessMessage::NewPeerMsg(peer_id) => {
                     info!(
                         "send latest_state_msg to peer : {:?}:{:?}, message id is {:?}",
-                        peer_info.get_peer_id(),
+                        peer_id,
                         my_peer_info.get_peer_id(),
                         id
                     );
@@ -101,7 +101,7 @@ where
                     if let Err(e) = network
                         .clone()
                         .send_peer_message(
-                            peer_info.get_peer_id().into(),
+                            peer_id.into(),
                             PeerMessage::LatestStateMsg(latest_state_msg),
                         )
                         .await
