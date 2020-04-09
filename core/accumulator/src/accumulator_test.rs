@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, Accumulator, AccumulatorCache,
-    AccumulatorNode, AccumulatorReader, LeafCount, MerkleAccumulator, MockAccumulatorStore,
+    node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, Accumulator, AccumulatorNode,
+    LeafCount, MerkleAccumulator, MockAccumulatorStore,
 };
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use std::{collections::HashMap, sync::Arc};

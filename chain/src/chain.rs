@@ -234,8 +234,7 @@ where
             self.storage.clone(),
         )
         .unwrap();
-        let (accumulator_root, first_leaf_idx) =
-            accumulator.append_only_cache(&transaction_hash).unwrap();
+        let (accumulator_root, first_leaf_idx) = accumulator.append(&transaction_hash).unwrap();
         //Fixme proof verify
         transaction_hash.iter().enumerate().for_each(|(i, hash)| {
             let leaf_index = first_leaf_idx + i as u64;
