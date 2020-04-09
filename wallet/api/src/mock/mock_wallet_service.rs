@@ -53,4 +53,19 @@ impl WalletAsyncService for MockWalletService {
         self.wallet
             .unlock_account(address, password.as_str(), duration)
     }
+
+    async fn import_account(
+        self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: String,
+    ) -> Result<WalletAccount> {
+        self.wallet
+            .import_account(address, private_key, password.as_str())
+    }
+
+    /// Return the private key as bytes for `address`
+    async fn export_account(self, address: AccountAddress, password: String) -> Result<Vec<u8>> {
+        self.wallet.export_account(&address, password.as_str())
+    }
 }

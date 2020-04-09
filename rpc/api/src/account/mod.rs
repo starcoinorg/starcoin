@@ -26,4 +26,17 @@ pub trait AccountApi {
         password: String,
         duration: std::time::Duration,
     ) -> FutureResult<()>;
+
+    /// Import private key with address.
+    #[rpc(name = "account.import")]
+    fn import(
+        &self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: String,
+    ) -> FutureResult<WalletAccount>;
+
+    /// Return the private key as bytes for `address`
+    #[rpc(name = "account.export")]
+    fn export(&self, address: AccountAddress, password: String) -> FutureResult<Vec<u8>>;
 }

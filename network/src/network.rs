@@ -9,7 +9,7 @@ use anyhow::Result;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
 use futures::lock::Mutex;
-use futures::{channel::mpsc, stream::StreamExt};
+use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
 use libp2p::PeerId;
 use network_p2p_api::sync_messages::{DownloadMessage, SyncMessage};
 use scs::SCSCodec;
@@ -24,9 +24,11 @@ use lru::LruCache;
 use std::time::Duration;
 use tokio::runtime::Handle;
 
+use bitflags::_core::sync::atomic::Ordering;
 use crypto::{hash::CryptoHash, HashValue};
 use network_p2p_api::messages::RawRpcRequestMessage;
 use std::collections::{HashMap, HashSet};
+use std::sync::atomic::AtomicBool;
 use types::transaction::SignedUserTransaction;
 
 const LRU_CACHE_SIZE: usize = 1024;
@@ -49,6 +51,8 @@ struct Inner {
     raw_message_processor: MessageProcessor<u128, Vec<u8>>,
     handle: Handle,
     peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
+    connected_tx: mpsc::Sender<PeerEvent>,
+    need_send_event: AtomicBool,
 }
 
 struct PeerInfoNet {
@@ -218,6 +222,11 @@ impl NetworkActor {
             bus: bus_clone,
             peers: peers_clone,
         });
+        let (connected_tx, mut connected_rx) = futures::channel::mpsc::channel(1);
+        let need_send_event = AtomicBool::new(false);
+        if node_config.network.seeds.len() > 0 {
+            need_send_event.swap(true, Ordering::Acquire);
+        }
         let inner = Inner {
             network_service: service,
             bus,
@@ -225,9 +234,19 @@ impl NetworkActor {
             message_processor: message_processor_clone,
             raw_message_processor: raw_message_processor_clone,
             peers,
+            connected_tx,
+            need_send_event,
         };
         let inner = Arc::new(inner);
         handle.spawn(Self::start(inner.clone(), rx, event_rx, tx_command));
+
+        if node_config.network.seeds.len() > 0 {
+            futures::executor::block_on(async move {
+                let event = connected_rx.next().await.unwrap();
+                info!("receive event {:?}", event);
+            });
+        }
+
         NetworkAsyncService {
             addr,
             message_processor,
@@ -287,6 +306,7 @@ impl Inner {
     async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         match msg {
             PeerMessage::UserTransactions(txns) => {
+                info!("receive new txn list from {:?} ", peer_id);
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
                     for txn in &txns {
                         let id = txn.crypto_hash();
@@ -304,8 +324,13 @@ impl Inner {
                     .await?;
             }
             PeerMessage::Block(block) => {
-                let peer_info = PeerInfo::new(peer_id.clone().into());
                 let block_hash = block.header().id();
+
+                info!(
+                    "receive new block from {:?} with hash {:?}",
+                    peer_id, block_hash
+                );
+                let peer_info = PeerInfo::new(peer_id.clone().into());
                 let block_number = block.header().number();
 
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
@@ -392,6 +417,12 @@ impl Inner {
         match event.clone() {
             PeerEvent::Open(peer_id) => {
                 self.on_peer_connected(peer_id.into()).await;
+                if self.need_send_event.load(Ordering::Acquire) {
+                    info!("send event");
+                    let mut connected_tx = self.connected_tx.clone();
+                    connected_tx.send(event.clone()).await?;
+                    self.need_send_event.swap(false, Ordering::Acquire);
+                }
             }
             PeerEvent::Close(peer_id) => {
                 self.on_peer_disconnected(peer_id.into()).await;
@@ -403,10 +434,11 @@ impl Inner {
     }
 
     async fn on_peer_connected(&self, peer_id: PeerId) {
-        let mut peers = self.peers.lock().await;
-        if !peers.contains_key(&peer_id) {
-            peers.insert(peer_id.clone(), PeerInfoNet::new(peer_id));
-        };
+        self.peers
+            .lock()
+            .await
+            .entry(peer_id.clone())
+            .or_insert(PeerInfoNet::new(peer_id));
     }
 
     async fn on_peer_disconnected(&self, peer_id: PeerId) {
@@ -446,6 +478,7 @@ impl Handler<SystemEvents> for NetworkActor {
 
                 let id = block.header().id();
                 let peers = self.peers.clone();
+
                 let network_service = self.network_service.clone();
 
                 let block_hash = block.header().id();
@@ -457,6 +490,7 @@ impl Handler<SystemEvents> for NetworkActor {
 
                 Arbiter::spawn(async move {
                     for (peer_id, mut peer_info) in peers.lock().await.iter_mut() {
+                        info!("send block to peer {}", peer_id);
                         peer_info.peer_info.block_number = block_number;
                         peer_info.peer_info.block_id = block_hash;
                         peer_info.peer_info.total_difficult = total_difficulty;
@@ -540,7 +574,6 @@ mod tests {
 
     #[test]
     fn test_network_with_mock() {
-        use std::thread;
         use std::time::Duration;
 
         ::logger::init_for_test();
@@ -558,8 +591,6 @@ mod tests {
 
         let (network1, _addr1, _bus1) = build_network(node_config1.clone(), handle.clone());
 
-        thread::sleep(Duration::from_secs(1));
-
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
         let seed = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex);
@@ -569,8 +600,6 @@ mod tests {
         let node_config2 = Arc::new(node_config2);
 
         let (network2, _addr2, bus2) = build_network(node_config2.clone(), handle.clone());
-
-        thread::sleep(Duration::from_secs(1));
 
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();

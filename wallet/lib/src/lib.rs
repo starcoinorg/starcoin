@@ -66,6 +66,8 @@ mod test {
             .unwrap();
         wallet.remove_account(&account).unwrap();
         let test_account = wallet.get_account(&account);
-        assert!(test_account.is_err());
+        assert!(test_account.is_ok());
+        let test_account = test_account.unwrap();
+        assert!(test_account.is_none());
     }
 }

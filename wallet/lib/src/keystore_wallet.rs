@@ -98,13 +98,24 @@ where
         self.store.get_account(address)
     }
 
-    fn import_account(&self, private_key: Vec<u8>, password: &str) -> Result<WalletAccount, Error> {
+    fn import_account(
+        &self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: &str,
+    ) -> Result<WalletAccount, Error> {
+        if self.contains(&address)? {
+            bail!("account with address {} already exists", &address);
+        }
         let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())?;
         let key_pair = KeyPair::from(private_key);
-        let address = AccountAddress::from_public_key(&key_pair.public_key);
         let account = WalletAccount::new(address, key_pair.public_key.clone(), false);
         self.save_account(account.clone(), key_pair, password.to_string())?;
         Ok(account)
+    }
+    fn export_account(&self, address: &AccountAddress, password: &str) -> Result<Vec<u8>> {
+        let keypair = self.unlock_prikey(address, password)?;
+        Ok(keypair.private_key.to_bytes().to_vec())
     }
 
     fn contains(&self, address: &AccountAddress) -> Result<bool, Error> {
@@ -117,38 +128,7 @@ where
         password: &str,
         duration: Duration,
     ) -> Result<(), Error> {
-        let cached_public_key = {
-            let mut cache_guard = self.key_cache.write().unwrap();
-            cache_guard.get_key(&address).map(|p| p.public_key.clone())
-        };
-        let account_public_key = match cached_public_key {
-            Some(pub_key) => pub_key,
-            None => match self.store.get_account(&address)? {
-                None => {
-                    bail!("account {} doesn't exist", &address);
-                }
-                Some(account) => account.public_key.clone(),
-            },
-        };
-
-        let key_data = self
-            .store
-            .get_from_account(&address, KEY_NAME_ENCRYPTED_PRIVATE_KEY)?;
-        ensure!(
-            key_data.is_some(),
-            "no private key data associate with address {}",
-            &address
-        );
-        let key_data = key_data.unwrap();
-        let plain_key_data = decrypt(password.as_bytes(), &key_data)?;
-        let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice())?;
-        let keypair = KeyPair::from(private_key);
-
-        // check the private key does correspond the declared public key
-        if &keypair.public_key.to_bytes() != &account_public_key.to_bytes() {
-            bail!("cannot unlock account: {}, invalid password", &address);
-        }
-
+        let keypair = self.unlock_prikey(&address, password)?;
         let address = AccountAddress::from_public_key(&keypair.public_key);
         let ttl = std::time::Instant::now().add(duration);
         self.key_cache
@@ -268,6 +248,44 @@ where
         )?;
         Ok(())
     }
+
+    fn unlock_prikey(&self, address: &AccountAddress, password: &str) -> Result<KeyPair> {
+        let cached_public_key = {
+            let mut cache_guard = self.key_cache.write().unwrap();
+            cache_guard.get_key(address).map(|p| p.public_key.clone())
+        };
+        let account_public_key = match cached_public_key {
+            Some(pub_key) => pub_key,
+            None => match self.store.get_account(address)? {
+                None => {
+                    bail!("account {} doesn't exist", address);
+                }
+                Some(account) => account.public_key.clone(),
+            },
+        };
+
+        let key_data = self
+            .store
+            .get_from_account(address, KEY_NAME_ENCRYPTED_PRIVATE_KEY)?;
+        ensure!(
+            key_data.is_some(),
+            "no private key data associate with address {}",
+            address
+        );
+        let key_data = key_data.unwrap();
+        let plain_key_data = decrypt(password.as_bytes(), &key_data)?;
+        let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice())?;
+        let keypair = KeyPair::from(private_key);
+
+        // check the private key does correspond the declared public key
+        if &keypair.public_key.to_bytes() != &account_public_key.to_bytes() {
+            bail!(
+                "cannot get private key for account: {}, invalid password",
+                address
+            );
+        }
+        Ok(keypair)
+    }
 }
 
 #[cfg(test)]
@@ -305,8 +323,9 @@ mod tests {
         let wallet_store = FileWalletStore::new(tmp_path.path());
         let wallet = KeyStoreWallet::new(wallet_store)?;
         let keypair = gen_keypair();
-
-        let account = wallet.import_account(keypair.private_key.to_bytes().to_vec(), "pass")?;
+        let address = AccountAddress::from_public_key(&keypair.public_key);
+        let account =
+            wallet.import_account(address, keypair.private_key.to_bytes().to_vec(), "pass")?;
         wallet.unlock_account(account.address, "pass", Duration::from_secs(10))?;
         let raw_txn = RawUserTransaction::mock_by_sender(account.address);
         let signed_txn = raw_txn
