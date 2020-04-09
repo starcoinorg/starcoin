@@ -10,8 +10,6 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "hello_app")]
 struct GlobalOpts {
-    #[structopt(short = "t")]
-    test: bool,
     #[structopt(short = "c", default_value = "0")]
     counter: usize,
     #[structopt(short = "r")]
@@ -99,6 +97,13 @@ impl CommandAction for BetaSub1Command {
     }
 }
 
+#[derive(Debug, StructOpt)]
+#[structopt(name = "test")]
+struct TestOpts {
+    #[structopt(short = "d")]
+    debug: bool,
+}
+
 fn main() -> Result<()> {
     let context = CmdContext::<Counter, GlobalOpts>::with_default_action(
         |global_opt| -> Result<Counter> { Ok(Counter::new(global_opt.counter)) },
@@ -134,6 +139,17 @@ fn main() -> Result<()> {
                 .into_cmd()
                 .subcommand(BetaSub1Command {}.into_cmd()),
         )
+        .command(Command::with_action_fn(
+            |ctx: &ExecContext<Counter, GlobalOpts, TestOpts>| -> Result<()> {
+                println!(
+                    "hello test global_opts:{:?} {:?} state:{:?}",
+                    ctx.global_opt(),
+                    ctx.opt(),
+                    ctx.state().get()
+                );
+                Ok(())
+            },
+        ))
         .exec()?;
     Ok(())
 }

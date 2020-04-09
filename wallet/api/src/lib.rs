@@ -60,7 +60,15 @@ pub trait Wallet {
 
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>>;
 
-    fn import_account(&self, private_key: Vec<u8>, password: &str) -> Result<WalletAccount>;
+    fn import_account(
+        &self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: &str,
+    ) -> Result<WalletAccount>;
+
+    /// Return the private key as bytes for `address`
+    fn export_account(&self, address: &AccountAddress, password: &str) -> Result<Vec<u8>>;
 
     fn contains(&self, address: &AccountAddress) -> Result<bool>;
 
@@ -112,4 +120,19 @@ pub trait WalletAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn get_account(self, address: AccountAddress) -> Result<Option<WalletAccount>>;
 
     async fn sign_txn(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction>;
+    async fn unlock_account(
+        self,
+        address: AccountAddress,
+        password: String,
+        duration: std::time::Duration,
+    ) -> Result<()>;
+    async fn import_account(
+        self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: String,
+    ) -> Result<WalletAccount>;
+
+    /// Return the private key as bytes for `address`
+    async fn export_account(self, address: AccountAddress, password: String) -> Result<Vec<u8>>;
 }

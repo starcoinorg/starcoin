@@ -42,8 +42,9 @@ futures-timer = "3.0.1"
 async-std = "1.5.0"
 starcoin-wallet-api = { path = "../wallet/api"}
 starcoin-txpool-api = {path = "../txpool/api"}
+hex = { version = "0.3.2", default-features = false }
+
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}
-tokio = { version = "0.2", features = ["full"] }
-
+starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}

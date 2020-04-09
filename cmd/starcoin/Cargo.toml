@@ -15,6 +15,7 @@ scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 structopt = "0.3.2"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
+starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-types = { path = "../../types"}
 starcoin-rpc-client = { path = "../../rpc/client"}
 starcoin-node = { path = "../../node"}

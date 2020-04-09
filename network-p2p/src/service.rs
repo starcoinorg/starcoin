@@ -57,7 +57,7 @@ use crate::network_state::{
 };
 use crate::protocol;
 use crate::protocol::event::Event;
-use crate::protocol::Protocol;
+use crate::protocol::{ChainInfo, Protocol};
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
     parse_addr, parse_str_addr,
@@ -185,10 +185,14 @@ impl NetworkWorker {
 
         let num_connected = Arc::new(AtomicUsize::new(0));
         let is_major_syncing = Arc::new(AtomicBool::new(false));
+        let chain_info = ChainInfo {
+            genesis_hash: params.network_config.genesis_hash,
+            self_info: params.network_config.self_info,
+        };
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,
             params.protocol_id.clone(),
-            params.network_config.genesis_hash,
+            chain_info,
             boot_node_ids.clone(),
         )?;
 

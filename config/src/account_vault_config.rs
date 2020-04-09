@@ -1,6 +1,3 @@
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 use crate::{BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -8,19 +5,19 @@ use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
-pub struct StorageConfig {
+pub struct AccountVaultConfig {
     dir: PathBuf,
     #[serde(skip)]
     absolute_dir: Option<PathBuf>,
 }
 
-impl Default for StorageConfig {
+impl Default for AccountVaultConfig {
     fn default() -> Self {
         Self::default_with_net(ChainNetwork::default())
     }
 }
 
-impl StorageConfig {
+impl AccountVaultConfig {
     pub fn dir(&self) -> PathBuf {
         self.absolute_dir
             .as_ref()
@@ -29,10 +26,10 @@ impl StorageConfig {
     }
 }
 
-impl ConfigModule for StorageConfig {
+impl ConfigModule for AccountVaultConfig {
     fn default_with_net(_net: ChainNetwork) -> Self {
         Self {
-            dir: PathBuf::from("starcoindb/db"),
+            dir: PathBuf::from("account_vaults"),
             absolute_dir: None,
         }
     }

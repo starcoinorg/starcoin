@@ -6,8 +6,6 @@ mod process;
 pub mod state_sync;
 mod sync;
 
-pub use download::DownloadActor;
-pub use process::ProcessActor;
 use std::time::Duration;
 pub use sync::SyncActor;
 

@@ -1,10 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{Consensus, ConsensusHeader};
 use anyhow::{Error, Result};
 use config::NodeConfig;
-use futures::channel::oneshot::Receiver;
 use logger::prelude::*;
 use rand::prelude::*;
 use std::convert::TryFrom;
@@ -12,6 +10,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::ChainReader;
+use traits::{Consensus, ConsensusHeader};
 use types::block::{Block, BlockHeader, BlockTemplate};
 use types::U256;
 
@@ -39,10 +38,6 @@ pub struct DummyConsensus {}
 
 impl Consensus for DummyConsensus {
     type ConsensusHeader = DummyHeader;
-
-    fn init_genesis_header(_config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
-        (vec![], U256::max_value())
-    }
 
     fn calculate_next_difficulty(config: Arc<NodeConfig>, _reader: &dyn ChainReader) -> U256 {
         config.miner.dev_period.into()
@@ -73,7 +68,6 @@ impl Consensus for DummyConsensus {
         config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
         block_template: BlockTemplate,
-        _cancel: Receiver<()>,
     ) -> Result<Block> {
         if config.miner.dev_period > 0 {
             let start = SystemTime::now();

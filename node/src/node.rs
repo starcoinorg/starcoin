@@ -4,23 +4,24 @@
 use actix::prelude::*;
 use anyhow::{bail, Result};
 use starcoin_bus::BusActor;
-use starcoin_chain::{ChainActor, ChainActorRef, SyncMetadata};
+use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
-use starcoin_consensus::{Consensus, ConsensusHeader};
 use starcoin_executor::executor::Executor;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_miner::{miner_client, MinerActor};
+use starcoin_miner::miner_client::MinerClientActor;
+use starcoin_miner::MinerActor;
 use starcoin_network::NetworkActor;
-use starcoin_rpc_server::JSONRpcActor;
+use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
-use starcoin_sync::{DownloadActor, ProcessActor, SyncActor};
+use starcoin_sync::SyncActor;
+use starcoin_sync_api::SyncMetadata;
+use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
@@ -34,7 +35,7 @@ where
 {
     _miner_actor: Addr<MinerActor<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>>,
     _sync_actor: Addr<SyncActor<Executor, C>>,
-    _rpc_actor: Addr<JSONRpcActor>,
+    _rpc_actor: Addr<RpcActor>,
 }
 
 pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<NodeStartHandle<C, H>>
@@ -55,7 +56,7 @@ where
 
     let sync_metadata = SyncMetadata::new(config.clone());
 
-    let startup_info = match storage.get_startup_info()? {
+    let (startup_info, genesis_hash) = match storage.get_startup_info()? {
         Some(startup_info) => {
             info!("Get startup info from db");
             info!("Check genesis file.");
@@ -67,22 +68,24 @@ where
                 bail!("Genesis version mismatch, please clean you data_dir.")
             }
             //TODO verify genesis block in db.
-            startup_info
+            (startup_info, genesis.block().header().id())
         }
         None => {
             let genesis = match Genesis::load(config.data_dir())? {
                 Some(genesis) => {
-                    info!("Load genesis from data_dir: {:?}", genesis);
+                    info!("Load genesis from data_dir: {}", genesis);
                     genesis
                 }
                 None => {
                     let genesis = Genesis::build(config.net())?;
-                    info!("Build genesis: {:?}", genesis);
+                    info!("Build genesis: {}", genesis);
                     genesis.save(config.data_dir())?;
                     genesis
                 }
             };
-            genesis.execute(storage.clone())?
+            let genesis_hash = genesis.block().header().id();
+            let startup_info = genesis.execute(storage.clone())?;
+            (startup_info, genesis_hash)
         }
     };
     info!("Start chain with startup info: {:?}", startup_info);
@@ -113,7 +116,7 @@ where
         )
     };
 
-    let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone());
+    let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone(), genesis_hash);
 
     let head_block = storage
         .get_block(startup_info.head.get_head())?
@@ -136,7 +139,7 @@ where
         sync_metadata.clone(),
     )?;
 
-    let (json_rpc, _io_handler) = JSONRpcActor::launch(
+    let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
         txpool.clone(),
         account_service,
@@ -157,26 +160,33 @@ where
             receiver,
             default_account,
         )?;
-    let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
-    let process_actor = ProcessActor::<Executor, C>::launch(
-        Arc::clone(&peer_info),
+    let peer_id = config
+        .network
+        .self_peer_id
+        .clone()
+        .expect("Self peer_id must has been set.");
+    info!("Self peer_id is: {}", peer_id.to_base58());
+    info!(
+        "Self connect address is: {}",
+        config
+            .network
+            .self_connect_address
+            .as_ref()
+            .expect("Self connect address must has been set.")
+    );
+    let peer_info = Arc::new(PeerInfo::new(peer_id));
+    let sync = SyncActor::launch(
+        config.clone(),
+        bus,
+        peer_info,
         chain.clone(),
         network.clone(),
-        bus.clone(),
-        storage.clone(),
-    )?;
-    let download_actor = DownloadActor::launch(
-        peer_info,
-        chain,
-        network.clone(),
-        bus.clone(),
         storage.clone(),
         sync_metadata.clone(),
     )?;
-    let sync = SyncActor::launch(bus, process_actor, download_actor)?;
-    //TODO manager MinerClient by actor.
     let stratum_server = config.miner.stratum_server;
-    handle.spawn(miner_client::MinerClient::<C>::run(stratum_server));
+    let miner_client = MinerClientActor::<C>::new(stratum_server);
+    miner_client.start();
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,

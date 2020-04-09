@@ -205,13 +205,18 @@ where
         if self.commands.contains_key(name) {
             panic!("Command with name {} exist.", name);
         }
-        self.app = self.app.subcommand(command.app().clone());
+        let order = self.commands.len();
+        self.app = self
+            .app
+            .subcommand(command.app().clone().display_order(order));
         self.commands.insert(name.to_string(), Box::new(command));
         self
     }
 
     pub fn print_help(&mut self) {
-        self.app.print_help().expect("print help should success.");
+        self.app
+            .print_long_help()
+            .expect("print help should success.");
     }
 
     pub fn exec(mut self) -> Result<()> {
@@ -259,11 +264,12 @@ where
             .completion_type(CompletionType::List)
             .auto_add_history(true)
             .build();
-        // insert quit command
+        //insert quit command
         self.app = self.app.subcommand(
             SubCommand::with_name("quit")
                 .aliases(&["exit", "q!"])
-                .help("Quit from console."),
+                .help("Quit from console.")
+                .display_order(998),
         );
         let app_name = self.app.get_name().to_string();
         let global_opt = Arc::new(global_opt);
@@ -289,7 +295,9 @@ where
                             break;
                         }
                         "help" => {
-                            self.app.print_help().expect("print help should success.");
+                            self.app
+                                .print_long_help()
+                                .expect("print help should success.");
                         }
                         "console" => continue,
                         "" => continue,
@@ -314,7 +322,12 @@ where
                                         }
                                     }
                                 }
-                                _ => println!("Unknown command: {:?}", cmd_name),
+                                _ => {
+                                    println!("Unknown command: {:?}", cmd_name);
+                                    self.app
+                                        .print_long_help()
+                                        .expect("print help should success.");
+                                }
                             }
                         }
                     }
@@ -453,7 +466,10 @@ where
         if self.subcommands.contains_key(name) {
             panic!("Subcommand with name {} exist.", name);
         }
-        self.app = self.app.subcommand(subcommand.app().clone());
+        let order = self.subcommands.len();
+        self.app = self
+            .app
+            .subcommand(subcommand.app().clone().display_order(order));
         self.subcommands
             .insert(name.to_string(), Box::new(subcommand));
         self

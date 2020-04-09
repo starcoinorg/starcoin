@@ -77,6 +77,14 @@ impl ChainNetwork {
             _ => false,
         }
     }
+
+    pub fn is_main(&self) -> bool {
+        match self {
+            ChainNetwork::Main => true,
+            _ => false,
+        }
+    }
+
     pub fn get_config(&self) -> &ChainConfig {
         match self {
             ChainNetwork::Dev => &DEV_CHAIN_CONFIG,

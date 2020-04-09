@@ -11,7 +11,6 @@ use bus::BusActor;
 use chain::to_block_chain_collection;
 use chain::BlockChain;
 use config::{NodeConfig, PacemakerStrategy};
-use consensus::{Consensus, ConsensusHeader};
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::channel::mpsc;
@@ -24,6 +23,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use storage::Store;
 use traits::ChainAsyncService;
+use traits::{Consensus, ConsensusHeader};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
@@ -84,7 +84,8 @@ where
             ctx.add_message_stream(receiver);
             match &config.miner.pacemaker_strategy {
                 PacemakerStrategy::HeadBlock => {
-                    HeadBlockPacemaker::new(bus.clone(), sender).start();
+                    let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender);
+                    pacemaker.start();
                 }
                 PacemakerStrategy::Ondemand => {
                     OndemandPacemaker::new(

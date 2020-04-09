@@ -1,23 +1,24 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::difficult::difficult_1_target;
-use crate::{difficult, Consensus, ConsensusHeader};
+use crate::difficult;
 use anyhow::{Error, Result};
 use argon2::{self, Config};
-use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
+use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
 use config::NodeConfig;
-use futures::channel::oneshot::Receiver;
+use logger::prelude::*;
 use rand::Rng;
 use std::convert::TryFrom;
+use std::io::Cursor;
 use std::sync::Arc;
 use traits::ChainReader;
+use traits::{Consensus, ConsensusHeader};
 use types::block::{Block, BlockHeader, BlockTemplate};
 use types::{H256, U256};
 
 #[derive(Clone, Debug)]
 pub struct ArgonConsensusHeader {
-    nonce: u64,
+    pub nonce: u64,
 }
 
 impl ConsensusHeader for ArgonConsensusHeader {}
@@ -26,15 +27,17 @@ impl TryFrom<Vec<u8>> for ArgonConsensusHeader {
     type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
-        Ok(ArgonConsensusHeader {
-            nonce: vec_to_u64(value),
-        })
+        let mut rdr = Cursor::new(value.as_slice());
+        let nonce = rdr.read_u64::<LittleEndian>()?;
+        Ok(ArgonConsensusHeader { nonce })
     }
 }
 
 impl Into<Vec<u8>> for ArgonConsensusHeader {
     fn into(self) -> Vec<u8> {
-        u64_to_vec(self.nonce)
+        let mut buf = vec![0u8; 8];
+        LittleEndian::write_u64(buf.as_mut(), self.nonce);
+        buf
     }
 }
 
@@ -44,9 +47,6 @@ pub struct ArgonConsensus {}
 impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
-    fn init_genesis_header(_config: Arc<NodeConfig>) -> (Vec<u8>, U256) {
-        (vec![], difficult_1_target())
-    }
     fn calculate_next_difficulty(_config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256 {
         difficult::get_next_work_required(reader)
     }
@@ -68,10 +68,16 @@ impl Consensus for ArgonConsensus {
         _reader: &dyn ChainReader,
         header: &BlockHeader,
     ) -> Result<()> {
-        let df = header.difficult();
-        let nonce = vec_to_u64(Vec::from(header.consensus_header()));
-        let header = header.id().to_vec();
-        if verify(&header, nonce, df) == true {
+        let difficulty = header.difficult();
+        let consensus_header: ArgonConsensusHeader =
+            ArgonConsensusHeader::try_from(header.consensus_header().to_vec())?;
+        let nonce = consensus_header.nonce;
+        let header = header.parent_hash().to_hex();
+        info!(
+            "Verify header, nonce, difficulty :{:?}, {:o}, {:x}",
+            header, nonce, difficulty
+        );
+        if verify(header.as_bytes(), nonce, difficulty) {
             Ok(())
         } else {
             Err(anyhow::Error::msg("invalid header"))
@@ -82,7 +88,6 @@ impl Consensus for ArgonConsensus {
         _config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
         _block_template: BlockTemplate,
-        _cancel: Receiver<()>,
     ) -> Result<Block, Error> {
         unimplemented!()
     }

@@ -51,6 +51,44 @@ where
         let fut = self.service.clone().sign_txn(raw_txn).map_err(map_err);
         Box::new(fut.compat())
     }
+
+    fn unlock(
+        &self,
+        address: AccountAddress,
+        password: String,
+        duration: std::time::Duration,
+    ) -> FutureResult<()> {
+        let fut = self
+            .service
+            .clone()
+            .unlock_account(address, password, duration)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
+    /// Import private key with address.
+    fn import(
+        &self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        password: String,
+    ) -> FutureResult<WalletAccount> {
+        let fut = self
+            .service
+            .clone()
+            .import_account(address, private_key, password)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
+
+    /// Return the private key as bytes for `address`
+    fn export(&self, address: AccountAddress, password: String) -> FutureResult<Vec<u8>> {
+        let fut = self
+            .service
+            .clone()
+            .export_account(address, password)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
 }
 
 #[cfg(test)]

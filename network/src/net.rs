@@ -14,6 +14,7 @@ use futures::{
 
 use bytes::Bytes;
 use config::NetworkConfig;
+use crypto::hash::HashValue;
 use libp2p::PeerId;
 use network_p2p::{
     identity, Event, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig, Params,
@@ -167,13 +168,13 @@ impl NetworkInner {
             Event::Dht(_) => {
                 info!("ignore dht event");
             }
-            Event::NotificationStreamOpened { remote } => {
+            Event::NotificationStreamOpened { remote, info } => {
                 info!(
                     "Connected peer {:?},Myself is {:?}",
                     remote,
                     self.service.peer_id()
                 );
-                let open_msg = PeerEvent::Open(remote.into());
+                let open_msg = PeerEvent::Open(remote.into(), info);
                 event_tx.unbounded_send(open_msg)?;
             }
             Event::NotificationStreamClosed { remote } => {
@@ -222,7 +223,7 @@ impl NetworkInner {
                     if let Some(tx) = self.acks.lock().remove(&message_id) {
                         let _ = tx.send(());
                     } else {
-                        error!(
+                        debug!(
                             "Receive a invalid ack, message id:{}, peer id:{}",
                             message_id, peer_id
                         );
@@ -247,6 +248,7 @@ impl NetworkInner {
 pub fn build_network_service(
     cfg: &NetworkConfig,
     handle: Handle,
+    genesis_hash: HashValue,
 ) -> (
     SNetworkService,
     mpsc::UnboundedSender<NetworkMessage>,
@@ -264,6 +266,7 @@ pub fn build_network_service(
             .unwrap();
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
+        genesis_hash,
         ..NetworkConfiguration::default()
     };
     let mut service = SNetworkService::new(config, handle);

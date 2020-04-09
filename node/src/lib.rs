@@ -5,8 +5,8 @@ use actix::prelude::*;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::{Consensus, ConsensusHeader};
 use starcoin_logger::prelude::*;
+use starcoin_traits::{Consensus, ConsensusHeader};
 use std::sync::Arc;
 use tokio::sync::oneshot;
 
@@ -15,7 +15,7 @@ pub mod message;
 mod node;
 
 pub use actor::{NodeActor, NodeRef};
-use starcoin_consensus::argon_consensus::{ArgonConsensus, ArgonConsensusHeader};
+use starcoin_consensus::argon::{ArgonConsensus, ArgonConsensusHeader};
 use starcoin_consensus::dummy::{DummyConsensus, DummyHeader};
 use std::thread::JoinHandle;
 use tokio::runtime::Runtime;

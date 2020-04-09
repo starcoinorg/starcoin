@@ -1,18 +1,21 @@
+use actix::{Actor, Context, System};
+use actix_rt::Arbiter;
 use anyhow::Result;
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
-use consensus::Consensus;
 use futures::channel::mpsc;
 use jsonrpc_core::{MethodCall, Params};
 use logger::prelude::*;
 use serde_json;
+use std::marker::PhantomData;
 use std::{net::SocketAddr, sync::Arc};
+use traits::Consensus;
 use types::U256;
 
 pub struct MinerClient<C>
 where
     C: Consensus + 'static + Send + Sync,
 {
-    c_phantom: std::marker::PhantomData<C>,
+    c_phantom: PhantomData<C>,
 }
 
 impl<C> MinerClient<C>
@@ -37,9 +40,15 @@ where
         Err(anyhow::Error::msg("mining.notify with bad params"))
     }
 
-    fn submit_job_request(nonce: C::ConsensusHeader) -> Vec<u8> {
-        let mut request = format!(r#"{{"jsonrpc": "2.0", "method": "mining.submit", "params": ["miner1", "", "{:?}"], "id": 7}}"#, nonce.into()).as_bytes().to_vec();
+    fn submit_job_request(consensus_header: C::ConsensusHeader) -> Vec<u8> {
+        let nonce: Vec<u8> = consensus_header.into();
+        let nonce_hex = hex::encode(&nonce);
+        let mut request = format!(r#"{{"jsonrpc": "2.0", "method": "mining.submit", "params": ["miner1", "", {:?}], "id": 7}}"#, nonce_hex).as_bytes().to_vec();
         request.extend(b"\n");
+        info!(
+            "Submit job response: {:?}",
+            &String::from_utf8(request.clone()).unwrap()
+        );
         request
     }
 
@@ -54,7 +63,7 @@ where
         let reader_arc_clone = stream_arc.clone();
         let writer_arc_clone = stream_arc.clone();
         let mut writer = &*writer_arc_clone;
-        writer.write_all(&auth_request).await.unwrap();
+        writer.write_all(&auth_request).await?;
 
         let (tx, mut rx) = mpsc::unbounded();
         let reader_future = async move {
@@ -77,16 +86,13 @@ where
                     continue;
                 }
                 let nonce = processed.unwrap();
-                info!("Process nonce:{:?}", &nonce);
                 tx.unbounded_send(nonce).unwrap();
             }
         };
         let reader_handle = task::spawn(reader_future);
-
         let writer_future = async move {
             let mut stream = &*writer_arc_clone;
             while let Some(msg) = rx.next().await {
-                info!("Submit nonce is {:?}", msg);
                 let request = MinerClient::<C>::submit_job_request(msg);
                 stream.write_all(&request).await.unwrap();
             }
@@ -98,16 +104,56 @@ where
     }
 }
 
+pub struct MinerClientActor<C>
+where
+    C: Consensus + 'static + Send + Sync,
+{
+    addr: SocketAddr,
+    c_phantom: PhantomData<C>,
+}
+
+impl<C> MinerClientActor<C>
+where
+    C: Consensus + 'static + Send + Sync,
+{
+    pub fn new(addr: SocketAddr) -> Self {
+        MinerClientActor {
+            addr,
+            c_phantom: PhantomData,
+        }
+    }
+}
+
+impl<C> Actor for MinerClientActor<C>
+where
+    C: Consensus + 'static + Send + Sync,
+{
+    type Context = Context<Self>;
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        let addr = self.addr.clone();
+        Arbiter::spawn(async move {
+            match MinerClient::<C>::run(addr).await {
+                Err(e) => {
+                    error!("miner client run fail: {}, exist.", e);
+                    System::current().stop();
+                }
+                _ => {}
+            }
+        });
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::miner::{MineCtx, Miner};
     use crate::miner_client::MinerClient;
     use crate::stratum::StratumManager;
+    use actix_rt::System;
     use bus::BusActor;
     use config::NodeConfig;
-    use consensus::argon_consensus::ArgonConsensus;
-    use consensus::argon_consensus::ArgonConsensusHeader;
+    use consensus::argon::ArgonConsensus;
+    use consensus::argon::ArgonConsensusHeader;
     use futures_timer::Delay;
     use sc_stratum::{PushWorkHandler, Stratum};
     use std::sync::Arc;
@@ -154,6 +200,17 @@ mod test {
                 MinerClient::<ArgonConsensus>::run("127.0.0.1:9000".parse().unwrap()),
             )
             .await;
+        });
+    }
+
+    #[test]
+    fn test_miner_client_actor() {
+        ::logger::init_for_test();
+        let mut system = System::new("test");
+        system.block_on(async {
+            let actor = MinerClientActor::<ArgonConsensus>::new("127.0.0.1:9000".parse().unwrap());
+            actor.start();
+            let _ = async_std::future::timeout(Duration::from_secs(7), prepare()).await;
         });
     }
 }

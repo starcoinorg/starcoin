@@ -91,13 +91,21 @@ where
         self.store.get_account(address)
     }
 
-    fn import_account(&self, private_key: Vec<u8>, _password: &str) -> Result<WalletAccount> {
+    fn import_account(
+        &self,
+        address: AccountAddress,
+        private_key: Vec<u8>,
+        _password: &str,
+    ) -> Result<WalletAccount> {
         let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())?;
         let key_pair = KeyPair::from(private_key);
-        let address = AccountAddress::from_public_key(&key_pair.public_key);
         let account = WalletAccount::new(address, key_pair.public_key.clone(), false);
         self.save_account(account.clone(), key_pair)?;
         Ok(account)
+    }
+    fn export_account(&self, address: &AccountAddress, _password: &str) -> Result<Vec<u8>> {
+        self.get_key_pair(address)
+            .map(|kp| kp.private_key.to_bytes().to_vec())
     }
 
     fn contains(&self, address: &AccountAddress) -> Result<bool> {

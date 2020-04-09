@@ -6,9 +6,8 @@ use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
-use consensus::{difficult, dummy::DummyConsensus, Consensus};
+use consensus::{difficult, dummy::DummyConsensus};
 use executor::executor::Executor;
-use futures::channel::oneshot;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
@@ -17,6 +16,7 @@ use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
+use traits::Consensus;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
 
@@ -64,8 +64,6 @@ async fn gen_head_chain(
                 )
                 .await
                 .unwrap();
-            let (_sender, receiver) = oneshot::channel();
-
             let startup_info = chain.clone().master_startup_info().await.unwrap();
             let collection = to_block_chain_collection(
                 node_config.clone(),
@@ -88,13 +86,9 @@ async fn gen_head_chain(
                 collection,
             )
             .unwrap();
-            let block = DummyConsensus::create_block(
-                node_config.clone(),
-                &block_chain,
-                block_template,
-                receiver,
-            )
-            .unwrap();
+            let block =
+                DummyConsensus::create_block(node_config.clone(), &block_chain, block_template)
+                    .unwrap();
             chain.clone().try_connect(block).await.unwrap();
             if delay {
                 Delay::new(Duration::from_millis(1000)).await;
@@ -199,9 +193,7 @@ async fn test_chain_apply() -> Result<()> {
         difficulty,
         vec![],
     )?;
-    let (_sender, receiver) = futures::channel::oneshot::channel();
-    let new_block =
-        DummyConsensus::create_block(config.clone(), &block_chain, block_template, receiver)?;
+    let new_block = DummyConsensus::create_block(config.clone(), &block_chain, block_template)?;
     block_chain.apply(new_block)?;
     let header1 = block_chain.current_header();
     debug!("block 1 header: {:?}", header1);

@@ -19,6 +19,7 @@ use std::{
     net::Ipv4Addr,
     path::{Path, PathBuf},
 };
+use types::peer_info::PeerInfo;
 use zeroize::Zeroize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -86,6 +87,8 @@ pub struct NetworkConfiguration {
     pub transport: TransportConfig,
 
     pub genesis_hash: HashValue,
+
+    pub self_info: PeerInfo,
 }
 
 /// Configuration for the transport layer.
@@ -140,6 +143,7 @@ impl Default for NetworkConfiguration {
                 use_yamux_flow_control: false,
             },
             genesis_hash: HashValue::default(),
+            self_info: PeerInfo::default(),
         }
     }
 }

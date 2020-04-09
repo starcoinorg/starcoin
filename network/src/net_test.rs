@@ -18,6 +18,7 @@ mod tests {
     use crate::{helper::convert_boot_nodes, PeerEvent};
 
     use crate::net::{build_network_service, SNetworkService};
+    use crypto::hash::HashValue;
 
     use crate::NetworkMessage;
 
@@ -79,7 +80,7 @@ mod tests {
                 first_addr = Some(config.listen.clone().parse().unwrap());
             }
 
-            let server = build_network_service(&config, handle.clone());
+            let server = build_network_service(&config, handle.clone(), HashValue::default());
             result.push({
                 let c: NetworkComponent = server;
                 c
@@ -261,7 +262,7 @@ mod tests {
         node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
 
         let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
-            build_network_service(&node_config1, rt.handle().clone());
+            build_network_service(&node_config1, rt.handle().clone(), HashValue::default());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -271,7 +272,7 @@ mod tests {
         node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         node_config2.seeds = vec![seed.clone()];
         let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) =
-            build_network_service(&node_config2, rt.handle().clone());
+            build_network_service(&node_config2, rt.handle().clone(), HashValue::default());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -279,7 +280,7 @@ mod tests {
         node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         node_config3.seeds = vec![seed];
         let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-            build_network_service(&node_config3, rt.handle().clone());
+            build_network_service(&node_config3, rt.handle().clone(), HashValue::default());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -310,12 +311,12 @@ mod tests {
         thread::sleep(Duration::from_secs(10));
 
         let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) =
-            build_network_service(&node_config2, rt.handle().clone());
+            build_network_service(&node_config2, rt.handle().clone(), HashValue::default());
 
         thread::sleep(Duration::from_secs(1));
 
         let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-            build_network_service(&node_config3, rt.handle().clone());
+            build_network_service(&node_config3, rt.handle().clone(), HashValue::default());
 
         thread::sleep(Duration::from_secs(1));
 

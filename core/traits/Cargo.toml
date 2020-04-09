@@ -13,3 +13,5 @@ async-trait = "0.1"
 types = {path = "../../types", package="starcoin-types"}
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 starcoin-state-api = {package = "starcoin-state-api", path = "../../state/api"}
+config = {path = "../../config", package="starcoin-config"}
+

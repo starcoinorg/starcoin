@@ -1,0 +1,19 @@
+[package]
+name = "starcoin-sync-api"
+version = "0.1.0"
+authors = ["tiangong3624749 <tiangong3624749@163.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+actix = "0.9"
+parking_lot = "0.9"
+actix-rt = "1.0"
+starcoin-types = {path = "../../types", package="starcoin-types"}
+starcoin-config = {path = "../../config", package="starcoin-config"}
+starcoin-logger = {path = "../../commons/logger", package="starcoin-logger"}
+async-trait = "0.1"
+starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+dyn-clone = "1.0.1"

@@ -24,19 +24,24 @@ fn run() -> Result<()> {
             let logger_handle = starcoin_logger::init();
             info!("Starcoin opts: {:?}", opt);
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
-            let node_handle = match config.net() {
-                ChainNetwork::Dev => starcoin_node::run_dev_node(config.clone()),
-                _ => starcoin_node::run_normal_node(config.clone()),
-            };
             let ipc_file = config.rpc.get_ipc_file();
-            info!("Waiting node start...");
-            helper::wait_until_file_created(ipc_file)?;
+            let node_handle = if !ipc_file.exists() {
+                let file_log_path = config.data_dir().join("starcoin.log");
+                info!("Write log to file: {:?}", file_log_path);
+                logger_handle.enable_file(true, file_log_path);
+                let node_handle = match config.net() {
+                    ChainNetwork::Dev => starcoin_node::run_dev_node(config.clone()),
+                    _ => starcoin_node::run_normal_node(config.clone()),
+                };
+                info!("Waiting node start...");
+                helper::wait_until_file_created(ipc_file)?;
+                Some(node_handle)
+            } else {
+                None
+            };
             info!("Try to connect node by ipc: {:?}", ipc_file);
             let client = RpcClient::connect_ipc(ipc_file)?;
-            let file_log_path = config.data_dir().join("starcoin.log");
-            info!("Redirect log to file: {:?}", file_log_path);
-            logger_handle.enable_file(false, file_log_path);
-            let state = CliState::new(config, client, logger_handle, Some(node_handle));
+            let state = CliState::new(config, client, logger_handle, node_handle);
             Ok(state)
         },
         |_, _, state| {
@@ -74,7 +79,10 @@ fn run() -> Result<()> {
                 .subcommand(account::CreateCommand {}.into_cmd())
                 .subcommand(account::ShowCommand {}.into_cmd())
                 .subcommand(account::ListCommand {}.into_cmd())
-                .subcommand(account::SignTxnCommand {}.into_cmd()),
+                .subcommand(account::SignTxnCommand {}.into_cmd())
+                .subcommand(account::UnlockCommand.into_cmd())
+                .subcommand(account::ExportCommand.into_cmd())
+                .subcommand(account::ImportCommand.into_cmd()),
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand {}.into_cmd()))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand {}.into_cmd()))
