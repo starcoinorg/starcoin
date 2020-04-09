@@ -3,9 +3,9 @@
 
 //! Support for encoding transactions for common situations.
 
+use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN};
 use crate::{account::create_signed_txn_with_association_account, account::Account};
 use std::time::Duration;
-use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN};
 use types::account_address::AccountAddress;
 use types::account_config::lbr_type_tag;
 use types::transaction::{
@@ -84,7 +84,7 @@ pub fn mint_txn(
         seq_num,
         TXN_RESERVED, // this is a default for gas
         1,            // this is a default for gas
-	lbr_type_tag(),
+        lbr_type_tag(),
     )
 }
 
@@ -148,7 +148,11 @@ pub fn raw_peer_to_peer_txn(
     RawUserTransaction::new(
         sender,
         seq_num,
-        TransactionPayload::Script(Script::new(PEER_TO_PEER_TXN.clone(), vec![lbr_type_tag()], args)),
+        TransactionPayload::Script(Script::new(
+            PEER_TO_PEER_TXN.clone(),
+            vec![lbr_type_tag()],
+            args,
+        )),
         TXN_RESERVED,
         1,
         lbr_type_tag(),

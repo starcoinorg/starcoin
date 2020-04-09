@@ -4,12 +4,13 @@
 use crate::chain_state::StateStore;
 use anyhow::Result;
 use config::VMConfig;
-use logger::prelude::*;
-use once_cell::sync::Lazy;
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::keygen::KeyGen;
+use logger::prelude::*;
+use once_cell::sync::Lazy;
 use starcoin_state_api::ChainState;
 use std::convert::TryInto;
+use types::account_config::lbr_type_tag;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -20,7 +21,6 @@ use types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
-use types::account_config::lbr_type_tag;
 
 type KeyPair = crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
@@ -152,31 +152,31 @@ impl MockVM {
                         })
                         .and_then(|blob| blob.try_into())?;
 
-//                    let balance_sender = account_resource_sender.balance();
-//                    let balance_receiver = account_resource_receiver.balance();
-//                    let deduction;
-//
-//                    if balance_sender < amount {
-//                        deduction = balance_sender;
-//                    } else {
-//                        deduction = amount;
-//                    }
-//
-//                    let new_account_resource_sender = AccountResource::new(
-//                        balance_sender - deduction,
-//                        account_resource_sender.sequence_number() + 1,
-//                        account_resource_sender.authentication_key().to_vec(),
-//                    );
-//                    let new_account_resource_receiver = AccountResource::new(
-//                        balance_receiver + deduction,
-//                        account_resource_sender.sequence_number(),
-//                        account_resource_receiver.authentication_key().to_vec(),
-//                    );
-//                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?)?;
-//                    state_store.set(
-//                        access_path_receiver,
-//                        new_account_resource_receiver.try_into()?,
-//                    )?;
+                    //                    let balance_sender = account_resource_sender.balance();
+                    //                    let balance_receiver = account_resource_receiver.balance();
+                    //                    let deduction;
+                    //
+                    //                    if balance_sender < amount {
+                    //                        deduction = balance_sender;
+                    //                    } else {
+                    //                        deduction = amount;
+                    //                    }
+                    //
+                    //                    let new_account_resource_sender = AccountResource::new(
+                    //                        balance_sender - deduction,
+                    //                        account_resource_sender.sequence_number() + 1,
+                    //                        account_resource_sender.authentication_key().to_vec(),
+                    //                    );
+                    //                    let new_account_resource_receiver = AccountResource::new(
+                    //                        balance_receiver + deduction,
+                    //                        account_resource_sender.sequence_number(),
+                    //                        account_resource_receiver.authentication_key().to_vec(),
+                    //                    );
+                    //                    state_store.set(access_path_sender, new_account_resource_sender.try_into()?)?;
+                    //                    state_store.set(
+                    //                        access_path_receiver,
+                    //                        new_account_resource_receiver.try_into()?,
+                    //                    )?;
                     output = TransactionOutput::new(
                         vec![],
                         0,
@@ -200,12 +200,12 @@ impl MockVM {
                     })
                     .and_then(|blob| blob.try_into())?;
 
-//                let new_account_resource = AccountResource::new(
-//                    account_resource.balance() + 50_00000000,
-//                    account_resource.sequence_number(),
-//                    account_resource.authentication_key().to_vec(),
-//                );
-//                state_store.set(access_path, new_account_resource.try_into()?)?;
+                //                let new_account_resource = AccountResource::new(
+                //                    account_resource.balance() + 50_00000000,
+                //                    account_resource.sequence_number(),
+                //                    account_resource.authentication_key().to_vec(),
+                //                );
+                //                state_store.set(access_path, new_account_resource.try_into()?)?;
                 output = TransactionOutput::new(vec![], 0, KEEP_STATUS.clone());
             }
             Transaction::StateSet(state_set) => {

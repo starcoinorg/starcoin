@@ -38,8 +38,8 @@ pub static ACCOUNT_RESOURCE_PATH: Lazy<HashValue> =
     Lazy::new(|| AccessPath::resource_access_vec(&account_struct_tag()));
 
 /// Path to the Balance resource
-pub static BALANCE_RESOURCE_PATH: Lazy<HashValue> = Lazy::new(||
-    AccessPath::resource_access_vec(&account_balance_struct_tag()));
+pub static BALANCE_RESOURCE_PATH: Lazy<HashValue> =
+    Lazy::new(|| AccessPath::resource_access_vec(&account_balance_struct_tag()));
 
 pub fn coin_module_name() -> &'static IdentStr {
     &*COIN_MODULE_NAME
@@ -196,10 +196,10 @@ impl AccountResource {
         self.0.sequence_number()
     }
 
-//    /// Return the balance field for the given AccountResource
-//    pub fn balance(&self) -> u64 {
-//        self.0.balance()
-//    }
+    //    /// Return the balance field for the given AccountResource
+    //    pub fn balance(&self) -> u64 {
+    //        self.0.balance()
+    //    }
 
     /// Return the authentication_key field for the given AccountResource
     pub fn authentication_key(&self) -> &[u8] {
@@ -255,8 +255,6 @@ impl BalanceResource {
         Self::decode(bytes)
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

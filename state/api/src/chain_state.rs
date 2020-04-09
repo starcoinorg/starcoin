@@ -6,9 +6,11 @@ use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_types::{
-    access_path::AccessPath, account_address::AccountAddress,
+    access_path::AccessPath,
+    account_address::AccountAddress,
     account_config::{AccountResource, BalanceResource},
-    account_state::AccountState, state_set::ChainStateSet,
+    account_state::AccountState,
+    state_set::ChainStateSet,
 };
 use std::convert::TryFrom;
 

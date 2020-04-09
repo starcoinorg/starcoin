@@ -1,7 +1,7 @@
 use anyhow::Result;
 use crypto::ed25519::*;
-use crypto::test_utils::KeyPair;
 use crypto::keygen::KeyGen;
+use crypto::test_utils::KeyPair;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use rand;
@@ -9,7 +9,8 @@ use rand::{Rng, SeedableRng};
 use starcoin_state_api::ChainStateReader;
 use types::{
     access_path::AccessPath, account_address::AccountAddress, account_address::AuthenticationKey,
-    account_config::association_address, account_config::AccountResource, account_config::BalanceResource, transaction::Transaction,
+    account_config::association_address, account_config::AccountResource,
+    account_config::BalanceResource, transaction::Transaction,
 };
 
 type AccountKeyPair = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
@@ -58,7 +59,7 @@ impl MockTxnGenerator {
         state_db: &dyn ChainStateReader,
     ) -> Result<Option<u64>> {
         let ap = AccessPath::new_for_balance(address);
-        let balance_resource= match state_db.get(&ap)? {
+        let balance_resource = match state_db.get(&ap)? {
             None => None,
             Some(b) => Some(BalanceResource::make_from(b.as_slice())?.coin()),
         };
@@ -130,7 +131,7 @@ impl MockTxnGenerator {
         // A -> B
         let balance_a = Self::get_balance(self.account_a, state_db)?.unwrap();
         let balance_b = Self::get_balance(self.account_b, state_db)?.unwrap();
-        if  balance_a > 3000 {
+        if balance_a > 3000 {
             transfer_function(
                 (self.account_a, &self.account_a_keypair),
                 (self.account_b, &self.account_b_keypair),

@@ -16,13 +16,13 @@ use starcoin_crypto::{ed25519::*, hash::CryptoHash, traits::*, HashValue};
 use serde::{de, ser, Deserialize, Serialize};
 use std::{convert::TryFrom, fmt, time::Duration};
 
+pub mod authenticator;
 mod error;
 pub mod helpers;
 mod module;
 mod pending_transaction;
 mod script;
 mod transaction_argument;
-pub mod authenticator;
 
 pub use error::CallError;
 pub use error::Error as TransactionError;
@@ -256,7 +256,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::default()),
             0,
             0,
-	    lbr_type_tag(),
+            lbr_type_tag(),
             Duration::new(0, 0),
         )
     }
@@ -265,10 +265,10 @@ impl RawUserTransaction {
         Self::new(
             AccountAddress::default(),
             0,
-            TransactionPayload::Script(Script::new(compiled_script, vec![lbr_type_tag()],vec![])),
+            TransactionPayload::Script(Script::new(compiled_script, vec![lbr_type_tag()], vec![])),
             600,
             0,
-	    lbr_type_tag(),
+            lbr_type_tag(),
             Duration::new(0, 0),
         )
     }
