@@ -2,6 +2,7 @@
 pub mod generic {
     use crypto::HashValue;
     use serde::{Deserialize, Serialize};
+    use types::peer_info::PeerInfo;
 
     /// Consensus is mostly opaque to us
     #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -19,6 +20,8 @@ pub mod generic {
         pub min_supported_version: u32,
         /// Genesis block hash.
         pub genesis_hash: HashValue,
+
+        pub info: PeerInfo,
     }
 
     #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
