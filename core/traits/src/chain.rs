@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::ChainInfo,
