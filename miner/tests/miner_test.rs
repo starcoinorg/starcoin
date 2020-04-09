@@ -33,7 +33,7 @@ fn test_miner_with_schedule_pacemaker() {
     let mut system = System::new("test");
 
     let fut = async move {
-        let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
+        let peer_id = Arc::new(PeerId::random());
         let mut config = NodeConfig::random_for_test();
         config.miner.pacemaker_strategy = PacemakerStrategy::Schedule;
         config.miner.dev_period = 1;
@@ -97,7 +97,7 @@ fn test_miner_with_schedule_pacemaker() {
         let _sync = SyncActor::launch(
             config.clone(),
             bus,
-            peer_info,
+            peer_id,
             chain.clone(),
             network.clone(),
             storage.clone(),
@@ -123,7 +123,7 @@ fn test_miner_with_ondemand_pacemaker() {
     let mut system = System::new("test");
 
     let fut = async move {
-        let peer_info = Arc::new(PeerInfo::new(PeerId::random()));
+        let peer_id = Arc::new(PeerId::random());
         let mut conf = NodeConfig::random_for_test();
         conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
         let config = Arc::new(conf);
@@ -189,7 +189,7 @@ fn test_miner_with_ondemand_pacemaker() {
         let _sync = SyncActor::launch(
             config.clone(),
             bus,
-            peer_info,
+            peer_id,
             chain.clone(),
             network.clone(),
             storage.clone(),

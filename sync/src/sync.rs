@@ -9,12 +9,12 @@ use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
-use network_p2p_api::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
+use network_p2p_api::sync_messages::{DownloadMessage, SyncMessage};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use traits::Consensus;
-use types::peer_info::PeerInfo;
+use types::peer_info::PeerId;
 
 pub struct SyncActor<E, C>
 where
@@ -34,14 +34,14 @@ where
     pub fn launch(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
-        peer_info: Arc<PeerInfo>,
+        peer_id: Arc<PeerId>,
         chain: ChainActorRef<E, C>,
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
         sync_metadata: SyncMetadata,
     ) -> Result<Addr<SyncActor<E, C>>> {
         let process_address = ProcessActor::launch(
-            Arc::clone(&peer_info),
+            Arc::clone(&peer_id),
             chain.clone(),
             network.clone(),
             bus.clone(),
@@ -49,7 +49,7 @@ where
         )?;
         let download_address = DownloadActor::launch(
             node_config,
-            peer_info,
+            peer_id,
             chain,
             network.clone(),
             bus.clone(),
@@ -130,20 +130,18 @@ where
 
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            PeerEvent::Open(open_peer, _) => {
-                info!("connect new peer:{:?}", open_peer);
-                let peer_info = PeerInfo::new(open_peer);
-                let process_msg = ProcessMessage::NewPeerMsg(peer_info);
-                self.process_address
-                    .send(process_msg)
+            PeerEvent::Open(open_peer_id, _) => {
+                info!("connect new peer:{:?}", open_peer_id);
+                let download_msg = DownloadMessage::NewPeerMsg(open_peer_id);
+                self.download_address
+                    .send(download_msg)
                     .into_actor(self)
                     .then(|_result, act, _ctx| async {}.into_actor(act))
                     .wait(ctx);
             }
-            PeerEvent::Close(close_peer) => {
-                info!("disconnect new peer: {:?}", close_peer);
-                let peer_info = PeerInfo::new(close_peer);
-                let download_msg = DownloadMessage::ClosePeerMsg(peer_info);
+            PeerEvent::Close(close_peer_id) => {
+                info!("disconnect peer: {:?}", close_peer_id);
+                let download_msg = DownloadMessage::ClosePeerMsg(close_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)

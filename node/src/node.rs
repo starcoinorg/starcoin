@@ -130,7 +130,7 @@ where
         .self_peer_id
         .clone()
         .expect("should have");
-    let self_info = PeerInfo::_new(
+    let self_info = PeerInfo::new(
         peer_id,
         startup_info.head.start_number(),
         block_info.get_total_difficult(),
@@ -200,11 +200,11 @@ where
             .as_ref()
             .expect("Self connect address must has been set.")
     );
-    let peer_info = Arc::new(PeerInfo::new(peer_id));
+    let peer_id = Arc::new(peer_id);
     let sync = SyncActor::launch(
         config.clone(),
         bus,
-        peer_info,
+        peer_id,
         chain.clone(),
         network.clone(),
         storage.clone(),

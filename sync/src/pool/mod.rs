@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashSet};
 use std::sync::RwLock;
 use std::time::Duration;
-use types::{block::BlockNumber, peer_info::PeerInfo};
+use types::{block::BlockNumber, peer_info::PeerId};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 struct TTLEntry<E>
@@ -12,7 +12,7 @@ where
     data: E,
     expiration_time: Duration,
     block_number: BlockNumber,
-    peers: HashSet<PeerInfo>,
+    peers: HashSet<PeerId>,
 }
 
 impl<E> TTLEntry<E>
@@ -23,7 +23,7 @@ where
         self.expiration_time
     }
 
-    fn new(peer: PeerInfo, block_number: BlockNumber, entry: E) -> Self {
+    fn new(peer: PeerId, block_number: BlockNumber, entry: E) -> Self {
         let mut peers = HashSet::new();
         peers.insert(peer);
         TTLEntry {
@@ -77,7 +77,7 @@ where
     }
 
     /// add entry to pool
-    pub(crate) fn insert(&self, peer: PeerInfo, number: BlockNumber, entry: E) {
+    pub(crate) fn insert(&self, peer: PeerId, number: BlockNumber, entry: E) {
         let mut ttl_entry = TTLEntry::new(peer.clone(), number, entry);
         let mut lock = self.data.write().unwrap();
         if lock.contains(&ttl_entry) {

@@ -364,7 +364,6 @@ impl Inner {
                         }
                     }
                 }
-                let _peer_info = PeerInfo::new(peer_id.into());
                 self.bus
                     .clone()
                     .broadcast(PeerTransactions::new(txns))
@@ -377,7 +376,6 @@ impl Inner {
                     "receive new block from {:?} with hash {:?}",
                     peer_id, block_hash
                 );
-                let peer_info = PeerInfo::new(peer_id.clone().into());
                 let block_number = block.header().number();
                 let total_difficulty = block.get_total_difficulty();
 
@@ -391,19 +389,8 @@ impl Inner {
                 self.bus
                     .send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
-                            peer_info,
+                            peer_id.into(),
                             block.get_block().clone(),
-                        )),
-                    })
-                    .await?;
-            }
-            PeerMessage::LatestStateMsg(state) => {
-                info!("broadcast LatestStateMsg.");
-                let peer_info = PeerInfo::new(peer_id.into());
-                self.bus
-                    .send(Broadcast {
-                        msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
-                            peer_info, state,
                         )),
                     })
                     .await?;
@@ -540,7 +527,7 @@ impl Handler<SystemEvents> for NetworkActor {
                 let msg = PeerMessage::Block(block.clone());
                 let bytes = msg.encode().unwrap();
 
-                let self_info = PeerInfo::_new(
+                let self_info = PeerInfo::new(
                     self.peer_id.clone().into(),
                     block_number,
                     total_difficulty,
@@ -633,6 +620,7 @@ mod tests {
     use types::account_address::AccountAddress;
     use types::transaction::SignedUserTransaction;
 
+    #[ignore]
     #[test]
     fn test_network_with_mock() {
         use std::time::Duration;

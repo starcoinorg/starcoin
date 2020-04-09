@@ -11,12 +11,14 @@ use parking_lot::RwLock;
 // use itertools;
 use crate::state_sync::StateSyncTaskActor;
 use config::NodeConfig;
+use crypto::HashValue;
 use executor::TransactionExecutor;
+use futures::executor::block_on;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use network_p2p_api::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
-    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+    GetHashByNumberMsg, HashWithNumber, ProcessMessage,
 };
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
@@ -27,15 +29,15 @@ use std::time::Duration;
 use traits::ChainAsyncService;
 use traits::Consensus;
 use types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber},
-    peer_info::{PeerId, PeerInfo},
+    block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber},
+    peer_info::PeerId,
 };
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
 struct SyncEvent {}
 
-const MIN_PEER_LEN: usize = 5;
+const MIN_PEER_SIZE: usize = 5;
 
 #[derive(Clone)]
 pub struct DownloadActor<E, C>
@@ -44,7 +46,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     downloader: Arc<Downloader<E, C>>,
-    peer_info: Arc<PeerInfo>,
+    self_peer_id: Arc<PeerId>,
     network: NetworkAsyncService,
     bus: Addr<BusActor>,
     sync_event_sender: mpsc::Sender<SyncEvent>,
@@ -53,6 +55,7 @@ where
     state_node_storage: Arc<dyn StateNodeStore>,
     sync_metadata: SyncMetadata,
     main_network: bool,
+    future_blocks: Arc<RwLock<HashMap<HashValue, BlockDetail>>>,
 }
 
 impl<E, C> DownloadActor<E, C>
@@ -62,7 +65,7 @@ where
 {
     pub fn launch(
         node_config: Arc<NodeConfig>,
-        peer_info: Arc<PeerInfo>,
+        peer_id: Arc<PeerId>,
         chain_reader: ChainActorRef<E, C>,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
@@ -74,7 +77,7 @@ where
             ctx.add_message_stream(sync_event_receiver);
             DownloadActor {
                 downloader: Arc::new(Downloader::new(chain_reader)),
-                peer_info,
+                self_peer_id: peer_id,
                 network,
                 bus,
                 sync_event_sender,
@@ -83,6 +86,7 @@ where
                 state_node_storage,
                 sync_metadata,
                 main_network: node_config.base.net().is_main(),
+                future_blocks: Arc::new(RwLock::new(HashMap::new())),
             }
         });
         Ok(download_actor)
@@ -138,23 +142,13 @@ where
         let sync_metadata = self.sync_metadata.clone();
         let is_main = self.main_network;
         let bus = self.bus.clone();
-        let my_peer_id = self.peer_info.get_peer_id();
+        let self_peer_id = self.self_peer_id.as_ref().clone();
         let fut = async move {
             match msg {
-                DownloadMessage::LatestStateMsg(peer_info, latest_state_msg) => {
-                    debug!(
-                        "latest_state_msg number: {:?}",
-                        &latest_state_msg.header.number()
-                    );
-                    Downloader::handle_latest_state_msg(
-                        downloader.clone(),
-                        peer_info.clone(),
-                        latest_state_msg,
-                    )
-                    .await;
-
+                DownloadMessage::NewPeerMsg(peer_id) => {
+                    info!("new peer msg: {:?}", peer_id);
                     Self::sync_state(
-                        my_peer_id,
+                        self_peer_id,
                         is_main,
                         downloader.clone(),
                         network,
@@ -164,30 +158,17 @@ where
                     )
                     .await;
                 }
-                DownloadMessage::NewHeadBlock(peer_info, block) => {
+                DownloadMessage::NewHeadBlock(peer_id, block) => {
                     info!(
                         "receive new block: {:?} from {:?}",
                         block.header().id(),
-                        peer_info.get_peer_id()
+                        peer_id
                     );
-                    //1. update latest block
-                    let latest_state_msg = LatestStateMsg {
-                        header: block.header().clone(),
-                    };
-                    Downloader::handle_latest_state_msg(
-                        downloader.clone(),
-                        peer_info.clone(),
-                        latest_state_msg,
-                    )
-                    .await;
-
-                    //2. connect block
+                    // connect block
                     Downloader::do_block(downloader.clone(), block).await;
                 }
-                DownloadMessage::ClosePeerMsg(peer_info) => {
-                    debug!("close peer: {:?}", peer_info,);
-
-                    Downloader::close_peer(downloader.clone(), peer_info).await;
+                DownloadMessage::ClosePeerMsg(peer_id) => {
+                    warn!("close peer: {:?}", peer_id,);
                 }
                 _ => {}
             }
@@ -205,7 +186,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     async fn sync_state(
-        my_peer_id: PeerId,
+        self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<E, C>>,
         network: NetworkAsyncService,
@@ -213,14 +194,33 @@ where
         sync_metadata: SyncMetadata,
         bus: Addr<BusActor>,
     ) {
-        if (main_network && Downloader::peer_size(downloader.clone()) >= MIN_PEER_LEN)
-            || !main_network
+        if let Err(e) = Self::sync_state_inner(
+            self_peer_id,
+            main_network,
+            downloader,
+            network,
+            state_node_storage,
+            sync_metadata,
+            bus,
+        )
+        .await
         {
-            if sync_metadata
-                .is_state_sync()
-                .expect("Get state_sync failed.")
-            {
-                if let Some(best_peer) = Downloader::best_peer(downloader.clone()) {
+            error!("error : {:?}", e);
+        }
+    }
+
+    async fn sync_state_inner(
+        self_peer_id: PeerId,
+        main_network: bool,
+        downloader: Arc<Downloader<E, C>>,
+        network: NetworkAsyncService,
+        state_node_storage: Arc<dyn StateNodeStore>,
+        sync_metadata: SyncMetadata,
+        bus: Addr<BusActor>,
+    ) -> Result<()> {
+        if (main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network {
+            if sync_metadata.is_state_sync()? {
+                if let Some(best_peer) = network.best_peer().await? {
                     //1. ancestor
                     let begin_number = downloader
                         .chain_reader
@@ -232,7 +232,7 @@ where
 
                     let ancestor = if let Some(hash_with_number) = Downloader::find_ancestor(
                         downloader.clone(),
-                        best_peer.clone(),
+                        best_peer.get_peer_id(),
                         network.clone(),
                         begin_number,
                     )
@@ -244,7 +244,7 @@ where
                     };
 
                     // 2. pivot
-                    let latest_number = downloader.get_latest_header_with_peer(&best_peer).number();
+                    let latest_number = best_peer.get_block_number();
                     let min_behind = if main_network {
                         MAIN_MIN_BLOCKS_BEHIND
                     } else {
@@ -263,12 +263,11 @@ where
                             network
                                 .clone()
                                 .send_request(
-                                    best_peer.get_peer_id().clone().into(),
+                                    best_peer.get_peer_id().into(),
                                     get_hash_by_number_req.clone(),
                                     do_duration(DELAY_TIME),
                                 )
-                                .await
-                                .expect("send_request 2 err.")
+                                .await?
                         {
                             // 4. get pivot header
                             let hash_with_number = batch_hash_by_number_msg.hashs.pop().unwrap();
@@ -288,51 +287,36 @@ where
                             ) = network
                                 .clone()
                                 .send_request(
-                                    best_peer.get_peer_id().clone().into(),
+                                    best_peer.get_peer_id().into(),
                                     get_data_by_hash_req.clone(),
                                     do_duration(DELAY_TIME),
                                 )
-                                .await
-                                .expect("send_request 3 err.")
+                                .await?
                             {
                                 // 5. StateSyncActor
                                 let root = headers.headers.pop().unwrap();
-                                let sync_pivot =
-                                    sync_metadata.get_pivot().expect("Get pivot failed.");
-                                if sync_metadata
-                                    .is_state_sync()
-                                    .expect("Get state_sync failed.")
-                                {
+                                let sync_pivot = sync_metadata.get_pivot()?;
+                                if sync_metadata.is_state_sync()? {
                                     if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
-                                        if let Err(e) = sync_metadata.clone().update_pivot(pivot) {
-                                            warn!("err: {:?}", e);
-                                        } else {
-                                            if sync_pivot.is_none() {
-                                                let state_sync_task_address =
-                                                    StateSyncTaskActor::launch(
-                                                        my_peer_id,
-                                                        root.state_root(),
-                                                        state_node_storage,
-                                                        network.clone(),
-                                                        downloader.clone(),
-                                                        sync_metadata.clone(),
-                                                        bus,
-                                                    );
-                                                if let Err(e) = sync_metadata
-                                                    .update_address(&state_sync_task_address)
-                                                {
-                                                    warn!("err: {:?}", e);
-                                                }
-                                            } else if sync_pivot.unwrap() < pivot {
-                                                //todo:reset
-                                                if let Some(address) = sync_metadata.get_address() {
-                                                    &address.reset(root.state_root());
-                                                } else {
-                                                    warn!(
-                                                        "{:?}",
-                                                        "state sync reset address is none."
-                                                    );
-                                                }
+                                        sync_metadata.clone().update_pivot(pivot)?;
+                                        if sync_pivot.is_none() {
+                                            let state_sync_task_address =
+                                                StateSyncTaskActor::launch(
+                                                    self_peer_id,
+                                                    root.state_root(),
+                                                    state_node_storage,
+                                                    network.clone(),
+                                                    sync_metadata.clone(),
+                                                    bus,
+                                                );
+                                            sync_metadata
+                                                .update_address(&state_sync_task_address)?
+                                        } else if sync_pivot.unwrap() < pivot {
+                                            //todo:reset
+                                            if let Some(address) = sync_metadata.get_address() {
+                                                &address.reset(root.state_root());
+                                            } else {
+                                                warn!("{:?}", "state sync reset address is none.");
                                             }
                                         }
                                     } else {
@@ -353,12 +337,14 @@ where
         } else {
             warn!("{:?}", "nothing todo when sync state.");
         }
+
+        Ok(())
     }
 
     fn sync_block_from_best_peer(downloader: Arc<Downloader<E, C>>, network: NetworkAsyncService) {
         Arbiter::spawn(async move {
             debug!("begin sync.");
-            if let Some(best_peer) = Downloader::best_peer(downloader.clone()) {
+            if let Some(best_peer) = network.best_peer().await.unwrap() {
                 let mut begin_number = downloader
                     .chain_reader
                     .clone()
@@ -369,7 +355,7 @@ where
 
                 let hash_with_number = Downloader::find_ancestor(
                     downloader.clone(),
-                    best_peer.clone(),
+                    best_peer.get_peer_id(),
                     network.clone(),
                     begin_number,
                 )
@@ -382,9 +368,9 @@ where
                         loop {
                             //1. sync hash
                             let send_get_hash_by_number_msg =
-                                Downloader::send_get_hash_by_number_msg_forward(
-                                    downloader.clone(),
-                                    best_peer.clone(),
+                                Downloader::<E, C>::send_get_hash_by_number_msg_forward(
+                                    network.clone(),
+                                    best_peer.get_peer_id(),
                                     begin_number,
                                 )
                                 .await;
@@ -407,7 +393,7 @@ where
                                     ) = network
                                         .clone()
                                         .send_request(
-                                            best_peer.get_peer_id().clone().into(),
+                                            best_peer.get_peer_id().into(),
                                             get_hash_by_number_req.clone(),
                                             do_duration(DELAY_TIME),
                                         )
@@ -416,7 +402,7 @@ where
                                     {
                                         Downloader::handle_batch_hash_by_number_msg(
                                             downloader.clone(),
-                                            best_peer.clone(),
+                                            best_peer.get_peer_id(),
                                             batch_hash_by_number_msg,
                                         );
                                     }
@@ -436,7 +422,7 @@ where
                                         ) = network
                                             .clone()
                                             .send_request(
-                                                best_peer.get_peer_id().clone().into(),
+                                                best_peer.get_peer_id().into(),
                                                 get_data_by_hash_req.clone(),
                                                 do_duration(DELAY_TIME),
                                             )
@@ -482,7 +468,6 @@ where
     hash_pool: TTLPool<HashWithNumber>,
     _header_pool: TTLPool<BlockHeader>,
     _body_pool: TTLPool<BlockBody>,
-    peers: Arc<RwLock<HashMap<PeerInfo, LatestStateMsg>>>,
     chain_reader: ChainActorRef<E, C>,
 }
 
@@ -501,160 +486,110 @@ where
             _header_pool: TTLPool::new(),
             _body_pool: TTLPool::new(),
             //            _network: network,
-            peers: Arc::new(RwLock::new(HashMap::new())),
             chain_reader,
         }
     }
 
-    pub fn get_latest_header_with_peer(&self, peer: &PeerInfo) -> BlockHeader {
-        self.peers.read().get(&peer).unwrap().header.clone()
-    }
-
-    pub async fn handle_latest_state_msg(
-        downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
-        latest_state_msg: LatestStateMsg,
-    ) {
-        // let hash_num = HashWithNumber {
-        //     hash: latest_state_msg.hash_header.hash.clone(),
-        //     number: latest_state_msg.hash_header.header.number(),
-        // };
-        //        self.hash_pool
-        //            .insert(peer.clone(), latest_state_msg.header.number(), hash_num);
-        let mut lock = downloader.peers.write();
-        if lock.get(&peer).is_none()
-            || (lock.get(&peer).unwrap().header.number() < latest_state_msg.header.number())
-        {
-            info!(
-                "peer {:?} : latest number: {} , hash : {:?}",
-                peer.get_peer_id(),
-                latest_state_msg.header.number(),
-                latest_state_msg.header.id()
-            );
-            lock.insert(peer, latest_state_msg.clone());
-        }
-    }
-
-    pub fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerInfo> {
-        let lock = downloader.peers.read();
-        for p in lock.keys() {
-            return Some(p.clone());
-        }
-
-        info!("best peer return none.");
-        None
-    }
-
-    pub fn peer_size(downloader: Arc<Downloader<E, C>>) -> usize {
-        downloader.peers.read().len()
-    }
-
     /// for ancestors
     pub async fn send_get_hash_by_number_msg_backward(
-        downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        network: NetworkAsyncService,
+        peer_id: PeerId,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
         //todo：binary search
 
-        let number = downloader
-            .peers
-            .read()
-            .get(&peer)
-            .expect("Latest state is none.")
-            .header
-            .number();
-
-        info!(
-            "sync with peer {:?} : latest number: {} , begin number : {}",
-            peer.get_peer_id(),
-            number,
-            begin_number
-        );
-        if begin_number < number {
-            let mut numbers = Vec::new();
-            let mut end = false;
-            let mut next_number = 0;
-            if begin_number < HEAD_CT {
-                for i in 0..(begin_number + 1) {
-                    info!("best peer backward number : {}, number : {}", number, i);
-                    numbers.push(i);
-                    end = true;
-                }
-            } else {
-                for i in (begin_number - HEAD_CT + 1)..(begin_number + 1) {
-                    info!("best peer backward number : {}, number : {}, ", number, i);
-                    numbers.push(i);
-                }
-                next_number = begin_number - HEAD_CT;
-            };
+        if let Some(peer_info) =
+            block_on(async move { network.get_peer(&peer_id.into()).await.unwrap() })
+        {
+            let number = peer_info.get_block_number();
             info!(
-                "best peer backward number : {}, next number : {}",
-                number, next_number
+                "sync with peer {:?} : latest number: {} , begin number : {}",
+                peer_info.get_peer_id(),
+                number,
+                begin_number
             );
-            Some((GetHashByNumberMsg { numbers }, end, next_number))
-        } else {
-            warn!("GetHashByNumberMsg is none.");
-            None
+
+            if begin_number < number {
+                let mut numbers = Vec::new();
+                let mut end = false;
+                let mut next_number = 0;
+                if begin_number < HEAD_CT {
+                    for i in 0..(begin_number + 1) {
+                        info!("best peer backward number : {}, number : {}", number, i);
+                        numbers.push(i);
+                        end = true;
+                    }
+                } else {
+                    for i in (begin_number - HEAD_CT + 1)..(begin_number + 1) {
+                        info!("best peer backward number : {}, number : {}, ", number, i);
+                        numbers.push(i);
+                    }
+                    next_number = begin_number - HEAD_CT;
+                };
+                info!(
+                    "best peer backward number : {}, next number : {}",
+                    number, next_number
+                );
+                return Some((GetHashByNumberMsg { numbers }, end, next_number));
+            }
         }
+        warn!("GetHashByNumberMsg is none.");
+        None
     }
 
     pub async fn send_get_hash_by_number_msg_forward(
-        downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        network: NetworkAsyncService,
+        peer_id: PeerId,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
-        let number = downloader
-            .peers
-            .read()
-            .get(&peer)
-            .expect("Latest state is none.")
-            .header
-            .number();
+        if let Some(peer_info) =
+            block_on(async move { network.get_peer(&peer_id.into()).await.unwrap() })
+        {
+            let number = peer_info.get_block_number();
+            if begin_number < number {
+                let mut numbers = Vec::new();
+                let mut end = false;
+                let mut next_number = 0;
+                if (number - begin_number) < HEAD_CT {
+                    for i in begin_number..(number + 1) {
+                        info!("best peer forward number : {}, next number : {}", number, i,);
+                        numbers.push(i);
+                        end = true;
+                    }
+                } else {
+                    for i in begin_number..(begin_number + HEAD_CT) {
+                        info!("best peer forward number : {}, next number : {}", number, i,);
+                        numbers.push(i);
+                    }
+                    next_number = begin_number + HEAD_CT;
+                };
 
-        if begin_number < number {
-            let mut numbers = Vec::new();
-            let mut end = false;
-            let mut next_number = 0;
-            if (number - begin_number) < HEAD_CT {
-                for i in begin_number..(number + 1) {
-                    info!("best peer forward number : {}, next number : {}", number, i,);
-                    numbers.push(i);
-                    end = true;
-                }
-            } else {
-                for i in begin_number..(begin_number + HEAD_CT) {
-                    info!("best peer forward number : {}, next number : {}", number, i,);
-                    numbers.push(i);
-                }
-                next_number = begin_number + HEAD_CT;
-            };
-
-            info!(
-                "best peer forward number : {}, next number : {}",
-                number, next_number
-            );
-            Some((GetHashByNumberMsg { numbers }, end, next_number))
-        } else {
-            None
+                info!(
+                    "best peer forward number : {}, next number : {}",
+                    number, next_number
+                );
+                return Some((GetHashByNumberMsg { numbers }, end, next_number));
+            }
         }
+        None
     }
 
     pub async fn find_ancestor(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer_id: PeerId,
         network: NetworkAsyncService,
         block_number: BlockNumber,
     ) -> Option<HashWithNumber> {
         let mut hash_with_number = None;
         let mut begin_number = block_number;
         loop {
-            let send_get_hash_by_number_msg = Downloader::send_get_hash_by_number_msg_backward(
-                downloader.clone(),
-                peer.clone(),
-                begin_number,
-            )
-            .await;
+            let send_get_hash_by_number_msg =
+                Downloader::<E, C>::send_get_hash_by_number_msg_backward(
+                    network.clone(),
+                    peer_id.clone(),
+                    begin_number,
+                )
+                .await;
 
             info!(
                 "get_hash_by_number_msg:{:?}, backward",
@@ -665,7 +600,7 @@ where
                     begin_number = next_number;
                     info!(
                         "peer: {:?} , numbers : {}",
-                        peer.clone(),
+                        peer_id.clone(),
                         get_hash_by_number_msg.numbers.len()
                     );
                     let get_hash_by_number_req = RPCRequest::GetHashByNumberMsg(
@@ -675,7 +610,7 @@ where
                     if let RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) = network
                         .clone()
                         .send_request(
-                            peer.get_peer_id().clone().into(),
+                            peer_id.clone().into(),
                             get_hash_by_number_req.clone(),
                             do_duration(DELAY_TIME),
                         )
@@ -685,7 +620,7 @@ where
                         debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
                         hash_with_number = Downloader::handle_hash_by_number_msg(
                             downloader.clone(),
-                            peer.clone(),
+                            peer_id.clone(),
                             batch_hash_by_number_msg,
                         )
                         .await;
@@ -706,7 +641,7 @@ where
 
     pub async fn handle_hash_by_number_msg(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) -> Option<HashWithNumber> {
         //TODO
@@ -744,7 +679,7 @@ where
 
     fn handle_batch_hash_by_number_msg(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) {
         for hash in batch_hash_by_number_msg.hashs {
@@ -771,7 +706,7 @@ where
 
     pub async fn _handle_batch_header_msg(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer: PeerId,
         batch_header_msg: BatchHeaderMsg,
     ) {
         if !batch_header_msg.headers.is_empty() {
@@ -815,12 +750,12 @@ where
         }
     }
 
-    pub async fn do_block_with_info(
+    pub async fn _do_block_with_info(
         downloader: Arc<Downloader<E, C>>,
         block: Block,
         block_info: BlockInfo,
     ) {
-        info!("do block {:?}", block.header().id());
+        info!("do block info {:?}", block.header().id());
         //todo:verify block
         let _ = downloader
             .chain_reader
@@ -833,10 +768,5 @@ where
         info!("do block {:?}", block.header().id());
         //todo:verify block
         let _ = downloader.chain_reader.clone().try_connect(block).await;
-    }
-
-    pub async fn close_peer(downloader: Arc<Downloader<E, C>>, peer: PeerInfo) {
-        let mut lock = downloader.peers.write();
-        let _ = lock.remove(&peer);
     }
 }

@@ -23,7 +23,6 @@ pub struct GetCounterMessage {}
 pub enum PeerMessage {
     UserTransactions(Vec<SignedUserTransaction>),
     Block(BlockDetail),
-    LatestStateMsg(LatestStateMsg),
     RPCRequest(u128, RPCRequest),
     RPCResponse(u128, RPCResponse),
     RawRPCRequest(u128, Vec<u8>),

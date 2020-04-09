@@ -2,9 +2,9 @@ use actix::prelude::*;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo},
-    peer_info::PeerInfo,
     transaction::SignedUserTransaction,
 };
 use std::cmp::Ordering;
@@ -18,15 +18,15 @@ pub enum SyncMessage {
 
 #[derive(Clone)]
 pub enum DownloadMessage {
-    ClosePeerMsg(PeerInfo),
-    LatestStateMsg(PeerInfo, LatestStateMsg),
-    BatchHashByNumberMsg(PeerInfo, BatchHashByNumberMsg),
-    BatchHeaderMsg(PeerInfo, BatchHeaderMsg),
+    ClosePeerMsg(PeerId),
+    BatchHashByNumberMsg(PeerId, BatchHashByNumberMsg),
+    BatchHeaderMsg(PeerId, BatchHeaderMsg),
     BatchBodyMsg(BatchBodyMsg),
     BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
-    NewHeadBlock(PeerInfo, Block),
+    NewHeadBlock(PeerId, Block),
     // just fo test
     MinedBlock(Block),
+    NewPeerMsg(PeerId),
 }
 
 impl Message for DownloadMessage {
@@ -35,7 +35,6 @@ impl Message for DownloadMessage {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ProcessMessage {
-    NewPeerMsg(PeerInfo),
     GetHashByNumberMsg(GetHashByNumberMsg),
     GetDataByHashMsg(GetDataByHashMsg),
 }
@@ -52,11 +51,6 @@ impl CryptoHash for ProcessMessage {
 
 impl Message for ProcessMessage {
     type Result = Result<()>;
-}
-
-#[derive(Eq, Serialize, Deserialize, PartialEq, Hash, Clone, Debug)]
-pub struct LatestStateMsg {
-    pub header: BlockHeader,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

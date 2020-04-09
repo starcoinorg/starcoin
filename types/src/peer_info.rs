@@ -132,7 +132,7 @@ pub struct PeerInfo {
 }
 
 impl PeerInfo {
-    pub fn new(peer_id: PeerId) -> Self {
+    pub fn new_for_test(peer_id: PeerId) -> Self {
         PeerInfo {
             peer_id,
             block_number: 0,
@@ -141,7 +141,7 @@ impl PeerInfo {
         }
     }
 
-    pub fn _new(
+    pub fn new(
         peer_id: PeerId,
         block_number: BlockNumber,
         total_difficult: U256,
@@ -157,6 +157,10 @@ impl PeerInfo {
 
     pub fn get_peer_id(&self) -> PeerId {
         self.peer_id.clone()
+    }
+
+    pub fn get_block_number(&self) -> BlockNumber {
+        self.block_number
     }
 
     pub fn default() -> Self {
