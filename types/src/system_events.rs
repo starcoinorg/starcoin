@@ -14,3 +14,12 @@ pub enum SystemEvents {
     MinedBlock(Block),
     StateSyncDone(),
 }
+
+impl SystemEvents {
+    pub fn is_sync_done(&self) -> bool {
+        match self {
+            SystemEvents::StateSyncDone() => true,
+            _ => false,
+        }
+    }
+}
