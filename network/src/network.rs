@@ -63,9 +63,9 @@ struct PeerInfoNet {
 }
 
 impl PeerInfoNet {
-    fn new(peer_id: PeerId) -> Self {
+    fn new(peer_info: PeerInfo) -> Self {
         Self {
-            peer_info: PeerInfo::new(peer_id.into()),
+            peer_info,
             known_blocks: LruCache::new(LRU_CACHE_SIZE),
             known_transactions: LruCache::new(LRU_CACHE_SIZE),
         }
@@ -170,6 +170,13 @@ impl NetworkAsyncService {
             result.insert(peer.peer_info.clone());
         }
         Ok(result)
+    }
+
+    pub async fn get_peer(&self, peer_id: &PeerId) -> Result<Option<PeerInfo>> {
+        match self.inner.peers.lock().await.get(peer_id) {
+            Some(peer) => Ok(Some(peer.peer_info.clone())),
+            None => Ok(None),
+        }
     }
 }
 
@@ -415,8 +422,8 @@ impl Inner {
     async fn handle_event_receive(&self, event: PeerEvent) -> Result<()> {
         info!("event is {:?}", event);
         match event.clone() {
-            PeerEvent::Open(peer_id) => {
-                self.on_peer_connected(peer_id.into()).await;
+            PeerEvent::Open(peer_id, peer_info) => {
+                self.on_peer_connected(peer_id.into(), peer_info).await;
                 if self.need_send_event.load(Ordering::Acquire) {
                     info!("send event");
                     let mut connected_tx = self.connected_tx.clone();
@@ -433,12 +440,12 @@ impl Inner {
         Ok(())
     }
 
-    async fn on_peer_connected(&self, peer_id: PeerId) {
+    async fn on_peer_connected(&self, peer_id: PeerId, peer_info: PeerInfo) {
         self.peers
             .lock()
             .await
             .entry(peer_id.clone())
-            .or_insert(PeerInfoNet::new(peer_id));
+            .or_insert(PeerInfoNet::new(peer_info));
     }
 
     async fn on_peer_disconnected(&self, peer_id: PeerId) {

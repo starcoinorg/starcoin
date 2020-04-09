@@ -11,19 +11,19 @@ use jsonrpc_ws_server;
 use starcoin_logger::prelude::*;
 use std::sync::Arc;
 
-pub struct RpcServer {
+pub struct RpcService {
     ipc: jsonrpc_ipc_server::Server,
     http: Option<jsonrpc_http_server::Server>,
     tcp: Option<jsonrpc_tcp_server::Server>,
     ws: Option<jsonrpc_ws_server::Server>,
 }
 
-impl RpcServer {
-    pub fn new(config: Arc<NodeConfig>, io_handler: IoHandler) -> RpcServer {
+impl RpcService {
+    pub fn new(config: Arc<NodeConfig>, io_handler: IoHandler) -> RpcService {
         let ipc_file = config.rpc.get_ipc_file();
         let ipc = jsonrpc_ipc_server::ServerBuilder::new(io_handler.clone())
             .start(ipc_file.to_str().expect("Path to string should success."))
-            .expect("Unable to start IPC server.");
+            .expect(format!("Unable to start IPC server with ipc file: {:?}", ipc_file).as_str());
         info!("Ipc rpc server start at :{:?}", ipc_file);
         let http = match &config.rpc.http_address {
             Some(address) => {
@@ -43,7 +43,7 @@ impl RpcServer {
             None => None,
         };
 
-        RpcServer {
+        RpcService {
             ipc,
             http,
             tcp: None,

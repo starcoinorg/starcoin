@@ -8,6 +8,7 @@ use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::StateNode;
+use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{block::Block, peer_info::PeerId};
 
@@ -77,6 +78,6 @@ pub enum RPCResponse {
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Eq, PartialEq, Message, Clone)]
 pub enum PeerEvent {
-    Open(PeerId),
+    Open(PeerId, PeerInfo),
     Close(PeerId),
 }

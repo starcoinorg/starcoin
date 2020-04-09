@@ -10,7 +10,7 @@ use starcoin_logger::prelude::*;
 use starcoin_rpc_api::node::NodeApi;
 use starcoin_rpc_client::RpcClient;
 use starcoin_rpc_server::module::NodeRpcImpl;
-use starcoin_rpc_server::JSONRpcActor;
+use starcoin_rpc_server::RpcActor;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -32,8 +32,7 @@ fn test_multi_client() -> Result<()> {
         let mut io_handler = IoHandler::new();
         //io_handler.add_method("status", |_params: Params| Ok(Value::Bool(true)));
         io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new()));
-        let (_rpc_actor, iohandler) =
-            JSONRpcActor::launch_with_handler(config, io_handler).unwrap();
+        let (_rpc_actor, iohandler) = RpcActor::launch_with_handler(config, io_handler).unwrap();
 
         let client_task = move || {
             info!("client thread start.");

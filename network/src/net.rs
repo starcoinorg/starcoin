@@ -168,13 +168,13 @@ impl NetworkInner {
             Event::Dht(_) => {
                 info!("ignore dht event");
             }
-            Event::NotificationStreamOpened { remote } => {
+            Event::NotificationStreamOpened { remote, info } => {
                 info!(
                     "Connected peer {:?},Myself is {:?}",
                     remote,
                     self.service.peer_id()
                 );
-                let open_msg = PeerEvent::Open(remote.into());
+                let open_msg = PeerEvent::Open(remote.into(), info);
                 event_tx.unbounded_send(open_msg)?;
             }
             Event::NotificationStreamClosed { remote } => {

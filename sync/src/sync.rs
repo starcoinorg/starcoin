@@ -130,7 +130,7 @@ where
 
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            PeerEvent::Open(open_peer_id) => {
+            PeerEvent::Open(open_peer_id, _) => {
                 info!("connect new peer:{:?}", open_peer_id);
                 let process_msg = ProcessMessage::NewPeerMsg(open_peer_id);
                 self.process_address

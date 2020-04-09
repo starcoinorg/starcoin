@@ -54,7 +54,9 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
 }
 
 pub fn temp_path() -> TempPath {
-    TempPath::new()
+    let temp_path = TempPath::new();
+    temp_path.create_as_dir().expect("Create temp dir fail.");
+    return temp_path;
 }
 
 #[derive(Debug, Clone, StructOpt, Default)]
@@ -121,6 +123,10 @@ impl BaseConfig {
             }
         };
         let data_dir = base_data_dir.as_ref().join(net.to_string());
+        if !data_dir.exists() {
+            create_dir_all(data_dir.as_path())
+                .expect(format!("Create data dir {:?} fail.", data_dir).as_str());
+        }
         Self {
             net,
             base_data_dir,
@@ -196,9 +202,6 @@ impl NodeConfig {
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
         let base = BaseConfig::new(opt.net, opt.data_dir.clone());
         let data_dir = base.data_dir();
-        if !data_dir.exists() {
-            create_dir_all(data_dir)?;
-        }
         ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
 
         let config_file_path = data_dir.join(CONFIG_FILE_PATH);
