@@ -6,7 +6,7 @@ module LibraAccount {
     use 0x0::Hash;
     use 0x0::LBR;
     use 0x0::Libra;
-    use 0x0::LibraTransactionTimeout;
+//    use 0x0::LibraTransactionTimeout;
     use 0x0::Transaction;
     use 0x0::U64Util;
     use 0x0::Vector;
@@ -465,7 +465,7 @@ module LibraAccount {
         // Check that the transaction sequence number matches the sequence number of the account
         Transaction::assert(txn_sequence_number >= sender_account.sequence_number, 3);
         Transaction::assert(txn_sequence_number == sender_account.sequence_number, 4);
-        Transaction::assert(LibraTransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), 7);
+//        Transaction::assert(LibraTransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), 7);
     }
 
     // The epilogue is invoked at the end of transactions.
