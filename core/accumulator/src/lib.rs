@@ -162,7 +162,6 @@ impl AccumulatorCache {
         num_leaves: LeafCount,
         num_nodes: NodeCount,
         root_hash: HashValue,
-        internal_vec: Vec<HashValue>,
         node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
         info!("accumulator cache new: {:?}", accumulator_id.short_str());
@@ -170,13 +169,7 @@ impl AccumulatorCache {
             id: accumulator_id,
             frozen_subtree_roots: RefCell::new(frozen_subtree_roots.clone()),
             index_cache: RefCell::new(
-                Self::aggregate_cache(
-                    root_hash,
-                    internal_vec,
-                    frozen_subtree_roots,
-                    node_store.clone(),
-                )
-                .unwrap(),
+                Self::aggregate_cache(root_hash, frozen_subtree_roots, node_store.clone()).unwrap(),
             ),
             num_leaves,
             num_nodes,
@@ -309,7 +302,6 @@ impl AccumulatorCache {
 
     fn aggregate_cache(
         root_hash: HashValue,
-        internal_vec: Vec<HashValue>,
         frozen_node_vec: Vec<HashValue>,
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<HashMap<NodeIndex, HashValue>> {
@@ -322,15 +314,6 @@ impl AccumulatorCache {
             if hash != root_hash {
                 let tmp_map = Self::restore_index_cache(hash, store.clone()).unwrap();
                 cache_map.extend(tmp_map.iter());
-            }
-        }
-        // restore from internal node
-        for hash in internal_vec {
-            match store.get_node(hash) {
-                Ok(Some(node)) => {
-                    cache_map.insert(node.index(), node.hash());
-                }
-                _ => {}
             }
         }
         Ok(cache_map)
@@ -635,14 +618,12 @@ impl AccumulatorCache {
 impl MerkleAccumulator {
     pub fn new(
         accumulator_id: HashValue,
+        root_hash: HashValue,
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: LeafCount,
         num_notes: NodeCount,
         node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<Self> {
-        let (root_hash, internal_vec) =
-            Self::compute_root_hash(&frozen_subtree_roots, num_leaves).unwrap();
-
         Ok(Self {
             cache: Mutex::new(AccumulatorCache::new(
                 accumulator_id,
@@ -650,7 +631,6 @@ impl MerkleAccumulator {
                 num_leaves,
                 num_notes,
                 root_hash,
-                internal_vec,
                 node_store.clone(),
             )),
             node_store: node_store.clone(),

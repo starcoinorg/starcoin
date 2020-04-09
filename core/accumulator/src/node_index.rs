@@ -5,7 +5,6 @@ use crate::LeafCount;
 use mirai_annotations::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::HashValue;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeIndex(u64);
