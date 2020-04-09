@@ -158,4 +158,13 @@ impl PeerInfo {
     pub fn get_peer_id(&self) -> PeerId {
         self.peer_id.clone()
     }
+
+    pub fn default() -> Self {
+        Self {
+            peer_id: PeerId::random(),
+            block_number: 0,
+            total_difficult: U256::from(0),
+            block_id: HashValue::default(),
+        }
+    }
 }

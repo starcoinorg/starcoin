@@ -150,10 +150,11 @@ impl NetworkBehaviourEventProcess<void::Void> for Behaviour {
 impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
     fn inject_event(&mut self, event: CustomMessageOutcome) {
         match event {
-            CustomMessageOutcome::NotificationStreamOpened { remote } => {
+            CustomMessageOutcome::NotificationStreamOpened { remote, info } => {
                 self.events
                     .push(BehaviourOut::Event(Event::NotificationStreamOpened {
                         remote: remote.clone(),
+                        info,
                     }));
             }
             CustomMessageOutcome::NotificationStreamClosed { remote } => {

@@ -29,6 +29,7 @@ use std::str;
 use std::sync::Arc;
 use std::task::Poll;
 use std::time;
+use types::peer_info::PeerInfo;
 use wasm_timer::Instant;
 
 const REQUEST_TIMEOUT_SEC: u64 = 40;
@@ -78,6 +79,7 @@ mod rep {
 pub enum CustomMessageOutcome {
     NotificationStreamOpened {
         remote: PeerId,
+        info: PeerInfo,
     },
     /// Notification protocols have been closed with a remote.
     NotificationStreamClosed {
@@ -97,13 +99,6 @@ struct HandshakingPeer {
     timestamp: Instant,
 }
 
-/// Info about a peer's known state.
-#[derive(Clone, Debug)]
-pub struct PeerInfo {
-    /// Protocol version
-    pub protocol_version: u32,
-}
-
 #[derive(Default)]
 struct PacketStats {
     bytes_in: u64,
@@ -117,6 +112,11 @@ struct ContextData {
     peers: HashMap<PeerId, Peer>,
 }
 
+pub struct ChainInfo {
+    pub genesis_hash: HashValue,
+    pub self_info: PeerInfo,
+}
+
 pub struct Protocol {
     /// Interval at which we call `tick`.
     tick_timeout: Pin<Box<dyn Stream<Item = ()> + Send>>,
@@ -128,9 +128,10 @@ pub struct Protocol {
     /// Handles opening the unique substream and sending and receiving raw messages.
     behaviour: GenericProto,
     context_data: ContextData,
-    genesis_hash: HashValue,
     /// The `PeerId`'s of all boot nodes.
     boot_node_ids: Arc<HashSet<PeerId>>,
+
+    chain_info: ChainInfo,
 }
 
 impl NetworkBehaviour for Protocol {
@@ -288,7 +289,7 @@ impl Protocol {
     pub fn new(
         peerset_config: peerset::PeersetConfig,
         protocol_id: ProtocolId,
-        genesis_hash: HashValue,
+        chain_info: ChainInfo,
         boot_node_ids: Arc<HashSet<PeerId>>,
     ) -> crate::net_error::Result<(Protocol, peerset::PeersetHandle)> {
         let important_peers = {
@@ -313,7 +314,7 @@ impl Protocol {
             context_data: ContextData {
                 peers: HashMap::new(),
             },
-            genesis_hash,
+            chain_info,
             boot_node_ids,
         };
 
@@ -379,10 +380,10 @@ impl Protocol {
                 self.peerset_handle.report_peer(who, rep::UNEXPECTED_STATUS);
                 return CustomMessageOutcome::None;
             }
-            if status.genesis_hash != self.genesis_hash {
+            if status.genesis_hash != self.chain_info.genesis_hash {
                 info!(
                     "Peer is on different chain (our genesis: {} theirs: {})",
-                    self.genesis_hash, status.genesis_hash
+                    self.chain_info.genesis_hash, status.genesis_hash
                 );
                 self.peerset_handle
                     .report_peer(who.clone(), rep::GENESIS_MISMATCH);
@@ -393,7 +394,7 @@ impl Protocol {
                         target: "sync",
                         "Bootnode with peer id `{}` is on a different chain (our genesis: {} theirs: {})",
                         who,
-                        self.genesis_hash,
+                        self.chain_info.genesis_hash,
                         status.genesis_hash,
                     );
                 }
@@ -413,9 +414,7 @@ impl Protocol {
             }
 
             let _info = match self.handshaking_peers.remove(&who) {
-                Some(_handshaking) => PeerInfo {
-                    protocol_version: status.version,
-                },
+                Some(_handshaking) => {}
                 None => {
                     error!(target: "sync", "Received status from previously unconnected node {}", who);
                     return CustomMessageOutcome::None;
@@ -426,7 +425,10 @@ impl Protocol {
             status.version
         };
         // Notify all the notification protocols as open.
-        CustomMessageOutcome::NotificationStreamOpened { remote: who }
+        CustomMessageOutcome::NotificationStreamOpened {
+            remote: who,
+            info: status.info.clone(),
+        }
     }
 
     fn send_message(&mut self, who: &PeerId, message: Message) {
@@ -450,7 +452,8 @@ impl Protocol {
         let status = message::generic::Status {
             version: CURRENT_VERSION,
             min_supported_version: MIN_VERSION,
-            genesis_hash: self.genesis_hash,
+            genesis_hash: self.chain_info.genesis_hash,
+            info: self.chain_info.self_info.clone(),
         };
 
         self.send_message(&who, Message::Status(status))
@@ -538,6 +541,7 @@ impl Protocol {
             .iter()
             .map(|(peer_id, _peer)| event::Event::NotificationStreamOpened {
                 remote: peer_id.clone(),
+                info: self.chain_info.self_info.clone(),
             })
             .collect()
     }
