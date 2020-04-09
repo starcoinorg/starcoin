@@ -9,6 +9,8 @@ use crypto::{hash::CryptoHash, HashValue};
 use executor::executor::mock_create_account_txn;
 use executor::TransactionExecutor;
 use logger::prelude::*;
+use once_cell::sync::Lazy;
+use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -28,6 +30,17 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
     U256,
 };
+
+pub static DEFAULT_BLOCK_INFO: Lazy<BlockInfo> = Lazy::new(|| {
+    BlockInfo::new(
+        *BLOCK_INFO_DEFAULT_ID,
+        *ACCUMULATOR_PLACEHOLDER_HASH,
+        vec![],
+        0,
+        0,
+        U256::zero(),
+    )
+});
 
 pub struct BlockChain<E, C, S, P>
 where
@@ -74,15 +87,17 @@ where
             Ok(Some(block_info_1)) => block_info_1,
             Err(e) => {
                 warn!("err : {:?}", e);
-                BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0)
+                DEFAULT_BLOCK_INFO.clone()
             }
-            _ => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
+            _ => DEFAULT_BLOCK_INFO.clone(),
         };
 
         let state_root = head.header().state_root();
         let chain = Self {
             config: config.clone(),
             accumulator: MerkleAccumulator::new(
+                chain_info.branch_id(),
+                block_info.accumulator_root,
                 block_info.frozen_subtree_roots,
                 block_info.num_leaves,
                 block_info.num_nodes,
@@ -131,9 +146,9 @@ where
             Ok(Some(block_info_1)) => block_info_1,
             Err(e) => {
                 warn!("err : {:?}", e);
-                BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0)
+                DEFAULT_BLOCK_INFO.clone()
             }
-            _ => BlockInfo::new(*BLOCK_INFO_DEFAULT_ID, vec![], 0, 0),
+            _ => DEFAULT_BLOCK_INFO.clone(),
         };
         block_info
     }
@@ -226,14 +241,15 @@ where
 
         let block_info = self.get_block_info(previous_header.id());
         let accumulator = MerkleAccumulator::new(
+            self.chain_info.branch_id(),
+            block_info.accumulator_root,
             block_info.frozen_subtree_roots,
             block_info.num_leaves,
             block_info.num_nodes,
             self.storage.clone(),
         )
         .unwrap();
-        let (accumulator_root, first_leaf_idx) =
-            accumulator.append_only_cache(&transaction_hash).unwrap();
+        let (accumulator_root, first_leaf_idx) = accumulator.append(&transaction_hash).unwrap();
         //Fixme proof verify
         transaction_hash.iter().enumerate().for_each(|(i, hash)| {
             let leaf_index = first_leaf_idx + i as u64;
@@ -400,24 +416,9 @@ where
         self.storage.get_block_info(id)
     }
 
-    fn get_total_difficulty(&self) -> U256 {
-        if false {
-            // Caculate a difficulty for recent "block_count" blocks
-            let mut block_count = 10;
-            let mut current_number = self.head.header().number();
-            let mut avg_target = U256::zero();
-            if block_count > current_number {
-                block_count = current_number
-            }
-            for _ in 0..block_count {
-                let block = self.get_block_by_number(current_number).unwrap().unwrap();
-                avg_target = avg_target + block.header().difficult() / block_count.into();
-                current_number -= 1;
-            }
-            avg_target
-        } else {
-            self.head.header().number().into()
-        }
+    fn get_total_difficulty(&self) -> Result<U256> {
+        let block_info = self.storage.get_block_info(self.head.header().id())?;
+        Ok(block_info.map_or(U256::zero(), |info| info.total_difficulty))
     }
 
     fn exist_block(&self, block_id: HashValue) -> bool {
@@ -494,11 +495,20 @@ where
         if let Err(e) = chain_state.flush() {
             warn!("err : {:?}", e);
         }
+        let total_difficulty = {
+            let pre_total_difficulty = self
+                .get_block_info(block.header().parent_hash())
+                .total_difficulty;
+            pre_total_difficulty + header.difficult()
+        };
+
         let block_info = BlockInfo::new(
             header.id(),
+            accumulator_root,
             self.accumulator.get_frozen_subtree_roots().unwrap(),
             self.accumulator.num_leaves(),
             self.accumulator.num_nodes(),
+            total_difficulty,
         );
         if let Err(e) = self.commit(block, block_info) {
             warn!("err : {:?}", e);

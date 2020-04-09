@@ -67,5 +67,6 @@ pub trait ChainAsyncService: Clone + std::marker::Unpin {
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
+        difficulty: U256,
     ) -> Option<BlockTemplate>;
 }

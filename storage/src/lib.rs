@@ -11,8 +11,7 @@ use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    node_index::NodeIndex, AccumulatorNode, AccumulatorReader, AccumulatorTreeStore,
-    AccumulatorWriter,
+    AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter,
 };
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -38,7 +37,6 @@ pub mod transaction_info;
 #[macro_use]
 pub mod storage_macros;
 
-pub const ACCUMULATOR_INDEX_PREFIX_NAME: ColumnFamilyName = "acc_index";
 pub const ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
@@ -53,7 +51,6 @@ pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
 pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![
-        ACCUMULATOR_INDEX_PREFIX_NAME,
         ACCUMULATOR_NODE_PREFIX_NAME,
         BLOCK_PREFIX_NAME,
         BLOCK_HEADER_PREFIX_NAME,
@@ -279,21 +276,17 @@ impl BlockStore for Storage {
 
 impl AccumulatorTreeStore for Storage {}
 impl AccumulatorReader for Storage {
-    ///get node by node_index
-    fn get(&self, index: NodeIndex) -> Result<Option<AccumulatorNode>> {
-        self.accumulator_storage.get(index)
-    }
     ///get node by node hash
     fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
         self.accumulator_storage.get_node(hash)
     }
+
+    fn multiple_get(&self, _hash_vec: Vec<HashValue>) -> Result<Vec<AccumulatorNode>, Error> {
+        unimplemented!()
+    }
 }
 
 impl AccumulatorWriter for Storage {
-    /// save node index
-    fn save(&self, index: NodeIndex, hash: HashValue) -> Result<()> {
-        self.accumulator_storage.save(index, hash)
-    }
     /// save node
     fn save_node(&self, node: AccumulatorNode) -> Result<()> {
         self.accumulator_storage.save_node(node)
@@ -301,10 +294,6 @@ impl AccumulatorWriter for Storage {
     ///delete node
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()> {
         self.accumulator_storage.delete_nodes(node_hash_vec)
-    }
-    ///delete larger index than one
-    fn delete_nodes_index(&self, vec_index: Vec<NodeIndex>) -> Result<()> {
-        self.accumulator_storage.delete_nodes_index(vec_index)
     }
 }
 

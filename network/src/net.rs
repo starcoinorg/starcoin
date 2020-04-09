@@ -5,10 +5,7 @@ use crate::{helper::convert_boot_nodes, Message, NetworkMessage, PeerEvent};
 
 use anyhow::*;
 use futures::{
-    channel::{
-        mpsc,
-        oneshot::{self, Sender},
-    },
+    channel::{mpsc, oneshot::Sender},
     prelude::*,
 };
 
@@ -24,6 +21,7 @@ use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
 use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Handle;
+use types::peer_info::PeerInfo;
 
 const PROTOCOL_NAME: &[u8] = b"/starcoin/consensus/1";
 
@@ -128,15 +126,15 @@ impl SNetworkService {
     }
 
     pub async fn send_message(&self, peer_id: PeerId, message: Vec<u8>) -> Result<()> {
-        let (tx, rx) = oneshot::channel::<()>();
-        let (protocol_msg, message_id) = Message::new_payload(message);
+        //let (tx, rx) = oneshot::channel::<()>();
+        let (protocol_msg, _message_id) = Message::new_payload(message);
 
         info!("Send message to {} with ack", peer_id);
         self.service
             .write_notification(peer_id, PROTOCOL_NAME.into(), protocol_msg.into_bytes());
         //self.waker.wake();
-        self.inner.acks.lock().insert(message_id, tx);
-        rx.await?;
+        //self.inner.acks.lock().insert(message_id, tx);
+        //rx.await?;
 
         Ok(())
     }
@@ -154,6 +152,10 @@ impl SNetworkService {
 
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
         self.service.connected_peers().await
+    }
+
+    pub fn update_self_info(&self, info: PeerInfo) {
+        self.service.update_self_info(info);
     }
 }
 
@@ -249,6 +251,7 @@ pub fn build_network_service(
     cfg: &NetworkConfig,
     handle: Handle,
     genesis_hash: HashValue,
+    self_info: PeerInfo,
 ) -> (
     SNetworkService,
     mpsc::UnboundedSender<NetworkMessage>,
@@ -267,6 +270,7 @@ pub fn build_network_service(
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
         genesis_hash,
+        self_info,
         ..NetworkConfiguration::default()
     };
     let mut service = SNetworkService::new(config, handle);

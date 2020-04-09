@@ -8,9 +8,10 @@ use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::StateNode;
+use starcoin_types::block::BlockDetail;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::SignedUserTransaction;
-use starcoin_types::{block::Block, peer_info::PeerId};
 
 #[derive(Message)]
 #[rtype(result = "u64")]
@@ -21,7 +22,7 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Message)]
 pub enum PeerMessage {
     UserTransactions(Vec<SignedUserTransaction>),
-    Block(Block),
+    Block(BlockDetail),
     RPCRequest(u128, RPCRequest),
     RPCResponse(u128, RPCResponse),
     RawRPCRequest(u128, Vec<u8>),

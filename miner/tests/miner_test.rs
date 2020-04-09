@@ -56,8 +56,13 @@ fn test_miner_with_schedule_pacemaker() {
                 bus.clone(),
             )
         };
-        let network =
-            NetworkActor::launch(config.clone(), bus.clone(), handle.clone(), genesis_hash);
+        let network = NetworkActor::launch(
+            config.clone(),
+            bus.clone(),
+            handle.clone(),
+            genesis_hash,
+            PeerInfo::default(),
+        );
         let sync_metadata = SyncMetadata::new(config.clone());
         let chain = ChainActor::launch(
             config.clone(),
@@ -142,8 +147,13 @@ fn test_miner_with_ondemand_pacemaker() {
                 bus.clone(),
             )
         };
-        let network =
-            NetworkActor::launch(config.clone(), bus.clone(), handle.clone(), genesis_hash);
+        let network = NetworkActor::launch(
+            config.clone(),
+            bus.clone(),
+            handle.clone(),
+            genesis_hash,
+            PeerInfo::default(),
+        );
         let sync_metadata = SyncMetadata::new(config.clone());
         let chain = ChainActor::launch(
             config.clone(),

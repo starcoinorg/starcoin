@@ -14,6 +14,7 @@ use starcoin_miner::MinerActor;
 use starcoin_network::NetworkActor;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
@@ -115,7 +116,32 @@ where
         )
     };
 
-    let network = NetworkActor::launch(config.clone(), bus.clone(), handle.clone(), genesis_hash);
+    let block_info = match storage.get_block_info(startup_info.head.get_head())? {
+        Some(block_info) => block_info,
+        None => panic!(
+            "can't get block info by hash {}",
+            startup_info.head.get_head()
+        ),
+    };
+    let peer_id = config
+        .clone()
+        .network
+        .self_peer_id
+        .clone()
+        .expect("should have");
+    let self_info = PeerInfo::_new(
+        peer_id,
+        startup_info.head.start_number(),
+        block_info.get_total_difficult(),
+        startup_info.head.get_head(),
+    );
+    let network = NetworkActor::launch(
+        config.clone(),
+        bus.clone(),
+        handle.clone(),
+        genesis_hash,
+        self_info,
+    );
 
     let head_block = storage
         .get_block(startup_info.head.get_head())?

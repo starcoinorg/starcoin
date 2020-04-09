@@ -5647,6 +5647,7 @@ dependencies = [
  "futures 0.3.4",
  "futures-timer 3.0.2",
  "libra-temppath",
+ "once_cell",
  "parking_lot 0.9.0",
  "starcoin-accumulator",
  "starcoin-bus",
@@ -6413,6 +6414,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-types",
  "stest",
+ "thiserror",
 ]
 
 [[package]]

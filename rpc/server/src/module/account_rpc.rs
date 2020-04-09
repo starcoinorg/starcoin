@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::module::map_err;
+use crate::module::map_rpc_err;
 use futures::future::TryFutureExt;
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_types::account_address::AccountAddress;
@@ -33,22 +33,34 @@ where
             .service
             .clone()
             .create_account(password)
-            .map_err(map_err);
+            .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }
 
     fn list(&self) -> FutureResult<Vec<WalletAccount>> {
-        let fut = self.service.clone().get_accounts().map_err(map_err);
+        let fut = self
+            .service
+            .clone()
+            .get_accounts()
+            .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }
 
     fn get(&self, address: AccountAddress) -> FutureResult<Option<WalletAccount>> {
-        let fut = self.service.clone().get_account(address).map_err(map_err);
+        let fut = self
+            .service
+            .clone()
+            .get_account(address)
+            .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }
 
     fn sign_txn(&self, raw_txn: RawUserTransaction) -> FutureResult<SignedUserTransaction> {
-        let fut = self.service.clone().sign_txn(raw_txn).map_err(map_err);
+        let fut = self
+            .service
+            .clone()
+            .sign_txn(raw_txn)
+            .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }
 
@@ -62,7 +74,7 @@ where
             .service
             .clone()
             .unlock_account(address, password, duration)
-            .map_err(map_err);
+            .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }
     /// Import private key with address.
@@ -76,7 +88,7 @@ where
             .service
             .clone()
             .import_account(address, private_key, password)
-            .map_err(map_err);
+            .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }
 
@@ -86,7 +98,7 @@ where
             .service
             .clone()
             .export_account(address, password)
-            .map_err(map_err);
+            .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }
 }

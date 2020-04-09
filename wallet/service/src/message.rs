@@ -3,10 +3,9 @@
 
 use actix::clock::Duration;
 use actix::Message;
-use anyhow::Result;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::WalletAccount;
+use starcoin_wallet_api::{WalletAccount, WalletResult};
 
 #[derive(Debug, Clone)]
 pub enum WalletRequest {
@@ -28,7 +27,7 @@ pub enum WalletRequest {
 }
 
 impl Message for WalletRequest {
-    type Result = Result<WalletResponse>;
+    type Result = WalletResult<WalletResponse>;
 }
 
 #[derive(Debug, Clone)]

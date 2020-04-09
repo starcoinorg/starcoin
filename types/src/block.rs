@@ -282,44 +282,58 @@ pub static BLOCK_INFO_DEFAULT_ID: Lazy<HashValue> =
 pub struct BlockInfo {
     /// Block id
     pub block_id: HashValue,
+    /// Accumulator root hash
+    pub accumulator_root: HashValue,
     /// Frozen subtree roots of this accumulator.
     pub frozen_subtree_roots: Vec<HashValue>,
     /// The total number of leaves in this accumulator.
     pub num_leaves: u64,
     /// The total number of nodes in this accumulator.
     pub num_nodes: u64,
+    /// The total difficulty.
+    pub total_difficulty: U256,
 }
 
 impl BlockInfo {
     pub fn new(
         block_id: HashValue,
+        accumulator_root: HashValue,
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: u64,
         num_nodes: u64,
+        total_difficulty: U256,
     ) -> Self {
         Self {
             block_id,
+            accumulator_root,
             frozen_subtree_roots,
             num_leaves,
             num_nodes,
+            total_difficulty,
         }
     }
-    pub fn into_inner(self) -> (HashValue, Vec<HashValue>, u64, u64) {
+    pub fn into_inner(self) -> (HashValue, HashValue, Vec<HashValue>, u64, u64, U256) {
         self.into()
     }
 
     pub fn id(&self) -> HashValue {
         self.crypto_hash()
     }
+
+    pub fn get_total_difficult(&self) -> U256 {
+        U256::from(0)
+    }
 }
 
-impl Into<(HashValue, Vec<HashValue>, u64, u64)> for BlockInfo {
-    fn into(self) -> (HashValue, Vec<HashValue>, u64, u64) {
+impl Into<(HashValue, HashValue, Vec<HashValue>, u64, u64, U256)> for BlockInfo {
+    fn into(self) -> (HashValue, HashValue, Vec<HashValue>, u64, u64, U256) {
         (
             self.block_id,
+            self.accumulator_root,
             self.frozen_subtree_roots,
             self.num_leaves,
             self.num_nodes,
+            self.total_difficulty,
         )
     }
 }
