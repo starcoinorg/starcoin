@@ -15,7 +15,7 @@ pub mod node;
 pub mod node_index;
 
 use crate::node::{InternalNode, ACCUMULATOR_PLACEHOLDER_HASH};
-use crate::node_index::{FrozenSubTreeIterator, NodeIndex, NodeStoreIndex};
+use crate::node_index::{FrozenSubTreeIterator, NodeIndex};
 pub use node::AccumulatorNode;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -116,21 +116,17 @@ pub trait Accumulator {
 }
 
 pub trait AccumulatorReader {
-    ///get node by node_index
-    fn get(&self, index: NodeStoreIndex) -> Result<Option<AccumulatorNode>>;
     ///get node by node hash
     fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>>;
+    /// multiple get nodes
+    fn multiple_get(&self, hash_vec: Vec<HashValue>) -> Result<Vec<AccumulatorNode>>;
 }
 
 pub trait AccumulatorWriter {
-    /// save node index
-    fn save(&self, index: NodeStoreIndex, hash: HashValue) -> Result<()>;
     /// save node
     fn save_node(&self, node: AccumulatorNode) -> Result<()>;
     ///delete node
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()>;
-    ///delete indexes
-    fn delete_nodes_index(&self, index_vec: Vec<NodeStoreIndex>) -> Result<()>;
 }
 
 pub trait AccumulatorTreeStore: AccumulatorReader + AccumulatorWriter {}
@@ -300,13 +296,6 @@ impl AccumulatorCache {
         Ok(self.frozen_subtree_roots.borrow().to_vec())
     }
 
-    fn get_node_store_index_vec(&self, index_vec: Vec<NodeIndex>) -> Vec<NodeStoreIndex> {
-        index_vec
-            .into_iter()
-            .map(|v| NodeStoreIndex::new(self.id, v))
-            .collect::<Vec<NodeStoreIndex>>()
-    }
-
     fn get_index(&self, index: NodeIndex) -> Result<HashValue> {
         match self.index_cache.borrow().get(&index) {
             Some(hash) => Ok(*hash),
@@ -409,8 +398,6 @@ impl AccumulatorCache {
             .map(|v| v.clone())
             .collect::<Vec<NodeIndex>>();
         self.node_store.delete_nodes(vec_update_nodes.clone())?;
-        self.node_store
-            .delete_nodes_index(self.get_node_store_index_vec(vec_update_nodes_index.clone()))?;
 
         // update self frozen_subtree_roots
         let mut frozen_subtree_roots = self.frozen_subtree_roots.borrow_mut().to_vec();
@@ -598,8 +585,6 @@ impl AccumulatorCache {
     /// Update node storage,and index cache
     fn update_node(&self, index: NodeIndex, hash: HashValue, node: AccumulatorNode) -> Result<()> {
         self.node_store.save_node(node.clone())?;
-        self.node_store
-            .save(NodeStoreIndex::new(self.id, index), hash)?;
         self.index_cache.borrow_mut().insert(index, hash);
         Ok(())
     }
@@ -838,14 +823,12 @@ impl Accumulator for MerkleAccumulator {
 }
 
 pub struct MockAccumulatorStore {
-    index_store: RefCell<HashMap<NodeStoreIndex, HashValue>>,
     node_store: RefCell<HashMap<HashValue, AccumulatorNode>>,
 }
 
 impl MockAccumulatorStore {
     pub fn new() -> Self {
         Self {
-            index_store: RefCell::new(HashMap::new()),
             node_store: RefCell::new(HashMap::new()),
         }
     }
@@ -853,29 +836,18 @@ impl MockAccumulatorStore {
 
 impl AccumulatorTreeStore for MockAccumulatorStore {}
 impl AccumulatorReader for MockAccumulatorStore {
-    fn get(&self, index: NodeStoreIndex) -> Result<Option<AccumulatorNode>, Error> {
-        match self.index_store.borrow().get(&index) {
-            Some(node_index) => match self.node_store.borrow().get(node_index) {
-                Some(node) => Ok(Some(node.clone())),
-                None => bail!("get node is null:{:?}", index),
-            },
-            None => bail!("get node index is null:{:?}", index),
-        }
-    }
-
     fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
         match self.node_store.borrow().get(&hash) {
             Some(node) => Ok(Some(node.clone())),
             None => bail!("get node is null: {}", hash),
         }
     }
+
+    fn multiple_get(&self, _hash_vec: Vec<HashValue>) -> Result<Vec<AccumulatorNode>, Error> {
+        unimplemented!()
+    }
 }
 impl AccumulatorWriter for MockAccumulatorStore {
-    fn save(&self, index: NodeStoreIndex, hash: HashValue) -> Result<(), Error> {
-        self.index_store.borrow_mut().insert(index, hash);
-        Ok(())
-    }
-
     fn save_node(&self, node: AccumulatorNode) -> Result<()> {
         self.node_store.borrow_mut().insert(node.hash(), node);
         Ok(())
@@ -884,18 +856,6 @@ impl AccumulatorWriter for MockAccumulatorStore {
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
         for hash in node_hash_vec {
             self.node_store.borrow_mut().remove(&hash);
-        }
-        Ok(())
-    }
-
-    fn delete_nodes_index(&self, index_vec: Vec<NodeStoreIndex>) -> Result<(), Error> {
-        ensure!(
-            index_vec.len() > 0,
-            " invalid index vec len: {}.",
-            index_vec.len()
-        );
-        for index in index_vec {
-            self.index_store.borrow_mut().remove(&index);
         }
         Ok(())
     }
