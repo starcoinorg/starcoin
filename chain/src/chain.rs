@@ -38,6 +38,7 @@ pub static DEFAULT_BLOCK_INFO: Lazy<BlockInfo> = Lazy::new(|| {
         vec![],
         0,
         0,
+        U256::zero(),
     )
 });
 
@@ -415,24 +416,9 @@ where
         self.storage.get_block_info(id)
     }
 
-    fn get_total_difficulty(&self) -> U256 {
-        if false {
-            // Caculate a difficulty for recent "block_count" blocks
-            let mut block_count = 10;
-            let mut current_number = self.head.header().number();
-            let mut avg_target = U256::zero();
-            if block_count > current_number {
-                block_count = current_number
-            }
-            for _ in 0..block_count {
-                let block = self.get_block_by_number(current_number).unwrap().unwrap();
-                avg_target = avg_target + block.header().difficult() / block_count.into();
-                current_number -= 1;
-            }
-            avg_target
-        } else {
-            self.head.header().number().into()
-        }
+    fn get_total_difficulty(&self) -> Result<U256> {
+        let block_info = self.storage.get_block_info(self.head.header().id())?;
+        Ok(block_info.map_or(U256::zero(), |info| info.total_difficulty))
     }
 
     fn exist_block(&self, block_id: HashValue) -> bool {
@@ -509,12 +495,20 @@ where
         if let Err(e) = chain_state.flush() {
             warn!("err : {:?}", e);
         }
+        let total_difficulty = {
+            let pre_total_difficulty = self
+                .get_block_info(block.header().parent_hash())
+                .total_difficulty;
+            pre_total_difficulty + header.difficult()
+        };
+
         let block_info = BlockInfo::new(
             header.id(),
             accumulator_root,
             self.accumulator.get_frozen_subtree_roots().unwrap(),
             self.accumulator.num_leaves(),
             self.accumulator.num_nodes(),
+            total_difficulty,
         );
         if let Err(e) = self.commit(block, block_info) {
             warn!("err : {:?}", e);

@@ -19,7 +19,7 @@ use storage::Storage;
 use traits::Consensus;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
-
+use types::U256;
 async fn gen_head_chain(
     times: u64,
     delay: bool,
@@ -54,16 +54,6 @@ async fn gen_head_chain(
     let miner_account = WalletAccount::random();
     if times > 0 {
         for _i in 0..times {
-            let block_template = chain
-                .clone()
-                .create_block_template(
-                    *miner_account.address(),
-                    Some(miner_account.get_auth_key().prefix().to_vec()),
-                    None,
-                    Vec::new(),
-                )
-                .await
-                .unwrap();
             let startup_info = chain.clone().master_startup_info().await.unwrap();
             let collection = to_block_chain_collection(
                 node_config.clone(),
@@ -86,6 +76,17 @@ async fn gen_head_chain(
                 collection,
             )
             .unwrap();
+            let block_template = chain
+                .clone()
+                .create_block_template(
+                    *miner_account.address(),
+                    Some(miner_account.get_auth_key().prefix().to_vec()),
+                    None,
+                    Vec::new(),
+                    DummyConsensus::calculate_next_difficulty(node_config.clone(), &block_chain),
+                )
+                .await
+                .unwrap();
             let block =
                 DummyConsensus::create_block(node_config.clone(), &block_chain, block_template)
                     .unwrap();
@@ -130,6 +131,7 @@ async fn test_block_chain_forks() {
                     Some(miner_account.get_auth_key().prefix().to_vec()),
                     Some(parent_hash),
                     Vec::new(),
+                    U256::zero() + 1.into(),
                 )
                 .await
                 .unwrap()
