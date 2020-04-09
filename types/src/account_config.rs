@@ -155,7 +155,7 @@ impl<'de> Deserialize<'de> for AccountResource {
 
 impl AccountResource {
     /// Constructs an Account resource.
-    pub fn new(balance: u64, sequence_number: u64, authentication_key: Vec<u8>) -> Self {
+    pub fn new(sequence_number: u64, authentication_key: Vec<u8>) -> Self {
         AccountResource(libra_types::account_config::AccountResource::new(
             sequence_number,
             authentication_key,
@@ -253,6 +253,14 @@ impl BalanceResource {
     /// Given an account map (typically from storage) retrieves the Account resource associated.
     pub fn make_from(bytes: &[u8]) -> Result<Self> {
         Self::decode(bytes)
+    }
+}
+
+impl TryInto<Vec<u8>> for BalanceResource {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
     }
 }
 

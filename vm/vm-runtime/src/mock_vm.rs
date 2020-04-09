@@ -118,7 +118,7 @@ impl MockVM {
                         .unwrap()
                         .try_into()?;
                     let new_account_resource = AccountResource::new(
-                        amount,
+                        //amount,
                         1,
                         account_resource.authentication_key().to_vec(),
                     );

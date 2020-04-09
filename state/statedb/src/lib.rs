@@ -14,7 +14,7 @@ use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::{
     access_path::{AccessPath, DataType},
     account_address::AccountAddress,
-    account_config::{account_struct_tag, AccountResource},
+    account_config::{account_balance_struct_tag, account_struct_tag, AccountResource, BalanceResource},
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
@@ -375,7 +375,7 @@ impl ChainStateWriter for ChainStateDB {
         let account_state_object =
             AccountStateObject::new_account(account_address, self.store.clone());
 
-        let account_resource = AccountResource::new(0, 0, account_address.to_vec());
+        let account_resource = AccountResource::new(0, account_address.to_vec());
         debug!(
             "create account: {:?} with address: {:?}",
             account_resource, account_address
@@ -386,6 +386,16 @@ impl ChainStateWriter for ChainStateDB {
             struct_tag.crypto_hash(),
             account_resource.try_into()?,
         );
+
+        let balance_resource = BalanceResource::new(0);
+        debug!("balance resource = {:?}", balance_resource);
+        let balance_struct_tag = account_balance_struct_tag();
+        account_state_object.set(
+            DataType::RESOURCE,
+            balance_struct_tag.crypto_hash(),
+            balance_resource.try_into()?,
+        );
+
         self.cache.borrow_mut().insert(
             account_address.crypto_hash(),
             Some(Arc::new(account_state_object)),
@@ -500,6 +510,7 @@ mod tests {
         chain_state_db.create_account(account_address)?;
         let state_root = chain_state_db.commit()?;
         let access_path = AccessPath::new_for_account(account_address);
+        let access_path_balance = AccessPath::new_for_balance(account_address);
 
         let account_state_reader = AccountStateReader::new(&chain_state_db);
         let account_resource: AccountResource = account_state_reader
@@ -519,8 +530,11 @@ mod tests {
         assert_eq!(0, balance, "new account balance error");
 
         let new_account_resource =
-            AccountResource::new(10, 1, account_resource.authentication_key().to_vec());
+            AccountResource::new(1, account_resource.authentication_key().to_vec());
         chain_state_db.set(&access_path, new_account_resource.try_into()?)?;
+
+        let new_balance_resource = BalanceResource::new(10);
+        chain_state_db.set(&access_path_balance, new_balance_resource.try_into()?)?;
 
         let balance2 = account_state_reader
             .get_balance(&account_address)
