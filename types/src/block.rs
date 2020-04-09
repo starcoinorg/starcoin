@@ -282,6 +282,8 @@ pub static BLOCK_INFO_DEFAULT_ID: Lazy<HashValue> =
 pub struct BlockInfo {
     /// Block id
     pub block_id: HashValue,
+    /// Accumulator root hash
+    pub accumulator_root: HashValue,
     /// Frozen subtree roots of this accumulator.
     pub frozen_subtree_roots: Vec<HashValue>,
     /// The total number of leaves in this accumulator.
@@ -293,18 +295,20 @@ pub struct BlockInfo {
 impl BlockInfo {
     pub fn new(
         block_id: HashValue,
+        accumulator_root: HashValue,
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: u64,
         num_nodes: u64,
     ) -> Self {
         Self {
             block_id,
+            accumulator_root,
             frozen_subtree_roots,
             num_leaves,
             num_nodes,
         }
     }
-    pub fn into_inner(self) -> (HashValue, Vec<HashValue>, u64, u64) {
+    pub fn into_inner(self) -> (HashValue, HashValue, Vec<HashValue>, u64, u64) {
         self.into()
     }
 
@@ -313,10 +317,11 @@ impl BlockInfo {
     }
 }
 
-impl Into<(HashValue, Vec<HashValue>, u64, u64)> for BlockInfo {
-    fn into(self) -> (HashValue, Vec<HashValue>, u64, u64) {
+impl Into<(HashValue, HashValue, Vec<HashValue>, u64, u64)> for BlockInfo {
+    fn into(self) -> (HashValue, HashValue, Vec<HashValue>, u64, u64) {
         (
             self.block_id,
+            self.accumulator_root,
             self.frozen_subtree_roots,
             self.num_leaves,
             self.num_nodes,

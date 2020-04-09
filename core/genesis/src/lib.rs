@@ -3,6 +3,7 @@
 
 use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
+use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::{ChainNetwork, VMConfig};
 use starcoin_consensus::{argon::ArgonConsensus, dummy::DummyConsensus};
@@ -69,7 +70,14 @@ impl Genesis {
 
         let transaction_info = Self::execute_genesis_txn(chain_state_set.clone(), &chain_state_db)?;
 
-        let accumulator = MerkleAccumulator::new(vec![], 0, 0, storage.clone())?;
+        let accumulator = MerkleAccumulator::new(
+            HashValue::zero(),
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            vec![],
+            0,
+            0,
+            storage.clone(),
+        )?;
         let txn_info_hash = transaction_info.crypto_hash();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
@@ -149,7 +157,14 @@ impl Genesis {
             "Genesis block state root mismatch."
         );
 
-        let accumulator = MerkleAccumulator::new(vec![], 0, 0, storage.clone().into_super_arc())?;
+        let accumulator = MerkleAccumulator::new(
+            block.header().id(),
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            vec![],
+            0,
+            0,
+            storage.clone().into_super_arc(),
+        )?;
         let txn_info_hash = transaction_info.crypto_hash();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
@@ -172,6 +187,7 @@ impl Genesis {
         //save block info for accumulator init
         storage.save_block_info(BlockInfo::new(
             block.header().id(),
+            accumulator_root,
             accumulator.get_frozen_subtree_roots().unwrap(),
             accumulator.num_leaves(),
             accumulator.num_nodes(),
