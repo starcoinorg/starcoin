@@ -257,7 +257,7 @@ where
 
         let key_data = key_data.unwrap();
         let plain_key_data = decrypt(password.as_bytes(), &key_data)
-            .map_err(|e| WalletError::DecryptPrivateKeyError(e))?;
+            .map_err(|_e| WalletError::InvalidPassword(address.clone()))?;
         let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice()).map_err(|_e| {
             WalletError::StoreError(format_err!("underline vault store corrupted"))
         })?;

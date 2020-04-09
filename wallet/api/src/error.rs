@@ -37,7 +37,7 @@ impl From<WalletError> for AccountServiceError {
             WalletError::InvalidPrivateKey => AccountServiceError::InvalidPrivateKey,
 
             WalletError::TransactionSignError(e) => AccountServiceError::AccountError(e),
-            WalletError::DecryptPrivateKeyError(e) => AccountServiceError::AccountError(e),
+            // WalletError::DecryptPrivateKeyError(e) => AccountServiceError::AccountError(e),
             WalletError::AccountPrivateKeyMissing(a) => AccountServiceError::AccountError(
                 format_err!("no private key data associate with address {}", a),
             ),
@@ -67,8 +67,8 @@ pub enum WalletError {
     // logic error
     #[error("transaction sign error, {0:?}")]
     TransactionSignError(anyhow::Error),
-    #[error("decrypt private key error, {0:?}")]
-    DecryptPrivateKeyError(anyhow::Error),
+    // #[error("decrypt private key error, {0:?}")]
+    // DecryptPrivateKeyError(anyhow::Error),
     #[error("no private key data associate with address {0}")]
     AccountPrivateKeyMissing(AccountAddress),
     #[error("account vault store error, {0:?}")]
