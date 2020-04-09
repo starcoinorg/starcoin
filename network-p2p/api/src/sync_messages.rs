@@ -5,7 +5,6 @@ use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo},
-    peer_info::PeerInfo,
     transaction::SignedUserTransaction,
 };
 use std::cmp::Ordering;

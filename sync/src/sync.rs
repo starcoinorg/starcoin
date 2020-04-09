@@ -14,7 +14,7 @@ use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use traits::Consensus;
-use types::peer_info::PeerInfo;
+use types::peer_info::PeerId;
 
 pub struct SyncActor<E, C>
 where
@@ -34,14 +34,14 @@ where
     pub fn launch(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
-        peer_info: Arc<PeerInfo>,
+        peer_id: Arc<PeerId>,
         chain: ChainActorRef<E, C>,
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
         sync_metadata: SyncMetadata,
     ) -> Result<Addr<SyncActor<E, C>>> {
         let process_address = ProcessActor::launch(
-            Arc::clone(&peer_info),
+            Arc::clone(&peer_id),
             chain.clone(),
             network.clone(),
             bus.clone(),
@@ -49,7 +49,7 @@ where
         )?;
         let download_address = DownloadActor::launch(
             node_config,
-            peer_info,
+            peer_id,
             chain,
             network.clone(),
             bus.clone(),

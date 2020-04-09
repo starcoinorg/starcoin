@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
 use traits::Consensus;
-use types::{block::Block, peer_info::PeerInfo};
+use types::{block::Block, peer_info::PeerId};
 
 pub struct ProcessActor<E, C>
 where
@@ -27,7 +27,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     processor: Arc<Processor<E, C>>,
-    peer_info: Arc<PeerInfo>,
+    self_peer_id: Arc<PeerId>,
     network: NetworkAsyncService,
     bus: Addr<BusActor>,
 }
@@ -38,7 +38,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn launch(
-        peer_info: Arc<PeerInfo>,
+        peer_id: Arc<PeerId>,
         chain_reader: ChainActorRef<E, C>,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
@@ -46,7 +46,7 @@ where
     ) -> Result<Addr<ProcessActor<E, C>>> {
         let process_actor = ProcessActor {
             processor: Arc::new(Processor::new(chain_reader, state_node_storage)),
-            peer_info,
+            self_peer_id: peer_id,
             network,
             bus,
         };
@@ -83,7 +83,7 @@ where
 
     fn handle(&mut self, msg: ProcessMessage, _ctx: &mut Self::Context) -> Self::Result {
         let processor = self.processor.clone();
-        let my_peer_info = self.peer_info.as_ref().clone();
+        let self_peer_id = self.self_peer_id.as_ref().clone();
         let network = self.network.clone();
         let fut = async move {
             let id = msg.crypto_hash();
@@ -91,9 +91,7 @@ where
                 ProcessMessage::NewPeerMsg(peer_id) => {
                     info!(
                         "send latest_state_msg to peer : {:?}:{:?}, message id is {:?}",
-                        peer_id,
-                        my_peer_info.get_peer_id(),
-                        id
+                        peer_id, self_peer_id, id
                     );
                     let latest_state_msg =
                         Processor::send_latest_state_msg(processor.clone()).await;

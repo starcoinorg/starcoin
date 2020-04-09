@@ -29,7 +29,7 @@ use traits::ChainAsyncService;
 use traits::Consensus;
 use types::{
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber},
-    peer_info::{PeerId, PeerInfo},
+    peer_info::PeerId,
 };
 
 #[derive(Default, Debug, Message)]
@@ -45,7 +45,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     downloader: Arc<Downloader<E, C>>,
-    peer_info: Arc<PeerInfo>,
+    self_peer_id: Arc<PeerId>,
     network: NetworkAsyncService,
     bus: Addr<BusActor>,
     sync_event_sender: mpsc::Sender<SyncEvent>,
@@ -64,7 +64,7 @@ where
 {
     pub fn launch(
         node_config: Arc<NodeConfig>,
-        peer_info: Arc<PeerInfo>,
+        peer_id: Arc<PeerId>,
         chain_reader: ChainActorRef<E, C>,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
@@ -76,7 +76,7 @@ where
             ctx.add_message_stream(sync_event_receiver);
             DownloadActor {
                 downloader: Arc::new(Downloader::new(chain_reader)),
-                peer_info,
+                self_peer_id: peer_id,
                 network,
                 bus,
                 sync_event_sender,
@@ -141,7 +141,7 @@ where
         let sync_metadata = self.sync_metadata.clone();
         let is_main = self.main_network;
         let bus = self.bus.clone();
-        let my_peer_id = self.peer_info.get_peer_id();
+        let self_peer_id = self.self_peer_id.as_ref().clone();
         let fut = async move {
             match msg {
                 DownloadMessage::LatestStateMsg(peer_id, latest_state_msg) => {
@@ -157,7 +157,7 @@ where
                     .await;
 
                     Self::sync_state(
-                        my_peer_id,
+                        self_peer_id,
                         is_main,
                         downloader.clone(),
                         network,
@@ -206,7 +206,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     async fn sync_state(
-        my_peer_id: PeerId,
+        self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<E, C>>,
         network: NetworkAsyncService,
@@ -264,7 +264,7 @@ where
                             network
                                 .clone()
                                 .send_request(
-                                    best_peer.get_peer_id().clone().into(),
+                                    best_peer.clone().into(),
                                     get_hash_by_number_req.clone(),
                                     do_duration(DELAY_TIME),
                                 )
@@ -289,7 +289,7 @@ where
                             ) = network
                                 .clone()
                                 .send_request(
-                                    best_peer.get_peer_id().clone().into(),
+                                    best_peer.clone().into(),
                                     get_data_by_hash_req.clone(),
                                     do_duration(DELAY_TIME),
                                 )
@@ -311,7 +311,7 @@ where
                                             if sync_pivot.is_none() {
                                                 let state_sync_task_address =
                                                     StateSyncTaskActor::launch(
-                                                        my_peer_id,
+                                                        self_peer_id,
                                                         root.state_root(),
                                                         state_node_storage,
                                                         network.clone(),
@@ -408,7 +408,7 @@ where
                                     ) = network
                                         .clone()
                                         .send_request(
-                                            best_peer.get_peer_id().clone().into(),
+                                            best_peer.clone().into(),
                                             get_hash_by_number_req.clone(),
                                             do_duration(DELAY_TIME),
                                         )
@@ -437,7 +437,7 @@ where
                                         ) = network
                                             .clone()
                                             .send_request(
-                                                best_peer.get_peer_id().clone().into(),
+                                                best_peer.clone().into(),
                                                 get_data_by_hash_req.clone(),
                                                 do_duration(DELAY_TIME),
                                             )
@@ -507,7 +507,7 @@ where
         }
     }
 
-    pub fn get_latest_header_with_peer(&self, peer: &PeerInfo) -> BlockHeader {
+    pub fn get_latest_header_with_peer(&self, peer: &PeerId) -> BlockHeader {
         //self.peers.read().get(&peer).unwrap().header.clone()
         unimplemented!()
     }
@@ -538,7 +538,7 @@ where
         unimplemented!()
     }
 
-    pub fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerInfo> {
+    pub fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerId> {
         // let lock = downloader.peers.read();
         // for p in lock.keys() {
         //     return Some(p.clone());
@@ -557,7 +557,7 @@ where
     /// for ancestors
     pub async fn send_get_hash_by_number_msg_backward(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer: PeerId,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
         //todo：binary search
@@ -608,7 +608,7 @@ where
 
     pub async fn send_get_hash_by_number_msg_forward(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer: PeerId,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
         // let number = downloader
@@ -651,7 +651,7 @@ where
 
     pub async fn find_ancestor(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer_id: PeerId,
         network: NetworkAsyncService,
         block_number: BlockNumber,
     ) -> Option<HashWithNumber> {
@@ -660,7 +660,7 @@ where
         loop {
             let send_get_hash_by_number_msg = Downloader::send_get_hash_by_number_msg_backward(
                 downloader.clone(),
-                peer.clone(),
+                peer_id.clone(),
                 begin_number,
             )
             .await;
@@ -674,7 +674,7 @@ where
                     begin_number = next_number;
                     info!(
                         "peer: {:?} , numbers : {}",
-                        peer.clone(),
+                        peer_id.clone(),
                         get_hash_by_number_msg.numbers.len()
                     );
                     let get_hash_by_number_req = RPCRequest::GetHashByNumberMsg(
@@ -684,7 +684,7 @@ where
                     if let RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) = network
                         .clone()
                         .send_request(
-                            peer.get_peer_id().clone().into(),
+                            peer_id.clone().into(),
                             get_hash_by_number_req.clone(),
                             do_duration(DELAY_TIME),
                         )
@@ -694,7 +694,7 @@ where
                         debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
                         hash_with_number = Downloader::handle_hash_by_number_msg(
                             downloader.clone(),
-                            peer.clone(),
+                            peer_id.clone(),
                             batch_hash_by_number_msg,
                         )
                         .await;
@@ -715,7 +715,7 @@ where
 
     pub async fn handle_hash_by_number_msg(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) -> Option<HashWithNumber> {
         //TODO
@@ -753,7 +753,7 @@ where
 
     fn handle_batch_hash_by_number_msg(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) {
         for hash in batch_hash_by_number_msg.hashs {
@@ -780,7 +780,7 @@ where
 
     pub async fn _handle_batch_header_msg(
         downloader: Arc<Downloader<E, C>>,
-        peer: PeerInfo,
+        peer: PeerId,
         batch_header_msg: BatchHeaderMsg,
     ) {
         if !batch_header_msg.headers.is_empty() {

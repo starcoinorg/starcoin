@@ -97,7 +97,7 @@ where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    peer_id: PeerId,
+    self_peer_id: PeerId,
     root: HashValue,
     state_node_storage: Arc<dyn StateNodeStore>,
     network_service: NetworkAsyncService,
@@ -114,7 +114,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn launch(
-        my_peer_id: PeerId,
+        self_peer_id: PeerId,
         root: HashValue,
         state_node_storage: Arc<dyn StateNodeStore>,
         network_service: NetworkAsyncService,
@@ -125,7 +125,7 @@ where
         let mut wait_2_sync: VecDeque<HashValue> = VecDeque::new();
         wait_2_sync.push_back(root.clone());
         let address = StateSyncTaskActor::create(move |_ctx| Self {
-            peer_id: my_peer_id,
+            self_peer_id,
             root,
             state_node_storage,
             network_service,
@@ -143,9 +143,9 @@ where
         if let Some(state_node) = self.state_node_storage.get(&node_key).unwrap() {
             self.syncing_nodes
                 .lock()
-                .insert(self.peer_id.clone(), node_key.clone());
+                .insert(self.self_peer_id.clone(), node_key.clone());
             if let Err(err) = address.try_send(StateSyncTaskEvent {
-                peer_id: self.peer_id.clone(),
+                peer_id: self.self_peer_id.clone(),
                 node_key,
                 state_node: Some(state_node),
             }) {
@@ -154,9 +154,7 @@ where
         } else {
             let downloader = self.downloader.clone();
             let network_service = self.network_service.clone();
-            let best_peer = Downloader::best_peer(downloader.clone())
-                .unwrap()
-                .get_peer_id();
+            let best_peer = Downloader::best_peer(downloader.clone()).unwrap();
             self.syncing_nodes
                 .lock()
                 .insert(best_peer.clone(), node_key.clone());

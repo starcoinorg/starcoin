@@ -22,7 +22,7 @@ use storage::Storage;
 use tokio::runtime::Handle;
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
-use types::peer_info::{PeerId, PeerInfo};
+use types::peer_info::PeerId;
 
 fn gen_network(
     node_config: Arc<NodeConfig>,
@@ -92,7 +92,7 @@ fn test_network_actor_rpc() {
         )
         .unwrap();
         // sync
-        let first_p = Arc::new(PeerInfo::new(network_1.identify().clone().into()));
+        let first_p = Arc::new(network_1.identify().clone().into());
         let _first_sync_actor = SyncActor::launch(
             node_config_1.clone(),
             bus_1.clone(),
@@ -184,7 +184,7 @@ fn test_network_actor_rpc() {
         )
         .unwrap();
         // sync
-        let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
+        let second_p = Arc::new(network_2.identify().clone().into());
         let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
             node_config_2.clone(),
             bus_2,
@@ -271,7 +271,7 @@ fn test_network_actor_rpc_2() {
         )
         .unwrap();
         // sync
-        let first_p = Arc::new(PeerInfo::new(network_1.identify().clone().into()));
+        let first_p = Arc::new(network_1.identify().clone().into());
         let _first_sync_actor = SyncActor::launch(
             node_config_1.clone(),
             bus_1.clone(),
@@ -335,7 +335,7 @@ fn test_network_actor_rpc_2() {
         )
         .unwrap();
         // sync
-        let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
+        let second_p = Arc::new(network_2.identify().clone().into());
         let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
             node_config_2.clone(),
             bus_2,
@@ -435,7 +435,7 @@ fn test_state_sync() {
         )
         .unwrap();
         // sync
-        let first_p = Arc::new(PeerInfo::new(network_1.identify().clone().into()));
+        let first_p = Arc::new(network_1.identify().clone().into());
         let _first_sync_actor = SyncActor::launch(
             node_config_1.clone(),
             bus_1.clone(),
@@ -532,7 +532,7 @@ fn test_state_sync() {
         )
         .unwrap();
         // sync
-        let second_p = Arc::new(PeerInfo::new(network_2.identify().clone().into()));
+        let second_p = Arc::new(network_2.identify().clone().into());
         let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
             node_config_2.clone(),
             bus_2,
