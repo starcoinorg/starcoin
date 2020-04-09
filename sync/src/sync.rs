@@ -132,9 +132,9 @@ where
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 info!("connect new peer:{:?}", open_peer_id);
-                let process_msg = ProcessMessage::NewPeerMsg(open_peer_id);
-                self.process_address
-                    .send(process_msg)
+                let download_msg = DownloadMessage::NewPeerMsg(open_peer_id);
+                self.download_address
+                    .send(download_msg)
                     .into_actor(self)
                     .then(|_result, act, _ctx| async {}.into_actor(act))
                     .wait(ctx);

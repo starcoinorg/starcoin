@@ -12,7 +12,7 @@ use network::{NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequ
 /// Sync message which inbound
 use network_p2p_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, ProcessMessage,
 };
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
@@ -82,31 +82,12 @@ where
     type Result = ResponseActFuture<Self, Result<()>>;
 
     fn handle(&mut self, msg: ProcessMessage, _ctx: &mut Self::Context) -> Self::Result {
-        let processor = self.processor.clone();
-        let self_peer_id = self.self_peer_id.as_ref().clone();
-        let network = self.network.clone();
+        let _processor = self.processor.clone();
+        let _self_peer_id = self.self_peer_id.as_ref().clone();
+        let _network = self.network.clone();
         let fut = async move {
-            let id = msg.crypto_hash();
+            let _id = msg.crypto_hash();
             match msg {
-                ProcessMessage::NewPeerMsg(peer_id) => {
-                    info!(
-                        "send latest_state_msg to peer : {:?}:{:?}, message id is {:?}",
-                        peer_id, self_peer_id, id
-                    );
-                    let latest_state_msg =
-                        Processor::send_latest_state_msg(processor.clone()).await;
-                    Delay::new(Duration::from_secs(1)).await;
-                    if let Err(e) = network
-                        .clone()
-                        .send_peer_message(
-                            peer_id.into(),
-                            PeerMessage::LatestStateMsg(latest_state_msg),
-                        )
-                        .await
-                    {
-                        warn!("err :{:?}", e);
-                    }
-                }
                 _ => {}
             }
 
@@ -188,7 +169,6 @@ where
                         }
                     });
                 }
-                ProcessMessage::NewPeerMsg(_) => unreachable!(),
             },
             RPCRequest::GetStateNodeByNodeHash(state_node_key) => {
                 Arbiter::spawn(async move {
@@ -234,23 +214,6 @@ where
         Processor {
             chain_reader,
             state_node_storage,
-        }
-    }
-
-    pub async fn head_block(processor: Arc<Processor<E, C>>) -> Block {
-        processor
-            .chain_reader
-            .clone()
-            .master_head_block()
-            .await
-            .unwrap()
-    }
-
-    pub async fn send_latest_state_msg(processor: Arc<Processor<E, C>>) -> LatestStateMsg {
-        let head_block = Self::head_block(processor.clone()).await;
-        //todo:send to network
-        LatestStateMsg {
-            header: head_block.header().clone(),
         }
     }
 

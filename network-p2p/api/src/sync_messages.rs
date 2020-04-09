@@ -19,7 +19,6 @@ pub enum SyncMessage {
 #[derive(Clone)]
 pub enum DownloadMessage {
     ClosePeerMsg(PeerId),
-    LatestStateMsg(PeerId, LatestStateMsg),
     BatchHashByNumberMsg(PeerId, BatchHashByNumberMsg),
     BatchHeaderMsg(PeerId, BatchHeaderMsg),
     BatchBodyMsg(BatchBodyMsg),
@@ -27,6 +26,7 @@ pub enum DownloadMessage {
     NewHeadBlock(PeerId, Block),
     // just fo test
     MinedBlock(Block),
+    NewPeerMsg(PeerId),
 }
 
 impl Message for DownloadMessage {
@@ -35,7 +35,6 @@ impl Message for DownloadMessage {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ProcessMessage {
-    NewPeerMsg(PeerId),
     GetHashByNumberMsg(GetHashByNumberMsg),
     GetDataByHashMsg(GetDataByHashMsg),
 }
@@ -52,11 +51,6 @@ impl CryptoHash for ProcessMessage {
 
 impl Message for ProcessMessage {
     type Result = Result<()>;
-}
-
-#[derive(Eq, Serialize, Deserialize, PartialEq, Hash, Clone, Debug)]
-pub struct LatestStateMsg {
-    pub header: BlockHeader,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

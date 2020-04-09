@@ -22,7 +22,6 @@ use starcoin_sync_api::SyncMetadata;
 use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
-use starcoin_types::peer_info::PeerInfo;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;

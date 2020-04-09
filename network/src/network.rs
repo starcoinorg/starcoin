@@ -352,17 +352,6 @@ impl Inner {
                     })
                     .await?;
             }
-            PeerMessage::LatestStateMsg(state) => {
-                info!("broadcast LatestStateMsg.");
-                self.bus
-                    .send(Broadcast {
-                        msg: SyncMessage::DownloadMessage(DownloadMessage::LatestStateMsg(
-                            peer_id.into(),
-                            state,
-                        )),
-                    })
-                    .await?;
-            }
             PeerMessage::RPCRequest(id, request) => {
                 info!("do request.");
                 let (tx, mut rx) = mpsc::channel(1);

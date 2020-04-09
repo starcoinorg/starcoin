@@ -17,7 +17,7 @@ use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use network_p2p_api::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
-    GetHashByNumberMsg, HashWithNumber, LatestStateMsg, ProcessMessage,
+    GetHashByNumberMsg, HashWithNumber, ProcessMessage,
 };
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
@@ -144,18 +144,7 @@ where
         let self_peer_id = self.self_peer_id.as_ref().clone();
         let fut = async move {
             match msg {
-                DownloadMessage::LatestStateMsg(peer_id, latest_state_msg) => {
-                    debug!(
-                        "latest_state_msg number: {:?}",
-                        &latest_state_msg.header.number()
-                    );
-                    Downloader::handle_latest_state_msg(
-                        downloader.clone(),
-                        peer_id,
-                        latest_state_msg,
-                    )
-                    .await;
-
+                DownloadMessage::NewPeerMsg(peer_id) => {
                     Self::sync_state(
                         self_peer_id,
                         is_main,
@@ -173,18 +162,7 @@ where
                         block.header().id(),
                         peer_id
                     );
-                    //1. update latest block
-                    let latest_state_msg = LatestStateMsg {
-                        header: block.header().clone(),
-                    };
-                    Downloader::handle_latest_state_msg(
-                        downloader.clone(),
-                        peer_id,
-                        latest_state_msg,
-                    )
-                    .await;
-
-                    //2. connect block
+                    // connect block
                     Downloader::do_block(downloader.clone(), block).await;
                 }
                 DownloadMessage::ClosePeerMsg(peer_id) => {
@@ -483,7 +461,6 @@ where
     hash_pool: TTLPool<HashWithNumber>,
     _header_pool: TTLPool<BlockHeader>,
     _body_pool: TTLPool<BlockBody>,
-    // peers: Arc<RwLock<HashMap<PeerInfo, LatestStateMsg>>>,
     chain_reader: ChainActorRef<E, C>,
 }
 
@@ -502,55 +479,19 @@ where
             _header_pool: TTLPool::new(),
             _body_pool: TTLPool::new(),
             //            _network: network,
-            // peers: Arc::new(RwLock::new(HashMap::new())),
             chain_reader,
         }
     }
 
     pub fn get_latest_header_with_peer(&self, peer: &PeerId) -> BlockHeader {
-        //self.peers.read().get(&peer).unwrap().header.clone()
-        unimplemented!()
-    }
-
-    pub async fn handle_latest_state_msg(
-        downloader: Arc<Downloader<E, C>>,
-        peer: PeerId,
-        latest_state_msg: LatestStateMsg,
-    ) {
-        // let hash_num = HashWithNumber {
-        //     hash: latest_state_msg.hash_header.hash.clone(),
-        //     number: latest_state_msg.hash_header.header.number(),
-        // };
-        //        self.hash_pool
-        //            .insert(peer.clone(), latest_state_msg.header.number(), hash_num);
-        // let mut lock = downloader.peers.write();
-        // if lock.get(&peer).is_none()
-        //     || (lock.get(&peer).unwrap().header.number() < latest_state_msg.header.number())
-        // {
-        //     info!(
-        //         "peer {:?} : latest number: {} , hash : {:?}",
-        //         peer.get_peer_id(),
-        //         latest_state_msg.header.number(),
-        //         latest_state_msg.header.id()
-        //     );
-        //     lock.insert(peer, latest_state_msg.clone());
-        // }
         unimplemented!()
     }
 
     pub fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerId> {
-        // let lock = downloader.peers.read();
-        // for p in lock.keys() {
-        //     return Some(p.clone());
-        // }
-        //
-        // info!("best peer return none.");
-        // None
         unimplemented!()
     }
 
     pub fn peer_size(downloader: Arc<Downloader<E, C>>) -> usize {
-        //downloader.peers.read().len()
         unimplemented!()
     }
 
