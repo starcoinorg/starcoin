@@ -8,9 +8,9 @@
 
 pub mod ed25519;
 pub mod hash;
+pub mod keygen;
 pub mod test_utils;
 pub mod traits;
-pub mod keygen;
 
 pub use crate::hash::HashValue;
 pub use crate::traits::*;

@@ -330,18 +330,13 @@ fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u6
     }
 }
 
-fn get_balance(
-    address: AccountAddress,
-    state_db: &dyn ChainState,
-) -> u64 {
+fn get_balance(address: AccountAddress, state_db: &dyn ChainState) -> u64 {
     let ap = AccessPath::new_for_balance(address);
-    let balance_resource= state_db
-        .get(&ap)
-        .expect("read balance resource should ok");
+    let balance_resource = state_db.get(&ap).expect("read balance resource should ok");
     match balance_resource {
         None => 0u64,
         Some(b) => BalanceResource::make_from(b.as_slice())
             .expect("decode balance resource should ok")
-            .coin()
+            .coin(),
     }
 }

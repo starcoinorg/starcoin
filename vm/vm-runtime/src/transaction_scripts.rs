@@ -9,8 +9,7 @@ use once_cell::sync::Lazy;
 use std::path::PathBuf;
 
 const STAGED_EXTENSION: &str = "mv";
-const STAGED_TXN_SCRIPTS_DIR: Dir =
-    include_dir!("../stdlib/staged/transaction_scripts");
+const STAGED_TXN_SCRIPTS_DIR: Dir = include_dir!("../stdlib/staged/transaction_scripts");
 
 fn script(script_name: &str) -> Vec<u8> {
     let mut path = PathBuf::from(script_name);

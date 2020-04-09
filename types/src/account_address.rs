@@ -9,8 +9,8 @@ use bytes::Bytes;
 use rand::{rngs::OsRng, Rng};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::{hash::CryptoHash, HashValue, VerifyingKey};
-use std::{convert::TryFrom, fmt, str::FromStr};
 use std::borrow::Cow;
+use std::{convert::TryFrom, fmt, str::FromStr};
 
 pub const ADDRESS_LENGTH: usize = 16;
 pub const AUTHENTICATION_KEY_LENGTH: usize = ADDRESS_LENGTH * 2;

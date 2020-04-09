@@ -6,13 +6,14 @@ use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
 use crypto::ed25519::*;
+use crypto::HashValue;
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     PrivateKey, Uniform, ValidKey,
 };
-use crypto::HashValue;
 use libra_state_view::StateView;
-use libra_types::{access_path::AccessPath};
+use libra_types::access_path::AccessPath;
+use logger::prelude::*;
 use move_core_types::identifier::Identifier;
 use move_vm_runtime::MoveVM;
 use move_vm_state::{
@@ -24,14 +25,13 @@ use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_state_api::ChainState;
 use stdlib::{stdlib_modules, StdLibOptions};
-use types::{account_config, state_set::ChainStateSet};
 use types::transaction::authenticator::AuthenticationKey;
+use types::{account_config, state_set::ChainStateSet};
 use vm::{
     access::ModuleAccess,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
-use logger::prelude::*;
 
 const GENESIS_SEED: [u8; 32] = [42; 32];
 
@@ -294,20 +294,20 @@ fn create_and_initialize_main_accounts(
         )
         .unwrap();
 
-//    // init subsidy.
-//    txn_data.sender = mint_address;
-//    move_vm
-//        .execute_function(
-//            &LIBRA_BLOCK_MODULE,
-//            &SUBSIDY_INIT,
-//            &gas_schedule,
-//            interpreter_context,
-//            &txn_data,
-//            vec![],
-//            vec![],
-//        )
-//        .unwrap();
-//    txn_data.sender = association_addr;
+    //    // init subsidy.
+    //    txn_data.sender = mint_address;
+    //    move_vm
+    //        .execute_function(
+    //            &LIBRA_BLOCK_MODULE,
+    //            &SUBSIDY_INIT,
+    //            &gas_schedule,
+    //            interpreter_context,
+    //            &txn_data,
+    //            vec![],
+    //            vec![],
+    //        )
+    //        .unwrap();
+    //    txn_data.sender = association_addr;
 
     let genesis_auth_key = AuthenticationKey::ed25519(public_key).to_vec();
     move_vm
