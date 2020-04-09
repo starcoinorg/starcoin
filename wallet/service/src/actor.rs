@@ -4,14 +4,15 @@
 use crate::message::{WalletRequest, WalletResponse};
 use crate::service::WalletServiceImpl;
 use actix::{Actor, Addr, Context, Handler};
-use anyhow::{Error, Result};
+use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 // use starcoin_wallet_api::mock::{KeyPairWallet, MemWalletStore};
 use starcoin_wallet_lib::{file_wallet_store::FileWalletStore, keystore_wallet::KeyStoreWallet};
 
-use starcoin_wallet_api::{Wallet, WalletAccount, WalletAsyncService};
+use starcoin_wallet_api::error::AccountServiceError;
+use starcoin_wallet_api::{ServiceResult, Wallet, WalletAccount, WalletAsyncService, WalletResult};
 use std::sync::Arc;
 
 pub struct WalletActor {
@@ -35,7 +36,7 @@ impl Actor for WalletActor {
 }
 
 impl Handler<WalletRequest> for WalletActor {
-    type Result = Result<WalletResponse>;
+    type Result = WalletResult<WalletResponse>;
 
     fn handle(&mut self, msg: WalletRequest, _ctx: &mut Self::Context) -> Self::Result {
         let response = match msg {
@@ -95,12 +96,12 @@ impl Into<WalletActorRef> for Addr<WalletActor> {
 
 #[async_trait::async_trait]
 impl WalletAsyncService for WalletActorRef {
-    async fn create_account(self, password: String) -> Result<WalletAccount> {
+    async fn create_account(self, password: String) -> ServiceResult<WalletAccount> {
         let response = self
             .0
             .send(WalletRequest::CreateAccount(password))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::WalletAccount(account) = response {
             Ok(account)
         } else {
@@ -108,12 +109,12 @@ impl WalletAsyncService for WalletActorRef {
         }
     }
 
-    async fn get_default_account(self) -> Result<Option<WalletAccount>> {
+    async fn get_default_account(self) -> ServiceResult<Option<WalletAccount>> {
         let response = self
             .0
             .send(WalletRequest::GetDefaultAccount())
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::WalletAccountOption(account) = response {
             Ok(account)
         } else {
@@ -121,12 +122,12 @@ impl WalletAsyncService for WalletActorRef {
         }
     }
 
-    async fn get_accounts(self) -> Result<Vec<WalletAccount>> {
+    async fn get_accounts(self) -> ServiceResult<Vec<WalletAccount>> {
         let response = self
             .0
             .send(WalletRequest::GetAccounts())
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::AccountList(accounts) = response {
             Ok(accounts)
         } else {
@@ -134,12 +135,12 @@ impl WalletAsyncService for WalletActorRef {
         }
     }
 
-    async fn get_account(self, address: AccountAddress) -> Result<Option<WalletAccount>, Error> {
+    async fn get_account(self, address: AccountAddress) -> ServiceResult<Option<WalletAccount>> {
         let response = self
             .0
             .send(WalletRequest::GetAccount(address))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::Account(account) = response {
             Ok(account)
         } else {
@@ -147,12 +148,12 @@ impl WalletAsyncService for WalletActorRef {
         }
     }
 
-    async fn sign_txn(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+    async fn sign_txn(self, raw_txn: RawUserTransaction) -> ServiceResult<SignedUserTransaction> {
         let response = self
             .0
             .send(WalletRequest::SignTxn(raw_txn))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::SignedTxn(txn) = response {
             Ok(txn)
         } else {
@@ -165,12 +166,12 @@ impl WalletAsyncService for WalletActorRef {
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
-    ) -> Result<()> {
+    ) -> ServiceResult<()> {
         let response = self
             .0
             .send(WalletRequest::UnlockAccount(address, password, duration))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::UnlockAccountResponse = response {
             Ok(())
         } else {
@@ -183,7 +184,7 @@ impl WalletAsyncService for WalletActorRef {
         address: AccountAddress,
         private_key: Vec<u8>,
         password: String,
-    ) -> Result<WalletAccount> {
+    ) -> ServiceResult<WalletAccount> {
         let response = self
             .0
             .send(WalletRequest::ImportAccount {
@@ -192,7 +193,7 @@ impl WalletAsyncService for WalletActorRef {
                 private_key,
             })
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::ImportAccountResponse(account) = response {
             Ok(account)
         } else {
@@ -200,12 +201,16 @@ impl WalletAsyncService for WalletActorRef {
         }
     }
 
-    async fn export_account(self, address: AccountAddress, password: String) -> Result<Vec<u8>> {
+    async fn export_account(
+        self,
+        address: AccountAddress,
+        password: String,
+    ) -> ServiceResult<Vec<u8>> {
         let response = self
             .0
             .send(WalletRequest::ExportAccount { address, password })
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::ExportAccountResponse(data) = response {
             Ok(data)
         } else {

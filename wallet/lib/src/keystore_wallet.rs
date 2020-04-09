@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, ensure, format_err, Error, Result};
+use anyhow::format_err;
 use rand::prelude::*;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::Uniform;
@@ -17,9 +17,10 @@ use std::ops::Add;
 use std::sync::{Mutex, RwLock};
 use std::time::Duration;
 use std::time::Instant;
-use wallet_api::{Wallet, WalletAccount, WalletStore};
+use wallet_api::{error::WalletError, Wallet, WalletAccount, WalletStore};
 
 type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
+pub type Result<T> = std::result::Result<T, WalletError>;
 
 /// Wallet base KeyStore
 /// encrypt account's key by a password.
@@ -66,7 +67,7 @@ impl<TKeyStore> Wallet for KeyStoreWallet<TKeyStore>
 where
     TKeyStore: WalletStore,
 {
-    fn create_account(&self, password: &str) -> Result<WalletAccount, Error> {
+    fn create_account(&self, password: &str) -> Result<WalletAccount> {
         let keypair = gen_keypair();
         let address = AccountAddress::from_public_key(&keypair.public_key);
         let existed_accounts = self.store.get_accounts()?;
@@ -77,25 +78,8 @@ where
         Ok(account)
     }
 
-    // fn get_account_detail(&self, address: &AccountAddress) -> Result<Option<WalletAccount>> {
-    //     let account = self.store.get_account(address)?;
-    //     match account {
-    //         None => Ok(None),
-    //         Some(account) => {
-    //             let public_key = self.store.get_from_account(address, KEY_NAME_PUBLIC_KEY)?;
-    //             ensure!(
-    //                 public_key.is_some(),
-    //                 "no public key exists in account {}",
-    //                 address
-    //             );
-    //             let public_key = Ed25519PublicKey::try_from(public_key.unwrap().as_slice())?;
-    //             Ok(Some(WalletAccount::new(account, public_key)))
-    //         }
-    //     }
-    // }
-    //
-    fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>, Error> {
-        self.store.get_account(address)
+    fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>> {
+        Ok(self.store.get_account(address)?)
     }
 
     fn import_account(
@@ -103,11 +87,12 @@ where
         address: AccountAddress,
         private_key: Vec<u8>,
         password: &str,
-    ) -> Result<WalletAccount, Error> {
+    ) -> Result<WalletAccount> {
         if self.contains(&address)? {
-            bail!("account with address {} already exists", &address);
+            return Err(WalletError::AccountAlreadyExist(address));
         }
-        let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())?;
+        let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())
+            .map_err(|_| WalletError::InvalidPrivateKey)?;
         let key_pair = KeyPair::from(private_key);
         let account = WalletAccount::new(address, key_pair.public_key.clone(), false);
         self.save_account(account.clone(), key_pair, password.to_string())?;
@@ -118,7 +103,7 @@ where
         Ok(keypair.private_key.to_bytes().to_vec())
     }
 
-    fn contains(&self, address: &AccountAddress) -> Result<bool, Error> {
+    fn contains(&self, address: &AccountAddress) -> Result<bool> {
         self.get_account(address).map(|w| w.is_some())
     }
 
@@ -127,7 +112,7 @@ where
         address: AccountAddress,
         password: &str,
         duration: Duration,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let keypair = self.unlock_prikey(&address, password)?;
         let address = AccountAddress::from_public_key(&keypair.public_key);
         let ttl = std::time::Instant::now().add(duration);
@@ -138,27 +123,25 @@ where
         Ok(())
     }
 
-    fn lock_account(&self, address: AccountAddress) -> Result<(), Error> {
+    fn lock_account(&self, address: AccountAddress) -> Result<()> {
         self.key_cache.write().unwrap().remove_key(&address);
         Ok(())
     }
 
-    fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction, Error> {
+    fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         let address = raw_txn.sender();
-        ensure!(
-            self.contains(&address)?,
-            "Can not find account by address: {:?}",
-            address
-        );
+        if !self.contains(&address)? {
+            return Err(WalletError::AccountNotExist(address));
+        }
         match self.key_cache.write().unwrap().get_key(&address) {
-            None => {
-                bail!("account {} is locked, please unlock it", address);
-            }
-            Some(k) => k.sign_txn(raw_txn),
+            None => Err(WalletError::AccountLocked(address)),
+            Some(k) => k
+                .sign_txn(raw_txn)
+                .map_err(|err| WalletError::TransactionSignError(err)),
         }
     }
 
-    fn get_default_account(&self) -> Result<Option<WalletAccount>, Error> {
+    fn get_default_account(&self) -> Result<Option<WalletAccount>> {
         let default_account = self.default_account.lock().unwrap().as_ref().cloned();
         match default_account {
             Some(a) => Ok(Some(a)),
@@ -174,15 +157,14 @@ where
         }
     }
 
-    fn get_accounts(&self) -> Result<Vec<WalletAccount>, Error> {
-        self.store.get_accounts()
+    fn get_accounts(&self) -> Result<Vec<WalletAccount>> {
+        Ok(self.store.get_accounts()?)
     }
 
-    fn set_default(&self, address: &AccountAddress) -> Result<(), Error> {
-        let mut target = self.get_account(address)?.ok_or(format_err!(
-            "Can not find account by address: {:?}",
-            address
-        ))?;
+    fn set_default(&self, address: &AccountAddress) -> Result<()> {
+        let mut target = self
+            .get_account(address)?
+            .ok_or(WalletError::AccountNotExist(address.clone()))?;
 
         let default = self.get_default_account()?;
         if let Some(mut default) = default {
@@ -200,9 +182,11 @@ where
         Ok(())
     }
 
-    fn remove_account(&self, address: &AccountAddress) -> Result<(), Error> {
+    fn remove_account(&self, address: &AccountAddress) -> Result<()> {
         if let Some(account) = self.get_account(address)? {
-            ensure!(!account.is_default, "Can not remove default account.");
+            if account.is_default {
+                return Err(WalletError::RemoveDefaultAccountError(address.clone()));
+            }
             self.store.remove_account(address)?;
         }
         Ok(())
@@ -258,7 +242,7 @@ where
             Some(pub_key) => pub_key,
             None => match self.store.get_account(address)? {
                 None => {
-                    bail!("account {} doesn't exist", address);
+                    return Err(WalletError::AccountNotExist(address.clone()));
                 }
                 Some(account) => account.public_key.clone(),
             },
@@ -267,22 +251,21 @@ where
         let key_data = self
             .store
             .get_from_account(address, KEY_NAME_ENCRYPTED_PRIVATE_KEY)?;
-        ensure!(
-            key_data.is_some(),
-            "no private key data associate with address {}",
-            address
-        );
+        if key_data.is_none() {
+            return Err(WalletError::AccountPrivateKeyMissing(address.clone()));
+        }
+
         let key_data = key_data.unwrap();
-        let plain_key_data = decrypt(password.as_bytes(), &key_data)?;
-        let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice())?;
+        let plain_key_data = decrypt(password.as_bytes(), &key_data)
+            .map_err(|e| WalletError::DecryptPrivateKeyError(e))?;
+        let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice()).map_err(|_e| {
+            WalletError::StoreError(format_err!("underline vault store corrupted"))
+        })?;
         let keypair = KeyPair::from(private_key);
 
         // check the private key does correspond the declared public key
         if &keypair.public_key.to_bytes() != &account_public_key.to_bytes() {
-            bail!(
-                "cannot get private key for account: {}, invalid password",
-                address
-            );
+            return Err(WalletError::InvalidPassword(address.clone()));
         }
         Ok(keypair)
     }
@@ -290,9 +273,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::KeyStoreWallet;
+    use super::RawUserTransaction;
+    use super::Wallet;
     use crate::file_wallet_store::FileWalletStore;
-    // use wallet_api::mock::MemWalletStore;
+    use crate::keystore_wallet::gen_keypair;
+    use anyhow::Result;
+    use starcoin_types::account_address::AccountAddress;
+    use std::time::Duration;
 
     #[test]
     fn test_wallet() -> Result<()> {
