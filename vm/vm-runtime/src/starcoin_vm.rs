@@ -272,14 +272,20 @@ impl StarcoinVM {
                     .iter()
                     .map(|tag| self.resolve_type_argument(&mut ctx, tag))
                     .collect::<VMResult<Vec<_>>>()?;
-                match result {
-                    Ok(_) => Ok(VerifiedTranscationPayload::Script(
-                        script.code().to_vec(),
-                        ty_args,
-                        script.args().to_vec(),
-                    )),
-                    Err(e) => return Err(e.into()),
-                }
+                // ToDo: fix me
+                //                match result {
+                //                    Ok(_) => Ok(VerifiedTranscationPayload::Script(
+                //                        script.code().to_vec(),
+                //                        ty_args,
+                //                        script.args().to_vec(),
+                //                    )),
+                //                    Err(e) => return Err(e.into()),
+                //                }
+                Ok(VerifiedTranscationPayload::Script(
+                    script.code().to_vec(),
+                    ty_args,
+                    script.args().to_vec(),
+                ))
             }
             TransactionPayload::Module(module) => {
                 let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
@@ -489,7 +495,6 @@ impl StarcoinVM {
         let mut state_store = StateStore::new(chain_state);
         let mut data_cache = BlockDataCache::new(&state_store);
         self.load_gas_schedule(&data_cache);
-
         match txn {
             Transaction::UserTransaction(txn) => {
                 let libra_txn = txn.clone().into();
@@ -509,7 +514,6 @@ impl StarcoinVM {
                             &data_cache,
                             &txn_data,
                         );
-
                         let result = match verified_payload {
                             Ok(payload) => {
                                 self.execute_verified_payload(&mut data_cache, &txn_data, payload)
