@@ -32,7 +32,13 @@ fn gen_network(
 ) -> (NetworkAsyncService, PeerId) {
     let key_pair = node_config.network.network_keypair();
     let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
-    let network = NetworkActor::launch(node_config.clone(), bus, handle, genesis_hash);
+    let network = NetworkActor::launch(
+        node_config.clone(),
+        bus,
+        handle,
+        genesis_hash,
+        PeerInfo::default(),
+    );
     (network, addr)
 }
 

@@ -24,6 +24,7 @@ use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
 use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Handle;
+use types::peer_info::PeerInfo;
 
 const PROTOCOL_NAME: &[u8] = b"/starcoin/consensus/1";
 
@@ -155,6 +156,10 @@ impl SNetworkService {
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
         self.service.connected_peers().await
     }
+
+    pub fn update_self_info(&self, info: PeerInfo) {
+        self.service.update_self_info(info);
+    }
 }
 
 impl NetworkInner {
@@ -249,6 +254,7 @@ pub fn build_network_service(
     cfg: &NetworkConfig,
     handle: Handle,
     genesis_hash: HashValue,
+    self_info: PeerInfo,
 ) -> (
     SNetworkService,
     mpsc::UnboundedSender<NetworkMessage>,
@@ -267,6 +273,7 @@ pub fn build_network_service(
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
         genesis_hash,
+        self_info,
         ..NetworkConfiguration::default()
     };
     let mut service = SNetworkService::new(config, handle);
