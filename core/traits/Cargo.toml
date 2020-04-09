@@ -10,8 +10,8 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-types = {path = "../../types", package="starcoin-types"}
-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-starcoin-state-api = {package = "starcoin-state-api", path = "../../state/api"}
-config = {path = "../../config", package="starcoin-config"}
+starcoin-types = { path = "../../types"}
+starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-state-api = { path = "../../state/api"}
+starcoin-config = { path = "../../config" }
 

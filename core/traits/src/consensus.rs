@@ -3,12 +3,14 @@
 
 use crate::ChainReader;
 use anyhow::Result;
-use config::NodeConfig;
+use starcoin_config::NodeConfig;
+use starcoin_types::{
+    block::{Block, BlockHeader, BlockTemplate},
+    U256,
+};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::sync::Arc;
-use types::block::{Block, BlockHeader, BlockTemplate};
-use types::U256;
 
 pub trait ConsensusHeader:
     TryFrom<Vec<u8>> + Into<Vec<u8>> + std::marker::Unpin + Clone + Sync + Send + Debug
