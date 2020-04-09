@@ -6414,6 +6414,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-types",
  "stest",
+ "thiserror",
 ]
 
 [[package]]
