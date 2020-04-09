@@ -154,7 +154,6 @@ fn test_state_sync() {
             genesis_hash,
         );
         debug!("addr_2 : {:?}", addr_2);
-        Delay::new(Duration::from_secs(1)).await;
 
         let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone());
         assert!(

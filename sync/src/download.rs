@@ -13,6 +13,7 @@ use crate::state_sync::StateSyncTaskActor;
 use config::NodeConfig;
 use crypto::HashValue;
 use executor::TransactionExecutor;
+use log::kv::Source;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use network_p2p_api::sync_messages::{
@@ -36,7 +37,7 @@ use types::{
 #[rtype(result = "Result<()>")]
 struct SyncEvent {}
 
-const MIN_PEER_LEN: usize = 5;
+const MIN_PEER_SIZE: usize = 5;
 
 #[derive(Clone)]
 pub struct DownloadActor<E, C>
@@ -184,6 +185,16 @@ where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
+    async fn best_peer(network: &NetworkAsyncService) -> Result<Option<PeerId>> {
+        let mut peer_id = None;
+        // todo : cmp peer
+        network.peer_set().await?.iter().for_each(|peer_info| {
+            peer_id = Some(peer_info.get_peer_id());
+        });
+
+        Ok(peer_id)
+    }
+
     async fn sync_state(
         self_peer_id: PeerId,
         main_network: bool,
@@ -193,14 +204,35 @@ where
         sync_metadata: SyncMetadata,
         bus: Addr<BusActor>,
     ) {
-        if (main_network && Downloader::peer_size(downloader.clone()) >= MIN_PEER_LEN)
+        if let Err(e) = Self::sync_state_inner(
+            self_peer_id,
+            main_network,
+            downloader,
+            network,
+            state_node_storage,
+            sync_metadata,
+            bus,
+        )
+        .await
+        {
+            error!("error : {:?}", e);
+        }
+    }
+
+    async fn sync_state_inner(
+        self_peer_id: PeerId,
+        main_network: bool,
+        downloader: Arc<Downloader<E, C>>,
+        network: NetworkAsyncService,
+        state_node_storage: Arc<dyn StateNodeStore>,
+        sync_metadata: SyncMetadata,
+        bus: Addr<BusActor>,
+    ) -> Result<()> {
+        if (main_network && Downloader::peer_size(downloader.clone()) >= MIN_PEER_SIZE)
             || !main_network
         {
-            if sync_metadata
-                .is_state_sync()
-                .expect("Get state_sync failed.")
-            {
-                if let Some(best_peer) = Downloader::best_peer(downloader.clone()) {
+            if sync_metadata.is_state_sync()? {
+                if let Some(best_peer) = Self::best_peer(&network).await? {
                     //1. ancestor
                     let begin_number = downloader
                         .chain_reader
@@ -247,8 +279,7 @@ where
                                     get_hash_by_number_req.clone(),
                                     do_duration(DELAY_TIME),
                                 )
-                                .await
-                                .expect("send_request 2 err.")
+                                .await?
                         {
                             // 4. get pivot header
                             let hash_with_number = batch_hash_by_number_msg.hashs.pop().unwrap();
@@ -272,47 +303,33 @@ where
                                     get_data_by_hash_req.clone(),
                                     do_duration(DELAY_TIME),
                                 )
-                                .await
-                                .expect("send_request 3 err.")
+                                .await?
                             {
                                 // 5. StateSyncActor
                                 let root = headers.headers.pop().unwrap();
-                                let sync_pivot =
-                                    sync_metadata.get_pivot().expect("Get pivot failed.");
-                                if sync_metadata
-                                    .is_state_sync()
-                                    .expect("Get state_sync failed.")
-                                {
+                                let sync_pivot = sync_metadata.get_pivot()?;
+                                if sync_metadata.is_state_sync()? {
                                     if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
-                                        if let Err(e) = sync_metadata.clone().update_pivot(pivot) {
-                                            warn!("err: {:?}", e);
-                                        } else {
-                                            if sync_pivot.is_none() {
-                                                let state_sync_task_address =
-                                                    StateSyncTaskActor::launch(
-                                                        self_peer_id,
-                                                        root.state_root(),
-                                                        state_node_storage,
-                                                        network.clone(),
-                                                        downloader.clone(),
-                                                        sync_metadata.clone(),
-                                                        bus,
-                                                    );
-                                                if let Err(e) = sync_metadata
-                                                    .update_address(&state_sync_task_address)
-                                                {
-                                                    warn!("err: {:?}", e);
-                                                }
-                                            } else if sync_pivot.unwrap() < pivot {
-                                                //todo:reset
-                                                if let Some(address) = sync_metadata.get_address() {
-                                                    &address.reset(root.state_root());
-                                                } else {
-                                                    warn!(
-                                                        "{:?}",
-                                                        "state sync reset address is none."
-                                                    );
-                                                }
+                                        sync_metadata.clone().update_pivot(pivot)?;
+                                        if sync_pivot.is_none() {
+                                            let state_sync_task_address =
+                                                StateSyncTaskActor::launch(
+                                                    self_peer_id,
+                                                    root.state_root(),
+                                                    state_node_storage,
+                                                    network.clone(),
+                                                    downloader.clone(),
+                                                    sync_metadata.clone(),
+                                                    bus,
+                                                );
+                                            sync_metadata
+                                                .update_address(&state_sync_task_address)?
+                                        } else if sync_pivot.unwrap() < pivot {
+                                            //todo:reset
+                                            if let Some(address) = sync_metadata.get_address() {
+                                                &address.reset(root.state_root());
+                                            } else {
+                                                warn!("{:?}", "state sync reset address is none.");
                                             }
                                         }
                                     } else {
@@ -333,12 +350,14 @@ where
         } else {
             warn!("{:?}", "nothing todo when sync state.");
         }
+
+        Ok(())
     }
 
     fn sync_block_from_best_peer(downloader: Arc<Downloader<E, C>>, network: NetworkAsyncService) {
         Arbiter::spawn(async move {
             debug!("begin sync.");
-            if let Some(best_peer) = Downloader::best_peer(downloader.clone()) {
+            if let Some(best_peer) = Self::best_peer(&network).await.unwrap() {
                 let mut begin_number = downloader
                     .chain_reader
                     .clone()
@@ -485,10 +504,6 @@ where
     }
 
     pub fn get_latest_header_with_peer(&self, peer: &PeerId) -> BlockHeader {
-        unimplemented!()
-    }
-
-    pub fn best_peer(downloader: Arc<Downloader<E, C>>) -> Option<PeerId> {
         unimplemented!()
     }
 
