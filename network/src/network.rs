@@ -179,6 +179,20 @@ impl NetworkAsyncService {
         }
     }
 
+    pub async fn best_peer(&self) -> Result<Option<PeerInfo>> {
+        let size = self.inner.peers.lock().await.len();
+        if size == 0 {
+            return Ok(None);
+        }
+        let mut info = PeerInfo::default();
+        for (_, peer) in self.inner.peers.lock().await.iter() {
+            if peer.peer_info.total_difficult > info.total_difficult {
+                info = peer.peer_info.clone();
+            }
+        }
+        Ok(Some(info))
+    }
+
     pub async fn get_peer_set_size(&self) -> Result<usize> {
         let size = self.inner.peers.lock().await.len();
         Ok(size)
