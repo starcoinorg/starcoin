@@ -5,10 +5,7 @@ use crate::{helper::convert_boot_nodes, Message, NetworkMessage, PeerEvent};
 
 use anyhow::*;
 use futures::{
-    channel::{
-        mpsc,
-        oneshot::{self, Sender},
-    },
+    channel::{mpsc, oneshot::Sender},
     prelude::*,
 };
 
@@ -129,15 +126,15 @@ impl SNetworkService {
     }
 
     pub async fn send_message(&self, peer_id: PeerId, message: Vec<u8>) -> Result<()> {
-        let (tx, rx) = oneshot::channel::<()>();
-        let (protocol_msg, message_id) = Message::new_payload(message);
+        //let (tx, rx) = oneshot::channel::<()>();
+        let (protocol_msg, _message_id) = Message::new_payload(message);
 
         info!("Send message to {} with ack", peer_id);
         self.service
             .write_notification(peer_id, PROTOCOL_NAME.into(), protocol_msg.into_bytes());
         //self.waker.wake();
-        self.inner.acks.lock().insert(message_id, tx);
-        rx.await?;
+        //self.inner.acks.lock().insert(message_id, tx);
+        //rx.await?;
 
         Ok(())
     }

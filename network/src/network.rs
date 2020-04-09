@@ -663,11 +663,10 @@ mod tests {
         let (network2, _addr2, bus2) = build_network(node_config2.clone(), handle.clone());
 
         Arbiter::spawn(async move {
-            _delay(Duration::from_millis(1000)).await;
-
             let network_clone2 = network2.clone();
 
-            let response_actor = TestResponseActor::create(network_clone2);
+            let (tx, mut rx) = mpsc::unbounded();
+            let response_actor = TestResponseActor::create(network_clone2, tx);
             let addr = response_actor.start();
 
             let recipient = addr.clone().recipient::<RpcRequestMessage>();
@@ -682,8 +681,6 @@ mod tests {
             })
             .await
             .unwrap();
-
-            _delay(Duration::from_millis(1000)).await;
 
             network1
                 .network_actor_addr()
@@ -701,8 +698,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            _delay(Duration::from_millis(1000)).await;
-
+            let _ = rx.next().await;
             let txns = addr.send(GetPeerTransactions).await.unwrap();
             assert_eq!(1, txns.len());
 
@@ -749,13 +745,18 @@ mod tests {
     struct TestResponseActor {
         _network_service: NetworkAsyncService,
         peer_txns: Vec<PeerTransactions>,
+        event_tx: mpsc::UnboundedSender<()>,
     }
 
     impl TestResponseActor {
-        fn create(network_service: NetworkAsyncService) -> TestResponseActor {
+        fn create(
+            network_service: NetworkAsyncService,
+            event_tx: mpsc::UnboundedSender<()>,
+        ) -> TestResponseActor {
             let instance = Self {
                 _network_service: network_service,
                 peer_txns: vec![],
+                event_tx,
             };
             instance
         }
@@ -774,6 +775,7 @@ mod tests {
 
         fn handle(&mut self, msg: PeerTransactions, _ctx: &mut Self::Context) -> Self::Result {
             self.peer_txns.push(msg);
+            self.event_tx.unbounded_send(()).unwrap();
         }
     }
     struct GetPeerTransactions;
