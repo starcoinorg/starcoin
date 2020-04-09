@@ -42,6 +42,7 @@ fn gen_network(
     (network, addr)
 }
 
+#[ignore]
 #[test]
 fn test_network_actor_rpc() {
     ::logger::init_for_test();
@@ -385,6 +386,7 @@ fn test_network_actor_rpc_2() {
     drop(rt);
 }
 
+#[ignore]
 #[test]
 fn test_state_sync() {
     ::logger::init_for_test();

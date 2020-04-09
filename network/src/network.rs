@@ -649,6 +649,8 @@ mod tests {
         let (network2, _addr2, bus2) = build_network(node_config2.clone(), handle.clone());
 
         Arbiter::spawn(async move {
+            _delay(Duration::from_millis(1000)).await;
+
             let network_clone2 = network2.clone();
 
             let response_actor = TestResponseActor::create(network_clone2);
@@ -667,7 +669,7 @@ mod tests {
             .await
             .unwrap();
 
-            _delay(Duration::from_millis(100)).await;
+            _delay(Duration::from_millis(1000)).await;
 
             network1
                 .network_actor_addr()
@@ -685,10 +687,10 @@ mod tests {
                 .await
                 .unwrap();
 
-            _delay(Duration::from_millis(100)).await;
+            _delay(Duration::from_millis(1000)).await;
 
-            let _txns = addr.send(GetPeerTransactions).await.unwrap();
-            //assert_eq!(1, txns.len());
+            let txns = addr.send(GetPeerTransactions).await.unwrap();
+            assert_eq!(1, txns.len());
 
             let request = RPCRequest::TestRequest(TestRequest {
                 data: HashValue::random(),
