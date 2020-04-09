@@ -48,6 +48,7 @@ use libp2p::{kad::record, Multiaddr, PeerId};
 use log::{error, info, trace, warn};
 use parking_lot::Mutex;
 use peerset::{PeersetHandle, ReputationChange};
+use types::peer_info::PeerInfo;
 
 use crate::behaviour::RpcRequest;
 use crate::config::{Params, TransportConfig};
@@ -457,6 +458,12 @@ impl NetworkService {
         }
     }
 
+    pub fn update_self_info(&self, info: PeerInfo) {
+        let _ = self
+            .to_worker
+            .unbounded_send(ServiceToWorkerMsg::SelfInfo(info));
+    }
+
     /// Returns a stream containing the events that happen on the network.
     ///
     /// If this method is called multiple times, the events are duplicated.
@@ -630,6 +637,7 @@ enum ServiceToWorkerMsg {
     DisconnectPeer(PeerId),
     IsConnected(PeerId, oneshot::Sender<bool>),
     ConnectedPeers(oneshot::Sender<HashSet<PeerId>>),
+    SelfInfo(PeerInfo),
 }
 
 /// Main network worker. Must be polled in order for the network to advance.
@@ -710,6 +718,11 @@ impl Future for NetworkWorker {
                         result.insert(peer.clone());
                     }
                     tx.send(result);
+                }
+                ServiceToWorkerMsg::SelfInfo(info) => {
+                    this.network_service
+                        .user_protocol_mut()
+                        .update_self_info(info);
                 }
             }
         }

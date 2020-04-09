@@ -21,6 +21,7 @@ mod tests {
     use crypto::hash::HashValue;
 
     use crate::NetworkMessage;
+    use types::peer_info::PeerInfo;
 
     pub type NetworkComponent = (
         SNetworkService,
@@ -80,7 +81,12 @@ mod tests {
                 first_addr = Some(config.listen.clone().parse().unwrap());
             }
 
-            let server = build_network_service(&config, handle.clone(), HashValue::default());
+            let server = build_network_service(
+                &config,
+                handle.clone(),
+                HashValue::default(),
+                PeerInfo::default(),
+            );
             result.push({
                 let c: NetworkComponent = server;
                 c
@@ -261,8 +267,12 @@ mod tests {
         let mut node_config1 = NodeConfig::random_for_test().network.clone();
         node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
 
-        let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
-            build_network_service(&node_config1, rt.handle().clone(), HashValue::default());
+        let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) = build_network_service(
+            &node_config1,
+            rt.handle().clone(),
+            HashValue::default(),
+            PeerInfo::default(),
+        );
 
         thread::sleep(Duration::from_secs(1));
 
@@ -271,16 +281,24 @@ mod tests {
         let seed = format!("{}/p2p/{}", &node_config1.listen, addr1_hex);
         node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         node_config2.seeds = vec![seed.clone()];
-        let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) =
-            build_network_service(&node_config2, rt.handle().clone(), HashValue::default());
+        let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) = build_network_service(
+            &node_config2,
+            rt.handle().clone(),
+            HashValue::default(),
+            PeerInfo::default(),
+        );
 
         thread::sleep(Duration::from_secs(1));
 
         let mut node_config3 = NodeConfig::random_for_test().network.clone();
         node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
         node_config3.seeds = vec![seed];
-        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-            build_network_service(&node_config3, rt.handle().clone(), HashValue::default());
+        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) = build_network_service(
+            &node_config3,
+            rt.handle().clone(),
+            HashValue::default(),
+            PeerInfo::default(),
+        );
 
         thread::sleep(Duration::from_secs(1));
 
@@ -310,13 +328,21 @@ mod tests {
 
         thread::sleep(Duration::from_secs(10));
 
-        let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) =
-            build_network_service(&node_config2, rt.handle().clone(), HashValue::default());
+        let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) = build_network_service(
+            &node_config2,
+            rt.handle().clone(),
+            HashValue::default(),
+            PeerInfo::default(),
+        );
 
         thread::sleep(Duration::from_secs(1));
 
-        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-            build_network_service(&node_config3, rt.handle().clone(), HashValue::default());
+        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) = build_network_service(
+            &node_config3,
+            rt.handle().clone(),
+            HashValue::default(),
+            PeerInfo::default(),
+        );
 
         thread::sleep(Duration::from_secs(1));
 

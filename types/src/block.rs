@@ -319,6 +319,10 @@ impl BlockInfo {
     pub fn id(&self) -> HashValue {
         self.crypto_hash()
     }
+
+    pub fn get_total_difficult(&self) -> U256 {
+        U256::from(0)
+    }
 }
 
 impl Into<(HashValue, HashValue, Vec<HashValue>, u64, u64, U256)> for BlockInfo {

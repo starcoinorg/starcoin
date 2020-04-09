@@ -178,6 +178,25 @@ impl NetworkAsyncService {
             None => Ok(None),
         }
     }
+
+    pub async fn best_peer(&self) -> Result<Option<PeerInfo>> {
+        let size = self.inner.peers.lock().await.len();
+        if size == 0 {
+            return Ok(None);
+        }
+        let mut info = PeerInfo::default();
+        for (_, peer) in self.inner.peers.lock().await.iter() {
+            if peer.peer_info.total_difficult > info.total_difficult {
+                info = peer.peer_info.clone();
+            }
+        }
+        Ok(Some(info))
+    }
+
+    pub async fn get_peer_set_size(&self) -> Result<usize> {
+        let size = self.inner.peers.lock().await.len();
+        Ok(size)
+    }
 }
 
 impl NetworkAsyncService {
@@ -191,6 +210,7 @@ pub struct NetworkActor {
     network_service: SNetworkService,
     bus: Addr<BusActor>,
     peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
+    peer_id: PeerId,
 }
 
 impl NetworkActor {
@@ -199,9 +219,14 @@ impl NetworkActor {
         bus: Addr<BusActor>,
         handle: Handle,
         genesis_hash: HashValue,
+        self_info: PeerInfo,
     ) -> NetworkAsyncService {
-        let (service, tx, rx, event_rx, tx_command) =
-            build_network_service(&node_config.network, handle.clone(), genesis_hash);
+        let (service, tx, rx, event_rx, tx_command) = build_network_service(
+            &node_config.network,
+            handle.clone(),
+            genesis_hash,
+            self_info.clone(),
+        );
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -219,15 +244,22 @@ impl NetworkActor {
         let raw_message_processor_clone = raw_message_processor.clone();
 
         let peer_id = service.identify().clone();
+        let peer_id_clone = peer_id.clone();
 
         let service_clone = service.clone();
         let bus_clone = bus.clone();
-        let peers = Arc::new(Mutex::new(HashMap::new()));
+        let mut peers = HashMap::new();
+        peers.insert(
+            self_info.peer_id.clone().into(),
+            PeerInfoNet::new(self_info),
+        );
+        let peers = Arc::new(Mutex::new(peers));
         let peers_clone = peers.clone();
         let addr = NetworkActor::create(move |_ctx: &mut Context<NetworkActor>| NetworkActor {
             network_service: service_clone,
             bus: bus_clone,
             peers: peers_clone,
+            peer_id: peer_id_clone,
         });
         let (connected_tx, mut connected_rx) = futures::channel::mpsc::channel(1);
         let need_send_event = AtomicBool::new(false);
@@ -245,7 +277,13 @@ impl NetworkActor {
             need_send_event,
         };
         let inner = Arc::new(inner);
-        handle.spawn(Self::start(inner.clone(), rx, event_rx, tx_command));
+        handle.spawn(Self::start(
+            handle.clone(),
+            inner.clone(),
+            rx,
+            event_rx,
+            tx_command,
+        ));
 
         if node_config.network.seeds.len() > 0 {
             futures::executor::block_on(async move {
@@ -266,6 +304,7 @@ impl NetworkActor {
     }
 
     async fn start(
+        handle: Handle,
         inner: Arc<Inner>,
         net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
         event_rx: mpsc::UnboundedReceiver<PeerEvent>,
@@ -277,11 +316,11 @@ impl NetworkActor {
         loop {
             futures::select! {
                 message = net_rx.select_next_some()=>{
-                    inner.handle_network_receive(message).await.unwrap();
+                    handle.spawn(Inner::handle_network_receive(inner.clone(),message));
                     info!("receive net message");
                 },
                 event = event_rx.select_next_some()=>{
-                    inner.handle_event_receive(event).await.unwrap();
+                    handle.spawn(Inner::handle_event_receive(inner.clone(),event));
                     info!("receive net event");
                 },
                 complete => {
@@ -295,12 +334,13 @@ impl NetworkActor {
 }
 
 impl Inner {
-    async fn handle_network_receive(&self, network_msg: NetworkMessage) -> Result<()> {
+    async fn handle_network_receive(inner: Arc<Inner>, network_msg: NetworkMessage) -> Result<()> {
         info!("receive network_message ");
         let message = PeerMessage::decode(&network_msg.data);
         match message {
             Ok(msg) => {
-                self.handle_network_message(network_msg.peer_id.into(), msg)
+                inner
+                    .handle_network_message(network_msg.peer_id.into(), msg)
                     .await?
             }
             Err(e) => {
@@ -339,15 +379,20 @@ impl Inner {
                 );
                 let peer_info = PeerInfo::new(peer_id.clone().into());
                 let block_number = block.header().number();
+                let total_difficulty = block.get_total_difficulty();
 
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
-                    peer_info.peer_info.block_number = block_number;
-                    peer_info.peer_info.block_id = block_hash;
+                    if total_difficulty > peer_info.peer_info.total_difficult {
+                        peer_info.peer_info.block_number = block_number;
+                        peer_info.peer_info.block_id = block_hash;
+                        peer_info.peer_info.total_difficult = total_difficulty;
+                    }
                 }
                 self.bus
                     .send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
-                            peer_info, block,
+                            peer_info,
+                            block.get_block().clone(),
                         )),
                     })
                     .await?;
@@ -419,23 +464,23 @@ impl Inner {
         Ok(())
     }
 
-    async fn handle_event_receive(&self, event: PeerEvent) -> Result<()> {
+    async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) -> Result<()> {
         info!("event is {:?}", event);
         match event.clone() {
             PeerEvent::Open(peer_id, peer_info) => {
-                self.on_peer_connected(peer_id.into(), peer_info).await;
-                if self.need_send_event.load(Ordering::Acquire) {
+                inner.on_peer_connected(peer_id.into(), peer_info).await;
+                if inner.need_send_event.load(Ordering::Acquire) {
                     info!("send event");
-                    let mut connected_tx = self.connected_tx.clone();
+                    let mut connected_tx = inner.connected_tx.clone();
                     connected_tx.send(event.clone()).await?;
-                    self.need_send_event.swap(false, Ordering::Acquire);
+                    inner.need_send_event.swap(false, Ordering::Acquire);
                 }
             }
             PeerEvent::Close(peer_id) => {
-                self.on_peer_disconnected(peer_id.into()).await;
+                inner.on_peer_disconnected(peer_id.into()).await;
             }
         }
-        self.bus.send(Broadcast { msg: event }).await?;
+        inner.bus.send(Broadcast { msg: event }).await?;
         info!("already broadcast event");
         Ok(())
     }
@@ -492,8 +537,15 @@ impl Handler<SystemEvents> for NetworkActor {
                 let block_number = block.header().number();
 
                 let total_difficulty = block.get_total_difficulty();
-                let msg = PeerMessage::Block(block.get_block().clone());
+                let msg = PeerMessage::Block(block.clone());
                 let bytes = msg.encode().unwrap();
+
+                let self_info = PeerInfo::_new(
+                    self.peer_id.clone().into(),
+                    block_number,
+                    total_difficulty,
+                    block_hash,
+                );
 
                 Arbiter::spawn(async move {
                     for (peer_id, mut peer_info) in peers.lock().await.iter_mut() {
@@ -514,6 +566,8 @@ impl Handler<SystemEvents> for NetworkActor {
                             .unwrap();
                     }
                 });
+
+                self.network_service.update_self_info(self_info);
 
                 ()
             }
@@ -611,7 +665,8 @@ mod tests {
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();
 
-            let response_actor = TestResponseActor::create(network_clone2);
+            let (tx, mut rx) = mpsc::unbounded();
+            let response_actor = TestResponseActor::create(network_clone2, tx);
             let addr = response_actor.start();
 
             let recipient = addr.clone().recipient::<RpcRequestMessage>();
@@ -626,8 +681,6 @@ mod tests {
             })
             .await
             .unwrap();
-
-            _delay(Duration::from_millis(100)).await;
 
             network1
                 .network_actor_addr()
@@ -645,8 +698,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            _delay(Duration::from_millis(100)).await;
-
+            let _ = rx.next().await;
             let txns = addr.send(GetPeerTransactions).await.unwrap();
             assert_eq!(1, txns.len());
 
@@ -685,6 +737,7 @@ mod tests {
             bus.clone(),
             handle,
             HashValue::default(),
+            PeerInfo::default(),
         );
         (network, addr, bus)
     }
@@ -692,13 +745,18 @@ mod tests {
     struct TestResponseActor {
         _network_service: NetworkAsyncService,
         peer_txns: Vec<PeerTransactions>,
+        event_tx: mpsc::UnboundedSender<()>,
     }
 
     impl TestResponseActor {
-        fn create(network_service: NetworkAsyncService) -> TestResponseActor {
+        fn create(
+            network_service: NetworkAsyncService,
+            event_tx: mpsc::UnboundedSender<()>,
+        ) -> TestResponseActor {
             let instance = Self {
                 _network_service: network_service,
                 peer_txns: vec![],
+                event_tx,
             };
             instance
         }
@@ -717,6 +775,7 @@ mod tests {
 
         fn handle(&mut self, msg: PeerTransactions, _ctx: &mut Self::Context) -> Self::Result {
             self.peer_txns.push(msg);
+            self.event_tx.unbounded_send(()).unwrap();
         }
     }
     struct GetPeerTransactions;
