@@ -13,7 +13,7 @@ use crate::state_sync::StateSyncTaskActor;
 use config::NodeConfig;
 use crypto::HashValue;
 use executor::TransactionExecutor;
-use log::kv::Source;
+use futures::executor::block_on;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use network_p2p_api::sync_messages::{
@@ -185,16 +185,6 @@ where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    async fn best_peer(network: &NetworkAsyncService) -> Result<Option<PeerId>> {
-        let mut peer_id = None;
-        // todo : cmp peer
-        network.peer_set().await?.iter().for_each(|peer_info| {
-            peer_id = Some(peer_info.get_peer_id());
-        });
-
-        Ok(peer_id)
-    }
-
     async fn sync_state(
         self_peer_id: PeerId,
         main_network: bool,
@@ -228,11 +218,9 @@ where
         sync_metadata: SyncMetadata,
         bus: Addr<BusActor>,
     ) -> Result<()> {
-        if (main_network && Downloader::peer_size(downloader.clone()) >= MIN_PEER_SIZE)
-            || !main_network
-        {
+        if (main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network {
             if sync_metadata.is_state_sync()? {
-                if let Some(best_peer) = Self::best_peer(&network).await? {
+                if let Some(best_peer) = network.best_peer().await? {
                     //1. ancestor
                     let begin_number = downloader
                         .chain_reader
@@ -244,7 +232,7 @@ where
 
                     let ancestor = if let Some(hash_with_number) = Downloader::find_ancestor(
                         downloader.clone(),
-                        best_peer.clone(),
+                        best_peer.get_peer_id(),
                         network.clone(),
                         begin_number,
                     )
@@ -256,7 +244,7 @@ where
                     };
 
                     // 2. pivot
-                    let latest_number = downloader.get_latest_header_with_peer(&best_peer).number();
+                    let latest_number = best_peer.get_block_number();
                     let min_behind = if main_network {
                         MAIN_MIN_BLOCKS_BEHIND
                     } else {
@@ -275,7 +263,7 @@ where
                             network
                                 .clone()
                                 .send_request(
-                                    best_peer.clone().into(),
+                                    best_peer.get_peer_id().into(),
                                     get_hash_by_number_req.clone(),
                                     do_duration(DELAY_TIME),
                                 )
@@ -299,7 +287,7 @@ where
                             ) = network
                                 .clone()
                                 .send_request(
-                                    best_peer.clone().into(),
+                                    best_peer.get_peer_id().into(),
                                     get_data_by_hash_req.clone(),
                                     do_duration(DELAY_TIME),
                                 )
@@ -318,7 +306,6 @@ where
                                                     root.state_root(),
                                                     state_node_storage,
                                                     network.clone(),
-                                                    downloader.clone(),
                                                     sync_metadata.clone(),
                                                     bus,
                                                 );
@@ -357,7 +344,7 @@ where
     fn sync_block_from_best_peer(downloader: Arc<Downloader<E, C>>, network: NetworkAsyncService) {
         Arbiter::spawn(async move {
             debug!("begin sync.");
-            if let Some(best_peer) = Self::best_peer(&network).await.unwrap() {
+            if let Some(best_peer) = network.best_peer().await.unwrap() {
                 let mut begin_number = downloader
                     .chain_reader
                     .clone()
@@ -368,7 +355,7 @@ where
 
                 let hash_with_number = Downloader::find_ancestor(
                     downloader.clone(),
-                    best_peer.clone(),
+                    best_peer.get_peer_id(),
                     network.clone(),
                     begin_number,
                 )
@@ -381,9 +368,9 @@ where
                         loop {
                             //1. sync hash
                             let send_get_hash_by_number_msg =
-                                Downloader::send_get_hash_by_number_msg_forward(
-                                    downloader.clone(),
-                                    best_peer.clone(),
+                                Downloader::<E, C>::send_get_hash_by_number_msg_forward(
+                                    network.clone(),
+                                    best_peer.get_peer_id(),
                                     begin_number,
                                 )
                                 .await;
@@ -406,7 +393,7 @@ where
                                     ) = network
                                         .clone()
                                         .send_request(
-                                            best_peer.clone().into(),
+                                            best_peer.get_peer_id().into(),
                                             get_hash_by_number_req.clone(),
                                             do_duration(DELAY_TIME),
                                         )
@@ -415,7 +402,7 @@ where
                                     {
                                         Downloader::handle_batch_hash_by_number_msg(
                                             downloader.clone(),
-                                            best_peer.clone(),
+                                            best_peer.get_peer_id(),
                                             batch_hash_by_number_msg,
                                         );
                                     }
@@ -435,7 +422,7 @@ where
                                         ) = network
                                             .clone()
                                             .send_request(
-                                                best_peer.clone().into(),
+                                                best_peer.get_peer_id().into(),
                                                 get_data_by_hash_req.clone(),
                                                 do_duration(DELAY_TIME),
                                             )
@@ -503,107 +490,88 @@ where
         }
     }
 
-    pub fn get_latest_header_with_peer(&self, peer: &PeerId) -> BlockHeader {
-        unimplemented!()
-    }
-
-    pub fn peer_size(downloader: Arc<Downloader<E, C>>) -> usize {
-        unimplemented!()
-    }
-
     /// for ancestors
     pub async fn send_get_hash_by_number_msg_backward(
-        downloader: Arc<Downloader<E, C>>,
-        peer: PeerId,
+        network: NetworkAsyncService,
+        peer_id: PeerId,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
         //todo：binary search
 
-        // let number = downloader
-        //     .peers
-        //     .read()
-        //     .get(&peer)
-        //     .expect("Latest state is none.")
-        //     .header
-        //     .number();
-        //
-        // info!(
-        //     "sync with peer {:?} : latest number: {} , begin number : {}",
-        //     peer.get_peer_id(),
-        //     number,
-        //     begin_number
-        // );
-        // if begin_number < number {
-        //     let mut numbers = Vec::new();
-        //     let mut end = false;
-        //     let mut next_number = 0;
-        //     if begin_number < HEAD_CT {
-        //         for i in 0..(begin_number + 1) {
-        //             info!("best peer backward number : {}, number : {}", number, i);
-        //             numbers.push(i);
-        //             end = true;
-        //         }
-        //     } else {
-        //         for i in (begin_number - HEAD_CT + 1)..(begin_number + 1) {
-        //             info!("best peer backward number : {}, number : {}, ", number, i);
-        //             numbers.push(i);
-        //         }
-        //         next_number = begin_number - HEAD_CT;
-        //     };
-        //     info!(
-        //         "best peer backward number : {}, next number : {}",
-        //         number, next_number
-        //     );
-        //     Some((GetHashByNumberMsg { numbers }, end, next_number))
-        // } else {
-        //     warn!("GetHashByNumberMsg is none.");
-        //     None
-        // }
+        if let Some(peer_info) =
+            block_on(async move { network.get_peer(&peer_id.into()).await.unwrap() })
+        {
+            let number = peer_info.get_block_number();
+            info!(
+                "sync with peer {:?} : latest number: {} , begin number : {}",
+                peer_info.get_peer_id(),
+                number,
+                begin_number
+            );
 
-        unimplemented!()
+            if begin_number < number {
+                let mut numbers = Vec::new();
+                let mut end = false;
+                let mut next_number = 0;
+                if begin_number < HEAD_CT {
+                    for i in 0..(begin_number + 1) {
+                        info!("best peer backward number : {}, number : {}", number, i);
+                        numbers.push(i);
+                        end = true;
+                    }
+                } else {
+                    for i in (begin_number - HEAD_CT + 1)..(begin_number + 1) {
+                        info!("best peer backward number : {}, number : {}, ", number, i);
+                        numbers.push(i);
+                    }
+                    next_number = begin_number - HEAD_CT;
+                };
+                info!(
+                    "best peer backward number : {}, next number : {}",
+                    number, next_number
+                );
+                return Some((GetHashByNumberMsg { numbers }, end, next_number));
+            }
+        }
+        warn!("GetHashByNumberMsg is none.");
+        None
     }
 
     pub async fn send_get_hash_by_number_msg_forward(
-        downloader: Arc<Downloader<E, C>>,
-        peer: PeerId,
+        network: NetworkAsyncService,
+        peer_id: PeerId,
         begin_number: u64,
     ) -> Option<(GetHashByNumberMsg, bool, u64)> {
-        // let number = downloader
-        //     .peers
-        //     .read()
-        //     .get(&peer)
-        //     .expect("Latest state is none.")
-        //     .header
-        //     .number();
-        //
-        // if begin_number < number {
-        //     let mut numbers = Vec::new();
-        //     let mut end = false;
-        //     let mut next_number = 0;
-        //     if (number - begin_number) < HEAD_CT {
-        //         for i in begin_number..(number + 1) {
-        //             info!("best peer forward number : {}, next number : {}", number, i,);
-        //             numbers.push(i);
-        //             end = true;
-        //         }
-        //     } else {
-        //         for i in begin_number..(begin_number + HEAD_CT) {
-        //             info!("best peer forward number : {}, next number : {}", number, i,);
-        //             numbers.push(i);
-        //         }
-        //         next_number = begin_number + HEAD_CT;
-        //     };
-        //
-        //     info!(
-        //         "best peer forward number : {}, next number : {}",
-        //         number, next_number
-        //     );
-        //     Some((GetHashByNumberMsg { numbers }, end, next_number))
-        // } else {
-        //     None
-        // }
+        if let Some(peer_info) =
+            block_on(async move { network.get_peer(&peer_id.into()).await.unwrap() })
+        {
+            let number = peer_info.get_block_number();
+            if begin_number < number {
+                let mut numbers = Vec::new();
+                let mut end = false;
+                let mut next_number = 0;
+                if (number - begin_number) < HEAD_CT {
+                    for i in begin_number..(number + 1) {
+                        info!("best peer forward number : {}, next number : {}", number, i,);
+                        numbers.push(i);
+                        end = true;
+                    }
+                } else {
+                    for i in begin_number..(begin_number + HEAD_CT) {
+                        info!("best peer forward number : {}, next number : {}", number, i,);
+                        numbers.push(i);
+                    }
+                    next_number = begin_number + HEAD_CT;
+                };
 
-        unimplemented!()
+                info!(
+                    "best peer forward number : {}, next number : {}",
+                    number, next_number
+                );
+                return Some((GetHashByNumberMsg { numbers }, end, next_number));
+            }
+        }
+        None
     }
 
     pub async fn find_ancestor(
@@ -615,12 +583,13 @@ where
         let mut hash_with_number = None;
         let mut begin_number = block_number;
         loop {
-            let send_get_hash_by_number_msg = Downloader::send_get_hash_by_number_msg_backward(
-                downloader.clone(),
-                peer_id.clone(),
-                begin_number,
-            )
-            .await;
+            let send_get_hash_by_number_msg =
+                Downloader::<E, C>::send_get_hash_by_number_msg_backward(
+                    network.clone(),
+                    peer_id.clone(),
+                    begin_number,
+                )
+                .await;
 
             info!(
                 "get_hash_by_number_msg:{:?}, backward",
@@ -781,7 +750,7 @@ where
         }
     }
 
-    pub async fn do_block_with_info(
+    pub async fn _do_block_with_info(
         downloader: Arc<Downloader<E, C>>,
         block: Block,
         block_info: BlockInfo,

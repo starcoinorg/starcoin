@@ -6,9 +6,8 @@ use chain::ChainActorRef;
 use crypto::hash::{CryptoHash, HashValue};
 use executor::TransactionExecutor;
 use futures::sink::SinkExt;
-use futures_timer::Delay;
 use logger::prelude::*;
-use network::{NetworkAsyncService, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
+use network::{NetworkAsyncService, RPCRequest, RPCResponse, RpcRequestMessage};
 /// Sync message which inbound
 use network_p2p_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
@@ -16,10 +15,9 @@ use network_p2p_api::sync_messages::{
 };
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
-use std::time::Duration;
 use traits::ChainAsyncService;
 use traits::Consensus;
-use types::{block::Block, peer_info::PeerId};
+use types::peer_info::PeerId;
 
 pub struct ProcessActor<E, C>
 where

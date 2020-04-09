@@ -1,12 +1,11 @@
-use crate::download::Downloader;
 use crate::{do_duration, DELAY_TIME};
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use crypto::hash::HashValue;
-use executor::TransactionExecutor;
 use forkable_jellyfish_merkle::node_type::Node;
+use futures::executor::block_on;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RPCRequest, RPCResponse};
 use parking_lot::Mutex;
@@ -14,18 +13,14 @@ use starcoin_state_tree::{StateNode, StateNodeStore};
 use starcoin_sync_api::{StateSyncReset, SyncMetadata};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use traits::Consensus;
 use types::{peer_info::PeerId, system_events::SystemEvents};
 
-async fn sync_state_node<E, C>(
+async fn sync_state_node(
     node_key: HashValue,
     peer_id: PeerId,
     network_service: NetworkAsyncService,
-    address: Addr<StateSyncTaskActor<E, C>>,
-) where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+    address: Addr<StateSyncTaskActor>,
+) {
     debug!("sync_state_node : {:?}", node_key);
     let get_state_node_by_node_hash_req = RPCRequest::GetStateNodeByNodeHash(node_key);
     let state_node = if let RPCResponse::GetStateNodeByNodeHash(state_node) = network_service
@@ -63,20 +58,12 @@ async fn sync_state_node<E, C>(
 }
 
 #[derive(Clone)]
-pub struct StateSyncTaskRef<E, C>
-where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    address: Addr<StateSyncTaskActor<E, C>>,
+pub struct StateSyncTaskRef {
+    address: Addr<StateSyncTaskActor>,
 }
 
 #[async_trait::async_trait]
-impl<E, C> StateSyncReset for StateSyncTaskRef<E, C>
-where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl StateSyncReset for StateSyncTaskRef {
     async fn reset(&self, root: HashValue) {
         if let Err(e) = self.address.send(StateSyncEvent { root }).await {
             warn!("err : {:?}", e);
@@ -92,36 +79,26 @@ struct StateSyncTaskEvent {
     state_node: Option<StateNode>,
 }
 
-pub struct StateSyncTaskActor<E, C>
-where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+pub struct StateSyncTaskActor {
     self_peer_id: PeerId,
     root: HashValue,
     state_node_storage: Arc<dyn StateNodeStore>,
     network_service: NetworkAsyncService,
-    downloader: Arc<Downloader<E, C>>,
     wait_2_sync: VecDeque<HashValue>,
     sync_metadata: SyncMetadata,
     bus: Addr<BusActor>,
     syncing_nodes: Mutex<HashMap<PeerId, HashValue>>,
 }
 
-impl<E, C> StateSyncTaskActor<E, C>
-where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl StateSyncTaskActor {
     pub fn launch(
         self_peer_id: PeerId,
         root: HashValue,
         state_node_storage: Arc<dyn StateNodeStore>,
         network_service: NetworkAsyncService,
-        downloader: Arc<Downloader<E, C>>,
         sync_metadata: SyncMetadata,
         bus: Addr<BusActor>,
-    ) -> StateSyncTaskRef<E, C> {
+    ) -> StateSyncTaskRef {
         let mut wait_2_sync: VecDeque<HashValue> = VecDeque::new();
         wait_2_sync.push_back(root.clone());
         let address = StateSyncTaskActor::create(move |_ctx| Self {
@@ -129,7 +106,6 @@ where
             root,
             state_node_storage,
             network_service,
-            downloader,
             wait_2_sync,
             sync_metadata,
             bus,
@@ -138,7 +114,7 @@ where
         StateSyncTaskRef { address }
     }
 
-    fn exe_task(&mut self, address: Addr<StateSyncTaskActor<E, C>>) {
+    fn exe_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let node_key = self.wait_2_sync.pop_front().unwrap();
         if let Some(state_node) = self.state_node_storage.get(&node_key).unwrap() {
             self.syncing_nodes
@@ -152,15 +128,23 @@ where
                 warn!("err:{:?}", err);
             };
         } else {
-            let downloader = self.downloader.clone();
             let network_service = self.network_service.clone();
-            let best_peer = Downloader::best_peer(downloader.clone()).unwrap();
-            self.syncing_nodes
-                .lock()
-                .insert(best_peer.clone(), node_key.clone());
-            Arbiter::spawn(async move {
-                sync_state_node(node_key, best_peer, network_service, address).await;
+            let best_peer_info = block_on(async move {
+                let peer_info = network_service.best_peer().await.unwrap();
+                peer_info
             });
+            if let Some(best_peer) = best_peer_info {
+                let network_service = self.network_service.clone();
+                self.syncing_nodes
+                    .lock()
+                    .insert(best_peer.get_peer_id(), node_key.clone());
+                Arbiter::spawn(async move {
+                    sync_state_node(node_key, best_peer.get_peer_id(), network_service, address)
+                        .await;
+                });
+            } else {
+                warn!("{:?}", "best peer is none.");
+            }
         }
     }
 
@@ -172,11 +156,7 @@ where
     }
 }
 
-impl<E, C> Actor for StateSyncTaskActor<E, C>
-where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Actor for StateSyncTaskActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -189,11 +169,7 @@ where
     }
 }
 
-impl<E, C> Handler<StateSyncTaskEvent> for StateSyncTaskActor<E, C>
-where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
     type Result = Result<()>;
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -259,11 +235,7 @@ struct StateSyncEvent {
     root: HashValue,
 }
 
-impl<E, C> Handler<StateSyncEvent> for StateSyncTaskActor<E, C>
-where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<StateSyncEvent> for StateSyncTaskActor {
     type Result = Result<()>;
 
     /// This method is called for every message received by this actor.

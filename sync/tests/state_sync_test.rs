@@ -21,6 +21,7 @@ use storage::Storage;
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 
+#[ignore]
 #[test]
 fn test_state_sync() {
     ::logger::init_for_test();

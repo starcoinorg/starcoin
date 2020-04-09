@@ -5,7 +5,7 @@ use crypto::hash::HashValue;
 use network::{network::NetworkAsyncService, NetworkActor};
 use std::sync::Arc;
 use tokio::runtime::Handle;
-use types::peer_info::PeerId;
+use types::peer_info::{PeerId, PeerInfo};
 
 pub fn gen_network(
     node_config: Arc<NodeConfig>,
@@ -15,6 +15,12 @@ pub fn gen_network(
 ) -> (NetworkAsyncService, PeerId) {
     let key_pair = node_config.network.network_keypair();
     let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
-    let network = NetworkActor::launch(node_config.clone(), bus, handle, genesis_hash);
+    let network = NetworkActor::launch(
+        node_config.clone(),
+        bus,
+        handle,
+        genesis_hash,
+        PeerInfo::new_for_test(addr.clone()),
+    );
     (network, addr)
 }

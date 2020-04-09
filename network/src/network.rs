@@ -364,7 +364,6 @@ impl Inner {
                         }
                     }
                 }
-                let _peer_info = PeerInfo::new(peer_id.into());
                 self.bus
                     .clone()
                     .broadcast(PeerTransactions::new(txns))
@@ -391,7 +390,7 @@ impl Inner {
                     .send(Broadcast {
                         msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
                             peer_id.into(),
-                            block,
+                            block.get_block().clone(),
                         )),
                     })
                     .await?;
@@ -528,7 +527,7 @@ impl Handler<SystemEvents> for NetworkActor {
                 let msg = PeerMessage::Block(block.clone());
                 let bytes = msg.encode().unwrap();
 
-                let self_info = PeerInfo::_new(
+                let self_info = PeerInfo::new(
                     self.peer_id.clone().into(),
                     block_number,
                     total_difficulty,

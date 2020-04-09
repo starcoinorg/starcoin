@@ -9,7 +9,7 @@ use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
-use network_p2p_api::sync_messages::{DownloadMessage, ProcessMessage, SyncMessage};
+use network_p2p_api::sync_messages::{DownloadMessage, SyncMessage};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
