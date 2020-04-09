@@ -145,6 +145,7 @@ where
         let fut = async move {
             match msg {
                 DownloadMessage::NewPeerMsg(peer_id) => {
+                    info!("new peer msg: {:?}", peer_id);
                     Self::sync_state(
                         self_peer_id,
                         is_main,
