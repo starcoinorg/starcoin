@@ -125,7 +125,7 @@ fn create_and_initialize_main_accounts(
         .execute_function(
             &LBR_MODULE,
             &INITIALIZE,
-            gas_schedule,
+            &gas_schedule,
             interpreter_context,
             &txn_data,
             vec![],

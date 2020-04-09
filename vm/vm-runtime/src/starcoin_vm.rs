@@ -273,19 +273,19 @@ impl StarcoinVM {
                     .map(|tag| self.resolve_type_argument(&mut ctx, tag))
                     .collect::<VMResult<Vec<_>>>()?;
                 // ToDo: fix me
-                //                match result {
-                //                    Ok(_) => Ok(VerifiedTranscationPayload::Script(
-                //                        script.code().to_vec(),
-                //                        ty_args,
-                //                        script.args().to_vec(),
-                //                    )),
-                //                    Err(e) => return Err(e.into()),
-                //                }
-                Ok(VerifiedTranscationPayload::Script(
-                    script.code().to_vec(),
-                    ty_args,
-                    script.args().to_vec(),
-                ))
+                                match result {
+                                    Ok(_) => Ok(VerifiedTranscationPayload::Script(
+                                        script.code().to_vec(),
+                                        ty_args,
+                                        script.args().to_vec(),
+                                    )),
+                                    Err(e) => return Err(e.into()),
+                                }
+//                Ok(VerifiedTranscationPayload::Script(
+//                    script.code().to_vec(),
+//                    ty_args,
+//                    script.args().to_vec(),
+//                ))
             }
             TransactionPayload::Module(module) => {
                 let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
