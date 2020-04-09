@@ -115,19 +115,17 @@ where
             ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(
                 self.service.master_block_by_number(number)?.unwrap(),
             )),
-            ChainRequest::CreateBlockTemplate(author, auth_key_prefix, parent_hash, txs) => {
-                Ok(ChainResponse::BlockTemplate(
-                    self.service
-                        .create_block_template(
-                            author,
-                            auth_key_prefix,
-                            parent_hash,
-                            types::U256::zero(),
-                            txs,
-                        )
-                        .unwrap(),
-                ))
-            }
+            ChainRequest::CreateBlockTemplate(
+                author,
+                auth_key_prefix,
+                parent_hash,
+                txs,
+                difficulty,
+            ) => Ok(ChainResponse::BlockTemplate(
+                self.service
+                    .create_block_template(author, auth_key_prefix, parent_hash, difficulty, txs)
+                    .unwrap(),
+            )),
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
                 self.service.get_block_by_hash(hash).unwrap(),
             )),
@@ -315,6 +313,7 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
+        difficulty: types::U256,
     ) -> Option<BlockTemplate> {
         let address = self.address.clone();
         drop(self);
@@ -324,6 +323,7 @@ where
                 auth_key_prefix,
                 parent_hash,
                 txs,
+                difficulty,
             ))
             .await
             .unwrap()

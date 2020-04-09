@@ -263,7 +263,9 @@ where
 
     fn select_head(&mut self, new_branch: BlockChain<E, C, S, P>) {
         let block = new_branch.head_block();
-        let total_difficulty = new_branch.get_total_difficulty();
+        let total_difficulty = new_branch
+            .get_total_difficulty()
+            .expect("Failed to get total difficulty");
         if total_difficulty
             > self
                 .collection
@@ -272,6 +274,7 @@ where
                 .get(0)
                 .expect("master is none.")
                 .get_total_difficulty()
+                .expect("faild to get total difficulty")
         {
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
             let mut retracted = Vec::new();

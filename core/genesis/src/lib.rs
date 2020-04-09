@@ -20,7 +20,7 @@ use starcoin_types::block::BlockInfo;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::{block::Block, transaction::Transaction, vm_error::StatusCode};
+use starcoin_types::{block::Block, transaction::Transaction, vm_error::StatusCode, U256};
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
@@ -184,6 +184,7 @@ impl Genesis {
         storage.commit_branch_block(block.header().id(), block.clone())?;
 
         let startup_info = StartupInfo::new(chain_info, vec![]);
+
         //save block info for accumulator init
         storage.save_block_info(BlockInfo::new(
             block.header().id(),
@@ -191,6 +192,7 @@ impl Genesis {
             accumulator.get_frozen_subtree_roots().unwrap(),
             accumulator.num_leaves(),
             accumulator.num_nodes(),
+            U256::zero(),
         ))?;
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)
