@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    access_path::AccessPath, account_address::AccountAddress, language_storage::StructTag,
+    access_path::AccessPath, account_address::AccountAddress,
+    language_storage::{StructTag, TypeTag},
 };
 use anyhow::Result;
 use move_core_types::identifier::{IdentStr, Identifier};
@@ -19,7 +20,9 @@ use std::convert::{TryFrom, TryInto};
 // Starcoin
 static COIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LibraCoin").unwrap());
 static COIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
-
+// LBR
+static LBR_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LBR").unwrap());
+static LBR_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 // Account
 static ACCOUNT_MODULE_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("LibraAccount").unwrap());
@@ -59,6 +62,14 @@ pub fn account_struct_name() -> &'static IdentStr {
 
 pub fn account_balance_struct_name() -> &'static IdentStr {
     &*ACCOUNT_BALANCE_STRUCT_NAME
+}
+
+pub fn lbr_module_name() -> &'static IdentStr {
+    &*LBR_MODULE_NAME
+}
+
+pub fn lbr_struct_name() -> &'static IdentStr {
+    &*LBR_STRUCT_NAME
 }
 
 pub fn sent_event_name() -> &'static IdentStr {
@@ -106,8 +117,21 @@ pub fn account_balance_struct_tag() -> StructTag {
     }
 }
 
-pub fn lbr_type_tag() -> libra_types::language_storage::TypeTag {
-    libra_types::account_config::lbr_type_tag()
+//pub fn lbr_type_tag() -> libra_types::language_storage::TypeTag {
+//    libra_types::account_config::lbr_type_tag()
+//}
+
+pub fn lbr_type_tag() -> TypeTag {
+    TypeTag::Struct(lbr_struct_tag())
+}
+
+pub fn lbr_struct_tag() -> StructTag {
+    StructTag {
+        address: core_code_address(),
+        module: lbr_module_name().to_owned(),
+        name: lbr_struct_name().to_owned(),
+        type_params: vec![],
+    }
 }
 
 pub fn sent_payment_tag() -> StructTag {

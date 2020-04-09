@@ -55,6 +55,7 @@ impl fmt::Debug for Script {
 impl Into<libra_types::transaction::Script> for Script {
     fn into(self) -> libra_types::transaction::Script {
         let args = self.args().iter().map(|arg| arg.clone().into()).collect();
-        libra_types::transaction::Script::new(self.code().to_vec(), self.ty_args, args)
+        let ty_args = self.ty_args.iter().map(|t| t.clone().into()).collect();
+        libra_types::transaction::Script::new(self.code().to_vec(), ty_args, args)
     }
 }

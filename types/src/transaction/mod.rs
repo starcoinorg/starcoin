@@ -690,7 +690,7 @@ impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction
             self.payload().clone().into(),
             self.max_gas_amount(),
             self.gas_unit_price(),
-            lbr_type_tag(),
+            lbr_type_tag().into(),
             self.expiration_time(),
         );
         libra_types::transaction::SignedTransaction::new(
