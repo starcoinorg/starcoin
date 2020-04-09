@@ -12,7 +12,7 @@ use starcoin_logger::prelude::*;
 use starcoin_miner::miner_client::MinerClientActor;
 use starcoin_miner::MinerActor;
 use starcoin_network::NetworkActor;
-use starcoin_rpc_server::JSONRpcActor;
+use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -35,7 +35,7 @@ where
 {
     _miner_actor: Addr<MinerActor<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>>,
     _sync_actor: Addr<SyncActor<Executor, C>>,
-    _rpc_actor: Addr<JSONRpcActor>,
+    _rpc_actor: Addr<RpcActor>,
 }
 
 pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<NodeStartHandle<C, H>>
@@ -139,7 +139,7 @@ where
         sync_metadata.clone(),
     )?;
 
-    let (json_rpc, _io_handler) = JSONRpcActor::launch(
+    let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
         txpool.clone(),
         account_service,
