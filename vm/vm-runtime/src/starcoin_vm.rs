@@ -273,19 +273,14 @@ impl StarcoinVM {
                     .map(|tag| self.resolve_type_argument(&mut ctx, tag))
                     .collect::<VMResult<Vec<_>>>()?;
                 // ToDo: fix me
-                                match result {
-                                    Ok(_) => Ok(VerifiedTranscationPayload::Script(
-                                        script.code().to_vec(),
-                                        ty_args,
-                                        script.args().to_vec(),
-                                    )),
-                                    Err(e) => return Err(e.into()),
-                                }
-//                Ok(VerifiedTranscationPayload::Script(
-//                    script.code().to_vec(),
-//                    ty_args,
-//                    script.args().to_vec(),
-//                ))
+                match result {
+                    Ok(_) => Ok(VerifiedTranscationPayload::Script(
+                        script.code().to_vec(),
+                        ty_args,
+                        script.args().to_vec(),
+                    )),
+                    Err(e) => return Err(e.into()),
+                }
             }
             TransactionPayload::Module(module) => {
                 let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
@@ -453,7 +448,9 @@ impl StarcoinVM {
         if let Ok((id, timestamp, author, auth)) = block_metadata.into_inner() {
             let previous_vote: BTreeMap<LibraAccountAddress, Ed25519Signature> = BTreeMap::new();
             let vote_maps = scs::to_bytes(&previous_vote).unwrap();
+            let round = 0u64;
             let args = vec![
+                Value::u64(round),
                 Value::u64(timestamp),
                 Value::vector_u8(id.into_inner()),
                 Value::vector_u8(vote_maps),

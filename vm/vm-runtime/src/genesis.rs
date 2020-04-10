@@ -294,20 +294,20 @@ fn create_and_initialize_main_accounts(
         )
         .unwrap();
 
-    //    // init subsidy.
-    //    txn_data.sender = mint_address;
-    //    move_vm
-    //        .execute_function(
-    //            &LIBRA_BLOCK_MODULE,
-    //            &SUBSIDY_INIT,
-    //            &gas_schedule,
-    //            interpreter_context,
-    //            &txn_data,
-    //            vec![],
-    //            vec![],
-    //        )
-    //        .unwrap();
-    //    txn_data.sender = association_addr;
+    // init subsidy.
+    txn_data.sender = mint_address;
+    move_vm
+        .execute_function(
+            &LIBRA_BLOCK_MODULE,
+            &SUBSIDY_INIT,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![],
+            vec![],
+        )
+        .unwrap();
+    txn_data.sender = association_addr;
 
     let genesis_auth_key = AuthenticationKey::ed25519(public_key).to_vec();
     move_vm
