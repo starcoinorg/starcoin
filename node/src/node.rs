@@ -37,6 +37,7 @@ where
     _miner_actor: Addr<MinerActor<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>>,
     _sync_actor: Addr<SyncActor<Executor, C>>,
     _rpc_actor: Addr<RpcActor>,
+    _miner_client: Addr<MinerClientActor<C>>,
 }
 
 pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<NodeStartHandle<C, H>>
@@ -203,19 +204,30 @@ where
     let peer_id = Arc::new(peer_id);
     let sync = SyncActor::launch(
         config.clone(),
-        bus,
+        bus.clone(),
         peer_id,
         chain.clone(),
         network.clone(),
         storage.clone(),
         sync_metadata.clone(),
     )?;
+    //TODO wait sync implement sync done event.
+
+    // info!("Waiting sync ......");
+    // let mut receiver = bus
+    //     .channel::<SystemEvents>()
+    //     .await
+    //     .expect("Subscribe system event error.");
+    //
+    // receiver.any(|event| event.is_sync_done());
+    // info!("Waiting sync finished.");
+
     let stratum_server = config.miner.stratum_server;
-    let miner_client = MinerClientActor::<C>::new(stratum_server);
-    miner_client.start();
+    let miner_client = MinerClientActor::<C>::new(stratum_server).start();
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,
         _rpc_actor: json_rpc,
+        _miner_client: miner_client,
     })
 }
