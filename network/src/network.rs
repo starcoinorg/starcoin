@@ -11,7 +11,7 @@ use config::NodeConfig;
 use futures::lock::Mutex;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
 use libp2p::PeerId;
-use network_p2p_api::sync_messages::{DownloadMessage, SyncMessage};
+use network_p2p_api::sync_messages::PeerNewBlock;
 use scs::SCSCodec;
 use std::sync::Arc;
 use tx_relay::*;
@@ -388,10 +388,7 @@ impl Inner {
                 }
                 self.bus
                     .send(Broadcast {
-                        msg: SyncMessage::DownloadMessage(DownloadMessage::NewHeadBlock(
-                            peer_id.into(),
-                            block.get_block().clone(),
-                        )),
+                        msg: PeerNewBlock::new(peer_id.into(), block.get_block().clone()),
                     })
                     .await?;
             }

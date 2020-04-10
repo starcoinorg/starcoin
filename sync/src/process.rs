@@ -3,16 +3,18 @@ use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, Respo
 use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
-use crypto::hash::{CryptoHash, HashValue};
+use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use futures::sink::SinkExt;
 use logger::prelude::*;
-use network::{NetworkAsyncService, RPCRequest, RPCResponse, RpcRequestMessage};
+use network::{NetworkAsyncService, RawRpcRequestMessage};
 /// Sync message which inbound
 use network_p2p_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, ProcessMessage,
+    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, ProcessMessage, SyncRpcRequest,
+    SyncRpcResponse,
 };
+use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
 use traits::ChainAsyncService;
@@ -60,7 +62,7 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let rpc_recipient = ctx.address().recipient::<RpcRequestMessage>();
+        let rpc_recipient = ctx.address().recipient::<RawRpcRequestMessage>();
         self.bus
             .send(Subscription {
                 recipient: rpc_recipient,
@@ -84,7 +86,6 @@ where
         let _self_peer_id = self.self_peer_id.as_ref().clone();
         let _network = self.network.clone();
         let fut = async move {
-            let _id = msg.crypto_hash();
             match msg {
                 _ => {}
             }
@@ -96,20 +97,20 @@ where
     }
 }
 
-impl<E, C> Handler<RpcRequestMessage> for ProcessActor<E, C>
+impl<E, C> Handler<RawRpcRequestMessage> for ProcessActor<E, C>
 where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = Result<()>;
 
-    fn handle(&mut self, msg: RpcRequestMessage, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: RawRpcRequestMessage, _ctx: &mut Self::Context) -> Self::Result {
         let mut responder = msg.responder.clone();
         let processor = self.processor.clone();
-        match msg.request {
-            RPCRequest::TestRequest(_r) => {}
-            RPCRequest::GetHashByNumberMsg(process_msg)
-            | RPCRequest::GetDataByHashMsg(process_msg) => match process_msg {
+        let req = SyncRpcRequest::decode(msg.request.as_slice())?;
+        match req {
+            SyncRpcRequest::GetHashByNumberMsg(process_msg)
+            | SyncRpcRequest::GetDataByHashMsg(process_msg) => match process_msg {
                 ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg) => {
                     info!(
                         "get_hash_by_number_msg:{:?}, do request begin",
@@ -122,7 +123,10 @@ where
                         )
                         .await;
 
-                        let resp = RPCResponse::BatchHashByNumberMsg(batch_hash_by_number_msg);
+                        let resp = SyncRpcResponse::encode(&SyncRpcResponse::BatchHashByNumberMsg(
+                            batch_hash_by_number_msg,
+                        ))
+                        .unwrap();
 
                         responder.send(resp).await.unwrap();
 
@@ -156,11 +160,14 @@ where
                                     batch_block_info_msg.infos.len()
                                 );
 
-                                let resp = RPCResponse::BatchHeaderAndBodyMsg(
-                                    batch_header_msg,
-                                    batch_body_msg,
-                                    batch_block_info_msg,
-                                );
+                                let resp = SyncRpcResponse::encode(
+                                    &SyncRpcResponse::BatchHeaderAndBodyMsg(
+                                        batch_header_msg,
+                                        batch_body_msg,
+                                        batch_block_info_msg,
+                                    ),
+                                )
+                                .unwrap();
                                 responder.send(resp).await.unwrap();
                             }
                             _ => {}
@@ -168,19 +175,20 @@ where
                     });
                 }
             },
-            RPCRequest::GetStateNodeByNodeHash(state_node_key) => {
+            SyncRpcRequest::GetStateNodeByNodeHash(state_node_key) => {
                 Arbiter::spawn(async move {
                     let mut keys = Vec::new();
                     keys.push(state_node_key);
                     let mut state_nodes =
                         Processor::handle_state_node_msg(processor.clone(), keys).await;
-                    let resp = RPCResponse::GetStateNodeByNodeHash(
+                    let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetStateNodeByNodeHash(
                         state_nodes
                             .pop()
                             .expect("state_nodes is none.")
                             .1
                             .expect("state_node is none."),
-                    );
+                    ))
+                    .unwrap();
                     responder.send(resp).await.unwrap();
                 });
             }

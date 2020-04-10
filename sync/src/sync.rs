@@ -9,7 +9,7 @@ use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
-use network_p2p_api::sync_messages::{DownloadMessage, SyncMessage};
+use network_p2p_api::sync_messages::{DownloadMessage, PeerNewBlock};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
@@ -21,7 +21,7 @@ where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    process_address: Addr<ProcessActor<E, C>>,
+    _process_address: Addr<ProcessActor<E, C>>,
     download_address: Addr<DownloadActor<E, C>>,
     bus: Addr<BusActor>,
 }
@@ -58,7 +58,7 @@ where
         )?;
         let actor = SyncActor {
             download_address,
-            process_address,
+            _process_address: process_address,
             bus,
         };
         Ok(actor.start())
@@ -82,7 +82,7 @@ where
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
 
-        let sync_recipient = ctx.address().recipient::<SyncMessage>();
+        let sync_recipient = ctx.address().recipient::<PeerNewBlock>();
         self.bus
             .send(Subscription {
                 recipient: sync_recipient,
@@ -90,34 +90,34 @@ where
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
+
+        // let sync_recipient = ctx.address().recipient::<RawRpcRequestMessage>();
+        // self.bus
+        //     .send(Subscription {
+        //         recipient: sync_recipient,
+        //     })
+        //     .into_actor(self)
+        //     .then(|_res, act, _ctx| async {}.into_actor(act))
+        //     .wait(ctx);
         info!("Sync actor started");
     }
 }
 
-impl<E, C> Handler<SyncMessage> for SyncActor<E, C>
+impl<E, C> Handler<PeerNewBlock> for SyncActor<E, C>
 where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = ();
 
-    fn handle(&mut self, msg: SyncMessage, ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            SyncMessage::DownloadMessage(download_msg) => {
-                self.download_address
-                    .send(download_msg)
-                    .into_actor(self)
-                    .then(|_result, act, _ctx| async {}.into_actor(act))
-                    .wait(ctx);
-            }
-            SyncMessage::ProcessMessage(process_msg) => {
-                self.process_address
-                    .send(process_msg)
-                    .into_actor(self)
-                    .then(|_result, act, _ctx| async {}.into_actor(act))
-                    .wait(ctx);
-            }
-        }
+    fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
+        let new_block = DownloadMessage::NewHeadBlock(msg.get_peer_id(), msg.get_block());
+        self.download_address
+            .send(new_block)
+            .into_actor(self)
+            .then(|_result, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+        ()
     }
 }
 

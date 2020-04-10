@@ -34,6 +34,7 @@ forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 network-p2p-api = {package="network-p2p-api", path="../network-p2p/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 async-trait = "0.1"
+starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
