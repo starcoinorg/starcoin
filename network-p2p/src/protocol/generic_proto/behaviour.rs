@@ -1124,6 +1124,7 @@ impl NetworkBehaviour for GenericProto {
                 debug_assert!(self.is_open(&source));
                 trace!(target: "sub-libp2p", "Handler({:?}) => Message", source);
                 trace!(target: "sub-libp2p", "External API <= Message({:?})", source);
+
                 let event = GenericProtoOut::CustomMessage {
                     peer_id: source,
                     message,
@@ -1150,7 +1151,6 @@ impl NetworkBehaviour for GenericProto {
                 });
 
                 let message = From::from(&msg.encode().unwrap()[..]);
-                info!("message is {:?}", message);
                 let event = GenericProtoOut::CustomMessage {
                     peer_id: source,
                     message,

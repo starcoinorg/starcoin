@@ -19,7 +19,7 @@ use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
 
-use crate::protocol::message::generic::{Message, Status};
+use crate::protocol::message::generic::{ConsensusMessage, Message, Status};
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::borrow::Cow;
@@ -520,11 +520,17 @@ impl Protocol {
     pub fn write_notification(
         &mut self,
         target: PeerId,
-        protocol_name: Cow<'static, [u8]>,
+        _protocol_name: Cow<'static, [u8]>,
         message: impl Into<Vec<u8>>,
     ) {
-        self.behaviour
-            .write_notification(&target, protocol_name, message);
+        self.send_message(
+            &target,
+            Message::Consensus(ConsensusMessage {
+                data: message.into(),
+            }),
+        );
+        // self.behaviour
+        //     .write_notification(&target, protocol_name, message);
     }
 
     pub fn register_notifications_protocol(
