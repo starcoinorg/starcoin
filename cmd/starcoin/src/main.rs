@@ -28,7 +28,7 @@ fn run() -> Result<()> {
             let node_handle = if !ipc_file.exists() {
                 let file_log_path = config.data_dir().join("starcoin.log");
                 info!("Write log to file: {:?}", file_log_path);
-                logger_handle.enable_file(true, file_log_path);
+                logger_handle.enable_file(false, file_log_path);
                 let node_handle = match config.net() {
                     ChainNetwork::Dev => starcoin_node::run_dev_node(config.clone()),
                     _ => starcoin_node::run_normal_node(config.clone()),
