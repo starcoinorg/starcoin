@@ -28,7 +28,7 @@ use types::{
     block_metadata::BlockMetadata,
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
-    U256,
+    U256, U512,
 };
 
 pub static DEFAULT_BLOCK_INFO: Lazy<BlockInfo> = Lazy::new(|| {
@@ -38,7 +38,7 @@ pub static DEFAULT_BLOCK_INFO: Lazy<BlockInfo> = Lazy::new(|| {
         vec![],
         0,
         0,
-        U256::zero(),
+        U512::zero(),
     )
 });
 
@@ -416,9 +416,9 @@ where
         self.storage.get_block_info(id)
     }
 
-    fn get_total_difficulty(&self) -> Result<U256> {
+    fn get_total_difficulty(&self) -> Result<U512> {
         let block_info = self.storage.get_block_info(self.head.header().id())?;
-        Ok(block_info.map_or(U256::zero(), |info| info.total_difficulty))
+        Ok(block_info.map_or(U512::zero(), |info| info.total_difficulty))
     }
 
     fn exist_block(&self, block_id: HashValue) -> bool {
@@ -499,7 +499,7 @@ where
             let pre_total_difficulty = self
                 .get_block_info(block.header().parent_hash())
                 .total_difficulty;
-            pre_total_difficulty + header.difficult()
+            pre_total_difficulty + header.difficult().into()
         };
 
         let block_info = BlockInfo::new(

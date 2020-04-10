@@ -6,7 +6,7 @@ use libp2p::multihash;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 
-use crate::{block::BlockNumber, U256};
+use crate::{block::BlockNumber, U512};
 use starcoin_crypto::HashValue;
 use std::fmt;
 use std::str::FromStr;
@@ -127,7 +127,7 @@ impl fmt::Display for PeerId {
 pub struct PeerInfo {
     pub peer_id: PeerId,
     pub block_number: BlockNumber,
-    pub total_difficult: U256,
+    pub total_difficult: U512,
     pub block_id: HashValue,
 }
 
@@ -136,7 +136,7 @@ impl PeerInfo {
         PeerInfo {
             peer_id,
             block_number: 0,
-            total_difficult: U256::zero(),
+            total_difficult: U512::zero(),
             block_id: HashValue::random(),
         }
     }
@@ -144,7 +144,7 @@ impl PeerInfo {
     pub fn new(
         peer_id: PeerId,
         block_number: BlockNumber,
-        total_difficult: U256,
+        total_difficult: U512,
         block_id: HashValue,
     ) -> Self {
         PeerInfo {
@@ -167,7 +167,7 @@ impl PeerInfo {
         Self {
             peer_id: PeerId::random(),
             block_number: 0,
-            total_difficult: U256::from(0),
+            total_difficult: U512::from(0),
             block_id: HashValue::default(),
         }
     }
