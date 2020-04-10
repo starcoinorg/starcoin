@@ -1,4 +1,6 @@
-use anyhow::private::new_adhoc;
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::{bail, ensure, Result};
 use ctrlc;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
@@ -11,7 +13,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
 use starcoin_types::account_config::association_address;
-use starcoin_wallet_api::{WalletAccount, WalletResult};
+use starcoin_wallet_api::WalletAccount;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -88,50 +90,6 @@ fn get_wallet_account(
     Ok(account)
 }
 
-struct TxnMocker {
-    client: RpcClient,
-    generator: MockTxnGenerator,
-    account_unlock_time: Option<Instant>,
-    account_address: AccountAddress,
-    account_password: String,
-    unlock_duration: Duration,
-}
-
-impl TxnMocker {
-    fn gen_and_submit_txn(&mut self) -> Result<bool> {
-        let state_reader = RemoteStateReader::new(&self.client);
-        let account_state_reader = AccountStateReader::new(&state_reader);
-        let raw_txn = self
-            .generator
-            .generate_mock_txn::<Executor>(&account_state_reader)?;
-        info!("prepare to sign txn, sender: {}", raw_txn.sender());
-
-        let unlock_time = self.account_unlock_time.clone();
-        match unlock_time {
-            Some(t) if t + self.unlock_duration > Instant::now() => {}
-            _ => {
-                let new_unlock_time = Instant::now();
-                // try unlock account
-                self.client.account_unlock(
-                    self.account_address,
-                    self.account_password.clone(),
-                    self.unlock_duration,
-                )?;
-
-                self.account_unlock_time = Some(new_unlock_time);
-            }
-        }
-
-        let user_txn = self.client.account_sign_txn(raw_txn)?;
-        info!(
-            "prepare to submit txn, sender:{},seq:{}",
-            user_txn.sender(),
-            user_txn.sequence_number(),
-        );
-        self.client.submit_transaction(user_txn)
-    }
-}
-
 fn main() {
     let _logger_handler = starcoin_logger::init();
     let opts: TxFactoryOpt = TxFactoryOpt::from_args();
@@ -186,4 +144,48 @@ fn main() {
     });
     handle.join().unwrap();
     info!("txfactory: stop now");
+}
+
+struct TxnMocker {
+    client: RpcClient,
+    generator: MockTxnGenerator,
+    account_unlock_time: Option<Instant>,
+    account_address: AccountAddress,
+    account_password: String,
+    unlock_duration: Duration,
+}
+
+impl TxnMocker {
+    fn gen_and_submit_txn(&mut self) -> Result<bool> {
+        let state_reader = RemoteStateReader::new(&self.client);
+        let account_state_reader = AccountStateReader::new(&state_reader);
+        let raw_txn = self
+            .generator
+            .generate_mock_txn::<Executor>(&account_state_reader)?;
+        info!("prepare to sign txn, sender: {}", raw_txn.sender());
+
+        let unlock_time = self.account_unlock_time.clone();
+        match unlock_time {
+            Some(t) if t + self.unlock_duration > Instant::now() => {}
+            _ => {
+                let new_unlock_time = Instant::now();
+                // try unlock account
+                self.client.account_unlock(
+                    self.account_address,
+                    self.account_password.clone(),
+                    self.unlock_duration,
+                )?;
+
+                self.account_unlock_time = Some(new_unlock_time);
+            }
+        }
+
+        let user_txn = self.client.account_sign_txn(raw_txn)?;
+        info!(
+            "prepare to submit txn, sender:{},seq:{}",
+            user_txn.sender(),
+            user_txn.sequence_number(),
+        );
+        self.client.submit_transaction(user_txn)
+    }
 }
