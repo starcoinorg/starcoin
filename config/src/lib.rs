@@ -394,7 +394,6 @@ mod tests {
         let mut opt = StarcoinOpt::default();
         let config = NodeConfig::load_with_opt(&opt)?;
         opt.data_dir = Some(config.base.base_data_dir().to_path_buf());
-
         let config2 = NodeConfig::load_with_opt(&opt)?;
         let config3 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(config2, config3);
