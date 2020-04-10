@@ -3,7 +3,7 @@
 
 use types::U256;
 
-pub const BLOCK_TIME_SEC: u32 = 10;
+pub const BLOCK_TIME_SEC: u32 = 20;
 pub const BLOCK_WINDOW: u32 = 24;
 
 use logger::prelude::*;
@@ -13,7 +13,7 @@ pub fn difficult_1_target() -> U256 {
     U256::max_value() / DIFF_1_HASH_TIMES.into()
 }
 
-pub const DIFF_1_HASH_TIMES: u32 = 10;
+pub const DIFF_1_HASH_TIMES: u32 = 100;
 
 pub fn current_hash_rate(target: &[u8]) -> u64 {
     // current_hash_rate = (difficult_1_target/target_current) * difficult_1_hash/block_per_esc

@@ -1,7 +1,8 @@
 use actix::prelude::*;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::HashValue;
+use starcoin_state_tree::StateNode;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo},
@@ -11,12 +12,43 @@ use std::cmp::Ordering;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "()")]
-pub enum SyncMessage {
-    DownloadMessage(DownloadMessage),
-    ProcessMessage(ProcessMessage),
+pub struct PeerNewBlock {
+    peer_id: PeerId,
+    new_block: Block,
 }
 
-#[derive(Clone, Debug)]
+impl PeerNewBlock {
+    pub fn new(peer_id: PeerId, new_block: Block) -> Self {
+        PeerNewBlock { peer_id, new_block }
+    }
+
+    pub fn get_peer_id(&self) -> PeerId {
+        self.peer_id.clone()
+    }
+
+    pub fn get_block(&self) -> Block {
+        self.new_block.clone()
+    }
+}
+
+#[derive(Message, Clone, Serialize, Deserialize)]
+#[rtype(result = "Result<()>")]
+pub enum SyncRpcRequest {
+    GetHashByNumberMsg(ProcessMessage),
+    GetDataByHashMsg(ProcessMessage),
+    GetStateNodeByNodeHash(HashValue),
+}
+
+#[derive(Message, Clone, Serialize, Deserialize)]
+#[rtype(result = "Result<()>")]
+pub enum SyncRpcResponse {
+    BatchHashByNumberMsg(BatchHashByNumberMsg),
+    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg, BatchBlockInfo),
+    GetStateNodeByNodeHash(StateNode),
+}
+
+#[derive(Debug, Message, Clone, Serialize, Deserialize)]
+#[rtype(result = "Result<()>")]
 pub enum DownloadMessage {
     ClosePeerMsg(PeerId),
     BatchHashByNumberMsg(PeerId, BatchHashByNumberMsg),
@@ -29,28 +61,11 @@ pub enum DownloadMessage {
     NewPeerMsg(PeerId),
 }
 
-impl Message for DownloadMessage {
-    type Result = Result<()>;
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Message, Clone, Serialize, Deserialize)]
+#[rtype(result = "Result<()>")]
 pub enum ProcessMessage {
     GetHashByNumberMsg(GetHashByNumberMsg),
     GetDataByHashMsg(GetDataByHashMsg),
-}
-
-impl CryptoHash for ProcessMessage {
-    fn crypto_hash(&self) -> HashValue {
-        HashValue::from_sha3_256(
-            scs::to_bytes(self)
-                .expect("Serialization should work.")
-                .as_slice(),
-        )
-    }
-}
-
-impl Message for ProcessMessage {
-    type Result = Result<()>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
