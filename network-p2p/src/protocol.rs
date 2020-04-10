@@ -347,7 +347,7 @@ impl Protocol {
     }
 
     pub fn on_custom_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
-        info!("receive custom message from {} ", who);
+        trace!("receive custom message from {} ", who);
         let message = match Message::decode(&mut &data[..]) {
             Ok(message) => message,
             Err(err) => {
