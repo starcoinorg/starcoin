@@ -620,7 +620,6 @@ mod tests {
     use types::account_address::AccountAddress;
     use types::transaction::SignedUserTransaction;
 
-    #[ignore]
     #[test]
     fn test_network_with_mock() {
         use std::time::Duration;
