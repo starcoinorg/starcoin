@@ -14,7 +14,9 @@ use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::{
     access_path::{AccessPath, DataType},
     account_address::AccountAddress,
-    account_config::{account_balance_struct_tag, account_struct_tag, AccountResource, BalanceResource},
+    account_config::{
+        account_balance_struct_tag, account_struct_tag, AccountResource, BalanceResource,
+    },
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };

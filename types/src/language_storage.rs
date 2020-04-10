@@ -33,10 +33,8 @@ impl Into<libra_types::language_storage::TypeTag> for TypeTag {
             TypeTag::Address => libra_types::language_storage::TypeTag::Address,
             TypeTag::Vector(v) => {
                 libra_types::language_storage::TypeTag::Vector(Box::new(v.as_ref().clone().into()))
-            },
-            TypeTag::Struct(s) => {
-                libra_types::language_storage::TypeTag::Struct(s.into())
-            },
+            }
+            TypeTag::Struct(s) => libra_types::language_storage::TypeTag::Struct(s.into()),
         }
     }
 }
@@ -51,10 +49,8 @@ impl From<libra_types::language_storage::TypeTag> for TypeTag {
             libra_types::language_storage::TypeTag::Address => TypeTag::Address,
             libra_types::language_storage::TypeTag::Vector(v) => {
                 TypeTag::Vector(Box::new(v.as_ref().clone().into()))
-            },
-            libra_types::language_storage::TypeTag::Struct(s) => {
-                TypeTag::Struct(s.into())
-            },
+            }
+            libra_types::language_storage::TypeTag::Struct(s) => TypeTag::Struct(s.into()),
         }
     }
 }
@@ -84,7 +80,11 @@ impl From<libra_types::language_storage::StructTag> for StructTag {
             address: struct_tag.address.into(),
             module: struct_tag.module,
             name: struct_tag.name,
-            type_params: struct_tag.type_params.into_iter().map(|tag| tag.into()).collect(),
+            type_params: struct_tag
+                .type_params
+                .into_iter()
+                .map(|tag| tag.into())
+                .collect(),
         }
     }
 }
