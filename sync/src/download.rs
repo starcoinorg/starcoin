@@ -364,6 +364,7 @@ where
         Arbiter::spawn(async move {
             debug!("begin sync.");
             if let Some(best_peer) = network.best_peer().await.unwrap() {
+                info!("peers: {:?}, {:?}", self_peer_id, best_peer.get_peer_id());
                 if self_peer_id != best_peer.get_peer_id() {
                     let mut begin_number = downloader
                         .chain_reader
