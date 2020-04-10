@@ -210,11 +210,7 @@ impl AccumulatorCache {
             let leaf_pos = NodeIndex::from_leaf_index(self.num_leaves + leaf_offset as LeafCount);
             let mut hash = *leaf;
             to_freeze.push(AccumulatorNode::new_leaf(leaf_pos, hash));
-            debug!(
-                "{:?} insert leaf cache: {:?}",
-                self.id.short_str(),
-                leaf_pos
-            );
+
             self.index_cache.borrow_mut().insert(leaf_pos, hash);
             new_num_nodes += 1;
             let mut pos = leaf_pos;
@@ -242,7 +238,6 @@ impl AccumulatorCache {
                 };
                 pos = pos.parent();
                 to_freeze.push(internal_node);
-                debug!("{:?} insert internal cache: {:?}", self.id.short_str(), pos);
                 self.index_cache.borrow_mut().insert(pos, hash);
                 new_num_nodes += 1;
             }
@@ -485,12 +480,6 @@ impl AccumulatorCache {
     fn save_frozen_nodes(&self, frozen_nodes: Vec<AccumulatorNode>) -> Result<()> {
         ensure!(frozen_nodes.len() > 0, "invalid frozen nodes length");
         for node in frozen_nodes {
-            println!(
-                "id:{:?}, save: {:?}, hash: {:?}",
-                self.id.short_str(),
-                node.index(),
-                node.hash().short_str()
-            );
             self.save_index_and_node(node.index(), node.hash(), node)?;
         }
         Ok(())
