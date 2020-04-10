@@ -9,14 +9,14 @@ use starcoin_types::{
 };
 use std::cmp::Ordering;
 
-#[derive(Message, Clone)]
+#[derive(Message, Clone, Debug)]
 #[rtype(result = "()")]
 pub enum SyncMessage {
     DownloadMessage(DownloadMessage),
     ProcessMessage(ProcessMessage),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum DownloadMessage {
     ClosePeerMsg(PeerId),
     BatchHashByNumberMsg(PeerId, BatchHashByNumberMsg),

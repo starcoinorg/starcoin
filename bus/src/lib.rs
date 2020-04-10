@@ -4,6 +4,12 @@
 use crate::bus::BusImpl;
 use actix::prelude::*;
 use anyhow::Result;
+use futures::{
+    channel::{mpsc, oneshot},
+    FutureExt,
+};
+use std::fmt::Debug;
+use std::marker::PhantomData;
 
 mod bus;
 
@@ -11,17 +17,75 @@ mod bus;
 #[rtype(result = "()")]
 pub struct Subscription<M: 'static>
 where
-    M: Message + Send + Clone,
+    M: Message + Send + Clone + Debug,
     M::Result: Send,
 {
     pub recipient: Recipient<M>,
+}
+
+#[derive(Debug)]
+pub struct Channel<M: 'static>
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    m: PhantomData<M>,
+}
+
+impl<M> Channel<M>
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    pub fn new() -> Self {
+        Self {
+            m: Default::default(),
+        }
+    }
+}
+
+impl<M> Message for Channel<M>
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    type Result = Result<mpsc::UnboundedReceiver<M>>;
+}
+
+#[derive(Debug)]
+pub struct Oneshot<M: 'static>
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    m: PhantomData<M>,
+}
+
+impl<M> Oneshot<M>
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    pub fn new() -> Self {
+        Self {
+            m: Default::default(),
+        }
+    }
+}
+
+impl<M> Message for Oneshot<M>
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    type Result = Result<oneshot::Receiver<M>>;
 }
 
 #[derive(Debug, Message)]
 #[rtype(result = "()")]
 pub struct Broadcast<M: 'static>
 where
-    M: Message + Send + Clone,
+    M: Message + Send + Clone + Debug,
     M::Result: Send,
 {
     pub msg: M,
@@ -31,12 +95,22 @@ where
 pub trait Bus {
     async fn subscribe<M: 'static>(self, recipient: Recipient<M>) -> Result<()>
     where
-        M: Message + Send + Clone,
+        M: Message + Send + Clone + Debug,
+        M::Result: Send;
+
+    async fn channel<M: 'static>(self) -> Result<mpsc::UnboundedReceiver<M>>
+    where
+        M: Message + Send + Clone + Debug,
+        M::Result: Send;
+
+    async fn oneshot<M: 'static>(self) -> Result<M>
+    where
+        M: Message + Send + Clone + Debug,
         M::Result: Send;
 
     async fn broadcast<M: 'static>(self, msg: M) -> Result<()>
     where
-        M: Message + Send + Clone,
+        M: Message + Send + Clone + Debug,
         M::Result: Send;
 }
 
@@ -59,7 +133,7 @@ impl Actor for BusActor {
 
 impl<M: 'static> Handler<Subscription<M>> for BusActor
 where
-    M: Message + Send + Clone,
+    M: Message + Send + Clone + Debug,
     M::Result: Send,
 {
     type Result = ();
@@ -69,9 +143,33 @@ where
     }
 }
 
+impl<M: 'static> Handler<Channel<M>> for BusActor
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    type Result = Result<mpsc::UnboundedReceiver<M>>;
+
+    fn handle(&mut self, _msg: Channel<M>, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(self.bus.channel())
+    }
+}
+
+impl<M: 'static> Handler<Oneshot<M>> for BusActor
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    type Result = Result<oneshot::Receiver<M>>;
+
+    fn handle(&mut self, _msg: Oneshot<M>, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(self.bus.oneshot())
+    }
+}
+
 impl<M: 'static> Handler<Broadcast<M>> for BusActor
 where
-    M: Message + Send + Clone,
+    M: Message + Send + Clone + Debug,
     M::Result: Send,
 {
     type Result = ();
@@ -85,7 +183,7 @@ where
 impl Bus for Addr<BusActor> {
     async fn subscribe<M: 'static>(self, recipient: Recipient<M>) -> Result<()>
     where
-        M: Message + Send + Clone,
+        M: Message + Send + Clone + Debug,
         M::Result: Send,
     {
         self.send(Subscription { recipient })
@@ -93,9 +191,36 @@ impl Bus for Addr<BusActor> {
             .map_err(|e| e.into())
     }
 
+    async fn channel<M: 'static>(self) -> Result<mpsc::UnboundedReceiver<M>>
+    where
+        M: Message + Send + Clone + Debug,
+        M::Result: Send,
+    {
+        self.send(Channel::<M>::new())
+            .await
+            .map_err(|e| Into::<anyhow::Error>::into(e))?
+    }
+
+    async fn oneshot<M: 'static>(self) -> Result<M>
+    where
+        M: Message + Send + Clone + Debug,
+        M::Result: Send,
+    {
+        self.send(Oneshot::<M>::new())
+            .then(|result| async {
+                match result {
+                    Ok(receiver) => receiver?
+                        .await
+                        .map_err(|err| Into::<anyhow::Error>::into(err)),
+                    Err(err) => Err(Into::<anyhow::Error>::into(err)),
+                }
+            })
+            .await
+    }
+
     async fn broadcast<M: 'static>(self, msg: M) -> Result<()>
     where
-        M: Message + Send + Clone,
+        M: Message + Send + Clone + Debug,
         M::Result: Send,
     {
         self.send(Broadcast { msg }).await.map_err(|e| e.into())
@@ -105,8 +230,12 @@ impl Bus for Addr<BusActor> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use logger::prelude::*;
-    use tokio::time::{delay_for, Duration};
+    use actix::clock::delay_for;
+    use futures::executor::block_on;
+    use futures::StreamExt;
+    use starcoin_logger::prelude::*;
+    use std::thread::sleep;
+    use std::time::Duration;
 
     #[derive(Debug, Message, Clone)]
     #[rtype(result = "()")]
@@ -227,5 +356,44 @@ mod tests {
         delay_for(Duration::from_millis(100)).await;
         let counter = addr.send(GetCounterMessage {}).await.unwrap();
         assert_eq!(counter, 1);
+    }
+
+    #[stest::test]
+    async fn test_onshot() {
+        let bus_actor = BusActor::launch();
+        let bus_actor2 = bus_actor.clone();
+        let arbiter = Arbiter::new();
+        arbiter.exec_fn(move || loop {
+            let result =
+                block_on(async { bus_actor2.clone().broadcast(MyMessage {}).await.is_ok() });
+            debug!("broadcast result: {}", result);
+            sleep(Duration::from_millis(50));
+        });
+        let msg = bus_actor.clone().oneshot::<MyMessage>().await;
+        assert!(msg.is_ok());
+        let msg = bus_actor.clone().oneshot::<MyMessage>().await;
+        assert!(msg.is_ok());
+    }
+
+    #[stest::test]
+    async fn test_channel() {
+        let bus_actor = BusActor::launch();
+        let bus_actor2 = bus_actor.clone();
+        let arbiter = Arbiter::new();
+        arbiter.exec_fn(move || loop {
+            let result =
+                block_on(async { bus_actor2.clone().broadcast(MyMessage {}).await.is_ok() });
+            debug!("broadcast result: {}", result);
+            sleep(Duration::from_millis(50));
+        });
+        let result = bus_actor.clone().channel::<MyMessage>().await;
+        assert!(result.is_ok());
+        let receiver = result.unwrap();
+        let msgs: Vec<MyMessage> = receiver.take(3).collect().await;
+        assert_eq!(3, msgs.len());
+
+        let receiver2 = bus_actor.clone().channel::<MyMessage>().await.unwrap();
+        let msgs: Vec<MyMessage> = receiver2.take(3).collect().await;
+        assert_eq!(3, msgs.len());
     }
 }
