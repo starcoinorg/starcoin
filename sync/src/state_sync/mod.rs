@@ -134,14 +134,21 @@ impl StateSyncTaskActor {
                 peer_info
             });
             if let Some(best_peer) = best_peer_info {
-                let network_service = self.network_service.clone();
-                self.syncing_nodes
-                    .lock()
-                    .insert(best_peer.get_peer_id(), node_key.clone());
-                Arbiter::spawn(async move {
-                    sync_state_node(node_key, best_peer.get_peer_id(), network_service, address)
+                if self.self_peer_id != best_peer.get_peer_id() {
+                    let network_service = self.network_service.clone();
+                    self.syncing_nodes
+                        .lock()
+                        .insert(best_peer.get_peer_id(), node_key.clone());
+                    Arbiter::spawn(async move {
+                        sync_state_node(
+                            node_key,
+                            best_peer.get_peer_id(),
+                            network_service,
+                            address,
+                        )
                         .await;
-                });
+                    });
+                }
             } else {
                 warn!("{:?}", "best peer is none.");
             }
