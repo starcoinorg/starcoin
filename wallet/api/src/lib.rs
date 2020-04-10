@@ -6,6 +6,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::{test_utils::KeyPair, Uniform};
+use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::time::Duration;
@@ -42,12 +43,13 @@ impl WalletAccount {
     }
 
     pub fn random() -> Self {
-        let key_pair = KeyPair::generate_for_testing();
-        let address = AccountAddress::from_public_key(&key_pair.public_key);
+        let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
+
+        let address = AccountAddress::from_public_key(&public_key);
         WalletAccount {
             address,
             is_default: false,
-            public_key: key_pair.public_key,
+            public_key
         }
     }
 }
