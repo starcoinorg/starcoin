@@ -1,12 +1,13 @@
 use crate::download::Downloader;
 use crate::download_body::{DownloadBodyActor, SyncBodyEvent};
-use crate::{do_duration, DELAY_TIME};
+use crate::helper::send_sync_request;
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
-use network::{NetworkAsyncService, RPCRequest, RPCResponse};
+use network::NetworkAsyncService;
 use network_p2p_api::sync_messages::{DataType, GetDataByHashMsg, ProcessMessage};
+use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
 use std::sync::Arc;
 use traits::Consensus;
 use types::peer_info::PeerInfo;
@@ -70,23 +71,19 @@ where
             data_type: DataType::HEADER,
         };
 
-        let get_data_by_hash_req =
-            RPCRequest::GetDataByHashMsg(ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg));
+        let get_data_by_hash_req = SyncRpcRequest::GetDataByHashMsg(
+            ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
+        );
 
         let network = self.network.clone();
         let peers = event.peers.clone();
         let download_body = self.download_body.clone();
         Arbiter::spawn(async move {
             for peer in peers.clone() {
-                if let RPCResponse::BatchHeaderAndBodyMsg(headers, _bodies, _infos) = network
-                    .clone()
-                    .send_request(
-                        peer.get_peer_id().clone().into(),
-                        get_data_by_hash_req.clone(),
-                        do_duration(DELAY_TIME),
-                    )
-                    .await
-                    .unwrap()
+                if let SyncRpcResponse::BatchHeaderAndBodyMsg(headers, _bodies, _infos) =
+                    send_sync_request(&network, peer.get_peer_id(), get_data_by_hash_req.clone())
+                        .await
+                        .unwrap()
                 {
                     download_body.do_send(SyncBodyEvent {
                         headers: headers.headers,

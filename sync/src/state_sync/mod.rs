@@ -1,4 +1,4 @@
-use crate::{do_duration, DELAY_TIME};
+use crate::helper::send_sync_request;
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
@@ -7,7 +7,8 @@ use crypto::hash::HashValue;
 use forkable_jellyfish_merkle::node_type::Node;
 use futures::executor::block_on;
 use logger::prelude::*;
-use network::{NetworkAsyncService, RPCRequest, RPCResponse};
+use network::NetworkAsyncService;
+use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
 use parking_lot::Mutex;
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use starcoin_sync_api::{StateSyncReset, SyncMetadata};
@@ -22,15 +23,14 @@ async fn sync_state_node(
     address: Addr<StateSyncTaskActor>,
 ) {
     debug!("sync_state_node : {:?}", node_key);
-    let get_state_node_by_node_hash_req = RPCRequest::GetStateNodeByNodeHash(node_key);
-    let state_node = if let RPCResponse::GetStateNodeByNodeHash(state_node) = network_service
-        .send_request(
-            peer_id.clone().into(),
-            get_state_node_by_node_hash_req.clone(),
-            do_duration(DELAY_TIME),
-        )
-        .await
-        .unwrap()
+    let get_state_node_by_node_hash_req = SyncRpcRequest::GetStateNodeByNodeHash(node_key);
+    let state_node = if let SyncRpcResponse::GetStateNodeByNodeHash(state_node) = send_sync_request(
+        &network_service,
+        peer_id.clone(),
+        get_state_node_by_node_hash_req.clone(),
+    )
+    .await
+    .unwrap()
     {
         debug!("get_state_node_by_node_hash_resp:{:?}", state_node);
         if node_key == state_node.0.hash() {
@@ -206,7 +206,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                         Arbiter::spawn(async move {
                             let _ = bus
                                 .send(Broadcast {
-                                    msg: SystemEvents::StateSyncDone(),
+                                    msg: SystemEvents::SyncDone(),
                                 })
                                 .await;
                         });

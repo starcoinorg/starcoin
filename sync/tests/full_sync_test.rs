@@ -10,9 +10,10 @@ use futures_timer::Delay;
 use gen_network::gen_network;
 use logger::prelude::*;
 use miner::{miner_client::MinerClient, MinerActor};
-use network::{RPCRequest, RPCResponse};
 use network_p2p_api::sync_messages::{GetHashByNumberMsg, ProcessMessage};
+use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
 use starcoin_genesis::Genesis;
+use starcoin_sync::helper::send_sync_request;
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
@@ -111,7 +112,7 @@ fn test_network_actor_rpc() {
         handle.spawn(MinerClient::<DummyConsensus>::run(
             node_config_1.miner.stratum_server,
         ));
-        Delay::new(Duration::from_secs(1 * 60)).await;
+        Delay::new(Duration::from_secs(20)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();
         debug!("first chain :{:?}", number);
@@ -182,10 +183,10 @@ fn test_network_actor_rpc() {
         )
         .unwrap();
 
-        Delay::new(Duration::from_secs(1 * 60)).await;
+        Delay::new(Duration::from_secs(30)).await;
 
         for i in 0..5 as usize {
-            Delay::new(Duration::from_secs(5)).await;
+            Delay::new(Duration::from_secs(2)).await;
             let block_1 = first_chain.clone().master_head_block().await.unwrap();
             let number_1 = block_1.header().number();
             debug!("index : {}, first chain number is {}", i, number_1);
@@ -339,21 +340,15 @@ fn test_network_actor_rpc_2() {
         let mut numbers = Vec::new();
         numbers.push(0);
         let get_hash_by_number_msg = GetHashByNumberMsg { numbers };
-        let req = RPCRequest::GetHashByNumberMsg(ProcessMessage::GetHashByNumberMsg(
+        let req = SyncRpcRequest::GetHashByNumberMsg(ProcessMessage::GetHashByNumberMsg(
             get_hash_by_number_msg,
         ));
-        let resp = network_1
-            .clone()
-            .send_request(
-                network_2.identify().clone().into(),
-                req.clone(),
-                Duration::from_secs(1),
-            )
+        let resp = send_sync_request(&network_1, network_2.identify().clone().into(), req.clone())
             .await
             .unwrap();
 
         assert!(match resp {
-            RPCResponse::BatchHashByNumberMsg(_) => true,
+            SyncRpcResponse::BatchHashByNumberMsg(_) => true,
             _ => false,
         });
 

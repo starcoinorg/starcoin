@@ -12,13 +12,13 @@ pub enum SystemEvents {
     NewHeadBlock(BlockDetail),
     /// Mint new Block.
     MinedBlock(Block),
-    StateSyncDone(),
+    SyncDone(),
 }
 
 impl SystemEvents {
     pub fn is_sync_done(&self) -> bool {
         match self {
-            SystemEvents::StateSyncDone() => true,
+            SystemEvents::SyncDone() => true,
             _ => false,
         }
     }
