@@ -184,13 +184,17 @@ impl NetworkAsyncService {
         if size == 0 {
             return Ok(None);
         }
-        let mut info = PeerInfo::default();
+        let mut info: Option<PeerInfo> = None;
         for (_, peer) in self.inner.peers.lock().await.iter() {
-            if peer.peer_info.total_difficult > info.total_difficult {
-                info = peer.peer_info.clone();
+            if info.is_none()
+                || (peer.peer_info.total_difficult
+                    > info.clone().expect("info is none.").total_difficult)
+            {
+                info = Some(peer.peer_info.clone());
+                break;
             }
         }
-        Ok(Some(info))
+        Ok(info)
     }
 
     pub async fn get_peer_set_size(&self) -> Result<usize> {
