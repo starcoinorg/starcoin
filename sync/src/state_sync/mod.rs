@@ -206,7 +206,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                         Arbiter::spawn(async move {
                             let _ = bus
                                 .send(Broadcast {
-                                    msg: SystemEvents::StateSyncDone(),
+                                    msg: SystemEvents::SyncDone(),
                                 })
                                 .await;
                         });

@@ -3,7 +3,7 @@ use crate::pool::TTLPool;
 use actix::prelude::*;
 use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, ResponseActFuture};
 use anyhow::Result;
-use bus::BusActor;
+use bus::{Broadcast, BusActor};
 use chain::ChainActorRef;
 use futures::channel::mpsc;
 use parking_lot::RwLock;
@@ -31,6 +31,7 @@ use traits::Consensus;
 use types::{
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
+    system_events::SystemEvents,
 };
 
 #[derive(Default, Debug, Message)]
@@ -91,6 +92,18 @@ where
         });
         Ok(download_actor)
     }
+
+    fn sync_task(&mut self) {
+        if !self.syncing.load(Ordering::Relaxed) {
+            self.syncing.store(true, Ordering::Relaxed);
+            Self::sync_block_from_best_peer(
+                self.downloader.clone(),
+                self.network.clone(),
+                self.bus.clone(),
+            );
+            self.syncing.store(false, Ordering::Relaxed);
+        }
+    }
 }
 
 impl<E, C> Actor for DownloadActor<E, C>
@@ -101,6 +114,7 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        self.sync_task();
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
             if !act.syncing.load(Ordering::Relaxed) {
                 if let Err(e) = act.sync_event_sender.try_send(SyncEvent {}) {
@@ -119,11 +133,7 @@ where
 {
     type Result = Result<()>;
     fn handle(&mut self, _item: SyncEvent, _ctx: &mut Self::Context) -> Self::Result {
-        if !self.syncing.load(Ordering::Relaxed) {
-            self.syncing.store(true, Ordering::Relaxed);
-            Self::sync_block_from_best_peer(self.downloader.clone(), self.network.clone());
-            self.syncing.store(false, Ordering::Relaxed);
-        }
+        self.sync_task();
         Ok(())
     }
 }
@@ -337,7 +347,11 @@ where
         Ok(())
     }
 
-    fn sync_block_from_best_peer(downloader: Arc<Downloader<E, C>>, network: NetworkAsyncService) {
+    fn sync_block_from_best_peer(
+        downloader: Arc<Downloader<E, C>>,
+        network: NetworkAsyncService,
+        bus: Addr<BusActor>,
+    ) {
         Arbiter::spawn(async move {
             debug!("begin sync.");
             if let Some(best_peer) = network.best_peer().await.unwrap() {
@@ -446,6 +460,11 @@ where
                     }
                 }
             };
+            let _ = bus
+                .send(Broadcast {
+                    msg: SystemEvents::SyncDone(),
+                })
+                .await;
             debug!("end sync.");
         });
     }
