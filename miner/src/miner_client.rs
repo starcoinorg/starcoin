@@ -236,4 +236,9 @@ mod test {
             }
         });
     }
+
+    #[test]
+    fn test() {
+        println!("max: {:?}", U256::max_value());
+    }
 }

@@ -164,7 +164,7 @@ impl AccumulatorCache {
         root_hash: HashValue,
         node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
-        info!("accumulator cache new: {:?}", accumulator_id.short_str());
+        trace!("accumulator cache new: {:?}", accumulator_id.short_str());
         Self {
             id: accumulator_id,
             frozen_subtree_roots: RefCell::new(frozen_subtree_roots.clone()),
@@ -324,7 +324,7 @@ impl AccumulatorCache {
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<HashMap<NodeIndex, HashValue>> {
         let mut cache_map = HashMap::new();
-        info!("restore index cache, root:{:?}", root_hash.short_str());
+        trace!("restore index cache, root:{:?}", root_hash.short_str());
         if root_hash != *ACCUMULATOR_PLACEHOLDER_HASH {
             //get node from storage
             match store.get_node(root_hash) {
@@ -485,12 +485,6 @@ impl AccumulatorCache {
     fn save_frozen_nodes(&self, frozen_nodes: Vec<AccumulatorNode>) -> Result<()> {
         ensure!(frozen_nodes.len() > 0, "invalid frozen nodes length");
         for node in frozen_nodes {
-            println!(
-                "id:{:?}, save: {:?}, hash: {:?}",
-                self.id.short_str(),
-                node.index(),
-                node.hash().short_str()
-            );
             self.save_index_and_node(node.index(), node.hash(), node)?;
         }
         Ok(())

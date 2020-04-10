@@ -21,4 +21,5 @@ pub mod system_events;
 pub mod transaction;
 pub mod vm_error;
 pub mod write_set;
-pub use ethereum_types::{H256, U256};
+
+pub use ethereum_types::{H256, U256, U512};
