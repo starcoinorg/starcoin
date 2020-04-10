@@ -621,6 +621,15 @@ mod tests {
     use types::account_address::AccountAddress;
     use types::transaction::SignedUserTransaction;
 
+    #[test]
+    fn test_peer_info() {
+        let mut peer_info = PeerInfo::default();
+        peer_info.block_number = 1;
+        let data = peer_info.encode().unwrap();
+        let peer_info_decode = PeerInfo::decode(&data).unwrap();
+        assert_eq!(peer_info, peer_info_decode);
+    }
+
     #[ignore]
     #[test]
     fn test_network_with_mock() {

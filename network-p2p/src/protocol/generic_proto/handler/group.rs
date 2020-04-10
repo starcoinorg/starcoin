@@ -550,7 +550,7 @@ impl ProtocolsHandler for NotifsHandler {
                 ProtocolsHandlerEvent::Custom(LegacyProtoHandlerOut::CustomMessage { message }) => {
                     return Poll::Ready(ProtocolsHandlerEvent::Custom(
                         NotifsHandlerOut::CustomMessage { message },
-                    ))
+                    ));
                 }
                 ProtocolsHandlerEvent::Custom(LegacyProtoHandlerOut::Clogged { messages }) => {
                     return Poll::Ready(ProtocolsHandlerEvent::Custom(NotifsHandlerOut::Clogged {

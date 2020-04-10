@@ -211,13 +211,13 @@ impl NetworkInner {
                         data: payload.data,
                     };
                     net_tx.unbounded_send(user_msg)?;
-                    if payload.id != 0 {
-                        self.service.write_notification(
-                            peer_id.clone(),
-                            PROTOCOL_NAME.into(),
-                            Message::ACK(payload.id).into_bytes(),
-                        );
-                    }
+                    // if payload.id != 0 {
+                    //     self.service.write_notification(
+                    //         peer_id.clone(),
+                    //         PROTOCOL_NAME.into(),
+                    //         Message::ACK(payload.id).into_bytes(),
+                    //     );
+                    // }
                 }
                 Message::ACK(message_id) => {
                     info!("Receive message ack");

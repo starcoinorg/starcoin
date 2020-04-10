@@ -3,7 +3,7 @@
 
 use actix::prelude::*;
 use anyhow::{bail, Result};
-use starcoin_bus::BusActor;
+use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_executor::executor::Executor;
@@ -24,10 +24,12 @@ use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::system_events::SystemEvents;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use tokio::runtime::Handle;
+use tokio::stream::StreamExt;
 
 pub struct NodeStartHandle<C, H>
 where
@@ -46,6 +48,9 @@ where
     H: ConsensusHeader + 'static,
 {
     let bus = BusActor::launch();
+
+    let sync_event_receiver_future = bus.clone().channel::<SystemEvents>();
+
     let cache_storage = Arc::new(CacheStorage::new());
     let db_storage = Arc::new(DBStorage::new(config.storage.clone().dir()));
     let storage = Arc::new(
@@ -117,24 +122,24 @@ where
             bus.clone(),
         )
     };
-
-    let block_info = match storage.get_block_info(startup_info.head.get_head())? {
+    let head_block_hash = startup_info.head.get_head();
+    let head_block = match storage.get_block(head_block_hash)? {
+        Some(block) => block,
+        None => panic!("can't get block by hash {}", head_block_hash),
+    };
+    let head_block_info = match storage.get_block_info(head_block_hash)? {
         Some(block_info) => block_info,
-        None => panic!(
-            "can't get block info by hash {}",
-            startup_info.head.get_head()
-        ),
+        None => panic!("can't get block info by hash {}", head_block_hash),
     };
     let peer_id = config
-        .clone()
         .network
         .self_peer_id
         .clone()
-        .expect("should have");
+        .expect("Self peer_id must has been set.");
     let self_info = PeerInfo::new(
-        peer_id,
-        startup_info.head.start_number(),
-        block_info.get_total_difficult(),
+        peer_id.clone(),
+        head_block.header().number(),
+        head_block_info.get_total_difficult(),
         startup_info.head.get_head(),
     );
     let network = NetworkActor::launch(
@@ -177,21 +182,7 @@ where
     } else {
         None
     };
-    let miner =
-        MinerActor::<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>::launch(
-            config.clone(),
-            bus.clone(),
-            storage.clone(),
-            txpool.clone(),
-            chain.clone(),
-            receiver,
-            default_account,
-        )?;
-    let peer_id = config
-        .network
-        .self_peer_id
-        .clone()
-        .expect("Self peer_id must has been set.");
+
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
         "Self connect address is: {}",
@@ -211,16 +202,23 @@ where
         storage.clone(),
         sync_metadata.clone(),
     )?;
-    //TODO wait sync implement sync done event.
 
-    // info!("Waiting sync ......");
-    // let mut receiver = bus
-    //     .channel::<SystemEvents>()
-    //     .await
-    //     .expect("Subscribe system event error.");
-    //
-    // receiver.any(|event| event.is_sync_done());
-    // info!("Waiting sync finished.");
+    info!("Waiting sync ......");
+    let mut sync_event_receiver = sync_event_receiver_future
+        .await
+        .expect("Subscribe system event error.");
+    sync_event_receiver.any(|event| event.is_sync_done()).await;
+    info!("Waiting sync finished.");
+    let miner =
+        MinerActor::<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>::launch(
+            config.clone(),
+            bus,
+            storage.clone(),
+            txpool.clone(),
+            chain.clone(),
+            receiver,
+            default_account,
+        )?;
 
     let stratum_server = config.miner.stratum_server;
     let miner_client = MinerClientActor::<C>::new(stratum_server).start();
