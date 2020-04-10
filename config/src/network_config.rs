@@ -1,7 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{get_available_port, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
+use crate::{
+    decode_key, get_available_port, load_key, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt,
+};
 use anyhow::{bail, ensure, Result};
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use logger::prelude::*;
@@ -88,7 +90,7 @@ impl ConfigModule for NetworkConfig {
 
     fn random(&mut self, _base: &BaseConfig) {
         let keypair = crate::gen_keypair();
-        self.network_keypair = Some(keypair);
+        self.network_keypair = Some(Arc::new(keypair));
         self.set_peer_id();
     }
 
@@ -121,18 +123,19 @@ impl ConfigModule for NetworkConfig {
         let data_dir = base.data_dir();
         let path = data_dir.join(&self.network_key_file);
         let keypair = if path.exists() {
-            // load from file directly
-            let network_keypair = crate::load_key(&path)?;
-            Arc::new(network_keypair)
+            load_key(&path)?
         } else {
-            // generate key and save it
-            let keypair = crate::gen_keypair();
-
+            let keypair = match (&opt.node_key, &opt.node_key_file) {
+                (Some(_), Some(_)) => bail!("Only one of node-key and node-key-file can be set."),
+                (Some(node_key), None) => decode_key(node_key)?,
+                (None, Some(node_key_file)) => load_key(node_key_file)?,
+                (None, None) => crate::gen_keypair(),
+            };
             crate::save_key(&keypair.private_key.to_bytes(), &path)?;
             keypair
         };
 
-        self.network_keypair = Some(keypair);
+        self.network_keypair = Some(Arc::new(keypair));
         self.set_peer_id();
 
         Ok(())
