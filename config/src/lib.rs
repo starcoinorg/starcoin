@@ -3,6 +3,7 @@
 
 use anyhow::{ensure, Result};
 use dirs;
+use libp2p::core::Multiaddr;
 use once_cell::sync::Lazy;
 use rand::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -72,11 +73,19 @@ pub struct StarcoinOpt {
 
     #[structopt(long)]
     /// P2P network seeds
-    pub seeds: Option<Vec<String>>,
+    pub seeds: Option<Vec<Multiaddr>>,
 
-    #[structopt(long, default_value = "0")]
+    #[structopt(name = "dev-period", default_value = "0")]
     /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
     pub dev_period: u64,
+
+    #[structopt(name = "node-key")]
+    /// Node network private key, only work for first init.
+    pub node_key: Option<String>,
+
+    #[structopt(name = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
+    /// Node network private key file, only work for first init.
+    pub node_key_file: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -313,22 +322,24 @@ where
     Ok(())
 }
 
-pub(crate) fn load_key<P: AsRef<Path>>(
-    path: P,
-) -> Result<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
-    let content = std::fs::read_to_string(path)?;
-    let bytes_out: Vec<u8> = hex::decode(&content)?;
+pub(crate) fn decode_key(hex_str: &str) -> Result<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
+    let bytes_out: Vec<u8> = hex::decode(hex_str)?;
     let pri_key = Ed25519PrivateKey::try_from(bytes_out.as_slice())?;
     Ok(KeyPair::from(pri_key))
 }
 
-pub fn gen_keypair() -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
+pub(crate) fn load_key<P: AsRef<Path>>(
+    path: P,
+) -> Result<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
+    let content = std::fs::read_to_string(path)?;
+    decode_key(content.as_str())
+}
+
+pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
     let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
     let seed_buf: [u8; 32] = seed_rng.gen();
     let mut rng0: StdRng = SeedableRng::from_seed(seed_buf);
-    let account_keypair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> =
-        Arc::new(KeyPair::generate_for_testing(&mut rng0));
-    account_keypair
+    KeyPair::generate_for_testing(&mut rng0)
 }
 
 pub fn get_available_port() -> u16 {
@@ -388,14 +399,5 @@ mod tests {
         let config3 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(config2, config3);
         Ok(())
-    }
-
-    #[test]
-    fn test_keys() {
-        let key_pair = gen_keypair();
-        println!("{}", key_pair.public_key.to_string());
-        println!("{}", hex::encode(key_pair.private_key.to_bytes()));
-        let config = ChainNetwork::Halley.get_config();
-        println!("{:?}", config)
     }
 }

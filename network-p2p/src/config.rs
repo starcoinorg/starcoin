@@ -68,7 +68,7 @@ pub struct NetworkConfiguration {
     /// Multiaddresses to advertise. Detected automatically if empty.
     pub public_addresses: Vec<Multiaddr>,
     /// List of initial node addresses
-    pub boot_nodes: Vec<String>,
+    pub boot_nodes: Vec<Multiaddr>,
     /// The node key configuration, which determines the node's network identity keypair.
     pub node_key: NodeKeyConfig,
     /// Maximum allowed number of incoming connections.

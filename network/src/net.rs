@@ -1,17 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{helper::convert_boot_nodes, Message, NetworkMessage, PeerEvent};
+use crate::{Message, NetworkMessage, PeerEvent};
 
 use anyhow::*;
+use bytes::Bytes;
+use config::NetworkConfig;
+use crypto::hash::HashValue;
 use futures::{
     channel::{mpsc, oneshot::Sender},
     prelude::*,
 };
-
-use bytes::Bytes;
-use config::NetworkConfig;
-use crypto::hash::HashValue;
 use libp2p::PeerId;
 use network_p2p::{
     identity, Event, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig, Params,
@@ -260,8 +259,8 @@ pub fn build_network_service(
     mpsc::UnboundedSender<()>,
 ) {
     let config = NetworkConfiguration {
-        listen_addresses: vec![cfg.listen.parse().expect("Failed to parse network config")],
-        boot_nodes: convert_boot_nodes(cfg.seeds.clone()),
+        listen_addresses: vec![cfg.listen.clone()],
+        boot_nodes: cfg.seeds.clone(),
         node_key: {
             let secret = identity::ed25519::SecretKey::from_bytes(
                 &mut cfg.network_keypair().private_key.to_bytes(),

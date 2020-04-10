@@ -97,12 +97,12 @@ where
         if !self.syncing.load(Ordering::Relaxed) {
             self.syncing.store(true, Ordering::Relaxed);
             Self::sync_block_from_best_peer(
+                self.syncing.clone(),
                 self.self_peer_id.as_ref().clone(),
                 self.downloader.clone(),
                 self.network.clone(),
                 self.bus.clone(),
             );
-            self.syncing.store(false, Ordering::Relaxed);
         }
     }
 }
@@ -356,6 +356,7 @@ where
     }
 
     fn sync_block_from_best_peer(
+        syncing: Arc<AtomicBool>,
         self_peer_id: PeerId,
         downloader: Arc<Downloader<E, C>>,
         network: NetworkAsyncService,
@@ -485,6 +486,7 @@ where
                     msg: SystemEvents::SyncDone(),
                 })
                 .await;
+            syncing.store(false, Ordering::Relaxed);
             debug!("end sync.");
         });
     }
