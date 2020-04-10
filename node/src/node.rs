@@ -119,24 +119,24 @@ where
             bus.clone(),
         )
     };
-
-    let block_info = match storage.get_block_info(startup_info.head.get_head())? {
+    let head_block_hash = startup_info.head.get_head();
+    let head_block = match storage.get_block(head_block_hash)? {
+        Some(block) => block,
+        None => panic!("can't get block by hash {}", head_block_hash),
+    };
+    let head_block_info = match storage.get_block_info(head_block_hash)? {
         Some(block_info) => block_info,
-        None => panic!(
-            "can't get block info by hash {}",
-            startup_info.head.get_head()
-        ),
+        None => panic!("can't get block info by hash {}", head_block_hash),
     };
     let peer_id = config
-        .clone()
         .network
         .self_peer_id
         .clone()
-        .expect("should have");
+        .expect("Self peer_id must has been set.");
     let self_info = PeerInfo::new(
-        peer_id,
-        startup_info.head.start_number(),
-        block_info.get_total_difficult(),
+        peer_id.clone(),
+        head_block.header().number(),
+        head_block_info.get_total_difficult(),
         startup_info.head.get_head(),
     );
     let network = NetworkActor::launch(
@@ -179,21 +179,7 @@ where
     } else {
         None
     };
-    let miner =
-        MinerActor::<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>::launch(
-            config.clone(),
-            bus.clone(),
-            storage.clone(),
-            txpool.clone(),
-            chain.clone(),
-            receiver,
-            default_account,
-        )?;
-    let peer_id = config
-        .network
-        .self_peer_id
-        .clone()
-        .expect("Self peer_id must has been set.");
+
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
         "Self connect address is: {}",
@@ -215,13 +201,24 @@ where
     )?;
 
     info!("Waiting sync ......");
-    let mut receiver = bus
+    let mut sync_event_receiver = bus
+        .clone()
         .channel::<SystemEvents>()
         .await
         .expect("Subscribe system event error.");
 
-    receiver.any(|event| event.is_sync_done());
+    sync_event_receiver.any(|event| event.is_sync_done()).await;
     info!("Waiting sync finished.");
+    let miner =
+        MinerActor::<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>::launch(
+            config.clone(),
+            bus,
+            storage.clone(),
+            txpool.clone(),
+            chain.clone(),
+            receiver,
+            default_account,
+        )?;
 
     let stratum_server = config.miner.stratum_server;
     let miner_client = MinerClientActor::<C>::new(stratum_server).start();
