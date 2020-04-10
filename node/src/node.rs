@@ -3,7 +3,7 @@
 
 use actix::prelude::*;
 use anyhow::{bail, Result};
-use starcoin_bus::BusActor;
+use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_executor::executor::Executor;
@@ -24,10 +24,12 @@ use starcoin_traits::{Consensus, ConsensusHeader};
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::system_events::SystemEvents;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use tokio::runtime::Handle;
+use tokio::stream::StreamExt;
 
 pub struct NodeStartHandle<C, H>
 where
@@ -211,16 +213,15 @@ where
         storage.clone(),
         sync_metadata.clone(),
     )?;
-    //TODO wait sync implement sync done event.
 
-    // info!("Waiting sync ......");
-    // let mut receiver = bus
-    //     .channel::<SystemEvents>()
-    //     .await
-    //     .expect("Subscribe system event error.");
-    //
-    // receiver.any(|event| event.is_sync_done());
-    // info!("Waiting sync finished.");
+    info!("Waiting sync ......");
+    let mut receiver = bus
+        .channel::<SystemEvents>()
+        .await
+        .expect("Subscribe system event error.");
+
+    receiver.any(|event| event.is_sync_done());
+    info!("Waiting sync finished.");
 
     let stratum_server = config.miner.stratum_server;
     let miner_client = MinerClientActor::<C>::new(stratum_server).start();
