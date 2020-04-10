@@ -379,8 +379,11 @@ pub(crate) fn load_key<P: AsRef<Path>>(
 }
 
 pub fn gen_keypair() -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
+    let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
+    let seed_buf: [u8; 32] = seed_rng.gen();
+    let mut rng0: StdRng = SeedableRng::from_seed(seed_buf);
     let account_keypair: Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> =
-        Arc::new(KeyPair::generate_for_testing());
+        Arc::new(KeyPair::generate(&mut rng0));
     account_keypair
 }
 

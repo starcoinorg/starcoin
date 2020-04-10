@@ -427,7 +427,9 @@ impl SignedUserTransaction {
 
     //TODO
     pub fn mock() -> Self {
-        let key_pair = starcoin_crypto::test_utils::KeyPair::generate_for_testing();
+        let seed: [u8; 32] = EntropyRng::new().gen();
+        let mut rng = StdRng::from_seed(seed);
+        let key_pair = starcoin_crypto::test_utils::KeyPair::generate(&mut rng);
         let raw_txn = RawUserTransaction::mock();
         raw_txn
             .sign(&key_pair.private_key, key_pair.public_key)
@@ -436,7 +438,9 @@ impl SignedUserTransaction {
     }
 
     pub fn mock_from(compiled_script: Vec<u8>) -> Self {
-        let key_pair = starcoin_crypto::test_utils::KeyPair::generate_for_testing();
+        let seed: [u8; 32] = EntropyRng::new().gen();
+        let mut rng = StdRng::from_seed(seed);
+        let key_pair = starcoin_crypto::test_utils::KeyPair::generate(&mut rng);
         let raw_txn = RawUserTransaction::mock_from(compiled_script);
         raw_txn
             .sign(&key_pair.private_key, key_pair.public_key)

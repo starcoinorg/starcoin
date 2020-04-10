@@ -189,7 +189,8 @@ mod tests {
             types::account_config::lbr_type_tag(),
             Duration::from_secs(60),
         );
-        let private_key = ed25519::Ed25519PrivateKey::generate_for_testing();
+        let mut rng = rand::rngs::StdRng::from_seed([0; 32]);
+        let private_key = ed25519::Ed25519PrivateKey::generate(&mut rng);
         let public_key = (&private_key).into();
 
         let signed = raw.sign(&private_key, public_key).unwrap().into_inner();
