@@ -51,7 +51,7 @@ impl NetworkConfig {
         let host = self
             .listen
             .clone()
-            .replace(1, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
+            .replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
             .expect("Replace multi address fail.");
         let mut p2p_address = host.clone();
         p2p_address.push(Protocol::P2p(peer_id.clone().into()));
