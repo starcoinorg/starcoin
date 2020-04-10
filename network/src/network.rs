@@ -630,6 +630,7 @@ mod tests {
         assert_eq!(peer_info, peer_info_decode);
     }
 
+    #[ignore]
     #[test]
     fn test_network_with_mock() {
         use std::time::Duration;
