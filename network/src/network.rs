@@ -191,7 +191,6 @@ impl NetworkAsyncService {
                     > info.clone().expect("info is none.").total_difficult)
             {
                 info = Some(peer.peer_info.clone());
-                break;
             }
         }
         Ok(info)
