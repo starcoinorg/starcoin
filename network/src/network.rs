@@ -237,7 +237,7 @@ impl NetworkActor {
                 .network
                 .seeds
                 .iter()
-                .fold(String::new(), |acc, arg| acc + arg.as_str()),
+                .fold(String::new(), |acc, arg| acc + arg.to_string().as_str()),
             service.identify()
         );
         let message_processor = MessageProcessor::new();
@@ -615,6 +615,7 @@ mod tests {
     use bus::Subscription;
     use futures::sink::SinkExt;
     use futures_timer::Delay;
+    use network_p2p::Multiaddr;
     use tokio::runtime::{Handle, Runtime};
     use tokio::task;
     use types::account_address::AccountAddress;
@@ -635,16 +636,22 @@ mod tests {
 
         let mut node_config1 = NodeConfig::random_for_test();
         node_config1.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+                .parse()
+                .unwrap();
         let node_config1 = Arc::new(node_config1);
 
         let (network1, _addr1, _bus1) = build_network(node_config1.clone(), handle.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
-        let seed = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex);
+        let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex)
+            .parse()
+            .unwrap();
         node_config2.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+                .parse()
+                .unwrap();
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 

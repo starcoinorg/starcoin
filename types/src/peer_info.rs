@@ -8,6 +8,7 @@ use starcoin_crypto::ed25519::Ed25519PublicKey;
 
 use crate::{block::BlockNumber, U512};
 use starcoin_crypto::HashValue;
+use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
@@ -83,6 +84,20 @@ impl From<libp2p::PeerId> for PeerId {
 impl std::convert::AsRef<[u8]> for PeerId {
     fn as_ref(&self) -> &[u8] {
         self.0.as_bytes()
+    }
+}
+
+impl TryFrom<multihash::Multihash> for PeerId {
+    type Error = multihash::Multihash;
+
+    fn try_from(value: multihash::Multihash) -> Result<Self, Self::Error> {
+        PeerId::from_multihash(value)
+    }
+}
+
+impl From<PeerId> for multihash::Multihash {
+    fn from(peer_id: PeerId) -> Self {
+        peer_id.0.into()
     }
 }
 

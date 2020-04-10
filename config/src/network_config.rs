@@ -1,15 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, Result};
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::test_utils::KeyPair;
-
+use crate::{
+    decode_key, get_available_port, load_key, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt,
+};
+use anyhow::{bail, ensure, Result};
+use libp2p::multiaddr::{Multiaddr, Protocol};
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
-
-use crate::{get_available_port, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
+use starcoin_crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    test_utils::KeyPair,
+};
 use starcoin_types::peer_info::PeerId;
+use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -19,15 +23,15 @@ pub static DEFAULT_NETWORK_PORT: u16 = 9840;
 #[serde(default, deny_unknown_fields)]
 pub struct NetworkConfig {
     // The address that this node is listening on for new connections.
-    pub listen: String,
-    pub seeds: Vec<String>,
+    pub listen: Multiaddr,
+    pub seeds: Vec<Multiaddr>,
     network_key_file: PathBuf,
     #[serde(skip)]
     pub network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
     #[serde(skip)]
     pub self_peer_id: Option<PeerId>,
     #[serde(skip)]
-    pub self_connect_address: Option<String>,
+    pub self_connect_address: Option<Multiaddr>,
 }
 
 impl Default for NetworkConfig {
@@ -44,9 +48,25 @@ impl NetworkConfig {
     fn set_peer_id(&mut self) {
         let peer_id = PeerId::from_ed25519_public_key(self.network_keypair().public_key.clone());
         //TODO use a more robust method to get local best advertise ip
-        let host = self.listen.clone().replace("0.0.0.0", "127.0.0.1");
-        self.self_connect_address = Some(format!("{}/p2p/{}", host, peer_id.to_base58()));
+        let host = self
+            .listen
+            .clone()
+            .replace(1, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
+            .expect("Replace multi address fail.");
+        let mut p2p_address = host.clone();
+        p2p_address.push(Protocol::P2p(peer_id.clone().into()));
+        self.self_connect_address = Some(p2p_address);
         self.self_peer_id = Some(peer_id);
+    }
+
+    fn check_seed(seed: &Multiaddr) -> Result<()> {
+        if let Some(Protocol::P2p(_peer_id)) = seed.clone().pop() {
+            return Ok(());
+        }
+        bail!(
+            "Invalid seed {:?}, seed addr last part must is p2p/peer_id ",
+            seed
+        )
     }
 }
 
@@ -57,7 +77,9 @@ impl ConfigModule for NetworkConfig {
             _ => DEFAULT_NETWORK_PORT,
         };
         Self {
-            listen: format!("/ip4/0.0.0.0/tcp/{}", port),
+            listen: format!("/ip4/0.0.0.0/tcp/{}", port)
+                .parse()
+                .expect("Parse multi address fail."),
             seeds: vec![],
             network_key_file: PathBuf::from("network_key"),
             network_keypair: None,
@@ -68,7 +90,7 @@ impl ConfigModule for NetworkConfig {
 
     fn random(&mut self, _base: &BaseConfig) {
         let keypair = crate::gen_keypair();
-        self.network_keypair = Some(keypair);
+        self.network_keypair = Some(Arc::new(keypair));
         self.set_peer_id();
     }
 
@@ -82,27 +104,38 @@ impl ConfigModule for NetworkConfig {
             "network key file should not be empty path"
         );
         if let Some(seeds) = &opt.seeds {
-            self.seeds.extend_from_slice(seeds.as_slice());
-            info!(
-                "Update seeds config from command line opt, seeds: {:?}",
-                self.seeds
-            );
+            for seed in seeds {
+                if self.seeds.contains(seed) {
+                    warn!(
+                        "Command line option seed {:?} has contains in config file.",
+                        seed
+                    );
+                } else {
+                    self.seeds.push(seed.clone());
+                    debug!("Add command line option seed {:?} to config", self.seeds);
+                }
+            }
+            info!("Final bootstrap seeds: {:?}", self.seeds);
+        }
+        for seed in &self.seeds {
+            Self::check_seed(seed)?;
         }
         let data_dir = base.data_dir();
         let path = data_dir.join(&self.network_key_file);
         let keypair = if path.exists() {
-            // load from file directly
-            let network_keypair = crate::load_key(&path)?;
-            Arc::new(network_keypair)
+            load_key(&path)?
         } else {
-            // generate key and save it
-            let keypair = crate::gen_keypair();
-
+            let keypair = match (&opt.node_key, &opt.node_key_file) {
+                (Some(_), Some(_)) => bail!("Only one of node-key and node-key-file can be set."),
+                (Some(node_key), None) => decode_key(node_key)?,
+                (None, Some(node_key_file)) => load_key(node_key_file)?,
+                (None, None) => crate::gen_keypair(),
+            };
             crate::save_key(&keypair.private_key.to_bytes(), &path)?;
             keypair
         };
 
-        self.network_keypair = Some(keypair);
+        self.network_keypair = Some(Arc::new(keypair));
         self.set_peer_id();
 
         Ok(())

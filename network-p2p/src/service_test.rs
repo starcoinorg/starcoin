@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::{Event, NodeKeyConfig, PeerId, ProtocolId, Secret};
+    use crate::{Event, Multiaddr, NodeKeyConfig, PeerId, ProtocolId, Secret};
     use crate::{NetworkConfiguration, NetworkWorker, Params};
     use crypto::HashValue;
     use futures::stream::StreamExt;
@@ -34,11 +34,13 @@ mod tests {
         handle.spawn(worker1);
 
         let addr1_hex = service1.peer_id().to_base58();
-        let seed = format!(
+        let seed: Multiaddr = format!(
             "{}/p2p/{}",
             &config1.listen_addresses.get(0).expect("should have"),
             addr1_hex
-        );
+        )
+        .parse()
+        .unwrap();
         let config2 = generate_config(vec![seed]);
 
         let worker2 = NetworkWorker::new(Params::new(config2.clone(), protocol.clone())).unwrap();
@@ -101,11 +103,13 @@ mod tests {
         handle.spawn(worker1);
 
         let addr1_hex = service1.peer_id().to_base58();
-        let seed = format!(
+        let seed: Multiaddr = format!(
             "{}/p2p/{}",
             &config1.listen_addresses.get(0).expect("should have"),
             addr1_hex
-        );
+        )
+        .parse()
+        .unwrap();
         let mut config2 = generate_config(vec![seed]);
         config2.genesis_hash = HashValue::random();
 
@@ -139,7 +143,7 @@ mod tests {
         rt.block_on(fut);
     }
 
-    fn generate_config(boot_nodes: Vec<String>) -> NetworkConfiguration {
+    fn generate_config(boot_nodes: Vec<Multiaddr>) -> NetworkConfiguration {
         let mut config = NetworkConfiguration::default();
         let listen = format!("/ip4/127.0.0.1/tcp/{}", sg_config::get_available_port());
         config.listen_addresses = vec![listen

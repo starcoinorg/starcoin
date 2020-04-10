@@ -43,4 +43,5 @@ storage = {path = "../storage", package = "starcoin-storage" }
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.2"
 starcoin-wallet-api = { path = "../wallet/api"}
+libp2p = "0.16.2"
 
