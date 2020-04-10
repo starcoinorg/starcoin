@@ -8,6 +8,7 @@ use consensus::dummy::DummyConsensus;
 use executor::executor::Executor;
 use futures_timer::Delay;
 use gen_network::gen_network;
+use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{miner_client::MinerClient, MinerActor};
 use network_p2p_api::sync_messages::{GetHashByNumberMsg, ProcessMessage};
@@ -41,7 +42,9 @@ fn test_network_actor_rpc() {
         );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
-        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
+        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port())
+            .parse()
+            .unwrap();
         let node_config_1 = Arc::new(config_1);
 
         // genesis
@@ -130,8 +133,12 @@ fn test_network_actor_rpc() {
         // node config
         let mut config_2 = NodeConfig::random_for_test();
         let addr_1_hex = network_1.identify().to_base58();
-        let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
-        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+        let seed: Multiaddr = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex)
+            .parse()
+            .unwrap();
+        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            .parse()
+            .unwrap();
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
 
@@ -221,7 +228,9 @@ fn test_network_actor_rpc_2() {
         );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
-        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port());
+        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port())
+            .parse()
+            .unwrap();
         let node_config_1 = Arc::new(config_1);
         let genesis_1 = Genesis::build(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
@@ -286,8 +295,12 @@ fn test_network_actor_rpc_2() {
         // node config
         let mut config_2 = NodeConfig::random_for_test();
         let addr_1_hex = network_1.identify().to_base58();
-        let seed = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex);
-        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+        let seed: Multiaddr = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex)
+            .parse()
+            .unwrap();
+        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            .parse()
+            .unwrap();
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
         let genesis_2 = Genesis::build(node_config_2.net()).unwrap();

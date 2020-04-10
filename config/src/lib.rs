@@ -3,6 +3,7 @@
 
 use anyhow::{ensure, Result};
 use dirs;
+use libp2p::core::Multiaddr;
 use once_cell::sync::Lazy;
 use rand::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -72,7 +73,7 @@ pub struct StarcoinOpt {
 
     #[structopt(long)]
     /// P2P network seeds
-    pub seeds: Option<Vec<String>>,
+    pub seeds: Option<Vec<Multiaddr>>,
 
     #[structopt(long, default_value = "0")]
     /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
@@ -388,14 +389,5 @@ mod tests {
         let config3 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(config2, config3);
         Ok(())
-    }
-
-    #[test]
-    fn test_keys() {
-        let key_pair = gen_keypair();
-        println!("{}", key_pair.public_key.to_string());
-        println!("{}", hex::encode(key_pair.private_key.to_bytes()));
-        let config = ChainNetwork::Halley.get_config();
-        println!("{:?}", config)
     }
 }

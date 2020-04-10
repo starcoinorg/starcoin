@@ -3,24 +3,19 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::net::{build_network_service, SNetworkService};
+    use crate::NetworkMessage;
+    use crate::PeerEvent;
     use config::{get_available_port, NodeConfig};
+    use crypto::hash::HashValue;
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
         stream::StreamExt,
     };
+    use futures_timer::Delay;
+    use network_p2p::{Multiaddr, PeerId};
     use std::{thread, time::Duration};
     use tokio::runtime::{Handle, Runtime};
-
-    use futures_timer::Delay;
-
-    use network_p2p::PeerId;
-
-    use crate::{helper::convert_boot_nodes, PeerEvent};
-
-    use crate::net::{build_network_service, SNetworkService};
-    use crypto::hash::HashValue;
-
-    use crate::NetworkMessage;
     use types::peer_info::PeerInfo;
 
     pub type NetworkComponent = (
@@ -65,20 +60,22 @@ mod tests {
             let mut boot_nodes = Vec::new();
 
             if let Some(first_addr) = first_addr.as_ref() {
-                boot_nodes.push(format!(
-                    "{}/p2p/{}",
-                    first_addr,
-                    result[0].0.identify().to_base58()
-                ));
+                boot_nodes.push(
+                    format!("{}/p2p/{}", first_addr, result[0].0.identify().to_base58())
+                        .parse()
+                        .unwrap(),
+                );
             }
             let mut config = NodeConfig::random_for_test().network.clone();
 
-            config.listen = format!("/ip4/{}/tcp/{}", host, base_port + index as u16);
+            config.listen = format!("/ip4/{}/tcp/{}", host, base_port + index as u16)
+                .parse()
+                .unwrap();
             config.seeds = boot_nodes;
 
             info!("listen:{:?},boots {:?}", config.listen, config.seeds);
             if first_addr.is_none() {
-                first_addr = Some(config.listen.clone().parse().unwrap());
+                first_addr = Some(config.listen.to_string());
             }
 
             let server = build_network_service(
@@ -243,29 +240,15 @@ mod tests {
         _rt.block_on(fut);
     }
 
-    fn generate_peer_address() -> String {
-        PeerId::random().to_base58()
-    }
-
-    #[test]
-    fn test_boot_nodes() {
-        let mut boot_nodes = Vec::new();
-
-        boot_nodes
-            .push(format!("/ip4/127.0.0.1/tcp/5000/p2p/{:}", generate_peer_address()).to_string());
-        boot_nodes.iter().for_each(|x| println!("{}", x));
-
-        let boot_nodes = convert_boot_nodes(boot_nodes);
-        boot_nodes.iter().for_each(|x| println!("{}", x));
-    }
-
     #[test]
     fn test_reconnected_nodes() {
         ::logger::init_for_test();
 
         let mut rt = Runtime::new().unwrap();
         let mut node_config1 = NodeConfig::random_for_test().network.clone();
-        node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+        node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            .parse()
+            .unwrap();
 
         let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) = build_network_service(
             &node_config1,
@@ -278,8 +261,12 @@ mod tests {
 
         let mut node_config2 = NodeConfig::random_for_test().network.clone();
         let addr1_hex = service1.identify().to_base58();
-        let seed = format!("{}/p2p/{}", &node_config1.listen, addr1_hex);
-        node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+        let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.listen, addr1_hex)
+            .parse()
+            .unwrap();
+        node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            .parse()
+            .unwrap();
         node_config2.seeds = vec![seed.clone()];
         let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) = build_network_service(
             &node_config2,
@@ -291,7 +278,9 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
 
         let mut node_config3 = NodeConfig::random_for_test().network.clone();
-        node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port());
+        node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            .parse()
+            .unwrap();
         node_config3.seeds = vec![seed];
         let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) = build_network_service(
             &node_config3,
