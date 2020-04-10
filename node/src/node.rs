@@ -48,6 +48,9 @@ where
     H: ConsensusHeader + 'static,
 {
     let bus = BusActor::launch();
+
+    let sync_event_receiver_future = bus.clone().channel::<SystemEvents>();
+
     let cache_storage = Arc::new(CacheStorage::new());
     let db_storage = Arc::new(DBStorage::new(config.storage.clone().dir()));
     let storage = Arc::new(
@@ -201,12 +204,9 @@ where
     )?;
 
     info!("Waiting sync ......");
-    let mut sync_event_receiver = bus
-        .clone()
-        .channel::<SystemEvents>()
+    let mut sync_event_receiver = sync_event_receiver_future
         .await
         .expect("Subscribe system event error.");
-
     sync_event_receiver.any(|event| event.is_sync_done()).await;
     info!("Waiting sync finished.");
     let miner =
