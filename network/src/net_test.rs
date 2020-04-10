@@ -13,7 +13,7 @@ mod tests {
         stream::StreamExt,
     };
     use futures_timer::Delay;
-    use network_p2p::{Multiaddr, PeerId};
+    use network_p2p::Multiaddr;
     use std::{thread, time::Duration};
     use tokio::runtime::{Handle, Runtime};
     use types::peer_info::PeerInfo;
