@@ -186,6 +186,8 @@ mod test {
     }
 
     #[test]
+    #[ignore]
+    // Do not need any more.
     fn test_mine() {
         ::logger::init_for_test();
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
@@ -215,6 +217,7 @@ mod test {
                 let dispatcher = Arc::new(StratumManager::new(miner.clone()));
                 Stratum::start(&addr, dispatcher, None).unwrap()
             };
+            Delay::new(Duration::from_millis(3000)).await;
             let actor = MinerClientActor::<ArgonConsensus>::new("127.0.0.1:9000".parse().unwrap());
             actor.start();
             let mine_ctx = {
@@ -225,7 +228,7 @@ mod test {
                 block_template.difficult = U256::max_value();
                 MineCtx::new(block_template)
             };
-            Delay::new(Duration::from_millis(3000)).await;
+
             miner.set_mint_job(mine_ctx);
             for _ in 1..10 {
                 stratum.push_work_all(miner.get_mint_job()).unwrap();
