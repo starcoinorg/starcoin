@@ -1150,6 +1150,7 @@ impl NetworkBehaviour for GenericProto {
                 });
 
                 let message = From::from(&msg.encode().unwrap()[..]);
+                info!("message is {:?}", message);
                 let event = GenericProtoOut::CustomMessage {
                     peer_id: source,
                     message,
