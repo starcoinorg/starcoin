@@ -133,7 +133,7 @@ impl NetworkWorker {
 
         // Process the bootnodes.
         for bootnode in params.network_config.boot_nodes.iter() {
-            match parse_str_addr(bootnode) {
+            match parse_addr(bootnode.clone()) {
                 Ok((peer_id, addr)) => {
                     bootnodes.push(peer_id.clone());
                     known_addresses.push((peer_id, addr));
