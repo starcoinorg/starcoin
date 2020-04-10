@@ -10,7 +10,7 @@ use starcoin_types::{
 };
 use std::cmp::Ordering;
 
-#[derive(Message, Clone)]
+#[derive(Message, Clone, Debug)]
 #[rtype(result = "()")]
 pub struct PeerNewBlock {
     peer_id: PeerId,
