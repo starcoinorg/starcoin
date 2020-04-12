@@ -12,6 +12,7 @@ use types::{
     vm_error::VMStatus,
 };
 
+pub mod block_executor;
 pub mod executor;
 #[cfg(test)]
 pub mod executor_test;
