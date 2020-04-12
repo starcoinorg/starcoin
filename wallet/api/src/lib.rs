@@ -5,8 +5,8 @@ use anyhow::Result;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::{test_utils::KeyPair, Uniform};
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::{test_utils::KeyPair, Uniform};
 use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::time::Duration;
@@ -49,7 +49,7 @@ impl WalletAccount {
         WalletAccount {
             address,
             is_default: false,
-            public_key
+            public_key,
         }
     }
 }
