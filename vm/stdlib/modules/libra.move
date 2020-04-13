@@ -95,7 +95,9 @@ module Libra {
         // minting. This will not be a problem in the production Libra system because coins will
         // be backed with real-world assets, and thus minting will be correspondingly rarer.
         // * 1000000 here because the unit is microlibra
-        Transaction::assert(value <= 1000000000 * 1000000, 11);
+
+        // disable the total value limitation
+        // Transaction::assert(value <= 1000000000 * 1000000, 11);
         // update market cap resource to reflect minting
         let market_cap = borrow_global_mut<Info<Token>>(0xA550C18);
         market_cap.total_value = market_cap.total_value + (value as u128);
