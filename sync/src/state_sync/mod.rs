@@ -1,4 +1,4 @@
-use crate::helper::send_sync_request;
+use crate::helper::get_state_node_by_node_hash;
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
@@ -8,7 +8,6 @@ use forkable_jellyfish_merkle::node_type::Node;
 use futures::executor::block_on;
 use logger::prelude::*;
 use network::NetworkAsyncService;
-use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
 use parking_lot::Mutex;
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use starcoin_sync_api::{StateSyncReset, SyncMetadata};
@@ -23,30 +22,27 @@ async fn sync_state_node(
     address: Addr<StateSyncTaskActor>,
 ) {
     debug!("sync_state_node : {:?}", node_key);
-    let get_state_node_by_node_hash_req = SyncRpcRequest::GetStateNodeByNodeHash(node_key);
-    let state_node = if let SyncRpcResponse::GetStateNodeByNodeHash(state_node) = send_sync_request(
-        &network_service,
-        peer_id.clone(),
-        get_state_node_by_node_hash_req.clone(),
-    )
-    .await
-    .unwrap()
-    {
-        debug!("get_state_node_by_node_hash_resp:{:?}", state_node);
-        if node_key == state_node.0.hash() {
-            Some(state_node)
-        } else {
-            warn!(
-                "state node hash not match {} :{:?}",
-                node_key,
-                state_node.0.hash()
-            );
-            None
-        }
-    } else {
-        warn!("{:?}", "error RPCResponse type.");
-        None
-    };
+
+    let state_node =
+        match get_state_node_by_node_hash(&network_service, peer_id.clone(), node_key).await {
+            Ok(state_node) => {
+                debug!("get_state_node_by_node_hash_resp:{:?}", state_node);
+                if node_key == state_node.0.hash() {
+                    Some(state_node)
+                } else {
+                    warn!(
+                        "state node hash not match {} :{:?}",
+                        node_key,
+                        state_node.0.hash()
+                    );
+                    None
+                }
+            }
+            Err(e) => {
+                error!("error: {:?}", e);
+                None
+            }
+        };
 
     if let Err(err) = address.try_send(StateSyncTaskEvent {
         peer_id,

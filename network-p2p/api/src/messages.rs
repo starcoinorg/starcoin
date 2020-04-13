@@ -1,13 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::sync_messages::*;
 use actix::prelude::*;
 use anyhow::*;
 use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::StateNode;
+use starcoin_sync_api::sync_messages::*;
 use starcoin_types::block::BlockDetail;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
@@ -40,8 +40,6 @@ pub struct TestRequest {
 #[derive(Debug, Serialize, Deserialize, Message, Clone)]
 pub enum RPCRequest {
     TestRequest(TestRequest),
-    GetHashByNumberMsg(ProcessMessage),
-    GetDataByHashMsg(ProcessMessage),
     GetStateNodeByNodeHash(HashValue),
 }
 

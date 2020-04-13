@@ -1,3 +1,5 @@
+pub mod sync_messages;
+
 use anyhow::Result;
 use dyn_clone::{clone_box, DynClone};
 use parking_lot::RwLock;

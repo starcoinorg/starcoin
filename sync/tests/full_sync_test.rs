@@ -10,11 +10,10 @@ use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{miner_client::MinerClient, MinerActor};
-use network_p2p_api::sync_messages::{GetHashByNumberMsg, ProcessMessage};
-use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
 use starcoin_genesis::Genesis;
-use starcoin_sync::helper::send_sync_request;
+use starcoin_sync::helper::get_hash_by_number;
 use starcoin_sync::SyncActor;
+use starcoin_sync_api::sync_messages::GetHashByNumberMsg;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
@@ -350,18 +349,13 @@ fn test_network_actor_rpc_2() {
 
         let mut numbers = Vec::new();
         numbers.push(0);
-        let get_hash_by_number_msg = GetHashByNumberMsg { numbers };
-        let req = SyncRpcRequest::GetHashByNumberMsg(ProcessMessage::GetHashByNumberMsg(
-            get_hash_by_number_msg,
-        ));
-        let resp = send_sync_request(&network_1, network_2.identify().clone().into(), req.clone())
-            .await
-            .unwrap();
-
-        assert!(match resp {
-            SyncRpcResponse::BatchHashByNumberMsg(_) => true,
-            _ => false,
-        });
+        let _ = get_hash_by_number(
+            &network_1,
+            network_2.identify().clone().into(),
+            GetHashByNumberMsg { numbers },
+        )
+        .await
+        .unwrap();
 
         Delay::new(Duration::from_secs(2)).await;
     };

@@ -3982,6 +3982,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-state-tree",
+ "starcoin-sync-api",
  "starcoin-types",
 ]
 
@@ -5959,6 +5960,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-sync-api",
  "starcoin-traits",
  "starcoin-tx-relay",
  "starcoin-types",
@@ -6260,9 +6262,11 @@ dependencies = [
  "async-trait",
  "dyn-clone",
  "parking_lot 0.9.0",
+ "serde",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-state-tree",
  "starcoin-types",
 ]
 

@@ -8,8 +8,8 @@ use config::NodeConfig;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
-use network_p2p_api::sync_messages::{DownloadMessage, PeerNewBlock};
 use starcoin_state_tree::StateNodeStore;
+use starcoin_sync_api::sync_messages::{DirectSendMessage, PeerNewBlock};
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use traits::Consensus;
@@ -37,13 +37,8 @@ where
         state_node_storage: Arc<dyn StateNodeStore>,
         sync_metadata: SyncMetadata,
     ) -> Result<Addr<SyncActor<C>>> {
-        let process_address = ProcessActor::launch(
-            Arc::clone(&peer_id),
-            chain.clone(),
-            network.clone(),
-            bus.clone(),
-            state_node_storage.clone(),
-        )?;
+        let process_address =
+            ProcessActor::launch(chain.clone(), bus.clone(), state_node_storage.clone())?;
         let download_address = DownloadActor::launch(
             node_config,
             peer_id,
@@ -106,7 +101,7 @@ where
     type Result = ();
 
     fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
-        let new_block = DownloadMessage::NewHeadBlock(msg.get_peer_id(), msg.get_block());
+        let new_block = DirectSendMessage::NewHeadBlock(msg.get_peer_id(), msg.get_block());
         self.download_address
             .send(new_block)
             .into_actor(self)
@@ -126,7 +121,7 @@ where
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 info!("connect new peer:{:?}", open_peer_id);
-                let download_msg = DownloadMessage::NewPeerMsg(open_peer_id);
+                let download_msg = DirectSendMessage::NewPeerMsg(open_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)
@@ -135,7 +130,7 @@ where
             }
             PeerEvent::Close(close_peer_id) => {
                 info!("disconnect peer: {:?}", close_peer_id);
-                let download_msg = DownloadMessage::ClosePeerMsg(close_peer_id);
+                let download_msg = DirectSendMessage::ClosePeerMsg(close_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)

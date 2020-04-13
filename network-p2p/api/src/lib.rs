@@ -5,7 +5,6 @@ use starcoin_types::system_events::SystemEvents;
 use std::time::Duration;
 
 pub mod messages;
-pub mod sync_messages;
 
 use async_trait::async_trait;
 
