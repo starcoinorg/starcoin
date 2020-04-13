@@ -10,6 +10,7 @@ pub mod block_metadata;
 pub mod byte_array;
 pub mod change_set;
 pub mod contract_event;
+pub mod error;
 pub mod event;
 pub mod ids;
 pub mod language_storage;

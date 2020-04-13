@@ -5,7 +5,6 @@ use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
 use consensus::dummy::DummyConsensus;
-use executor::executor::Executor;
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
@@ -97,9 +96,8 @@ fn test_network_actor_rpc() {
         // miner
         let _miner_1 = MinerActor::<
             DummyConsensus,
-            Executor,
             TxPoolRef,
-            ChainActorRef<Executor, DummyConsensus>,
+            ChainActorRef<DummyConsensus>,
             Storage,
             consensus::dummy::DummyHeader,
         >::launch(
@@ -166,7 +164,7 @@ fn test_network_actor_rpc() {
         let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone());
 
         // chain
-        let second_chain = ChainActor::<Executor, DummyConsensus>::launch(
+        let second_chain = ChainActor::<DummyConsensus>::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -178,7 +176,7 @@ fn test_network_actor_rpc() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
             node_config_2.clone(),
             bus_2,
             Arc::clone(&second_p),
@@ -255,7 +253,7 @@ fn test_network_actor_rpc_2() {
 
         let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone());
         // chain
-        let first_chain = ChainActor::<Executor, DummyConsensus>::launch(
+        let first_chain = ChainActor::<DummyConsensus>::launch(
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
@@ -334,7 +332,7 @@ fn test_network_actor_rpc_2() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
             node_config_2.clone(),
             bus_2,
             Arc::clone(&second_p),

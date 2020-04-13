@@ -8,7 +8,6 @@ use atomic_refcell::AtomicRefCell;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
-use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
 use parking_lot::RwLock;
@@ -29,20 +28,18 @@ use types::{
     U256,
 };
 
-pub struct BlockChainCollection<E, C, S, P>
+pub struct BlockChainCollection<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
     S: Store + 'static,
 {
-    master: AtomicRefCell<Vec<BlockChain<E, C, S, P>>>,
-    branches: RwLock<HashMap<HashValue, BlockChain<E, C, S, P>>>,
+    master: AtomicRefCell<Vec<BlockChain<C, S, P>>>,
+    branches: RwLock<HashMap<HashValue, BlockChain<C, S, P>>>,
 }
 
-impl<E, C, S, P> BlockChainCollection<E, C, S, P>
+impl<C, S, P> BlockChainCollection<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
     S: Store + 'static,
@@ -54,17 +51,17 @@ where
         }
     }
 
-    pub fn insert_branch(&self, branch: BlockChain<E, C, S, P>) {
+    pub fn insert_branch(&self, branch: BlockChain<C, S, P>) {
         self.branches
             .write()
             .insert(branch.get_chain_info().branch_id(), branch);
     }
 
-    pub fn update_master(&self, new_master: BlockChain<E, C, S, P>) {
+    pub fn update_master(&self, new_master: BlockChain<C, S, P>) {
         self.master.borrow_mut().insert(0, new_master)
     }
 
-    pub fn get_master(&self) -> &AtomicRefCell<Vec<BlockChain<E, C, S, P>>> {
+    pub fn get_master(&self) -> &AtomicRefCell<Vec<BlockChain<C, S, P>>> {
         &self.master
     }
 
@@ -184,15 +181,14 @@ where
     }
 }
 
-pub struct ChainServiceImpl<E, C, S, P>
+pub struct ChainServiceImpl<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
     S: Store + 'static,
 {
     config: Arc<NodeConfig>,
-    collection: Arc<BlockChainCollection<E, C, S, P>>,
+    collection: Arc<BlockChainCollection<C, S, P>>,
     storage: Arc<S>,
     network: Option<NetworkAsyncService>,
     txpool: P,
@@ -200,9 +196,8 @@ where
     sync: SyncMetadata,
 }
 
-impl<E, C, S, P> ChainServiceImpl<E, C, S, P>
+impl<C, S, P> ChainServiceImpl<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
     S: Store + 'static,
@@ -233,7 +228,7 @@ where
         })
     }
 
-    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<E, C, S, P>> {
+    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
         let chain_info = self.collection.fork(header);
 
@@ -257,7 +252,7 @@ where
         unimplemented!()
     }
 
-    fn select_head(&mut self, new_branch: BlockChain<E, C, S, P>) {
+    fn select_head(&mut self, new_branch: BlockChain<C, S, P>) {
         let block = new_branch.head_block();
         let total_difficulty = new_branch
             .get_total_difficulty()
@@ -344,7 +339,7 @@ where
 
     fn find_ancestors(
         &self,
-        new_branch: &BlockChain<E, C, S, P>,
+        new_branch: &BlockChain<C, S, P>,
     ) -> (Vec<SignedUserTransaction>, Vec<SignedUserTransaction>) {
         let mut enacted: Vec<Block> = Vec::new();
         let mut retracted: Vec<Block> = Vec::new();
@@ -442,9 +437,8 @@ where
     }
 }
 
-impl<E, C, S, P> ChainService for ChainServiceImpl<E, C, S, P>
+impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService,
     S: Store,
@@ -598,14 +592,13 @@ where
     }
 }
 
-pub fn to_block_chain_collection<E, C, S, P>(
+pub fn to_block_chain_collection<C, S, P>(
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
     storage: Arc<S>,
     txpool: P,
-) -> Result<Arc<BlockChainCollection<E, C, S, P>>>
+) -> Result<Arc<BlockChainCollection<C, S, P>>>
 where
-    E: TransactionExecutor,
     C: Consensus,
     P: TxPoolAsyncService + 'static,
     S: Store + 'static,
