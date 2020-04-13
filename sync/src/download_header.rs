@@ -1,13 +1,12 @@
 use crate::download::Downloader;
 use crate::download_body::{DownloadBodyActor, SyncBodyEvent};
-use crate::helper::send_sync_request;
+use crate::helper::get_header_by_hash;
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::hash::HashValue;
 use executor::TransactionExecutor;
+use logger::prelude::*;
 use network::NetworkAsyncService;
-use network_p2p_api::sync_messages::{DataType, GetDataByHashMsg, ProcessMessage};
-use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
 use std::sync::Arc;
 use traits::Consensus;
 use types::peer_info::PeerInfo;
@@ -66,30 +65,23 @@ where
 {
     type Result = Result<()>;
     fn handle(&mut self, event: SyncHeaderEvent, _ctx: &mut Self::Context) -> Self::Result {
-        let get_data_by_hash_msg = GetDataByHashMsg {
-            hashs: event.hashs.clone(),
-            data_type: DataType::HEADER,
-        };
-
-        let get_data_by_hash_req = SyncRpcRequest::GetDataByHashMsg(
-            ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
-        );
-
         let network = self.network.clone();
         let peers = event.peers.clone();
+        let hashs = event.hashs.clone();
         let download_body = self.download_body.clone();
         Arbiter::spawn(async move {
             for peer in peers.clone() {
-                if let SyncRpcResponse::BatchHeaderAndBodyMsg(headers, _bodies, _infos) =
-                    send_sync_request(&network, peer.get_peer_id(), get_data_by_hash_req.clone())
-                        .await
-                        .unwrap()
-                {
-                    download_body.do_send(SyncBodyEvent {
-                        headers: headers.headers,
-                        peers: peers.clone(),
-                    });
-                    break;
+                match get_header_by_hash(&network, peer.get_peer_id(), hashs.clone()).await {
+                    Ok(headers) => {
+                        download_body.do_send(SyncBodyEvent {
+                            headers: headers.headers,
+                            peers: peers.clone(),
+                        });
+                        break;
+                    }
+                    Err(e) => {
+                        error!("error: {:?}", e);
+                    }
                 };
             }
         });

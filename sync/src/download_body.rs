@@ -1,11 +1,11 @@
 use crate::download::Downloader;
-use crate::helper::send_sync_request;
+use crate::helper::get_block_by_hash;
 use actix::prelude::*;
 use anyhow::Result;
+use crypto::hash::HashValue;
 use executor::TransactionExecutor;
+use logger::prelude::*;
 use network::NetworkAsyncService;
-use network_p2p_api::sync_messages::{DataType, GetDataByHashMsg, ProcessMessage};
-use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
 use std::sync::Arc;
 use traits::Consensus;
 use types::{block::BlockHeader, peer_info::PeerInfo};
@@ -61,15 +61,7 @@ where
 {
     type Result = Result<()>;
     fn handle(&mut self, event: SyncBodyEvent, _ctx: &mut Self::Context) -> Self::Result {
-        let hashs = event.headers.iter().map(|h| h.id().clone()).collect();
-        let get_data_by_hash_msg = GetDataByHashMsg {
-            hashs,
-            data_type: DataType::BODY,
-        };
-
-        let get_data_by_hash_req = SyncRpcRequest::GetDataByHashMsg(
-            ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
-        );
+        let hashs: Vec<HashValue> = event.headers.iter().map(|h| h.id().clone()).collect();
 
         let network = self.network.clone();
         let peers = event.peers.clone();
@@ -78,16 +70,20 @@ where
         let headers = event.headers;
         Arbiter::spawn(async move {
             for peer in peers {
-                if let SyncRpcResponse::BatchHeaderAndBodyMsg(_, bodies, infos) = send_sync_request(
-                    &network,
-                    peer.get_peer_id().clone(),
-                    get_data_by_hash_req.clone(),
-                )
-                .await
-                .unwrap()
-                {
-                    Downloader::do_blocks(downloader, headers, bodies.bodies, infos.infos).await;
-                    break;
+                match get_block_by_hash(&network, peer.get_peer_id().clone(), hashs.clone()).await {
+                    Ok((_, bodies, infos)) => {
+                        Downloader::do_blocks(
+                            downloader,
+                            headers.clone(),
+                            bodies.bodies,
+                            infos.infos,
+                        )
+                        .await;
+                        break;
+                    }
+                    Err(e) => {
+                        error!("error: {:?}", e);
+                    }
                 };
             }
         });

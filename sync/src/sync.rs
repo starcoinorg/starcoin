@@ -40,13 +40,8 @@ where
         state_node_storage: Arc<dyn StateNodeStore>,
         sync_metadata: SyncMetadata,
     ) -> Result<Addr<SyncActor<E, C>>> {
-        let process_address = ProcessActor::launch(
-            Arc::clone(&peer_id),
-            chain.clone(),
-            network.clone(),
-            bus.clone(),
-            state_node_storage.clone(),
-        )?;
+        let process_address =
+            ProcessActor::launch(chain.clone(), bus.clone(), state_node_storage.clone())?;
         let download_address = DownloadActor::launch(
             node_config,
             peer_id,
