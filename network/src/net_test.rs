@@ -240,6 +240,16 @@ mod tests {
         _rt.block_on(fut);
     }
 
+    #[stest::test(timeout = 1)]
+    fn test_timeout() {
+        std::thread::sleep(Duration::from_secs(60));
+    }
+
+    #[stest::test(timeout = 1)]
+    async fn test_async_timeout() {
+        actix_rt::time::delay_for(Duration::from_secs(60)).await;
+    }
+
     #[test]
     fn test_reconnected_nodes() {
         ::logger::init_for_test();
