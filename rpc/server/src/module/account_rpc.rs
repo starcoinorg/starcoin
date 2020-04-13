@@ -28,6 +28,15 @@ impl<S> WalletApi for AccountRpcImpl<S>
 where
     S: WalletAsyncService,
 {
+    fn default(&self) -> FutureResult<Option<WalletAccount>> {
+        let fut = self
+            .service
+            .clone()
+            .get_default_account()
+            .map_err(|e| map_rpc_err(e.into()));
+        Box::new(fut.compat())
+    }
+
     fn create(&self, password: String) -> FutureResult<WalletAccount> {
         let fut = self
             .service
