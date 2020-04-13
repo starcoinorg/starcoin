@@ -5,13 +5,14 @@ use crate::state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_logger::prelude::*;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "loglevel")]
 pub struct LogLevelOpt {
     #[structopt(short = "l")]
-    level: String,
+    level: Level,
 }
 
 pub struct LogLevelCommand {}
@@ -22,14 +23,10 @@ impl CommandAction for LogLevelCommand {
     type Opt = LogLevelOpt;
 
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
-        let log_handler = ctx.state().logger();
         let opt = ctx.opt();
-        log_handler.update_level(opt.level.as_str())?;
-        println!(
-            "set log level to {:?}, log file is {:?}",
-            opt.level,
-            log_handler.log_path()
-        );
+        let client = ctx.state().client();
+        client.debug_set_log_level(opt.level.clone())?;
+        println!("set log level to {:?}", opt.level,);
         Ok(())
     }
 }

@@ -41,6 +41,7 @@ impl NodeHandle {
     pub fn join(mut self) -> Result<()> {
         //TODO use a more light method.
         self.runtime.block_on(async {
+            println!("Waiting Ctrl-C ...");
             tokio::signal::ctrl_c().await.unwrap();
             println!("Ctrl-C received, shutting down");
         });
@@ -73,6 +74,12 @@ where
     C: Consensus + 'static,
     H: ConsensusHeader + 'static,
 {
+    let logger_handle = starcoin_logger::init();
+
+    let file_log_path = config.data_dir().join("starcoin.log");
+    info!("Write log to file: {:?}", file_log_path);
+    logger_handle.enable_file(true, file_log_path);
+
     let (start_sender, start_receiver) = oneshot::channel();
     let (stop_sender, stop_receiver) = oneshot::channel();
     let thread_handle = std::thread::spawn(move || {
@@ -84,7 +91,7 @@ where
             //let node_actor = NodeActor::<C, H>::new(config, handle);
             //let _node_ref = node_actor.start();
             //TODO fix me, this just a work around method.
-            let _handle = match node::start::<C, H>(config, handle).await {
+            let _handle = match node::start::<C, H>(config, logger_handle, handle).await {
                 Err(e) => {
                     error!("Node start fail: {}, exist.", e);
                     System::current().stop();

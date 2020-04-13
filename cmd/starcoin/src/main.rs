@@ -19,16 +19,14 @@ mod helper;
 pub mod state;
 
 fn run() -> Result<()> {
+    let _logger_handle = starcoin_logger::init();
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         |opt| -> Result<CliState> {
-            let logger_handle = starcoin_logger::init();
             info!("Starcoin opts: {:?}", opt);
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
+            info!("Final data-dir is : {:?}", config.data_dir());
             let ipc_file = config.rpc.get_ipc_file();
             let node_handle = if !ipc_file.exists() {
-                let file_log_path = config.data_dir().join("starcoin.log");
-                info!("Write log to file: {:?}", file_log_path);
-                logger_handle.enable_file(false, file_log_path);
                 let node_handle = match config.net() {
                     ChainNetwork::Dev => starcoin_node::run_dev_node(config.clone()),
                     _ => starcoin_node::run_normal_node(config.clone()),
@@ -41,27 +39,29 @@ fn run() -> Result<()> {
             };
             info!("Try to connect node by ipc: {:?}", ipc_file);
             let client = RpcClient::connect_ipc(ipc_file)?;
-            let state = CliState::new(config, client, logger_handle, node_handle);
+            let state = CliState::new(config, client, node_handle);
             Ok(state)
         },
         |_, _, state| {
-            let (_, _, logger_handle, handle) = state.into_inner();
+            let config = state.config();
+            info!(
+                "Attach a new console by command: starcoin -n {} -d {:?} console",
+                config.net(),
+                config.base.base_data_dir()
+            );
+            let (_, _, handle) = state.into_inner();
             match handle {
-                Some(handle) => {
-                    // if start node server and no subcommand, wait server and output logger to stderr.
-                    logger_handle.enable_stderr();
-                    match handle.join() {
-                        Err(e) => {
-                            error!("{:?}", e);
-                        }
-                        _ => {}
+                Some(handle) => match handle.join() {
+                    Err(e) => {
+                        error!("{:?}", e);
                     }
-                }
+                    _ => {}
+                },
                 None => {}
             }
         },
         |_, _, state| {
-            let (_, _, _, handle) = state.into_inner();
+            let (_, _, handle) = state.into_inner();
             match handle {
                 Some(handle) => match handle.stop() {
                     Err(e) => {
