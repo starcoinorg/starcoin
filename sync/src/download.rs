@@ -16,7 +16,7 @@ use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_p2p_api::sync_messages::{
-    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
+    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DirectSendMessage, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber,
 };
 use starcoin_state_tree::StateNodeStore;
@@ -138,14 +138,14 @@ where
     }
 }
 
-impl<E, C> Handler<DownloadMessage> for DownloadActor<E, C>
+impl<E, C> Handler<DirectSendMessage> for DownloadActor<E, C>
 where
     E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = ResponseActFuture<Self, Result<()>>;
 
-    fn handle(&mut self, msg: DownloadMessage, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: DirectSendMessage, _ctx: &mut Self::Context) -> Self::Result {
         let downloader = self.downloader.clone();
         let network = self.network.clone();
         let state_node_storage = self.state_node_storage.clone();
@@ -155,7 +155,7 @@ where
         let self_peer_id = self.self_peer_id.as_ref().clone();
         let fut = async move {
             match msg {
-                DownloadMessage::NewPeerMsg(peer_id) => {
+                DirectSendMessage::NewPeerMsg(peer_id) => {
                     info!("new peer msg: {:?}", peer_id);
                     Self::sync_state(
                         self_peer_id,
@@ -168,7 +168,7 @@ where
                     )
                     .await;
                 }
-                DownloadMessage::NewHeadBlock(peer_id, block) => {
+                DirectSendMessage::NewHeadBlock(peer_id, block) => {
                     info!(
                         "receive new block: {:?} from {:?}",
                         block.header().id(),
@@ -177,10 +177,9 @@ where
                     // connect block
                     Downloader::do_block(downloader.clone(), block).await;
                 }
-                DownloadMessage::ClosePeerMsg(peer_id) => {
+                DirectSendMessage::ClosePeerMsg(peer_id) => {
                     warn!("close peer: {:?}", peer_id,);
                 }
-                _ => {}
             }
 
             Ok(())

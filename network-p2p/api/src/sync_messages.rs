@@ -34,8 +34,6 @@ impl PeerNewBlock {
 #[derive(Message, Clone, Serialize, Deserialize, Debug)]
 #[rtype(result = "Result<()>")]
 pub enum SyncRpcRequest {
-    // GetHashByNumberMsg(ProcessMessage),
-    // GetDataByHashMsg(ProcessMessage),
     GetHashByNumberMsg(GetHashByNumberMsg),
     GetDataByHashMsg(GetDataByHashMsg),
     GetStateNodeByNodeHash(HashValue),
@@ -51,15 +49,9 @@ pub enum SyncRpcResponse {
 
 #[derive(Debug, Message, Clone, Serialize, Deserialize)]
 #[rtype(result = "Result<()>")]
-pub enum DownloadMessage {
+pub enum DirectSendMessage {
     ClosePeerMsg(PeerId),
-    BatchHashByNumberMsg(PeerId, BatchHashByNumberMsg),
-    BatchHeaderMsg(PeerId, BatchHeaderMsg),
-    BatchBodyMsg(BatchBodyMsg),
-    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg),
     NewHeadBlock(PeerId, Block),
-    // just fo test
-    MinedBlock(Block),
     NewPeerMsg(PeerId),
 }
 

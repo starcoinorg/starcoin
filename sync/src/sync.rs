@@ -9,7 +9,7 @@ use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
-use network_p2p_api::sync_messages::{DownloadMessage, PeerNewBlock};
+use network_p2p_api::sync_messages::{DirectSendMessage, PeerNewBlock};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
@@ -106,7 +106,7 @@ where
     type Result = ();
 
     fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
-        let new_block = DownloadMessage::NewHeadBlock(msg.get_peer_id(), msg.get_block());
+        let new_block = DirectSendMessage::NewHeadBlock(msg.get_peer_id(), msg.get_block());
         self.download_address
             .send(new_block)
             .into_actor(self)
@@ -127,7 +127,7 @@ where
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 info!("connect new peer:{:?}", open_peer_id);
-                let download_msg = DownloadMessage::NewPeerMsg(open_peer_id);
+                let download_msg = DirectSendMessage::NewPeerMsg(open_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)
@@ -136,7 +136,7 @@ where
             }
             PeerEvent::Close(close_peer_id) => {
                 info!("disconnect peer: {:?}", close_peer_id);
-                let download_msg = DownloadMessage::ClosePeerMsg(close_peer_id);
+                let download_msg = DirectSendMessage::ClosePeerMsg(close_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)
