@@ -3,7 +3,6 @@ use crate::helper::get_block_by_hash;
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::hash::HashValue;
-use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use std::sync::Arc;
@@ -18,26 +17,24 @@ pub struct SyncBodyEvent {
 }
 
 #[derive(Clone)]
-pub struct DownloadBodyActor<E, C>
+pub struct DownloadBodyActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    downloader: Arc<Downloader<E, C>>,
+    downloader: Arc<Downloader<C>>,
     peer_info: Arc<PeerInfo>,
     network: NetworkAsyncService,
 }
 
-impl<E, C> DownloadBodyActor<E, C>
+impl<C> DownloadBodyActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn _launch(
-        downloader: Arc<Downloader<E, C>>,
+        downloader: Arc<Downloader<C>>,
         peer_info: Arc<PeerInfo>,
         network: NetworkAsyncService,
-    ) -> Result<Addr<DownloadBodyActor<E, C>>> {
+    ) -> Result<Addr<DownloadBodyActor<C>>> {
         Ok(Actor::create(move |_ctx| DownloadBodyActor {
             downloader,
             peer_info,
@@ -46,17 +43,15 @@ where
     }
 }
 
-impl<E, C> Actor for DownloadBodyActor<E, C>
+impl<C> Actor for DownloadBodyActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Context = Context<Self>;
 }
 
-impl<E, C> Handler<SyncBodyEvent> for DownloadBodyActor<E, C>
+impl<C> Handler<SyncBodyEvent> for DownloadBodyActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = Result<()>;
