@@ -4,7 +4,6 @@ use crate::helper::send_sync_request;
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::hash::HashValue;
-use executor::TransactionExecutor;
 use network::NetworkAsyncService;
 use network_p2p_api::sync_messages::{DataType, GetDataByHashMsg, ProcessMessage};
 use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
@@ -20,28 +19,26 @@ struct SyncHeaderEvent {
 }
 
 #[derive(Clone)]
-pub struct DownloadHeaderActor<E, C>
+pub struct DownloadHeaderActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    downloader: Arc<Downloader<E, C>>,
+    downloader: Arc<Downloader<C>>,
     peer_info: Arc<PeerInfo>,
     network: NetworkAsyncService,
-    download_body: Addr<DownloadBodyActor<E, C>>,
+    download_body: Addr<DownloadBodyActor<C>>,
 }
 
-impl<E, C> DownloadHeaderActor<E, C>
+impl<C> DownloadHeaderActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn _launch(
-        downloader: Arc<Downloader<E, C>>,
+        downloader: Arc<Downloader<C>>,
         peer_info: Arc<PeerInfo>,
         network: NetworkAsyncService,
-        download_body: Addr<DownloadBodyActor<E, C>>,
-    ) -> Result<Addr<DownloadHeaderActor<E, C>>> {
+        download_body: Addr<DownloadBodyActor<C>>,
+    ) -> Result<Addr<DownloadHeaderActor<C>>> {
         Ok(Actor::create(move |_ctx| DownloadHeaderActor {
             downloader,
             peer_info,
@@ -51,17 +48,15 @@ where
     }
 }
 
-impl<E, C> Actor for DownloadHeaderActor<E, C>
+impl<C> Actor for DownloadHeaderActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Context = Context<Self>;
 }
 
-impl<E, C> Handler<SyncHeaderEvent> for DownloadHeaderActor<E, C>
+impl<C> Handler<SyncHeaderEvent> for DownloadHeaderActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = Result<()>;

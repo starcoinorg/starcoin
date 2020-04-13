@@ -4,7 +4,7 @@
 use crate::executor::Executor;
 use crate::TransactionExecutor;
 use crypto::{hash::CryptoHash, HashValue};
-use logger::prelude::*;
+// use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::VMConfig;
 use starcoin_state_api::ChainState;
@@ -13,31 +13,24 @@ use types::error::ExecutorResult;
 use types::transaction::Transaction;
 use types::transaction::TransactionStatus;
 
-pub trait BlockExecutor: std::marker::Unpin + Clone {
-    /// Execute block transaction, update state to state_store, and apend accumulator , verify proof.
-    fn block_execute(
-        config: &VMConfig,
-        chain_state: &dyn ChainState,
-        accumulator: &MerkleAccumulator,
-        txns: Vec<Transaction>,
-        is_preview: bool,
-    ) -> ExecutorResult<()>;
-}
+#[derive(Clone)]
+pub struct BlockExecutor {}
 
-impl BlockExecutor for Executor {
-    fn block_execute(
+impl BlockExecutor {
+    /// Execute block transaction, update state to state_store, and apend accumulator , verify proof.
+    pub fn block_execute(
         config: &VMConfig,
         chain_state: &dyn ChainState,
         accumulator: &MerkleAccumulator,
         txns: Vec<Transaction>,
         is_preview: bool,
-    ) -> ExecutorResult<()> {
+    ) -> ExecutorResult<(HashValue, HashValue)> {
         let mut state_root = HashValue::zero();
         let mut transaction_hash = vec![];
         for txn in txns {
             let txn_hash = txn.crypto_hash();
-            let output = TransactionExecutor::execute_transaction(config, chain_state, txn)
-                .map_err(|err| BlockExecutorError::BlockTransactionExecuteErr(txn_hash))?;
+            let output = Executor::execute_transaction(config, chain_state, txn)
+                .map_err(|_err| BlockExecutorError::BlockTransactionExecuteErr(txn_hash))?;
 
             match output.status() {
                 TransactionStatus::Discard(status) => {
@@ -49,18 +42,17 @@ impl BlockExecutor for Executor {
                 TransactionStatus::Keep(_status) => {
                     //continue.
                 }
-                _ => {}
             }
             state_root = chain_state
                 .commit()
-                .map_err(|err| BlockExecutorError::BlockChainStateCommitErr)
+                .map_err(|_err| BlockExecutorError::BlockChainStateCommitErr)
                 .unwrap();
             transaction_hash.push(txn_hash);
         }
 
         let (accumulator_root, first_leaf_idx) = accumulator
             .append(&transaction_hash)
-            .map_err(|err| BlockExecutorError::BlockAccumulatorAppendErr)
+            .map_err(|_err| BlockExecutorError::BlockAccumulatorAppendErr)
             .unwrap();
 
         // transaction verify proof
@@ -69,12 +61,12 @@ impl BlockExecutor for Executor {
                 let leaf_index = first_leaf_idx + i as u64;
                 let proof = accumulator
                     .get_proof(leaf_index)
-                    .map_err(|err| BlockExecutorError::BlockAccumulatorGetProofErr)
+                    .map_err(|_err| BlockExecutorError::BlockAccumulatorGetProofErr)
                     .unwrap()
                     .unwrap();
                 proof
                     .verify(accumulator_root, *hash, leaf_index)
-                    .map_err(|err| {
+                    .map_err(|_err| {
                         BlockExecutorError::BlockAccumulatorVerifyErr(accumulator_root, leaf_index)
                     })
                     .unwrap();
@@ -82,9 +74,9 @@ impl BlockExecutor for Executor {
 
             chain_state
                 .flush()
-                .map_err(|err| BlockExecutorError::BlockChainStateFlushErr)?;
+                .map_err(|_err| BlockExecutorError::BlockChainStateFlushErr)?;
         }
 
-        Ok(())
+        Ok((accumulator_root, state_root))
     }
 }

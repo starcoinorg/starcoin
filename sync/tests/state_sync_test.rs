@@ -5,7 +5,6 @@ use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
 use consensus::dummy::DummyConsensus;
-use executor::executor::Executor;
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
@@ -96,9 +95,8 @@ fn test_state_sync() {
         // miner
         let _miner_1 = MinerActor::<
             DummyConsensus,
-            Executor,
             TxPoolRef,
-            ChainActorRef<Executor, DummyConsensus>,
+            ChainActorRef<DummyConsensus>,
             Storage,
             consensus::dummy::DummyHeader,
         >::launch(
@@ -174,7 +172,7 @@ fn test_state_sync() {
         );
 
         // chain
-        let second_chain = ChainActor::<Executor, DummyConsensus>::launch(
+        let second_chain = ChainActor::<DummyConsensus>::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -186,7 +184,7 @@ fn test_state_sync() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
             node_config_2.clone(),
             bus_2,
             Arc::clone(&second_p),

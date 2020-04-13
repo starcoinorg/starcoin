@@ -3,16 +3,16 @@
 
 use crate::chain_service::BlockChainCollection;
 use actix::prelude::*;
-use anyhow::{ensure, format_err, Error, Result};
+use anyhow::{format_err, Error, Result};
 use config::NodeConfig;
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::HashValue;
+use executor::block_executor::BlockExecutor;
 use executor::executor::mock_create_account_txn;
-use executor::TransactionExecutor;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::convert::TryInto;
@@ -27,7 +27,7 @@ use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate, BLOCK_INFO_DEFAULT_ID},
     block_metadata::BlockMetadata,
     startup_info::ChainInfo,
-    transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256, U512,
 };
 
@@ -42,9 +42,8 @@ pub static DEFAULT_BLOCK_INFO: Lazy<BlockInfo> = Lazy::new(|| {
     )
 });
 
-pub struct BlockChain<E, C, S, P>
+pub struct BlockChain<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     S: Store + 'static,
     P: TxPoolAsyncService + 'static,
@@ -54,17 +53,15 @@ where
     accumulator: MerkleAccumulator,
     head: Block,
     chain_state: ChainStateDB,
-    phantom_e: PhantomData<E>,
     phantom_c: PhantomData<C>,
     pub storage: Arc<S>,
     pub txpool: P,
     chain_info: ChainInfo,
-    pub block_chain_collection: Arc<BlockChainCollection<E, C, S, P>>,
+    pub block_chain_collection: Arc<BlockChainCollection<C, S, P>>,
 }
 
-impl<E, C, S, P> BlockChain<E, C, S, P>
+impl<C, S, P> BlockChain<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     S: Store,
     P: TxPoolAsyncService,
@@ -74,7 +71,7 @@ where
         chain_info: ChainInfo,
         storage: Arc<S>,
         txpool: P,
-        block_chain_collection: Arc<BlockChainCollection<E, C, S, P>>,
+        block_chain_collection: Arc<BlockChainCollection<C, S, P>>,
     ) -> Result<Self> {
         let head_block_hash = chain_info.get_head();
         let head = storage
@@ -106,7 +103,6 @@ where
             .unwrap(),
             head,
             chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
-            phantom_e: PhantomData,
             phantom_c: PhantomData,
             storage,
             txpool,
@@ -114,21 +110,6 @@ where
             block_chain_collection,
         };
         Ok(chain)
-    }
-
-    fn verify_proof(
-        &self,
-        expect_root: HashValue,
-        leaves: &[HashValue],
-        first_leaf_idx: u64,
-    ) -> Result<()> {
-        ensure!(leaves.len() > 0, "invalid leaves.");
-        leaves.iter().enumerate().for_each(|(i, hash)| {
-            let leaf_index = first_leaf_idx + i as u64;
-            let proof = self.accumulator.get_proof(leaf_index).unwrap().unwrap();
-            proof.verify(expect_root, *hash, leaf_index).unwrap();
-        });
-        Ok(())
     }
 
     pub fn save_block(&self, block: &Block) {
@@ -216,29 +197,6 @@ where
         )));
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
-        let mut state_root = HashValue::zero();
-        let mut transaction_hash = vec![];
-        for txn in txns {
-            let txn_hash = txn.crypto_hash();
-            let output = E::execute_transaction(&self.config.vm, &chain_state, txn)?;
-            match output.status() {
-                TransactionStatus::Discard(status) => return Err(status.clone().into()),
-                TransactionStatus::Keep(_status) => {
-                    //continue.
-                }
-            }
-            //TODO should not commit here.
-            state_root = chain_state.commit()?;
-            let _transaction_info = TransactionInfo::new(
-                txn_hash,
-                state_root,
-                HashValue::zero(),
-                0,
-                output.status().vm_status().major_status,
-            );
-            transaction_hash.push(txn_hash);
-        }
-
         let block_info = self.get_block_info(previous_header.id());
         let accumulator = MerkleAccumulator::new(
             self.chain_info.branch_id(),
@@ -249,14 +207,9 @@ where
             self.storage.clone(),
         )
         .unwrap();
-        let (accumulator_root, first_leaf_idx) = accumulator.append(&transaction_hash).unwrap();
-        //Fixme proof verify
-        transaction_hash.iter().enumerate().for_each(|(i, hash)| {
-            let leaf_index = first_leaf_idx + i as u64;
-            let proof = accumulator.get_proof(leaf_index).unwrap().unwrap();
-            proof.verify(accumulator_root, *hash, leaf_index).unwrap();
-        });
-        //TODO execute txns and computer state.
+        let (accumulator_root, state_root) =
+            BlockExecutor::block_execute(&self.config.vm, &chain_state, &accumulator, txns, true)
+                .unwrap();
 
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -299,9 +252,8 @@ where
     }
 }
 
-impl<E, C, S, P> ChainReader for BlockChain<E, C, S, P>
+impl<C, S, P> ChainReader for BlockChain<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     S: Store,
     P: TxPoolAsyncService,
@@ -430,9 +382,8 @@ where
     }
 }
 
-impl<E, C, S, P> ChainWriter for BlockChain<E, C, S, P>
+impl<C, S, P> ChainWriter for BlockChain<C, S, P>
 where
-    E: TransactionExecutor,
     C: Consensus,
     S: Store,
     P: TxPoolAsyncService,
@@ -459,42 +410,22 @@ where
         let block_metadata = header.clone().into_metadata();
 
         txns.push(Transaction::BlockMetadata(block_metadata));
-        let mut state_root = HashValue::zero();
-        let mut transaction_hash = vec![];
-        for txn in txns {
-            let txn_hash = txn.crypto_hash();
-            let output = E::execute_transaction(&self.config.vm, chain_state, txn)?;
-            match output.status() {
-                TransactionStatus::Discard(status) => return Err(status.clone().into()),
-                TransactionStatus::Keep(_status) => {
-                    //continue.
-                }
-            }
-            state_root = chain_state.commit()?;
-            let _transaction_info = TransactionInfo::new(
-                txn_hash,
-                state_root,
-                HashValue::zero(),
-                0,
-                output.status().vm_status().major_status,
-            );
-            transaction_hash.push(txn_hash);
-        }
 
-        let (accumulator_root, first_leaf_idx) =
-            self.accumulator.append(&transaction_hash).unwrap();
+        let (accumulator_root, state_root) = BlockExecutor::block_execute(
+            &self.config.vm,
+            chain_state,
+            &self.accumulator,
+            txns,
+            false,
+        )
+        .unwrap();
         assert_eq!(
             block.header().state_root(),
             state_root,
             "verify block:{:?} state_root fail.",
             block.header().id()
         );
-        if let Err(e) = self.verify_proof(accumulator_root, &transaction_hash, first_leaf_idx) {
-            warn!("err : {:?}", e);
-        }
-        if let Err(e) = chain_state.flush() {
-            warn!("err : {:?}", e);
-        }
+
         let total_difficulty = {
             let pre_total_difficulty = self
                 .get_block_info(block.header().parent_hash())
