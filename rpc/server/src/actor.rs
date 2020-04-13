@@ -9,8 +9,8 @@ use config::NodeConfig;
 use jsonrpc_core::IoHandler;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
-use starcoin_rpc_api::account::AccountApi;
 use starcoin_rpc_api::debug::DebugApi;
+use starcoin_rpc_api::wallet::WalletApi;
 use starcoin_rpc_api::{node::NodeApi, state::StateApi, txpool::TxPoolApi};
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_txpool_api::TxPoolAsyncService;
@@ -54,7 +54,7 @@ impl RpcActor {
     ) -> Result<(Addr<Self>, IoHandler)>
     where
         T: TxPoolApi,
-        A: AccountApi,
+        A: WalletApi,
         S: StateApi,
         D: DebugApi,
     {
@@ -64,7 +64,7 @@ impl RpcActor {
             io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
         }
         if let Some(account_api) = account_api {
-            io_handler.extend_with(AccountApi::to_delegate(account_api));
+            io_handler.extend_with(WalletApi::to_delegate(account_api));
         }
         if let Some(state_api) = state_api {
             io_handler.extend_with(StateApi::to_delegate(state_api));
