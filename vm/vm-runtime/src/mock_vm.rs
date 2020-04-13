@@ -3,7 +3,7 @@
 
 use crate::chain_state::StateStore;
 use anyhow::Result;
-use config::VMConfig;
+use starcoin_config::VMConfig;
 use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::keygen::KeyGen;
 use logger::prelude::*;

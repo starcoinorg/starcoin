@@ -5,7 +5,7 @@ use crate::{
     decode_key, get_available_port, load_key, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt,
 };
 use anyhow::{bail, ensure, Result};
-use libp2p::multiaddr::{Multiaddr, Protocol};
+use libp2p::multiaddr::{Multiaddr, Protocol,};
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{

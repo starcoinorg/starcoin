@@ -6,7 +6,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{ed25519::*, ValidKeyStringExt};
+use starcoin_crypto::{ed25519::*, ValidKeyStringExt, PrivateKey, Uniform};
 use starcoin_types::U256;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -139,9 +139,10 @@ pub struct ChainConfig {
 pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1000_000;
 
 const STATIC_SEED: [u8; 32] = [42; 32];
-static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
+pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let mut rng = StdRng::from_seed(STATIC_SEED);
-    let (private_key, public_key) = compat::generate_keypair(&mut rng);
+    let private_key = Ed25519PrivateKey::generate(&mut rng);
+    let public_key = private_key.public_key();
 
     ChainConfig {
         total_supply: STARCOIN_TOTAL_SUPPLY,

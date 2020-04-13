@@ -46,7 +46,8 @@ impl MockTxnGenerator {
         // TODO: make it configurable
         let amount_to_transfer = 1000;
 
-        if account_resource.balance() <= amount_to_transfer {
+        let balance_resource = state_db.get_balance(self.account.address())?;
+        if balance_resource.is_none() || (balance_resource.unwrap() <= amount_to_transfer) {
             bail!("not enough balance, skip gen mock txn, please faucet it first");
         }
 
