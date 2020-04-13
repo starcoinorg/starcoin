@@ -2,68 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::message::NodeCommand;
-use crate::node;
 use actix::prelude::*;
 use anyhow::Result;
 use starcoin_config::NodeConfig;
-use starcoin_logger::prelude::*;
-use starcoin_traits::{Consensus, ConsensusHeader};
+use starcoin_traits::Consensus;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use tokio::runtime::Handle;
 
-pub struct NodeActor<C, H>
+pub struct NodeActor<C>
 where
     C: Consensus + 'static,
-    H: ConsensusHeader + 'static,
 {
-    config: Arc<NodeConfig>,
-    handle: Handle,
     consensus: PhantomData<C>,
-    consensus_header: PhantomData<H>,
 }
 
-impl<C, H> NodeActor<C, H>
+impl<C> NodeActor<C>
 where
     C: Consensus,
-    H: ConsensusHeader,
 {
-    pub fn new(config: Arc<NodeConfig>, handle: Handle) -> Self {
+    pub fn new(_config: Arc<NodeConfig>, _handle: Handle) -> Self {
         Self {
-            config,
-            handle,
             consensus: Default::default(),
-            consensus_header: Default::default(),
         }
     }
 }
 
-impl<C, H> Actor for NodeActor<C, H>
+impl<C> Actor for NodeActor<C>
 where
     C: Consensus,
-    H: ConsensusHeader,
 {
     type Context = Context<Self>;
 
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        let config = self.config.clone();
-        let handle = self.handle.clone();
-        Arbiter::spawn(async {
-            match node::start::<C, H>(config, handle).await {
-                Err(e) => {
-                    error!("Node start fail: {}, exist.", e);
-                    System::current().stop();
-                }
-                _ => {}
-            }
-        });
-    }
+    fn started(&mut self, _ctx: &mut Self::Context) {}
 }
 
-impl<C, H> Handler<NodeCommand> for NodeActor<C, H>
+impl<C> Handler<NodeCommand> for NodeActor<C>
 where
     C: Consensus,
-    H: ConsensusHeader,
 {
     type Result = Result<()>;
 
@@ -73,27 +49,24 @@ where
 }
 
 #[derive(Clone)]
-pub struct NodeRef<C, H>(pub Addr<NodeActor<C, H>>)
+pub struct NodeRef<C>(pub Addr<NodeActor<C>>)
 where
-    C: Consensus + 'static,
-    H: ConsensusHeader + 'static;
+    C: Consensus + 'static;
 
-impl<C, H> Into<Addr<NodeActor<C, H>>> for NodeRef<C, H>
+impl<C> Into<Addr<NodeActor<C>>> for NodeRef<C>
 where
     C: Consensus,
-    H: ConsensusHeader,
 {
-    fn into(self) -> Addr<NodeActor<C, H>> {
+    fn into(self) -> Addr<NodeActor<C>> {
         self.0
     }
 }
 
-impl<C, H> Into<NodeRef<C, H>> for Addr<NodeActor<C, H>>
+impl<C> Into<NodeRef<C>> for Addr<NodeActor<C>>
 where
     C: Consensus,
-    H: ConsensusHeader,
 {
-    fn into(self) -> NodeRef<C, H> {
+    fn into(self) -> NodeRef<C> {
         NodeRef(self)
     }
 }
