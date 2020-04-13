@@ -40,8 +40,6 @@ pub struct TestRequest {
 #[derive(Debug, Serialize, Deserialize, Message, Clone)]
 pub enum RPCRequest {
     TestRequest(TestRequest),
-    GetHashByNumberMsg(ProcessMessage),
-    GetDataByHashMsg(ProcessMessage),
     GetStateNodeByNodeHash(HashValue),
 }
 

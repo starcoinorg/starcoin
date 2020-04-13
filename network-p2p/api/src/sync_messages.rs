@@ -55,13 +55,6 @@ pub enum DirectSendMessage {
     NewPeerMsg(PeerId),
 }
 
-#[derive(Debug, Message, Clone, Serialize, Deserialize)]
-#[rtype(result = "Result<()>")]
-pub enum ProcessMessage {
-    GetHashByNumberMsg(GetHashByNumberMsg),
-    GetDataByHashMsg(GetDataByHashMsg),
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetHashByNumberMsg {
     pub numbers: Vec<u64>,
