@@ -8,6 +8,7 @@ use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_logger::LoggerHandle;
 use starcoin_miner::miner_client::MinerClientActor;
 use starcoin_miner::MinerActor;
 use starcoin_network::NetworkActor;
@@ -41,7 +42,11 @@ where
     _miner_client: Addr<MinerClientActor<C>>,
 }
 
-pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<NodeStartHandle<C, H>>
+pub async fn start<C, H>(
+    config: Arc<NodeConfig>,
+    logger_handle: Arc<LoggerHandle>,
+    handle: Handle,
+) -> Result<NodeStartHandle<C, H>>
 where
     C: Consensus + 'static,
     H: ConsensusHeader + 'static,
@@ -175,6 +180,7 @@ where
         txpool.clone(),
         account_service,
         chain_state_service,
+        Some(logger_handle),
     )?;
     let receiver = if config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
         Some(txpool.clone().subscribe_txns().await?)

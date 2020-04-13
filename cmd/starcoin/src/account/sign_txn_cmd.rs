@@ -11,7 +11,7 @@ use structopt::StructOpt;
 #[structopt(name = "sign_txn")]
 pub struct SignTxnOpt {}
 
-pub struct SignTxnCommand {}
+pub struct SignTxnCommand;
 
 impl CommandAction for SignTxnCommand {
     type State = CliState;

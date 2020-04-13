@@ -2,22 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use lazy_static::lazy_static;
 use log::LevelFilter;
 use log4rs::append::console::{ConsoleAppender, Target};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::Handle;
-use std::cell::RefCell;
 use std::path::PathBuf;
-use std::sync::Once;
+use std::sync::Mutex;
+use std::sync::{Arc, Once};
 
 /// Logger prelude which includes all logging macros.
 pub mod prelude {
-    pub use log::{debug, error, info, log_enabled, trace, warn, Level};
+    pub use log::{debug, error, info, log_enabled, trace, warn, Level, LevelFilter};
 }
 
-#[derive(Clone, PartialOrd, PartialEq, Ord, Eq)]
+#[derive(Debug, Clone, PartialOrd, PartialEq, Ord, Eq)]
 struct LoggerConfigArg {
     enable_stderr: bool,
     level: LevelFilter,
@@ -35,7 +36,7 @@ impl LoggerConfigArg {
 }
 
 pub struct LoggerHandle {
-    arg: RefCell<LoggerConfigArg>,
+    arg: Mutex<LoggerConfigArg>,
     handle: Handle,
 }
 
@@ -47,7 +48,7 @@ impl LoggerHandle {
         handle: Handle,
     ) -> Self {
         Self {
-            arg: RefCell::new(LoggerConfigArg {
+            arg: Mutex::new(LoggerConfigArg {
                 enable_stderr,
                 level,
                 log_path,
@@ -57,42 +58,51 @@ impl LoggerHandle {
     }
 
     pub fn enable_stderr(&self) {
-        let mut arg = self.arg.borrow().clone();
+        let mut arg = self.arg.lock().unwrap().clone();
         arg.enable_stderr = true;
         self.update_logger(arg);
     }
 
     pub fn disable_stderr(&self) {
-        let mut arg = self.arg.borrow().clone();
+        let mut arg = self.arg.lock().unwrap().clone();
         arg.enable_stderr = false;
         self.update_logger(arg);
     }
 
     pub fn enable_file(&self, enable_stderr: bool, log_path: PathBuf) {
-        let mut arg = self.arg.borrow().clone();
+        let mut arg = self.arg.lock().unwrap().clone();
         arg.enable_stderr = enable_stderr;
         arg.log_path = Some(log_path);
         self.update_logger(arg);
     }
 
-    pub fn update_level(&self, level: &str) -> Result<()> {
-        let level = level.parse()?;
-        let mut arg = self.arg.borrow().clone();
+    pub fn update_level(&self, level: LevelFilter) {
+        let mut arg = self.arg.lock().unwrap().clone();
         arg.level = level;
         self.update_logger(arg);
-        Ok(())
     }
 
     fn update_logger(&self, arg: LoggerConfigArg) {
-        if self.arg.borrow().clone() != arg {
+        let mut origin_arg = self.arg.lock().unwrap();
+        if *origin_arg != arg {
             let config = build_config(arg.clone()).expect("rebuild log config should success.");
-            self.arg.replace(arg);
+            *origin_arg = arg;
             self.handle.set_config(config);
         }
     }
 
+    /// Get log path
     pub fn log_path(&self) -> Option<PathBuf> {
-        self.arg.borrow().log_path.as_ref().cloned()
+        self.arg.lock().unwrap().log_path.as_ref().cloned()
+    }
+
+    /// Check is stderr enabled
+    pub fn stderr(&self) -> bool {
+        self.arg.lock().unwrap().enable_stderr
+    }
+
+    pub fn level(&self) -> LevelFilter {
+        self.arg.lock().unwrap().level
     }
 }
 
@@ -134,33 +144,49 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
 
 fn env_log_level(default_level: &str) -> LevelFilter {
     let level = std::env::var("RUST_LOG").unwrap_or(default_level.to_string());
-    println!("Log level: {:?}", level);
     level
         .parse()
         .expect(format!("Unexpect log level: {}", level).as_str())
 }
 
-pub fn init() -> LoggerHandle {
+lazy_static! {
+    static ref LOGGER_HANDLE: Mutex<Option<Arc<LoggerHandle>>> = Mutex::new(None);
+}
+
+pub fn init() -> Arc<LoggerHandle> {
     init_with_default_level("info")
 }
 
-pub fn init_with_default_level(default_level: &str) -> LoggerHandle {
+pub fn init_with_default_level(default_level: &str) -> Arc<LoggerHandle> {
     let level = env_log_level(default_level);
-    let config =
-        build_config(LoggerConfigArg::new(true, level, None)).expect("build log config fail.");
-    let handle = match log4rs::init_config(config) {
-        Ok(handle) => handle,
-        Err(e) => panic!(format!("{}", e.to_string())),
-    };
-    LoggerHandle::new(true, level, None, handle)
+    LOG_INIT.call_once(|| {
+        let config =
+            build_config(LoggerConfigArg::new(true, level, None)).expect("build log config fail.");
+        let handle = match log4rs::init_config(config) {
+            Ok(handle) => handle,
+            Err(e) => panic!(format!("{}", e.to_string())),
+        };
+        let logger_handle = LoggerHandle::new(true, level, None, handle);
+
+        *LOGGER_HANDLE.lock().unwrap() = Some(Arc::new(logger_handle));
+    });
+
+    let logger_handle = LOGGER_HANDLE
+        .lock()
+        .unwrap()
+        .as_ref()
+        .expect("logger handle must has been set.")
+        .clone();
+    if logger_handle.level() != level {
+        logger_handle.update_level(level);
+    }
+    logger_handle
 }
 
-static TEST_LOG_INIT: Once = Once::new();
+static LOG_INIT: Once = Once::new();
 
-pub fn init_for_test() {
-    TEST_LOG_INIT.call_once(|| {
-        let _ = init_with_default_level("debug");
-    });
+pub fn init_for_test() -> Arc<LoggerHandle> {
+    init_with_default_level("debug")
 }
 
 #[cfg(test)]
@@ -169,10 +195,22 @@ mod tests {
 
     #[test]
     fn test_log() {
-        super::init_for_test();
+        let handle = super::init_for_test();
         debug!("debug message2.");
         info!("info message.");
         warn!("warn message.");
         error!("error message.");
+        let handle2 = super::init_for_test();
+        assert_eq!(handle.level(), handle2.level());
+        assert_eq!(handle.log_path(), handle2.log_path());
+        assert_eq!(handle.stderr(), handle2.stderr());
+        let origin_level = handle.level();
+
+        handle.update_level(LevelFilter::Off);
+
+        assert_eq!(handle.level(), LevelFilter::Off);
+        assert_eq!(handle.level(), handle2.level());
+
+        handle.update_level(origin_level);
     }
 }

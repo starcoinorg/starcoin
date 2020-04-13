@@ -9,7 +9,8 @@ use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, 
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::{
-    account::AccountClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
+    account::AccountClient, debug::DebugClient, node::NodeClient, state::StateClient,
+    txpool::TxPoolClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -247,6 +248,17 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn debug_set_log_level(&self, level: Level) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .debug_client
+                .set_log_level(level.to_string())
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     fn call_rpc_blocking<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F,
@@ -306,6 +318,7 @@ pub(crate) struct RpcClientInner {
     txpool_client: TxPoolClient,
     account_client: AccountClient,
     state_client: StateClient,
+    debug_client: DebugClient,
 }
 
 impl RpcClientInner {
@@ -315,6 +328,7 @@ impl RpcClientInner {
             txpool_client: channel.clone().into(),
             account_client: channel.clone().into(),
             state_client: channel.clone().into(),
+            debug_client: channel.clone().into(),
         }
     }
 }

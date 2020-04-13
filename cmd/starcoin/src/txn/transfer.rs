@@ -27,7 +27,7 @@ pub struct TransferOpt {
     amount: u64,
 }
 
-pub struct TransferCommand {}
+pub struct TransferCommand;
 
 impl CommandAction for TransferCommand {
     type State = CliState;
