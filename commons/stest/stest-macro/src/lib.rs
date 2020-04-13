@@ -100,15 +100,13 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 #(#attrs)*
                 fn #name() #ret {
                     stest::init_test_logger();
-                    let (tx,rx) = std::sync::mpsc::channel();
-                    let tx_clone = tx.clone();
+                    let (tx,mut rx) = stest::make_channel();
 
-                    stest::timeout(#timeout,move ||{
-                        actix_rt::System::new("test").block_on(async { #body });
-                    },tx_clone);
+                    let mut system = actix_rt::System::new("test");
+                    actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
+                    actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
-                    let _= rx.recv();
-                    ()
+                    system.block_on(stest::wait_result(rx));
                 }
             }
         } else {
@@ -117,15 +115,13 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 #(#attrs)*
                 fn #name() #ret {
                     stest::init_test_logger();
-                    let (tx,rx) = std::sync::mpsc::channel();
-                    let tx_clone = tx.clone();
+                    let (tx,mut rx) = stest::make_channel();
 
-                    stest::timeout(#timeout,move ||{
-                        actix_rt::System::new("test").block_on(async { #body });
-                    },tx_clone);
+                    let mut system = actix_rt::System::new("test");
+                    actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
+                    actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
-                    let _= rx.recv();
-                    ()
+                    system.block_on(stest::wait_result(rx));
                  }
             }
         }

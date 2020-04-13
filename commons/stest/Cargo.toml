@@ -12,3 +12,5 @@ starcoin-logger = {path = "../logger"}
 log = "0.4.8"
 actix = "0.9"
 actix-rt = "1.0"
+futures = "0.3.4"
+

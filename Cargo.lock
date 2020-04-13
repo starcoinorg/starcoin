@@ -6531,6 +6531,7 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "actix-rt",
+ "futures 0.3.4",
  "log 0.4.8",
  "starcoin-logger",
  "stest-macro",
