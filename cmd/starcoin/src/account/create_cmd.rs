@@ -14,7 +14,7 @@ pub struct CreateOpt {
     password: String,
 }
 
-pub struct CreateCommand {}
+pub struct CreateCommand;
 
 impl CommandAction for CreateCommand {
     type State = CliState;

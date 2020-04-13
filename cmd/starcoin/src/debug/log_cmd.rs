@@ -15,7 +15,7 @@ pub struct LogLevelOpt {
     level: Level,
 }
 
-pub struct LogLevelCommand {}
+pub struct LogLevelCommand;
 
 impl CommandAction for LogLevelCommand {
     type State = CliState;

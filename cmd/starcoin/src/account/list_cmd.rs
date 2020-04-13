@@ -11,7 +11,7 @@ use structopt::StructOpt;
 #[structopt(name = "list")]
 pub struct ListOpt {}
 
-pub struct ListCommand {}
+pub struct ListCommand;
 
 impl CommandAction for ListCommand {
     type State = CliState;

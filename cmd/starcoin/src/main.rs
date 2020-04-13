@@ -3,7 +3,7 @@
 
 use crate::state::CliState;
 use anyhow::Result;
-use scmd::{CmdContext, Command, CommandAction};
+use scmd::{CmdContext, Command};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
@@ -19,12 +19,17 @@ mod helper;
 pub mod state;
 
 fn run() -> Result<()> {
-    let _logger_handle = starcoin_logger::init();
+    let logger_handle = starcoin_logger::init();
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {:?}", opt);
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
             info!("Final data-dir is : {:?}", config.data_dir());
+            info!(
+                "Attach a new console by command: starcoin -n {} -d {} console",
+                config.net(),
+                config.base.base_data_dir().to_str().unwrap()
+            );
             let ipc_file = config.rpc.get_ipc_file();
             let node_handle = if !ipc_file.exists() {
                 let node_handle = match config.net() {
@@ -43,12 +48,6 @@ fn run() -> Result<()> {
             Ok(state)
         },
         |_, _, state| {
-            let config = state.config();
-            info!(
-                "Attach a new console by command: starcoin -n {} -d {:?} console",
-                config.net(),
-                config.base.base_data_dir()
-            );
             let (_, _, handle) = state.into_inner();
             match handle {
                 Some(handle) => match handle.join() {
@@ -59,6 +58,10 @@ fn run() -> Result<()> {
                 },
                 None => {}
             }
+        },
+        move |_, _, _| {
+            info!("Start console, disable stderr output.");
+            logger_handle.disable_stderr();
         },
         |_, _, state| {
             let (_, _, handle) = state.into_inner();
@@ -76,16 +79,16 @@ fn run() -> Result<()> {
     context
         .command(
             Command::with_name("account")
-                .subcommand(account::CreateCommand {}.into_cmd())
-                .subcommand(account::ShowCommand {}.into_cmd())
-                .subcommand(account::ListCommand {}.into_cmd())
-                .subcommand(account::SignTxnCommand {}.into_cmd())
-                .subcommand(account::UnlockCommand.into_cmd())
-                .subcommand(account::ExportCommand.into_cmd())
-                .subcommand(account::ImportCommand.into_cmd()),
+                .subcommand(account::CreateCommand)
+                .subcommand(account::ShowCommand)
+                .subcommand(account::ListCommand)
+                .subcommand(account::SignTxnCommand)
+                .subcommand(account::UnlockCommand)
+                .subcommand(account::ExportCommand)
+                .subcommand(account::ImportCommand),
         )
-        .command(Command::with_name("txn").subcommand(txn::TransferCommand {}.into_cmd()))
-        .command(Command::with_name("debug").subcommand(debug::LogLevelCommand {}.into_cmd()))
+        .command(Command::with_name("txn").subcommand(txn::TransferCommand))
+        .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))
         .exec()
 }
 
