@@ -11,9 +11,9 @@ use std::sync::Arc;
 use starcoin_config::ChainNetwork;
 pub use starcoin_config::StarcoinOpt;
 
-mod account;
 mod debug;
 mod txn;
+mod wallet;
 
 mod helper;
 pub mod state;
@@ -78,14 +78,14 @@ fn run() -> Result<()> {
     );
     context
         .command(
-            Command::with_name("account")
-                .subcommand(account::CreateCommand)
-                .subcommand(account::ShowCommand)
-                .subcommand(account::ListCommand)
-                .subcommand(account::SignTxnCommand)
-                .subcommand(account::UnlockCommand)
-                .subcommand(account::ExportCommand)
-                .subcommand(account::ImportCommand),
+            Command::with_name("wallet")
+                .subcommand(wallet::CreateCommand)
+                .subcommand(wallet::ShowCommand)
+                .subcommand(wallet::ListCommand)
+                .subcommand(wallet::SignTxnCommand)
+                .subcommand(wallet::UnlockCommand)
+                .subcommand(wallet::ExportCommand)
+                .subcommand(wallet::ImportCommand),
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))
