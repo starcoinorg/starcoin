@@ -126,12 +126,12 @@ impl RpcClient {
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
-        self.block_call_rpc(|inner| async move { inner.node_client.status().compat().await })
+        self.call_rpc_blocking(|inner| async move { inner.node_client.status().compat().await })
             .map_err(map_err)
     }
 
     pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<bool> {
-        self.block_call_rpc(|inner| async move {
+        self.call_rpc_blocking(|inner| async move {
             inner.txpool_client.submit_transaction(txn).compat().await
         })
         .map_err(map_err)
@@ -139,29 +139,31 @@ impl RpcClient {
     //TODO should split client for different api ?
     // such as  RpcClient().account().create()
     pub fn account_create(&self, password: String) -> anyhow::Result<WalletAccount> {
-        self.block_call_rpc(
-            |inner| async move { inner.account_client.create(password).compat().await },
-        )
+        self.call_rpc_blocking(|inner| async move {
+            inner.account_client.create(password).compat().await
+        })
         .map_err(map_err)
     }
 
     pub fn account_list(&self) -> anyhow::Result<Vec<WalletAccount>> {
-        self.block_call_rpc(|inner| async move { inner.account_client.list().compat().await })
+        self.call_rpc_blocking(|inner| async move { inner.account_client.list().compat().await })
             .map_err(map_err)
     }
 
     pub fn account_get(&self, address: AccountAddress) -> anyhow::Result<Option<WalletAccount>> {
-        self.block_call_rpc(|inner| async move { inner.account_client.get(address).compat().await })
-            .map_err(map_err)
+        self.call_rpc_blocking(
+            |inner| async move { inner.account_client.get(address).compat().await },
+        )
+        .map_err(map_err)
     }
 
     pub fn account_sign_txn(
         &self,
         raw_txn: RawUserTransaction,
     ) -> anyhow::Result<SignedUserTransaction> {
-        self.block_call_rpc(
-            |inner| async move { inner.account_client.sign_txn(raw_txn).compat().await },
-        )
+        self.call_rpc_blocking(|inner| async move {
+            inner.account_client.sign_txn(raw_txn).compat().await
+        })
         .map_err(map_err)
     }
 
@@ -171,7 +173,7 @@ impl RpcClient {
         password: String,
         duration: std::time::Duration,
     ) -> anyhow::Result<()> {
-        self.block_call_rpc(|inner| async move {
+        self.call_rpc_blocking(|inner| async move {
             inner
                 .account_client
                 .unlock(address, password, duration)
@@ -185,7 +187,7 @@ impl RpcClient {
         address: AccountAddress,
         password: String,
     ) -> anyhow::Result<Vec<u8>> {
-        self.block_call_rpc(|inner| async move {
+        self.call_rpc_blocking(|inner| async move {
             inner
                 .account_client
                 .export(address, password)
@@ -200,7 +202,7 @@ impl RpcClient {
         private_key: Vec<u8>,
         password: String,
     ) -> anyhow::Result<WalletAccount> {
-        self.block_call_rpc(|inner| async move {
+        self.call_rpc_blocking(|inner| async move {
             inner
                 .account_client
                 .import(address, private_key, password)
@@ -211,14 +213,14 @@ impl RpcClient {
     }
 
     pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
-        self.block_call_rpc(
+        self.call_rpc_blocking(
             |inner| async move { inner.state_client.get(access_path).compat().await },
         )
         .map_err(map_err)
     }
 
     pub fn state_get_with_proof(&self, access_path: AccessPath) -> anyhow::Result<StateWithProof> {
-        self.block_call_rpc(|inner| async move {
+        self.call_rpc_blocking(|inner| async move {
             inner
                 .state_client
                 .get_with_proof(access_path)
@@ -229,7 +231,7 @@ impl RpcClient {
     }
 
     pub fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
-        self.block_call_rpc(
+        self.call_rpc_blocking(
             |inner| async move { inner.state_client.get_state_root().compat().await },
         )
         .map_err(map_err)
@@ -239,13 +241,13 @@ impl RpcClient {
         &self,
         address: AccountAddress,
     ) -> anyhow::Result<Option<AccountState>> {
-        self.block_call_rpc(|inner| async move {
+        self.call_rpc_blocking(|inner| async move {
             inner.state_client.get_account_state(address).compat().await
         })
         .map_err(map_err)
     }
 
-    fn block_call_rpc<F, T>(
+    fn call_rpc_blocking<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F,
     ) -> Result<T, jsonrpc_client_transports::RpcError>
