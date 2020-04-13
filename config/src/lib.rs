@@ -75,15 +75,15 @@ pub struct StarcoinOpt {
     /// P2P network seeds
     pub seeds: Option<Vec<Multiaddr>>,
 
-    #[structopt(name = "dev-period", default_value = "0")]
+    #[structopt(long = "dev-period", default_value = "0")]
     /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
     pub dev_period: u64,
 
-    #[structopt(name = "node-key")]
+    #[structopt(long = "node-key")]
     /// Node network private key, only work for first init.
     pub node_key: Option<String>,
 
-    #[structopt(name = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
+    #[structopt(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
     /// Node network private key file, only work for first init.
     pub node_key_file: Option<PathBuf>,
 }

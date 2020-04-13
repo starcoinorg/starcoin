@@ -11,6 +11,9 @@ use starcoin_wallet_api::WalletAccount;
 
 #[rpc]
 pub trait WalletApi {
+    /// Get default account
+    #[rpc(name = "wallet.default")]
+    fn default(&self) -> FutureResult<Option<WalletAccount>>;
     #[rpc(name = "wallet.create")]
     fn create(&self, password: String) -> FutureResult<WalletAccount>;
     #[rpc(name = "wallet.list")]

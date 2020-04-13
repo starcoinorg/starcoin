@@ -3,7 +3,7 @@
 
 use crate::state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
@@ -42,10 +42,9 @@ impl CommandAction for TransferCommand {
                 "Can not find WalletAccount by address: {}",
                 from
             ))?,
-            None => {
-                //TODO supported default account.
-                bail!("Please input from account.");
-            }
+            None => client.account_default()?.ok_or(format_err!(
+                "Can not find default account, Please input from account."
+            ))?,
         };
         let to = opt.to;
         //TODO check to is onchain

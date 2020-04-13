@@ -12,10 +12,11 @@ use starcoin_config::ChainNetwork;
 pub use starcoin_config::StarcoinOpt;
 
 mod debug;
+mod dev;
+mod helper;
 mod txn;
 mod wallet;
 
-mod helper;
 pub mod state;
 
 fn run() -> Result<()> {
@@ -88,6 +89,7 @@ fn run() -> Result<()> {
                 .subcommand(wallet::ImportCommand),
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand))
+        .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))
         .exec()
 }

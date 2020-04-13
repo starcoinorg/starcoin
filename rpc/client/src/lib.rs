@@ -138,7 +138,12 @@ impl RpcClient {
         .map_err(map_err)
     }
     //TODO should split client for different api ?
-    // such as  RpcClient().account().create()
+    // such as  RpcClient().account().default()
+    pub fn account_default(&self) -> anyhow::Result<Option<WalletAccount>> {
+        self.call_rpc_blocking(|inner| async move { inner.account_client.default().compat().await })
+            .map_err(map_err)
+    }
+
     pub fn account_create(&self, password: String) -> anyhow::Result<WalletAccount> {
         self.call_rpc_blocking(|inner| async move {
             inner.wallet_client.create(password).compat().await
