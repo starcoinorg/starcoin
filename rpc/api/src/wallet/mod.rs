@@ -3,23 +3,23 @@
 
 use jsonrpc_derive::rpc;
 
-pub use self::gen_client::Client as AccountClient;
+pub use self::gen_client::Client as WalletClient;
 use crate::FutureResult;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
 
 #[rpc]
-pub trait AccountApi {
-    #[rpc(name = "account.create")]
+pub trait WalletApi {
+    #[rpc(name = "wallet.create")]
     fn create(&self, password: String) -> FutureResult<WalletAccount>;
-    #[rpc(name = "account.list")]
+    #[rpc(name = "wallet.list")]
     fn list(&self) -> FutureResult<Vec<WalletAccount>>;
-    #[rpc(name = "account.get")]
+    #[rpc(name = "wallet.get")]
     fn get(&self, address: AccountAddress) -> FutureResult<Option<WalletAccount>>;
-    #[rpc(name = "account.sign_txn")]
+    #[rpc(name = "wallet.sign_txn")]
     fn sign_txn(&self, raw_txn: RawUserTransaction) -> FutureResult<SignedUserTransaction>;
-    #[rpc(name = "account.unlock")]
+    #[rpc(name = "wallet.unlock")]
     fn unlock(
         &self,
         address: AccountAddress,
@@ -28,7 +28,7 @@ pub trait AccountApi {
     ) -> FutureResult<()>;
 
     /// Import private key with address.
-    #[rpc(name = "account.import")]
+    #[rpc(name = "wallet.import")]
     fn import(
         &self,
         address: AccountAddress,
@@ -37,6 +37,6 @@ pub trait AccountApi {
     ) -> FutureResult<WalletAccount>;
 
     /// Return the private key as bytes for `address`
-    #[rpc(name = "account.export")]
+    #[rpc(name = "wallet.export")]
     fn export(&self, address: AccountAddress, password: String) -> FutureResult<Vec<u8>>;
 }

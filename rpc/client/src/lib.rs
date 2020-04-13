@@ -9,8 +9,8 @@ use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, 
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::{
-    account::AccountClient, debug::DebugClient, node::NodeClient, state::StateClient,
-    txpool::TxPoolClient,
+    debug::DebugClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
+    wallet::WalletClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -141,19 +141,19 @@ impl RpcClient {
     // such as  RpcClient().account().create()
     pub fn account_create(&self, password: String) -> anyhow::Result<WalletAccount> {
         self.call_rpc_blocking(|inner| async move {
-            inner.account_client.create(password).compat().await
+            inner.wallet_client.create(password).compat().await
         })
         .map_err(map_err)
     }
 
     pub fn account_list(&self) -> anyhow::Result<Vec<WalletAccount>> {
-        self.call_rpc_blocking(|inner| async move { inner.account_client.list().compat().await })
+        self.call_rpc_blocking(|inner| async move { inner.wallet_client.list().compat().await })
             .map_err(map_err)
     }
 
     pub fn account_get(&self, address: AccountAddress) -> anyhow::Result<Option<WalletAccount>> {
         self.call_rpc_blocking(
-            |inner| async move { inner.account_client.get(address).compat().await },
+            |inner| async move { inner.wallet_client.get(address).compat().await },
         )
         .map_err(map_err)
     }
@@ -163,7 +163,7 @@ impl RpcClient {
         raw_txn: RawUserTransaction,
     ) -> anyhow::Result<SignedUserTransaction> {
         self.call_rpc_blocking(|inner| async move {
-            inner.account_client.sign_txn(raw_txn).compat().await
+            inner.wallet_client.sign_txn(raw_txn).compat().await
         })
         .map_err(map_err)
     }
@@ -176,7 +176,7 @@ impl RpcClient {
     ) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move {
             inner
-                .account_client
+                .wallet_client
                 .unlock(address, password, duration)
                 .compat()
                 .await
@@ -189,11 +189,7 @@ impl RpcClient {
         password: String,
     ) -> anyhow::Result<Vec<u8>> {
         self.call_rpc_blocking(|inner| async move {
-            inner
-                .account_client
-                .export(address, password)
-                .compat()
-                .await
+            inner.wallet_client.export(address, password).compat().await
         })
         .map_err(map_err)
     }
@@ -205,7 +201,7 @@ impl RpcClient {
     ) -> anyhow::Result<WalletAccount> {
         self.call_rpc_blocking(|inner| async move {
             inner
-                .account_client
+                .wallet_client
                 .import(address, private_key, password)
                 .compat()
                 .await
@@ -316,7 +312,7 @@ impl RpcClient {
 pub(crate) struct RpcClientInner {
     node_client: NodeClient,
     txpool_client: TxPoolClient,
-    account_client: AccountClient,
+    wallet_client: WalletClient,
     state_client: StateClient,
     debug_client: DebugClient,
 }
@@ -326,7 +322,7 @@ impl RpcClientInner {
         Self {
             node_client: channel.clone().into(),
             txpool_client: channel.clone().into(),
-            account_client: channel.clone().into(),
+            wallet_client: channel.clone().into(),
             state_client: channel.clone().into(),
             debug_client: channel.clone().into(),
         }
