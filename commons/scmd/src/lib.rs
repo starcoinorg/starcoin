@@ -178,15 +178,15 @@ where
 
     /// default_action executed when no subcommand is provided.
     /// quit_action executed when input quit subcommand at console.
-    /// A and Q's fn signature is same but must use different name.
-    pub fn with_default_action<I, A, Q>(
+    // note: D and Q's fn signature is same but is different type.
+    pub fn with_default_action<I, D, Q>(
         state_initializer: I,
-        default_action: A,
+        default_action: D,
         quit_action: Q,
     ) -> Self
     where
         I: Fn(&GlobalOpt) -> Result<State> + 'static,
-        A: Fn(App, GlobalOpt, State) + 'static,
+        D: Fn(App, GlobalOpt, State) + 'static,
         Q: Fn(App, GlobalOpt, State) + 'static,
     {
         //insert console command
