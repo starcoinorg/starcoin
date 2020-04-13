@@ -53,7 +53,7 @@ struct BetaOpts {
     name: String,
 }
 
-struct BetaCommand {}
+struct BetaCommand;
 
 impl CommandAction for BetaCommand {
     type State = Counter;
@@ -118,6 +118,7 @@ fn main() -> Result<()> {
             while running.load(Ordering::SeqCst) {}
             println!("Got it! Exiting...");
         },
+        |_app, _opt, _state| println!("Start a console:"),
         |_app, _opt, _state| println!("good bye."),
     );
     context
@@ -134,11 +135,7 @@ fn main() -> Result<()> {
                 },
             )),
         )
-        .command(
-            BetaCommand {}
-                .into_cmd()
-                .subcommand(BetaSub1Command {}.into_cmd()),
-        )
+        .command(BetaCommand.into_cmd().subcommand(BetaSub1Command {}))
         .command(Command::with_action_fn(
             |ctx: &ExecContext<Counter, GlobalOpts, TestOpts>| -> Result<()> {
                 println!(
