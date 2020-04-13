@@ -168,6 +168,9 @@ impl TxnMocker {
         match unlock_time {
             Some(t) if t + self.unlock_duration > Instant::now() => {}
             _ => {
+                // reset first just in case account_unlock fail
+                self.account_unlock_time = None;
+
                 let new_unlock_time = Instant::now();
                 // try unlock account
                 self.client.account_unlock(
@@ -180,7 +183,14 @@ impl TxnMocker {
             }
         }
 
-        let user_txn = self.client.account_sign_txn(raw_txn)?;
+        let user_txn = match self.client.account_sign_txn(raw_txn) {
+            Err(e) => {
+                // sign txn fail, we should unlock again
+                self.account_unlock_time = None;
+                return Err(e);
+            }
+            Ok(txn) => txn,
+        };
         info!(
             "prepare to submit txn, sender:{},seq:{}",
             user_txn.sender(),
