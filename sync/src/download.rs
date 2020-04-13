@@ -8,7 +8,7 @@ use chain::ChainActorRef;
 use futures::channel::mpsc;
 use parking_lot::RwLock;
 // use itertools;
-use crate::helper::{get_hash_by_number, send_sync_request};
+use crate::helper::{get_block_by_hash, get_hash_by_number, get_header_by_hash};
 use crate::state_sync::StateSyncTaskActor;
 use config::NodeConfig;
 use crypto::HashValue;
@@ -17,7 +17,7 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_p2p_api::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DownloadMessage, GetDataByHashMsg,
-    GetHashByNumberMsg, HashWithNumber, ProcessMessage, SyncRpcRequest, SyncRpcResponse,
+    GetHashByNumberMsg, HashWithNumber,
 };
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
@@ -261,73 +261,39 @@ where
                             if (ancestor + min_behind) <= latest_number {
                                 let pivot = latest_number - min_behind;
 
-                                // 3. get pivot hash
-                                let mut numbers: Vec<BlockNumber> = Vec::new();
-                                numbers.push(pivot);
-                                let mut batch_hash_by_number_msg = get_hash_by_number(
-                                    &network,
-                                    best_peer.get_peer_id(),
-                                    GetHashByNumberMsg { numbers },
-                                )
-                                .await?;
-                                // 4. get pivot header
-                                let hash_with_number =
-                                    batch_hash_by_number_msg.hashs.pop().unwrap();
-                                let mut hashs = Vec::new();
-                                hashs.push(hash_with_number.hash);
-                                let get_header_msg = GetDataByHashMsg {
-                                    hashs,
-                                    data_type: DataType::HEADER,
-                                };
-                                let get_data_by_hash_req = SyncRpcRequest::GetDataByHashMsg(
-                                    ProcessMessage::GetDataByHashMsg(get_header_msg),
-                                );
-                                if let SyncRpcResponse::BatchHeaderAndBodyMsg(
-                                    mut headers,
-                                    _bodies,
-                                    _infos,
-                                ) = send_sync_request(
-                                    &network,
-                                    best_peer.get_peer_id(),
-                                    get_data_by_hash_req.clone(),
-                                )
-                                .await?
-                                {
-                                    // 5. StateSyncActor
-                                    let root = headers.headers.pop().unwrap();
-                                    let sync_pivot = sync_metadata.get_pivot()?;
-                                    if sync_metadata.is_state_sync()? {
-                                        if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
-                                            sync_metadata.clone().update_pivot(pivot)?;
-                                            if sync_pivot.is_none() {
-                                                let state_sync_task_address =
-                                                    StateSyncTaskActor::launch(
-                                                        self_peer_id,
-                                                        root.state_root(),
-                                                        state_node_storage,
-                                                        network.clone(),
-                                                        sync_metadata.clone(),
-                                                        bus,
-                                                    );
-                                                sync_metadata
-                                                    .update_address(&state_sync_task_address)?
-                                            } else if sync_pivot.unwrap() < pivot {
-                                                //todo:reset
-                                                if let Some(address) = sync_metadata.get_address() {
-                                                    &address.reset(root.state_root());
-                                                } else {
-                                                    warn!(
-                                                        "{:?}",
-                                                        "state sync reset address is none."
-                                                    );
-                                                }
+                                // 3. StateSyncActor
+                                let root =
+                                    Self::get_pivot(&network, best_peer.get_peer_id(), pivot)
+                                        .await?;
+                                let sync_pivot = sync_metadata.get_pivot()?;
+                                if sync_metadata.is_state_sync()? {
+                                    if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
+                                        sync_metadata.clone().update_pivot(pivot)?;
+                                        if sync_pivot.is_none() {
+                                            let state_sync_task_address =
+                                                StateSyncTaskActor::launch(
+                                                    self_peer_id,
+                                                    root.state_root(),
+                                                    state_node_storage,
+                                                    network.clone(),
+                                                    sync_metadata.clone(),
+                                                    bus,
+                                                );
+                                            sync_metadata
+                                                .update_address(&state_sync_task_address)?
+                                        } else if sync_pivot.unwrap() < pivot {
+                                            //todo:reset
+                                            if let Some(address) = sync_metadata.get_address() {
+                                                &address.reset(root.state_root());
+                                            } else {
+                                                warn!("{:?}", "state sync reset address is none.");
                                             }
-                                        } else {
-                                            warn!("pivot {:?} : {}", sync_pivot, pivot);
                                         }
                                     } else {
-                                        warn!("{:?}", "not state sync mode.");
+                                        warn!("pivot {:?} : {}", sync_pivot, pivot);
                                     }
+                                } else {
+                                    warn!("{:?}", "not state sync mode.");
                                 }
                             }
                         } else {
@@ -347,6 +313,31 @@ where
         }
 
         Ok(())
+    }
+
+    async fn get_pivot(
+        network: &NetworkAsyncService,
+        peer_id: PeerId,
+        pivot: BlockNumber,
+    ) -> Result<BlockHeader> {
+        // 1. pivot hash
+        let mut numbers: Vec<BlockNumber> = Vec::new();
+        numbers.push(pivot);
+        let mut batch_hash_by_number_msg =
+            get_hash_by_number(&network, peer_id.clone(), GetHashByNumberMsg { numbers }).await?;
+        if let Some(hash_number) = batch_hash_by_number_msg.hashs.pop() {
+            // 2. pivot header
+            let mut hashs = Vec::new();
+            hashs.push(hash_number.hash);
+            let mut headers = get_header_by_hash(&network, peer_id.clone(), hashs).await?;
+            if let Some(header) = headers.headers.pop() {
+                Ok(header)
+            } else {
+                Err(format_err!("{:?}", "pivot header is none."))
+            }
+        } else {
+            Err(format_err!("{:?}", "pivot hash is none."))
+        }
     }
 
     fn sync_block_from_best_peer(
@@ -398,7 +389,7 @@ where
                         loop {
                             //1. sync hash
                             if let Some((get_hash_by_number_msg, end, next_number)) =
-                                Downloader::<E, C>::send_get_hash_by_number_msg_forward(
+                                Downloader::<E, C>::get_hash_by_number_msg_forward(
                                     network.clone(),
                                     best_peer.get_peer_id(),
                                     begin_number,
@@ -413,39 +404,27 @@ where
                                 )
                                 .await?;
 
-                                Downloader::handle_batch_hash_by_number_msg(
+                                Downloader::put_hash_2_hash_pool(
                                     downloader.clone(),
                                     best_peer.get_peer_id(),
                                     batch_hash_by_number_msg,
                                 );
 
-                                if let Some(get_data_by_hash_msg) =
-                                    Downloader::send_get_header_by_hash_msg(downloader.clone())
-                                        .await
-                                {
-                                    let get_data_by_hash_req = SyncRpcRequest::GetDataByHashMsg(
-                                        ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
-                                    );
-
-                                    if let SyncRpcResponse::BatchHeaderAndBodyMsg(
-                                        headers,
-                                        bodies,
-                                        infos,
-                                    ) = send_sync_request(
-                                        &network,
-                                        best_peer.get_peer_id(),
-                                        get_data_by_hash_req.clone(),
+                                let hashs =
+                                    Downloader::take_task_from_hash_pool(downloader.clone());
+                                if !hashs.is_empty() {
+                                    let (headers, bodies, infos) =
+                                        get_block_by_hash(&network, best_peer.get_peer_id(), hashs)
+                                            .await?;
+                                    Downloader::do_blocks(
+                                        downloader.clone(),
+                                        headers.headers,
+                                        bodies.bodies,
+                                        infos.infos,
                                     )
-                                    .await?
-                                    {
-                                        Downloader::do_blocks(
-                                            downloader.clone(),
-                                            headers.headers,
-                                            bodies.bodies,
-                                            infos.infos,
-                                        )
-                                        .await;
-                                    }
+                                    .await;
+                                } else {
+                                    warn!("{:?}", "hash pool is empty.");
                                 }
 
                                 if end {
@@ -496,7 +475,6 @@ where
             hash_pool: TTLPool::new(),
             _header_pool: TTLPool::new(),
             _body_pool: TTLPool::new(),
-            //            _network: network,
             chain_reader,
         }
     }
@@ -549,7 +527,7 @@ where
         }
     }
 
-    pub async fn send_get_hash_by_number_msg_forward(
+    pub async fn get_hash_by_number_msg_forward(
         network: NetworkAsyncService,
         peer_id: PeerId,
         begin_number: u64,
@@ -613,7 +591,7 @@ where
                 let batch_hash_by_number_msg =
                     get_hash_by_number(&network, peer_id.clone(), get_hash_by_number_msg).await?;
                 debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
-                hash_with_number = Downloader::handle_hash_by_number_msg(
+                hash_with_number = Downloader::do_ancestor(
                     downloader.clone(),
                     peer_id.clone(),
                     batch_hash_by_number_msg,
@@ -631,7 +609,7 @@ where
         Ok(hash_with_number)
     }
 
-    pub async fn handle_hash_by_number_msg(
+    pub async fn do_ancestor(
         downloader: Arc<Downloader<E, C>>,
         peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
@@ -669,7 +647,7 @@ where
         ancestor
     }
 
-    fn handle_batch_hash_by_number_msg(
+    fn put_hash_2_hash_pool(
         downloader: Arc<Downloader<E, C>>,
         peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
@@ -681,22 +659,16 @@ where
         }
     }
 
-    pub async fn send_get_header_by_hash_msg(
-        downloader: Arc<Downloader<E, C>>,
-    ) -> Option<GetDataByHashMsg> {
+    pub fn take_task_from_hash_pool(downloader: Arc<Downloader<E, C>>) -> Vec<HashValue> {
         let hash_vec = downloader.hash_pool.take(100);
         if !hash_vec.is_empty() {
-            let hashs = hash_vec.iter().map(|hash| hash.hash).collect();
-            Some(GetDataByHashMsg {
-                hashs,
-                data_type: DataType::HEADER,
-            })
+            hash_vec.iter().map(|hash| hash.hash).collect()
         } else {
-            None
+            Vec::new()
         }
     }
 
-    pub async fn _handle_batch_header_msg(
+    pub async fn _put_header_2_header_pool(
         downloader: Arc<Downloader<E, C>>,
         peer: PeerId,
         batch_header_msg: BatchHeaderMsg,
@@ -710,7 +682,7 @@ where
         }
     }
 
-    pub async fn _send_get_body_by_hash_msg(
+    pub async fn _take_task_from_header_pool(
         downloader: Arc<Downloader<E, C>>,
     ) -> Option<GetDataByHashMsg> {
         let header_vec = downloader._header_pool.take(100);
