@@ -7,7 +7,6 @@ use bus::BusActor;
 use config::NodeConfig;
 use consensus::dummy::DummyHeader;
 use consensus::{difficult, dummy::DummyConsensus};
-use executor::executor::Executor;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
@@ -23,7 +22,7 @@ use types::U256;
 async fn gen_head_chain(
     times: u64,
     delay: bool,
-) -> (ChainActorRef<Executor, DummyConsensus>, Arc<NodeConfig>) {
+) -> (ChainActorRef<DummyConsensus>, Arc<NodeConfig>) {
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
     let storage =
@@ -41,7 +40,7 @@ async fn gen_head_chain(
         )
     };
     let sync_metadata = SyncMetadata::new(node_config.clone());
-    let chain = ChainActor::<Executor, DummyConsensus>::launch(
+    let chain = ChainActor::<DummyConsensus>::launch(
         node_config.clone(),
         startup_info.clone(),
         storage.clone(),
@@ -62,7 +61,7 @@ async fn gen_head_chain(
                 txpool.clone(),
             )
             .unwrap();
-            let block_chain = BlockChain::<Executor, DummyConsensus, Storage, TxPoolRef>::new(
+            let block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
                 node_config.clone(),
                 collection
                     .clone()
@@ -177,7 +176,7 @@ async fn test_chain_apply() -> Result<()> {
         storage.clone(),
         txpool.clone(),
     )?;
-    let mut block_chain = BlockChain::<Executor, DummyConsensus, Storage, TxPoolRef>::new(
+    let mut block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
         config.clone(),
         startup_info.head.clone(),
         storage,

@@ -4,7 +4,6 @@ use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
 use crypto::hash::HashValue;
-use executor::TransactionExecutor;
 use futures::sink::SinkExt;
 use logger::prelude::*;
 use network::{NetworkAsyncService, RawRpcRequestMessage};
@@ -21,29 +20,27 @@ use traits::ChainAsyncService;
 use traits::Consensus;
 use types::peer_info::PeerId;
 
-pub struct ProcessActor<E, C>
+pub struct ProcessActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    processor: Arc<Processor<E, C>>,
+    processor: Arc<Processor<C>>,
     self_peer_id: Arc<PeerId>,
     network: NetworkAsyncService,
     bus: Addr<BusActor>,
 }
 
-impl<E, C> ProcessActor<E, C>
+impl<C> ProcessActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn launch(
         peer_id: Arc<PeerId>,
-        chain_reader: ChainActorRef<E, C>,
+        chain_reader: ChainActorRef<C>,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
         state_node_storage: Arc<dyn StateNodeStore>,
-    ) -> Result<Addr<ProcessActor<E, C>>> {
+    ) -> Result<Addr<ProcessActor<C>>> {
         let process_actor = ProcessActor {
             processor: Arc::new(Processor::new(chain_reader, state_node_storage)),
             self_peer_id: peer_id,
@@ -54,9 +51,8 @@ where
     }
 }
 
-impl<E, C> Actor for ProcessActor<E, C>
+impl<C> Actor for ProcessActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Context = Context<Self>;
@@ -74,9 +70,8 @@ where
     }
 }
 
-impl<E, C> Handler<ProcessMessage> for ProcessActor<E, C>
+impl<C> Handler<ProcessMessage> for ProcessActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = ResponseActFuture<Self, Result<()>>;
@@ -97,9 +92,8 @@ where
     }
 }
 
-impl<E, C> Handler<RawRpcRequestMessage> for ProcessActor<E, C>
+impl<C> Handler<RawRpcRequestMessage> for ProcessActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = Result<()>;
@@ -199,22 +193,20 @@ where
 }
 
 /// Process request for syncing block
-pub struct Processor<E, C>
+pub struct Processor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    chain_reader: ChainActorRef<E, C>,
+    chain_reader: ChainActorRef<C>,
     state_node_storage: Arc<dyn StateNodeStore>,
 }
 
-impl<E, C> Processor<E, C>
+impl<C> Processor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn new(
-        chain_reader: ChainActorRef<E, C>,
+        chain_reader: ChainActorRef<C>,
         state_node_storage: Arc<dyn StateNodeStore>,
     ) -> Self {
         Processor {
@@ -224,7 +216,7 @@ where
     }
 
     pub async fn handle_get_hash_by_number_msg(
-        processor: Arc<Processor<E, C>>,
+        processor: Arc<Processor<C>>,
         get_hash_by_number_msg: GetHashByNumberMsg,
     ) -> BatchHashByNumberMsg {
         let mut hashs = Vec::new();
@@ -259,7 +251,7 @@ where
     }
 
     pub async fn handle_get_header_by_hash_msg(
-        processor: Arc<Processor<E, C>>,
+        processor: Arc<Processor<C>>,
         get_header_by_hash_msg: GetDataByHashMsg,
     ) -> BatchHeaderMsg {
         let mut headers = Vec::new();
@@ -276,7 +268,7 @@ where
     }
 
     pub async fn handle_get_body_by_hash_msg(
-        processor: Arc<Processor<E, C>>,
+        processor: Arc<Processor<C>>,
         get_body_by_hash_msg: GetDataByHashMsg,
     ) -> BatchBodyMsg {
         let mut bodies = Vec::new();
@@ -299,7 +291,7 @@ where
     }
 
     pub async fn handle_get_block_info_by_hash_msg(
-        processor: Arc<Processor<E, C>>,
+        processor: Arc<Processor<C>>,
         get_body_by_hash_msg: GetDataByHashMsg,
     ) -> BatchBlockInfo {
         let mut infos = Vec::new();
@@ -317,7 +309,7 @@ where
     }
 
     pub async fn handle_state_node_msg(
-        processor: Arc<Processor<E, C>>,
+        processor: Arc<Processor<C>>,
         nodes_hash: Vec<HashValue>,
     ) -> Vec<(HashValue, Option<StateNode>)> {
         let mut state_nodes = Vec::new();
