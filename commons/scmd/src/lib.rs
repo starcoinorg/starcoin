@@ -154,7 +154,8 @@ where
     commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
     default_action: Box<dyn Fn(App, GlobalOpt, State)>,
     state_initializer: Box<dyn Fn(&GlobalOpt) -> Result<State>>,
-    quit_action: Box<dyn Fn(App, GlobalOpt, State)>,
+    console_start_action: Box<dyn Fn(&App, Arc<GlobalOpt>, Arc<State>)>,
+    console_quit_action: Box<dyn Fn(App, GlobalOpt, State)>,
 }
 
 impl<State, GlobalOpt> CmdContext<State, GlobalOpt>
@@ -170,6 +171,7 @@ where
             |mut app, _opt, _state| {
                 app.print_long_help().expect("print help should success.");
             },
+            |_app, _opt, _state| {},
             |_app, _opt, _state| {
                 println!("quit.");
             },
@@ -177,16 +179,19 @@ where
     }
 
     /// default_action executed when no subcommand is provided.
-    /// quit_action executed when input quit subcommand at console.
+    /// console_start_action executed when start a console.
+    /// console_quit_action executed when input quit subcommand at console.
     // note: D and Q's fn signature is same but is different type.
-    pub fn with_default_action<I, D, Q>(
+    pub fn with_default_action<I, D, S, Q>(
         state_initializer: I,
         default_action: D,
-        quit_action: Q,
+        console_start_action: S,
+        console_quit_action: Q,
     ) -> Self
     where
         I: Fn(&GlobalOpt) -> Result<State> + 'static,
         D: Fn(App, GlobalOpt, State) + 'static,
+        S: Fn(&App, Arc<GlobalOpt>, Arc<State>) + 'static,
         Q: Fn(App, GlobalOpt, State) + 'static,
     {
         //insert console command
@@ -202,7 +207,8 @@ where
             commands: HashMap::new(),
             default_action: Box::new(default_action),
             state_initializer: Box::new(state_initializer),
-            quit_action: Box::new(quit_action),
+            console_start_action: Box::new(console_start_action),
+            console_quit_action: Box::new(console_quit_action),
         }
     }
 
@@ -213,11 +219,13 @@ where
         app.author(crate_authors!("\n"))
     }
 
-    pub fn command<Opt, Action>(mut self, command: Command<State, GlobalOpt, Opt, Action>) -> Self
+    pub fn command<Opt, Action, CMD>(mut self, command: CMD) -> Self
     where
         Opt: StructOpt + 'static,
         Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt> + 'static,
+        CMD: Into<Command<State, GlobalOpt, Opt, Action>> + 'static,
     {
+        let command = command.into();
         let name = command.name();
         if self.commands.contains_key(name) {
             panic!("Command with name {} exist.", name);
@@ -282,16 +290,23 @@ where
             .auto_add_history(true)
             .build();
         //insert quit command
-        self.app = self.app.subcommand(
-            SubCommand::with_name("quit")
-                .aliases(&["exit", "q!"])
-                .help("Quit from console.")
-                .display_order(998),
-        );
+        self.app = self
+            .app
+            .subcommand(
+                SubCommand::with_name("version")
+                    .help("Print app version.")
+                    .display_order(997),
+            )
+            .subcommand(
+                SubCommand::with_name("quit")
+                    .aliases(&["exit", "q!"])
+                    .help("Quit from console.")
+                    .display_order(998),
+            );
         let app_name = self.app.get_name().to_string();
         let global_opt = Arc::new(global_opt);
         let state = Arc::new(state);
-
+        self.console_start_action.as_ref()(&self.app, global_opt.clone(), state.clone());
         let mut rl = Editor::<()>::with_config(config);
         let prompt = format!("{}% ", app_name);
         loop {
@@ -308,13 +323,16 @@ where
                             let state = Arc::try_unwrap(state)
                                 .ok()
                                 .expect("unwrap state must success when quit.");
-                            self.quit_action.as_ref()(self.app, global_opt, state);
+                            self.console_quit_action.as_ref()(self.app, global_opt, state);
                             break;
                         }
                         "help" => {
                             self.app
                                 .print_long_help()
                                 .expect("print help should success.");
+                        }
+                        "version" => {
+                            println!("{}", LONG_VERSION.as_str());
                         }
                         "console" => continue,
                         "" => continue,
@@ -471,14 +489,13 @@ where
         &self.app
     }
 
-    pub fn subcommand<SubOpt, SubAction>(
-        mut self,
-        subcommand: Command<State, GlobalOpt, SubOpt, SubAction>,
-    ) -> Self
+    pub fn subcommand<SubOpt, SubAction, CMD>(mut self, subcommand: CMD) -> Self
     where
         SubOpt: StructOpt + 'static,
-        SubAction: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = SubOpt>,
+        SubAction: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = SubOpt> + 'static,
+        CMD: Into<Command<State, GlobalOpt, SubOpt, SubAction>> + 'static,
     {
+        let subcommand = subcommand.into();
         let name = subcommand.name();
         if self.subcommands.contains_key(name) {
             panic!("Subcommand with name {} exist.", name);
