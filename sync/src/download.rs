@@ -15,11 +15,11 @@ use crypto::HashValue;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::NetworkAsyncService;
-use network_p2p_api::sync_messages::{
+use starcoin_state_tree::StateNodeStore;
+use starcoin_sync_api::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DirectSendMessage, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber,
 };
-use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::SyncMetadata;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};

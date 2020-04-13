@@ -8,13 +8,13 @@ use crypto::hash::HashValue;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::RawRpcRequestMessage;
+use starcoin_canonical_serialization::SCSCodec;
+use starcoin_state_tree::{StateNode, StateNodeStore};
 /// Sync message which inbound
-use network_p2p_api::sync_messages::{
+use starcoin_sync_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
     GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, SyncRpcRequest,
 };
-use starcoin_canonical_serialization::SCSCodec;
-use starcoin_state_tree::{StateNode, StateNodeStore};
 use std::sync::Arc;
 use traits::ChainAsyncService;
 use traits::Consensus;

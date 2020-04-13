@@ -4,12 +4,12 @@ use crypto::hash::HashValue;
 use futures::channel::mpsc::Sender;
 use futures::sink::SinkExt;
 use network::NetworkAsyncService;
-use network_p2p_api::sync_messages::{
+use starcoin_canonical_serialization::SCSCodec;
+use starcoin_state_tree::StateNode;
+use starcoin_sync_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, DataType, GetDataByHashMsg,
     GetHashByNumberMsg, SyncRpcRequest, SyncRpcResponse,
 };
-use starcoin_canonical_serialization::SCSCodec;
-use starcoin_state_tree::StateNode;
 use types::peer_info::PeerId;
 
 async fn do_request(
