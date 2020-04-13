@@ -2,18 +2,17 @@
 use crate::pool::TTLPool;
 use actix::prelude::*;
 use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, ResponseActFuture};
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use bus::{Broadcast, BusActor};
 use chain::ChainActorRef;
 use futures::channel::mpsc;
 use parking_lot::RwLock;
 // use itertools;
-use crate::helper::send_sync_request;
+use crate::helper::{get_hash_by_number, send_sync_request};
 use crate::state_sync::StateSyncTaskActor;
 use config::NodeConfig;
 use crypto::HashValue;
 use executor::TransactionExecutor;
-use futures::executor::block_on;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_p2p_api::sync_messages::{
@@ -242,44 +241,35 @@ where
                             .unwrap()
                             .number();
 
-                        let ancestor = if let Some(hash_with_number) = Downloader::find_ancestor(
+                        if let Some(hash_with_number) = Downloader::find_ancestor(
                             downloader.clone(),
                             best_peer.get_peer_id(),
                             network.clone(),
                             begin_number,
                         )
-                        .await
+                        .await?
                         {
-                            hash_with_number.number
-                        } else {
-                            0
-                        };
+                            let ancestor = hash_with_number.number;
 
-                        // 2. pivot
-                        let latest_number = best_peer.get_block_number();
-                        let min_behind = if main_network {
-                            MAIN_MIN_BLOCKS_BEHIND
-                        } else {
-                            MIN_BLOCKS_BEHIND
-                        };
-                        if (ancestor + min_behind) <= latest_number {
-                            let pivot = latest_number - min_behind;
+                            // 2. pivot
+                            let latest_number = best_peer.get_block_number();
+                            let min_behind = if main_network {
+                                MAIN_MIN_BLOCKS_BEHIND
+                            } else {
+                                MIN_BLOCKS_BEHIND
+                            };
+                            if (ancestor + min_behind) <= latest_number {
+                                let pivot = latest_number - min_behind;
 
-                            // 3. get pivot hash
-                            let mut numbers: Vec<BlockNumber> = Vec::new();
-                            numbers.push(pivot);
-                            let get_hash_by_number_req = SyncRpcRequest::GetHashByNumberMsg(
-                                ProcessMessage::GetHashByNumberMsg(GetHashByNumberMsg { numbers }),
-                            );
-                            if let SyncRpcResponse::BatchHashByNumberMsg(
-                                mut batch_hash_by_number_msg,
-                            ) = send_sync_request(
-                                &network,
-                                best_peer.get_peer_id(),
-                                get_hash_by_number_req.clone(),
-                            )
-                            .await?
-                            {
+                                // 3. get pivot hash
+                                let mut numbers: Vec<BlockNumber> = Vec::new();
+                                numbers.push(pivot);
+                                let mut batch_hash_by_number_msg = get_hash_by_number(
+                                    &network,
+                                    best_peer.get_peer_id(),
+                                    GetHashByNumberMsg { numbers },
+                                )
+                                .await?;
                                 // 4. get pivot header
                                 let hash_with_number =
                                     batch_hash_by_number_msg.hashs.pop().unwrap();
@@ -340,7 +330,11 @@ where
                                     }
                                 }
                             }
+                        } else {
+                            warn!("{:?}", "find_ancestor return none.");
                         }
+                    } else {
+                        info!("{:?}", "self is best peer.");
                     }
                 } else {
                     warn!("{:?}", "best peer is none.");
@@ -364,131 +358,115 @@ where
     ) {
         Arbiter::spawn(async move {
             debug!("begin sync.");
-            if let Some(best_peer) = network.best_peer().await.unwrap() {
-                info!("peers: {:?}, {:?}", self_peer_id, best_peer.get_peer_id());
-                if self_peer_id != best_peer.get_peer_id() {
-                    let mut begin_number = downloader
-                        .chain_reader
-                        .clone()
-                        .master_head_header()
-                        .await
-                        .unwrap()
-                        .number();
+            if let Err(e) =
+                Self::sync_block_from_best_peer_inner(self_peer_id, downloader, network).await
+            {
+                error!("error: {:?}", e);
+            } else {
+                let _ = bus
+                    .send(Broadcast {
+                        msg: SystemEvents::SyncDone(),
+                    })
+                    .await;
+                debug!("end sync.");
+            };
 
-                    let hash_with_number = Downloader::find_ancestor(
+            syncing.store(false, Ordering::Relaxed);
+        });
+    }
+
+    async fn sync_block_from_best_peer_inner(
+        self_peer_id: PeerId,
+        downloader: Arc<Downloader<E, C>>,
+        network: NetworkAsyncService,
+    ) -> Result<()> {
+        if let Some(best_peer) = network.best_peer().await? {
+            info!("peers: {:?}, {:?}", self_peer_id, best_peer.get_peer_id());
+            if self_peer_id != best_peer.get_peer_id() {
+                if let Some(header) = downloader.chain_reader.clone().master_head_header().await {
+                    let mut begin_number = header.number();
+
+                    if let Some(hash_number) = Downloader::find_ancestor(
                         downloader.clone(),
                         best_peer.get_peer_id(),
                         network.clone(),
                         begin_number,
                     )
-                    .await;
+                    .await?
+                    {
+                        begin_number = hash_number.number + 1;
+                        loop {
+                            //1. sync hash
+                            if let Some((get_hash_by_number_msg, end, next_number)) =
+                                Downloader::<E, C>::send_get_hash_by_number_msg_forward(
+                                    network.clone(),
+                                    best_peer.get_peer_id(),
+                                    begin_number,
+                                )
+                                .await?
+                            {
+                                begin_number = next_number;
+                                let batch_hash_by_number_msg = get_hash_by_number(
+                                    &network,
+                                    best_peer.get_peer_id(),
+                                    get_hash_by_number_msg,
+                                )
+                                .await?;
 
-                    debug!("hash_with_number:{:?}", hash_with_number);
-                    match hash_with_number {
-                        Some(hash_number) => {
-                            begin_number = hash_number.number + 1;
-                            loop {
-                                //1. sync hash
-                                let send_get_hash_by_number_msg =
-                                    Downloader::<E, C>::send_get_hash_by_number_msg_forward(
-                                        network.clone(),
-                                        best_peer.get_peer_id(),
-                                        begin_number,
-                                    )
-                                    .await;
-
-                                info!(
-                                    "get_hash_by_number_msg:{:?}, forward",
-                                    send_get_hash_by_number_msg
+                                Downloader::handle_batch_hash_by_number_msg(
+                                    downloader.clone(),
+                                    best_peer.get_peer_id(),
+                                    batch_hash_by_number_msg,
                                 );
 
-                                match send_get_hash_by_number_msg {
-                                    Some((get_hash_by_number_msg, end, next_number)) => {
-                                        begin_number = next_number;
-
-                                        let get_hash_by_number_req =
-                                            SyncRpcRequest::GetHashByNumberMsg(
-                                                ProcessMessage::GetHashByNumberMsg(
-                                                    get_hash_by_number_msg,
-                                                ),
-                                            );
-
-                                        if let SyncRpcResponse::BatchHashByNumberMsg(
-                                            batch_hash_by_number_msg,
-                                        ) = send_sync_request(
-                                            &network,
-                                            best_peer.get_peer_id(),
-                                            get_hash_by_number_req.clone(),
-                                        )
+                                if let Some(get_data_by_hash_msg) =
+                                    Downloader::send_get_header_by_hash_msg(downloader.clone())
                                         .await
-                                        .expect("send_request 1 err.")
-                                        {
-                                            Downloader::handle_batch_hash_by_number_msg(
-                                                downloader.clone(),
-                                                best_peer.get_peer_id(),
-                                                batch_hash_by_number_msg,
-                                            );
-                                        }
+                                {
+                                    let get_data_by_hash_req = SyncRpcRequest::GetDataByHashMsg(
+                                        ProcessMessage::GetDataByHashMsg(get_data_by_hash_msg),
+                                    );
 
-                                        if let Some(get_data_by_hash_msg) =
-                                            Downloader::send_get_header_by_hash_msg(
-                                                downloader.clone(),
-                                            )
-                                            .await
-                                        {
-                                            let get_data_by_hash_req =
-                                                SyncRpcRequest::GetDataByHashMsg(
-                                                    ProcessMessage::GetDataByHashMsg(
-                                                        get_data_by_hash_msg,
-                                                    ),
-                                                );
-
-                                            if let SyncRpcResponse::BatchHeaderAndBodyMsg(
-                                                headers,
-                                                bodies,
-                                                infos,
-                                            ) = send_sync_request(
-                                                &network,
-                                                best_peer.get_peer_id(),
-                                                get_data_by_hash_req.clone(),
-                                            )
-                                            .await
-                                            .expect("send_request 2 err.")
-                                            {
-                                                Downloader::do_blocks(
-                                                    downloader.clone(),
-                                                    headers.headers,
-                                                    bodies.bodies,
-                                                    infos.infos,
-                                                )
-                                                .await;
-                                            }
-                                        }
-
-                                        if end {
-                                            break;
-                                        }
-                                    }
-                                    _ => {
-                                        break;
+                                    if let SyncRpcResponse::BatchHeaderAndBodyMsg(
+                                        headers,
+                                        bodies,
+                                        infos,
+                                    ) = send_sync_request(
+                                        &network,
+                                        best_peer.get_peer_id(),
+                                        get_data_by_hash_req.clone(),
+                                    )
+                                    .await?
+                                    {
+                                        Downloader::do_blocks(
+                                            downloader.clone(),
+                                            headers.headers,
+                                            bodies.bodies,
+                                            infos.infos,
+                                        )
+                                        .await;
                                     }
                                 }
+
+                                if end {
+                                    break;
+                                }
+                            } else {
+                                break;
                             }
                         }
-                        _ => {
-                            warn!("find ancestor is none.");
-                        }
+                    } else {
+                        return Err(format_err!("{:?}", "find ancestor is none."));
                     }
+                } else {
+                    return Err(format_err!("{:?}", "block header is none."));
                 }
-            };
-            let _ = bus
-                .send(Broadcast {
-                    msg: SystemEvents::SyncDone(),
-                })
-                .await;
-            syncing.store(false, Ordering::Relaxed);
-            debug!("end sync.");
-        });
+            }
+        } else {
+            return Err(format_err!("{:?}", "best peer is none."));
+        }
+
+        Ok(())
     }
 }
 
@@ -524,16 +502,14 @@ where
     }
 
     /// for ancestors
-    pub async fn send_get_hash_by_number_msg_backward(
+    pub async fn get_hash_by_number_msg_backward(
         network: NetworkAsyncService,
         peer_id: PeerId,
         begin_number: u64,
-    ) -> Option<(GetHashByNumberMsg, bool, u64)> {
+    ) -> Result<Option<(GetHashByNumberMsg, bool, u64)>> {
         //todo：binary search
 
-        if let Some(peer_info) =
-            block_on(async move { network.get_peer(&peer_id.into()).await.unwrap() })
-        {
+        if let Some(peer_info) = network.get_peer(&peer_id.clone().into()).await? {
             let number = peer_info.get_block_number();
             info!(
                 "sync with peer {:?} : latest number: {} , begin number : {}",
@@ -563,21 +539,22 @@ where
                     "best peer backward number : {}, next number : {}",
                     number, next_number
                 );
-                return Some((GetHashByNumberMsg { numbers }, end, next_number));
+                Ok(Some((GetHashByNumberMsg { numbers }, end, next_number)))
+            } else {
+                warn!("GetHashByNumberMsg is none.");
+                Ok(None)
             }
+        } else {
+            Err(format_err!("peer {:?} not exist.", peer_id))
         }
-        warn!("GetHashByNumberMsg is none.");
-        None
     }
 
     pub async fn send_get_hash_by_number_msg_forward(
         network: NetworkAsyncService,
         peer_id: PeerId,
         begin_number: u64,
-    ) -> Option<(GetHashByNumberMsg, bool, u64)> {
-        if let Some(peer_info) =
-            block_on(async move { network.get_peer(&peer_id.into()).await.unwrap() })
-        {
+    ) -> Result<Option<(GetHashByNumberMsg, bool, u64)>> {
+        if let Some(peer_info) = network.get_peer(&peer_id.clone().into()).await? {
             let number = peer_info.get_block_number();
             if begin_number < number {
                 let mut numbers = Vec::new();
@@ -601,10 +578,13 @@ where
                     "best peer forward number : {}, next number : {}",
                     number, next_number
                 );
-                return Some((GetHashByNumberMsg { numbers }, end, next_number));
+                Ok(Some((GetHashByNumberMsg { numbers }, end, next_number)))
+            } else {
+                Ok(None)
             }
+        } else {
+            Err(format_err!("peer {:?} not exist.", peer_id))
         }
-        None
     }
 
     pub async fn find_ancestor(
@@ -612,59 +592,43 @@ where
         peer_id: PeerId,
         network: NetworkAsyncService,
         block_number: BlockNumber,
-    ) -> Option<HashWithNumber> {
+    ) -> Result<Option<HashWithNumber>> {
         let mut hash_with_number = None;
         let mut begin_number = block_number;
         loop {
-            let send_get_hash_by_number_msg =
-                Downloader::<E, C>::send_get_hash_by_number_msg_backward(
+            if let Some((get_hash_by_number_msg, end, next_number)) =
+                Downloader::<E, C>::get_hash_by_number_msg_backward(
                     network.clone(),
                     peer_id.clone(),
                     begin_number,
                 )
+                .await?
+            {
+                begin_number = next_number;
+                info!(
+                    "peer: {:?} , numbers : {}",
+                    peer_id.clone(),
+                    get_hash_by_number_msg.numbers.len()
+                );
+                let batch_hash_by_number_msg =
+                    get_hash_by_number(&network, peer_id.clone(), get_hash_by_number_msg).await?;
+                debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
+                hash_with_number = Downloader::handle_hash_by_number_msg(
+                    downloader.clone(),
+                    peer_id.clone(),
+                    batch_hash_by_number_msg,
+                )
                 .await;
 
-            info!(
-                "get_hash_by_number_msg:{:?}, backward",
-                send_get_hash_by_number_msg
-            );
-            match send_get_hash_by_number_msg {
-                Some((get_hash_by_number_msg, end, next_number)) => {
-                    begin_number = next_number;
-                    info!(
-                        "peer: {:?} , numbers : {}",
-                        peer_id.clone(),
-                        get_hash_by_number_msg.numbers.len()
-                    );
-                    let get_hash_by_number_req = SyncRpcRequest::GetHashByNumberMsg(
-                        ProcessMessage::GetHashByNumberMsg(get_hash_by_number_msg),
-                    );
-
-                    if let SyncRpcResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) =
-                        send_sync_request(&network, peer_id.clone(), get_hash_by_number_req.clone())
-                            .await
-                            .expect("send_request 1 err.")
-                    {
-                        debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
-                        hash_with_number = Downloader::handle_hash_by_number_msg(
-                            downloader.clone(),
-                            peer_id.clone(),
-                            batch_hash_by_number_msg,
-                        )
-                        .await;
-                    }
-
-                    if end || hash_with_number.is_some() {
-                        break;
-                    }
-                }
-                _ => {
+                if end || hash_with_number.is_some() {
                     break;
                 }
+            } else {
+                break;
             }
         }
 
-        hash_with_number
+        Ok(hash_with_number)
     }
 
     pub async fn handle_hash_by_number_msg(
