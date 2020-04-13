@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use clap::{App, ArgMatches, SubCommand};
+use clap::{crate_authors, crate_version, App, ArgMatches, SubCommand};
+use git_version::git_version;
+use lazy_static::lazy_static;
 use rustyline::{config::CompletionType, error::ReadlineError, Config, Editor};
 use serde::export::PhantomData;
 use std::collections::HashMap;
@@ -138,6 +140,11 @@ where
     }
 }
 
+static VERSION: &str = crate_version!();
+static GIT_VERSION: &str = git_version!();
+lazy_static! {
+    static ref LONG_VERSION: String = format!("{} (build:{})", VERSION, GIT_VERSION);
+}
 pub struct CmdContext<State, GlobalOpt>
 where
     State: 'static,
@@ -184,6 +191,9 @@ where
     {
         //insert console command
         let mut app = GlobalOpt::clap();
+        app = app.version(VERSION);
+        app = app.long_version(LONG_VERSION.as_str());
+        app = Self::set_app_author(app);
         app = app.subcommand(
             SubCommand::with_name("console").help("Start an interactive command console"),
         );
@@ -194,6 +204,13 @@ where
             state_initializer: Box::new(state_initializer),
             quit_action: Box::new(quit_action),
         }
+    }
+
+    //remove this after clap upgrade
+    //use of deprecated item 'std::sync::ONCE_INIT': the `new` function is now preferred
+    #[allow(deprecated)]
+    fn set_app_author<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
+        app.author(crate_authors!("\n"))
     }
 
     pub fn command<Opt, Action>(mut self, command: Command<State, GlobalOpt, Opt, Action>) -> Self
