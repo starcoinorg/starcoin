@@ -3,7 +3,7 @@ address 0x0:
 // The module for the account resource that governs every Libra account
 module LibraAccount {
     use 0x0::AddressUtil;
-//    use 0x0::Hash;
+    use 0x0::Hash;
     use 0x0::LBR;
     use 0x0::Libra;
 //    use 0x0::LibraTransactionTimeout;
@@ -452,10 +452,10 @@ module LibraAccount {
         let sender_account = borrow_global_mut<T>(transaction_sender);
 
         // Check that the hash of the transaction's public key matches the account's auth key
-//        Transaction::assert(
-//            Hash::sha3_256(txn_public_key) == *&sender_account.authentication_key,
-//            2
-//        );
+        Transaction::assert(
+            Hash::sha3_256(txn_public_key) == *&sender_account.authentication_key,
+            2
+        );
 
         // Check that the account has enough balance for all of the gas
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;

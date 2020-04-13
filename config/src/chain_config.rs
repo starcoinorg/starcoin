@@ -6,7 +6,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{ed25519::*, ValidKeyStringExt, PrivateKey, Uniform};
+use starcoin_crypto::{ed25519::*, PrivateKey, Uniform, ValidKeyStringExt};
 use starcoin_types::U256;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;

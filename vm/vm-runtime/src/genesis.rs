@@ -5,15 +5,12 @@ use crate::gas::initial_gas_schedule;
 use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
-use crypto::ed25519::*;
-use crypto::HashValue;
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-    PrivateKey, Uniform, ValidKey,
+    PrivateKey, Uniform,
 };
 use libra_state_view::StateView;
 use libra_types::access_path::AccessPath;
-use logger::prelude::*;
 use move_core_types::identifier::Identifier;
 use move_vm_runtime::MoveVM;
 use move_vm_state::{
@@ -26,8 +23,8 @@ use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
 use stdlib::{stdlib_modules, StdLibOptions};
+use types::account_config;
 use types::transaction::authenticator::AuthenticationKey;
-use types::{account_config, state_set::ChainStateSet};
 use vm::{
     access::ModuleAccess,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
@@ -292,8 +289,7 @@ fn create_and_initialize_main_accounts(
             )
             .expect("Failure minting to association");
 
-        let association_auth_key =
-            AuthenticationKey::ed25519(&pre_mine_config.public_key).to_vec();
+        let association_auth_key = AuthenticationKey::ed25519(&pre_mine_config.public_key).to_vec();
         move_vm
             .execute_function(
                 &ACCOUNT_MODULE,

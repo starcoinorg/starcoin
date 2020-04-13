@@ -275,6 +275,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         0,
         1000,
     );
+
     let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
     let output = Executor::execute_transaction(&config, &chain_state, txn2).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
@@ -338,5 +339,19 @@ fn get_balance(address: AccountAddress, state_db: &dyn ChainState) -> u64 {
         Some(b) => BalanceResource::make_from(b.as_slice())
             .expect("decode balance resource should ok")
             .coin(),
+    }
+}
+
+fn get_auth_key(addr: AccountAddress, chain_state: &dyn ChainState) -> Vec<u8> {
+    let access_path = AccessPath::new_for_account(addr);
+    let state = chain_state
+        .get(&access_path)
+        .expect("read account state should ok");
+    match state {
+        None => vec![],
+        Some(s) => AccountResource::make_from(&s)
+            .expect("account resource decode ok")
+            .authentication_key()
+            .to_vec(),
     }
 }

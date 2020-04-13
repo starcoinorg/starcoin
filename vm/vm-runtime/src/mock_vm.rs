@@ -3,11 +3,10 @@
 
 use crate::chain_state::StateStore;
 use anyhow::Result;
-use starcoin_config::VMConfig;
-use crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use crypto::keygen::KeyGen;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
+use starcoin_config::VMConfig;
 use starcoin_state_api::ChainState;
 use std::convert::TryInto;
 use types::account_config::lbr_type_tag;
@@ -21,8 +20,6 @@ use types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
-
-type KeyPair = crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
 enum MockTransaction {
     Mint {
@@ -112,6 +109,7 @@ impl MockVM {
         match txn {
             Transaction::UserTransaction(txn) => match decode_transaction(&txn) {
                 MockTransaction::Mint { sender, amount } => {
+                    let _temp = amount;
                     let access_path = AccessPath::new_for_account(sender);
                     let account_resource: AccountResource = state_store
                         .get_from_statedb(&access_path)?
@@ -132,14 +130,15 @@ impl MockVM {
                     recipient,
                     amount,
                 } => {
+                    let _temp = amount;
                     let access_path_sender = AccessPath::new_for_account(sender);
                     let access_path_receiver = AccessPath::new_for_account(recipient);
 
-                    let account_resource_sender: AccountResource = state_store
+                    let _account_resource_sender: AccountResource = state_store
                         .get_from_statedb(&access_path_sender)?
                         .expect("txn sender must exist.")
                         .try_into()?;
-                    let account_resource_receiver: AccountResource = state_store
+                    let _account_resource_receiver: AccountResource = state_store
                         .get_from_statedb(&access_path_receiver)
                         .and_then(|blob| match blob {
                             Some(blob) => Ok(blob),
@@ -187,7 +186,7 @@ impl MockVM {
             Transaction::BlockMetadata(block_metadata) => {
                 let (_id, _timestamp, author, _auth) = block_metadata.into_inner().unwrap();
                 let access_path = AccessPath::new_for_account(author);
-                let account_resource: AccountResource = state_store
+                let _account_resource: AccountResource = state_store
                     .get_from_statedb(&access_path)
                     .and_then(|blob| match blob {
                         Some(blob) => Ok(blob),

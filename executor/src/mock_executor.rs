@@ -40,9 +40,9 @@ impl MockExecutor {
         MockExecutor {}
     }
 
-    fn mint_for(chain_state: &dyn ChainState, account: AccountAddress, amount: u64) -> Result<()> {
+    fn mint_for(chain_state: &dyn ChainState, account: AccountAddress, _amount: u64) -> Result<()> {
         let access_path = AccessPath::new_for_account(account);
-        let account_resource: AccountResource = chain_state
+        let _account_resource: AccountResource = chain_state
             .get(&access_path)
             .and_then(|blob| match blob {
                 Some(blob) => Ok(blob),

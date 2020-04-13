@@ -5,7 +5,8 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::{test_utils::KeyPair, Uniform};
-use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct WalletAccount {
@@ -28,7 +29,7 @@ impl WalletAccount {
     }
 
     pub fn get_auth_key(&self) -> AuthenticationKey {
-        AuthenticationKey::from_public_key(&self.public_key)
+        AuthenticationKey::ed25519(&self.public_key)
     }
 
     pub fn address(&self) -> &AccountAddress {

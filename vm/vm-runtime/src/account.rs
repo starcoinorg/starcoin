@@ -10,14 +10,14 @@ use move_vm_types::{
     loaded_data::types::{StructType, Type},
     values::{Struct, Value},
 };
-use rand::{Rng, SeedableRng};
 use std::time::Duration;
 use types::{
-    account_address::{AccountAddress, AuthenticationKey},
+    account_address::AccountAddress,
     account_config,
-    language_storage::{StructTag, TypeTag},
+    language_storage::TypeTag,
     transaction::{
-        RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
+        authenticator::AuthenticationKey, RawUserTransaction, Script, SignedUserTransaction,
+        TransactionArgument, TransactionPayload,
     },
 };
 
@@ -32,9 +32,9 @@ pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub struct Account {
     addr: AccountAddress,
     /// The current private key for this account.
-    privkey: Ed25519PrivateKey,
+    pub privkey: Ed25519PrivateKey,
     /// The current public key for this account.
-    pubkey: Ed25519PublicKey,
+    pub pubkey: Ed25519PublicKey,
 }
 
 impl Account {
@@ -81,14 +81,12 @@ impl Account {
     ///
     /// This is the same as the account's address if the keys have never been rotated.
     pub fn auth_key(&self) -> Vec<u8> {
-        AuthenticationKey::from_public_key(&self.pubkey).to_vec()
+        AuthenticationKey::ed25519(&self.pubkey).to_vec()
     }
 
     /// Return the first 16 bytes of the account's auth key
     pub fn auth_key_prefix(&self) -> Vec<u8> {
-        AuthenticationKey::from_public_key(&self.pubkey)
-            .prefix()
-            .to_vec()
+        AuthenticationKey::ed25519(&self.pubkey).prefix().to_vec()
     }
 
     /// Returns a [`SignedUserTransaction`] with a payload and this account as the sender.
