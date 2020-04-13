@@ -29,10 +29,11 @@ use tokio_compat::runtime::Runtime;
 mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 enum ConnSource {
-    Ipc(PathBuf),
+    Ipc(PathBuf, Arc<Reactor>),
     Http,
     Local,
 }
@@ -57,9 +58,8 @@ pub enum ConnError {
 
 impl ConnectionProvider {
     async fn get_rpc_channel(&self) -> anyhow::Result<RpcChannel, ConnError> {
-        let reactor = Reactor::new().unwrap();
         match &self.conn_source {
-            ConnSource::Ipc(sock_path) => {
+            ConnSource::Ipc(sock_path, reactor) => {
                 let conn_fut = ipc::connect(sock_path, &reactor.handle())?;
                 conn_fut.compat().await.map_err(|e| ConnError::RpcError(e))
             }
@@ -118,7 +118,11 @@ impl RpcClient {
         let fut = ipc::connect(sock_path, &reactor.handle())?;
         let client_inner = rt.block_on(fut.map_err(map_err))?;
 
-        Ok(Self::new(ConnSource::Ipc(path), client_inner, rt))
+        Ok(Self::new(
+            ConnSource::Ipc(path, Arc::new(reactor)),
+            client_inner,
+            rt,
+        ))
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
