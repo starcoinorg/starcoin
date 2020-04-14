@@ -13,10 +13,14 @@ pub trait CommandAction {
     type State;
     type GlobalOpt: StructOpt;
     type Opt: StructOpt;
+    type ReturnItem: serde::Serialize;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()>;
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem>;
 
-    fn into_cmd(self) -> Command<Self::State, Self::GlobalOpt, Self::Opt, Self>
+    fn into_cmd(self) -> Command<Self::State, Self::GlobalOpt, Self::Opt, Self::ReturnItem, Self>
     where
         Self: std::marker::Sized,
     {
@@ -24,23 +28,25 @@ pub trait CommandAction {
     }
 }
 
-pub struct FnCommandAction<State, GlobalOpt, Opt>
+pub struct FnCommandAction<State, GlobalOpt, Opt, ReturnItem>
 where
     State: 'static,
     GlobalOpt: StructOpt + 'static,
     Opt: StructOpt + 'static,
+    ReturnItem: serde::Serialize,
 {
-    action: Box<dyn Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<()>>,
+    action: Box<dyn Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<ReturnItem>>,
 }
 
-impl<State, GlobalOpt, Opt> FnCommandAction<State, GlobalOpt, Opt>
+impl<State, GlobalOpt, Opt, ReturnItem> FnCommandAction<State, GlobalOpt, Opt, ReturnItem>
 where
     GlobalOpt: StructOpt,
     Opt: StructOpt,
+    ReturnItem: serde::Serialize,
 {
     pub fn new<A>(action: A) -> Self
     where
-        A: Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<()> + 'static,
+        A: Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<ReturnItem> + 'static,
     {
         Self {
             action: Box::new(action),
@@ -48,16 +54,22 @@ where
     }
 }
 
-impl<State, GlobalOpt, Opt> CommandAction for FnCommandAction<State, GlobalOpt, Opt>
+impl<State, GlobalOpt, Opt, ReturnItem> CommandAction
+    for FnCommandAction<State, GlobalOpt, Opt, ReturnItem>
 where
     GlobalOpt: StructOpt,
     Opt: StructOpt,
+    ReturnItem: serde::Serialize,
 {
     type State = State;
     type GlobalOpt = GlobalOpt;
     type Opt = Opt;
+    type ReturnItem = ReturnItem;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
         self.action.as_ref()(ctx)
     }
 }
@@ -78,8 +90,12 @@ where
     type State = State;
     type GlobalOpt = GlobalOpt;
     type Opt = EmptyOpt;
+    type ReturnItem = ();
 
-    fn run(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(
+        &self,
+        _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
         Ok(())
     }
 }

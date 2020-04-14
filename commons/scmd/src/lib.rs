@@ -4,7 +4,10 @@
 mod action;
 mod command;
 mod context;
+mod error;
+mod result;
 
 pub use action::*;
 pub use command::*;
 pub use context::*;
+pub use result::*;

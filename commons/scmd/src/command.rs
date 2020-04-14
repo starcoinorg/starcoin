@@ -1,10 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::error::CmdError;
 use crate::{CommandAction, EmptyOpt, FnCommandAction, NoneAction};
 use anyhow::Result;
 use clap::{App, ArgMatches};
 use serde::export::PhantomData;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -19,7 +21,7 @@ where
         state: Arc<State>,
         global_opt: Arc<GlobalOpt>,
         arg_matches: &ArgMatches<'_>,
-    ) -> Result<()>;
+    ) -> Result<Value>;
 
     fn get_app(&mut self) -> &mut App<'static, 'static>;
 }
@@ -60,12 +62,14 @@ where
     }
 }
 
-pub struct Command<State, GlobalOpt, Opt, Action>
+pub struct Command<State, GlobalOpt, Opt, ReturnItem, Action>
 where
     GlobalOpt: StructOpt + 'static,
     State: 'static,
     Opt: StructOpt + 'static,
-    Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt> + 'static,
+    ReturnItem: serde::Serialize + 'static,
+    Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>
+        + 'static,
 {
     app: App<'static, 'static>,
     action: Option<Action>,
@@ -74,7 +78,7 @@ where
     opt_type: PhantomData<Opt>,
 }
 
-impl<State, GlobalOpt> Command<State, GlobalOpt, EmptyOpt, NoneAction<State, GlobalOpt>>
+impl<State, GlobalOpt> Command<State, GlobalOpt, EmptyOpt, (), NoneAction<State, GlobalOpt>>
 where
     GlobalOpt: StructOpt,
 {
@@ -89,14 +93,16 @@ where
     }
 }
 
-impl<State, GlobalOpt, Opt> Command<State, GlobalOpt, Opt, FnCommandAction<State, GlobalOpt, Opt>>
+impl<State, GlobalOpt, Opt, ReturnItem>
+    Command<State, GlobalOpt, Opt, ReturnItem, FnCommandAction<State, GlobalOpt, Opt, ReturnItem>>
 where
     GlobalOpt: StructOpt,
     Opt: StructOpt,
+    ReturnItem: serde::Serialize,
 {
     pub fn with_action_fn<A>(action: A) -> Self
     where
-        A: Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<()> + 'static,
+        A: Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<ReturnItem> + 'static,
     {
         Self {
             app: Opt::clap(),
@@ -108,11 +114,12 @@ where
     }
 }
 
-impl<State, GlobalOpt, Opt, Action> Command<State, GlobalOpt, Opt, Action>
+impl<State, GlobalOpt, Opt, ReturnItem, Action> Command<State, GlobalOpt, Opt, ReturnItem, Action>
 where
     GlobalOpt: StructOpt,
     Opt: StructOpt,
-    Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt>,
+    ReturnItem: serde::Serialize + 'static,
+    Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>,
 {
     pub fn new() -> Self {
         Self {
@@ -142,11 +149,17 @@ where
         &self.app
     }
 
-    pub fn subcommand<SubOpt, SubAction, CMD>(mut self, subcommand: CMD) -> Self
+    pub fn subcommand<SubOpt, SubReturnItem, SubAction, CMD>(mut self, subcommand: CMD) -> Self
     where
         SubOpt: StructOpt + 'static,
-        SubAction: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = SubOpt> + 'static,
-        CMD: Into<Command<State, GlobalOpt, SubOpt, SubAction>> + 'static,
+        SubReturnItem: serde::Serialize + 'static,
+        SubAction: CommandAction<
+                State = State,
+                GlobalOpt = GlobalOpt,
+                Opt = SubOpt,
+                ReturnItem = SubReturnItem,
+            > + 'static,
+        CMD: Into<Command<State, GlobalOpt, SubOpt, SubReturnItem, SubAction>> + 'static,
     {
         let subcommand = subcommand.into();
         let name = subcommand.name();
@@ -166,57 +179,65 @@ where
         !self.subcommands.is_empty()
     }
 
-    fn exec_action(&mut self, ctx: &ExecContext<State, GlobalOpt, Opt>) -> Result<()> {
+    pub fn help_message(&mut self) -> String {
+        let mut help_message = vec![];
+        self.app
+            .write_long_help(&mut help_message)
+            .expect("format help message fail.");
+        String::from_utf8(help_message).expect("help message should utf8")
+    }
+
+    fn exec_action(&mut self, ctx: &ExecContext<State, GlobalOpt, Opt>) -> Result<Value> {
         match &self.action {
             Some(action) => {
-                action.run(ctx)?;
+                let ret = action.run(ctx)?;
+                Ok(serde_json::to_value(ret)?)
             }
-            None => {
-                self.app.print_help()?;
-            }
+            None => Err(anyhow::Error::msg(self.help_message())),
         }
-        Ok(())
     }
 }
 
-impl<State, GlobalOpt, Opt, Action> CommandExec<State, GlobalOpt>
-    for Command<State, GlobalOpt, Opt, Action>
+impl<State, GlobalOpt, Opt, ReturnItem, Action> CommandExec<State, GlobalOpt>
+    for Command<State, GlobalOpt, Opt, ReturnItem, Action>
 where
     GlobalOpt: StructOpt,
     Opt: StructOpt,
-    Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt>,
+    ReturnItem: serde::Serialize + 'static,
+    Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>,
 {
     fn exec(
         &mut self,
         state: Arc<State>,
         global_opt: Arc<GlobalOpt>,
         arg_matches: &ArgMatches<'_>,
-    ) -> Result<()> {
+    ) -> Result<Value> {
         let opt = Arc::new(Opt::from_clap(arg_matches));
         let ctx = ExecContext::new(state, global_opt, opt);
-        if self.has_subcommand() {
+        let value = if self.has_subcommand() {
             let (subcmd_name, subcmd_matches) = arg_matches.subcommand();
             match subcmd_name {
-                "" => {
-                    self.exec_action(&ctx)?;
-                }
+                "" => self.exec_action(&ctx)?,
                 subcmd_name => {
                     let subcmd = self.subcommands.get_mut(subcmd_name);
                     match (subcmd, subcmd_matches) {
                         (Some(subcmd), Some(subcmd_matches)) => {
-                            subcmd.exec(ctx.state, ctx.global_opt, subcmd_matches)?;
+                            subcmd.exec(ctx.state, ctx.global_opt, subcmd_matches)?
                         }
                         _ => {
-                            println!("Can not find subcomamnd: {}", subcmd_name);
-                            self.exec_action(&ctx)?;
+                            return Err(CmdError::InvalidCommand {
+                                cmd: subcmd_name.to_string(),
+                                help: self.help_message(),
+                            }
+                            .into());
                         }
                     }
                 }
             }
         } else {
-            self.exec_action(&ctx)?;
-        }
-        Ok(())
+            self.exec_action(&ctx)?
+        };
+        Ok(value)
     }
 
     fn get_app(&mut self) -> &mut App<'static, 'static> {
@@ -224,11 +245,13 @@ where
     }
 }
 
-impl<C, State, GlobalOpt, Opt> From<C> for Command<C::State, C::GlobalOpt, C::Opt, C>
+impl<C, State, GlobalOpt, Opt, ReturnItem> From<C>
+    for Command<C::State, C::GlobalOpt, C::Opt, C::ReturnItem, C>
 where
     GlobalOpt: StructOpt,
     Opt: StructOpt,
-    C: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt> + 'static,
+    ReturnItem: serde::Serialize,
+    C: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>,
 {
     fn from(action: C) -> Self {
         Command::with_action(action)
