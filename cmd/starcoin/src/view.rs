@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{
-    ed25519::{Ed25519PublicKey, Ed25519Signature},
-    hash::CryptoHash,
-    HashValue,
-};
+use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
 
@@ -24,8 +20,6 @@ pub struct TransactionView {
     pub sequence_number: u64,
     pub gas_unit_price: u64,
     pub max_gas_amount: u64,
-    pub public_key: Ed25519PublicKey,
-    pub signature: Ed25519Signature,
 }
 
 impl From<SignedUserTransaction> for TransactionView {
@@ -36,8 +30,6 @@ impl From<SignedUserTransaction> for TransactionView {
             sequence_number: txn.sequence_number(),
             gas_unit_price: txn.gas_unit_price(),
             max_gas_amount: txn.max_gas_amount(),
-            public_key: txn.public_key(),
-            signature: txn.signature(),
         }
     }
 }
