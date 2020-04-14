@@ -6,9 +6,9 @@ use anyhow::{bail, Result};
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
-use starcoin_executor::executor::Executor;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_logger::LoggerHandle;
 use starcoin_miner::miner_client::MinerClientActor;
 use starcoin_miner::MinerActor;
 use starcoin_network::NetworkActor;
@@ -36,13 +36,17 @@ where
     C: Consensus + 'static,
     H: ConsensusHeader + 'static,
 {
-    _miner_actor: Addr<MinerActor<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>>,
-    _sync_actor: Addr<SyncActor<Executor, C>>,
+    _miner_actor: Addr<MinerActor<C, TxPoolRef, ChainActorRef<C>, Storage, H>>,
+    _sync_actor: Addr<SyncActor<C>>,
     _rpc_actor: Addr<RpcActor>,
     _miner_client: Addr<MinerClientActor<C>>,
 }
 
-pub async fn start<C, H>(config: Arc<NodeConfig>, handle: Handle) -> Result<NodeStartHandle<C, H>>
+pub async fn start<C, H>(
+    config: Arc<NodeConfig>,
+    logger_handle: Arc<LoggerHandle>,
+    handle: Handle,
+) -> Result<NodeStartHandle<C, H>>
 where
     C: Consensus + 'static,
     H: ConsensusHeader + 'static,
@@ -176,6 +180,7 @@ where
         txpool.clone(),
         account_service,
         chain_state_service,
+        Some(logger_handle),
     )?;
     let receiver = if config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
         Some(txpool.clone().subscribe_txns().await?)
@@ -209,16 +214,15 @@ where
         .expect("Subscribe system event error.");
     sync_event_receiver.any(|event| event.is_sync_done()).await;
     info!("Waiting sync finished.");
-    let miner =
-        MinerActor::<C, Executor, TxPoolRef, ChainActorRef<Executor, C>, Storage, H>::launch(
-            config.clone(),
-            bus,
-            storage.clone(),
-            txpool.clone(),
-            chain.clone(),
-            receiver,
-            default_account,
-        )?;
+    let miner = MinerActor::<C, TxPoolRef, ChainActorRef<C>, Storage, H>::launch(
+        config.clone(),
+        bus,
+        storage.clone(),
+        txpool.clone(),
+        chain.clone(),
+        receiver,
+        default_account,
+    )?;
 
     let stratum_server = config.miner.stratum_server;
     let miner_client = MinerClientActor::<C>::new(stratum_server).start();

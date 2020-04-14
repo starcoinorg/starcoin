@@ -3,7 +3,7 @@
 
 use crate::state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
@@ -27,7 +27,7 @@ pub struct TransferOpt {
     amount: u64,
 }
 
-pub struct TransferCommand {}
+pub struct TransferCommand;
 
 impl CommandAction for TransferCommand {
     type State = CliState;
@@ -38,14 +38,13 @@ impl CommandAction for TransferCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let sender = match opt.from {
-            Some(from) => client.account_get(from)?.ok_or(format_err!(
+            Some(from) => client.wallet_get(from)?.ok_or(format_err!(
                 "Can not find WalletAccount by address: {}",
                 from
             ))?,
-            None => {
-                //TODO supported default account.
-                bail!("Please input from account.");
-            }
+            None => client.wallet_default()?.ok_or(format_err!(
+                "Can not find default account, Please input from account."
+            ))?,
         };
         let to = opt.to;
         //TODO check to is onchain
@@ -67,7 +66,7 @@ impl CommandAction for TransferCommand {
             account_resource.sequence_number(),
             opt.amount,
         );
-        let txn = client.account_sign_txn(raw_txn)?;
+        let txn = client.wallet_sign_txn(raw_txn)?;
         println!("Submit txn: {:?}", txn);
         client.submit_transaction(txn)?;
         Ok(())

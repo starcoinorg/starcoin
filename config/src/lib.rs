@@ -33,7 +33,7 @@ mod vm_config;
 
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
-pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig};
+pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG};
 pub use libra_temppath::TempPath;
 pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
@@ -75,15 +75,15 @@ pub struct StarcoinOpt {
     /// P2P network seeds
     pub seeds: Option<Vec<Multiaddr>>,
 
-    #[structopt(name = "dev-period", default_value = "0")]
+    #[structopt(long = "dev-period", default_value = "0")]
     /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
     pub dev_period: u64,
 
-    #[structopt(name = "node-key")]
+    #[structopt(long = "node-key")]
     /// Node network private key, only work for first init.
     pub node_key: Option<String>,
 
-    #[structopt(name = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
+    #[structopt(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
     /// Node network private key file, only work for first init.
     pub node_key_file: Option<PathBuf>,
 }
@@ -339,7 +339,7 @@ pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
     let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
     let seed_buf: [u8; 32] = seed_rng.gen();
     let mut rng0: StdRng = SeedableRng::from_seed(seed_buf);
-    KeyPair::generate_for_testing(&mut rng0)
+    KeyPair::generate(&mut rng0)
 }
 
 pub fn get_available_port() -> u16 {

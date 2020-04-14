@@ -1,24 +1,38 @@
 address 0x0:
 
 module LibraBlock {
-    use 0x0::LibraTimestamp;
+    use 0x0::LBR;
+    use 0x0::LibraAccount;
+    //use 0x0::LibraSystem;
+    //use 0x0::LibraTimestamp;
     use 0x0::Transaction;
     //use 0x0::TransactionFee;
     use 0x0::U64Util;
-    //use 0x0::LibraSystem;
-    use 0x0::LibraAccount;
     use 0x0::Vector;
     use 0x6d696e74::SubsidyConfig;
 
     resource struct BlockMetadata {
       // Height of the current block
-      // TODO: Should we keep the height?
+      // TODO: should we keep the height?
       height: u64,
+
       // Hash of the current block of transactions.
       id: vector<u8>,
 
       // Proposer of the current block.
       proposer: address,
+
+      // Handle where events with the time of new blocks are emitted
+      //new_block_events: LibraAccount::EventHandle<Self::NewBlockEvent>,
+    }
+
+    struct NewBlockEvent {
+      round: u64,
+      proposer: address,
+      previous_block_votes: vector<address>,
+
+      // On-chain time during  he block at the given height
+      time_microseconds: u64,
     }
 
     resource struct SubsidyInfo {
@@ -45,15 +59,13 @@ module LibraBlock {
       // Only callable by the Association address
       Transaction::assert(Transaction::sender() == 0xA550C18, 1);
 
-      // TODO: How should we get the default block metadata? Should it be set in the first block prologue transaction or
-      //       in the genesis?
       move_to_sender<BlockMetadata>(BlockMetadata {
         height: 0,
-        // FIXME: Update this once we have byte vector literals
+	// FIXME: Update this once we have byte vector literals
         id: U64Util::u64_to_bytes(0),
         proposer: 0xA550C18,
+        //new_block_events: LibraAccount::new_event_handle<Self::NewBlockEvent>(),
       });
-      LibraTimestamp::initialize_timer();
     }
 
     fun do_subsidy(auth_key_prefix: vector<u8>) acquires BlockMetadata, SubsidyInfo {
@@ -78,8 +90,8 @@ module LibraBlock {
                 subsidy_info.subsidy_height = subsidy_height;
                 if (subsidy_coin > 0) {
                     Transaction::assert(LibraAccount::exists(subsidy_miner), 6006);
-                    let libra_coin = LibraAccount::withdraw_with_capability(&subsidy_info.withdrawal_capability, subsidy_coin);
-                    LibraAccount::deposit(subsidy_miner, libra_coin);
+                    let libra_coin = LibraAccount::withdraw_with_capability<LBR::T>(&subsidy_info.withdrawal_capability, subsidy_coin);
+                    LibraAccount::deposit<LBR::T>(subsidy_miner, libra_coin);
                 };
                 Vector::remove(&mut subsidy_info.heights, 0);
                 Vector::remove(&mut subsidy_info.miners, 0);
@@ -101,28 +113,30 @@ module LibraBlock {
     //       2. Should the previous block votes be provided from BlockMetadata or should it come from the ValidatorSet
     //          Resource?
     public fun block_prologue(
+        round: u64,
         timestamp: u64,
         new_block_hash: vector<u8>,
-        previous_block_votes: vector<u8>,
+        previous_block_votes: vector<address>,
         proposer: address,
         auth_key_prefix: vector<u8>
     ) acquires BlockMetadata, SubsidyInfo {
       // Can only be invoked by LibraVM privilege.
       Transaction::assert(Transaction::sender() == 0x6d696e74, 33);
 
-      process_block_prologue(timestamp, new_block_hash, previous_block_votes, proposer);
+      process_block_prologue(round, timestamp, new_block_hash, previous_block_votes, proposer);
 
       // Currently distribute once per-block.
       // TODO: Once we have a better on-chain representation of epochs we will make this per-epoch.
-      //TransactionFee::distribute_transaction_fees();
+      //TransactionFee::distribute_transaction_fees<LBR::T>();
       do_subsidy(auth_key_prefix);
     }
 
     // Update the BlockMetadata resource with the new blockmetada coming from the consensus.
     fun process_block_prologue(
+        round: u64,
         timestamp: u64,
         new_block_hash: vector<u8>,
-        previous_block_votes: vector<u8>,
+        previous_block_votes: vector<address>,
         proposer: address
     ) acquires BlockMetadata {
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(0xA550C18);
@@ -134,6 +148,15 @@ module LibraBlock {
         block_metadata_ref.id = new_block_hash;
         block_metadata_ref.proposer = proposer;
         block_metadata_ref.height = block_metadata_ref.height + 1;
+        //LibraAccount::emit_event<NewBlockEvent>(
+        //  &mut block_metadata_ref.new_block_events,
+        //  NewBlockEvent {
+        //    round: round,
+        //    proposer: proposer,
+        //    previous_block_votes: previous_block_votes,
+        //    time_microseconds: timestamp,
+        //  }
+        //);
     }
 
     // Get the current block height

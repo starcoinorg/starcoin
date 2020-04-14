@@ -9,7 +9,6 @@ use std::thread;
 
 #[test]
 fn test_run_node() {
-    starcoin_logger::init_for_test();
     let config = Arc::new(NodeConfig::random_for_test());
     let handle = run_dev_node(config);
     thread::sleep(Duration::from_secs(10));

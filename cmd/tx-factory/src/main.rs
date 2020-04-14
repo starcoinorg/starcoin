@@ -11,8 +11,9 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_rpc_client::RpcClient;
 use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
-use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_wallet_api::WalletAccount;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -65,7 +66,7 @@ fn get_wallet_account(
 ) -> Result<WalletAccount> {
     let account = match account_address {
         None => {
-            let all_account = client.account_list()?;
+            let all_account = client.wallet_list()?;
             let default_account = all_account.into_iter().find(|w| w.is_default);
 
             ensure!(
@@ -74,14 +75,14 @@ fn get_wallet_account(
             );
             default_account.unwrap()
         }
-        Some(a) => match client.account_get(a)? {
+        Some(a) => match client.wallet_get(a)? {
             None => bail!("the specified account does not exists in the starcoin node"),
             Some(w) => w,
         },
     };
 
     // try unlock account
-    client.account_unlock(
+    client.wallet_unlock(
         account.address,
         account_password,
         Duration::from_secs(60 * 10),
@@ -107,7 +108,7 @@ fn main() {
         .map(|k| {
             let k = Ed25519PublicKey::from_encoded_string(&k)
                 .expect("public key should be hex encoded");
-            AuthenticationKey::from_public_key(&k).prefix().to_vec()
+            AuthenticationKey::ed25519(&k).prefix().to_vec()
         })
         .unwrap_or_default();
 
@@ -168,9 +169,12 @@ impl TxnMocker {
         match unlock_time {
             Some(t) if t + self.unlock_duration > Instant::now() => {}
             _ => {
+                // reset first just in case account_unlock fail
+                self.account_unlock_time = None;
+
                 let new_unlock_time = Instant::now();
                 // try unlock account
-                self.client.account_unlock(
+                self.client.wallet_unlock(
                     self.account_address,
                     self.account_password.clone(),
                     self.unlock_duration,
@@ -180,7 +184,14 @@ impl TxnMocker {
             }
         }
 
-        let user_txn = self.client.account_sign_txn(raw_txn)?;
+        let user_txn = match self.client.wallet_sign_txn(raw_txn) {
+            Err(e) => {
+                // sign txn fail, we should unlock again
+                self.account_unlock_time = None;
+                return Err(e);
+            }
+            Ok(txn) => txn,
+        };
         info!(
             "prepare to submit txn, sender:{},seq:{}",
             user_txn.sender(),

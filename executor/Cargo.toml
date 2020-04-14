@@ -18,11 +18,12 @@ scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 state-tree = {path = "../state/state-tree", package="starcoin-state-tree"}
 statedb = {path = "../state/statedb", package="starcoin-statedb"}
 starcoin-state-api = {path="../state/api"}
+starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
 vm-runtime = { package="starcoin-vm-runtime", path = "../vm/vm-runtime"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
 storage = { package="starcoin-storage", path = "../storage"}
 stdlib = { package="stdlib", path = "../vm/stdlib"}
-libra_types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
-libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
+libra_types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 [dev-dependencies]

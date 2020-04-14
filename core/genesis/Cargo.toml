@@ -23,4 +23,4 @@ starcoin-consensus = { path = "../../consensus"}
 starcoin-state-api = { path = "../../state/api"}
 traits = { path = "../../core/traits", package = "starcoin-traits"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
+libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }

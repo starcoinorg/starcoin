@@ -3,7 +3,7 @@
 
 use crate::state::CliState;
 use anyhow::Result;
-use scmd::{CmdContext, Command, CommandAction};
+use scmd::{CmdContext, Command};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
@@ -11,24 +11,28 @@ use std::sync::Arc;
 use starcoin_config::ChainNetwork;
 pub use starcoin_config::StarcoinOpt;
 
-mod account;
 mod debug;
-mod txn;
-
+mod dev;
 mod helper;
+mod txn;
+mod wallet;
+
 pub mod state;
 
 fn run() -> Result<()> {
+    let logger_handle = starcoin_logger::init();
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         |opt| -> Result<CliState> {
-            let logger_handle = starcoin_logger::init();
             info!("Starcoin opts: {:?}", opt);
             let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
+            info!("Final data-dir is : {:?}", config.data_dir());
+            info!(
+                "Attach a new console by command: starcoin -n {} -d {} console",
+                config.net(),
+                config.base.base_data_dir().to_str().unwrap()
+            );
             let ipc_file = config.rpc.get_ipc_file();
             let node_handle = if !ipc_file.exists() {
-                let file_log_path = config.data_dir().join("starcoin.log");
-                info!("Write log to file: {:?}", file_log_path);
-                logger_handle.enable_file(false, file_log_path);
                 let node_handle = match config.net() {
                     ChainNetwork::Dev => starcoin_node::run_dev_node(config.clone()),
                     _ => starcoin_node::run_normal_node(config.clone()),
@@ -41,27 +45,27 @@ fn run() -> Result<()> {
             };
             info!("Try to connect node by ipc: {:?}", ipc_file);
             let client = RpcClient::connect_ipc(ipc_file)?;
-            let state = CliState::new(config, client, logger_handle, node_handle);
+            let state = CliState::new(config, client, node_handle);
             Ok(state)
         },
         |_, _, state| {
-            let (_, _, logger_handle, handle) = state.into_inner();
+            let (_, _, handle) = state.into_inner();
             match handle {
-                Some(handle) => {
-                    // if start node server and no subcommand, wait server and output logger to stderr.
-                    logger_handle.enable_stderr();
-                    match handle.join() {
-                        Err(e) => {
-                            error!("{:?}", e);
-                        }
-                        _ => {}
+                Some(handle) => match handle.join() {
+                    Err(e) => {
+                        error!("{:?}", e);
                     }
-                }
+                    _ => {}
+                },
                 None => {}
             }
         },
+        move |_, _, _| {
+            info!("Start console, disable stderr output.");
+            logger_handle.disable_stderr();
+        },
         |_, _, state| {
-            let (_, _, _, handle) = state.into_inner();
+            let (_, _, handle) = state.into_inner();
             match handle {
                 Some(handle) => match handle.stop() {
                     Err(e) => {
@@ -75,17 +79,18 @@ fn run() -> Result<()> {
     );
     context
         .command(
-            Command::with_name("account")
-                .subcommand(account::CreateCommand {}.into_cmd())
-                .subcommand(account::ShowCommand {}.into_cmd())
-                .subcommand(account::ListCommand {}.into_cmd())
-                .subcommand(account::SignTxnCommand {}.into_cmd())
-                .subcommand(account::UnlockCommand.into_cmd())
-                .subcommand(account::ExportCommand.into_cmd())
-                .subcommand(account::ImportCommand.into_cmd()),
+            Command::with_name("wallet")
+                .subcommand(wallet::CreateCommand)
+                .subcommand(wallet::ShowCommand)
+                .subcommand(wallet::ListCommand)
+                .subcommand(wallet::SignTxnCommand)
+                .subcommand(wallet::UnlockCommand)
+                .subcommand(wallet::ExportCommand)
+                .subcommand(wallet::ImportCommand),
         )
-        .command(Command::with_name("txn").subcommand(txn::TransferCommand {}.into_cmd()))
-        .command(Command::with_name("debug").subcommand(debug::LogLevelCommand {}.into_cmd()))
+        .command(Command::with_name("txn").subcommand(txn::TransferCommand))
+        .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
+        .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))
         .exec()
 }
 

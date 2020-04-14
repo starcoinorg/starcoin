@@ -26,17 +26,17 @@ radix_trie = { version = "0.1.4", default-features = false }
 rand = "0.6.5"
 ref-cast = "1.0"
 serde = { version = "1.0.99", default-features = false }
-thiserror = "1.0"
+thiserror = "1.0.14"
 tiny-keccak = { version = "1.5.0", default-features = false }
 num_enum = "0.4.1"
 actix = "0.9"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
 starcoin-accumulator = { path = "../core/accumulator"}
-libra-types = { git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
+libra-types = { git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 libp2p = "0.16.2"
 logger = {path = "../commons/logger", package="starcoin-logger"}
-move-core-types = {git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
+move-core-types = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 futures = "0.3.4"
 
 

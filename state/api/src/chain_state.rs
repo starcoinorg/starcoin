@@ -6,8 +6,11 @@ use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_types::{
-    access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
-    account_state::AccountState, state_set::ChainStateSet,
+    access_path::AccessPath,
+    account_address::AccountAddress,
+    account_config::{AccountResource, BalanceResource},
+    account_state::AccountState,
+    state_set::ChainStateSet,
 };
 use std::convert::TryFrom;
 
@@ -160,14 +163,13 @@ impl<'a> AccountStateReader<'a> {
 
     /// Get starcoin account balance by address
     pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
-        //TODO read BalanceResource after refactor AccountResource.
         Ok(self
             .reader
-            .get(&AccessPath::new_for_account(*address))
+            .get(&AccessPath::new_for_balance(*address))
             .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(AccountResource::make_from(bytes.as_slice())?)),
+                Some(bytes) => Ok(Some(BalanceResource::make_from(bytes.as_slice())?)),
                 None => Ok(None),
             })?
-            .map(|resource| resource.balance()))
+            .map(|resource| resource.coin()))
     }
 }

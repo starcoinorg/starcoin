@@ -10,7 +10,50 @@ use move_core_types::identifier::{IdentStr, Identifier};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, HashValue, LibraCryptoHash};
 
-pub use libra_types::language_storage::TypeTag;
+//pub use libra_types::language_storage::TypeTag;
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+pub enum TypeTag {
+    Bool,
+    U8,
+    U64,
+    U128,
+    Address,
+    Vector(Box<TypeTag>),
+    Struct(StructTag),
+}
+
+impl Into<libra_types::language_storage::TypeTag> for TypeTag {
+    fn into(self) -> libra_types::language_storage::TypeTag {
+        match self {
+            TypeTag::Bool => libra_types::language_storage::TypeTag::Bool,
+            TypeTag::U8 => libra_types::language_storage::TypeTag::U8,
+            TypeTag::U64 => libra_types::language_storage::TypeTag::U64,
+            TypeTag::U128 => libra_types::language_storage::TypeTag::U128,
+            TypeTag::Address => libra_types::language_storage::TypeTag::Address,
+            TypeTag::Vector(v) => {
+                libra_types::language_storage::TypeTag::Vector(Box::new(v.as_ref().clone().into()))
+            }
+            TypeTag::Struct(s) => libra_types::language_storage::TypeTag::Struct(s.into()),
+        }
+    }
+}
+
+impl From<libra_types::language_storage::TypeTag> for TypeTag {
+    fn from(type_tag: libra_types::language_storage::TypeTag) -> Self {
+        match type_tag {
+            libra_types::language_storage::TypeTag::Bool => TypeTag::Bool,
+            libra_types::language_storage::TypeTag::U8 => TypeTag::U8,
+            libra_types::language_storage::TypeTag::U64 => TypeTag::U64,
+            libra_types::language_storage::TypeTag::U128 => TypeTag::U128,
+            libra_types::language_storage::TypeTag::Address => TypeTag::Address,
+            libra_types::language_storage::TypeTag::Vector(v) => {
+                TypeTag::Vector(Box::new(v.as_ref().clone().into()))
+            }
+            libra_types::language_storage::TypeTag::Struct(s) => TypeTag::Struct(s.into()),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
 pub struct StructTag {
@@ -26,7 +69,7 @@ impl Into<libra_types::language_storage::StructTag> for StructTag {
             address: self.address.into(),
             module: self.module,
             name: self.name,
-            type_params: self.type_params,
+            type_params: self.type_params.into_iter().map(|tag| tag.into()).collect(),
         }
     }
 }
@@ -37,7 +80,11 @@ impl From<libra_types::language_storage::StructTag> for StructTag {
             address: struct_tag.address.into(),
             module: struct_tag.module,
             name: struct_tag.name,
-            type_params: struct_tag.type_params,
+            type_params: struct_tag
+                .type_params
+                .into_iter()
+                .map(|tag| tag.into())
+                .collect(),
         }
     }
 }

@@ -54,3 +54,4 @@ async-trait = "0.1.13"
 stest = {path = "../commons/stest"}
 
 network-p2p-api = {package="network-p2p-api", path="../network-p2p/api"}
+starcoin-sync-api = {package="starcoin-sync-api", path = "../sync/api"}

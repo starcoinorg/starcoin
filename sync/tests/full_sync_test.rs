@@ -5,17 +5,15 @@ use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
 use consensus::dummy::DummyConsensus;
-use executor::executor::Executor;
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{miner_client::MinerClient, MinerActor};
-use network_p2p_api::sync_messages::{GetHashByNumberMsg, ProcessMessage};
-use network_p2p_api::sync_messages::{SyncRpcRequest, SyncRpcResponse};
 use starcoin_genesis::Genesis;
-use starcoin_sync::helper::send_sync_request;
+use starcoin_sync::helper::get_hash_by_number;
 use starcoin_sync::SyncActor;
+use starcoin_sync_api::sync_messages::GetHashByNumberMsg;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
@@ -98,9 +96,8 @@ fn test_network_actor_rpc() {
         // miner
         let _miner_1 = MinerActor::<
             DummyConsensus,
-            Executor,
             TxPoolRef,
-            ChainActorRef<Executor, DummyConsensus>,
+            ChainActorRef<DummyConsensus>,
             Storage,
             consensus::dummy::DummyHeader,
         >::launch(
@@ -167,7 +164,7 @@ fn test_network_actor_rpc() {
         let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone());
 
         // chain
-        let second_chain = ChainActor::<Executor, DummyConsensus>::launch(
+        let second_chain = ChainActor::<DummyConsensus>::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -179,7 +176,7 @@ fn test_network_actor_rpc() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
             node_config_2.clone(),
             bus_2,
             Arc::clone(&second_p),
@@ -256,7 +253,7 @@ fn test_network_actor_rpc_2() {
 
         let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone());
         // chain
-        let first_chain = ChainActor::<Executor, DummyConsensus>::launch(
+        let first_chain = ChainActor::<DummyConsensus>::launch(
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
@@ -335,7 +332,7 @@ fn test_network_actor_rpc_2() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<Executor, DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
             node_config_2.clone(),
             bus_2,
             Arc::clone(&second_p),
@@ -352,18 +349,13 @@ fn test_network_actor_rpc_2() {
 
         let mut numbers = Vec::new();
         numbers.push(0);
-        let get_hash_by_number_msg = GetHashByNumberMsg { numbers };
-        let req = SyncRpcRequest::GetHashByNumberMsg(ProcessMessage::GetHashByNumberMsg(
-            get_hash_by_number_msg,
-        ));
-        let resp = send_sync_request(&network_1, network_2.identify().clone().into(), req.clone())
-            .await
-            .unwrap();
-
-        assert!(match resp {
-            SyncRpcResponse::BatchHashByNumberMsg(_) => true,
-            _ => false,
-        });
+        let _ = get_hash_by_number(
+            &network_1,
+            network_2.identify().clone().into(),
+            GetHashByNumberMsg { numbers },
+        )
+        .await
+        .unwrap();
 
         Delay::new(Duration::from_secs(2)).await;
     };

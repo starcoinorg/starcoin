@@ -3,21 +3,33 @@
 
 use starcoin_logger::prelude::*;
 
-mod account_rpc;
+mod debug_rpc;
 mod node_rpc;
 mod state_rpc;
 mod txpool_rpc;
+mod wallet_rpc;
 
-pub use self::account_rpc::AccountRpcImpl;
+pub use self::debug_rpc::DebugRpcImpl;
 pub use self::node_rpc::NodeRpcImpl;
 pub use self::state_rpc::StateRpcImpl;
 pub use self::txpool_rpc::TxPoolRpcImpl;
+pub use self::wallet_rpc::WalletRpcImpl;
+
 use starcoin_wallet_api::error::AccountServiceError;
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
     //TODO error convert.
     error!("rpc return internal_error for: {:?}", err);
     jsonrpc_core::Error::internal_error()
+}
+
+pub fn to_invalid_param_err<E>(err: E) -> jsonrpc_core::Error
+where
+    E: Into<anyhow::Error>,
+{
+    let anyhow_err: anyhow::Error = err.into();
+    let message = format!("Invalid param error: {:?}", anyhow_err);
+    jsonrpc_core::Error::invalid_params(message)
 }
 
 pub fn map_rpc_err(err: RpcError) -> jsonrpc_core::Error {
