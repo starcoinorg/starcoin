@@ -49,7 +49,7 @@ pub enum SyncRpcResponse {
 
 #[derive(Debug, Message, Clone, Serialize, Deserialize)]
 #[rtype(result = "Result<()>")]
-pub enum DirectSendMessage {
+pub enum SyncNotify {
     ClosePeerMsg(PeerId),
     NewHeadBlock(PeerId, Block),
     NewPeerMsg(PeerId),

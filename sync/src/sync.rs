@@ -9,7 +9,7 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
 use starcoin_state_tree::StateNodeStore;
-use starcoin_sync_api::sync_messages::{DirectSendMessage, PeerNewBlock};
+use starcoin_sync_api::sync_messages::{PeerNewBlock, SyncNotify};
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use traits::Consensus;
@@ -101,7 +101,7 @@ where
     type Result = ();
 
     fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
-        let new_block = DirectSendMessage::NewHeadBlock(msg.get_peer_id(), msg.get_block());
+        let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), msg.get_block());
         self.download_address
             .send(new_block)
             .into_actor(self)
@@ -121,7 +121,7 @@ where
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 info!("connect new peer:{:?}", open_peer_id);
-                let download_msg = DirectSendMessage::NewPeerMsg(open_peer_id);
+                let download_msg = SyncNotify::NewPeerMsg(open_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)
@@ -130,7 +130,7 @@ where
             }
             PeerEvent::Close(close_peer_id) => {
                 info!("disconnect peer: {:?}", close_peer_id);
-                let download_msg = DirectSendMessage::ClosePeerMsg(close_peer_id);
+                let download_msg = SyncNotify::ClosePeerMsg(close_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)

@@ -16,8 +16,8 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::sync_messages::{
-    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, DirectSendMessage, GetDataByHashMsg,
-    GetHashByNumberMsg, HashWithNumber,
+    BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
+    GetHashByNumberMsg, HashWithNumber, SyncNotify,
 };
 use starcoin_sync_api::SyncMetadata;
 use std::collections::HashMap;
@@ -133,13 +133,13 @@ where
     }
 }
 
-impl<C> Handler<DirectSendMessage> for DownloadActor<C>
+impl<C> Handler<SyncNotify> for DownloadActor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = ResponseActFuture<Self, Result<()>>;
 
-    fn handle(&mut self, msg: DirectSendMessage, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: SyncNotify, _ctx: &mut Self::Context) -> Self::Result {
         let downloader = self.downloader.clone();
         let network = self.network.clone();
         let state_node_storage = self.state_node_storage.clone();
@@ -149,7 +149,7 @@ where
         let self_peer_id = self.self_peer_id.as_ref().clone();
         let fut = async move {
             match msg {
-                DirectSendMessage::NewPeerMsg(peer_id) => {
+                SyncNotify::NewPeerMsg(peer_id) => {
                     info!("new peer msg: {:?}", peer_id);
                     Self::sync_state(
                         self_peer_id,
@@ -162,7 +162,7 @@ where
                     )
                     .await;
                 }
-                DirectSendMessage::NewHeadBlock(peer_id, block) => {
+                SyncNotify::NewHeadBlock(peer_id, block) => {
                     info!(
                         "receive new block: {:?} from {:?}",
                         block.header().id(),
@@ -171,7 +171,7 @@ where
                     // connect block
                     Downloader::do_block(downloader.clone(), block).await;
                 }
-                DirectSendMessage::ClosePeerMsg(peer_id) => {
+                SyncNotify::ClosePeerMsg(peer_id) => {
                     warn!("close peer: {:?}", peer_id,);
                 }
             }
