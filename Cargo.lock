@@ -19,7 +19,7 @@ dependencies = [
  "parking_lot 0.10.2",
  "pin-project",
  "smallvec 1.3.0",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "tokio-util 0.2.0",
  "trust-dns-proto",
  "trust-dns-resolver",
@@ -36,7 +36,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "log 0.4.8",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "tokio-util 0.2.0",
 ]
 
@@ -124,7 +124,7 @@ dependencies = [
  "copyless",
  "futures-channel",
  "futures-util",
- "tokio 0.2.18",
+ "tokio 0.2.17",
 ]
 
 [[package]]
@@ -1851,7 +1851,7 @@ dependencies = [
  "indexmap",
  "log 0.4.8",
  "slab",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "tokio-util 0.3.1",
 ]
 
@@ -2487,9 +2487,9 @@ checksum = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
 
 [[package]]
 name = "libc"
-version = "0.2.69"
+version = "0.2.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99e85c08494b21a9054e7fe1374a732aeadaff3980b6990b94bfd3a70f690005"
+checksum = "dea0c0405123bba743ee3f91f49b1c7cfb684eef0da0a50110f758ccf24cdff0"
 
 [[package]]
 name = "libloading"
@@ -3930,7 +3930,7 @@ dependencies = [
  "starcoin-types",
  "tempfile",
  "thiserror",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "unsigned-varint 0.3.2",
  "void",
  "wasm-timer",
@@ -5589,7 +5589,7 @@ dependencies = [
  "futures 0.3.4",
  "starcoin-logger",
  "stest",
- "tokio 0.2.18",
+ "tokio 0.2.17",
 ]
 
 [[package]]
@@ -5787,7 +5787,7 @@ dependencies = [
  "starcoin-wallet-api",
  "structopt",
  "tiny_http",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "tokio-executor 0.2.0-alpha.6",
 ]
 
@@ -5866,7 +5866,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
- "tokio 0.2.18",
+ "tokio 0.2.17",
 ]
 
 [[package]]
@@ -5907,7 +5907,7 @@ dependencies = [
  "starcoin-tx-relay",
  "starcoin-types",
  "tempfile",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "yamux",
  "zeroize",
 ]
@@ -5944,7 +5944,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
- "tokio 0.2.18",
+ "tokio 0.2.17",
 ]
 
 [[package]]
@@ -6009,7 +6009,7 @@ dependencies = [
  "stest",
  "thiserror",
  "tokio 0.1.22",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "tokio-compat",
 ]
 
@@ -6191,7 +6191,7 @@ dependencies = [
  "starcoin-txpool",
  "starcoin-types",
  "starcoin-wallet-api",
- "tokio 0.2.18",
+ "tokio 0.2.17",
 ]
 
 [[package]]
@@ -6241,7 +6241,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "structopt",
- "tokio 0.2.18",
+ "tokio 0.2.17",
 ]
 
 [[package]]
@@ -6731,9 +6731,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "0.2.18"
+version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34ef16d072d2b6dc8b4a56c70f5c5ced1a37752116f8e7c1e80c659aa7cb6713"
+checksum = "39fb9142eb6e9cc37f4f29144e62618440b149a138eee01a7bbe9b9226aaf17c"
 dependencies = [
  "bytes 0.5.4",
  "fnv",
@@ -6785,7 +6785,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "pin-project-lite",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "tokio-current-thread",
  "tokio-executor 0.1.10",
  "tokio-reactor",
@@ -7016,7 +7016,7 @@ dependencies = [
  "futures-sink",
  "log 0.4.8",
  "pin-project-lite",
- "tokio 0.2.18",
+ "tokio 0.2.17",
 ]
 
 [[package]]
@@ -7030,7 +7030,7 @@ dependencies = [
  "futures-sink",
  "log 0.4.8",
  "pin-project-lite",
- "tokio 0.2.18",
+ "tokio 0.2.17",
 ]
 
 [[package]]
@@ -7084,7 +7084,7 @@ dependencies = [
  "rand 0.7.3",
  "smallvec 1.3.0",
  "socket2",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "url 2.1.1",
 ]
 
@@ -7103,7 +7103,7 @@ dependencies = [
  "lru-cache",
  "resolv-conf",
  "smallvec 1.3.0",
- "tokio 0.2.18",
+ "tokio 0.2.17",
  "trust-dns-proto",
 ]
 
@@ -7122,19 +7122,6 @@ dependencies = [
  "block-cipher-trait",
  "byteorder 1.3.4",
  "opaque-debug",
-]
-
-[[package]]
-name = "tx-pool"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures-util",
- "log 0.4.8",
- "smallvec 0.6.13",
- "starcoin-crypto",
- "starcoin-types",
- "tokio 0.2.18",
 ]
 
 [[package]]
