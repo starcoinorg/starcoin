@@ -40,7 +40,7 @@ pub trait ChainReader {
 
 pub trait ChainWriter {
     /// execute and insert block to current chain.
-    fn apply(&mut self, block: Block) -> Result<()>;
+    fn apply(&mut self, block: Block) -> Result<bool>;
     /// execute and insert block to current chain.
     fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()>;
     fn chain_state(&mut self) -> &dyn ChainState;

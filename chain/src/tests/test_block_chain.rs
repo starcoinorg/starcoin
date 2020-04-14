@@ -89,7 +89,7 @@ async fn gen_head_chain(
             let block =
                 DummyConsensus::create_block(node_config.clone(), &block_chain, block_template)
                     .unwrap();
-            chain.clone().try_connect(block).await.unwrap();
+            let _ = chain.clone().try_connect(block).await.unwrap();
             if delay {
                 Delay::new(Duration::from_millis(1000)).await;
             }
@@ -143,7 +143,7 @@ async fn test_block_chain_forks() {
                 block.header().parent_hash()
             );
             parent_hash = block.header().id();
-            chain.clone().try_connect(block).await.unwrap();
+            let _ = chain.clone().try_connect(block).await.unwrap();
         }
     }
 

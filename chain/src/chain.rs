@@ -388,7 +388,7 @@ where
     S: Store,
     P: TxPoolAsyncService,
 {
-    fn apply(&mut self, block: Block) -> Result<()> {
+    fn apply(&mut self, block: Block) -> Result<bool> {
         let header = block.header();
         info!(
             "Apply block {:?} to {:?}",
@@ -398,7 +398,10 @@ where
         //TODO custom verify macro
         assert_eq!(self.head.header().id(), block.header().parent_hash());
 
-        C::verify_header(self.config.clone(), self, header)?;
+        if let Err(e) = C::verify_header(self.config.clone(), self, header) {
+            error!("err: {:?}", e);
+            return Ok(false);
+        }
 
         let chain_state = &self.chain_state;
         let mut txns = block
@@ -417,8 +420,7 @@ where
             &self.accumulator,
             txns,
             false,
-        )
-        .unwrap();
+        )?;
         assert_eq!(
             block.header().state_root(),
             state_root,
@@ -436,15 +438,13 @@ where
         let block_info = BlockInfo::new(
             header.id(),
             accumulator_root,
-            self.accumulator.get_frozen_subtree_roots().unwrap(),
+            self.accumulator.get_frozen_subtree_roots()?,
             self.accumulator.num_leaves(),
             self.accumulator.num_nodes(),
             total_difficulty,
         );
-        if let Err(e) = self.commit(block, block_info) {
-            warn!("err : {:?}", e);
-        }
-        Ok(())
+        self.commit(block, block_info)?;
+        Ok(true)
     }
 
     fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()> {

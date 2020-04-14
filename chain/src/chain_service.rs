@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use storage::Store;
 use traits::Consensus;
-use traits::{ChainReader, ChainService, ChainWriter};
+use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -228,23 +228,20 @@ where
         })
     }
 
-    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Option<BlockChain<C, S, P>> {
+    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Result<BlockChain<C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
         let chain_info = self.collection.fork(header);
 
         if chain_info.is_some() {
-            return Some(
-                BlockChain::new(
-                    self.config.clone(),
-                    chain_info.unwrap(),
-                    self.storage.clone(),
-                    self.txpool.clone(),
-                    Arc::clone(&self.collection),
-                )
-                .unwrap(),
-            );
+            Ok(BlockChain::new(
+                self.config.clone(),
+                chain_info.unwrap(),
+                self.storage.clone(),
+                self.txpool.clone(),
+                Arc::clone(&self.collection),
+            )?)
         } else {
-            None
+            Err(format_err!("{:?}", "chain info is none."))
         }
     }
 
@@ -252,11 +249,9 @@ where
         unimplemented!()
     }
 
-    fn select_head(&mut self, new_branch: BlockChain<C, S, P>) {
+    fn select_head(&mut self, new_branch: BlockChain<C, S, P>) -> Result<()> {
         let block = new_branch.head_block();
-        let total_difficulty = new_branch
-            .get_total_difficulty()
-            .expect("Failed to get total difficulty");
+        let total_difficulty = new_branch.get_total_difficulty()?;
         if total_difficulty
             > self
                 .collection
@@ -264,8 +259,7 @@ where
                 .borrow()
                 .get(0)
                 .expect("master is none.")
-                .get_total_difficulty()
-                .expect("faild to get total difficulty")
+                .get_total_difficulty()?
         {
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
             let mut retracted = Vec::new();
@@ -282,25 +276,22 @@ where
                 enacted.append(&mut block.transactions().clone().to_vec());
             } else {
                 debug!("rollback branch.");
-                let (mut enacted_tmp, mut retracted_tmp) = self.find_ancestors(&new_branch);
+                let (mut enacted_tmp, mut retracted_tmp) = self.find_ancestors(&new_branch)?;
                 enacted.append(&mut enacted_tmp);
                 retracted.append(&mut retracted_tmp);
 
-                self.collection.insert_branch(
-                    BlockChain::new(
-                        self.config.clone(),
-                        self.collection
-                            .get_master()
-                            .borrow()
-                            .get(0)
-                            .expect("master is none.")
-                            .get_chain_info(),
-                        self.storage.clone(),
-                        self.txpool.clone(),
-                        Arc::clone(&self.collection),
-                    )
-                    .unwrap(),
-                );
+                self.collection.insert_branch(BlockChain::new(
+                    self.config.clone(),
+                    self.collection
+                        .get_master()
+                        .borrow()
+                        .get(0)
+                        .expect("master is none.")
+                        .get_chain_info(),
+                    self.storage.clone(),
+                    self.txpool.clone(),
+                    Arc::clone(&self.collection),
+                )?);
             }
 
             let _ = self
@@ -319,9 +310,7 @@ where
 
         let startup_info = self.collection.to_startup_info();
         debug!("save startup info : {:?}", startup_info);
-        if let Err(e) = self.storage.save_startup_info(startup_info) {
-            warn!("err: {:?}", e);
-        }
+        self.storage.save_startup_info(startup_info)
     }
 
     fn commit_2_txpool(
@@ -340,7 +329,7 @@ where
     fn find_ancestors(
         &self,
         new_branch: &BlockChain<C, S, P>,
-    ) -> (Vec<SignedUserTransaction>, Vec<SignedUserTransaction>) {
+    ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction>)> {
         let mut enacted: Vec<Block> = Vec::new();
         let mut retracted: Vec<Block> = Vec::new();
 
@@ -356,8 +345,7 @@ where
 
         let ancestor = self
             .storage
-            .get_common_ancestor(block_enacted.clone(), block_retracted.clone())
-            .unwrap()
+            .get_common_ancestor(block_enacted.clone(), block_retracted.clone())?
             .unwrap();
 
         let mut block_enacted_tmp = block_enacted.clone();
@@ -388,8 +376,7 @@ where
                 .borrow()
                 .get(0)
                 .expect("master is none.")
-                .get_block(block_retracted_tmp)
-                .unwrap()
+                .get_block(block_retracted_tmp)?
                 .expect("block is none 2.");
             block_retracted_tmp = block_tmp.header().parent_hash();
             retracted.push(block_tmp);
@@ -409,7 +396,7 @@ where
             tx_enacted.len(),
             tx_retracted.len()
         );
-        (tx_enacted, tx_retracted)
+        Ok((tx_enacted, tx_retracted))
     }
 
     pub fn broadcast_2_bus(&self, block: BlockDetail) {
@@ -444,33 +431,52 @@ where
     S: Store,
 {
     //TODO define connect result.
-    fn try_connect(&mut self, block: Block) -> Result<()> {
+    fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {
         if !self.sync.is_state_sync()? {
             if self
                 .storage
                 .get_block_by_hash(block.header().id())?
                 .is_none()
-                && self
+            {
+                if self
                     .storage
                     .get_block_by_hash(block.header().parent_hash())?
                     .is_some()
-            {
-                let header = block.header();
-                let mut branch = self.find_or_fork(&header).expect("fork branch failed.");
-                branch.apply(block.clone())?;
-                self.select_head(branch);
-                self.collection
-                    .get_master()
-                    .borrow()
-                    .get(0)
-                    .expect("master is none.")
-                    .latest_blocks(10);
+                {
+                    let header = block.header();
+                    let mut branch = self.find_or_fork(&header)?;
+
+                    let connected = branch.apply(block.clone())?;
+                    if !connected {
+                        Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
+                    } else {
+                        self.select_head(branch)?;
+                        self.collection
+                            .get_master()
+                            .borrow()
+                            .get(0)
+                            .expect("master is none.")
+                            .latest_blocks(10);
+                        Ok(ConnectResult::Ok(()))
+                    }
+                } else {
+                    Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
+                }
+            } else {
+                Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
             }
+        } else {
+            Ok(ConnectResult::Err(ConnectBlockError::Other(
+                "error connect type.".to_string(),
+            )))
         }
-        Ok(())
     }
 
-    fn try_connect_with_block_info(&mut self, block: Block, block_info: BlockInfo) -> Result<()> {
+    fn try_connect_with_block_info(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+    ) -> Result<ConnectResult<()>> {
         if self.sync.is_state_sync()? {
             let pivot = self.sync.get_pivot()?;
             if pivot.is_some() {
@@ -483,7 +489,7 @@ where
                     let block_header = block.header().clone();
                     if let Ok(_) = C::verify_header(self.config.clone(), master, &block_header) {
                         // 2. save block
-                        let _ = master.commit(block, block_info);
+                        let _ = master.commit(block, block_info)?;
                         // 3. update master
                         self.collection
                             .get_master()
@@ -497,10 +503,20 @@ where
                                 warn!("err:{:?}", err);
                             }
                         }
+                        Ok(ConnectResult::Ok(()))
+                    } else {
+                        Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                     }
+                } else {
+                    Ok(ConnectResult::Err(ConnectBlockError::Other(
+                        "block number > pivot.".to_string(),
+                    )))
                 }
+            } else {
+                Ok(ConnectResult::Err(ConnectBlockError::Other(
+                    "pivot is none.".to_string(),
+                )))
             }
-            Ok(())
         } else {
             self.try_connect(block)
         }
