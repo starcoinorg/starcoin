@@ -25,9 +25,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
-use traits::Consensus;
+use traits::{is_ok, ConnectBlockError, ConnectResult, Consensus};
 use types::{
-    block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     system_events::SystemEvents,
 };
@@ -53,7 +53,6 @@ where
     state_node_storage: Arc<dyn StateNodeStore>,
     sync_metadata: SyncMetadata,
     main_network: bool,
-    _future_blocks: Arc<RwLock<HashMap<HashValue, BlockDetail>>>,
 }
 
 impl<C> DownloadActor<C>
@@ -83,7 +82,6 @@ where
                 state_node_storage,
                 sync_metadata,
                 main_network: node_config.base.net().is_main(),
-                _future_blocks: Arc::new(RwLock::new(HashMap::new())),
             }
         });
         Ok(download_actor)
@@ -450,6 +448,7 @@ where
     _header_pool: TTLPool<BlockHeader>,
     _body_pool: TTLPool<BlockBody>,
     chain_reader: ChainActorRef<C>,
+    future_blocks: Arc<RwLock<HashMap<HashValue, (Block, BlockInfo)>>>,
 }
 
 const HEAD_CT: u64 = 10;
@@ -466,6 +465,7 @@ where
             _header_pool: TTLPool::new(),
             _body_pool: TTLPool::new(),
             chain_reader,
+            future_blocks: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -691,7 +691,7 @@ where
         downloader: Arc<Downloader<C>>,
         headers: Vec<BlockHeader>,
         bodies: Vec<BlockBody>,
-        _infos: Vec<BlockInfo>,
+        infos: Vec<BlockInfo>,
     ) {
         assert_eq!(headers.len(), bodies.len());
         for i in 0..headers.len() {
@@ -699,28 +699,123 @@ where
                 headers.get(i).unwrap().clone(),
                 bodies.get(i).unwrap().clone().transactions,
             );
-            //todo:verify block
-            let _ = Self::do_block(downloader.clone(), block).await;
+            let block_info = infos.get(i).unwrap().clone();
+            Self::do_block_with_info(downloader.clone(), block, block_info).await;
         }
     }
 
-    pub async fn _do_block_with_info(
+    pub async fn do_block_with_info(
         downloader: Arc<Downloader<C>>,
         block: Block,
         block_info: BlockInfo,
     ) {
         info!("do block info {:?}", block.header().id());
-        //todo:verify block
-        let _ = downloader
+        match downloader
             .chain_reader
             .clone()
-            .try_connect_with_block_info(block, block_info)
-            .await;
+            .try_connect_with_block_info(block.clone(), block_info.clone())
+            .await
+        {
+            Ok(connect) => {
+                if let ConnectResult::Err(ConnectBlockError::FutureBlock) = connect {
+                    Self::do_future_block(downloader.clone(), block, block_info).await;
+                }
+            }
+            Err(e) => error!("err: {:?}", e),
+        }
     }
 
     pub async fn do_block(downloader: Arc<Downloader<C>>, block: Block) {
         info!("do block {:?}", block.header().id());
-        //todo:verify block
-        let _ = downloader.chain_reader.clone().try_connect(block).await;
+        match downloader
+            .chain_reader
+            .clone()
+            .try_connect(block.clone())
+            .await
+        {
+            Ok(connect) => {
+                if let ConnectResult::Err(err) = connect {
+                    error!("err: {:?}", err);
+                }
+            }
+            Err(e) => error!("err: {:?}", e),
+        }
+    }
+
+    async fn do_future_block(downloader: Arc<Downloader<C>>, block: Block, block_info: BlockInfo) {
+        let block_id = block.header().id();
+        let parent_id = block.header().parent_hash();
+        downloader
+            .future_blocks
+            .write()
+            .insert(block_id, (block, block_info));
+        let (ancestor_id, mut ancestors) =
+            Self::find_ancestors_in_future_block(downloader.clone(), parent_id);
+        if !ancestors.is_empty()
+            && downloader
+                .chain_reader
+                .clone()
+                .get_block_by_hash(&ancestor_id)
+                .await
+                .is_some()
+        {
+            ancestors.push(block_id);
+            for id in ancestors {
+                let (tmp_block, tmp_block_info) = downloader
+                    .future_blocks
+                    .read()
+                    .get(&id)
+                    .expect("block not exist in future blocks.")
+                    .clone();
+                match downloader
+                    .chain_reader
+                    .clone()
+                    .try_connect_with_block_info(tmp_block, tmp_block_info)
+                    .await
+                {
+                    Ok(conn) => {
+                        if is_ok(&conn) {
+                            Self::remove_future_block(downloader.clone(), id);
+                        } else {
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        error!("err: {:?}", e);
+                        //Self::remove_future_block(downloader.clone(), block.header().id());
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    fn find_ancestors_in_future_block(
+        downloader: Arc<Downloader<C>>,
+        block_id: HashValue,
+    ) -> (HashValue, Vec<HashValue>) {
+        let mut ancestors = Vec::new();
+        let mut id = block_id.clone();
+        loop {
+            if downloader.future_blocks.read().contains_key(&id) {
+                ancestors.push(id.clone());
+            } else {
+                break;
+            }
+            id = downloader
+                .future_blocks
+                .read()
+                .get(&id)
+                .expect("block is none.")
+                .0
+                .header()
+                .parent_hash();
+        }
+        ancestors.reverse();
+        (id, ancestors)
+    }
+
+    fn remove_future_block(downloader: Arc<Downloader<C>>, block_id: HashValue) {
+        let _ = downloader.future_blocks.write().remove(&block_id);
     }
 }

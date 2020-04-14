@@ -23,3 +23,12 @@ pub enum ConnectBlockError {
     #[error("connect failed, cause : {0:?}")]
     Other(String),
 }
+
+pub fn is_ok<T>(conn_result: &ConnectResult<T>) -> bool {
+    conn_result.is_ok()
+        || if let Err(ConnectBlockError::DuplicateConn) = conn_result {
+            true
+        } else {
+            false
+        }
+}
