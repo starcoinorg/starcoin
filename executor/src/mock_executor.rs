@@ -11,7 +11,7 @@ use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use stdlib::transaction_scripts::EMPTY_TXN;
+use types::account_config::lbr_type_tag;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -26,6 +26,7 @@ use vm_runtime::mock_vm::{
     encode_transfer_program, encode_transfer_transaction, mock_raw_transfer_txn,
     mock_transaction_with_seq_number, MockVM,
 };
+use vm_runtime::transaction_scripts::EMPTY_TXN;
 
 const MOCK_GAS_AMOUNT: u64 = 140_000;
 const MOCK_GAS_PRICE: u64 = 1;
@@ -39,9 +40,9 @@ impl MockExecutor {
         MockExecutor {}
     }
 
-    fn mint_for(chain_state: &dyn ChainState, account: AccountAddress, amount: u64) -> Result<()> {
+    fn mint_for(chain_state: &dyn ChainState, account: AccountAddress, _amount: u64) -> Result<()> {
         let access_path = AccessPath::new_for_account(account);
-        let account_resource: AccountResource = chain_state
+        let _account_resource: AccountResource = chain_state
             .get(&access_path)
             .and_then(|blob| match blob {
                 Some(blob) => Ok(blob),
@@ -53,12 +54,12 @@ impl MockExecutor {
                 }
             })?
             .try_into()?;
-        let new_account_resource = AccountResource::new(
-            account_resource.balance() + amount,
-            account_resource.sequence_number(),
-            account_resource.authentication_key().to_vec(),
-        );
-        chain_state.set(&access_path, new_account_resource.try_into()?)?;
+        //        let new_account_resource = AccountResource::new(
+        //            account_resource.balance() + amount,
+        //            account_resource.sequence_number(),
+        //            account_resource.authentication_key().to_vec(),
+        //        );
+        //        chain_state.set(&access_path, new_account_resource.try_into()?)?;
         Ok(())
     }
 }
@@ -132,6 +133,7 @@ pub fn get_signed_txn(
         script,
         MOCK_GAS_AMOUNT,
         MOCK_GAS_PRICE,
+        lbr_type_tag(),
         Duration::from_secs(expiration_time),
     );
 

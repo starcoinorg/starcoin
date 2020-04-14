@@ -4,7 +4,8 @@
 use anyhow::{bail, Result};
 use starcoin_executor::TransactionExecutor;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_wallet_api::WalletAccount;
 
@@ -46,13 +47,14 @@ impl MockTxnGenerator {
         // TODO: make it configurable
         let amount_to_transfer = 1000;
 
-        if account_resource.balance() <= amount_to_transfer {
+        let balance_resource = state_db.get_balance(self.account.address())?;
+        if balance_resource.is_none() || (balance_resource.unwrap() <= amount_to_transfer) {
             bail!("not enough balance, skip gen mock txn, please faucet it first");
         }
 
         let transfer_txn = <E as TransactionExecutor>::build_transfer_txn(
             self.account.address,
-            AuthenticationKey::from_public_key(&self.account.public_key).to_vec(),
+            AuthenticationKey::ed25519(&self.account.public_key).to_vec(),
             self.receiver_address,
             self.receiver_auth_key_prefix.clone(),
             account_resource.sequence_number(),

@@ -5,9 +5,12 @@ use crate::gas::initial_gas_schedule;
 use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
-use crypto::ed25519::*;
+use crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    PrivateKey, Uniform,
+};
 use libra_state_view::StateView;
-use libra_types::{access_path::AccessPath, account_address::AuthenticationKey};
+use libra_types::access_path::AccessPath;
 use move_core_types::identifier::Identifier;
 use move_vm_runtime::MoveVM;
 use move_vm_state::{
@@ -21,6 +24,7 @@ use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
 use stdlib::{stdlib_modules, StdLibOptions};
 use types::account_config;
+use types::transaction::authenticator::AuthenticationKey;
 use vm::{
     access::ModuleAccess,
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
@@ -35,7 +39,9 @@ pub const SUBSIDY_BALANCE: u64 = ASSOCIATION_INIT_BALANCE / 2;
 
 pub static GENESIS_KEYPAIR: Lazy<(Ed25519PrivateKey, Ed25519PublicKey)> = Lazy::new(|| {
     let mut rng = StdRng::from_seed(GENESIS_SEED);
-    compat::generate_keypair(&mut rng)
+    let private_key = Ed25519PrivateKey::generate(&mut rng);
+    let public_key = private_key.public_key();
+    (private_key, public_key)
 });
 
 static INITIALIZE: Lazy<Identifier> = Lazy::new(|| Identifier::new("initialize").unwrap());
@@ -109,7 +115,18 @@ fn create_and_initialize_main_accounts(
         account_config::association_address().into();
     let mut txn_data = TransactionMetadata::default();
     txn_data.sender = association_addr;
-
+    // create  the LBR module
+    move_vm
+        .execute_function(
+            &LBR_MODULE,
+            &INITIALIZE,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![],
+            vec![],
+        )
+        .expect("Failure initializing LBR");
     // create the association account
     move_vm
         .execute_function(
@@ -118,6 +135,7 @@ fn create_and_initialize_main_accounts(
             gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(association_addr),
                 Value::vector_u8(association_addr.to_vec()),
@@ -140,6 +158,7 @@ fn create_and_initialize_main_accounts(
             gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(transaction_fee_address),
                 Value::vector_u8(transaction_fee_address.to_vec()),
@@ -162,23 +181,13 @@ fn create_and_initialize_main_accounts(
             gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(mint_address),
                 Value::vector_u8(mint_address.to_vec()),
             ],
         )
         .unwrap_or_else(|e| panic!("Failure creating mint account {:?}: {}", mint_address, e));
-
-    move_vm
-        .execute_function(
-            &COIN_MODULE,
-            &INITIALIZE,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-        )
-        .expect("Failure initializing LibraCoin");
 
     // init subsidy config
     txn_data.sender = mint_address;
@@ -190,6 +199,7 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .expect("Failure initializing SubsidyConfig");
 
@@ -200,6 +210,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::u64(chain_config.reward_halving_interval),
                 Value::u64(chain_config.base_block_reward),
@@ -216,6 +227,7 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .expect("Failure init block reward for block module.");
 
@@ -229,6 +241,7 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .expect("Failure initializing LibraTransactionTimeout");
 
@@ -240,6 +253,7 @@ fn create_and_initialize_main_accounts(
             interpreter_context,
             &txn_data,
             vec![],
+            vec![],
         )
         .expect("Failure initializing block metadata");
 
@@ -250,6 +264,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![initial_gas_schedule],
         )
         .expect("Failure initializing gas module");
@@ -265,6 +280,7 @@ fn create_and_initialize_main_accounts(
                 &gas_schedule,
                 interpreter_context,
                 &txn_data,
+                vec![],
                 vec![
                     Value::address(association_addr),
                     Value::vector_u8(association_addr.to_vec()),
@@ -273,8 +289,7 @@ fn create_and_initialize_main_accounts(
             )
             .expect("Failure minting to association");
 
-        let association_auth_key =
-            AuthenticationKey::from_public_key(&pre_mine_config.public_key).to_vec();
+        let association_auth_key = AuthenticationKey::ed25519(&pre_mine_config.public_key).to_vec();
         move_vm
             .execute_function(
                 &ACCOUNT_MODULE,
@@ -282,6 +297,7 @@ fn create_and_initialize_main_accounts(
                 &gas_schedule,
                 interpreter_context,
                 &txn_data,
+                vec![],
                 vec![Value::vector_u8(association_auth_key)],
             )
             .expect("Failure rotating association key");
@@ -295,6 +311,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::address(mint_address),
                 Value::vector_u8(mint_address.to_vec()),
@@ -314,6 +331,7 @@ fn create_and_initialize_main_accounts(
             &gas_schedule,
             interpreter_context,
             &txn_data,
+            vec![],
             vec![
                 Value::u64(/* txn_sequence_number */ 0),
                 Value::u64(/* txn_gas_price */ 0),

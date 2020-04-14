@@ -33,7 +33,7 @@ mod vm_config;
 
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
-pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig};
+pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG};
 pub use libra_temppath::TempPath;
 pub use miner_config::{MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
@@ -339,7 +339,7 @@ pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
     let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
     let seed_buf: [u8; 32] = seed_rng.gen();
     let mut rng0: StdRng = SeedableRng::from_seed(seed_buf);
-    KeyPair::generate_for_testing(&mut rng0)
+    KeyPair::generate(&mut rng0)
 }
 
 pub fn get_available_port() -> u16 {

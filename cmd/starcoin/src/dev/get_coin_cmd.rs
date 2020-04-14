@@ -9,7 +9,8 @@ use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::{
-    account_address::AuthenticationKey, account_config, transaction::helpers::TransactionSigner,
+    account_config,
+    transaction::{authenticator::AuthenticationKey, helpers::TransactionSigner},
 };
 use structopt::StructOpt;
 
@@ -52,14 +53,17 @@ impl CommandAction for GetCoinCommand {
             .as_ref()
             .expect("Dev net pre mine config must exist.");
 
-        let to_auth_key_prefix = AuthenticationKey::from_public_key(&to.public_key).prefix();
+        let to_auth_key_prefix = AuthenticationKey::ed25519(&to.public_key).prefix();
 
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(&pre_mine_address)?
             .expect(format!("pre mine address {} must exist", pre_mine_address).as_str());
-        let amount = opt.amount.unwrap_or(account_resource.balance() * 20 / 100);
+        let balance = account_state_reader
+            .get_balance(&pre_mine_address)?
+            .expect(format!("pre mine address {} balance must exist", pre_mine_address).as_str());
+        let amount = opt.amount.unwrap_or(balance * 20 / 100);
         let raw_txn = Executor::build_transfer_txn(
             pre_mine_address,
             vec![],

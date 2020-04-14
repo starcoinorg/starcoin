@@ -5,17 +5,19 @@
 
 use crate::genesis::GENESIS_KEYPAIR;
 use crypto::ed25519::*;
+use crypto::keygen::KeyGen;
 use move_vm_types::{
-    loaded_data::{struct_def::StructDef, types::Type},
+    loaded_data::types::{StructType, Type},
     values::{Struct, Value},
 };
-use rand::{Rng, SeedableRng};
 use std::time::Duration;
 use types::{
-    account_address::{AccountAddress, AuthenticationKey},
+    account_address::AccountAddress,
     account_config,
+    language_storage::TypeTag,
     transaction::{
-        RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
+        authenticator::AuthenticationKey, RawUserTransaction, Script, SignedUserTransaction,
+        TransactionArgument, TransactionPayload,
     },
 };
 
@@ -30,9 +32,9 @@ pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub struct Account {
     addr: AccountAddress,
     /// The current private key for this account.
-    privkey: Ed25519PrivateKey,
+    pub privkey: Ed25519PrivateKey,
     /// The current public key for this account.
-    pubkey: Ed25519PublicKey,
+    pub pubkey: Ed25519PublicKey,
 }
 
 impl Account {
@@ -44,13 +46,7 @@ impl Account {
     /// [`FakeExecutor::add_account_data`][crate::executor::FakeExecutor::add_account_data].
     /// This function returns distinct values upon every call.
     pub fn new() -> Self {
-        let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
-        let seed_buf: [u8; 32] = seed_rng.gen();
-        let mut rng = rand::rngs::StdRng::from_seed(seed_buf);
-
-        // replace `&mut rng` by None (making the function deterministic) and watch the
-        // functional_tests fail!
-        let (privkey, pubkey) = compat::generate_keypair(&mut rng);
+        let (privkey, pubkey) = KeyGen::from_os_rng().generate_keypair();
         Self::with_keypair(privkey, pubkey)
     }
 
@@ -85,14 +81,12 @@ impl Account {
     ///
     /// This is the same as the account's address if the keys have never been rotated.
     pub fn auth_key(&self) -> Vec<u8> {
-        AuthenticationKey::from_public_key(&self.pubkey).to_vec()
+        AuthenticationKey::ed25519(&self.pubkey).to_vec()
     }
 
     /// Return the first 16 bytes of the account's auth key
     pub fn auth_key_prefix(&self) -> Vec<u8> {
-        AuthenticationKey::from_public_key(&self.pubkey)
-            .prefix()
-            .to_vec()
+        AuthenticationKey::ed25519(&self.pubkey).prefix().to_vec()
     }
 
     /// Returns a [`SignedUserTransaction`] with a payload and this account as the sender.
@@ -105,6 +99,7 @@ impl Account {
         sequence_number: u64,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        gas_specifier: TypeTag,
     ) -> SignedUserTransaction {
         let raw_txn = match payload {
             TransactionPayload::StateSet(_state_set) => unimplemented!(),
@@ -114,6 +109,7 @@ impl Account {
                 module,
                 max_gas_amount,
                 gas_unit_price,
+                gas_specifier,
                 Duration::from_secs(DEFAULT_EXPIRATION_TIME),
             ),
             TransactionPayload::Script(script) => RawUserTransaction::new_script(
@@ -122,6 +118,7 @@ impl Account {
                 script,
                 max_gas_amount,
                 gas_unit_price,
+                gas_specifier,
                 Duration::from_secs(DEFAULT_EXPIRATION_TIME),
             ),
         };
@@ -147,17 +144,20 @@ impl Account {
     pub fn create_signed_txn_with_args(
         &self,
         program: Vec<u8>,
+        ty_args: Vec<TypeTag>,
         args: Vec<TransactionArgument>,
         sequence_number: u64,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        gas_specifier: TypeTag,
     ) -> SignedUserTransaction {
         self.create_signed_txn_impl(
             *self.address(),
-            TransactionPayload::Script(Script::new(program, args)),
+            TransactionPayload::Script(Script::new(program, ty_args, args)),
             sequence_number,
             max_gas_amount,
             gas_unit_price,
+            gas_specifier,
         )
     }
 
@@ -168,17 +168,20 @@ impl Account {
         &self,
         sender: AccountAddress,
         program: Vec<u8>,
+        ty_args: Vec<TypeTag>,
         args: Vec<TransactionArgument>,
         sequence_number: u64,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        gas_specifier: TypeTag,
     ) -> SignedUserTransaction {
         self.create_signed_txn_impl(
             sender,
-            TransactionPayload::Script(Script::new(program, args)),
+            TransactionPayload::Script(Script::new(program, ty_args, args)),
             sequence_number,
             max_gas_amount,
             gas_unit_price,
+            gas_specifier,
         )
     }
 
@@ -192,6 +195,7 @@ impl Account {
         sequence_number: u64,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        gas_specifier: TypeTag,
     ) -> SignedUserTransaction {
         RawUserTransaction::new(
             sender,
@@ -199,6 +203,7 @@ impl Account {
             program,
             max_gas_amount,
             gas_unit_price,
+            gas_specifier,
             // TTL is 86400s. Initial time was set to 0.
             Duration::from_secs(DEFAULT_EXPIRATION_TIME),
         )
@@ -216,17 +221,20 @@ impl Default for Account {
 
 pub fn create_signed_txn_with_association_account(
     program: Vec<u8>,
+    ty_args: Vec<TypeTag>,
     args: Vec<TransactionArgument>,
     sequence_number: u64,
     max_gas_amount: u64,
     gas_unit_price: u64,
+    gas_specifier: TypeTag,
 ) -> SignedUserTransaction {
     RawUserTransaction::new(
         account_config::association_address(),
         sequence_number,
-        TransactionPayload::Script(Script::new(program, args)),
+        TransactionPayload::Script(Script::new(program, ty_args, args)),
         max_gas_amount,
         gas_unit_price,
+        gas_specifier,
         // TTL is 86400s. Initial time was set to 0.
         Duration::from_secs(DEFAULT_EXPIRATION_TIME),
     )
@@ -257,7 +265,14 @@ impl Balance {
     }
 
     /// Returns the value layout for the account balance
-    pub fn layout() -> StructDef {
-        StructDef::new(vec![Type::U64])
+    pub fn type_() -> StructType {
+        StructType {
+            address: account_config::core_code_address().into(),
+            module: account_config::account_module_name().to_owned(),
+            name: account_config::account_balance_struct_name().to_owned(),
+            is_resource: true,
+            ty_args: vec![],
+            layout: vec![Type::U64],
+        }
     }
 }

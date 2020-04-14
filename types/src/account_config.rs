@@ -5,7 +5,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    access_path::AccessPath, account_address::AccountAddress, language_storage::StructTag,
+    access_path::AccessPath,
+    account_address::AccountAddress,
+    language_storage::{StructTag, TypeTag},
 };
 use anyhow::Result;
 use move_core_types::identifier::{IdentStr, Identifier};
@@ -19,12 +21,15 @@ use std::convert::{TryFrom, TryInto};
 // Starcoin
 static COIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LibraCoin").unwrap());
 static COIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
-
+// LBR
+static LBR_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LBR").unwrap());
+static LBR_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 // Account
 static ACCOUNT_MODULE_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("LibraAccount").unwrap());
 static ACCOUNT_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
-
+static ACCOUNT_BALANCE_STRUCT_NAME: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("Balance").unwrap());
 // Payment Events
 static SENT_EVENT_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("SentPaymentEvent").unwrap());
@@ -35,6 +40,10 @@ static RECEIVED_EVENT_NAME: Lazy<Identifier> =
 /// It can be used to create an AccessPath for an Account resource.
 pub static ACCOUNT_RESOURCE_PATH: Lazy<HashValue> =
     Lazy::new(|| AccessPath::resource_access_vec(&account_struct_tag()));
+
+/// Path to the Balance resource
+pub static BALANCE_RESOURCE_PATH: Lazy<HashValue> =
+    Lazy::new(|| AccessPath::resource_access_vec(&account_balance_struct_tag()));
 
 pub fn coin_module_name() -> &'static IdentStr {
     &*COIN_MODULE_NAME
@@ -50,6 +59,18 @@ pub fn account_module_name() -> &'static IdentStr {
 
 pub fn account_struct_name() -> &'static IdentStr {
     &*ACCOUNT_STRUCT_NAME
+}
+
+pub fn account_balance_struct_name() -> &'static IdentStr {
+    &*ACCOUNT_BALANCE_STRUCT_NAME
+}
+
+pub fn lbr_module_name() -> &'static IdentStr {
+    &*LBR_MODULE_NAME
+}
+
+pub fn lbr_struct_name() -> &'static IdentStr {
+    &*LBR_STRUCT_NAME
 }
 
 pub fn sent_event_name() -> &'static IdentStr {
@@ -84,6 +105,32 @@ pub fn account_struct_tag() -> StructTag {
         address: core_code_address(),
         module: account_module_name().to_owned(),
         name: account_struct_name().to_owned(),
+        type_params: vec![],
+    }
+}
+
+pub fn account_balance_struct_tag() -> StructTag {
+    StructTag {
+        address: core_code_address(),
+        module: account_module_name().to_owned(),
+        name: account_balance_struct_name().to_owned(),
+        type_params: vec![lbr_type_tag()],
+    }
+}
+
+//pub fn lbr_type_tag() -> libra_types::language_storage::TypeTag {
+//    libra_types::account_config::lbr_type_tag()
+//}
+
+pub fn lbr_type_tag() -> TypeTag {
+    TypeTag::Struct(lbr_struct_tag())
+}
+
+pub fn lbr_struct_tag() -> StructTag {
+    StructTag {
+        address: core_code_address(),
+        module: lbr_module_name().to_owned(),
+        name: lbr_struct_name().to_owned(),
         type_params: vec![],
     }
 }
@@ -133,9 +180,8 @@ impl<'de> Deserialize<'de> for AccountResource {
 
 impl AccountResource {
     /// Constructs an Account resource.
-    pub fn new(balance: u64, sequence_number: u64, authentication_key: Vec<u8>) -> Self {
+    pub fn new(sequence_number: u64, authentication_key: Vec<u8>) -> Self {
         AccountResource(libra_types::account_config::AccountResource::new(
-            balance,
             sequence_number,
             authentication_key,
             false,
@@ -175,10 +221,10 @@ impl AccountResource {
         self.0.sequence_number()
     }
 
-    /// Return the balance field for the given AccountResource
-    pub fn balance(&self) -> u64 {
-        self.0.balance()
-    }
+    //    /// Return the balance field for the given AccountResource
+    //    pub fn balance(&self) -> u64 {
+    //        self.0.balance()
+    //    }
 
     /// Return the authentication_key field for the given AccountResource
     pub fn authentication_key(&self) -> &[u8] {
@@ -214,6 +260,35 @@ impl From<libra_types::account_config::AccountResource> for AccountResource {
     }
 }
 
+/// The balance resource held under an account.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BalanceResource {
+    coin: u64,
+}
+
+impl BalanceResource {
+    pub fn new(coin: u64) -> Self {
+        Self { coin }
+    }
+
+    pub fn coin(&self) -> u64 {
+        self.coin
+    }
+
+    /// Given an account map (typically from storage) retrieves the Account resource associated.
+    pub fn make_from(bytes: &[u8]) -> Result<Self> {
+        Self::decode(bytes)
+    }
+}
+
+impl TryInto<Vec<u8>> for BalanceResource {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -230,7 +305,6 @@ mod tests {
             0,
         );
         let account_res = libra_types::account_config::AccountResource::new(
-            0,
             1,
             address.to_vec(),
             false,
@@ -240,7 +314,6 @@ mod tests {
             0,
         );
         let account_res1: AccountResource = AccountResource::from(account_res);
-        assert_eq!(account_res1.balance(), 0);
         assert_eq!(
             account_res1.authentication_key().len(),
             address.to_vec().len()

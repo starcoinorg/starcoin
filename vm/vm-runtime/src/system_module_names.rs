@@ -8,6 +8,13 @@ use once_cell::sync::Lazy;
 use types::{account_config, language_storage::ModuleId};
 
 // Data to resolve basic account and transaction flow functions and structs
+
+/// LBR
+static LBR_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LBR").unwrap());
+pub static LBR_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
+    ModuleId::new(account_config::core_code_address(), LBR_MODULE_NAME.clone()).into()
+});
+
 /// The ModuleId for the Account module
 pub static ACCOUNT_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
     let module_id = ModuleId::new(
@@ -21,14 +28,6 @@ pub static LIBRA_TRANSACTION_TIMEOUT: Lazy<LibraModuleId> = Lazy::new(|| {
     let module_id = ModuleId::new(
         account_config::core_code_address(),
         Identifier::new("LibraTransactionTimeout").unwrap(),
-    );
-    module_id.into()
-});
-/// The ModuleId for the LibraCoin module
-pub static COIN_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
-        account_config::core_code_address(),
-        Identifier::new("LibraCoin").unwrap(),
     );
     module_id.into()
 });

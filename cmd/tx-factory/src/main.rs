@@ -11,8 +11,9 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_rpc_client::RpcClient;
 use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
-use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_wallet_api::WalletAccount;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -107,7 +108,7 @@ fn main() {
         .map(|k| {
             let k = Ed25519PublicKey::from_encoded_string(&k)
                 .expect("public key should be hex encoded");
-            AuthenticationKey::from_public_key(&k).prefix().to_vec()
+            AuthenticationKey::ed25519(&k).prefix().to_vec()
         })
         .unwrap_or_default();
 
