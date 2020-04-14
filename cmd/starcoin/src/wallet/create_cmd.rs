@@ -23,7 +23,7 @@ impl CommandAction for CreateCommand {
 
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         let client = ctx.state().client();
-        let account = client.account_create(ctx.opt().password.clone())?;
+        let account = client.wallet_create(ctx.opt().password.clone())?;
         println!("create new account: {:?}", account);
         Ok(())
     }

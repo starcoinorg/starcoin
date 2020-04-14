@@ -28,7 +28,7 @@ impl CommandAction for ShowCommand {
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let account = client.account_get(opt.address)?;
+        let account = client.wallet_get(opt.address)?;
         match account {
             Some(account) => {
                 let auth_key = AuthenticationKey::ed25519(&account.public_key);
