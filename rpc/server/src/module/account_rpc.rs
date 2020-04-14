@@ -3,7 +3,7 @@
 
 use crate::module::map_rpc_err;
 use futures::future::TryFutureExt;
-use starcoin_rpc_api::{account::AccountApi, FutureResult};
+use starcoin_rpc_api::{wallet::WalletApi, FutureResult};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::{WalletAccount, WalletAsyncService};
@@ -24,7 +24,7 @@ where
     }
 }
 
-impl<S> AccountApi for AccountRpcImpl<S>
+impl<S> WalletApi for AccountRpcImpl<S>
 where
     S: WalletAsyncService,
 {

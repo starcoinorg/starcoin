@@ -8,22 +8,21 @@ use scmd::{CommandAction, ExecContext};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "list")]
-pub struct ListOpt {}
+#[structopt(name = "sign_txn")]
+pub struct SignTxnOpt {}
 
-pub struct ListCommand {}
+pub struct SignTxnCommand;
 
-impl CommandAction for ListCommand {
+impl CommandAction for SignTxnCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ListOpt;
+    type Opt = SignTxnOpt;
 
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
-        let client = ctx.state().client();
-        let accounts = client.account_list()?;
-        for account in accounts {
-            println!("{} {}", account.address, account.is_default);
-        }
+        //let client = ctx.state().client();
+        let _opt = ctx.opt();
+        //let account = client.account_create(ctx.opt().password.clone())?;
+        println!("TODO sign txn command");
         Ok(())
     }
 }

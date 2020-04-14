@@ -3,7 +3,6 @@ use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{NodeConfig, PacemakerStrategy};
 use consensus::dummy::{DummyConsensus, DummyHeader};
-use executor::executor::Executor;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -77,9 +76,8 @@ fn test_miner_with_schedule_pacemaker() {
         let miner_account = WalletAccount::random();
         let _miner = MinerActor::<
             DummyConsensus,
-            Executor,
             TxPoolRef,
-            ChainActorRef<Executor, DummyConsensus>,
+            ChainActorRef<DummyConsensus>,
             Storage,
             DummyHeader,
         >::launch(
@@ -169,9 +167,8 @@ fn test_miner_with_ondemand_pacemaker() {
         let miner_account = WalletAccount::random();
         let _miner = MinerActor::<
             DummyConsensus,
-            Executor,
             TxPoolRef,
-            ChainActorRef<Executor, DummyConsensus>,
+            ChainActorRef<DummyConsensus>,
             Storage,
             DummyHeader,
         >::launch(

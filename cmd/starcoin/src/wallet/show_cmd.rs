@@ -18,7 +18,7 @@ pub struct ShowOpt {
     address: AccountAddress,
 }
 
-pub struct ShowCommand {}
+pub struct ShowCommand;
 
 impl CommandAction for ShowCommand {
     type State = CliState;

@@ -5,48 +5,40 @@ use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
 use config::NodeConfig;
-use executor::TransactionExecutor;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
-use network_p2p_api::sync_messages::{DownloadMessage, PeerNewBlock};
 use starcoin_state_tree::StateNodeStore;
+use starcoin_sync_api::sync_messages::{DirectSendMessage, PeerNewBlock};
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use traits::Consensus;
 use types::peer_info::PeerId;
 
-pub struct SyncActor<E, C>
+pub struct SyncActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    _process_address: Addr<ProcessActor<E, C>>,
-    download_address: Addr<DownloadActor<E, C>>,
+    _process_address: Addr<ProcessActor<C>>,
+    download_address: Addr<DownloadActor<C>>,
     bus: Addr<BusActor>,
 }
 
-impl<E, C> SyncActor<E, C>
+impl<C> SyncActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn launch(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         peer_id: Arc<PeerId>,
-        chain: ChainActorRef<E, C>,
+        chain: ChainActorRef<C>,
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
         sync_metadata: SyncMetadata,
-    ) -> Result<Addr<SyncActor<E, C>>> {
-        let process_address = ProcessActor::launch(
-            Arc::clone(&peer_id),
-            chain.clone(),
-            network.clone(),
-            bus.clone(),
-            state_node_storage.clone(),
-        )?;
+    ) -> Result<Addr<SyncActor<C>>> {
+        let process_address =
+            ProcessActor::launch(chain.clone(), bus.clone(), state_node_storage.clone())?;
         let download_address = DownloadActor::launch(
             node_config,
             peer_id,
@@ -65,9 +57,8 @@ where
     }
 }
 
-impl<E, C> Actor for SyncActor<E, C>
+impl<C> Actor for SyncActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Context = Context<Self>;
@@ -103,15 +94,14 @@ where
     }
 }
 
-impl<E, C> Handler<PeerNewBlock> for SyncActor<E, C>
+impl<C> Handler<PeerNewBlock> for SyncActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = ();
 
     fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
-        let new_block = DownloadMessage::NewHeadBlock(msg.get_peer_id(), msg.get_block());
+        let new_block = DirectSendMessage::NewHeadBlock(msg.get_peer_id(), msg.get_block());
         self.download_address
             .send(new_block)
             .into_actor(self)
@@ -121,9 +111,8 @@ where
     }
 }
 
-impl<E, C> Handler<PeerEvent> for SyncActor<E, C>
+impl<C> Handler<PeerEvent> for SyncActor<C>
 where
-    E: TransactionExecutor + Sync + Send + 'static + Clone,
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = Result<()>;
@@ -132,7 +121,7 @@ where
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 info!("connect new peer:{:?}", open_peer_id);
-                let download_msg = DownloadMessage::NewPeerMsg(open_peer_id);
+                let download_msg = DirectSendMessage::NewPeerMsg(open_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)
@@ -141,7 +130,7 @@ where
             }
             PeerEvent::Close(close_peer_id) => {
                 info!("disconnect peer: {:?}", close_peer_id);
-                let download_msg = DownloadMessage::ClosePeerMsg(close_peer_id);
+                let download_msg = DirectSendMessage::ClosePeerMsg(close_peer_id);
                 self.download_address
                     .send(download_msg)
                     .into_actor(self)
