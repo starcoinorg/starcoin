@@ -6,24 +6,27 @@ use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
+use starcoin_crypto::ed25519::Ed25519PublicKey;
+use starcoin_crypto::ValidKeyStringExt;
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "transfer")]
 pub struct TransferOpt {
     #[structopt(short = "f")]
-    /// if from is absent, use default account.
+    /// if `from` is absent, use default account.
     from: Option<AccountAddress>,
     #[structopt(short = "t")]
     to: AccountAddress,
     #[structopt(short = "k")]
-    /// if to account not exist on chain, must set this key prefix.
-    auth_key_prefix: Option<String>,
+    /// if `to` account not exist on chain, must provide public_key of the account.
+    public_key: Option<String>,
     #[structopt(short = "v")]
     amount: u64,
 }
@@ -52,11 +55,29 @@ impl CommandAction for TransferCommand {
             ))?,
         };
         let to = opt.to;
-        //TODO check to is onchain
-        let to_auth_key_prefix = opt.auth_key_prefix.clone().unwrap_or("".to_string());
-        let to_auth_key_prefix = hex::decode(to_auth_key_prefix)?;
+
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
+        let to_exist_on_chain = account_state_reader.get_account_resource(&to)?.is_some();
+        let to_auth_key_prefix = if to_exist_on_chain {
+            vec![]
+        } else {
+            opt.public_key
+                .as_ref()
+                .ok_or(format_err!(
+                    "To account {} not exist on chain, please provide public_key",
+                    to
+                ))
+                .and_then(|pubkey_str| {
+                    Ok(
+                        AuthenticationKey::ed25519(&Ed25519PublicKey::from_encoded_string(
+                            pubkey_str,
+                        )?)
+                        .prefix()
+                        .to_vec(),
+                    )
+                })?
+        };
         let account_resource = account_state_reader
             .get_account_resource(sender.address())?
             .ok_or(format_err!(
@@ -65,7 +86,7 @@ impl CommandAction for TransferCommand {
             ))?;
         let raw_txn = Executor::build_transfer_txn(
             sender.address,
-            sender.get_auth_key().prefix().to_vec(),
+            vec![],
             to,
             to_auth_key_prefix,
             account_resource.sequence_number(),
