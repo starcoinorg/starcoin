@@ -341,17 +341,3 @@ fn get_balance(address: AccountAddress, state_db: &dyn ChainState) -> u64 {
             .coin(),
     }
 }
-
-fn get_auth_key(addr: AccountAddress, chain_state: &dyn ChainState) -> Vec<u8> {
-    let access_path = AccessPath::new_for_account(addr);
-    let state = chain_state
-        .get(&access_path)
-        .expect("read account state should ok");
-    match state {
-        None => vec![],
-        Some(s) => AccountResource::make_from(&s)
-            .expect("account resource decode ok")
-            .authentication_key()
-            .to_vec(),
-    }
-}

@@ -1,7 +1,6 @@
 use crate::pool::AccountSeqNumberClient;
 use crate::TxPoolRef;
 use anyhow::Result;
-use common_crypto::ed25519;
 use common_crypto::hash::CryptoHash;
 use common_crypto::keygen::KeyGen;
 use parking_lot::RwLock;
