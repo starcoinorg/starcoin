@@ -17,6 +17,7 @@ impl CommandAction for SignTxnCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = SignTxnOpt;
+    type ReturnItem = ();
 
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         //let client = ctx.state().client();

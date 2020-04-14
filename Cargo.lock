@@ -5736,6 +5736,7 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
+ "starcoin-wallet-api",
  "structopt",
 ]
 

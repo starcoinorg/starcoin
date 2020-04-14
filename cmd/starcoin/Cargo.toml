@@ -22,6 +22,7 @@ starcoin-node = { path = "../../node"}
 starcoin-consensus = {path = "../../consensus"}
 starcoin-executor = {path = "../../executor"}
 starcoin-state-api = {path = "../../state/api"}
+starcoin-wallet-api = {path = "../../wallet/api"}
 scmd = { path = "../../commons/scmd" }
 hex = { version = "0.3.2", default-features = false }
 

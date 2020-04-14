@@ -15,6 +15,7 @@ mod debug;
 mod dev;
 mod helper;
 mod txn;
+mod view;
 mod wallet;
 
 pub mod state;
@@ -91,7 +92,8 @@ fn run() -> Result<()> {
         .command(Command::with_name("txn").subcommand(txn::TransferCommand))
         .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))
-        .exec()
+        .exec();
+    Ok(())
 }
 
 //TODO error and crash handle.

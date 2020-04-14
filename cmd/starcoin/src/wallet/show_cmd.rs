@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::state::CliState;
+use crate::view::AccountWithStateView;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -24,40 +24,30 @@ impl CommandAction for ShowCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ShowOpt;
+    type ReturnItem = AccountWithStateView;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<AccountWithStateView> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let account = client.wallet_get(opt.address)?;
-        match account {
-            Some(account) => {
-                let auth_key = AuthenticationKey::ed25519(&account.public_key);
-                println!("account: {}", account.address);
-                println!("is_default: {}", account.is_default);
-                println!("public_key: {}", account.public_key);
-                println!("authentication_key: {}", auth_key);
-                println!(
-                    "authentication_key_prefix: {}",
-                    hex::encode(auth_key.prefix())
-                );
+        let account = client.wallet_get(opt.address)?.ok_or(format_err!(
+            "Account with address {} not exist.",
+            opt.address
+        ))?;
 
-                let chain_state_reader = RemoteStateReader::new(client);
-                let account_state_reader = AccountStateReader::new(&chain_state_reader);
-                if let Some(account_resource) =
-                    account_state_reader.get_account_resource(account.address())?
-                {
-                    println!("On chain data");
-                    println!("-----------------");
-                    println!("sequence_number: {}", account_resource.sequence_number());
-                    let balance = account_state_reader
-                        .get_balance(account.address())?
-                        .unwrap_or(0);
-                    println!("balance: {}", balance);
-                };
-            }
-            None => println!("Account with address {} not exist.", opt.address),
-        }
+        let chain_state_reader = RemoteStateReader::new(client);
+        let account_state_reader = AccountStateReader::new(&chain_state_reader);
+        let sequence_number = account_state_reader
+            .get_account_resource(account.address())?
+            .map(|res| res.sequence_number());
+        let balance = account_state_reader.get_balance(account.address())?;
 
-        Ok(())
+        Ok(AccountWithStateView {
+            account,
+            sequence_number,
+            balance,
+        })
     }
 }

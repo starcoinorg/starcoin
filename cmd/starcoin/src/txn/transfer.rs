@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::state::CliState;
+use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
@@ -33,8 +34,12 @@ impl CommandAction for TransferCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = TransferOpt;
+    type ReturnItem = TransactionView;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<TransactionView> {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let sender = match opt.from {
@@ -67,8 +72,7 @@ impl CommandAction for TransferCommand {
             opt.amount,
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
-        println!("Submit txn: {:?}", txn);
-        client.submit_transaction(txn)?;
-        Ok(())
+        client.submit_transaction(txn.clone())?;
+        Ok(txn.into())
     }
 }
