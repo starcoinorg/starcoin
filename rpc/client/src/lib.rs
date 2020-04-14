@@ -139,31 +139,31 @@ impl RpcClient {
     }
     //TODO should split client for different api ?
     // such as  RpcClient().account().default()
-    pub fn account_default(&self) -> anyhow::Result<Option<WalletAccount>> {
-        self.call_rpc_blocking(|inner| async move { inner.account_client.default().compat().await })
+    pub fn wallet_default(&self) -> anyhow::Result<Option<WalletAccount>> {
+        self.call_rpc_blocking(|inner| async move { inner.wallet_client.default().compat().await })
             .map_err(map_err)
     }
 
-    pub fn account_create(&self, password: String) -> anyhow::Result<WalletAccount> {
+    pub fn wallet_create(&self, password: String) -> anyhow::Result<WalletAccount> {
         self.call_rpc_blocking(|inner| async move {
             inner.wallet_client.create(password).compat().await
         })
         .map_err(map_err)
     }
 
-    pub fn account_list(&self) -> anyhow::Result<Vec<WalletAccount>> {
+    pub fn wallet_list(&self) -> anyhow::Result<Vec<WalletAccount>> {
         self.call_rpc_blocking(|inner| async move { inner.wallet_client.list().compat().await })
             .map_err(map_err)
     }
 
-    pub fn account_get(&self, address: AccountAddress) -> anyhow::Result<Option<WalletAccount>> {
+    pub fn wallet_get(&self, address: AccountAddress) -> anyhow::Result<Option<WalletAccount>> {
         self.call_rpc_blocking(
             |inner| async move { inner.wallet_client.get(address).compat().await },
         )
         .map_err(map_err)
     }
 
-    pub fn account_sign_txn(
+    pub fn wallet_sign_txn(
         &self,
         raw_txn: RawUserTransaction,
     ) -> anyhow::Result<SignedUserTransaction> {
@@ -173,7 +173,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn account_unlock(
+    pub fn wallet_unlock(
         &self,
         address: AccountAddress,
         password: String,
@@ -188,7 +188,7 @@ impl RpcClient {
         })
         .map_err(map_err)
     }
-    pub fn account_export(
+    pub fn wallet_export(
         &self,
         address: AccountAddress,
         password: String,
@@ -198,7 +198,7 @@ impl RpcClient {
         })
         .map_err(map_err)
     }
-    pub fn account_import(
+    pub fn wallet_import(
         &self,
         address: AccountAddress,
         private_key: Vec<u8>,
