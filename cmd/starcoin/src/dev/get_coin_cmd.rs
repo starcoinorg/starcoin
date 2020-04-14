@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::state::CliState;
+use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
@@ -30,8 +31,12 @@ impl CommandAction for GetCoinCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetCoinOpt;
+    type ReturnItem = TransactionView;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<TransactionView> {
         let opt = ctx.opt();
         let config = ctx.state().config();
         let net = config.net();
@@ -73,8 +78,7 @@ impl CommandAction for GetCoinCommand {
             amount,
         );
         let txn = pre_mine_config.sign_txn(raw_txn)?;
-        println!("Submit txn: {:?}", txn);
-        client.submit_transaction(txn)?;
-        Ok(())
+        client.submit_transaction(txn.clone())?;
+        Ok(txn.into())
     }
 }

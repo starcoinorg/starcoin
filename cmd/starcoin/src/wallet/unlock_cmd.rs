@@ -29,13 +29,16 @@ impl CommandAction for UnlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = UnlockOpt;
+    type ReturnItem = String;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<String> {
         let client = ctx.state().client();
         let opt: &UnlockOpt = ctx.opt();
         let duration = Duration::from_secs(opt.duration as u64);
         client.wallet_unlock(opt.account.clone(), opt.password.clone(), duration)?;
-        println!("account {} unlocked for {:?}", &opt.account, duration);
-        Ok(())
+        Ok(format!(
+            "account {} unlocked for {:?}",
+            &opt.account, duration
+        ))
     }
 }

@@ -5,6 +5,7 @@ use crate::state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_wallet_api::WalletAccount;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -17,13 +18,14 @@ impl CommandAction for ListCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ListOpt;
+    type ReturnItem = Vec<WalletAccount>;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Vec<WalletAccount>> {
         let client = ctx.state().client();
         let accounts = client.wallet_list()?;
-        for account in accounts {
-            println!("{} {}", account.address, account.is_default);
-        }
-        Ok(())
+        Ok(accounts)
     }
 }

@@ -28,6 +28,7 @@ impl CommandAction for ExportCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ExportOpt;
+    type ReturnItem = ();
 
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         let client = ctx.state().client();

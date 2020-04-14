@@ -8,6 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{PrivateKey, ValidKeyStringExt};
 use starcoin_types::account_address::AccountAddress;
+use starcoin_wallet_api::WalletAccount;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -37,8 +38,12 @@ impl CommandAction for ImportCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ImportOpt;
+    type ReturnItem = WalletAccount;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<WalletAccount> {
         let client = ctx.state().client();
         let opt: &ImportOpt = ctx.opt();
 
@@ -61,12 +66,6 @@ impl CommandAction for ImportCommand {
             private_key.to_bytes().to_vec(),
             opt.password.clone(),
         )?;
-        println!("account imported:");
-        println!("address: {}", account.address);
-        println!(
-            "public key: {}",
-            account.public_key.to_encoded_string().unwrap()
-        );
-        Ok(())
+        Ok(account)
     }
 }
