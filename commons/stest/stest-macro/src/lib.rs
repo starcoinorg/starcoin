@@ -64,15 +64,12 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 fn #name() #ret {
                     stest::init_test_logger();
                     let (tx,rx) = std::sync::mpsc::channel();
-                    let tx_clone = tx.clone();
 
                     stest::timeout(#timeout,move ||{
-                        #body
-                        let _= tx.send(());
-                    },tx_clone);
+                        #body;
+                    },tx);
 
-                    let _= rx.recv();
-                    ()
+                    stest::wait_channel(rx)
                 }
             }
         } else {
@@ -82,15 +79,12 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 fn #name() #ret {
                     stest::init_test_logger();
                     let (tx,rx) = std::sync::mpsc::channel();
-                    let tx_clone = tx.clone();
 
                     stest::timeout(#timeout,move ||{
                         #body
-                        let _= tx.send(());
-                    },tx_clone);
+                    },tx);
 
-                    let _= rx.recv();
-                    ()
+                    stest::wait_channel(rx)
                 }
             }
         }
@@ -106,7 +100,7 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                     actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
                     actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
-                    system.block_on(stest::wait_result(rx));
+                    system.block_on(stest::wait_result(rx))
                 }
             }
         } else {
@@ -121,7 +115,7 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                     actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
                     actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
-                    system.block_on(stest::wait_result(rx));
+                    system.block_on(stest::wait_result(rx))
                  }
             }
         }
