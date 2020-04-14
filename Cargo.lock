@@ -6264,6 +6264,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-state-api",
  "starcoin-types",
+ "thiserror",
 ]
 
 [[package]]

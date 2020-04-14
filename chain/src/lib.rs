@@ -14,7 +14,7 @@ pub use chain_service::BlockChainCollection;
 use crate::chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;
 use actix::prelude::*;
-use anyhow::{bail, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use bus::{BusActor, Subscription};
 use config::NodeConfig;
 use crypto::HashValue;
@@ -25,7 +25,7 @@ use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use storage::Storage;
 use traits::Consensus;
-use traits::{ChainAsyncService, ChainService};
+use traits::{ChainAsyncService, ChainService, ConnectResult};
 use txpool::TxPoolRef;
 use types::{
     account_address::AccountAddress,
@@ -104,7 +104,7 @@ where
                 self.service.master_head_header(),
             )),
             ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeader(
-                self.service.get_header_by_hash(hash).unwrap().unwrap(),
+                self.service.get_header_by_hash(hash)?.unwrap(),
             )),
             ChainRequest::HeadBlock() => Ok(ChainResponse::Block(self.service.master_head_block())),
             ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(
@@ -117,32 +117,35 @@ where
                 txs,
                 difficulty,
             ) => Ok(ChainResponse::BlockTemplate(
-                self.service
-                    .create_block_template(author, auth_key_prefix, parent_hash, difficulty, txs)
-                    .unwrap(),
+                self.service.create_block_template(
+                    author,
+                    auth_key_prefix,
+                    parent_hash,
+                    difficulty,
+                    txs,
+                )?,
             )),
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
-                self.service.get_block_by_hash(hash).unwrap(),
+                self.service.get_block_by_hash(hash)?,
             )),
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(
-                self.service.get_block_info_by_hash(hash).unwrap(),
+                self.service.get_block_info_by_hash(hash)?,
             )),
             ChainRequest::ConnectBlock(block, mut block_info) => {
-                if block_info.is_none() {
-                    self.service.try_connect(block).unwrap();
+                let conn_state = if block_info.is_none() {
+                    self.service.try_connect(block)?
                 } else {
                     self.service
-                        .try_connect_with_block_info(block, block_info.take().unwrap())
-                        .unwrap();
-                }
+                        .try_connect_with_block_info(block, block_info.take().unwrap())?
+                };
 
-                Ok(ChainResponse::None)
+                Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
                 self.service.master_startup_info(),
             )),
             ChainRequest::GenTx() => {
-                self.service.gen_tx().unwrap();
+                self.service.gen_tx()?;
                 Ok(ChainResponse::None)
             }
         }
@@ -200,24 +203,34 @@ impl<C> ChainAsyncService for ChainActorRef<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    async fn try_connect(self, block: Block) -> Result<()> {
-        self.address
+    async fn try_connect(self, block: Block) -> Result<ConnectResult<()>> {
+        if let ChainResponse::Conn(conn_result) = self
+            .address
             .send(ChainRequest::ConnectBlock(block, None))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        Ok(())
+            .map_err(|e| Into::<Error>::into(e))??
+        {
+            Ok(conn_result)
+        } else {
+            Err(format_err!("error ChainResponse type."))
+        }
     }
 
     async fn try_connect_with_block_info(
         &mut self,
         block: Block,
         block_info: BlockInfo,
-    ) -> Result<()> {
-        self.address
+    ) -> Result<ConnectResult<()>> {
+        if let ChainResponse::Conn(conn_result) = self
+            .address
             .send(ChainRequest::ConnectBlock(block, Some(block_info)))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        Ok(())
+            .map_err(|e| Into::<Error>::into(e))??
+        {
+            Ok(conn_result)
+        } else {
+            Err(format_err!("error ChainResponse type."))
+        }
     }
 
     async fn master_startup_info(self) -> Result<StartupInfo> {

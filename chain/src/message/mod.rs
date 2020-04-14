@@ -2,6 +2,7 @@
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
+use traits::ConnectResult;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockTemplate},
@@ -33,7 +34,6 @@ impl Message for ChainRequest {
     type Result = Result<ChainResponse>;
 }
 
-#[derive(Clone)]
 pub enum ChainResponse {
     BlockTemplate(BlockTemplate),
     Block(Block),
@@ -43,4 +43,5 @@ pub enum ChainResponse {
     HashValue(HashValue),
     StartupInfo(StartupInfo),
     None,
+    Conn(ConnectResult<()>),
 }
