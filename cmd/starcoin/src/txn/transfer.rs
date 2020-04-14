@@ -38,11 +38,11 @@ impl CommandAction for TransferCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let sender = match opt.from {
-            Some(from) => client.account_get(from)?.ok_or(format_err!(
+            Some(from) => client.wallet_get(from)?.ok_or(format_err!(
                 "Can not find WalletAccount by address: {}",
                 from
             ))?,
-            None => client.account_default()?.ok_or(format_err!(
+            None => client.wallet_default()?.ok_or(format_err!(
                 "Can not find default account, Please input from account."
             ))?,
         };
@@ -66,7 +66,7 @@ impl CommandAction for TransferCommand {
             account_resource.sequence_number(),
             opt.amount,
         );
-        let txn = client.account_sign_txn(raw_txn)?;
+        let txn = client.wallet_sign_txn(raw_txn)?;
         println!("Submit txn: {:?}", txn);
         client.submit_transaction(txn)?;
         Ok(())

@@ -20,7 +20,7 @@ impl CommandAction for ListCommand {
 
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         let client = ctx.state().client();
-        let accounts = client.account_list()?;
+        let accounts = client.wallet_list()?;
         for account in accounts {
             println!("{} {}", account.address, account.is_default);
         }

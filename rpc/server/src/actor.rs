@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::module::{AccountRpcImpl, DebugRpcImpl, NodeRpcImpl, StateRpcImpl, TxPoolRpcImpl};
+use crate::module::{DebugRpcImpl, NodeRpcImpl, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl};
 use crate::service::RpcService;
 use actix::prelude::*;
 use anyhow::Result;
@@ -39,7 +39,7 @@ impl RpcActor {
         Self::launch_with_apis(
             config,
             Some(TxPoolRpcImpl::new(txpool_service)),
-            Some(AccountRpcImpl::new(account_service)),
+            Some(WalletRpcImpl::new(account_service)),
             Some(StateRpcImpl::new(state_service)),
             logger_handle.map(|logger_handle| DebugRpcImpl::new(logger_handle)),
         )

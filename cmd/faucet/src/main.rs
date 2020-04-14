@@ -27,7 +27,7 @@ fn main() {
         Server::http(&opts.server_addr).expect(&format!("Faild to serve on {}", opts.server_addr));
     let client = RpcClient::connect_ipc(opts.ipc_path).expect("Failed to connect ipc");
     let account = client
-        .account_get(account_address)
+        .wallet_get(account_address)
         .unwrap()
         .expect("Invaid faucet account address");
     let faucet = Faucet::new(client, account);

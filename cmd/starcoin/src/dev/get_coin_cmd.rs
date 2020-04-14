@@ -41,7 +41,7 @@ impl CommandAction for GetCoinCommand {
             );
         }
         let client = ctx.state().client();
-        let to = client.account_default()?.ok_or(format_err!(
+        let to = client.wallet_default()?.ok_or(format_err!(
             "Can not find default account, Please create account first."
         ))?;
 

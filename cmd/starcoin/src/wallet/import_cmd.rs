@@ -56,7 +56,7 @@ impl CommandAction for ImportCommand {
         let address = opt
             .account
             .unwrap_or_else(|| AccountAddress::from_public_key(&private_key.public_key()));
-        let account = client.account_import(
+        let account = client.wallet_import(
             address,
             private_key.to_bytes().to_vec(),
             opt.password.clone(),
