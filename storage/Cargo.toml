@@ -23,7 +23,7 @@ state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
 logger = {path = "../commons/logger", package="starcoin-logger"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="7a35ed6edb7921ab096028aed91b8e5ff11cc74d" }
+libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 
 [dependencies.rocksdb]
 git = "https://github.com/pingcap/rust-rocksdb.git"

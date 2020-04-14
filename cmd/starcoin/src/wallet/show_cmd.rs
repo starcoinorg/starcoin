@@ -7,7 +7,8 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::{AccountAddress, AuthenticationKey};
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -27,10 +28,10 @@ impl CommandAction for ShowCommand {
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let account = client.account_get(opt.address)?;
+        let account = client.wallet_get(opt.address)?;
         match account {
             Some(account) => {
-                let auth_key = AuthenticationKey::from_public_key(&account.public_key);
+                let auth_key = AuthenticationKey::ed25519(&account.public_key);
                 println!("account: {}", account.address);
                 println!("is_default: {}", account.is_default);
                 println!("public_key: {}", account.public_key);

@@ -8,14 +8,14 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::{WalletAccount, WalletAsyncService};
 
-pub struct AccountRpcImpl<S>
+pub struct WalletRpcImpl<S>
 where
     S: WalletAsyncService + 'static,
 {
     service: S,
 }
 
-impl<S> AccountRpcImpl<S>
+impl<S> WalletRpcImpl<S>
 where
     S: WalletAsyncService,
 {
@@ -24,10 +24,19 @@ where
     }
 }
 
-impl<S> WalletApi for AccountRpcImpl<S>
+impl<S> WalletApi for WalletRpcImpl<S>
 where
     S: WalletAsyncService,
 {
+    fn default(&self) -> FutureResult<Option<WalletAccount>> {
+        let fut = self
+            .service
+            .clone()
+            .get_default_account()
+            .map_err(|e| map_rpc_err(e.into()));
+        Box::new(fut.compat())
+    }
+
     fn create(&self, password: String) -> FutureResult<WalletAccount> {
         let fut = self
             .service
@@ -114,10 +123,10 @@ mod tests {
     fn test_account() {
         let mut io = IoHandler::new();
         let wallet_service = MockWalletService::new().unwrap();
-        io.extend_with(AccountRpcImpl::new(wallet_service).to_delegate());
+        io.extend_with(WalletRpcImpl::new(wallet_service).to_delegate());
         let client = RpcClient::connect_local(io);
-        let account = client.account_create("passwd".to_string()).unwrap();
-        let accounts = client.account_list().unwrap();
+        let account = client.wallet_create("passwd".to_string()).unwrap();
+        let accounts = client.wallet_list().unwrap();
         assert!(accounts.len() >= 1);
         assert!(accounts
             .iter()
@@ -125,7 +134,7 @@ mod tests {
             .is_some());
         // assert!(accounts.contains(&account));
         let raw_txn = RawUserTransaction::mock_by_sender(account.address);
-        let signed_txn = client.account_sign_txn(raw_txn).unwrap();
+        let signed_txn = client.wallet_sign_txn(raw_txn).unwrap();
         assert!(signed_txn.check_signature().is_ok())
     }
 }

@@ -20,6 +20,7 @@ use move_vm_state::{
 };
 use move_vm_types::chain_state::ChainState as LibraChainState;
 use move_vm_types::identifier::create_access_path;
+use move_vm_types::loaded_data::types::Type;
 use move_vm_types::values::Value;
 use once_cell::sync::Lazy;
 use starcoin_config::VMConfig;
@@ -29,6 +30,7 @@ use std::sync::Arc;
 use types::{
     account_config,
     block_metadata::BlockMetadata,
+    language_storage::{ModuleId, TypeTag},
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
         TransactionOutput, TransactionPayload, TransactionStatus, MAX_TRANSACTION_SIZE_IN_BYTES,
@@ -78,22 +80,21 @@ impl StarcoinVM {
 
     fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
         info!("load gas schedule");
-        let _ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
         self.gas_schedule = self.fetch_gas_schedule(data_cache).ok();
     }
 
     fn fetch_gas_schedule(&mut self, data_cache: &dyn RemoteCache) -> VMResult<CostTable> {
         let address = account_config::association_address();
         let mut ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
-        let gas_struct_tag = self
+        let gas_struct_ty = self
             .move_vm
-            .resolve_struct_tag_by_name(&GAS_SCHEDULE_MODULE, &GAS_SCHEDULE_NAME, &mut ctx)
+            .resolve_struct_def_by_name(&GAS_SCHEDULE_MODULE, &GAS_SCHEDULE_NAME, &mut ctx, &[])
             .map_err(|_| {
                 LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
                     .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_MODULE)
             })?;
 
-        let access_path = create_access_path(&address.into(), gas_struct_tag);
+        let access_path = create_access_path(address.into(), gas_struct_ty.into_struct_tag()?);
 
         let data_blob = data_cache
             .get(&access_path)
@@ -222,6 +223,35 @@ impl StarcoinVM {
         Ok(())
     }
 
+    fn resolve_type_argument(
+        &self,
+        ctx: &mut SystemExecutionContext,
+        tag: &TypeTag,
+    ) -> VMResult<Type> {
+        Ok(match tag {
+            TypeTag::U8 => Type::U8,
+            TypeTag::U64 => Type::U64,
+            TypeTag::U128 => Type::U128,
+            TypeTag::Bool => Type::Bool,
+            TypeTag::Address => Type::Address,
+            TypeTag::Vector(tag) => Type::Vector(Box::new(self.resolve_type_argument(ctx, tag)?)),
+            TypeTag::Struct(struct_tag) => {
+                let module_id = ModuleId::new(struct_tag.address.into(), struct_tag.module.clone());
+                let ty_args = struct_tag
+                    .type_params
+                    .iter()
+                    .map(|tag| self.resolve_type_argument(ctx, tag))
+                    .collect::<VMResult<Vec<_>>>()?;
+                Type::Struct(Box::new(self.move_vm.resolve_struct_def_by_name(
+                    &module_id.into(),
+                    &struct_tag.name,
+                    ctx,
+                    &ty_args,
+                )?))
+            }
+        })
+    }
+
     fn verify_transaction_impl(
         &mut self,
         transaction: &SignatureCheckedTransaction,
@@ -237,9 +267,16 @@ impl StarcoinVM {
         match transaction.payload() {
             TransactionPayload::Script(script) => {
                 let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
+                let ty_args = script
+                    .ty_args()
+                    .iter()
+                    .map(|tag| self.resolve_type_argument(&mut ctx, tag))
+                    .collect::<VMResult<Vec<_>>>()?;
+                // ToDo: fix me
                 match result {
                     Ok(_) => Ok(VerifiedTranscationPayload::Script(
                         script.code().to_vec(),
+                        ty_args,
                         script.args().to_vec(),
                     )),
                     Err(e) => return Err(e.into()),
@@ -297,7 +334,7 @@ impl StarcoinVM {
             VerifiedTranscationPayload::Module(m) => {
                 self.move_vm.publish_module(m, &mut ctx, txn_data)
             }
-            VerifiedTranscationPayload::Script(s, args) => {
+            VerifiedTranscationPayload::Script(s, ty_args, args) => {
                 ////////
                 let gas_schedule = match self.get_gas_schedule() {
                     Ok(s) => s,
@@ -308,6 +345,7 @@ impl StarcoinVM {
                     gas_schedule,
                     &mut ctx,
                     txn_data,
+                    ty_args,
                     convert_txn_args(args),
                 )
             }
@@ -342,7 +380,7 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
     ) -> VMResult<()> {
         let txn_sequence_number = txn_data.sequence_number();
-        let txn_public_key = txn_data.public_key().to_bytes().to_vec();
+        let txn_public_key = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_units = txn_data.max_gas_amount().get();
         let txn_expiration_time = txn_data.expiration_time();
@@ -353,6 +391,7 @@ impl StarcoinVM {
                 gas_schedule,
                 chain_state,
                 &txn_data,
+                vec![],
                 vec![
                     Value::u64(txn_sequence_number),
                     Value::vector_u8(txn_public_key),
@@ -383,6 +422,7 @@ impl StarcoinVM {
             gas_schedule,
             chain_state,
             &txn_data,
+            vec![],
             vec![
                 Value::u64(txn_sequence_number),
                 Value::u64(txn_gas_price),
@@ -408,7 +448,9 @@ impl StarcoinVM {
         if let Ok((id, timestamp, author, auth)) = block_metadata.into_inner() {
             let previous_vote: BTreeMap<LibraAccountAddress, Ed25519Signature> = BTreeMap::new();
             let vote_maps = scs::to_bytes(&previous_vote).unwrap();
+            let round = 0u64;
             let args = vec![
+                Value::u64(round),
                 Value::u64(timestamp),
                 Value::vector_u8(id.into_inner()),
                 Value::vector_u8(vote_maps),
@@ -425,6 +467,7 @@ impl StarcoinVM {
                 &gas_schedule,
                 &mut interpreter_context,
                 &txn_data,
+                vec![],
                 args,
             )?
         } else {
@@ -449,7 +492,6 @@ impl StarcoinVM {
         let mut state_store = StateStore::new(chain_state);
         let mut data_cache = BlockDataCache::new(&state_store);
         self.load_gas_schedule(&data_cache);
-
         match txn {
             Transaction::UserTransaction(txn) => {
                 let libra_txn = txn.clone().into();
@@ -469,7 +511,6 @@ impl StarcoinVM {
                             &data_cache,
                             &txn_data,
                         );
-
                         let result = match verified_payload {
                             Ok(payload) => {
                                 self.execute_verified_payload(&mut data_cache, &txn_data, payload)
@@ -569,6 +610,6 @@ pub fn failed_transaction_output(
 }
 
 pub enum VerifiedTranscationPayload {
-    Script(Vec<u8>, Vec<TransactionArgument>),
+    Script(Vec<u8>, Vec<Type>, Vec<TransactionArgument>),
     Module(Vec<u8>),
 }

@@ -6,7 +6,6 @@ members = [
     "commons/crypto",
     "commons/decrypt",
     "commons/logger",
-    "commons/transaction-pool",
     "commons/scmd",
     "types",
     "core/traits",

@@ -6,8 +6,16 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{ed25519::*, ValidKeyStringExt};
-use starcoin_types::U256;
+use starcoin_crypto::{
+    ed25519::*, hash::CryptoHash, PrivateKey, SigningKey, Uniform, ValidKeyStringExt,
+};
+use starcoin_types::{
+    transaction::{
+        helpers::TransactionSigner,
+        {RawUserTransaction, SignedUserTransaction},
+    },
+    U256,
+};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -117,6 +125,21 @@ pub struct PreMineConfig {
     pub pre_mine_percent: u64,
 }
 
+impl TransactionSigner for PreMineConfig {
+    fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+        let private_key = self
+            .private_key
+            .as_ref()
+            .expect("PreMineConfig not contains private_key");
+        let signature = private_key.sign_message(&raw_txn.crypto_hash());
+        Ok(SignedUserTransaction::new(
+            raw_txn,
+            self.public_key.clone(),
+            signature,
+        ))
+    }
+}
+
 /// ChainConfig is a static hard code config.
 #[derive(Debug)]
 pub struct ChainConfig {
@@ -139,9 +162,10 @@ pub struct ChainConfig {
 pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1000_000;
 
 const STATIC_SEED: [u8; 32] = [42; 32];
-static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
+pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let mut rng = StdRng::from_seed(STATIC_SEED);
-    let (private_key, public_key) = compat::generate_keypair(&mut rng);
+    let private_key = Ed25519PrivateKey::generate(&mut rng);
+    let public_key = private_key.public_key();
 
     ChainConfig {
         total_supply: STARCOIN_TOTAL_SUPPLY,
