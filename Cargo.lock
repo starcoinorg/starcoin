@@ -858,6 +858,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cli-table"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c33fefd3d47608151daee022309798b78d25bb3320b378258822ce2edc2abe7"
+dependencies = [
+ "termcolor",
+ "unicode-width",
+]
+
+[[package]]
 name = "cloudabi"
 version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1297,6 +1307,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d88b6d1705e16a4d62e05ea61cc0496c2bd190f4fa8e5c1f11ce747be6bcf3d1"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "error-chain"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d371106cc88ffdfb1eabd7111e432da544f16f3e2d7bf1dfe8bf575f1df045cd"
+dependencies = [
+ "backtrace",
+ "version_check 0.9.1",
 ]
 
 [[package]]
@@ -5113,6 +5133,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-flatten-json"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d0d62c70781901ff6d68c677e092551ee10223b2149cf8a3d8bd5ab6280894b"
+dependencies = [
+ "error-chain",
+ "log 0.4.8",
+ "serde_json",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5255,12 +5286,17 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "cli-table",
  "ctrlc",
  "git-version",
  "lazy_static",
+ "rand 0.7.3",
+ "rust-flatten-json",
  "rustyline",
  "serde",
+ "serde_json",
  "structopt",
+ "thiserror",
 ]
 
 [[package]]

@@ -1,9 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{Command, CommandAction, CommandExec};
+use crate::error::CmdError;
+use crate::{print_action_result, Command, CommandAction, CommandExec, OutputFormat};
 use anyhow::Result;
-use clap::{crate_authors, crate_version, App, ArgMatches, SubCommand};
+use clap::{crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use git_version::git_version;
 use lazy_static::lazy_static;
 use rustyline::{config::CompletionType, error::ReadlineError, Config, Editor};
@@ -11,6 +12,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use structopt::StructOpt;
 
+static OUTPUT_FORMAT_ARG: &str = "output-format";
 static VERSION: &str = crate_version!();
 static GIT_VERSION: &str = git_version!();
 lazy_static! {
@@ -67,8 +69,16 @@ where
     {
         //insert console command
         let mut app = GlobalOpt::clap();
-        app = app.version(VERSION);
-        app = app.long_version(LONG_VERSION.as_str());
+        app = app
+            .version(VERSION)
+            .long_version(LONG_VERSION.as_str())
+            .arg(
+                Arg::with_name(OUTPUT_FORMAT_ARG)
+                    .short("o")
+                    .help("set output-format, support [json|table]")
+                    .takes_value(true)
+                    .default_value("table"),
+            );
         app = Self::set_app_author(app);
         app = app.subcommand(
             SubCommand::with_name("console").help("Start an interactive command console"),
@@ -90,11 +100,13 @@ where
         app.author(crate_authors!("\n"))
     }
 
-    pub fn command<Opt, Action, CMD>(mut self, command: CMD) -> Self
+    pub fn command<Opt, ReturnItem, Action, CMD>(mut self, command: CMD) -> Self
     where
         Opt: StructOpt + 'static,
-        Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt> + 'static,
-        CMD: Into<Command<State, GlobalOpt, Opt, Action>> + 'static,
+        ReturnItem: serde::Serialize + 'static,
+        Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>
+            + 'static,
+        CMD: Into<Command<State, GlobalOpt, Opt, ReturnItem, Action>> + 'static,
     {
         let command = command.into();
         let name = command.name();
@@ -115,18 +127,31 @@ where
             .expect("print help should success.");
     }
 
-    pub fn exec(mut self) -> Result<()> {
-        let matches = match self
+    pub fn help_message(&mut self) -> String {
+        let mut help_message = vec![];
+        self.app
+            .write_long_help(&mut help_message)
+            .expect("format help message fail.");
+        String::from_utf8(help_message).expect("help message should utf8")
+    }
+
+    pub fn exec(mut self) {
+        match self.exec_inner() {
+            Err(e) => println!("{}", e.to_string()),
+            Ok(_) => {}
+        }
+    }
+
+    fn exec_inner(&mut self) -> Result<()> {
+        let matches = self
             .app
-            .get_matches_from_safe_borrow(&mut std::env::args_os())
-        {
-            Ok(matches) => matches,
-            Err(e) => {
-                //println!("Match err: {:?}", e.kind);
-                println!("{}", e.message);
-                return Ok(());
-            }
-        };
+            .get_matches_from_safe_borrow(&mut std::env::args_os())?;
+        let output_format = matches
+            .value_of(OUTPUT_FORMAT_ARG)
+            .expect("output-format arg must exist")
+            .parse()
+            .expect("parse output-format must success.");
+
         let (global_opt, state) = self.init_global_opt(&matches)?;
         let (cmd_name, arg_matches) = matches.subcommand();
         match cmd_name {
@@ -134,17 +159,20 @@ where
                 self.console_inner(global_opt, state);
             }
             "" => {
-                self.default_action.as_ref()(self.app, global_opt, state);
+                self.default_action.as_ref()(self.app.clone(), global_opt, state);
             }
             cmd_name => {
                 let cmd = self.commands.get_mut(cmd_name);
                 match (cmd, arg_matches) {
                     (Some(cmd), Some(arg_matches)) => {
-                        cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)?;
+                        let value = cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)?;
+                        print_action_result(value, output_format)?;
                     }
                     _ => {
-                        println!("Unknown command: {:?}", cmd_name);
-                        self.print_help();
+                        return Err(CmdError::NeedHelp {
+                            help: self.help_message(),
+                        }
+                        .into());
                     }
                 };
             }
@@ -153,7 +181,7 @@ where
         Ok(())
     }
 
-    fn console_inner(mut self, global_opt: GlobalOpt, state: State) {
+    fn console_inner(&mut self, global_opt: GlobalOpt, state: State) {
         //TODO support use custom config
         let config = Config::builder()
             .history_ignore_space(true)
@@ -161,8 +189,9 @@ where
             .auto_add_history(true)
             .build();
         //insert quit command
-        self.app = self
+        let mut app = self
             .app
+            .clone()
             .subcommand(
                 SubCommand::with_name("version")
                     .help("Print app version.")
@@ -174,10 +203,10 @@ where
                     .help("Quit from console.")
                     .display_order(998),
             );
-        let app_name = self.app.get_name().to_string();
+        let app_name = app.get_name().to_string();
         let global_opt = Arc::new(global_opt);
         let state = Arc::new(state);
-        self.console_start_action.as_ref()(&self.app, global_opt.clone(), state.clone());
+        self.console_start_action.as_ref()(&app, global_opt.clone(), state.clone());
         let mut rl = Editor::<()>::with_config(config);
         let prompt = format!("{}% ", app_name);
         loop {
@@ -194,13 +223,11 @@ where
                             let state = Arc::try_unwrap(state)
                                 .ok()
                                 .expect("unwrap state must success when quit.");
-                            self.console_quit_action.as_ref()(self.app, global_opt, state);
+                            self.console_quit_action.as_ref()(app.clone(), global_opt, state);
                             break;
                         }
                         "help" => {
-                            self.app
-                                .print_long_help()
-                                .expect("print help should success.");
+                            app.print_long_help().expect("print help should success.");
                         }
                         "version" => {
                             println!("{}", LONG_VERSION.as_str());
@@ -219,20 +246,21 @@ where
                                                 global_opt.clone(),
                                                 &arg_matches,
                                             ) {
-                                                Ok(()) => {}
-                                                Err(e) => println!("Execute error:{:?}", e),
+                                                Ok(v) => {
+                                                    print_action_result(v, OutputFormat::TABLE)
+                                                        .expect("Print result should success.")
+                                                }
+                                                Err(e) => println!("{}", e),
                                             };
                                         }
                                         Err(e) => {
-                                            println!("{}", e.message);
+                                            println!("{}", e);
                                         }
                                     }
                                 }
                                 _ => {
                                     println!("Unknown command: {:?}", cmd_name);
-                                    self.app
-                                        .print_long_help()
-                                        .expect("print help should success.");
+                                    app.print_long_help().expect("print help should success.");
                                 }
                             }
                         }
@@ -260,20 +288,14 @@ where
         Ok((global_opt, state))
     }
 
-    pub fn console(mut self) -> Result<()> {
-        let matches = match self
+    pub fn console(mut self) {
+        let matches = self
             .app
             .get_matches_from_safe_borrow(&mut std::env::args_os())
-        {
-            Ok(matches) => matches,
-            Err(e) => {
-                //println!("Match err: {:?}", e.kind);
-                println!("{}", e.message);
-                return Ok(());
-            }
-        };
-        let (global_opt, state) = self.init_global_opt(&matches)?;
+            .unwrap_or_else(|e| panic!("{}", e));
+        let (global_opt, state) = self
+            .init_global_opt(&matches)
+            .unwrap_or_else(|e| panic!("{}", e));
         self.console_inner(global_opt, state);
-        Ok(())
     }
 }

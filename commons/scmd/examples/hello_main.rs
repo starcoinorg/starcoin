@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 use scmd::{CmdContext, Command, CommandAction, ExecContext};
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -14,6 +17,62 @@ struct GlobalOpts {
     counter: usize,
     #[structopt(short = "r")]
     required: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Address {
+    pub city: String,
+    pub zip: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct User {
+    pub index: usize,
+    pub name: String,
+    pub age: u32,
+    pub address: Address,
+}
+
+impl User {
+    pub fn random(index: usize) -> Self {
+        let mut rng = rand::thread_rng();
+        let name: String = rng.sample_iter(&Alphanumeric).take(10).collect();
+        let age: u32 = rng.gen();
+        let city = rng.sample_iter(&Alphanumeric).take(5).collect();
+        let zip = rng.gen_range(10000, 99999);
+        let address = Address { city, zip };
+        Self {
+            index,
+            name,
+            age,
+            address,
+        }
+    }
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "list")]
+struct ListOpts {
+    #[structopt(long, default_value = "5")]
+    count: usize,
+}
+
+struct ListCommand;
+
+impl CommandAction for ListCommand {
+    type State = Counter;
+    type GlobalOpt = GlobalOpts;
+    type Opt = ListOpts;
+    type ReturnItem = Vec<User>;
+
+    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<Vec<User>> {
+        let count = ctx.opt().count;
+        let mut users = vec![];
+        for i in 0..count {
+            users.push(User::random(i));
+        }
+        Ok(users)
+    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -59,6 +118,7 @@ impl CommandAction for BetaCommand {
     type State = Counter;
     type GlobalOpt = GlobalOpts;
     type Opt = BetaOpts;
+    type ReturnItem = ();
 
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         println!(
@@ -84,6 +144,7 @@ impl CommandAction for BetaSub1Command {
     type State = Counter;
     type GlobalOpt = GlobalOpts;
     type Opt = BetaSub1Opts;
+    type ReturnItem = ();
 
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         ctx.state().incr();
@@ -122,6 +183,7 @@ fn main() -> Result<()> {
         |_app, _opt, _state| println!("good bye."),
     );
     context
+        .command(ListCommand)
         .command(
             Command::with_name("alpha").subcommand(Command::with_action_fn(
                 |ctx: &ExecContext<Counter, GlobalOpts, AlphaSub1Opts>| -> Result<()> {
@@ -147,6 +209,6 @@ fn main() -> Result<()> {
                 Ok(())
             },
         ))
-        .exec()?;
+        .exec();
     Ok(())
 }
