@@ -44,7 +44,7 @@ use futures::{
     prelude::*,
 };
 use libp2p::swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent};
-use libp2p::{kad::record, Multiaddr, PeerId};
+use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
 use parking_lot::Mutex;
 use peerset::{PeersetHandle, ReputationChange};
@@ -56,7 +56,6 @@ use crate::net_error::Error;
 use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
-use crate::protocol;
 use crate::protocol::event::Event;
 use crate::protocol::{ChainInfo, Protocol};
 use crate::{
@@ -64,6 +63,7 @@ use crate::{
     parse_addr, parse_str_addr,
 };
 use crate::{config::NonReservedPeerMode, transport};
+use crate::{protocol, Multiaddr};
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -458,6 +458,20 @@ impl NetworkService {
         }
     }
 
+    pub async fn get_address(&self, peer_id: PeerId) -> Vec<Multiaddr> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self
+            .to_worker
+            .unbounded_send(ServiceToWorkerMsg::AddressByPeerID(peer_id, tx));
+        match rx.await {
+            Ok(t) => t,
+            Err(e) => {
+                warn!("sth wrong {}", e);
+                Vec::new()
+            }
+        }
+    }
+
     pub fn update_self_info(&self, info: PeerInfo) {
         let _ = self
             .to_worker
@@ -638,6 +652,7 @@ enum ServiceToWorkerMsg {
     IsConnected(PeerId, oneshot::Sender<bool>),
     ConnectedPeers(oneshot::Sender<HashSet<PeerId>>),
     SelfInfo(PeerInfo),
+    AddressByPeerID(PeerId, oneshot::Sender<Vec<Multiaddr>>),
 }
 
 /// Main network worker. Must be polled in order for the network to advance.
@@ -723,6 +738,9 @@ impl Future for NetworkWorker {
                     this.network_service
                         .user_protocol_mut()
                         .update_self_info(info);
+                }
+                ServiceToWorkerMsg::AddressByPeerID(peer_id, tx) => {
+                    tx.send(this.network_service.get_address(&peer_id));
                 }
             }
         }

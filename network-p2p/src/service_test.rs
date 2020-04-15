@@ -3,6 +3,7 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::service::NetworkStateInfo;
     use crate::{Event, Multiaddr, NodeKeyConfig, PeerId, ProtocolId, Secret};
     use crate::{NetworkConfiguration, NetworkWorker, Params};
     use crypto::HashValue;
@@ -16,10 +17,8 @@ mod tests {
 
     const PROTOCOL_NAME: &[u8] = b"/starcoin/notify/1";
 
-    #[test]
+    #[stest::test(timeout = 5)]
     fn test_notify() {
-        ::logger::init_for_test();
-
         let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
 
@@ -59,9 +58,11 @@ mod tests {
         );
 
         info!(
-            "first peer is {:?},second peer is {:?}",
-            service1.peer_id(),
-            service2.peer_id()
+            "first peer address is {:?} id is {:?},second peer address is {:?} id is {:?}",
+            config1.listen_addresses,
+            service1.local_peer_id(),
+            config2.listen_addresses,
+            service2.local_peer_id()
         );
         let fut = async move {
             while let Some(event) = stream.next().await {
@@ -74,6 +75,11 @@ mod tests {
                         info!("receive message {:?} from {} ", msg, remote);
                         assert_eq!(msg, data);
                         break;
+                    }
+                    Event::NotificationStreamOpened { remote, info } => {
+                        info!("open stream from {},info is {:?}", remote, info);
+                        let result = service1.get_address(remote.clone()).await;
+                        info!("remote {} address is {:?}", remote, result);
                     }
                     _ => {
                         info!("event is {:?}", event);

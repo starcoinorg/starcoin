@@ -28,6 +28,34 @@ struct TestAttributeOpts {
 /// fn my_async_test() {
 ///     assert!(true);
 /// }
+///
+/// #[stest::test(timeout = 1)]
+/// fn test_timeout() {
+///     std::thread::sleep(Duration::from_secs(6));
+/// }
+///
+/// #[stest::test(timeout = 1)]
+/// fn test_ok() -> anyhow::Result<()> {
+///     Ok(())
+/// }
+///
+/// #[stest::test(timeout = 1)]
+/// fn test_timeout_result() -> anyhow::Result<()> {
+///     std::thread::sleep(Duration::from_secs(6));
+///     Ok(())
+/// }
+///
+/// #[stest::test(timeout = 1)]
+/// async fn test_async_timeout() {
+///     actix_rt::time::delay_for(Duration::from_secs(6)).await;
+/// }
+///
+/// #[stest::test(timeout = 1)]
+/// async fn test_async_timeout_result() -> anyhow::Result<()> {
+///     actix_rt::time::delay_for(Duration::from_secs(6)).await;
+///     Ok(())
+/// }
+///
 /// ```
 #[proc_macro_attribute]
 pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {

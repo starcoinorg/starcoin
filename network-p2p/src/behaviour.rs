@@ -23,7 +23,9 @@ use crate::{
 use futures::channel::oneshot;
 use libp2p::core::{Multiaddr, PeerId, PublicKey};
 use libp2p::kad::record;
-use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
+use libp2p::swarm::{
+    NetworkBehaviour, NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters,
+};
 use libp2p::NetworkBehaviour;
 use log::debug;
 use std::{iter, task::Context, task::Poll};
@@ -96,6 +98,10 @@ impl Behaviour {
     /// Adds a hard-coded address for the given peer, that never expires.
     pub fn add_known_address(&mut self, peer_id: PeerId, addr: Multiaddr) {
         self.discovery.add_known_address(peer_id, addr)
+    }
+
+    pub fn get_address(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
+        self.discovery.addresses_of_peer(peer_id)
     }
 
     /// Returns true if we have a channel open with this node.
