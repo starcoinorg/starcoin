@@ -48,4 +48,5 @@ members = [
     "cmd/starcoin",
     "cmd/faucet",
     "cmd/tx-factory",
+    "vm/functional-tests"
 ]

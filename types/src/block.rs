@@ -359,9 +359,6 @@ pub struct BlockTemplate {
     /// Block gas limit.
     pub gas_limit: u64,
 
-    /// Block difficult
-    pub difficult: U256,
-
     pub body: BlockBody,
 }
 
@@ -376,7 +373,6 @@ impl BlockTemplate {
         state_root: HashValue,
         gas_used: u64,
         gas_limit: u64,
-        difficult: U256,
         body: BlockBody,
     ) -> Self {
         Self {
@@ -389,12 +385,11 @@ impl BlockTemplate {
             state_root,
             gas_used,
             gas_limit,
-            difficult,
             body,
         }
     }
 
-    pub fn into_block<H>(self, consensus_header: H) -> Block
+    pub fn into_block<H>(self, consensus_header: H, difficult: U256) -> Block
     where
         H: Into<Vec<u8>>,
     {
@@ -408,7 +403,7 @@ impl BlockTemplate {
             self.state_root,
             self.gas_used,
             self.gas_limit,
-            self.difficult,
+            difficult,
             consensus_header.into(),
         );
         Block {
@@ -416,7 +411,7 @@ impl BlockTemplate {
             body: self.body,
         }
     }
-    pub fn into_block_header<H>(self, consensus_header: H) -> BlockHeader
+    pub fn into_block_header<H>(self, consensus_header: H, difficult: U256) -> BlockHeader
     where
         H: Into<Vec<u8>>,
     {
@@ -430,7 +425,7 @@ impl BlockTemplate {
             self.state_root,
             self.gas_used,
             self.gas_limit,
-            self.difficult,
+            difficult,
             consensus_header.into(),
         );
         header
@@ -447,8 +442,6 @@ impl BlockTemplate {
             state_root: block.header().state_root,
             gas_used: block.header().gas_used,
             gas_limit: block.header().gas_limit,
-
-            difficult: block.header().difficult,
             body: block.body,
         }
     }

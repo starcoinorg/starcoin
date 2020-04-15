@@ -173,9 +173,8 @@ mod test {
             let header = BlockHeader::default();
             let body = BlockBody::default();
             let block = Block::new(header, body);
-            let mut block_template = BlockTemplate::from_block(block);
-            block_template.difficult = U256::max_value();
-            MineCtx::new(block_template)
+            let block_template = BlockTemplate::from_block(block);
+            MineCtx::new(block_template, U256::max_value())
         };
         Delay::new(Duration::from_millis(3000)).await;
         miner.set_mint_job(mine_ctx);
@@ -224,9 +223,8 @@ mod test {
                 let header = BlockHeader::default();
                 let body = BlockBody::default();
                 let block = Block::new(header, body);
-                let mut block_template = BlockTemplate::from_block(block);
-                block_template.difficult = U256::max_value();
-                MineCtx::new(block_template)
+                let block_template = BlockTemplate::from_block(block);
+                MineCtx::new(block_template, U256::max_value())
             };
 
             miner.set_mint_job(mine_ctx);
