@@ -1,13 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use config::NodeConfig;
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server;
 use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
 use jsonrpc_tcp_server;
 use jsonrpc_ws_server;
+use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use std::sync::Arc;
 

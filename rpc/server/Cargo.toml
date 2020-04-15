@@ -30,7 +30,7 @@ futures = { version = "0.3.2", features = ["compat"] }
 num_cpus = "1.10"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = {path = "../../types"}
-config = {path = "../../config", package="starcoin-config"}
+starcoin-config = {path = "../../config"}
 txpool = {path = "../../txpool", package="starcoin-txpool"}
 starcoin-logger = { path = "../../commons/logger"}
 stest = { path = "../../commons/stest"}
@@ -44,6 +44,8 @@ starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-state-service = { path = "../../state/service"}
 starcoin-txpool-api = {path = "../../txpool/api"}
+starcoin-network = {path = "../../network"}
+
 [dev-dependencies]
 starcoin-rpc-client = { path = "../client"}
 starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}

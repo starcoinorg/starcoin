@@ -5,10 +5,11 @@ use crate::module::{DebugRpcImpl, NodeRpcImpl, StateRpcImpl, TxPoolRpcImpl, Wall
 use crate::service::RpcService;
 use actix::prelude::*;
 use anyhow::Result;
-use config::NodeConfig;
 use jsonrpc_core::IoHandler;
+use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
+use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::debug::DebugApi;
 use starcoin_rpc_api::wallet::WalletApi;
 use starcoin_rpc_api::{node::NodeApi, state::StateApi, txpool::TxPoolApi};
@@ -29,6 +30,8 @@ impl RpcActor {
         txpool_service: TS,
         account_service: AS,
         state_service: SS,
+        //TODO after network async service provide trait, remove Option.
+        network_service: Option<NetworkAsyncService>,
         logger_handle: Option<Arc<LoggerHandle>>,
     ) -> Result<(Addr<RpcActor>, IoHandler)>
     where
@@ -37,7 +40,8 @@ impl RpcActor {
         SS: ChainStateAsyncService + 'static,
     {
         Self::launch_with_apis(
-            config,
+            config.clone(),
+            NodeRpcImpl::new(config, network_service),
             Some(TxPoolRpcImpl::new(txpool_service)),
             Some(WalletRpcImpl::new(account_service)),
             Some(StateRpcImpl::new(state_service)),
@@ -45,21 +49,23 @@ impl RpcActor {
         )
     }
 
-    pub fn launch_with_apis<T, A, S, D>(
+    pub fn launch_with_apis<N, T, A, S, D>(
         config: Arc<NodeConfig>,
+        node_api: N,
         txpool_api: Option<T>,
         account_api: Option<A>,
         state_api: Option<S>,
         debug_api: Option<D>,
     ) -> Result<(Addr<Self>, IoHandler)>
     where
+        N: NodeApi,
         T: TxPoolApi,
         A: WalletApi,
         S: StateApi,
         D: DebugApi,
     {
         let mut io_handler = IoHandler::new();
-        io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new()));
+        io_handler.extend_with(NodeApi::to_delegate(node_api));
         if let Some(txpool_api) = txpool_api {
             io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
         }
@@ -141,6 +147,7 @@ mod tests {
             txpool,
             account_service,
             state_service,
+            None,
             Some(logger_handle),
         )
         .unwrap();
