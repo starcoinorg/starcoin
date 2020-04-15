@@ -61,6 +61,7 @@ struct Inner {
     connected_tx: mpsc::Sender<PeerEvent>,
     need_send_event: AtomicBool,
     node_config: Arc<NodeConfig>,
+    peer_id: PeerId,
 }
 
 struct PeerInfoNet {
@@ -174,7 +175,10 @@ impl NetworkAsyncService {
     pub async fn peer_set(&self) -> Result<HashSet<PeerInfo>> {
         let mut result = HashSet::new();
 
-        for (_, peer) in self.inner.peers.lock().await.iter() {
+        for (peer_id, peer) in self.inner.peers.lock().await.iter() {
+            if self.peer_id.eq(peer_id) {
+                continue;
+            }
             result.insert(peer.peer_info.clone());
         }
         Ok(result)
@@ -322,6 +326,7 @@ impl NetworkActor {
             connected_tx,
             need_send_event,
             node_config,
+            peer_id: peer_id.clone(),
         };
         let inner = Arc::new(inner);
         handle.spawn(Self::start(
@@ -528,19 +533,21 @@ impl Inner {
 
         let path = path.join(file);
 
-        let mut peers = Vec::new();
+        let mut peers = HashSet::new();
         for peer in self.peers.lock().await.keys() {
-            peers.push(peer.clone());
+            if !self.peer_id.eq(peer) {
+                peers.insert(peer.clone());
+            }
         }
         if path.exists() {
             std::fs::remove_file(path.clone())?;
         }
-        let mut addrs_list = Vec::new();
+        let mut addrs_list = HashSet::new();
         for peer_id in peers {
             let addrs = self.network_service.get_address(peer_id.clone()).await;
             for addr in addrs {
                 let new_addr = addr.with(Protocol::P2p(peer_id.clone().into()));
-                addrs_list.push(new_addr);
+                addrs_list.insert(new_addr);
             }
         }
         let mut file = std::fs::File::create(path)?;
