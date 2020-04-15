@@ -122,6 +122,7 @@ async fn test_block_chain_forks() {
     if times > 0 {
         for i in 0..(times + 1) {
             Delay::new(Duration::from_millis(1000)).await;
+            //TODO optimize this logic, use a more clear method to simulate chain difficulty and fork.
             let block = chain
                 .clone()
                 .create_block_template(
@@ -132,7 +133,7 @@ async fn test_block_chain_forks() {
                 )
                 .await
                 .unwrap()
-                .into_block(DummyHeader {}, U256::zero() + 1.into());
+                .into_block(DummyHeader {}, U256::max_value());
             info!(
                 "{}:{:?}:{:?}:{:?}",
                 i,
@@ -145,10 +146,7 @@ async fn test_block_chain_forks() {
         }
     }
 
-    assert_eq!(
-        chain.master_head_header().await.unwrap().number(),
-        (times + 1)
-    )
+    assert_eq!(chain.master_head_header().await.unwrap().id(), parent_hash)
 }
 
 #[stest::test]
