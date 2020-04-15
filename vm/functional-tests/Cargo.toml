@@ -1,0 +1,22 @@
+[package]
+name = "starcoin-vm-tests"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+tempfile = "3.1.0"
+datatest-stable = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+move-vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+move-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/libra", version = "0.1.0",rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+libra_types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+functional-tests = { package="functional-tests", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+stdlib = { package="stdlib", path = "../stdlib"}
+
+[[test]]
+name = "testsuite"
+harness = false
