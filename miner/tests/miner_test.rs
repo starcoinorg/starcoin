@@ -6,7 +6,7 @@ use consensus::dummy::{DummyConsensus, DummyHeader};
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
-use starcoin_miner::miner_client::MinerClient;
+use starcoin_miner::miner_client::miner_client::MinerClient;
 use starcoin_miner::MinerActor;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolAsyncService;

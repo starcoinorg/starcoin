@@ -16,12 +16,20 @@ pub struct MinerConfig {
     /// The real use time is a random value between 0 and dev_period.
     pub dev_period: u64,
     pub pacemaker_strategy: PacemakerStrategy,
+    pub consensus_strategy: ConsensusStrategy,
 }
 
 impl Default for MinerConfig {
     fn default() -> Self {
         Self::default_with_net(ChainNetwork::default())
     }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(tag = "type")]
+pub enum ConsensusStrategy {
+    Argon,
+    Dummy,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -34,9 +42,9 @@ pub enum PacemakerStrategy {
 
 impl ConfigModule for MinerConfig {
     fn default_with_net(net: ChainNetwork) -> Self {
-        let pacemaker_strategy = match net {
-            ChainNetwork::Dev => PacemakerStrategy::Ondemand,
-            _ => PacemakerStrategy::HeadBlock,
+        let (pacemaker_strategy, consensus_strategy) = match net {
+            ChainNetwork::Dev => (PacemakerStrategy::Ondemand, ConsensusStrategy::Dummy),
+            _ => (PacemakerStrategy::HeadBlock, ConsensusStrategy::Argon),
         };
         let port = match net {
             ChainNetwork::Dev => get_available_port(),
@@ -48,6 +56,7 @@ impl ConfigModule for MinerConfig {
                 .expect("parse address must success."),
             dev_period: 0,
             pacemaker_strategy,
+            consensus_strategy,
         }
     }
 
@@ -56,6 +65,7 @@ impl ConfigModule for MinerConfig {
             .parse::<SocketAddr>()
             .unwrap();
         self.pacemaker_strategy = PacemakerStrategy::Schedule;
+        self.consensus_strategy = ConsensusStrategy::Dummy;
         self.dev_period = 1;
     }
 
@@ -64,6 +74,7 @@ impl ConfigModule for MinerConfig {
             if opt.dev_period > 0 {
                 self.dev_period = opt.dev_period;
                 self.pacemaker_strategy = PacemakerStrategy::Schedule;
+                self.consensus_strategy = ConsensusStrategy::Dummy;
             }
         }
         Ok(())
