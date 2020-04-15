@@ -108,7 +108,6 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        self.sync_task();
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
             if !act.syncing.load(Ordering::Relaxed) {
                 if let Err(e) = act.sync_event_sender.try_send(SyncEvent {}) {
@@ -219,7 +218,7 @@ where
         bus: Addr<BusActor>,
     ) -> Result<()> {
         if (main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network {
-            if sync_metadata.is_state_sync()? {
+            if sync_metadata.can_sync_state() {
                 if let Some(best_peer) = network.best_peer().await? {
                     if self_peer_id != best_peer.get_peer_id() {
                         //1. ancestor
@@ -256,7 +255,7 @@ where
                                     Self::get_pivot(&network, best_peer.get_peer_id(), pivot)
                                         .await?;
                                 let sync_pivot = sync_metadata.get_pivot()?;
-                                if sync_metadata.is_state_sync()? {
+                                if sync_metadata.can_sync_state() {
                                     if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
                                         sync_metadata.clone().update_pivot(pivot)?;
                                         if sync_pivot.is_none() {
@@ -272,7 +271,6 @@ where
                                             sync_metadata
                                                 .update_address(&state_sync_task_address)?
                                         } else if sync_pivot.unwrap() < pivot {
-                                            //todo:reset
                                             if let Some(address) = sync_metadata.get_address() {
                                                 &address.reset(root.state_root());
                                             } else {

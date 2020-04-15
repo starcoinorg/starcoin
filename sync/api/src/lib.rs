@@ -18,38 +18,65 @@ pub trait StateSyncReset: DynClone + Send + Sync {
 pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
 
 pub struct SyncMetadataInner {
-    syncing: bool,
+    is_state_sync: bool,
     pivot: Option<BlockNumber>,
     state_sync_address: Option<Box<dyn StateSyncReset>>,
+    state_sync_done: bool,
+    block_sync_done: bool,
 }
 
 impl SyncMetadata {
     pub fn new(config: Arc<NodeConfig>) -> SyncMetadata {
         info!("is_state_sync : {}", config.sync.is_state_sync());
         let inner = SyncMetadataInner {
-            syncing: config.sync.is_state_sync(),
+            is_state_sync: config.sync.is_state_sync(),
             pivot: None,
             state_sync_address: None,
+            state_sync_done: false,
+            block_sync_done: false,
         };
         SyncMetadata(Arc::new(RwLock::new(inner)))
     }
 
+    pub fn can_sync_state(&self) -> bool {
+        self.is_state_sync() && !self.0.read().state_sync_done && !self.0.read().block_sync_done
+    }
     pub fn update_pivot(&self, pivot: BlockNumber) -> Result<()> {
-        assert!(self.0.read().syncing, "chain is not in fast sync mode.");
+        assert!(self.can_sync_state(), "cat not update pivot.");
         self.0.write().pivot = Some(pivot);
         Ok(())
     }
 
-    pub fn sync_done(&self) -> Result<()> {
+    pub fn state_sync_done(&self) -> Result<()> {
+        assert!(self.is_state_sync(), "chain is not in fast sync mode.");
+        assert!(!self.0.read().state_sync_done, "state sync already done.");
         let mut lock = self.0.write();
-        lock.syncing = false;
-        lock.pivot = None;
-        lock.state_sync_address = None;
+        lock.state_sync_done = true;
+        self.both_done();
         Ok(())
     }
 
-    pub fn is_state_sync(&self) -> Result<bool> {
-        Ok(self.0.read().syncing)
+    pub fn block_sync_done(&self) -> Result<()> {
+        assert!(self.is_state_sync(), "chain is not in fast sync mode.");
+        assert!(!self.0.read().block_sync_done, "block sync already done.");
+        let mut lock = self.0.write();
+        lock.state_sync_done = true;
+        self.both_done();
+        Ok(())
+    }
+
+    fn both_done(&self) -> Result<()> {
+        if self.0.read().state_sync_done && self.0.read().block_sync_done {
+            let mut lock = self.0.write();
+            lock.pivot = None;
+            lock.state_sync_address = None;
+            //todo: send done event
+        }
+        Ok(())
+    }
+
+    fn is_state_sync(&self) -> bool {
+        self.0.read().is_state_sync
     }
 
     pub fn get_pivot(&self) -> Result<Option<BlockNumber>> {
@@ -57,6 +84,7 @@ impl SyncMetadata {
     }
 
     pub fn update_address(&self, address: &(dyn StateSyncReset + 'static)) -> Result<()> {
+        assert!(self.can_sync_state(), "cat not update address.");
         self.0.write().state_sync_address = Some(clone_box(address));
         Ok(())
     }

@@ -167,7 +167,7 @@ fn test_state_sync() {
 
         let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone());
         assert!(
-            sync_metadata_actor_2.is_state_sync().unwrap(),
+            sync_metadata_actor_2.is_state_sync(),
             "is_state_sync is false."
         );
 
@@ -198,7 +198,7 @@ fn test_state_sync() {
         Delay::new(Duration::from_secs(2 * 60)).await;
 
         assert!(
-            !sync_metadata_actor_2.is_state_sync().unwrap(),
+            !sync_metadata_actor_2.is_state_sync(),
             "is_state_sync is true."
         );
     };

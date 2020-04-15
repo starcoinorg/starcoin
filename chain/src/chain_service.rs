@@ -423,7 +423,7 @@ where
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {
-        if !self.sync.is_state_sync()? {
+        if !self.sync.is_state_sync() {
             if self
                 .storage
                 .get_block_by_hash(block.header().id())?
@@ -468,7 +468,7 @@ where
         block: Block,
         block_info: BlockInfo,
     ) -> Result<ConnectResult<()>> {
-        if self.sync.is_state_sync()? {
+        if self.sync.is_state_sync() {
             let pivot = self.sync.get_pivot()?;
             if pivot.is_some() {
                 let pivot_number = pivot.unwrap();
