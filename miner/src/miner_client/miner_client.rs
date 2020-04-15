@@ -147,7 +147,6 @@ where
 mod test {
     use super::*;
     use crate::miner::{MineCtx, Miner};
-    use crate::miner_client::MinerClient;
     use crate::stratum::StratumManager;
     use actix_rt::System;
     use bus::BusActor;
@@ -160,6 +159,7 @@ mod test {
     use std::time::Duration;
     use tokio;
     use types::block::{Block, BlockBody, BlockHeader, BlockTemplate};
+    use MinerClient;
 
     async fn prepare() {
         let conf = Arc::new(NodeConfig::random_for_test());
