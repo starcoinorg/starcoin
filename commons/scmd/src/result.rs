@@ -73,6 +73,9 @@ pub fn fmt_table(value: Value) -> Result<()> {
         Value::Array(values) => values,
         value => vec![value],
     };
+    if values.is_empty() {
+        return Ok(());
+    }
     let first = &values[0];
     let first_value = serde_json::to_value(first)?;
     if first_value.is_null() {
