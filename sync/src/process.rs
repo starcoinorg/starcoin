@@ -1,4 +1,7 @@
-use crate::helper::{do_get_block_by_hash, do_get_hash_by_number, do_state_node};
+use crate::get_txns_handler::GetTxnsHandler;
+use crate::helper::{
+    do_get_block_by_hash, do_get_hash_by_number, do_response_get_txns, do_state_node,
+};
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::Result;
@@ -12,11 +15,12 @@ use starcoin_state_tree::{StateNode, StateNodeStore};
 /// Sync message which inbound
 use starcoin_sync_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, SyncRpcRequest,
+    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, SyncRpcRequest, TransactionsData,
 };
 use std::sync::Arc;
 use traits::ChainAsyncService;
 use traits::Consensus;
+use txpool::TxPoolRef;
 
 pub struct ProcessActor<C>
 where
@@ -32,11 +36,12 @@ where
 {
     pub fn launch(
         chain_reader: ChainActorRef<C>,
+        txpool: TxPoolRef,
         bus: Addr<BusActor>,
         state_node_storage: Arc<dyn StateNodeStore>,
     ) -> Result<Addr<ProcessActor<C>>> {
         let process_actor = ProcessActor {
-            processor: Arc::new(Processor::new(chain_reader, state_node_storage)),
+            processor: Arc::new(Processor::new(chain_reader, txpool, state_node_storage)),
             bus,
         };
         Ok(process_actor.start())
@@ -143,6 +148,13 @@ where
                         warn!("{:?}", "state_nodes is none.");
                     }
                 }
+                SyncRpcRequest::GetTxns(msg) => {
+                    let handler = GetTxnsHandler::new(self.processor.txpool.clone());
+                    let result = handler.handle(responder, msg).await;
+                    if let Err(e) = result {
+                        warn!("handle get txn fail, error: {:?}", e);
+                    }
+                }
             }
         });
 
@@ -156,6 +168,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     chain_reader: ChainActorRef<C>,
+    txpool: TxPoolRef,
     state_node_storage: Arc<dyn StateNodeStore>,
 }
 
@@ -165,10 +178,12 @@ where
 {
     pub fn new(
         chain_reader: ChainActorRef<C>,
+        txpool: TxPoolRef,
         state_node_storage: Arc<dyn StateNodeStore>,
     ) -> Self {
         Processor {
             chain_reader,
+            txpool,
             state_node_storage,
         }
     }
