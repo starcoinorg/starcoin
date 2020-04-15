@@ -3989,6 +3989,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-types",
+ "stest",
  "tempfile",
  "thiserror",
  "tokio 0.2.17",

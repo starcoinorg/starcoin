@@ -10,6 +10,7 @@ use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
 use futures::lock::Mutex;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
+use libp2p::multiaddr::Protocol;
 use libp2p::PeerId;
 use scs::SCSCodec;
 use starcoin_sync_api::sync_messages::PeerNewBlock;
@@ -26,12 +27,18 @@ use tokio::runtime::Handle;
 
 use bitflags::_core::sync::atomic::Ordering;
 use crypto::{hash::CryptoHash, HashValue};
+use network_p2p::Multiaddr;
 use network_p2p_api::messages::RawRpcRequestMessage;
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::Write;
+use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use types::transaction::SignedUserTransaction;
 
 const LRU_CACHE_SIZE: usize = 1024;
+const PEERS_FILE_NAME: &str = "peers.json";
 
 #[derive(Clone)]
 pub struct NetworkAsyncService {
@@ -53,6 +60,7 @@ struct Inner {
     peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
     connected_tx: mpsc::Sender<PeerEvent>,
     need_send_event: AtomicBool,
+    node_config: Arc<NodeConfig>,
 }
 
 struct PeerInfoNet {
@@ -224,8 +232,39 @@ impl NetworkActor {
         genesis_hash: HashValue,
         self_info: PeerInfo,
     ) -> NetworkAsyncService {
+        let mut has_seed = false;
+        if node_config.network.seeds.len() > 0 {
+            has_seed = true;
+        }
+
+        let path = node_config.base.data_dir();
+        let file = Path::new(PEERS_FILE_NAME);
+
+        let path = path.join(file);
+        let peers_from_json = match File::open(path) {
+            Ok(mut f) => {
+                let mut contents = String::new();
+                let result = match f.read_to_string(&mut contents) {
+                    Ok(_n) => Some(serde_json::from_str::<Vec<Multiaddr>>(&contents)),
+                    Err(_e) => None,
+                };
+                result
+            }
+            Err(_e) => {
+                info!("no peers file ");
+                None
+            }
+        };
+
+        let mut network_config = node_config.network.clone();
+        match peers_from_json {
+            Some(Ok(mut addrs)) => {
+                network_config.seeds.append(&mut addrs);
+            }
+            _ => {}
+        }
         let (service, tx, rx, event_rx, tx_command) = build_network_service(
-            &node_config.network,
+            &network_config,
             handle.clone(),
             genesis_hash,
             self_info.clone(),
@@ -240,6 +279,7 @@ impl NetworkActor {
                 .fold(String::new(), |acc, arg| acc + arg.to_string().as_str()),
             service.identify()
         );
+
         let message_processor = MessageProcessor::new();
         let message_processor_clone = message_processor.clone();
 
@@ -266,9 +306,11 @@ impl NetworkActor {
         });
         let (connected_tx, mut connected_rx) = futures::channel::mpsc::channel(1);
         let need_send_event = AtomicBool::new(false);
-        if node_config.network.seeds.len() > 0 {
+
+        if has_seed {
             need_send_event.swap(true, Ordering::Acquire);
         }
+
         let inner = Inner {
             network_service: service,
             bus,
@@ -278,6 +320,7 @@ impl NetworkActor {
             peers,
             connected_tx,
             need_send_event,
+            node_config,
         };
         let inner = Arc::new(inner);
         handle.spawn(Self::start(
@@ -288,7 +331,7 @@ impl NetworkActor {
             tx_command,
         ));
 
-        if node_config.network.seeds.len() > 0 {
+        if has_seed {
             futures::executor::block_on(async move {
                 let event = connected_rx.next().await.unwrap();
                 info!("receive event {:?}", event);
@@ -455,7 +498,7 @@ impl Inner {
         info!("event is {:?}", event);
         match event.clone() {
             PeerEvent::Open(peer_id, peer_info) => {
-                inner.on_peer_connected(peer_id.into(), peer_info).await;
+                inner.on_peer_connected(peer_id.into(), peer_info).await?;
                 if inner.need_send_event.load(Ordering::Acquire) {
                     info!("send event");
                     let mut connected_tx = inner.connected_tx.clone();
@@ -472,12 +515,38 @@ impl Inner {
         Ok(())
     }
 
-    async fn on_peer_connected(&self, peer_id: PeerId, peer_info: PeerInfo) {
+    async fn on_peer_connected(&self, peer_id: PeerId, peer_info: PeerInfo) -> Result<()> {
         self.peers
             .lock()
             .await
             .entry(peer_id.clone())
             .or_insert(PeerInfoNet::new(peer_info));
+
+        let path = self.node_config.base.data_dir();
+        let file = Path::new(PEERS_FILE_NAME);
+
+        let path = path.join(file);
+
+        let mut peers = Vec::new();
+        for peer in self.peers.lock().await.keys() {
+            peers.push(peer.clone());
+        }
+        if path.exists() {
+            std::fs::remove_file(path.clone())?;
+        }
+        let mut addrs_list = Vec::new();
+        for peer_id in peers {
+            let addrs = self.network_service.get_address(peer_id.clone()).await;
+            for addr in addrs {
+                let new_addr = addr.with(Protocol::P2p(peer_id.clone().into()));
+                addrs_list.push(new_addr);
+            }
+        }
+        let mut file = std::fs::File::create(path)?;
+        let content = serde_json::to_vec(&addrs_list)?;
+        file.write_all(&content)?;
+
+        Ok(())
     }
 
     async fn on_peer_disconnected(&self, peer_id: PeerId) {
