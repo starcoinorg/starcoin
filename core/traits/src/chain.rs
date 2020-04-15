@@ -9,7 +9,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
-    U256, U512,
+    U512,
 };
 
 pub trait ChainReader {
@@ -27,7 +27,6 @@ pub trait ChainReader {
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
-        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;

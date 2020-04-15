@@ -21,7 +21,6 @@ pub enum ChainRequest {
         Option<Vec<u8>>,
         Option<HashValue>,
         Vec<SignedUserTransaction>,
-        types::U256,
     ), // just fot test
     GetBlockByHash(HashValue),
     GetBlockInfoByHash(HashValue),
