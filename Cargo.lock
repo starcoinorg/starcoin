@@ -379,6 +379,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-stream"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22068c0c19514942eefcfd4daf8976ef1aad84e61539f95cd200c35202f80af5"
+dependencies = [
+ "async-stream-impl",
+ "futures-core",
+]
+
+[[package]]
+name = "async-stream-impl"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25f9db3b38af870bf7e5cc649167533b493928e50744e2c30ae350230b414670"
+dependencies = [
+ "proc-macro2 1.0.10",
+ "quote 1.0.3",
+ "syn 1.0.17",
+]
+
+[[package]]
 name = "async-task"
 version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -907,6 +928,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "compiler"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "anyhow",
+ "bytecode-source-map",
+ "bytecode-verifier",
+ "ir-to-bytecode",
+ "libra-types",
+ "move-ir-types",
+ "serde_json",
+ "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
+ "structopt",
+ "vm",
+]
+
+[[package]]
 name = "const-random"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -961,6 +999,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "crossbeam"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69323bff1fb41c635347b8ead484a5ca6c3f11914d784170b158d8449ab07f8e"
+dependencies = [
+ "cfg-if",
+ "crossbeam-channel",
+ "crossbeam-deque",
+ "crossbeam-epoch",
+ "crossbeam-queue",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -1160,6 +1212,22 @@ dependencies = [
  "structopt",
  "termcolor",
  "walkdir",
+]
+
+[[package]]
+name = "debug-interface"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "anyhow",
+ "libra-logger",
+ "libra-metrics",
+ "once_cell",
+ "prost",
+ "serde_json",
+ "tokio 0.2.17",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]
@@ -1584,6 +1652,30 @@ name = "fuchsia-zircon-sys"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
+
+[[package]]
+name = "functional-tests"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "aho-corasick",
+ "anyhow",
+ "bytecode-verifier",
+ "datatest-stable",
+ "language-e2e-tests",
+ "libra-config",
+ "libra-crypto",
+ "libra-state-view",
+ "libra-types",
+ "libra-vm",
+ "mirai-annotations",
+ "move-core-types",
+ "once_cell",
+ "regex",
+ "termcolor",
+ "thiserror",
+ "vm",
+]
 
 [[package]]
 name = "futures"
@@ -2026,6 +2118,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "http-body"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13d5ff830006f7646652e057693569bfe0d51760c0085a071769d142a205111b"
+dependencies = [
+ "bytes 0.5.4",
+ "http 0.2.1",
+]
+
+[[package]]
 name = "httparse"
 version = "1.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2070,7 +2172,7 @@ dependencies = [
  "futures-cpupool",
  "h2 0.1.26",
  "http 0.1.21",
- "http-body",
+ "http-body 0.1.0",
  "httparse",
  "iovec",
  "itoa",
@@ -2086,7 +2188,31 @@ dependencies = [
  "tokio-tcp",
  "tokio-threadpool",
  "tokio-timer",
- "want",
+ "want 0.2.0",
+]
+
+[[package]]
+name = "hyper"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed6081100e960d9d74734659ffc9cc91daf1c0fc7aceb8eaa94ee1a3f5046f2e"
+dependencies = [
+ "bytes 0.5.4",
+ "futures-channel",
+ "futures-core",
+ "futures-util",
+ "h2 0.2.4",
+ "http 0.2.1",
+ "http-body 0.3.1",
+ "httparse",
+ "itoa",
+ "log 0.4.8",
+ "net2",
+ "pin-project",
+ "time",
+ "tokio 0.2.17",
+ "tower-service",
+ "want 0.3.0",
 ]
 
 [[package]]
@@ -2526,6 +2652,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c54d9f465d530a752e6ebdc217e081a7a614b48cb200f6f0aee21ba6bc9aabb"
 dependencies = [
  "log 0.4.8",
+]
+
+[[package]]
+name = "language-e2e-tests"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "anyhow",
+ "bytecode-verifier",
+ "compiler",
+ "libra-canonical-serialization",
+ "libra-config",
+ "libra-crypto",
+ "libra-logger",
+ "libra-proptest-helpers",
+ "libra-state-view",
+ "libra-types",
+ "libra-vm",
+ "move-core-types",
+ "move-vm-cache",
+ "move-vm-state",
+ "move-vm-types",
+ "once_cell",
+ "proptest",
+ "proptest-derive",
+ "rand 0.6.5",
+ "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
+ "transaction-builder",
+ "vm",
+ "vm-genesis",
 ]
 
 [[package]]
@@ -3386,6 +3542,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "libra-config"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "anyhow",
+ "get_if_addrs",
+ "hex 0.4.2",
+ "libra-canonical-serialization",
+ "libra-crypto",
+ "libra-crypto-derive",
+ "libra-logger",
+ "libra-temppath",
+ "libra-types",
+ "log 0.4.8",
+ "mirai-annotations",
+ "parity-multiaddr 0.7.3",
+ "rand 0.6.5",
+ "serde",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "libra-crypto"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
@@ -3436,11 +3615,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "libra-metrics"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "anyhow",
+ "futures 0.3.4",
+ "hyper 0.13.4",
+ "libra-logger",
+ "once_cell",
+ "prometheus",
+ "serde_json",
+ "tokio 0.2.17",
+]
+
+[[package]]
 name = "libra-nibble"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "libra-proptest-helpers"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "crossbeam",
+ "proptest",
+ "proptest-derive",
 ]
 
 [[package]]
@@ -3474,10 +3678,13 @@ dependencies = [
  "libra-canonical-serialization",
  "libra-crypto",
  "libra-crypto-derive",
+ "libra-proptest-helpers",
  "mirai-annotations",
  "move-core-types",
  "once_cell",
  "parity-multiaddr 0.7.3",
+ "proptest",
+ "proptest-derive",
  "prost",
  "prost-build",
  "radix_trie",
@@ -3485,6 +3692,35 @@ dependencies = [
  "serde",
  "thiserror",
  "tiny-keccak 2.0.2",
+]
+
+[[package]]
+name = "libra-vm"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "bytecode-verifier",
+ "debug-interface",
+ "hex 0.4.2",
+ "libra-canonical-serialization",
+ "libra-config",
+ "libra-crypto",
+ "libra-logger",
+ "libra-metrics",
+ "libra-state-view",
+ "libra-types",
+ "mirai-annotations",
+ "move-core-types",
+ "move-vm-cache",
+ "move-vm-runtime",
+ "move-vm-state",
+ "move-vm-types",
+ "once_cell",
+ "prometheus",
+ "rayon",
+ "serde",
+ "serde_json",
+ "vm",
 ]
 
 [[package]]
@@ -3803,6 +4039,8 @@ source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2
 dependencies = [
  "anyhow",
  "libra-canonical-serialization",
+ "proptest",
+ "proptest-derive",
  "ref-cast",
  "serde",
 ]
@@ -4653,6 +4891,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "prometheus"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0575e258dab62268e7236d7307caa38848acbda7ec7ab87bd9093791e999d20"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "spin",
+ "thiserror",
+]
+
+[[package]]
 name = "proptest"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4847,7 +5098,7 @@ dependencies = [
  "rand_isaac",
  "rand_jitter",
  "rand_os",
- "rand_pcg",
+ "rand_pcg 0.1.2",
  "rand_xorshift",
  "winapi 0.3.8",
 ]
@@ -4863,6 +5114,7 @@ dependencies = [
  "rand_chacha 0.2.2",
  "rand_core 0.5.1",
  "rand_hc 0.2.0",
+ "rand_pcg 0.2.1",
 ]
 
 [[package]]
@@ -4972,12 +5224,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand_pcg"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
+dependencies = [
+ "rand_core 0.5.1",
+]
+
+[[package]]
 name = "rand_xorshift"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cbf7e9e623549b0e21f6e97cf8ecf247c1a8fd2e8a992ae265314300b2455d5c"
 dependencies = [
  "rand_core 0.3.1",
+]
+
+[[package]]
+name = "rayon"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db6ce3297f9c85e16621bb8cca38a06779ffc31bb8184e1be4bed2be4678a098"
+dependencies = [
+ "crossbeam-deque",
+ "either",
+ "rayon-core",
+]
+
+[[package]]
+name = "rayon-core"
+version = "1.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08a89b46efaf957e52b18062fb2f4660f8b8a4dde1807ca002690868ef2c85a9"
+dependencies = [
+ "crossbeam-deque",
+ "crossbeam-queue",
+ "crossbeam-utils",
+ "lazy_static",
+ "num_cpus",
 ]
 
 [[package]]
@@ -5842,7 +6127,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-runtime",
- "stdlib",
+ "stdlib 0.1.0",
  "stest",
 ]
 
@@ -6451,8 +6736,23 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-traits",
  "starcoin-types",
- "stdlib",
+ "stdlib 0.1.0",
  "stest",
+ "vm",
+]
+
+[[package]]
+name = "starcoin-vm-tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytecode-verifier",
+ "datatest-stable",
+ "functional-tests",
+ "libra-types",
+ "move-lang",
+ "stdlib 0.1.0",
+ "tempfile",
  "vm",
 ]
 
@@ -6520,6 +6820,23 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "stdlib"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "anyhow",
+ "bytecode-verifier",
+ "datatest-stable",
+ "include_dir",
+ "libra-canonical-serialization",
+ "libra-crypto",
+ "libra-types",
+ "move-lang",
+ "once_cell",
+ "vm",
+]
 
 [[package]]
 name = "stdlib"
@@ -7134,6 +7451,226 @@ dependencies = [
 ]
 
 [[package]]
+name = "tonic"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b058d1caf0c61cd4d7425b4f161fa3c41a4e0ca2d2e9f63af842ad2f1eca1628"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "base64 0.11.0",
+ "bytes 0.5.4",
+ "futures-core",
+ "futures-util",
+ "http 0.2.1",
+ "http-body 0.3.1",
+ "hyper 0.13.4",
+ "percent-encoding 2.1.0",
+ "pin-project",
+ "prost",
+ "prost-derive",
+ "tokio 0.2.17",
+ "tokio-util 0.3.1",
+ "tower",
+ "tower-balance",
+ "tower-load",
+ "tower-make",
+ "tower-service",
+ "tracing",
+ "tracing-futures",
+]
+
+[[package]]
+name = "tonic-build"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71d8d21cb568e802d77055ab7fcd43f0992206de5028de95c8d3a41118d32e8e"
+dependencies = [
+ "proc-macro2 1.0.10",
+ "prost-build",
+ "quote 1.0.3",
+ "syn 1.0.17",
+]
+
+[[package]]
+name = "tower"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd3169017c090b7a28fce80abaad0ab4f5566423677c9331bb320af7e49cfe62"
+dependencies = [
+ "futures-core",
+ "tower-buffer",
+ "tower-discover",
+ "tower-layer",
+ "tower-limit",
+ "tower-load-shed",
+ "tower-retry",
+ "tower-service",
+ "tower-timeout",
+ "tower-util",
+]
+
+[[package]]
+name = "tower-balance"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a792277613b7052448851efcf98a2c433e6f1d01460832dc60bef676bc275d4c"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "indexmap",
+ "pin-project",
+ "rand 0.7.3",
+ "slab",
+ "tokio 0.2.17",
+ "tower-discover",
+ "tower-layer",
+ "tower-load",
+ "tower-make",
+ "tower-ready-cache",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tower-buffer"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4887dc2a65d464c8b9b66e0e4d51c2fd6cf5b3373afc72805b0a60bce00446a"
+dependencies = [
+ "futures-core",
+ "pin-project",
+ "tokio 0.2.17",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tower-discover"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f6b5000c3c54d269cc695dff28136bb33d08cbf1df2c48129e143ab65bf3c2a"
+dependencies = [
+ "futures-core",
+ "pin-project",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-layer"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a35d656f2638b288b33495d1053ea74c40dc05ec0b92084dd71ca5566c4ed1dc"
+
+[[package]]
+name = "tower-limit"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92c3040c5dbed68abffaa0d4517ac1a454cd741044f33ab0eefab6b8d1361404"
+dependencies = [
+ "futures-core",
+ "pin-project",
+ "tokio 0.2.17",
+ "tower-layer",
+ "tower-load",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-load"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cc79fc3afd07492b7966d7efa7c6c50f8ed58d768a6075dd7ae6591c5d2017b"
+dependencies = [
+ "futures-core",
+ "log 0.4.8",
+ "pin-project",
+ "tokio 0.2.17",
+ "tower-discover",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-load-shed"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f021e23900173dc315feb4b6922510dae3e79c689b74c089112066c11f0ae4e"
+dependencies = [
+ "futures-core",
+ "pin-project",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-make"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce50370d644a0364bf4877ffd4f76404156a248d104e2cc234cd391ea5cdc965"
+dependencies = [
+ "tokio 0.2.17",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-ready-cache"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4eabb6620e5481267e2ec832c780b31cad0c15dcb14ed825df5076b26b591e1f"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "indexmap",
+ "log 0.4.8",
+ "tokio 0.2.17",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-retry"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6727956aaa2f8957d4d9232b308fe8e4e65d99db30f42b225646e86c9b6a952"
+dependencies = [
+ "futures-core",
+ "pin-project",
+ "tokio 0.2.17",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-service"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e987b6bf443f4b5b3b6f38704195592cca41c5bb7aedd3c3693c7081f8289860"
+
+[[package]]
+name = "tower-timeout"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "127b8924b357be938823eaaec0608c482d40add25609481027b96198b2e4b31e"
+dependencies = [
+ "pin-project",
+ "tokio 0.2.17",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-util"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1093c19826d33807c72511e68f73b4a0469a3f22c2bd5f7d5212178b4b89674"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "pin-project",
+ "tower-service",
+]
+
+[[package]]
 name = "trace-time"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7143,10 +7680,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracing"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1721cc8cf7d770cc4257872507180f35a4797272f5962f24c806af9e7faf52ab"
+dependencies = [
+ "cfg-if",
+ "log 0.4.8",
+ "tracing-attributes",
+ "tracing-core",
+]
+
+[[package]]
+name = "tracing-attributes"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fbad39da2f9af1cae3016339ad7f2c7a9e870f12e8fd04c4fd7ef35b30c0d2b"
+dependencies = [
+ "quote 1.0.3",
+ "syn 1.0.17",
+]
+
+[[package]]
+name = "tracing-core"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0aa83a9a47081cd522c09c81b31aec2c9273424976f922ad61c053b58350b715"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
+name = "tracing-futures"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58b0b7fd92dc7b71f29623cc6836dd7200f32161a2313dd78be233a8405694f6"
+dependencies = [
+ "pin-project",
+ "tracing",
+]
+
+[[package]]
 name = "traitobject"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
+
+[[package]]
+name = "transaction-builder"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "libra-canonical-serialization",
+ "libra-config",
+ "libra-types",
+ "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
+ "vm",
+]
 
 [[package]]
 name = "transaction-pool"
@@ -7453,6 +8043,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "vm-genesis"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9#a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"
+dependencies = [
+ "anyhow",
+ "bytecode-verifier",
+ "libra-canonical-serialization",
+ "libra-config",
+ "libra-crypto",
+ "libra-state-view",
+ "libra-types",
+ "libra-vm",
+ "move-core-types",
+ "move-vm-cache",
+ "move-vm-runtime",
+ "move-vm-state",
+ "move-vm-types",
+ "once_cell",
+ "parity-multiaddr 0.7.3",
+ "rand 0.6.5",
+ "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
+ "transaction-builder",
+ "vm",
+]
+
+[[package]]
 name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7485,6 +8101,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6395efa4784b027708f7451087e647ec73cc74f5d9bc2e418404248d679a230"
 dependencies = [
  "futures 0.1.29",
+ "log 0.4.8",
+ "try-lock",
+]
+
+[[package]]
+name = "want"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ce8a968cb1cd110d136ff8b819a556d6fb6d919363c61534f6860c7eb172ba0"
+dependencies = [
  "log 0.4.8",
  "try-lock",
 ]
