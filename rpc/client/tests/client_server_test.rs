@@ -31,7 +31,7 @@ fn test_multi_client() -> Result<()> {
         let (stop_sender, stop_receiver) = oneshot::channel::<bool>();
         let mut io_handler = IoHandler::new();
         //io_handler.add_method("status", |_params: Params| Ok(Value::Bool(true)));
-        io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new()));
+        io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new(config.clone(), None)));
         let (_rpc_actor, iohandler) = RpcActor::launch_with_handler(config, io_handler).unwrap();
 
         let client_task = move || {
