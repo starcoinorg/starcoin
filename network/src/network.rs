@@ -259,6 +259,7 @@ impl NetworkActor {
         let mut network_config = node_config.network.clone();
         match peers_from_json {
             Some(Ok(mut addrs)) => {
+                info!("load peers {:?}", addrs);
                 network_config.seeds.append(&mut addrs);
             }
             _ => {}
