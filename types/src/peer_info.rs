@@ -107,8 +107,9 @@ impl<'de> Deserialize<'de> for PeerId {
         D: Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
-            let s = <&str>::deserialize(deserializer)?;
-            let peer_id = libp2p::PeerId::from_str(s).map_err(D::Error::custom)?;
+            //note: if use &str at here, json rpc raise a error: invalid type: string "xx", expected a borrowed string
+            let s = <String>::deserialize(deserializer)?;
+            let peer_id = libp2p::PeerId::from_str(s.as_str()).map_err(D::Error::custom)?;
             Ok(PeerId(peer_id))
         } else {
             let b = <Vec<u8>>::deserialize(deserializer)?;
