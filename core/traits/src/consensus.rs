@@ -22,17 +22,27 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
 
     fn calculate_next_difficulty(config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256;
 
-    fn solve_consensus_header(pow_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader;
+    /// Calculate new block consensus header
+    // TODO use &HashValue to replace &[u8] for parent_hash
+    fn solve_consensus_header(parent_hash: &[u8], difficult: U256) -> Self::ConsensusHeader;
 
     fn verify_header(
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,
         header: &BlockHeader,
     ) -> Result<()>;
-    /// Construct block with BlockTemplate, Only for test
+
+    /// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_header
     fn create_block(
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,
         block_template: BlockTemplate,
-    ) -> Result<Block>;
+    ) -> Result<Block> {
+        let difficulty = Self::calculate_next_difficulty(config, reader);
+        let consensus_header = Self::solve_consensus_header(
+            block_template.parent_hash.to_vec().as_slice(),
+            difficulty,
+        );
+        Ok(block_template.into_block(consensus_header, difficulty))
+    }
 }

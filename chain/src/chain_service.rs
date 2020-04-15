@@ -25,7 +25,6 @@ use types::{
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
     transaction::SignedUserTransaction,
-    U256,
 };
 
 pub struct BlockChainCollection<C, S, P>
@@ -126,7 +125,6 @@ where
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         block_id: HashValue,
-        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         if self
@@ -140,13 +138,7 @@ where
                 .borrow()
                 .get(0)
                 .expect("master is none.")
-                .create_block_template(
-                    author,
-                    auth_key_prefix,
-                    Some(block_id),
-                    difficulty,
-                    user_txns,
-                )
+                .create_block_template(author, auth_key_prefix, Some(block_id), user_txns)
         } else {
             // just for test
             let mut tmp = None;
@@ -156,7 +148,6 @@ where
                         author,
                         auth_key_prefix.clone(),
                         Some(block_id),
-                        difficulty,
                         user_txns.clone(),
                     ));
                 }
@@ -566,7 +557,6 @@ where
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
-        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         let block_id = match parent_hash {
@@ -582,13 +572,8 @@ where
         };
 
         if let Ok(Some(_)) = self.get_block_by_hash(block_id) {
-            self.collection.create_block_template(
-                author,
-                auth_key_prefix,
-                block_id,
-                difficulty,
-                user_txns,
-            )
+            self.collection
+                .create_block_template(author, auth_key_prefix, block_id, user_txns)
         } else {
             Err(format_err!("Block {:?} not exist.", block_id))
         }

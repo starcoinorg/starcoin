@@ -11,9 +11,10 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use traits::ChainReader;
 use traits::{Consensus, ConsensusHeader};
-use types::block::{Block, BlockHeader, BlockTemplate};
+use types::block::BlockHeader;
 use types::U256;
 
+//TODO add some field to DummyHeader.
 #[derive(Clone, Debug)]
 pub struct DummyHeader {}
 
@@ -43,7 +44,7 @@ impl Consensus for DummyConsensus {
         config.miner.dev_period.into()
     }
 
-    fn solve_consensus_header(_pow_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
+    fn solve_consensus_header(_header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
@@ -62,24 +63,5 @@ impl Consensus for DummyConsensus {
         _header: &BlockHeader,
     ) -> Result<()> {
         Ok(())
-    }
-
-    fn create_block(
-        config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
-        block_template: BlockTemplate,
-    ) -> Result<Block> {
-        if config.miner.dev_period > 0 {
-            let start = SystemTime::now();
-            let since_the_epoch = start
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards");
-            let mut rng: StdRng = SeedableRng::seed_from_u64(since_the_epoch.as_secs());
-            let time: u64 = rng.gen_range(0, config.miner.dev_period * 1000);
-            debug!("DummyConsensus rand sleep time : {}", time);
-            thread::sleep(Duration::from_millis(time));
-            //TODO use sleep time as difficult
-        }
-        Ok(block_template.into_block(DummyHeader {}))
     }
 }

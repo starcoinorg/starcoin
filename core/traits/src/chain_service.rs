@@ -9,7 +9,6 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::StartupInfo,
     transaction::SignedUserTransaction,
-    U256,
 };
 
 /// implement ChainService
@@ -37,7 +36,6 @@ pub trait ChainService {
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
-        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
     fn gen_tx(&self) -> Result<()>;
@@ -72,6 +70,5 @@ pub trait ChainAsyncService: Clone + std::marker::Unpin {
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
-        difficulty: U256,
     ) -> Option<BlockTemplate>;
 }
