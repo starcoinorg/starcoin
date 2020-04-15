@@ -23,7 +23,7 @@ impl CommandAction for ListCommand {
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
-    ) -> Result<Vec<WalletAccount>> {
+    ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let accounts = client.wallet_list()?;
         Ok(accounts)

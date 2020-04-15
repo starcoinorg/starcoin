@@ -43,7 +43,7 @@ impl CommandAction for ImportCommand {
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
-    ) -> Result<WalletAccount> {
+    ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt: &ImportOpt = ctx.opt();
 

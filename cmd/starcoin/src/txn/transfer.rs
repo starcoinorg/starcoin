@@ -42,7 +42,7 @@ impl CommandAction for TransferCommand {
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
-    ) -> Result<TransactionView> {
+    ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let sender = match opt.from {
