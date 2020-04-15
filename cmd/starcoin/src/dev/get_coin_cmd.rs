@@ -36,7 +36,7 @@ impl CommandAction for GetCoinCommand {
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
-    ) -> Result<TransactionView> {
+    ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let config = ctx.state().config();
         let net = config.net();

@@ -31,7 +31,10 @@ impl CommandAction for UnlockCommand {
     type Opt = UnlockOpt;
     type ReturnItem = String;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<String> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt: &UnlockOpt = ctx.opt();
         let duration = Duration::from_secs(opt.duration as u64);
