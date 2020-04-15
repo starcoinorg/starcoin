@@ -5,8 +5,8 @@ use crate::{
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
+use consensus::dummy::DummyConsensus;
 use consensus::dummy::DummyHeader;
-use consensus::{difficult, dummy::DummyConsensus};
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
@@ -82,7 +82,6 @@ async fn gen_head_chain(
                     Some(miner_account.get_auth_key().prefix().to_vec()),
                     None,
                     Vec::new(),
-                    DummyConsensus::calculate_next_difficulty(node_config.clone(), &block_chain),
                 )
                 .await
                 .unwrap();
@@ -130,11 +129,10 @@ async fn test_block_chain_forks() {
                     Some(miner_account.get_auth_key().prefix().to_vec()),
                     Some(parent_hash),
                     Vec::new(),
-                    U256::zero() + 1.into(),
                 )
                 .await
                 .unwrap()
-                .into_block(DummyHeader {});
+                .into_block(DummyHeader {}, U256::zero() + 1.into());
             info!(
                 "{}:{:?}:{:?}:{:?}",
                 i,
@@ -185,13 +183,11 @@ async fn test_chain_apply() -> Result<()> {
     )?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
-    let difficulty = difficult::get_next_work_required(&block_chain);
     let miner_account = WalletAccount::random();
     let block_template = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),
         None,
-        difficulty,
         vec![],
     )?;
     let new_block = DummyConsensus::create_block(config.clone(), &block_chain, block_template)?;

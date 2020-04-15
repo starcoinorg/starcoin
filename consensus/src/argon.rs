@@ -13,7 +13,7 @@ use std::io::Cursor;
 use std::sync::Arc;
 use traits::ChainReader;
 use traits::{Consensus, ConsensusHeader};
-use types::block::{Block, BlockHeader, BlockTemplate};
+use types::block::BlockHeader;
 use types::{H256, U256};
 
 #[derive(Clone, Debug)]
@@ -82,14 +82,6 @@ impl Consensus for ArgonConsensus {
         } else {
             Err(anyhow::Error::msg("invalid header"))
         }
-    }
-
-    fn create_block(
-        _config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
-        _block_template: BlockTemplate,
-    ) -> Result<Block, Error> {
-        unimplemented!()
     }
 }
 

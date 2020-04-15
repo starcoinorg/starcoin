@@ -56,10 +56,10 @@ where
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),
         None,
-        C::calculate_next_difficulty(config, chain),
         txns,
     )?;
-    miner.set_mint_job(MineCtx::new(block_template));
+    let difficult = C::calculate_next_difficulty(config, chain);
+    miner.set_mint_job(MineCtx::new(block_template, difficult));
     let job = miner.get_mint_job();
     info!("Push job to worker{:?}", job);
     stratum

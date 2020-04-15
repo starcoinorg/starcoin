@@ -28,7 +28,7 @@ use types::{
     block_metadata::BlockMetadata,
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
-    U256, U512,
+    U512,
 };
 
 pub static DEFAULT_BLOCK_INFO: Lazy<BlockInfo> = Lazy::new(|| {
@@ -175,7 +175,6 @@ where
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         previous_header: BlockHeader,
-        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         //TODO calculate gas limit etc.
@@ -221,7 +220,6 @@ where
             state_root,
             0,
             0,
-            difficulty,
             user_txns.into(),
         ))
     }
@@ -328,7 +326,6 @@ where
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
-        difficulty: U256,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         let block_id = match parent_hash {
@@ -337,13 +334,7 @@ where
         };
         assert!(self.exist_block(block_id));
         let previous_header = self.get_header(block_id).unwrap().unwrap();
-        self.create_block_template_inner(
-            author,
-            auth_key_prefix,
-            previous_header,
-            difficulty,
-            user_txns,
-        )
+        self.create_block_template_inner(author, auth_key_prefix, previous_header, user_txns)
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
