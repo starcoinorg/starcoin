@@ -205,6 +205,7 @@ where
         bus.clone(),
         peer_id,
         chain.clone(),
+        txpool.clone(),
         network.clone(),
         storage.clone(),
         sync_metadata.clone(),

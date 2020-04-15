@@ -12,6 +12,10 @@ use std::cmp::Ordering;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "()")]
+pub struct StartSyncTxnEvent;
+
+#[derive(Message, Clone, Debug)]
+#[rtype(result = "()")]
 pub struct PeerNewBlock {
     peer_id: PeerId,
     new_block: Block,
@@ -37,6 +41,7 @@ pub enum SyncRpcRequest {
     GetHashByNumberMsg(GetHashByNumberMsg),
     GetDataByHashMsg(GetDataByHashMsg),
     GetStateNodeByNodeHash(HashValue),
+    GetTxns(GetTxns),
 }
 
 #[derive(Message, Clone, Serialize, Deserialize)]
@@ -45,6 +50,7 @@ pub enum SyncRpcResponse {
     BatchHashByNumberMsg(BatchHashByNumberMsg),
     BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg, BatchBlockInfo),
     GetStateNodeByNodeHash(StateNode),
+    GetTxns(TransactionsData),
 }
 
 #[derive(Debug, Message, Clone, Serialize, Deserialize)]
@@ -53,6 +59,14 @@ pub enum SyncNotify {
     ClosePeerMsg(PeerId),
     NewHeadBlock(PeerId, Block),
     NewPeerMsg(PeerId),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetTxns;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransactionsData {
+    pub txns: Vec<SignedUserTransaction>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

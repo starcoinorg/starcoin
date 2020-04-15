@@ -8,7 +8,7 @@ use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
 use starcoin_sync_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, DataType, GetDataByHashMsg,
-    GetHashByNumberMsg, SyncRpcRequest, SyncRpcResponse,
+    GetHashByNumberMsg, GetTxns, SyncRpcRequest, SyncRpcResponse, TransactionsData,
 };
 use types::peer_info::PeerId;
 
@@ -22,6 +22,19 @@ async fn do_request(
         .send_request_bytes(peer_id.into(), request, do_duration(DELAY_TIME))
         .await?;
     SyncRpcResponse::decode(&response)
+}
+
+pub async fn get_txns(
+    network: &NetworkAsyncService,
+    peer_id: PeerId,
+    req: GetTxns,
+) -> Result<TransactionsData> {
+    let request = SyncRpcRequest::GetTxns(req);
+    if let SyncRpcResponse::GetTxns(txn_data) = do_request(&network, peer_id, request).await? {
+        Ok(txn_data)
+    } else {
+        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+    }
 }
 
 pub async fn get_hash_by_number(
@@ -146,5 +159,13 @@ pub async fn do_get_block_by_hash(
 
 pub async fn do_state_node(responder: Sender<Vec<u8>>, state_node: StateNode) -> Result<()> {
     let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetStateNodeByNodeHash(state_node))?;
+    do_response(responder, resp).await
+}
+
+pub async fn do_response_get_txns(
+    responder: Sender<Vec<u8>>,
+    txns_data: TransactionsData,
+) -> Result<()> {
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetTxns(txns_data))?;
     do_response(responder, resp).await
 }
