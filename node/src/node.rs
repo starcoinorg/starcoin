@@ -3,7 +3,7 @@
 
 use actix::{clock::delay_for, prelude::*};
 use anyhow::{bail, Result};
-use starcoin_bus::{Broadcast, Bus, BusActor};
+use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_genesis::Genesis;
