@@ -109,6 +109,7 @@ impl StateSyncTaskActor {
     fn exe_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let node_key = self.wait_2_sync.pop_front().unwrap();
         if let Some(state_node) = self.state_node_storage.get(&node_key).unwrap() {
+            debug!("find state_node {:?} in db.", node_key);
             self.syncing_nodes
                 .lock()
                 .insert(self.self_peer_id.clone(), node_key.clone());
@@ -125,6 +126,10 @@ impl StateSyncTaskActor {
                 let peer_info = network_service.best_peer().await.unwrap();
                 peer_info
             });
+            debug!(
+                "sync state_node {:?} from peer {:?}.",
+                node_key, best_peer_info
+            );
             if let Some(best_peer) = best_peer_info {
                 if self.self_peer_id != best_peer.get_peer_id() {
                     let network_service = self.network_service.clone();
@@ -148,6 +153,7 @@ impl StateSyncTaskActor {
     }
 
     pub fn reset(&mut self, root: &HashValue) {
+        info!("reset state sync task.");
         self.wait_2_sync.clear();
         self.root = root.clone();
         self.wait_2_sync.push_back(root.clone());
@@ -180,6 +186,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                 let _ = lock.remove(&task_event.peer_id);
                 drop(lock);
                 if let Some(state_node) = task_event.state_node {
+                    debug!("receive state_node: {:?}", state_node);
                     match state_node.inner() {
                         Node::Leaf(_) => {}
                         Node::Internal(n) => {
