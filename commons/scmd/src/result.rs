@@ -113,7 +113,10 @@ fn print_value_table(value: Value) -> Result<()> {
         let obj = flat.as_object().expect("must be a object");
         let mut rows = vec![];
         for (k, v) in obj {
-            let row = Row::new(vec![Cell::new(k, bold), Cell::new(v, Default::default())]);
+            let row = Row::new(vec![
+                Cell::new(k, bold),
+                Cell::new(value_to_string(&v).as_str(), Default::default()),
+            ]);
             rows.push(row);
         }
         let table = Table::new(rows, Default::default())?;
