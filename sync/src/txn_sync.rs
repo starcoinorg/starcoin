@@ -1,19 +1,12 @@
-use crate::get_txns_handler::GetTxnsHandler;
 use crate::helper;
 use actix::prelude::*;
 use anyhow::Result;
-use bus::{Bus, BusActor, Subscription};
-use crypto::hash::{CryptoHash, HashValue};
-use futures::FutureExt;
-use network::{NetworkAsyncService, PeerMessage};
-use rand::RngCore;
+use bus::{Bus, BusActor};
+use logger::prelude::*;
+use network::NetworkAsyncService;
 use starcoin_sync_api::sync_messages::{GetTxns, StartSyncTxnEvent};
 use starcoin_txpool_api::TxPoolAsyncService;
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
-use txpool::{TxPoolRef, TxStatus};
-use types::peer_info::{PeerId, PeerInfo};
-use types::transaction::SignedUserTransaction;
+use txpool::TxPoolRef;
 
 #[derive(Clone)]
 pub struct TxnSyncActor {
@@ -48,12 +41,11 @@ impl actix::Actor for TxnSyncActor {
             .clone()
             .subscribe(myself)
             .into_actor(self)
-            .then(|res, act, ctx| match res {
-                Err(e) => {
+            .map(|res, _act, ctx| {
+                if let Err(e) = res {
                     error!("fail to subscribe start_sync_txn event, err: {:?}", e);
                     ctx.terminate();
                 }
-                Ok(_) => {}
             })
             .wait(ctx);
 
@@ -65,14 +57,14 @@ impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
 
     fn handle(
         &mut self,
-        msg: StartSyncTxnEvent,
+        _msg: StartSyncTxnEvent,
         ctx: &mut <Self as Actor>::Context,
     ) -> Self::Result {
         self.inner
             .clone()
             .sync_txn()
             .into_actor(self)
-            .map(|res, act, ctx| {
+            .map(|res, _act, _ctx| {
                 if let Err(e) = res {
                     error!("fail to sync txn from best peers, e: {:?}", e);
                 }
@@ -95,11 +87,11 @@ impl Inner {
         } = self;
         let best_peer = network.best_peer().await?;
         if let Some(best_peer) = best_peer {
-            let txn_data = helper::get_txns(&network, best_peer.peer_id, GetTxns)
+            let txn_data = helper::get_txns(&network, best_peer.peer_id.clone(), GetTxns)
                 .await?
                 .txns;
             let import_result = pool.add_txns(txn_data).await?;
-            let succ_num = import_result.iter().filter(|r| r.is_ok()).collect();
+            let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
             info!(
                 "succ to sync {} txn from peer {}",
                 succ_num, best_peer.peer_id

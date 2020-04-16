@@ -23,6 +23,7 @@ where
 {
     _process_address: Addr<ProcessActor<C>>,
     download_address: Addr<DownloadActor<C>>,
+    #[allow(dead_code)]
     txn_sync_address: Addr<TxnSyncActor>,
     bus: Addr<BusActor>,
 }

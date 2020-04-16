@@ -4,7 +4,6 @@ use futures::channel::mpsc;
 use starcoin_sync_api::sync_messages::{GetTxns, TransactionsData};
 use starcoin_txpool_api::TxPoolAsyncService;
 use txpool::TxPoolRef;
-use types::transaction::SignedUserTransaction;
 #[derive(Clone)]
 pub struct GetTxnsHandler {
     pool: TxPoolRef,

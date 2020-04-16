@@ -1,7 +1,5 @@
 use crate::get_txns_handler::GetTxnsHandler;
-use crate::helper::{
-    do_get_block_by_hash, do_get_hash_by_number, do_response_get_txns, do_state_node,
-};
+use crate::helper::{do_get_block_by_hash, do_get_hash_by_number, do_state_node};
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::Result;
@@ -15,7 +13,7 @@ use starcoin_state_tree::{StateNode, StateNodeStore};
 /// Sync message which inbound
 use starcoin_sync_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, SyncRpcRequest, TransactionsData,
+    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, SyncRpcRequest,
 };
 use std::sync::Arc;
 use traits::ChainAsyncService;
@@ -149,7 +147,7 @@ where
                     }
                 }
                 SyncRpcRequest::GetTxns(msg) => {
-                    let handler = GetTxnsHandler::new(self.processor.txpool.clone());
+                    let handler = GetTxnsHandler::new(processor.txpool.clone());
                     let result = handler.handle(responder, msg).await;
                     if let Err(e) = result {
                         warn!("handle get txn fail, error: {:?}", e);
