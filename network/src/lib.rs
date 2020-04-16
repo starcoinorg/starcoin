@@ -18,9 +18,7 @@ pub use helper::get_unix_ts;
 pub use net::{build_network_service, SNetworkService};
 pub use network::NetworkAsyncService;
 pub use network_p2p::PeerId;
-pub use network_p2p_api::messages::{
-    PeerEvent, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage,
-};
+pub use network_p2p_api::messages::{PeerEvent, PeerMessage};
 
 use anyhow::*;
 use parity_codec::{Decode, Encode};
