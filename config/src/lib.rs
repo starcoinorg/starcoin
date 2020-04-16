@@ -72,8 +72,8 @@ pub struct StarcoinOpt {
     pub net: ChainNetwork,
 
     #[structopt(long)]
-    /// P2P network seeds
-    pub seeds: Option<Vec<Multiaddr>>,
+    /// P2P network seed, if want add more seeds, please edit config file.
+    pub seed: Option<Multiaddr>,
 
     #[structopt(long = "dev-period", default_value = "0")]
     /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
