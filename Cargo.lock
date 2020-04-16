@@ -6310,6 +6310,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
+ "stest",
  "tokio 0.2.18",
 ]
 
