@@ -65,13 +65,39 @@ impl CommandAction for ListCommand {
     type Opt = ListOpts;
     type ReturnItem = Vec<User>;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<Vec<User>> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
         let count = ctx.opt().count;
         let mut users = vec![];
         for i in 0..count {
             users.push(User::random(i));
         }
         Ok(users)
+    }
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "show")]
+struct ShowOpts {
+    #[structopt(long, default_value = "0")]
+    index: usize,
+}
+
+struct ShowCommand;
+
+impl CommandAction for ShowCommand {
+    type State = Counter;
+    type GlobalOpt = GlobalOpts;
+    type Opt = ShowOpts;
+    type ReturnItem = User;
+
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
+        Ok(User::random(ctx.opt().index))
     }
 }
 
@@ -184,6 +210,7 @@ fn main() -> Result<()> {
     );
     context
         .command(ListCommand)
+        .command(ShowCommand)
         .command(
             Command::with_name("alpha").subcommand(Command::with_action_fn(
                 |ctx: &ExecContext<Counter, GlobalOpts, AlphaSub1Opts>| -> Result<()> {

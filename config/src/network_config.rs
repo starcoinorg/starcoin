@@ -31,7 +31,7 @@ pub struct NetworkConfig {
     #[serde(skip)]
     pub self_peer_id: Option<PeerId>,
     #[serde(skip)]
-    pub self_connect_address: Option<Multiaddr>,
+    pub self_address: Option<Multiaddr>,
 }
 
 impl Default for NetworkConfig {
@@ -55,7 +55,7 @@ impl NetworkConfig {
             .expect("Replace multi address fail.");
         let mut p2p_address = host.clone();
         p2p_address.push(Protocol::P2p(peer_id.clone().into()));
-        self.self_connect_address = Some(p2p_address);
+        self.self_address = Some(p2p_address);
         self.self_peer_id = Some(peer_id);
     }
 
@@ -84,7 +84,7 @@ impl ConfigModule for NetworkConfig {
             network_key_file: PathBuf::from("network_key"),
             network_keypair: None,
             self_peer_id: None,
-            self_connect_address: None,
+            self_address: None,
         }
     }
 
@@ -103,17 +103,15 @@ impl ConfigModule for NetworkConfig {
             !self.network_key_file.as_os_str().is_empty(),
             "network key file should not be empty path"
         );
-        if let Some(seeds) = &opt.seeds {
-            for seed in seeds {
-                if self.seeds.contains(seed) {
-                    warn!(
-                        "Command line option seed {:?} has contains in config file.",
-                        seed
-                    );
-                } else {
-                    self.seeds.push(seed.clone());
-                    debug!("Add command line option seed {:?} to config", self.seeds);
-                }
+        if let Some(opt_seed) = &opt.seed {
+            if self.seeds.contains(opt_seed) {
+                warn!(
+                    "Command line option seed {:?} has contains in config file.",
+                    opt_seed
+                );
+            } else {
+                self.seeds.push(opt_seed.clone());
+                debug!("Add command line option seed {:?} to config", self.seeds);
             }
             info!("Final bootstrap seeds: {:?}", self.seeds);
         }

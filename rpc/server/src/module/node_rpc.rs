@@ -34,7 +34,7 @@ impl NodeApi for NodeRpcImpl {
         let self_address = self
             .config
             .network
-            .self_connect_address
+            .self_address
             .as_ref()
             .expect("self address must exist in runtime.")
             .to_string();
