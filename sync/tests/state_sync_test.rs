@@ -1,6 +1,7 @@
 mod gen_network;
 
-use actix_rt::{Actor, System};
+use actix::Actor;
+use actix_rt::System;
 use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
