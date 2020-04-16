@@ -11,17 +11,17 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_block")]
-pub struct ShowOpt {
+pub struct GetOpt {
     #[structopt(short = "h")]
     hash: String,
 }
 
-pub struct ShowCommand;
+pub struct GetBlockCommand;
 
-impl CommandAction for ShowCommand {
+impl CommandAction for GetBlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ShowOpt;
+    type Opt = GetOpt;
     type ReturnItem = BlockView;
 
     fn run(

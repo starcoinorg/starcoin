@@ -97,6 +97,11 @@ fn run() -> Result<()> {
                 .subcommand(node::InfoCommand)
                 .subcommand(node::PeersCommand),
         )
+        .command(
+            Command::with_name("chain")
+                .subcommand(chain::ShowCommand)
+                .subcommand(chain::GetBlockCommand),
+        )
         .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))
         .exec();

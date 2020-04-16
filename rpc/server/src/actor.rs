@@ -58,19 +58,26 @@ impl RpcActor {
 
     pub fn launch_with_apis<C, N, T, A, S, D>(
         config: Arc<NodeConfig>,
+        node_api: N,
+        chain_api: Option<C>,
         txpool_api: Option<T>,
         account_api: Option<A>,
         state_api: Option<S>,
         debug_api: Option<D>,
     ) -> Result<(Addr<Self>, IoHandler)>
     where
+        N: NodeApi,
+        C: ChainApi,
         T: TxPoolApi,
         A: WalletApi,
         S: StateApi,
         D: DebugApi,
     {
         let mut io_handler = IoHandler::new();
-        io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new()));
+        io_handler.extend_with(NodeApi::to_delegate(node_api));
+        if let Some(chain_api) = chain_api {
+            io_handler.extend_with(ChainApi::to_delegate(chain_api));
+        }
         if let Some(txpool_api) = txpool_api {
             io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
         }
@@ -155,6 +162,7 @@ mod tests {
             chain_service,
             account_service,
             state_service,
+            None,
             Some(logger_handle),
         )
         .unwrap();

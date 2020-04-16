@@ -4,6 +4,7 @@
 use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, Result};
 use merkle_tree::proof::SparseMerkleProof;
+use parking_lot::Mutex;
 use scs::SCSCodec;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_logger::prelude::*;
@@ -22,7 +23,7 @@ use starcoin_types::{
 };
 use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, MutexGuard};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
