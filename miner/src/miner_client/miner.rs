@@ -30,6 +30,7 @@ impl Miner {
     }
 
     pub async fn start(&mut self) {
+        info!("Miner client started");
         loop {
             futures::select! {
                 job = self.job_rx.select_next_some() => {

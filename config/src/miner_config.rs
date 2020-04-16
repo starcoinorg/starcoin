@@ -15,9 +15,9 @@ pub struct MinerConfig {
     /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
     /// The real use time is a random value between 0 and dev_period.
     pub dev_period: u64,
+    pub thread_num: u16,
     pub pacemaker_strategy: PacemakerStrategy,
     pub consensus_strategy: ConsensusStrategy,
-    pub thread_num: u16,
 }
 
 impl Default for MinerConfig {

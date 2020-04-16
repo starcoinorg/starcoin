@@ -1,12 +1,10 @@
+use crate::miner_client::{nonce_generator, partition_nonce, set_header_nonce};
 use anyhow::Result;
-use byteorder::{LittleEndian, WriteBytesExt};
 use config::{ConsensusStrategy, MinerConfig};
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
 use logger::prelude::*;
-use rand::Rng;
-use std::ops::Range;
 use std::thread;
 use std::time::Duration;
 use types::{H256, U256};
@@ -25,19 +23,34 @@ pub fn start_worker(
                     let nonce_range = partition_nonce(i as u64, thread_num as u64);
                     let nonce_tx_clone = nonce_tx.clone();
                     thread::Builder::new()
-                        .name(worker_name)
+                        .name(worker_name.clone())
                         .spawn(move || {
-                            let mut worker = ArgonWorker::new(worker_rx, nonce_tx_clone);
+                            let mut worker = Worker::new(worker_rx, nonce_tx_clone);
                             let rng = nonce_generator(nonce_range);
-                            worker.run(rng)
+                            worker.run(rng, argon_solver);
                         })
                         .expect("Start worker thread failed");
+                    info!("start mine worker: {:?}", worker_name);
                     worker_tx
                 })
                 .collect();
             WorkerController::new(worker_txs)
         }
-        ConsensusStrategy::Dummy => unimplemented!(),
+        ConsensusStrategy::Dummy => {
+            let (worker_tx, worker_rx) = mpsc::unbounded();
+            let worker_name = "starcoin-miner-dummy-worker".to_owned();
+            let nonce_tx_clone = nonce_tx.clone();
+            let nonce_range = partition_nonce(1 as u64, 2 as u64);
+            thread::Builder::new()
+                .name(worker_name)
+                .spawn(move || {
+                    let mut worker = Worker::new(worker_rx, nonce_tx_clone);
+                    let rng = nonce_generator(nonce_range);
+                    worker.run(rng, dummy_solver);
+                })
+                .expect("Start worker thread failed");
+            WorkerController::new(vec![worker_tx])
+        }
     }
 }
 
@@ -65,7 +78,7 @@ impl WorkerController {
     }
 }
 
-struct ArgonWorker {
+pub struct Worker {
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
     worker_rx: mpsc::UnboundedReceiver<WorkerMessage>,
     diff: U256,
@@ -73,7 +86,7 @@ struct ArgonWorker {
     start: bool,
 }
 
-impl ArgonWorker {
+impl Worker {
     pub fn new(
         worker_rx: mpsc::UnboundedReceiver<WorkerMessage>,
         nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
@@ -86,32 +99,17 @@ impl ArgonWorker {
             start: false,
         }
     }
-    fn argon2_hash(input: &[u8]) -> Result<H256> {
-        let config = argon2::Config::default();
-        let output = argon2::hash_raw(input, input, &config)?;
-        let h_256: H256 = output.as_slice().into();
-        Ok(h_256)
-    }
 
-    fn solve(&mut self, pow_header: &[u8], nonce: u64) {
-        let input = set_header_nonce(pow_header, nonce);
-        if let Ok(pow_hash) = ArgonWorker::argon2_hash(&input) {
-            let pow_hash_u256: U256 = pow_hash.into();
-            if pow_hash_u256 <= self.diff {
-                info!("Seal found {:?}", nonce);
-                if let Err(e) = block_on(self.nonce_tx.send((pow_header.to_vec(), nonce))) {
-                    error!("Failed to send nonce: {:?}", e);
-                };
-            }
-        }
-    }
-
-    fn run<G: FnMut() -> u64>(&mut self, mut rng: G) {
+    fn run<G: FnMut() -> u64, S: Fn(&[u8], u64, U256, mpsc::UnboundedSender<(Vec<u8>, u64)>)>(
+        &mut self,
+        mut rng: G,
+        solver: S,
+    ) {
         loop {
             self.refresh_new_work();
             if self.start {
                 if let Some(pow_header) = self.pow_header.clone() {
-                    self.solve(&pow_header, rng());
+                    solver(&pow_header, rng(), self.diff.clone(), self.nonce_tx.clone());
                 }
             } else {
                 // Wait next work
@@ -138,27 +136,41 @@ impl ArgonWorker {
     }
 }
 
-fn partition_nonce(id: u64, total: u64) -> Range<u64> {
-    let span = u64::max_value() / total;
-    let start = span * id;
-    let end = match id {
-        x if x < total - 1 => start + span,
-        x if x == total - 1 => u64::max_value(),
-        _ => unreachable!(),
+fn argon2_hash(input: &[u8]) -> Result<H256> {
+    let config = argon2::Config::default();
+    let output = argon2::hash_raw(input, input, &config)?;
+    let h_256: H256 = output.as_slice().into();
+    Ok(h_256)
+}
+
+fn argon_solver(
+    pow_header: &[u8],
+    nonce: u64,
+    diff: U256,
+    mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
+) {
+    let input = set_header_nonce(pow_header, nonce);
+    if let Ok(pow_hash) = argon2_hash(&input) {
+        let pow_hash_u256: U256 = pow_hash.into();
+        if pow_hash_u256 <= diff {
+            info!("Seal found {:?}", nonce);
+            if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
+                error!("Failed to send nonce: {:?}", e);
+            };
+        }
+    }
+}
+
+fn dummy_solver(
+    pow_header: &[u8],
+    nonce: u64,
+    diff: U256,
+    mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
+) {
+    let time: u64 = diff.as_u64();
+    debug!("DummyConsensus rand sleep time : {}", time);
+    thread::sleep(Duration::from_millis(time));
+    if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
+        error!("Failed to send nonce: {:?}", e);
     };
-    Range { start, end }
-}
-
-fn nonce_generator(range: Range<u64>) -> impl FnMut() -> u64 {
-    let mut rng = rand::thread_rng();
-    let Range { start, end } = range;
-    move || rng.gen_range(start, end)
-}
-
-pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
-    let len = header.len();
-    let mut header = header.to_owned();
-    header.truncate(len - 8);
-    let _ = header.write_u64::<LittleEndian>(nonce);
-    header
 }
