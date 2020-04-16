@@ -93,6 +93,7 @@ where
         if !self.syncing.load(Ordering::Relaxed) && self.ready.load(Ordering::Relaxed) {
             self.syncing.store(true, Ordering::Relaxed);
             Self::sync_block_from_best_peer(
+                self.sync_metadata.state_sync_mode(),
                 self.syncing.clone(),
                 self.self_peer_id.as_ref().clone(),
                 self.downloader.clone(),
@@ -376,6 +377,7 @@ where
     }
 
     fn sync_block_from_best_peer(
+        is_state_sync: bool,
         syncing: Arc<AtomicBool>,
         self_peer_id: PeerId,
         downloader: Arc<Downloader<C>>,
@@ -389,11 +391,13 @@ where
             {
                 error!("error: {:?}", e);
             } else {
-                let _ = bus
-                    .send(Broadcast {
-                        msg: SystemEvents::SyncDone(),
-                    })
-                    .await;
+                if !is_state_sync {
+                    let _ = bus
+                        .send(Broadcast {
+                            msg: SystemEvents::SyncDone(),
+                        })
+                        .await;
+                }
                 debug!("end sync.");
             };
 

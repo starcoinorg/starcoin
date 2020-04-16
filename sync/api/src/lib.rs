@@ -47,6 +47,7 @@ impl SyncMetadata {
     pub fn is_state_sync(&self) -> bool {
         self.state_sync_mode() && !self.0.read().state_sync_done && !self.0.read().block_sync_done
     }
+
     pub fn update_pivot(&self, pivot: BlockNumber, behind: u64) -> Result<()> {
         assert!(self.is_state_sync(), "cat not update pivot.");
         assert!(pivot > 0, "pivot must be positive integer.");
@@ -61,6 +62,7 @@ impl SyncMetadata {
         let mut lock = self.0.write();
         lock.state_sync_done = true;
         let _ = self.both_done();
+        info!("state sync done.");
         Ok(())
     }
 
@@ -70,6 +72,7 @@ impl SyncMetadata {
         let mut lock = self.0.write();
         lock.state_sync_done = true;
         let _ = self.both_done();
+        info!("block sync done.");
         Ok(())
     }
 
@@ -86,11 +89,12 @@ impl SyncMetadata {
                     })
                     .await;
             });
+            info!("state sync and block sync done.");
         }
         Ok(())
     }
 
-    fn state_sync_mode(&self) -> bool {
+    pub fn state_sync_mode(&self) -> bool {
         self.0.read().is_state_sync
     }
 

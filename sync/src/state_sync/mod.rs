@@ -180,6 +180,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                 let _ = lock.remove(&task_event.peer_id);
                 drop(lock);
                 if let Some(state_node) = task_event.state_node {
+                    debug!("receive state_node: {:?}", state_node);
                     match state_node.inner() {
                         Node::Leaf(_) => {}
                         Node::Internal(n) => {

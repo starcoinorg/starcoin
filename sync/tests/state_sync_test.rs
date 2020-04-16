@@ -22,7 +22,6 @@ use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::system_events::SystemEvents;
 
-#[ignore]
 #[test]
 fn test_state_sync() {
     ::logger::init_for_test();
@@ -210,7 +209,7 @@ fn test_state_sync() {
             })
             .await;
 
-        Delay::new(Duration::from_secs(30)).await;
+        Delay::new(Duration::from_secs(2 * 60)).await;
 
         assert!(
             !sync_metadata_actor_2.is_state_sync(),
