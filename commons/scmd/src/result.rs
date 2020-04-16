@@ -26,12 +26,12 @@ impl FromStr for OutputFormat {
 
 pub fn print_action_result(value: Value, format: OutputFormat) -> Result<()> {
     match format {
-        OutputFormat::JSON => fmt_json(value),
-        OutputFormat::TABLE => fmt_table(value),
+        OutputFormat::JSON => print_json(value),
+        OutputFormat::TABLE => print_table(value),
     }
 }
 
-pub fn fmt_json(value: Value) -> Result<()> {
+pub fn print_json(value: Value) -> Result<()> {
     let result = json!({ "result": value });
     let json = serde_json::to_string_pretty(&result).map_err(|e| Into::<anyhow::Error>::into(e))?;
     println!("{}", json);
@@ -65,7 +65,7 @@ fn head_row(first_value: &Value) -> Result<(Row, Box<dyn RowBuilder>)> {
     }
 }
 
-pub fn fmt_table(value: Value) -> Result<()> {
+pub fn print_table(value: Value) -> Result<()> {
     if value.is_null() {
         return Ok(());
     }
