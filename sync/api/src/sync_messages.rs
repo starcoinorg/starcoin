@@ -48,7 +48,7 @@ pub enum SyncRpcResponse {
 }
 
 #[derive(Debug, Message, Clone, Serialize, Deserialize)]
-#[rtype(result = "Result<()>")]
+#[rtype(result = "()")]
 pub enum SyncNotify {
     ClosePeerMsg(PeerId),
     NewHeadBlock(PeerId, Block),

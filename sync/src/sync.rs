@@ -81,15 +81,6 @@ where
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-
-        // let sync_recipient = ctx.address().recipient::<RawRpcRequestMessage>();
-        // self.bus
-        //     .send(Subscription {
-        //         recipient: sync_recipient,
-        //     })
-        //     .into_actor(self)
-        //     .then(|_res, act, _ctx| async {}.into_actor(act))
-        //     .wait(ctx);
         info!("Sync actor started");
     }
 }

@@ -7,7 +7,7 @@ use starcoin_node::run_dev_node;
 use std::sync::Arc;
 use std::thread;
 
-#[test]
+#[stest::test]
 fn test_run_node() {
     let config = Arc::new(NodeConfig::random_for_test());
     let handle = run_dev_node(config);

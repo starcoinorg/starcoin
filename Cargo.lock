@@ -6310,6 +6310,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
+ "stest",
  "tokio 0.2.18",
 ]
 
@@ -6570,8 +6571,10 @@ dependencies = [
  "anyhow",
  "async-trait",
  "dyn-clone",
+ "futures 0.3.4",
  "parking_lot 0.9.0",
  "serde",
+ "starcoin-bus",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
