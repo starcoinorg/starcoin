@@ -1,12 +1,13 @@
 use crate::helper;
 use actix::prelude::*;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use bus::{Bus, BusActor};
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use starcoin_sync_api::sync_messages::{GetTxns, StartSyncTxnEvent};
 use starcoin_txpool_api::TxPoolAsyncService;
 use txpool::TxPoolRef;
+use types::peer_info::PeerId;
 
 #[derive(Clone)]
 pub struct TxnSyncActor {
@@ -53,7 +54,6 @@ impl actix::Actor for TxnSyncActor {
     }
 }
 
-const MAX_TRY_TIMES: usize = 2;
 impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
     type Result = ();
 
@@ -62,24 +62,16 @@ impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
         _msg: StartSyncTxnEvent,
         ctx: &mut <Self as Actor>::Context,
     ) -> Self::Result {
-        let inner = self.inner.clone();
-        async move {
-            let mut tried_times = 0;
-            while tried_times < MAX_TRY_TIMES {
-                tried_times += 1;
-                match inner.clone().sync_txn().await {
-                    Ok(_) => break,
-                    Err(e) => {
-                        error!(
-                            "fail to sync txn from best peers ({} times), e: {:?}",
-                            tried_times, e
-                        );
-                    }
+        self.inner
+            .clone()
+            .sync_txn()
+            .into_actor(self)
+            .map(|res, _act, _ctx| {
+                if let Err(e) = res {
+                    error!("handle sync txn event fail: {:?}", e);
                 }
-            }
-        }
-        .into_actor(self)
-        .spawn(ctx);
+            })
+            .spawn(ctx);
     }
 }
 
@@ -91,24 +83,31 @@ struct Inner {
 
 impl Inner {
     async fn sync_txn(self) -> Result<()> {
-        let Inner {
-            pool,
-            network_service: network,
-        } = self;
-        let best_peer = network.best_peer().await?;
-        if let Some(best_peer) = best_peer {
-            let txn_data = helper::get_txns(&network, best_peer.peer_id.clone(), GetTxns)
-                .await?
-                .txns;
-            let import_result = pool.add_txns(txn_data).await?;
-            let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
-            info!(
-                "succ to sync {} txn from peer {}",
-                succ_num, best_peer.peer_id
-            );
-        } else {
-            warn!("no best peer, skip sync txn from peers");
+        // get all peers and sort by difficulty, try peer with max difficulty.
+        let mut best_peer = self.network_service.peer_set().await?;
+        best_peer.sort_by_key(|p| p.total_difficult);
+        best_peer.reverse();
+
+        for peer in best_peer {
+            match self.sync_txn_from_peer(peer.peer_id).await {
+                Ok(_) => {
+                    return Ok(());
+                }
+                Err(e) => {
+                    error!("fail to sync txn from peer, e: {:?}", e);
+                }
+            }
         }
+
+        bail!("fail to sync txn from all peers")
+    }
+    async fn sync_txn_from_peer(&self, peer_id: PeerId) -> Result<()> {
+        let txn_data = helper::get_txns(&self.network_service, peer_id.clone(), GetTxns)
+            .await?
+            .txns;
+        let import_result = self.pool.clone().add_txns(txn_data).await?;
+        let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
+        info!("succ to sync {} txn from peer {}", succ_num, peer_id);
         Ok(())
     }
 }
