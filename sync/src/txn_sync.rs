@@ -52,6 +52,8 @@ impl actix::Actor for TxnSyncActor {
         info!("Network actor started ",);
     }
 }
+
+const MAX_TRY_TIMES: usize = 2;
 impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
     type Result = ();
 
@@ -60,16 +62,24 @@ impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
         _msg: StartSyncTxnEvent,
         ctx: &mut <Self as Actor>::Context,
     ) -> Self::Result {
-        self.inner
-            .clone()
-            .sync_txn()
-            .into_actor(self)
-            .map(|res, _act, _ctx| {
-                if let Err(e) = res {
-                    error!("fail to sync txn from best peers, e: {:?}", e);
+        let inner = self.inner.clone();
+        async move {
+            let mut tried_times = 0;
+            while tried_times < MAX_TRY_TIMES {
+                tried_times += 1;
+                match inner.clone().sync_txn().await {
+                    Ok(_) => break,
+                    Err(e) => {
+                        error!(
+                            "fail to sync txn from best peers ({} times), e: {:?}",
+                            tried_times, e
+                        );
+                    }
                 }
-            })
-            .spawn(ctx);
+            }
+        }
+        .into_actor(self)
+        .spawn(ctx);
     }
 }
 
