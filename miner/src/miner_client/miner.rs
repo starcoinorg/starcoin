@@ -45,10 +45,12 @@ impl Miner {
     }
 
     async fn submit_seal(&mut self, pow_header: Vec<u8>, nonce: u64) {
-        self.stratum_client.submit_seal((pow_header, nonce)).await;
         self.worker_controller
             .send_message(WorkerMessage::Stop)
             .await;
+        if let Err(err) = self.stratum_client.submit_seal((pow_header, nonce)).await {
+            error!("Submit seal to stratum failed: {:?}", err);
+        }
     }
 
     async fn start_mint_work(&mut self, pow_header: Vec<u8>, diff: U256) {
