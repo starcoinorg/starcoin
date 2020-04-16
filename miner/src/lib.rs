@@ -25,11 +25,10 @@ use traits::ChainAsyncService;
 use traits::{Consensus, ConsensusHeader};
 use types::transaction::TxStatus;
 
+pub use miner_client::miner::MinerClientActor;
 mod headblock_pacemaker;
-#[allow(dead_code)]
 mod miner;
-#[allow(dead_code)]
-pub mod miner_client;
+mod miner_client;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 mod stratum;

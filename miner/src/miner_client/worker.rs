@@ -17,7 +17,7 @@ pub fn start_worker(
 ) -> WorkerController {
     match config.consensus_strategy {
         ConsensusStrategy::Argon => {
-            let thread_num = 3;
+            let thread_num = config.thread_num;
             let worker_txs = (0..thread_num)
                 .map(|i| {
                     let (worker_tx, worker_rx) = mpsc::unbounded();
@@ -44,7 +44,6 @@ pub fn start_worker(
 #[derive(Clone)]
 pub enum WorkerMessage {
     Stop,
-    Start,
     NewWork { pow_header: Vec<u8>, diff: U256 },
 }
 
@@ -88,8 +87,7 @@ impl ArgonWorker {
         }
     }
     fn argon2_hash(input: &[u8]) -> Result<H256> {
-        let mut config = argon2::Config::default();
-        config.variant = argon2::Variant::Argon2d;
+        let config = argon2::Config::default();
         let output = argon2::hash_raw(input, input, &config)?;
         let h_256: H256 = output.as_slice().into();
         Ok(h_256)
@@ -100,7 +98,7 @@ impl ArgonWorker {
         if let Ok(pow_hash) = ArgonWorker::argon2_hash(&input) {
             let pow_hash_u256: U256 = pow_hash.into();
             if pow_hash_u256 <= self.diff {
-                debug!("Seal found {:?}", nonce);
+                info!("Seal found {:?}", nonce);
                 if let Err(e) = block_on(self.nonce_tx.send((pow_header.to_vec(), nonce))) {
                     error!("Failed to send nonce: {:?}", e);
                 };
@@ -133,9 +131,6 @@ impl ArgonWorker {
                     }
                     WorkerMessage::Stop => {
                         self.start = false;
-                    }
-                    WorkerMessage::Start => {
-                        self.start = true;
                     }
                 }
             }

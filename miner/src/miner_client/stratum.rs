@@ -68,7 +68,7 @@ impl StratumClient {
     }
 
     pub async fn submit_seal(&mut self, seal: (Vec<u8>, u64)) -> Result<()> {
-        let (pow_header, nonce) = seal;
+        let (_pow_header, nonce) = seal;
         let mut buf = vec![0u8; 8];
         LittleEndian::write_u64(buf.as_mut(), nonce);
         let nonce = hex::encode(buf);

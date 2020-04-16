@@ -6207,6 +6207,7 @@ dependencies = [
  "libra-temppath",
  "rand 0.6.5",
  "rust-argon2 0.8.2",
+ "serde",
  "serde_json",
  "starcoin-accumulator",
  "starcoin-bus",
@@ -6231,6 +6232,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
+ "thiserror",
  "tokio 0.2.18",
 ]
 

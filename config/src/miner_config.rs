@@ -17,6 +17,7 @@ pub struct MinerConfig {
     pub dev_period: u64,
     pub pacemaker_strategy: PacemakerStrategy,
     pub consensus_strategy: ConsensusStrategy,
+    pub thread_num: u16,
 }
 
 impl Default for MinerConfig {
@@ -57,6 +58,7 @@ impl ConfigModule for MinerConfig {
             dev_period: 0,
             pacemaker_strategy,
             consensus_strategy,
+            thread_num: 1,
         }
     }
 
@@ -67,6 +69,7 @@ impl ConfigModule for MinerConfig {
         self.pacemaker_strategy = PacemakerStrategy::Schedule;
         self.consensus_strategy = ConsensusStrategy::Dummy;
         self.dev_period = 1;
+        self.thread_num = 1;
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
