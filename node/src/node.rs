@@ -191,10 +191,10 @@ where
 
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
-        "Self connect address is: {}",
+        "Self address is: {}",
         config
             .network
-            .self_connect_address
+            .self_address
             .as_ref()
             .expect("Self connect address must has been set.")
     );
