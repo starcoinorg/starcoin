@@ -119,7 +119,7 @@ fn test_state_sync() {
         handle.spawn(MinerClient::<DummyConsensus>::run(
             node_config_1.miner.stratum_server,
         ));
-        Delay::new(Duration::from_secs(1 * 60)).await;
+        Delay::new(Duration::from_secs(20)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();
         debug!("first chain :{:?}", number);
@@ -210,7 +210,7 @@ fn test_state_sync() {
             })
             .await;
 
-        Delay::new(Duration::from_secs(2 * 60)).await;
+        Delay::new(Duration::from_secs(30)).await;
 
         assert!(
             !sync_metadata_actor_2.is_state_sync(),

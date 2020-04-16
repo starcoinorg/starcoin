@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::prelude::*;
+use actix::{clock::delay_for, prelude::*};
 use anyhow::{bail, Result};
-use starcoin_bus::{Bus, BusActor};
+use starcoin_bus::{Broadcast, Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_genesis::Genesis;
@@ -28,6 +28,7 @@ use starcoin_types::system_events::SystemEvents;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::runtime::Handle;
 use tokio::stream::StreamExt;
 
@@ -208,6 +209,9 @@ where
         storage.clone(),
         sync_metadata.clone(),
     )?;
+
+    delay_for(Duration::from_secs(1)).await;
+    bus.broadcast(SystemEvents::SyncBegin()).await?;
 
     info!("Waiting sync ......");
     let mut sync_event_receiver = sync_event_receiver_future
