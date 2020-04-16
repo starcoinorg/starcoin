@@ -9,8 +9,8 @@ use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
-use starcoin_miner::miner_client::MinerClientActor;
 use starcoin_miner::MinerActor;
+use starcoin_miner::MinerClientActor;
 use starcoin_network::NetworkActor;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -40,7 +40,7 @@ where
     _miner_actor: Addr<MinerActor<C, TxPoolRef, ChainActorRef<C>, Storage, H>>,
     _sync_actor: Addr<SyncActor<C>>,
     _rpc_actor: Addr<RpcActor>,
-    _miner_client: Addr<MinerClientActor<C>>,
+    _miner_client: Addr<MinerClientActor>,
 }
 
 pub async fn start<C, H>(
@@ -228,9 +228,7 @@ where
         receiver,
         default_account,
     )?;
-
-    let stratum_server = config.miner.stratum_server;
-    let miner_client = MinerClientActor::<C>::new(stratum_server).start();
+    let miner_client = MinerClientActor::new(config.miner.clone()).start();
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,

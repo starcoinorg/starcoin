@@ -1,5 +1,6 @@
 mod gen_network;
 
+use actix::Actor;
 use actix_rt::System;
 use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
@@ -9,7 +10,7 @@ use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
-use miner::{miner_client::MinerClient, MinerActor};
+use miner::{MinerActor, MinerClientActor};
 use starcoin_genesis::Genesis;
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::SyncMetadata;
@@ -115,9 +116,7 @@ fn test_state_sync() {
             None,
             miner_account,
         );
-        handle.spawn(MinerClient::<DummyConsensus>::run(
-            node_config_1.miner.stratum_server,
-        ));
+        MinerClientActor::new(node_config_1.miner.clone()).start();
         Delay::new(Duration::from_secs(20)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();
