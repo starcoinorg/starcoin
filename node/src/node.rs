@@ -211,7 +211,7 @@ where
     )?;
 
     delay_for(Duration::from_secs(1)).await;
-    bus.broadcast(SystemEvents::SyncBegin()).await?;
+    bus.clone().broadcast(SystemEvents::SyncBegin()).await?;
 
     info!("Waiting sync ......");
     let mut sync_event_receiver = sync_event_receiver_future
