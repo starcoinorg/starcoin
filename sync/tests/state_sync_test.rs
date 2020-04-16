@@ -1,7 +1,7 @@
 mod gen_network;
 
 use actix_rt::System;
-use bus::BusActor;
+use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
 use consensus::dummy::DummyConsensus;
@@ -20,6 +20,7 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
+use types::system_events::SystemEvents;
 
 #[ignore]
 #[test]
@@ -67,7 +68,7 @@ fn test_state_sync() {
         );
         debug!("addr_1 : {:?}", addr_1);
 
-        let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone());
+        let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone(), bus_1.clone());
         // chain
         let first_chain = ChainActor::launch(
             node_config_1.clone(),
@@ -91,6 +92,13 @@ fn test_state_sync() {
             sync_metadata_actor_1.clone(),
         )
         .unwrap();
+        Delay::new(Duration::from_secs(1)).await;
+        let _ = bus_1
+            .clone()
+            .send(Broadcast {
+                msg: SystemEvents::SyncBegin(),
+            })
+            .await;
         let miner_account = WalletAccount::random();
         // miner
         let _miner_1 = MinerActor::<
@@ -165,7 +173,7 @@ fn test_state_sync() {
         );
         debug!("addr_2 : {:?}", addr_2);
 
-        let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone());
+        let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone(), bus_2.clone());
         assert!(
             sync_metadata_actor_2.is_state_sync(),
             "is_state_sync is false."
@@ -186,7 +194,7 @@ fn test_state_sync() {
         let second_p = Arc::new(network_2.identify().clone().into());
         let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
             node_config_2.clone(),
-            bus_2,
+            bus_2.clone(),
             Arc::clone(&second_p),
             second_chain.clone(),
             network_2.clone(),
@@ -194,6 +202,13 @@ fn test_state_sync() {
             sync_metadata_actor_2.clone(),
         )
         .unwrap();
+        Delay::new(Duration::from_secs(1)).await;
+        let _ = bus_2
+            .clone()
+            .send(Broadcast {
+                msg: SystemEvents::SyncBegin(),
+            })
+            .await;
 
         Delay::new(Duration::from_secs(2 * 60)).await;
 

@@ -469,11 +469,11 @@ where
         block_info: BlockInfo,
     ) -> Result<ConnectResult<()>> {
         if self.sync.is_state_sync() {
-            let pivot = self.sync.get_pivot()?;
-            if pivot.is_some() {
-                let pivot_number = pivot.unwrap();
+            let latest_sync_number = self.sync.get_latest();
+            if latest_sync_number.is_some() {
+                let latest_number = latest_sync_number.unwrap();
                 let current_block_number = block.header().number();
-                if pivot_number >= current_block_number {
+                if latest_number >= current_block_number {
                     //todo:1. verify block header / verify accumulator / total difficulty
                     let mut block_chain = self.collection.get_master().borrow_mut();
                     let master = block_chain.get_mut(0).expect("master is none.");
@@ -489,8 +489,8 @@ where
                             .expect("master is none.")
                             .latest_blocks(1);
                         // 4. update state sync metadata
-                        if pivot_number == current_block_number {
-                            if let Err(err) = self.sync.sync_done() {
+                        if latest_number == current_block_number {
+                            if let Err(err) = self.sync.block_sync_done() {
                                 warn!("err:{:?}", err);
                             }
                         }

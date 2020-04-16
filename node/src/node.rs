@@ -65,7 +65,7 @@ where
         .unwrap(),
     );
 
-    let sync_metadata = SyncMetadata::new(config.clone());
+    let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
 
     let (startup_info, genesis_hash) = match storage.get_startup_info()? {
         Some(startup_info) => {

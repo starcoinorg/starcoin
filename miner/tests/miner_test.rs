@@ -62,7 +62,7 @@ fn test_miner_with_schedule_pacemaker() {
             genesis_hash,
             PeerInfo::default(),
         );
-        let sync_metadata = SyncMetadata::new(config.clone());
+        let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),
@@ -152,7 +152,7 @@ fn test_miner_with_ondemand_pacemaker() {
             genesis_hash,
             PeerInfo::default(),
         );
-        let sync_metadata = SyncMetadata::new(config.clone());
+        let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),

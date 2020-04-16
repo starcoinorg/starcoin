@@ -1,9 +1,9 @@
 /// Sync message which outbound
 use crate::pool::TTLPool;
 use actix::prelude::*;
-use actix::{fut::wrap_future, Actor, Addr, AsyncContext, Context, Handler, ResponseActFuture};
+use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::{format_err, Result};
-use bus::{Broadcast, BusActor};
+use bus::{Broadcast, BusActor, Subscription};
 use chain::ChainActorRef;
 use futures::channel::mpsc;
 use parking_lot::RwLock;
@@ -50,6 +50,7 @@ where
     sync_event_sender: mpsc::Sender<SyncEvent>,
     sync_duration: Duration,
     syncing: Arc<AtomicBool>,
+    ready: Arc<AtomicBool>,
     state_node_storage: Arc<dyn StateNodeStore>,
     sync_metadata: SyncMetadata,
     main_network: bool,
@@ -79,6 +80,7 @@ where
                 sync_event_sender,
                 sync_duration: Duration::from_secs(5),
                 syncing: Arc::new(AtomicBool::new(false)),
+                ready: Arc::new(AtomicBool::new(false)),
                 state_node_storage,
                 sync_metadata,
                 main_network: node_config.base.net().is_main(),
@@ -88,7 +90,7 @@ where
     }
 
     fn sync_task(&mut self) {
-        if !self.syncing.load(Ordering::Relaxed) {
+        if !self.syncing.load(Ordering::Relaxed) && self.ready.load(Ordering::Relaxed) {
             self.syncing.store(true, Ordering::Relaxed);
             Self::sync_block_from_best_peer(
                 self.syncing.clone(),
@@ -108,6 +110,15 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        let sys_event_recipient = ctx.address().recipient::<SystemEvents>();
+        self.bus
+            .send(Subscription {
+                recipient: sys_event_recipient,
+            })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
             if !act.syncing.load(Ordering::Relaxed) {
                 if let Err(e) = act.sync_event_sender.try_send(SyncEvent {}) {
@@ -116,6 +127,45 @@ where
             }
         });
         info!("download actor started.")
+    }
+}
+
+impl<C> Handler<SystemEvents> for DownloadActor<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    type Result = ();
+
+    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            SystemEvents::SyncBegin() => {
+                info!("received SyncBegin event.");
+                self.ready.store(true, Ordering::Relaxed);
+
+                let downloader = self.downloader.clone();
+                let network = self.network.clone();
+                let state_node_storage = self.state_node_storage.clone();
+                let sync_metadata = self.sync_metadata.clone();
+                let is_main = self.main_network;
+                let self_peer_id = self.self_peer_id.as_ref().clone();
+                Arbiter::spawn(async move {
+                    Self::sync_state(
+                        self_peer_id,
+                        is_main,
+                        downloader.clone(),
+                        network,
+                        state_node_storage,
+                        sync_metadata,
+                    )
+                    .await;
+                });
+            }
+            _ => {
+                info!("do nothing.");
+            }
+        }
+
+        ()
     }
 }
 
@@ -134,7 +184,7 @@ impl<C> Handler<SyncNotify> for DownloadActor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    type Result = ResponseActFuture<Self, Result<()>>;
+    type Result = ();
 
     fn handle(&mut self, msg: SyncNotify, _ctx: &mut Self::Context) -> Self::Result {
         let downloader = self.downloader.clone();
@@ -142,41 +192,42 @@ where
         let state_node_storage = self.state_node_storage.clone();
         let sync_metadata = self.sync_metadata.clone();
         let is_main = self.main_network;
-        let bus = self.bus.clone();
         let self_peer_id = self.self_peer_id.as_ref().clone();
-        let fut = async move {
-            match msg {
-                SyncNotify::NewPeerMsg(peer_id) => {
-                    info!("new peer msg: {:?}", peer_id);
-                    Self::sync_state(
-                        self_peer_id,
-                        is_main,
-                        downloader.clone(),
-                        network,
-                        state_node_storage,
-                        sync_metadata,
-                        bus,
-                    )
-                    .await;
-                }
-                SyncNotify::NewHeadBlock(peer_id, block) => {
-                    info!(
-                        "receive new block: {:?} from {:?}",
-                        block.header().id(),
-                        peer_id
-                    );
-                    // connect block
-                    Downloader::do_block(downloader.clone(), block, None).await;
-                }
-                SyncNotify::ClosePeerMsg(peer_id) => {
-                    warn!("close peer: {:?}", peer_id,);
+        let ready = self.ready.load(Ordering::Relaxed);
+        match msg {
+            SyncNotify::NewPeerMsg(peer_id) => {
+                info!("new peer msg: {:?}, ready: {}", peer_id, ready);
+                if ready {
+                    Arbiter::spawn(async move {
+                        Self::sync_state(
+                            self_peer_id,
+                            is_main,
+                            downloader.clone(),
+                            network,
+                            state_node_storage,
+                            sync_metadata,
+                        )
+                        .await;
+                    });
                 }
             }
+            SyncNotify::NewHeadBlock(peer_id, block) => {
+                info!(
+                    "receive new block: {:?} from {:?}",
+                    block.header().id(),
+                    peer_id
+                );
+                // connect block
+                Arbiter::spawn(async move {
+                    Downloader::do_block(downloader.clone(), block, None).await;
+                });
+            }
+            SyncNotify::ClosePeerMsg(peer_id) => {
+                warn!("close peer: {:?}", peer_id,);
+            }
+        }
 
-            Ok(())
-        };
-
-        Box::new(wrap_future::<_, Self>(fut))
+        ()
     }
 }
 
@@ -191,7 +242,6 @@ where
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
         sync_metadata: SyncMetadata,
-        bus: Addr<BusActor>,
     ) {
         if let Err(e) = Self::sync_state_inner(
             self_peer_id,
@@ -200,7 +250,6 @@ where
             network,
             state_node_storage,
             sync_metadata,
-            bus,
         )
         .await
         {
@@ -215,10 +264,9 @@ where
         network: NetworkAsyncService,
         state_node_storage: Arc<dyn StateNodeStore>,
         sync_metadata: SyncMetadata,
-        bus: Addr<BusActor>,
     ) -> Result<()> {
         if (main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network {
-            if sync_metadata.can_sync_state() {
+            if sync_metadata.is_state_sync() {
                 if let Some(best_peer) = network.best_peer().await? {
                     if self_peer_id != best_peer.get_peer_id() {
                         //1. ancestor
@@ -255,9 +303,9 @@ where
                                     Self::get_pivot(&network, best_peer.get_peer_id(), pivot)
                                         .await?;
                                 let sync_pivot = sync_metadata.get_pivot()?;
-                                if sync_metadata.can_sync_state() {
+                                if sync_metadata.is_state_sync() {
                                     if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
-                                        sync_metadata.clone().update_pivot(pivot)?;
+                                        sync_metadata.clone().update_pivot(pivot, min_behind)?;
                                         if sync_pivot.is_none() {
                                             let state_sync_task_address =
                                                 StateSyncTaskActor::launch(
@@ -266,7 +314,6 @@ where
                                                     state_node_storage,
                                                     network.clone(),
                                                     sync_metadata.clone(),
-                                                    bus,
                                                 );
                                             sync_metadata
                                                 .update_address(&state_sync_task_address)?
