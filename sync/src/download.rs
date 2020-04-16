@@ -319,11 +319,11 @@ where
                                             sync_metadata
                                                 .update_address(&state_sync_task_address)?
                                         } else if sync_pivot.unwrap() < pivot {
-                                            if let Some(address) = sync_metadata.get_address() {
-                                                &address.reset(root.state_root());
-                                            } else {
-                                                warn!("{:?}", "state sync reset address is none.");
-                                            }
+                                            // if let Some(address) = sync_metadata.get_address() {
+                                            //     &address.reset(root.state_root());
+                                            // } else {
+                                            //     warn!("{:?}", "state sync reset address is none.");
+                                            // }
                                         }
                                     } else {
                                         warn!("pivot {:?} : {}", sync_pivot, pivot);
@@ -385,9 +385,10 @@ where
         bus: Addr<BusActor>,
     ) {
         Arbiter::spawn(async move {
-            debug!("begin sync.");
+            debug!("peer {:?} begin sync.", self_peer_id);
             if let Err(e) =
-                Self::sync_block_from_best_peer_inner(self_peer_id, downloader, network).await
+                Self::sync_block_from_best_peer_inner(self_peer_id.clone(), downloader, network)
+                    .await
             {
                 error!("error: {:?}", e);
             } else {
@@ -398,7 +399,7 @@ where
                         })
                         .await;
                 }
-                debug!("end sync.");
+                debug!("peer {:?} end sync.", self_peer_id);
             };
 
             syncing.store(false, Ordering::Relaxed);

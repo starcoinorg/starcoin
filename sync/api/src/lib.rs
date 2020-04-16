@@ -61,6 +61,7 @@ impl SyncMetadata {
         assert!(!self.0.read().state_sync_done, "state sync already done.");
         let mut lock = self.0.write();
         lock.state_sync_done = true;
+        drop(lock);
         let _ = self.both_done();
         info!("state sync done.");
         Ok(())

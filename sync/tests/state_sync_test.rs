@@ -209,7 +209,7 @@ fn test_state_sync() {
             })
             .await;
 
-        Delay::new(Duration::from_secs(2 * 60)).await;
+        Delay::new(Duration::from_secs(30)).await;
 
         assert!(
             !sync_metadata_actor_2.is_state_sync(),
