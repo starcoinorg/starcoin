@@ -1,6 +1,6 @@
-pub mod miner_client;
+pub use miner as miner_client;
+pub mod miner;
 mod stratum;
-mod miner;
-mod worker;
 #[cfg(test)]
 mod test;
+mod worker;

@@ -1,22 +1,25 @@
-use futures::channel::mpsc;
-use logger::prelude::*;
-use types::{U256, H256};
-use config::{MinerConfig, ConsensusStrategy};
-use futures::SinkExt;
-use std::ops::Range;
-use rand::Rng;
-use std::time::Duration;
-use std::thread;
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
+use config::{ConsensusStrategy, MinerConfig};
+use futures::channel::mpsc;
 use futures::executor::block_on;
+use futures::SinkExt;
+use logger::prelude::*;
+use rand::Rng;
+use std::ops::Range;
+use std::thread;
+use std::time::Duration;
+use types::{H256, U256};
 
-pub fn start_worker(config: &MinerConfig, nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>) -> WorkerController {
+pub fn start_worker(
+    config: &MinerConfig,
+    nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
+) -> WorkerController {
     match config.consensus_strategy {
         ConsensusStrategy::Argon => {
             let thread_num = 3;
-            let worker_txs = (0..thread_num).map(
-                |i| {
+            let worker_txs = (0..thread_num)
+                .map(|i| {
                     let (worker_tx, worker_rx) = mpsc::unbounded();
                     let worker_name = format!("starcoin-miner-argon-worker-{}", i);
                     let nonce_range = partition_nonce(i as u64, thread_num as u64);
@@ -30,13 +33,11 @@ pub fn start_worker(config: &MinerConfig, nonce_tx: mpsc::UnboundedSender<(Vec<u
                         })
                         .expect("Start worker thread failed");
                     worker_tx
-                }
-            ).collect();
+                })
+                .collect();
             WorkerController::new(worker_txs)
         }
-        ConsensusStrategy::Dummy => {
-            unimplemented!()
-        }
+        ConsensusStrategy::Dummy => unimplemented!(),
     }
 }
 
@@ -74,7 +75,10 @@ struct ArgonWorker {
 }
 
 impl ArgonWorker {
-    pub fn new(worker_rx: mpsc::UnboundedReceiver<WorkerMessage>, nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>) -> Self {
+    pub fn new(
+        worker_rx: mpsc::UnboundedReceiver<WorkerMessage>,
+        nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
+    ) -> Self {
         Self {
             nonce_tx,
             worker_rx,
@@ -98,7 +102,7 @@ impl ArgonWorker {
             if pow_hash_u256 <= self.diff {
                 debug!("Seal found {:?}", nonce);
                 if let Err(e) = block_on(self.nonce_tx.send((pow_header.to_vec(), nonce))) {
-                    error!("Faild to send nonce: {:?}", e);
+                    error!("Failed to send nonce: {:?}", e);
                 };
             }
         }
@@ -138,7 +142,6 @@ impl ArgonWorker {
         }
     }
 }
-
 
 fn partition_nonce(id: u64, total: u64) -> Range<u64> {
     let span = u64::max_value() / total;

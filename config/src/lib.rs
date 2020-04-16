@@ -35,7 +35,7 @@ use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG};
 pub use libra_temppath::TempPath;
-pub use miner_config::{MinerConfig, PacemakerStrategy, ConsensusStrategy};
+pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use storage_config::StorageConfig;
@@ -285,9 +285,9 @@ impl ConfigModule for NodeConfig {
 impl NodeConfig {}
 
 pub(crate) fn save_config<T, P>(c: &T, output_file: P) -> Result<()>
-    where
-        T: Serialize + DeserializeOwned,
-        P: AsRef<Path>,
+where
+    T: Serialize + DeserializeOwned,
+    P: AsRef<Path>,
 {
     let contents = toml::to_vec(c)?;
     let mut file = File::create(output_file)?;
@@ -296,9 +296,9 @@ pub(crate) fn save_config<T, P>(c: &T, output_file: P) -> Result<()>
 }
 
 pub(crate) fn load_config<T, P>(path: P) -> Result<T>
-    where
-        T: Serialize + DeserializeOwned,
-        P: AsRef<Path>,
+where
+    T: Serialize + DeserializeOwned,
+    P: AsRef<Path>,
 {
     let mut file = File::open(&path)?;
     let mut contents = String::new();
@@ -307,15 +307,15 @@ pub(crate) fn load_config<T, P>(path: P) -> Result<T>
 }
 
 fn parse<T>(serialized: &str) -> Result<T>
-    where
-        T: Serialize + DeserializeOwned,
+where
+    T: Serialize + DeserializeOwned,
 {
     Ok(toml::from_str(&serialized)?)
 }
 
 pub(crate) fn save_key<P>(key: &[u8], output_file: P) -> Result<()>
-    where
-        P: AsRef<Path>,
+where
+    P: AsRef<Path>,
 {
     let contents: String = hex::encode(key);
     let mut file = File::create(output_file)?;
