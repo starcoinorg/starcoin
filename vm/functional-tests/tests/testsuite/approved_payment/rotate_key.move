@@ -21,11 +21,11 @@ fun main() {
 //! new-transaction
 //! sender: bob
 use 0x0::ApprovedPayment;
-use 0x0::LBR;
+use 0x0::Starcoin;
 fun main() {
     let payment_id = x"0000000000000000000000000000000000000000000000000000000000000000";
     let signature = x"62d6be393b8ec77fb2c12ff44ca8b5bd8bba83b805171bc99f0af3bdc619b20b8bd529452fe62dac022c80752af2af02fb610c20f01fb67a4d72789db2b8b703";
-    ApprovedPayment::deposit_to_payee<LBR::T>({{alice}}, 1000, payment_id, signature);
+    ApprovedPayment::deposit_to_payee<Starcoin::T>({{alice}}, 1000, payment_id, signature);
 }
 
 // check: EXECUTED
