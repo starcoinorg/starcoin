@@ -599,11 +599,12 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
         for txn in txns {
             txn_map.insert(txn.crypto_hash(), txn);
         }
+        let self_peer_id = self.peer_id.clone();
         Arbiter::spawn(async move {
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                 let mut txns_unhandled = Vec::new();
                 for (id, txn) in &txn_map {
-                    if !peer_info.known_transactions.contains(id) {
+                    if !peer_info.known_transactions.contains(id) && !peer_id.eq(&self_peer_id) {
                         peer_info.known_transactions.put(id.clone(), ());
                         txns_unhandled.push(txn.clone());
                     }
@@ -651,11 +652,10 @@ mod tests {
         assert_eq!(peer_info, peer_info_decode);
     }
 
-    #[test]
+    #[ignore]
+    #[stest::test]
     fn test_network_with_mock() {
         use std::time::Duration;
-
-        ::logger::init_for_test();
 
         let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
