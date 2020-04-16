@@ -25,7 +25,7 @@ use traits::ChainAsyncService;
 use traits::{Consensus, ConsensusHeader};
 use types::transaction::TxStatus;
 
-pub use miner_client::miner::MinerClientActor;
+pub use miner_client::miner::{Miner as MinerClient, MinerClientActor};
 mod headblock_pacemaker;
 mod miner;
 mod miner_client;

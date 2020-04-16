@@ -6232,6 +6232,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
+ "structopt",
  "thiserror",
  "tokio 0.2.18",
 ]
