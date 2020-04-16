@@ -1,10 +1,8 @@
 use anyhow::Result;
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
+use byteorder::{ByteOrder, LittleEndian};
 use config::MinerConfig;
 use futures::channel::mpsc;
-use std::sync::Arc;
-use thiserror::Error;
-use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use futures::{SinkExt, StreamExt};
 pub use jsonrpc_core::types::{
     id, request, response, version, Error as Jsonrpc_err, Id, MethodCall, Params, Value, Version,
@@ -13,6 +11,8 @@ use jsonrpc_core::Output;
 use logger::prelude::*;
 use serde_json::error::Error as JsonError;
 use serde_json::{self, json};
+use std::sync::Arc;
+use thiserror::Error;
 use types::U256;
 
 pub struct StratumClient {
@@ -55,7 +55,7 @@ impl StratumClient {
             while let Some(line) = lines.next().await {
                 let response: String = line.unwrap();
                 info!("Receive from stratum: {}", &response);
-                if let Ok(job) =StratumClient::process_response(response) {
+                if let Ok(job) = StratumClient::process_response(response) {
                     if let Err(e) = job_tx.send(job).await {
                         error!("stratum subscribe job tx send failed:{:?}", e);
                     }
