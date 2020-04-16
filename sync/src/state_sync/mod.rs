@@ -2,7 +2,6 @@ use crate::helper::get_state_node_by_node_hash;
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
-use bus::{Broadcast, BusActor};
 use crypto::hash::HashValue;
 use forkable_jellyfish_merkle::node_type::Node;
 use futures::executor::block_on;
@@ -13,7 +12,7 @@ use starcoin_state_tree::{StateNode, StateNodeStore};
 use starcoin_sync_api::{StateSyncReset, SyncMetadata};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use types::{peer_info::PeerId, system_events::SystemEvents};
+use types::peer_info::PeerId;
 
 async fn sync_state_node(
     node_key: HashValue,
@@ -82,7 +81,6 @@ pub struct StateSyncTaskActor {
     network_service: NetworkAsyncService,
     wait_2_sync: VecDeque<HashValue>,
     sync_metadata: SyncMetadata,
-    bus: Addr<BusActor>,
     syncing_nodes: Mutex<HashMap<PeerId, HashValue>>,
 }
 
@@ -93,7 +91,6 @@ impl StateSyncTaskActor {
         state_node_storage: Arc<dyn StateNodeStore>,
         network_service: NetworkAsyncService,
         sync_metadata: SyncMetadata,
-        bus: Addr<BusActor>,
     ) -> StateSyncTaskRef {
         let mut wait_2_sync: VecDeque<HashValue> = VecDeque::new();
         wait_2_sync.push_back(root.clone());
@@ -104,7 +101,6 @@ impl StateSyncTaskActor {
             network_service,
             wait_2_sync,
             sync_metadata,
-            bus,
             syncing_nodes: Mutex::new(HashMap::new()),
         });
         StateSyncTaskRef { address }
@@ -113,6 +109,7 @@ impl StateSyncTaskActor {
     fn exe_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let node_key = self.wait_2_sync.pop_front().unwrap();
         if let Some(state_node) = self.state_node_storage.get(&node_key).unwrap() {
+            debug!("find state_node {:?} in db.", node_key);
             self.syncing_nodes
                 .lock()
                 .insert(self.self_peer_id.clone(), node_key.clone());
@@ -129,6 +126,10 @@ impl StateSyncTaskActor {
                 let peer_info = network_service.best_peer().await.unwrap();
                 peer_info
             });
+            debug!(
+                "sync state_node {:?} from peer {:?}.",
+                node_key, best_peer_info
+            );
             if let Some(best_peer) = best_peer_info {
                 if self.self_peer_id != best_peer.get_peer_id() {
                     let network_service = self.network_service.clone();
@@ -152,6 +153,7 @@ impl StateSyncTaskActor {
     }
 
     pub fn reset(&mut self, root: &HashValue) {
+        info!("reset state sync task.");
         self.wait_2_sync.clear();
         self.root = root.clone();
         self.wait_2_sync.push_back(root.clone());
@@ -184,6 +186,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                 let _ = lock.remove(&task_event.peer_id);
                 drop(lock);
                 if let Some(state_node) = task_event.state_node {
+                    debug!("receive state_node: {:?}", state_node);
                     match state_node.inner() {
                         Node::Leaf(_) => {}
                         Node::Internal(n) => {
@@ -201,18 +204,11 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
 
                 //2. exe_task
                 if self.wait_2_sync.is_empty() {
-                    if let Err(e) = self.sync_metadata.sync_done() {
+                    if let Err(e) = self.sync_metadata.state_sync_done() {
                         warn!("err:{:?}", e);
                     } else {
                         info!("sync_done : {:?}", self.sync_metadata.get_pivot());
-                        let bus = self.bus.clone();
-                        Arbiter::spawn(async move {
-                            let _ = bus
-                                .send(Broadcast {
-                                    msg: SystemEvents::SyncDone(),
-                                })
-                                .await;
-                        });
+
                         ctx.stop();
                     }
                 } else {

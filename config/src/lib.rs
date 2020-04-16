@@ -35,7 +35,7 @@ use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG};
 pub use libra_temppath::TempPath;
-pub use miner_config::{MinerConfig, PacemakerStrategy};
+pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use storage_config::StorageConfig;
@@ -294,6 +294,7 @@ where
     file.write_all(&contents)?;
     Ok(())
 }
+
 pub(crate) fn load_config<T, P>(path: P) -> Result<T>
 where
     T: Serialize + DeserializeOwned,

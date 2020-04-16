@@ -39,7 +39,7 @@ async fn gen_head_chain(
             bus.clone(),
         )
     };
-    let sync_metadata = SyncMetadata::new(node_config.clone());
+    let sync_metadata = SyncMetadata::new(node_config.clone(), bus.clone());
     let chain = ChainActor::<DummyConsensus>::launch(
         node_config.clone(),
         startup_info.clone(),

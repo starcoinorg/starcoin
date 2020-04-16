@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::prelude::*;
+use actix::{clock::delay_for, prelude::*};
 use anyhow::{bail, Result};
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
@@ -9,8 +9,8 @@ use starcoin_config::{NodeConfig, PacemakerStrategy};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
-use starcoin_miner::miner_client::MinerClientActor;
 use starcoin_miner::MinerActor;
+use starcoin_miner::MinerClientActor;
 use starcoin_network::NetworkActor;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -28,6 +28,7 @@ use starcoin_types::system_events::SystemEvents;
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::runtime::Handle;
 use tokio::stream::StreamExt;
 
@@ -39,7 +40,7 @@ where
     _miner_actor: Addr<MinerActor<C, TxPoolRef, ChainActorRef<C>, Storage, H>>,
     _sync_actor: Addr<SyncActor<C>>,
     _rpc_actor: Addr<RpcActor>,
-    _miner_client: Addr<MinerClientActor<C>>,
+    _miner_client: Addr<MinerClientActor>,
 }
 
 pub async fn start<C, H>(
@@ -65,7 +66,7 @@ where
         .unwrap(),
     );
 
-    let sync_metadata = SyncMetadata::new(config.clone());
+    let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
 
     let (startup_info, genesis_hash) = match storage.get_startup_info()? {
         Some(startup_info) => {
@@ -205,10 +206,14 @@ where
         bus.clone(),
         peer_id,
         chain.clone(),
+        txpool.clone(),
         network.clone(),
         storage.clone(),
         sync_metadata.clone(),
     )?;
+
+    delay_for(Duration::from_secs(1)).await;
+    bus.clone().broadcast(SystemEvents::SyncBegin()).await?;
 
     info!("Waiting sync ......");
     let mut sync_event_receiver = sync_event_receiver_future
@@ -225,9 +230,7 @@ where
         receiver,
         default_account,
     )?;
-
-    let stratum_server = config.miner.stratum_server;
-    let miner_client = MinerClientActor::<C>::new(stratum_server).start();
+    let miner_client = MinerClientActor::new(config.miner.clone()).start();
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,

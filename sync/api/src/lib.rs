@@ -1,12 +1,16 @@
 pub mod sync_messages;
 
+use actix::Addr;
 use anyhow::Result;
 use dyn_clone::{clone_box, DynClone};
+use futures::executor::block_on;
 use parking_lot::RwLock;
+use starcoin_bus::{Broadcast, BusActor};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::system_events::SystemEvents;
 use std::sync::Arc;
 
 #[async_trait::async_trait]
@@ -18,45 +22,99 @@ pub trait StateSyncReset: DynClone + Send + Sync {
 pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
 
 pub struct SyncMetadataInner {
-    syncing: bool,
-    pivot: Option<BlockNumber>,
+    is_state_sync: bool,
+    pivot_behind: Option<(BlockNumber, u64)>,
     state_sync_address: Option<Box<dyn StateSyncReset>>,
+    state_sync_done: bool,
+    block_sync_done: bool,
+    bus: Addr<BusActor>,
 }
 
 impl SyncMetadata {
-    pub fn new(config: Arc<NodeConfig>) -> SyncMetadata {
+    pub fn new(config: Arc<NodeConfig>, bus: Addr<BusActor>) -> SyncMetadata {
         info!("is_state_sync : {}", config.sync.is_state_sync());
         let inner = SyncMetadataInner {
-            syncing: config.sync.is_state_sync(),
-            pivot: None,
+            is_state_sync: config.sync.is_state_sync(),
+            pivot_behind: None,
             state_sync_address: None,
+            state_sync_done: false,
+            block_sync_done: false,
+            bus,
         };
         SyncMetadata(Arc::new(RwLock::new(inner)))
     }
 
-    pub fn update_pivot(&self, pivot: BlockNumber) -> Result<()> {
-        assert!(self.0.read().syncing, "chain is not in fast sync mode.");
-        self.0.write().pivot = Some(pivot);
+    pub fn is_state_sync(&self) -> bool {
+        self.state_sync_mode() && !self.0.read().state_sync_done && !self.0.read().block_sync_done
+    }
+
+    pub fn update_pivot(&self, pivot: BlockNumber, behind: u64) -> Result<()> {
+        assert!(self.is_state_sync(), "cat not update pivot.");
+        assert!(pivot > 0, "pivot must be positive integer.");
+        assert!(behind > 0, "behind must be positive integer.");
+        self.0.write().pivot_behind = Some((pivot, behind));
         Ok(())
     }
 
-    pub fn sync_done(&self) -> Result<()> {
+    pub fn state_sync_done(&self) -> Result<()> {
+        assert!(self.state_sync_mode(), "chain is not in fast sync mode.");
+        assert!(!self.0.read().state_sync_done, "state sync already done.");
         let mut lock = self.0.write();
-        lock.syncing = false;
-        lock.pivot = None;
-        lock.state_sync_address = None;
+        lock.state_sync_done = true;
+        drop(lock);
+        let _ = self.both_done();
+        info!("state sync done.");
         Ok(())
     }
 
-    pub fn is_state_sync(&self) -> Result<bool> {
-        Ok(self.0.read().syncing)
+    pub fn block_sync_done(&self) -> Result<()> {
+        assert!(self.state_sync_mode(), "chain is not in fast sync mode.");
+        assert!(!self.0.read().block_sync_done, "block sync already done.");
+        let mut lock = self.0.write();
+        lock.state_sync_done = true;
+        let _ = self.both_done();
+        info!("block sync done.");
+        Ok(())
+    }
+
+    fn both_done(&self) -> Result<()> {
+        if self.0.read().state_sync_done && self.0.read().block_sync_done {
+            let mut lock = self.0.write();
+            lock.pivot_behind = None;
+            lock.state_sync_address = None;
+            let bus = lock.bus.clone();
+            block_on(async move {
+                let _ = bus
+                    .send(Broadcast {
+                        msg: SystemEvents::SyncDone(),
+                    })
+                    .await;
+            });
+            info!("state sync and block sync done.");
+        }
+        Ok(())
+    }
+
+    pub fn state_sync_mode(&self) -> bool {
+        self.0.read().is_state_sync
     }
 
     pub fn get_pivot(&self) -> Result<Option<BlockNumber>> {
-        Ok(self.0.read().pivot.clone())
+        Ok(match self.0.read().pivot_behind.clone() {
+            None => None,
+            Some((pivot, _behind)) => Some(pivot),
+        })
+    }
+
+    pub fn get_latest(&self) -> Option<BlockNumber> {
+        match self.0.read().pivot_behind.clone() {
+            None => None,
+            Some((pivot, behind)) => Some(pivot + behind),
+        }
     }
 
     pub fn update_address(&self, address: &(dyn StateSyncReset + 'static)) -> Result<()> {
+        assert!(self.is_state_sync(), "cat not update address.");
         self.0.write().state_sync_address = Some(clone_box(address));
         Ok(())
     }

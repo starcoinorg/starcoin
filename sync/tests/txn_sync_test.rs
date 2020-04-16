@@ -1,30 +1,30 @@
 mod gen_network;
 
-use actix::Actor;
 use actix_rt::System;
-use bus::{Broadcast, BusActor};
-use chain::{ChainActor, ChainActorRef};
+use bus::{Bus, BusActor};
+use chain::ChainActor;
 use config::{get_available_port, NodeConfig};
 use consensus::dummy::DummyConsensus;
+use crypto::{hash::CryptoHash, keygen::KeyGen};
+use executor::{executor::Executor, TransactionExecutor};
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
-use miner::{MinerActor, MinerClientActor};
 use starcoin_genesis::Genesis;
 use starcoin_sync::SyncActor;
+use starcoin_sync_api::sync_messages::StartSyncTxnEvent;
 use starcoin_sync_api::SyncMetadata;
-use starcoin_wallet_api::WalletAccount;
+use starcoin_txpool_api::TxPoolAsyncService;
 use std::{sync::Arc, time::Duration};
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
-use traits::ChainAsyncService;
 use txpool::TxPoolRef;
-use types::system_events::SystemEvents;
+use types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 
 #[test]
-fn test_state_sync() {
+fn test_txn_sync_actor() {
     ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let handle = rt.handle().clone();
@@ -70,7 +70,7 @@ fn test_state_sync() {
 
         let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone(), bus_1.clone());
         // chain
-        let first_chain = ChainActor::launch(
+        let first_chain = ChainActor::<DummyConsensus>::launch(
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
@@ -93,36 +93,15 @@ fn test_state_sync() {
             sync_metadata_actor_1.clone(),
         )
         .unwrap();
-        Delay::new(Duration::from_secs(1)).await;
-        let _ = bus_1
-            .clone()
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await;
-        let miner_account = WalletAccount::random();
-        // miner
-        let _miner_1 = MinerActor::<
-            DummyConsensus,
-            TxPoolRef,
-            ChainActorRef<DummyConsensus>,
-            Storage,
-            consensus::dummy::DummyHeader,
-        >::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            storage_1.clone(),
-            txpool_1.clone(),
-            first_chain.clone(),
-            None,
-            miner_account,
-        );
-        MinerClientActor::new(node_config_1.miner.clone()).start();
-        Delay::new(Duration::from_secs(20)).await;
-        let block_1 = first_chain.clone().master_head_block().await.unwrap();
-        let number = block_1.header().number();
-        debug!("first chain :{:?}", number);
-        assert!(number > 11);
+
+        // add txn to node1
+        let user_txn = gen_user_txn();
+        let import_result = txpool_1
+            .add_txns(vec![user_txn.clone()])
+            .await
+            .unwrap()
+            .pop();
+        assert!(import_result.unwrap().is_ok());
 
         ////////////////////////
         // second chain
@@ -135,15 +114,10 @@ fn test_state_sync() {
 
         // node config
         let mut config_2 = NodeConfig::random_for_test();
-        config_2.sync.fast_sync_mode();
         let addr_1_hex = network_1.identify().to_base58();
-        let seed: Multiaddr = format!(
-            "{}/p2p/{}",
-            &node_config_1.network.listen.to_string(),
-            addr_1_hex
-        )
-        .parse()
-        .unwrap();
+        let seed: Multiaddr = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex)
+            .parse()
+            .unwrap();
         config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
             .parse()
             .unwrap();
@@ -173,10 +147,6 @@ fn test_state_sync() {
         debug!("addr_2 : {:?}", addr_2);
 
         let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone(), bus_2.clone());
-        assert!(
-            sync_metadata_actor_2.is_state_sync(),
-            "is_state_sync is false."
-        );
 
         // chain
         let second_chain = ChainActor::<DummyConsensus>::launch(
@@ -202,22 +172,32 @@ fn test_state_sync() {
             sync_metadata_actor_2.clone(),
         )
         .unwrap();
-        Delay::new(Duration::from_secs(1)).await;
-        let _ = bus_2
-            .clone()
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await;
 
-        Delay::new(Duration::from_secs(30)).await;
+        Delay::new(Duration::from_secs(10)).await;
 
-        assert!(
-            !sync_metadata_actor_2.is_state_sync(),
-            "is_state_sync is true."
-        );
+        // make node2 to sync txn
+        bus_2.clone().broadcast(StartSyncTxnEvent).await.unwrap();
+        // wait 10s to sync done
+        Delay::new(Duration::from_secs(10)).await;
+
+        // check txn
+        let mut txns = txpool_2.get_pending_txns(None).await.unwrap();
+        assert!(txns.len() == 1);
+        let txn = txns.pop().unwrap();
+        assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());
     };
 
     system.block_on(fut);
     drop(rt);
+}
+
+fn gen_user_txn() -> SignedUserTransaction {
+    let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
+    let account_address = AccountAddress::from_public_key(&public_key);
+    let auth_prefix = AccountAddress::authentication_key(&public_key)
+        .prefix()
+        .to_vec();
+    let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+    let txn = txn.as_signed_user_txn().unwrap().clone();
+    txn
 }

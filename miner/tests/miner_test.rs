@@ -1,13 +1,14 @@
+use actix::Actor;
 use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
-use config::{NodeConfig, PacemakerStrategy};
+use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
 use consensus::dummy::{DummyConsensus, DummyHeader};
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
-use starcoin_miner::miner_client::MinerClient;
 use starcoin_miner::MinerActor;
+use starcoin_miner::MinerClientActor;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
@@ -36,6 +37,7 @@ fn test_miner_with_schedule_pacemaker() {
         let mut config = NodeConfig::random_for_test();
         config.miner.pacemaker_strategy = PacemakerStrategy::Schedule;
         config.miner.dev_period = 1;
+        config.miner.consensus_strategy = ConsensusStrategy::Dummy;
         let config = Arc::new(config);
         let bus = BusActor::launch();
         let storage = Arc::new(
@@ -62,7 +64,7 @@ fn test_miner_with_schedule_pacemaker() {
             genesis_hash,
             PeerInfo::default(),
         );
-        let sync_metadata = SyncMetadata::new(config.clone());
+        let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),
@@ -89,14 +91,13 @@ fn test_miner_with_schedule_pacemaker() {
             None,
             miner_account,
         );
-        handle.spawn(MinerClient::<DummyConsensus>::run(
-            config.miner.stratum_server,
-        ));
+        MinerClientActor::new(config.miner.clone()).start();
         let _sync = SyncActor::launch(
             config.clone(),
             bus,
             peer_id,
             chain.clone(),
+            txpool.clone(),
             network.clone(),
             storage.clone(),
             sync_metadata.clone(),
@@ -124,6 +125,7 @@ fn test_miner_with_ondemand_pacemaker() {
         let peer_id = Arc::new(PeerId::random());
         let mut conf = NodeConfig::random_for_test();
         conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
+        conf.miner.consensus_strategy = ConsensusStrategy::Dummy;
         let config = Arc::new(conf);
         let bus = BusActor::launch();
         let storage = Arc::new(
@@ -152,7 +154,7 @@ fn test_miner_with_ondemand_pacemaker() {
             genesis_hash,
             PeerInfo::default(),
         );
-        let sync_metadata = SyncMetadata::new(config.clone());
+        let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),
@@ -180,14 +182,13 @@ fn test_miner_with_ondemand_pacemaker() {
             Some(receiver),
             miner_account,
         );
-        handle.spawn(MinerClient::<DummyConsensus>::run(
-            config.miner.stratum_server,
-        ));
+        MinerClientActor::new(config.miner.clone()).start();
         let _sync = SyncActor::launch(
             config.clone(),
             bus,
             peer_id,
             chain.clone(),
+            txpool.clone(),
             network.clone(),
             storage.clone(),
             sync_metadata.clone(),

@@ -38,4 +38,5 @@ starcoin-state-api = { path = "../state/api"}
 starcoin-state-service = { path = "../state/service"}
 starcoin-txpool-api = {path = "../txpool/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
+stest = {path = "../commons/stest"}
 

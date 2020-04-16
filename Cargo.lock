@@ -6207,6 +6207,7 @@ dependencies = [
  "libra-temppath",
  "rand 0.6.5",
  "rust-argon2 0.8.2",
+ "serde",
  "serde_json",
  "starcoin-accumulator",
  "starcoin-bus",
@@ -6231,6 +6232,8 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
+ "structopt",
+ "thiserror",
  "tokio 0.2.18",
 ]
 
@@ -6310,6 +6313,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
+ "stest",
  "tokio 0.2.18",
 ]
 
@@ -6542,6 +6546,7 @@ dependencies = [
  "libra-temppath",
  "network-p2p-api",
  "parking_lot 0.9.0",
+ "rand 0.7.3",
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
@@ -6558,6 +6563,7 @@ dependencies = [
  "starcoin-sync-api",
  "starcoin-traits",
  "starcoin-txpool",
+ "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
  "tokio 0.2.18",
@@ -6572,8 +6578,10 @@ dependencies = [
  "anyhow",
  "async-trait",
  "dyn-clone",
+ "futures 0.3.4",
  "parking_lot 0.9.0",
  "serde",
+ "starcoin-bus",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
