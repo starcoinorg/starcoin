@@ -254,6 +254,7 @@ where
         {
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
             let mut retracted = Vec::new();
+            let mut rollback = false;
             if new_branch.get_chain_info().branch_id()
                 == self
                     .collection
@@ -267,10 +268,6 @@ where
                 enacted.append(&mut block.transactions().clone().to_vec());
             } else {
                 debug!("rollback branch.");
-                let (mut enacted_tmp, mut retracted_tmp) = self.find_ancestors(&new_branch)?;
-                enacted.append(&mut enacted_tmp);
-                retracted.append(&mut retracted_tmp);
-
                 self.collection.insert_branch(BlockChain::new(
                     self.config.clone(),
                     self.collection
@@ -283,14 +280,27 @@ where
                     self.txpool.clone(),
                     Arc::clone(&self.collection),
                 )?);
+
+                rollback = true;
             }
 
             let _ = self
                 .collection
                 .remove_branch(&new_branch.get_chain_info().branch_id());
-            self.collection.update_master(new_branch);
-            self.commit_2_txpool(enacted, retracted);
+            self.collection.update_master(BlockChain::new(
+                self.config.clone(),
+                new_branch.get_chain_info(),
+                self.storage.clone(),
+                self.txpool.clone(),
+                Arc::clone(&self.collection),
+            )?);
+            if rollback {
+                let (mut enacted_tmp, mut retracted_tmp) = self.find_ancestors(&new_branch)?;
+                enacted.append(&mut enacted_tmp);
+                retracted.append(&mut retracted_tmp);
+            }
 
+            self.commit_2_txpool(enacted, retracted);
             let block_detail = BlockDetail::new(block, total_difficulty);
             self.broadcast_2_bus(block_detail.clone());
 

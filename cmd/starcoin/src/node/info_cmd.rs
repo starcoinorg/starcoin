@@ -5,27 +5,27 @@ use crate::state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_wallet_api::WalletAccount;
+use starcoin_rpc_api::node::NodeInfo;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "list")]
-pub struct ListOpt {}
+#[structopt(name = "info")]
+pub struct InfoOpt {}
 
-pub struct ListCommand;
+pub struct InfoCommand;
 
-impl CommandAction for ListCommand {
+impl CommandAction for InfoCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ListOpt;
-    type ReturnItem = Vec<WalletAccount>;
+    type Opt = InfoOpt;
+    type ReturnItem = NodeInfo;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let accounts = client.wallet_list()?;
-        Ok(accounts)
+        let node_info = client.node_info()?;
+        Ok(node_info)
     }
 }

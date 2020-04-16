@@ -51,6 +51,7 @@ logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 network-p2p-api = {package="network-p2p-api", path="../network-p2p/api"}
 types = {path = "../types", package="starcoin-types"}
+stest = {path = "../commons/stest"}
 
 [dev-dependencies]
 async-std = "1.5"

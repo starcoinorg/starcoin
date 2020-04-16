@@ -15,8 +15,6 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "import")]
 pub struct ImportOpt {
-    #[structopt(short = "a")]
-    account: Option<AccountAddress>,
     #[structopt(short = "p", default_value = "")]
     password: String,
 
@@ -30,6 +28,10 @@ pub struct ImportOpt {
         conflicts_with("input")
     )]
     from_file: Option<PathBuf>,
+
+    /// if account_address is absent, generate address by public_key.
+    #[structopt(name = "account_address")]
+    account_address: Option<AccountAddress>,
 }
 
 pub struct ImportCommand;
@@ -43,7 +45,7 @@ impl CommandAction for ImportCommand {
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
-    ) -> Result<WalletAccount> {
+    ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt: &ImportOpt = ctx.opt();
 
@@ -59,7 +61,7 @@ impl CommandAction for ImportCommand {
         };
 
         let address = opt
-            .account
+            .account_address
             .unwrap_or_else(|| AccountAddress::from_public_key(&private_key.public_key()));
         let account = client.wallet_import(
             address,

@@ -13,8 +13,8 @@ use futures::{
 };
 use libp2p::PeerId;
 use network_p2p::{
-    identity, Event, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig, Params,
-    Secret,
+    identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
+    Params, Secret,
 };
 use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
@@ -155,6 +155,10 @@ impl SNetworkService {
 
     pub fn update_self_info(&self, info: PeerInfo) {
         self.service.update_self_info(info);
+    }
+
+    pub async fn get_address(&self, peer_id: PeerId) -> Vec<Multiaddr> {
+        self.service.get_address(peer_id).await
     }
 }
 

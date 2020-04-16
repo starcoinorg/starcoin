@@ -180,6 +180,7 @@ where
         txpool.clone(),
         account_service,
         chain_state_service,
+        Some(network.clone()),
         Some(logger_handle),
     )?;
     let receiver = if config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
@@ -190,10 +191,10 @@ where
 
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
-        "Self connect address is: {}",
+        "Self address is: {}",
         config
             .network
-            .self_connect_address
+            .self_address
             .as_ref()
             .expect("Self connect address must has been set.")
     );

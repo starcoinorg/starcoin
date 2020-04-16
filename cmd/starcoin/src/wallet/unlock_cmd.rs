@@ -12,15 +12,16 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "unlock")]
 pub struct UnlockOpt {
-    #[structopt(short = "a")]
-    account: AccountAddress,
     #[structopt(short = "p", default_value = "")]
     password: String,
     #[structopt(
         short = "d",
-        help = "keep account unlock for how long(in seconds) from now"
+        help = "keep account unlock for how long(in seconds) from now",
+        default_value = "300"
     )]
     duration: u32,
+    #[structopt(name = "account_address")]
+    account_address: AccountAddress,
 }
 
 pub struct UnlockCommand;
@@ -31,14 +32,17 @@ impl CommandAction for UnlockCommand {
     type Opt = UnlockOpt;
     type ReturnItem = String;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<String> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt: &UnlockOpt = ctx.opt();
         let duration = Duration::from_secs(opt.duration as u64);
-        client.wallet_unlock(opt.account.clone(), opt.password.clone(), duration)?;
+        client.wallet_unlock(opt.account_address.clone(), opt.password.clone(), duration)?;
         Ok(format!(
             "account {} unlocked for {:?}",
-            &opt.account, duration
+            &opt.account_address, duration
         ))
     }
 }
