@@ -230,7 +230,7 @@ impl NetworkActor {
                 result
             }
             Err(_e) => {
-                info!("no peers file ");
+                debug!("no peers file ");
                 None
             }
         };
@@ -238,7 +238,7 @@ impl NetworkActor {
         let mut network_config = node_config.network.clone();
         match peers_from_json {
             Some(Ok(mut addrs)) => {
-                info!("load peers {:?}", addrs);
+                info!("load peers from file {:?}", addrs);
                 network_config.seeds.append(&mut addrs);
             }
             _ => {}
