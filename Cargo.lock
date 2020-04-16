@@ -6401,6 +6401,7 @@ dependencies = [
  "serde",
  "serde_json",
  "starcoin-canonical-serialization",
+ "starcoin-chain",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",

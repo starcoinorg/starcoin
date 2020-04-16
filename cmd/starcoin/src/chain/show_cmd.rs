@@ -3,7 +3,7 @@
 
 use crate::state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::startup_info::ChainInfo;
 use structopt::StructOpt;
@@ -20,12 +20,12 @@ impl CommandAction for ShowCommand {
     type Opt = ShowOpt;
     type ReturnItem = ChainInfo;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<ChainInfo> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let opt = ctx.opt();
-        let chain_info = client
-            .chain_head()?
-            .ok_or(format_err!("get chain head error."))?;
+        let chain_info = client.chain_head()?;
 
         Ok(chain_info)
     }

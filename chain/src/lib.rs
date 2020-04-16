@@ -7,6 +7,7 @@ pub use chain::BlockChain;
 
 pub mod chain_service;
 pub mod message;
+pub mod mock;
 
 pub use chain_service::to_block_chain_collection;
 pub use chain_service::BlockChainCollection;

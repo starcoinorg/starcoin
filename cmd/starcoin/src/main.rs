@@ -11,9 +11,11 @@ use std::sync::Arc;
 use starcoin_config::ChainNetwork;
 pub use starcoin_config::StarcoinOpt;
 
+mod chain;
 mod debug;
 mod dev;
 mod helper;
+mod node;
 mod txn;
 mod view;
 mod wallet;

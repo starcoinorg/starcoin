@@ -178,6 +178,7 @@ where
     let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
         txpool.clone(),
+        chain.clone(),
         account_service,
         chain_state_service,
         Some(network.clone()),
