@@ -3,6 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_types::block::Block;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
 
@@ -13,6 +14,28 @@ pub struct AccountWithStateView {
     pub balance: Option<u64>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BlockView {
+    pub parent_hash: HashValue,
+    pub number: u64,
+    pub author: AccountAddress,
+    pub accumulator_root: HashValue,
+    pub state_root: HashValue,
+    pub gas_used: u64,
+}
+
+impl From<Block> for BlockView {
+    fn from(block: Block) -> Self {
+        Self {
+            parent_hash: block.header().parent_hash(),
+            number: block.header().number(),
+            author: block.header().author(),
+            accumulator_root: block.header().accumulator_root(),
+            state_root: block.header().state_root(),
+            gas_used: block.header().gas_used(),
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionView {
     pub id: HashValue,
