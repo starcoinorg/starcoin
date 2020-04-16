@@ -64,7 +64,7 @@ impl BusImpl {
     {
         let type_id = TypeId::of::<M>();
         let topic_subscribes = self.subscriptions.entry(type_id).or_insert(vec![]);
-        info!("{:?}", subscription);
+        debug!("{:?}", subscription);
         topic_subscribes.push(Box::new(subscription));
     }
 

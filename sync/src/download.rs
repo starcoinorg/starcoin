@@ -224,7 +224,7 @@ where
                 });
             }
             SyncNotify::ClosePeerMsg(peer_id) => {
-                warn!("close peer: {:?}", peer_id,);
+                info!("close peer: {:?}", peer_id,);
             }
         }
 
@@ -322,30 +322,30 @@ where
                                             // if let Some(address) = sync_metadata.get_address() {
                                             //     &address.reset(root.state_root());
                                             // } else {
-                                            //     warn!("{:?}", "state sync reset address is none.");
+                                            //     info!("{:?}", "state sync reset address is none.");
                                             // }
                                         }
                                     } else {
-                                        warn!("pivot {:?} : {}", sync_pivot, pivot);
+                                        info!("pivot {:?} : {}", sync_pivot, pivot);
                                     }
                                 } else {
-                                    warn!("{:?}", "not state sync mode.");
+                                    info!("{:?}", "not state sync mode.");
                                 }
                             }
                         } else {
-                            warn!("{:?}", "find_ancestor return none.");
+                            info!("{:?}", "find_ancestor return none.");
                         }
                     } else {
                         info!("{:?}", "self is best peer.");
                     }
                 } else {
-                    warn!("{:?}", "best peer is none.");
+                    info!("{:?}", "best peer is none.");
                 }
             } else {
-                warn!("{:?}", "not state sync mode.");
+                info!("{:?}", "not state sync mode.");
             }
         } else {
-            warn!("{:?}", "nothing todo when sync state.");
+            info!("{:?}", "nothing todo when sync state.");
         }
 
         Ok(())
@@ -464,7 +464,7 @@ where
                                     )
                                     .await;
                                 } else {
-                                    warn!("{:?}", "hash pool is empty.");
+                                    info!("{:?}", "hash pool is empty.");
                                 }
 
                                 if end {
@@ -633,7 +633,7 @@ where
                 );
                 Ok(Some((GetHashByNumberMsg { numbers }, end, next_number)))
             } else {
-                warn!("GetHashByNumberMsg is none.");
+                info!("GetHashByNumberMsg is none.");
                 Ok(None)
             }
         } else {

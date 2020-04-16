@@ -231,7 +231,7 @@ impl BlockStorage {
     }
 
     pub fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()> {
-        info!("commit block: {:?}, block: {:?}", branch_id, block);
+        debug!("commit block: {:?}, block: {:?}", branch_id, block);
         let (header, body) = block.clone().into_inner();
         //save header
         let block_id = header.id();
@@ -282,7 +282,7 @@ impl BlockStorage {
         let mut parent_id1 = block_id1;
         let mut parent_id2 = block_id2;
         let mut found;
-        info!("common ancestor: {:?}, {:?}", block_id1, block_id2);
+        debug!("common ancestor: {:?}, {:?}", block_id1, block_id2);
         match self.get_relationship(block_id1, block_id2) {
             Ok(Some(hash)) => return Ok(Some(hash)),
             _ => {}
@@ -293,7 +293,6 @@ impl BlockStorage {
         }
 
         loop {
-            // info!("block_id: {}", parent_id1.to_hex());
             //get header by block_id
             match self.get_block_header_by_hash(parent_id1)? {
                 Some(header) => {
@@ -301,11 +300,11 @@ impl BlockStorage {
                     ensure!(parent_id1 != HashValue::zero(), "invaild block id is zero.");
                     match self.get_sons(parent_id1) {
                         Ok(sons1) => {
-                            info!("parent: {:?}, sons1 : {:?}", parent_id1, sons1);
+                            debug!("parent: {:?}, sons1 : {:?}", parent_id1, sons1);
                             if sons1.len() > 1 {
                                 // get parent2 from block2
                                 loop {
-                                    info!("parent2 : {:?}", parent_id2);
+                                    debug!("parent2 : {:?}", parent_id2);
                                     ensure!(
                                         parent_id2 != HashValue::zero(),
                                         "invaild block id is zero."
@@ -433,10 +432,10 @@ impl BlockStorage {
     }
 
     fn put_sons(&self, parent_hash: HashValue, son_hash: HashValue) -> Result<()> {
-        info!("put son:{}, {}", parent_hash, son_hash);
+        debug!("put son:{}, {}", parent_hash, son_hash);
         match self.get_sons(parent_hash) {
             Ok(mut vec_hash) => {
-                info!("branch block:{}, {:?}", parent_hash, vec_hash);
+                debug!("branch block:{}, {:?}", parent_hash, vec_hash);
                 vec_hash.push(son_hash);
                 self.sons_store
                     .write()
