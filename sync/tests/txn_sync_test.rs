@@ -68,7 +68,7 @@ fn test_txn_sync_actor() {
         );
         debug!("addr_1 : {:?}", addr_1);
 
-        let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone());
+        let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone(), bus_1.clone());
         // chain
         let first_chain = ChainActor::<DummyConsensus>::launch(
             node_config_1.clone(),
@@ -146,7 +146,7 @@ fn test_txn_sync_actor() {
         );
         debug!("addr_2 : {:?}", addr_2);
 
-        let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone());
+        let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone(), bus_2.clone());
 
         // chain
         let second_chain = ChainActor::<DummyConsensus>::launch(
