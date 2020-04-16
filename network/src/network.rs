@@ -144,6 +144,13 @@ impl NetworkAsyncService {
         }
         Ok(result)
     }
+    /// get all peers and sort by difficulty decreasely.
+    pub async fn best_peer_set(&self) -> Result<Vec<PeerInfo>> {
+        let mut peer_infos = self.peer_set().await?;
+        peer_infos.sort_by_key(|p| p.total_difficult);
+        peer_infos.reverse();
+        Ok(peer_infos)
+    }
 
     pub async fn get_peer(&self, peer_id: &PeerId) -> Result<Option<PeerInfo>> {
         match self.inner.peers.lock().await.get(peer_id) {

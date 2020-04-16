@@ -84,11 +84,8 @@ struct Inner {
 impl Inner {
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
-        let mut best_peer = self.network_service.peer_set().await?;
-        best_peer.sort_by_key(|p| p.total_difficult);
-        best_peer.reverse();
-
-        for peer in best_peer {
+        let best_peers = self.network_service.best_peer_set().await?;
+        for peer in best_peers {
             match self.sync_txn_from_peer(peer.peer_id).await {
                 Ok(_) => {
                     return Ok(());
