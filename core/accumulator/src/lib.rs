@@ -129,7 +129,10 @@ pub trait AccumulatorWriter {
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()>;
 }
 
-pub trait AccumulatorTreeStore: AccumulatorReader + AccumulatorWriter {}
+pub trait AccumulatorTreeStore:
+    AccumulatorReader + AccumulatorWriter + std::marker::Send + std::marker::Sync
+{
+}
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
 pub struct MerkleAccumulator {
@@ -714,13 +717,13 @@ impl Accumulator for MerkleAccumulator {
 }
 
 pub struct MockAccumulatorStore {
-    node_store: RefCell<HashMap<HashValue, AccumulatorNode>>,
+    node_store: Mutex<HashMap<HashValue, AccumulatorNode>>,
 }
 
 impl MockAccumulatorStore {
     pub fn new() -> Self {
         Self {
-            node_store: RefCell::new(HashMap::new()),
+            node_store: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -728,7 +731,7 @@ impl MockAccumulatorStore {
 impl AccumulatorTreeStore for MockAccumulatorStore {}
 impl AccumulatorReader for MockAccumulatorStore {
     fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
-        match self.node_store.borrow().get(&hash) {
+        match self.node_store.lock().unwrap().get(&hash) {
             Some(node) => Ok(Some(node.clone())),
             None => bail!("get node is null: {}", hash),
         }
@@ -740,13 +743,13 @@ impl AccumulatorReader for MockAccumulatorStore {
 }
 impl AccumulatorWriter for MockAccumulatorStore {
     fn save_node(&self, node: AccumulatorNode) -> Result<()> {
-        self.node_store.borrow_mut().insert(node.hash(), node);
+        self.node_store.lock().unwrap().insert(node.hash(), node);
         Ok(())
     }
 
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
         for hash in node_hash_vec {
-            self.node_store.borrow_mut().remove(&hash);
+            self.node_store.lock().unwrap().remove(&hash);
         }
         Ok(())
     }

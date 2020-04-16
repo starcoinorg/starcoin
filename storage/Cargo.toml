@@ -17,7 +17,7 @@ scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 chrono = "0.4"
 byteorder = "1.3.2"
 lru = "0.4.3"
-parking_lot = "0.10.0"
+parking_lot = "0.10.2"
 once_cell = "1.3.1"
 state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}

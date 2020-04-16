@@ -4,6 +4,7 @@
 use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, Result};
 use merkle_tree::proof::SparseMerkleProof;
+use parking_lot::{Mutex, MutexGuard};
 use scs::SCSCodec;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_logger::prelude::*;
@@ -20,10 +21,9 @@ use starcoin_types::{
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
-use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::Arc;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -74,7 +74,7 @@ impl AccountStateObject {
     }
 
     pub fn get(&self, data_type: DataType, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
-        let trees = self.trees.lock().unwrap();
+        let trees = self.trees.lock();
         match trees[data_type.storage_index()].as_ref() {
             Some(tree) => tree.get(key_hash),
             None => Ok(None),
@@ -88,7 +88,7 @@ impl AccountStateObject {
         data_type: DataType,
         key_hash: &HashValue,
     ) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
-        let trees = self.trees.lock().unwrap();
+        let trees = self.trees.lock();
         match trees[data_type.storage_index()].as_ref() {
             Some(tree) => tree.get_with_proof(key_hash),
             None => Ok((None, SparseMerkleProof::new(None, vec![]))),
@@ -96,7 +96,7 @@ impl AccountStateObject {
     }
 
     pub fn set(&self, data_type: DataType, key_hash: HashValue, value: Vec<u8>) {
-        let mut trees = self.trees.lock().unwrap();
+        let mut trees = self.trees.lock();
         if trees[data_type.storage_index()].as_ref().is_none() {
             trees[data_type.storage_index()] = Some(StateTree::new(self.store.clone(), None));
         }
@@ -110,7 +110,7 @@ impl AccountStateObject {
         if data_type.is_code() {
             bail!("Not supported remove code currently.");
         }
-        let trees = self.trees.lock().unwrap();
+        let trees = self.trees.lock();
         let tree = trees[data_type.storage_index()].as_ref();
         match tree {
             Some(tree) => tree.remove(key_hash),
@@ -124,7 +124,7 @@ impl AccountStateObject {
     }
 
     pub fn is_dirty(&self) -> bool {
-        let trees = self.trees.lock().unwrap();
+        let trees = self.trees.lock();
         for tree in trees.iter() {
             if let Some(tree) = tree {
                 if tree.is_dirty() {
@@ -136,7 +136,7 @@ impl AccountStateObject {
     }
 
     pub fn commit(&self) -> Result<AccountState> {
-        let trees = self.trees.lock().unwrap();
+        let trees = self.trees.lock();
         for tree in trees.iter() {
             if let Some(tree) = tree {
                 if tree.is_dirty() {
@@ -149,7 +149,7 @@ impl AccountStateObject {
     }
 
     pub fn flush(&self) -> Result<()> {
-        let trees = self.trees.lock().unwrap();
+        let trees = self.trees.lock();
         for tree in trees.iter() {
             if let Some(tree) = tree {
                 tree.flush()?;
@@ -171,7 +171,7 @@ impl AccountStateObject {
     }
 
     fn to_state(&self) -> AccountState {
-        let trees = self.trees.lock().unwrap();
+        let trees = self.trees.lock();
         Self::build_state(trees)
     }
 }
@@ -180,7 +180,7 @@ pub struct ChainStateDB {
     store: Arc<dyn StateNodeStore>,
     ///global state tree.
     state_tree: StateTree,
-    cache: RefCell<HashMap<HashValue, Option<Arc<AccountStateObject>>>>,
+    cache: Mutex<HashMap<HashValue, Option<Arc<AccountStateObject>>>>,
 }
 
 impl ChainStateDB {
@@ -188,7 +188,7 @@ impl ChainStateDB {
         Self {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
-            cache: RefCell::new(HashMap::new()),
+            cache: Mutex::new(HashMap::new()),
         }
     }
 
@@ -197,7 +197,7 @@ impl ChainStateDB {
         Self {
             store: self.store.clone(),
             state_tree: StateTree::new(self.store.clone(), Some(root_hash)),
-            cache: RefCell::new(HashMap::new()),
+            cache: Mutex::new(HashMap::new()),
         }
     }
 
@@ -221,7 +221,7 @@ impl ChainStateDB {
                     ));
                     let address_hash = account_address.crypto_hash();
                     self.cache
-                        .borrow_mut()
+                        .lock()
                         .insert(address_hash, Some(account_state_object.clone()));
                     Ok(account_state_object)
                 } else {
@@ -236,7 +236,7 @@ impl ChainStateDB {
         account_address: &AccountAddress,
     ) -> Result<Option<Arc<AccountStateObject>>> {
         let address_hash = account_address.crypto_hash();
-        let mut cache = self.cache.borrow_mut();
+        let mut cache = self.cache.lock();
         let entry = cache.entry(address_hash);
         let object = match entry {
             Entry::Occupied(entry) => entry.get().clone(),
@@ -398,7 +398,7 @@ impl ChainStateWriter for ChainStateDB {
             balance_resource.try_into()?,
         );
 
-        self.cache.borrow_mut().insert(
+        self.cache.lock().insert(
             account_address.crypto_hash(),
             Some(Arc::new(account_state_object)),
         );
@@ -446,7 +446,7 @@ impl ChainStateWriter for ChainStateDB {
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         //TODO optimize
-        for (address_hash, state_object) in self.cache.borrow().iter() {
+        for (address_hash, state_object) in self.cache.lock().iter() {
             match state_object {
                 Some(state_object) => {
                     if state_object.is_dirty() {
@@ -464,7 +464,7 @@ impl ChainStateWriter for ChainStateDB {
     /// flush data to db.
     fn flush(&self) -> Result<()> {
         //TODO optimize
-        for (_address_hash, state_object) in self.cache.borrow().iter() {
+        for (_address_hash, state_object) in self.cache.lock().iter() {
             match state_object {
                 Some(state_object) => {
                     state_object.flush()?;

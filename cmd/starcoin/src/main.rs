@@ -11,6 +11,7 @@ use std::sync::Arc;
 use starcoin_config::ChainNetwork;
 pub use starcoin_config::StarcoinOpt;
 
+mod chain;
 mod debug;
 mod dev;
 mod helper;
@@ -95,6 +96,11 @@ fn run() -> Result<()> {
             Command::with_name("node")
                 .subcommand(node::InfoCommand)
                 .subcommand(node::PeersCommand),
+        )
+        .command(
+            Command::with_name("chain")
+                .subcommand(chain::ShowCommand)
+                .subcommand(chain::GetBlockCommand),
         )
         .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))

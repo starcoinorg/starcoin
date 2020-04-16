@@ -9,8 +9,8 @@ use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, 
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::{
-    debug::DebugClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
-    wallet::WalletClient,
+    chain::ChainClient, debug::DebugClient, node::NodeClient, state::StateClient,
+    txpool::TxPoolClient, wallet::WalletClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -31,7 +31,9 @@ mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::node::NodeInfo;
+use starcoin_types::block::Block;
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -272,6 +274,18 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn chain_head(&self) -> anyhow::Result<ChainInfo> {
+        self.call_rpc_blocking(|inner| async move { inner.chain_client.head().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Block> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.chain_client.get_block_by_hash(hash).compat().await
+        })
+        .map_err(map_err)
+    }
+
     fn call_rpc_blocking<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F,
@@ -319,12 +333,6 @@ impl RpcClient {
     }
 }
 
-// impl AsRef<RpcClientInner> for RpcClient {
-//     fn as_ref(&self) -> &RpcClientInner {
-//         &self.inner
-//     }
-// }
-
 #[derive(Clone)]
 pub(crate) struct RpcClientInner {
     node_client: NodeClient,
@@ -332,6 +340,7 @@ pub(crate) struct RpcClientInner {
     wallet_client: WalletClient,
     state_client: StateClient,
     debug_client: DebugClient,
+    chain_client: ChainClient,
 }
 
 impl RpcClientInner {
@@ -342,6 +351,7 @@ impl RpcClientInner {
             wallet_client: channel.clone().into(),
             state_client: channel.clone().into(),
             debug_client: channel.clone().into(),
+            chain_client: channel.clone().into(),
         }
     }
 }

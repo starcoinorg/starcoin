@@ -36,6 +36,7 @@ starcoin-logger = { path = "../../commons/logger"}
 stest = { path = "../../commons/stest"}
 starcoin-rpc-api = { path = "../api"}
 starcoin-wallet-api = { path = "../../wallet/api"}
+starcoin-chain = {path ="../../chain"}
 starcoin-wallet-service = { path = "../../wallet/service"}
 starcoin-statedb = { path = "../../state/statedb"}
 starcoin-traits = { path = "../../core/traits"}
