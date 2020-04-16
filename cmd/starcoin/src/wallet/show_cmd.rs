@@ -14,8 +14,8 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "show")]
 pub struct ShowOpt {
-    #[structopt(short = "a")]
-    address: AccountAddress,
+    #[structopt(name = "account_address")]
+    account_address: AccountAddress,
 }
 
 pub struct ShowCommand;
@@ -32,9 +32,9 @@ impl CommandAction for ShowCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let account = client.wallet_get(opt.address)?.ok_or(format_err!(
+        let account = client.wallet_get(opt.account_address)?.ok_or(format_err!(
             "Account with address {} not exist.",
-            opt.address
+            opt.account_address
         ))?;
 
         let chain_state_reader = RemoteStateReader::new(client);

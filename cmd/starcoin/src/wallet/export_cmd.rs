@@ -14,8 +14,8 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "export")]
 pub struct ExportOpt {
-    #[structopt(short = "a")]
-    account: AccountAddress,
+    #[structopt(name = "account_address")]
+    account_address: AccountAddress,
     #[structopt(short = "p", default_value = "")]
     password: String,
     #[structopt(short = "o", parse(from_os_str))]
@@ -33,7 +33,7 @@ impl CommandAction for ExportCommand {
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
         let client = ctx.state().client();
         let opt: &ExportOpt = ctx.opt();
-        let data = client.wallet_export(opt.account, opt.password.clone())?;
+        let data = client.wallet_export(opt.account_address, opt.password.clone())?;
         let private_key = ed25519::Ed25519PrivateKey::try_from(data.as_slice())?;
         let encoded = private_key.to_encoded_string()?;
         if let Some(output_file) = &opt.output_file {
@@ -43,7 +43,10 @@ impl CommandAction for ExportCommand {
             std::fs::write(output_file, encoded.clone())?;
             println!("private key saved to {}", output_file.as_path().display());
         }
-        println!("account {}, private key: {}", &opt.account, &encoded);
+        println!(
+            "account {}, private key: {}",
+            &opt.account_address, &encoded
+        );
         Ok(())
     }
 }
