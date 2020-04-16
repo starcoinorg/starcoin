@@ -1,40 +1,38 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::helper::get_unix_ts;
 use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
 use crate::{NetworkMessage, PeerEvent, PeerMessage, RPCRequest, RPCResponse, RpcRequestMessage};
 use actix::prelude::*;
-use anyhow::Result;
+use anyhow::{bail, Result};
+use bitflags::_core::sync::atomic::Ordering;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
+use crypto::{hash::CryptoHash, HashValue};
 use futures::lock::Mutex;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
+use futures_timer::Delay;
 use libp2p::multiaddr::Protocol;
 use libp2p::PeerId;
-use scs::SCSCodec;
-use starcoin_sync_api::sync_messages::PeerNewBlock;
-use std::sync::Arc;
-use tx_relay::*;
-use types::peer_info::PeerInfo;
-use types::system_events::SystemEvents;
-
-use crate::helper::get_unix_ts;
-use futures_timer::Delay;
 use lru::LruCache;
-use std::time::Duration;
-use tokio::runtime::Handle;
-
-use bitflags::_core::sync::atomic::Ordering;
-use crypto::{hash::CryptoHash, HashValue};
 use network_p2p::Multiaddr;
 use network_p2p_api::messages::RawRpcRequestMessage;
+use scs::SCSCodec;
+use starcoin_sync_api::sync_messages::PeerNewBlock;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::Write;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::runtime::Handle;
+use tx_relay::*;
+use types::peer_info::PeerInfo;
+use types::system_events::SystemEvents;
 use types::transaction::SignedUserTransaction;
 
 const LRU_CACHE_SIZE: usize = 1024;
@@ -172,14 +170,14 @@ impl NetworkAsyncService {
         response
     }
 
-    pub async fn peer_set(&self) -> Result<HashSet<PeerInfo>> {
-        let mut result = HashSet::new();
+    pub async fn peer_set(&self) -> Result<Vec<PeerInfo>> {
+        let mut result = vec![];
 
         for (peer_id, peer) in self.inner.peers.lock().await.iter() {
             if self.peer_id.eq(peer_id) {
                 continue;
             }
-            result.insert(peer.peer_info.clone());
+            result.push(peer.peer_info.clone());
         }
         Ok(result)
     }
@@ -188,6 +186,13 @@ impl NetworkAsyncService {
         match self.inner.peers.lock().await.get(peer_id) {
             Some(peer) => Ok(Some(peer.peer_info.clone())),
             None => Ok(None),
+        }
+    }
+
+    pub async fn get_self_peer(&self) -> Result<PeerInfo> {
+        match self.inner.peers.lock().await.get(&self.peer_id) {
+            Some(peer) => Ok(peer.peer_info.clone()),
+            None => bail!("Can not find self peer info."),
         }
     }
 

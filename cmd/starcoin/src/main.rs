@@ -90,6 +90,11 @@ fn run() -> Result<()> {
                 .subcommand(wallet::ImportCommand),
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand))
+        .command(
+            Command::with_name("node")
+                .subcommand(node::InfoCommand)
+                .subcommand(node::PeersCommand),
+        )
         .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
         .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))
         .exec();

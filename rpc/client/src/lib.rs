@@ -9,8 +9,8 @@ use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, 
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::{
-    debug::DebugClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
-    wallet::WalletClient,
+    chain::ChainClient, debug::DebugClient, node::NodeClient, state::StateClient,
+    txpool::TxPoolClient, wallet::WalletClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -30,7 +30,9 @@ use tokio_compat::runtime::Runtime;
 mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
+use starcoin_rpc_api::node::NodeInfo;
 use starcoin_types::block::Block;
+use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 
@@ -130,6 +132,16 @@ impl RpcClient {
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
         self.call_rpc_blocking(|inner| async move { inner.node_client.status().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn node_info(&self) -> anyhow::Result<NodeInfo> {
+        self.call_rpc_blocking(|inner| async move { inner.node_client.info().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn node_peers(&self) -> anyhow::Result<Vec<PeerInfo>> {
+        self.call_rpc_blocking(|inner| async move { inner.node_client.peers().compat().await })
             .map_err(map_err)
     }
 

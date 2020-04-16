@@ -180,6 +180,7 @@ where
         txpool.clone(),
         account_service,
         chain_state_service,
+        Some(network.clone()),
         Some(logger_handle),
     )?;
     let receiver = if config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {

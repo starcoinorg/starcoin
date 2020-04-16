@@ -5,8 +5,8 @@ use crate::module::{DebugRpcImpl, NodeRpcImpl, StateRpcImpl, TxPoolRpcImpl, Wall
 use crate::service::RpcService;
 use actix::prelude::*;
 use anyhow::Result;
-use config::NodeConfig;
 use jsonrpc_core::IoHandler;
+use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_rpc_api::debug::DebugApi;
@@ -29,6 +29,8 @@ impl RpcActor {
         txpool_service: TS,
         account_service: AS,
         state_service: SS,
+        //TODO after network async service provide trait, remove Option.
+        network_service: Option<NetworkAsyncService>,
         logger_handle: Option<Arc<LoggerHandle>>,
     ) -> Result<(Addr<RpcActor>, IoHandler)>
     where

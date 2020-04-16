@@ -30,7 +30,7 @@ use txpool::TxPoolRef;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
-    startup_info::StartupInfo,
+    startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
     transaction::SignedUserTransaction,
 };
@@ -137,6 +137,10 @@ where
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
                 self.service.master_startup_info(),
             )),
+            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
+                self.service.master_startup_info().head,
+            )),
+
             ChainRequest::GenTx() => {
                 self.service.gen_tx()?;
                 Ok(ChainResponse::None)
@@ -191,7 +195,7 @@ where
     }
 }
 
-#[async_trait::async_trait(Send)]
+#[async_trait::async_trait]
 impl<C> ChainAsyncService for ChainActorRef<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
@@ -206,6 +210,38 @@ where
             Ok(conn_result)
         } else {
             Err(format_err!("error ChainResponse type."))
+        }
+    }
+
+    async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader> {
+        if let ChainResponse::BlockHeader(header) = self
+            .address
+            .send(ChainRequest::GetHeaderByHash(hash.clone()))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            Some(header)
+        } else {
+            None
+        }
+    }
+
+    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block> {
+        debug!("hash: {:?}", hash);
+        if let ChainResponse::OptionBlock(block) = self
+            .address
+            .send(ChainRequest::GetBlockByHash(hash.clone()))
+            .await
+            .unwrap()
+            .unwrap()
+        {
+            match block {
+                Some(b) => Ok(b),
+                None => bail!("get block by hash is none: {:?}", hash),
+            }
+        } else {
+            bail!("get block by hash error.")
         }
     }
 
@@ -226,45 +262,28 @@ where
         }
     }
 
-    async fn master_startup_info(self) -> Result<StartupInfo> {
-        let response = self
+    async fn get_block_info_by_hash(self, hash: &HashValue) -> Option<BlockInfo> {
+        debug!("hash: {:?}", hash);
+        if let ChainResponse::OptionBlockInfo(block_info) = self
             .address
-            .send(ChainRequest::GetStartupInfo())
+            .send(ChainRequest::GetBlockInfoByHash(hash.clone()))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        if let ChainResponse::StartupInfo(startup_info) = response {
-            Ok(startup_info)
+            .unwrap()
+            .unwrap()
+        {
+            match block_info {
+                Some(info) => Some(info),
+                _ => None,
+            }
         } else {
-            bail!("Get chain info response error.")
+            None
         }
-    }
-
-    async fn gen_tx(&self) -> Result<()> {
-        self.address
-            .send(ChainRequest::GenTx())
-            .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        Ok(())
     }
 
     async fn master_head_header(self) -> Option<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
             .address
             .send(ChainRequest::CurrentHeader())
-            .await
-            .unwrap()
-            .unwrap()
-        {
-            Some(header)
-        } else {
-            None
-        }
-    }
-
-    async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader> {
-        if let ChainResponse::BlockHeader(header) = self
-            .address
-            .send(ChainRequest::GetHeaderByHash(hash.clone()))
             .await
             .unwrap()
             .unwrap()
@@ -303,6 +322,42 @@ where
         }
     }
 
+    async fn master_startup_info(self) -> Result<StartupInfo> {
+        let response = self
+            .address
+            .send(ChainRequest::GetStartupInfo())
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        if let ChainResponse::StartupInfo(startup_info) = response {
+            Ok(startup_info)
+        } else {
+            bail!("Get chain info response error.")
+        }
+    }
+
+    async fn master_head(self) -> Result<ChainInfo> {
+        let response = self
+            .address
+            .send(ChainRequest::GetHeadChainInfo())
+            .await
+            .map_err(|e| Into::<Error>::into(e))
+            .unwrap()
+            .unwrap();
+        if let ChainResponse::ChainInfo(chain_info) = response {
+            Ok(chain_info)
+        } else {
+            bail!("get head chain info error.")
+        }
+    }
+
+    async fn gen_tx(&self) -> Result<()> {
+        self.address
+            .send(ChainRequest::GenTx())
+            .await
+            .map_err(|e| Into::<Error>::into(e))??;
+        Ok(())
+    }
+
     async fn create_block_template(
         self,
         author: AccountAddress,
@@ -324,42 +379,6 @@ where
             .unwrap()
         {
             Some(block_template)
-        } else {
-            None
-        }
-    }
-
-    async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block> {
-        debug!("hash: {:?}", hash);
-        if let ChainResponse::OptionBlock(block) = self
-            .address
-            .send(ChainRequest::GetBlockByHash(hash.clone()))
-            .await
-            .unwrap()
-            .unwrap()
-        {
-            match block {
-                Some(b) => Some(b),
-                _ => None,
-            }
-        } else {
-            None
-        }
-    }
-
-    async fn get_block_info_by_hash(self, hash: &HashValue) -> Option<BlockInfo> {
-        debug!("hash: {:?}", hash);
-        if let ChainResponse::OptionBlockInfo(block_info) = self
-            .address
-            .send(ChainRequest::GetBlockInfoByHash(hash.clone()))
-            .await
-            .unwrap()
-            .unwrap()
-        {
-            match block_info {
-                Some(info) => Some(info),
-                _ => None,
-            }
         } else {
             None
         }
