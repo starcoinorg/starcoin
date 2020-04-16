@@ -30,7 +30,7 @@ use txpool::TxPoolRef;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
-    startup_info::{ChainInfo, StartupInfo},
+    startup_info::StartupInfo,
     system_events::SystemEvents,
     transaction::SignedUserTransaction,
 };
@@ -137,10 +137,6 @@ where
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
                 self.service.master_startup_info(),
             )),
-            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
-                self.service.master_startup_info().head,
-            )),
-
             ChainRequest::GenTx() => {
                 self.service.gen_tx()?;
                 Ok(ChainResponse::None)
@@ -195,7 +191,7 @@ where
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(Send)]
 impl<C> ChainAsyncService for ChainActorRef<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
@@ -333,7 +329,7 @@ where
         }
     }
 
-    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block> {
+    async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block> {
         debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlock(block) = self
             .address
@@ -343,11 +339,11 @@ where
             .unwrap()
         {
             match block {
-                Some(b) => Ok(b),
-                None => bail!("get block by hash is none: {:?}", hash),
+                Some(b) => Some(b),
+                _ => None,
             }
         } else {
-            bail!("get block by hash error.")
+            None
         }
     }
 
@@ -366,21 +362,6 @@ where
             }
         } else {
             None
-        }
-    }
-
-    async fn master_head(self) -> Result<ChainInfo> {
-        let response = self
-            .address
-            .send(ChainRequest::GetHeadChainInfo())
-            .await
-            .map_err(|e| Into::<Error>::into(e))
-            .unwrap()
-            .unwrap();
-        if let ChainResponse::ChainInfo(chain_info) = response {
-            Ok(chain_info)
-        } else {
-            bail!("get head chain info error.")
         }
     }
 }

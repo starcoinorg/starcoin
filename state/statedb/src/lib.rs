@@ -20,6 +20,7 @@ use starcoin_types::{
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
+use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -179,7 +180,7 @@ pub struct ChainStateDB {
     store: Arc<dyn StateNodeStore>,
     ///global state tree.
     state_tree: StateTree,
-    cache: Mutex<HashMap<HashValue, Option<Arc<AccountStateObject>>>>,
+    cache: RefCell<HashMap<HashValue, Option<Arc<AccountStateObject>>>>,
 }
 
 impl ChainStateDB {
@@ -187,7 +188,7 @@ impl ChainStateDB {
         Self {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
-            cache: Mutex::new(HashMap::new()),
+            cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -196,7 +197,7 @@ impl ChainStateDB {
         Self {
             store: self.store.clone(),
             state_tree: StateTree::new(self.store.clone(), Some(root_hash)),
-            cache: Mutex::new(HashMap::new()),
+            cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -220,8 +221,7 @@ impl ChainStateDB {
                     ));
                     let address_hash = account_address.crypto_hash();
                     self.cache
-                        .lock()
-                        .unwrap()
+                        .borrow_mut()
                         .insert(address_hash, Some(account_state_object.clone()));
                     Ok(account_state_object)
                 } else {
@@ -236,7 +236,7 @@ impl ChainStateDB {
         account_address: &AccountAddress,
     ) -> Result<Option<Arc<AccountStateObject>>> {
         let address_hash = account_address.crypto_hash();
-        let mut cache = self.cache.lock().unwrap();
+        let mut cache = self.cache.borrow_mut();
         let entry = cache.entry(address_hash);
         let object = match entry {
             Entry::Occupied(entry) => entry.get().clone(),
@@ -398,7 +398,7 @@ impl ChainStateWriter for ChainStateDB {
             balance_resource.try_into()?,
         );
 
-        self.cache.lock().unwrap().insert(
+        self.cache.borrow_mut().insert(
             account_address.crypto_hash(),
             Some(Arc::new(account_state_object)),
         );
@@ -446,7 +446,7 @@ impl ChainStateWriter for ChainStateDB {
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         //TODO optimize
-        for (address_hash, state_object) in self.cache.lock().unwrap().iter() {
+        for (address_hash, state_object) in self.cache.borrow().iter() {
             match state_object {
                 Some(state_object) => {
                     if state_object.is_dirty() {
@@ -464,7 +464,7 @@ impl ChainStateWriter for ChainStateDB {
     /// flush data to db.
     fn flush(&self) -> Result<()> {
         //TODO optimize
-        for (_address_hash, state_object) in self.cache.lock().unwrap().iter() {
+        for (_address_hash, state_object) in self.cache.borrow().iter() {
             match state_object {
                 Some(state_object) => {
                     state_object.flush()?;

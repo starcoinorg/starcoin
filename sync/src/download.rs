@@ -688,9 +688,9 @@ where
             if downloader
                 .chain_reader
                 .clone()
-                .get_block_by_hash(hash.hash)
+                .get_block_by_hash(&hash.hash)
                 .await
-                .is_ok()
+                .is_some()
             {
                 exist_ancestor = true;
                 info!("find ancestor hash : {:?}", hash);

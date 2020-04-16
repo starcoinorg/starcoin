@@ -4,7 +4,6 @@
 use crate::ConnectResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -43,13 +42,13 @@ pub trait ChainService {
 }
 
 /// ChainActor
-#[async_trait::async_trait]
-pub trait ChainAsyncService: Clone + std::marker::Unpin + Send + Sync {
+#[async_trait::async_trait(? Send)]
+pub trait ChainAsyncService: Clone + std::marker::Unpin {
     /////////////////////////////////////////////// for chain service
     /// connect to master or a fork branch.
     async fn try_connect(self, block: Block) -> Result<ConnectResult<()>>;
     async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader>;
-    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block>;
+    async fn get_block_by_hash(self, hash: &HashValue) -> Option<Block>;
     async fn try_connect_with_block_info(
         &mut self,
         block: Block,
@@ -62,7 +61,7 @@ pub trait ChainAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn master_head_block(self) -> Option<Block>;
     async fn master_block_by_number(self, number: BlockNumber) -> Option<Block>;
     async fn master_startup_info(self) -> Result<StartupInfo>;
-    async fn master_head(self) -> Result<ChainInfo>;
+
     /////////////////////////////////////////////// just for test
     async fn gen_tx(&self) -> Result<()>;
     async fn create_block_template(

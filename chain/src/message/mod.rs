@@ -6,7 +6,7 @@ use traits::ConnectResult;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockTemplate},
-    startup_info::{ChainInfo, StartupInfo},
+    startup_info::StartupInfo,
     transaction::SignedUserTransaction,
 };
 
@@ -26,7 +26,6 @@ pub enum ChainRequest {
     GetBlockInfoByHash(HashValue),
     ConnectBlock(Block, Option<BlockInfo>),
     GetStartupInfo(),
-    GetHeadChainInfo(),
     GenTx(), // just for test
 }
 
@@ -42,7 +41,6 @@ pub enum ChainResponse {
     BlockHeader(BlockHeader),
     HashValue(HashValue),
     StartupInfo(StartupInfo),
-    ChainInfo(ChainInfo),
     None,
     Conn(ConnectResult<()>),
 }

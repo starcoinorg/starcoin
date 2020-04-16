@@ -3,14 +3,12 @@
 
 use starcoin_logger::prelude::*;
 
-mod chain_rpc;
 mod debug_rpc;
 mod node_rpc;
 mod state_rpc;
 mod txpool_rpc;
 mod wallet_rpc;
 
-pub use self::chain_rpc::ChainRpcImpl;
 pub use self::debug_rpc::DebugRpcImpl;
 pub use self::node_rpc::NodeRpcImpl;
 pub use self::state_rpc::StateRpcImpl;

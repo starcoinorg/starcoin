@@ -231,8 +231,13 @@ where
     ) -> BatchBodyMsg {
         let mut bodies = Vec::new();
         for hash in get_body_by_hash_msg.hashs {
-            let transactions = match processor.chain_reader.clone().get_block_by_hash(hash).await {
-                Ok(block) => block.transactions().clone().to_vec(),
+            let transactions = match processor
+                .chain_reader
+                .clone()
+                .get_block_by_hash(&hash)
+                .await
+            {
+                Some(block) => block.transactions().clone().to_vec(),
                 _ => Vec::new(),
             };
 

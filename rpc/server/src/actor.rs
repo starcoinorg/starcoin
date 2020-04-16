@@ -1,9 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::module::{
-    ChainRpcImpl, DebugRpcImpl, NodeRpcImpl, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl,
-};
+use crate::module::{DebugRpcImpl, NodeRpcImpl, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl};
 use crate::service::RpcService;
 use actix::prelude::*;
 use anyhow::Result;
@@ -11,12 +9,10 @@ use config::NodeConfig;
 use jsonrpc_core::IoHandler;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
-use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::debug::DebugApi;
 use starcoin_rpc_api::wallet::WalletApi;
 use starcoin_rpc_api::{node::NodeApi, state::StateApi, txpool::TxPoolApi};
 use starcoin_state_api::ChainStateAsyncService;
-use starcoin_traits::ChainAsyncService;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAsyncService;
 use std::sync::Arc;
@@ -28,23 +24,20 @@ pub struct RpcActor {
 }
 
 impl RpcActor {
-    pub fn launch<CS, TS, AS, SS>(
+    pub fn launch<TS, AS, SS>(
         config: Arc<NodeConfig>,
         txpool_service: TS,
-        chain_service: CS,
         account_service: AS,
         state_service: SS,
         logger_handle: Option<Arc<LoggerHandle>>,
     ) -> Result<(Addr<RpcActor>, IoHandler)>
     where
-        CS: ChainAsyncService + 'static,
         TS: TxPoolAsyncService + 'static,
         AS: WalletAsyncService + 'static,
         SS: ChainStateAsyncService + 'static,
     {
         Self::launch_with_apis(
             config,
-            Some(ChainRpcImpl::new(chain_service)),
             Some(TxPoolRpcImpl::new(txpool_service)),
             Some(WalletRpcImpl::new(account_service)),
             Some(StateRpcImpl::new(state_service)),
@@ -52,16 +45,14 @@ impl RpcActor {
         )
     }
 
-    pub fn launch_with_apis<C, T, A, S, D>(
+    pub fn launch_with_apis<T, A, S, D>(
         config: Arc<NodeConfig>,
-        chain_api: Option<C>,
         txpool_api: Option<T>,
         account_api: Option<A>,
         state_api: Option<S>,
         debug_api: Option<D>,
     ) -> Result<(Addr<Self>, IoHandler)>
     where
-        C: ChainApi,
         T: TxPoolApi,
         A: WalletApi,
         S: StateApi,
@@ -69,9 +60,6 @@ impl RpcActor {
     {
         let mut io_handler = IoHandler::new();
         io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new()));
-        if let Some(chain_api) = chain_api {
-            io_handler.extend_with(ChainApi::to_delegate(chain_api));
-        }
         if let Some(txpool_api) = txpool_api {
             io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
         }
@@ -136,26 +124,25 @@ impl Supervised for RpcActor {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
-    // use starcoin_state_api::mock::MockChainStateService;
-    // use starcoin_txpool_mock_service::MockTxPoolService;
-    // use starcoin_wallet_api::mock::MockWalletService;
+    use super::*;
+    use starcoin_state_api::mock::MockChainStateService;
+    use starcoin_txpool_mock_service::MockTxPoolService;
+    use starcoin_wallet_api::mock::MockWalletService;
 
-    // #[stest::test]
-    // async fn test_start() {
-    //     let logger_handle = starcoin_logger::init_for_test();
-    //     let config = Arc::new(NodeConfig::random_for_test());
-    //     let txpool = MockTxPoolService::new();
-    //     let chain_service = ChainAsyncService::();
-    //     let account_service = MockWalletService::new().unwrap();
-    //     let state_service = MockChainStateService::new();
-    //     let _rpc_actor = RpcActor::launch(
-    //         config,
-    //         txpool,
-    //         account_service,
-    //         state_service,
-    //         Some(logger_handle),
-    //     )
-    //     .unwrap();
-    // }
+    #[stest::test]
+    async fn test_start() {
+        let logger_handle = starcoin_logger::init_for_test();
+        let config = Arc::new(NodeConfig::random_for_test());
+        let txpool = MockTxPoolService::new();
+        let account_service = MockWalletService::new().unwrap();
+        let state_service = MockChainStateService::new();
+        let _rpc_actor = RpcActor::launch(
+            config,
+            txpool,
+            account_service,
+            state_service,
+            Some(logger_handle),
+        )
+        .unwrap();
+    }
 }

@@ -11,14 +11,14 @@ use std::sync::Arc;
 use starcoin_config::ChainNetwork;
 pub use starcoin_config::StarcoinOpt;
 
-mod chain;
 mod debug;
 mod dev;
 mod helper;
-pub mod state;
 mod txn;
 mod view;
 mod wallet;
+
+pub mod state;
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
