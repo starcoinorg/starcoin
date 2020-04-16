@@ -15,6 +15,12 @@ pub static LBR_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
     ModuleId::new(account_config::core_code_address(), LBR_MODULE_NAME.clone()).into()
 });
 
+/// Starcoin
+static STARCOIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Starcoin").unwrap());
+pub static STARCOIN_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
+    ModuleId::new(account_config::core_code_address(), STARCOIN_MODULE_NAME.clone()).into()
+});
+
 /// The ModuleId for the Account module
 pub static ACCOUNT_MODULE: Lazy<LibraModuleId> = Lazy::new(|| {
     let module_id = ModuleId::new(

@@ -1,7 +1,7 @@
 address 0x0:
 
 module LibraBlock {
-    use 0x0::LBR;
+    use 0x0::Starcoin;
     use 0x0::LibraAccount;
     //use 0x0::LibraSystem;
     //use 0x0::LibraTimestamp;
@@ -90,8 +90,8 @@ module LibraBlock {
                 subsidy_info.subsidy_height = subsidy_height;
                 if (subsidy_coin > 0) {
                     Transaction::assert(LibraAccount::exists(subsidy_miner), 6006);
-                    let libra_coin = LibraAccount::withdraw_with_capability<LBR::T>(&subsidy_info.withdrawal_capability, subsidy_coin);
-                    LibraAccount::deposit<LBR::T>(subsidy_miner, libra_coin);
+                    let libra_coin = LibraAccount::withdraw_with_capability<Starcoin::T>(&subsidy_info.withdrawal_capability, subsidy_coin);
+                    LibraAccount::deposit<Starcoin::T>(subsidy_miner, libra_coin);
                 };
                 Vector::remove(&mut subsidy_info.heights, 0);
                 Vector::remove(&mut subsidy_info.miners, 0);
@@ -127,7 +127,7 @@ module LibraBlock {
 
       // Currently distribute once per-block.
       // TODO: Once we have a better on-chain representation of epochs we will make this per-epoch.
-      //TransactionFee::distribute_transaction_fees<LBR::T>();
+      //TransactionFee::distribute_transaction_fees<Starcoin::T>();
       do_subsidy(auth_key_prefix);
     }
 

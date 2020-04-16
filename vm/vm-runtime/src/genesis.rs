@@ -115,7 +115,7 @@ fn create_and_initialize_main_accounts(
         account_config::association_address().into();
     let mut txn_data = TransactionMetadata::default();
     txn_data.sender = association_addr;
-    // create  the LBR module
+    // create the LBR module
     move_vm
         .execute_function(
             &LBR_MODULE,
@@ -127,6 +127,20 @@ fn create_and_initialize_main_accounts(
             vec![],
         )
         .expect("Failure initializing LBR");
+
+    // create the Starcoin module
+    move_vm
+        .execute_function(
+            &STARCOIN_MODULE,
+            &INITIALIZE,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![],
+            vec![],
+        )
+        .expect("Failure initializing Starcoin");
+
     // create the association account
     move_vm
         .execute_function(
