@@ -50,7 +50,7 @@ impl actix::Actor for TxnSyncActor {
             })
             .wait(ctx);
 
-        info!("Network actor started ",);
+        info!("txn sync actor started");
     }
 }
 
