@@ -35,4 +35,4 @@ Thank you for considering to help out with the source code! Feel free to submit 
 
 ## License
 
-Apache License 2.0
+Starcoin is licensed as [Apache 2.0](./LICENSE).
