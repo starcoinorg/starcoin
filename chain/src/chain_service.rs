@@ -184,7 +184,7 @@ where
     network: Option<NetworkAsyncService>,
     txpool: P,
     bus: Addr<BusActor>,
-    sync: SyncMetadata,
+    sync_metadata: SyncMetadata,
 }
 
 impl<C, S, P> ChainServiceImpl<C, S, P>
@@ -200,7 +200,7 @@ where
         network: Option<NetworkAsyncService>,
         txpool: P,
         bus: Addr<BusActor>,
-        sync: SyncMetadata,
+        sync_metadata: SyncMetadata,
     ) -> Result<Self> {
         let collection = to_block_chain_collection(
             config.clone(),
@@ -215,7 +215,7 @@ where
             network,
             txpool,
             bus,
-            sync,
+            sync_metadata,
         })
     }
 
@@ -301,10 +301,12 @@ where
             }
 
             self.commit_2_txpool(enacted, retracted);
-            let block_detail = BlockDetail::new(block, total_difficulty);
-            self.broadcast_2_bus(block_detail.clone());
+            if self.sync_metadata.is_sync_done() {
+                let block_detail = BlockDetail::new(block, total_difficulty);
+                self.broadcast_2_bus(block_detail.clone());
 
-            self.broadcast_2_network(block_detail);
+                self.broadcast_2_network(block_detail);
+            }
         } else {
             self.collection.insert_branch(new_branch);
         }
@@ -434,7 +436,7 @@ where
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {
         let connect_begin_time = get_unix_ts();
-        if !self.sync.is_state_sync() {
+        if !self.sync_metadata.state_syncing() {
             if self
                 .storage
                 .get_block_by_hash(block.header().id())?
@@ -488,8 +490,8 @@ where
         block: Block,
         block_info: BlockInfo,
     ) -> Result<ConnectResult<()>> {
-        if self.sync.is_state_sync() {
-            let latest_sync_number = self.sync.get_latest();
+        if self.sync_metadata.state_syncing() {
+            let latest_sync_number = self.sync_metadata.get_latest();
             if latest_sync_number.is_some() {
                 let latest_number = latest_sync_number.unwrap();
                 let current_block_number = block.header().number();
@@ -510,7 +512,7 @@ where
                             .latest_blocks(1);
                         // 4. update state sync metadata
                         if latest_number == current_block_number {
-                            if let Err(err) = self.sync.block_sync_done() {
+                            if let Err(err) = self.sync_metadata.block_sync_done() {
                                 warn!("err:{:?}", err);
                             }
                         }

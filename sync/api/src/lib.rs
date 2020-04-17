@@ -44,12 +44,12 @@ impl SyncMetadata {
         SyncMetadata(Arc::new(RwLock::new(inner)))
     }
 
-    pub fn is_state_sync(&self) -> bool {
+    pub fn state_syncing(&self) -> bool {
         self.state_sync_mode() && !self.0.read().state_sync_done && !self.0.read().block_sync_done
     }
 
     pub fn update_pivot(&self, pivot: BlockNumber, behind: u64) -> Result<()> {
-        assert!(self.is_state_sync(), "cat not update pivot.");
+        assert!(self.state_syncing(), "cat not update pivot.");
         assert!(pivot > 0, "pivot must be positive integer.");
         assert!(behind > 0, "behind must be positive integer.");
         self.0.write().pivot_behind = Some((pivot, behind));
@@ -62,23 +62,28 @@ impl SyncMetadata {
         let mut lock = self.0.write();
         lock.state_sync_done = true;
         drop(lock);
-        let _ = self.both_done();
+        let _ = self.sync_done();
         info!("state sync done.");
         Ok(())
     }
 
     pub fn block_sync_done(&self) -> Result<()> {
-        assert!(self.state_sync_mode(), "chain is not in fast sync mode.");
-        assert!(!self.0.read().block_sync_done, "block sync already done.");
-        let mut lock = self.0.write();
-        lock.state_sync_done = true;
-        let _ = self.both_done();
-        info!("block sync done.");
+        if !self.0.read().block_sync_done {
+            let mut lock = self.0.write();
+            lock.state_sync_done = true;
+            let _ = self.sync_done();
+            info!("block sync done.");
+        }
         Ok(())
     }
 
-    fn both_done(&self) -> Result<()> {
-        if self.0.read().state_sync_done && self.0.read().block_sync_done {
+    pub fn is_sync_done(&self) -> bool {
+        (self.state_sync_mode() && self.0.read().state_sync_done && self.0.read().block_sync_done)
+            || (!self.state_sync_mode() && self.0.read().block_sync_done)
+    }
+
+    fn sync_done(&self) -> Result<()> {
+        if self.is_sync_done() {
             let mut lock = self.0.write();
             lock.pivot_behind = None;
             lock.state_sync_address = None;
@@ -114,7 +119,7 @@ impl SyncMetadata {
     }
 
     pub fn update_address(&self, address: &(dyn StateSyncReset + 'static)) -> Result<()> {
-        assert!(self.is_state_sync(), "cat not update address.");
+        assert!(self.state_syncing(), "cat not update address.");
         self.0.write().state_sync_address = Some(clone_box(address));
         Ok(())
     }
