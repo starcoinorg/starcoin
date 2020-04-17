@@ -489,8 +489,6 @@ where
                                 break;
                             }
                         }
-                    } else {
-                        return Err(format_err!("{:?}", "find ancestor is none."));
                     }
                 } else {
                     return Err(format_err!("{:?}", "block header is none."));
@@ -728,6 +726,9 @@ where
                 .await;
 
                 if end || hash_with_number.is_some() {
+                    if end && hash_with_number.is_none() {
+                        return Err(format_err!("{:?}", "find ancestor is none."));
+                    }
                     break;
                 }
             } else {
