@@ -515,11 +515,9 @@ impl Inner {
                             continue;
                         }
                     }
-                    // Protocol::Ip6(ip) => {
-                    //     if !is_global_v6(ip) {
-                    //         continue;
-                    //     }
-                    // }
+                    Protocol::Ip6(_ip) => {
+                        continue;
+                    }
                     _ => {}
                 }
                 let new_addr = addr.with(Protocol::P2p(peer_id.clone().into()));
