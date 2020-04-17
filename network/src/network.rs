@@ -141,8 +141,10 @@ impl NetworkAsyncService {
             if self.peer_id.eq(peer_id) {
                 continue;
             }
+            info!("peer_id is {},peer_info is {:?}", peer_id, peer);
             result.push(peer.peer_info.clone());
         }
+        info!("result is {:?}", result);
         Ok(result)
     }
     /// get all peers and sort by difficulty decreasely.
@@ -403,17 +405,6 @@ impl Inner {
                 let total_difficulty = block.get_total_difficulty();
 
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
-                    debug!(
-                        "total_difficulty is {},peer_info is {:?}",
-                        total_difficulty, peer_info
-                    );
-                    if total_difficulty > peer_info.peer_info.total_difficult {
-                        peer_info.peer_info.block_number = block_number;
-                        peer_info.peer_info.block_id = block_hash;
-                        peer_info.peer_info.total_difficult = total_difficulty;
-                    }
-                }
-                if let Some(peer_info) = self.peers.lock().await.get_mut(&self.peer_id) {
                     debug!(
                         "total_difficulty is {},peer_info is {:?}",
                         total_difficulty, peer_info
