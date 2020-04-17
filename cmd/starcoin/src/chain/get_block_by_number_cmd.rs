@@ -2,30 +2,36 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::BlockView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_wallet_api::WalletAccount;
+use std::str::FromStr;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "list")]
-pub struct ListOpt {}
+#[structopt(name = "get_block_by_number")]
+pub struct GetOpt {
+    #[structopt(name = "number")]
+    number: String,
+}
 
-pub struct ListCommand;
+pub struct GetBlockByNumberCommand;
 
-impl CommandAction for ListCommand {
+impl CommandAction for GetBlockByNumberCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ListOpt;
-    type ReturnItem = Vec<WalletAccount>;
+    type Opt = GetOpt;
+    type ReturnItem = BlockView;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let accounts = client.wallet_list()?;
-        Ok(accounts)
+        let opt = ctx.opt();
+        let block = client.chain_get_block_by_number(u64::from_str(&opt.number).unwrap())?;
+
+        Ok(block.into())
     }
 }

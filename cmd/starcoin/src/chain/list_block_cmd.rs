@@ -2,27 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::BlockView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::HashValue;
+use starcoin_types::block::Block;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_block")]
+#[structopt(name = "list_block")]
 pub struct GetOpt {
-    #[structopt(name = "hash")]
-    hash: String,
+    #[structopt(name = "number", long, default_value = "0")]
+    number: usize,
+    #[structopt(name = "count", long, default_value = "1")]
+    count: usize,
 }
 
-pub struct GetBlockCommand;
+pub struct ListBlockCommand;
 
-impl CommandAction for GetBlockCommand {
+impl CommandAction for ListBlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = BlockView;
+    type ReturnItem = Vec<Block>;
 
     fn run(
         &self,
@@ -30,8 +31,8 @@ impl CommandAction for GetBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let block = client.chain_get_block_by_hash(HashValue::from_hex(&opt.hash).unwrap())?;
+        let block = client.chain_get_blocks_by_number(opt.number as u64, opt.count as u64)?;
 
-        Ok(block.into())
+        Ok(block)
     }
 }

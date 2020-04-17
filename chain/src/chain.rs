@@ -3,7 +3,7 @@
 
 use crate::chain_service::BlockChainCollection;
 use actix::prelude::*;
-use anyhow::{format_err, Error, Result};
+use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
 use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
@@ -287,6 +287,31 @@ where
             warn!("branch id not found.");
             Ok(None)
         }
+    }
+
+    fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>, Error> {
+        let mut block_vec = vec![];
+        ensure!(
+            number >= count,
+            "count :{} must litter than number :{} ",
+            count,
+            number
+        );
+        if let Some(branch_id) = self.get_branch_id(number) {
+            let begin = number - count;
+            for current_num in begin..number {
+                block_vec.push(
+                    self.storage
+                        .get_block_by_branch_number(branch_id, current_num)
+                        .map_err(|e| error!("get block err:{}", e))
+                        .unwrap()
+                        .unwrap(),
+                );
+            }
+        } else {
+            warn!("branch id not found.");
+        }
+        Ok(block_vec)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {

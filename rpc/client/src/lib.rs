@@ -31,7 +31,7 @@ mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::node::NodeInfo;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
@@ -282,6 +282,31 @@ impl RpcClient {
     pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Block> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_block_by_hash(hash).compat().await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn chain_get_block_by_number(&self, number: BlockNumber) -> anyhow::Result<Block> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_block_by_number(number)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+    pub fn chain_get_blocks_by_number(
+        &self,
+        number: BlockNumber,
+        count: u64,
+    ) -> anyhow::Result<Vec<Block>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_blocks_by_number(number, count)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }

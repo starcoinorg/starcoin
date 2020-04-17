@@ -199,7 +199,7 @@ where
                 .master_block_by_number(number)
                 .await;
             match block {
-                Some(b) => {
+                Ok(b) => {
                     debug!(
                         "block number:{:?}, hash {:?}",
                         b.header().number(),
@@ -212,7 +212,7 @@ where
 
                     hashs.push(hash_with_number);
                 }
-                None => {
+                Err(_) => {
                     warn!("block is none.");
                 }
             }
