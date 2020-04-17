@@ -105,7 +105,8 @@ fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
 }
 
 pub fn calculate_hash(header: &[u8]) -> H256 {
-    let config = Config::default();
+    let mut config = Config::default();
+    config.mem_cost = 1024;
     let output = argon2::hash_raw(header, header, &config).unwrap();
     let h_256: H256 = output.as_slice().into();
     h_256

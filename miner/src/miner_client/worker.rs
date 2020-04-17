@@ -137,7 +137,8 @@ impl Worker {
 }
 
 fn argon2_hash(input: &[u8]) -> Result<H256> {
-    let config = argon2::Config::default();
+    let mut config = argon2::Config::default();
+    config.mem_cost = 1024;
     let output = argon2::hash_raw(input, input, &config)?;
     let h_256: H256 = output.as_slice().into();
     Ok(h_256)

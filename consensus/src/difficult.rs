@@ -46,9 +46,9 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
     if blocks.len() <= 1 {
         info!(
             "Block length less than 1, set target to 1 difficult:{:?}",
-            difficult_1_target()
+            difficult_1_target() / 100.into()
         );
-        return difficult_1_target();
+        return difficult_1_target() / 100.into();
     }
     let mut avg_time: u64 = 0;
     let mut avg_target = U256::zero();
