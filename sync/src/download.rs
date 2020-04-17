@@ -658,19 +658,19 @@ where
             if begin_number < number {
                 let mut numbers = Vec::new();
                 let mut end = false;
-                let mut next_number = 0;
-                if (number - begin_number) < HEAD_CT {
+                let next_number = if (number - begin_number) < HEAD_CT {
                     for i in begin_number..(number + 1) {
                         info!("best peer forward number : {}, next number : {}", number, i,);
                         numbers.push(i);
                         end = true;
                     }
+                    number + 1
                 } else {
                     for i in begin_number..(begin_number + HEAD_CT) {
                         info!("best peer forward number : {}, next number : {}", number, i,);
                         numbers.push(i);
                     }
-                    next_number = begin_number + HEAD_CT;
+                    begin_number + HEAD_CT
                 };
 
                 info!(
