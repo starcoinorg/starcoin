@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::difficult;
+use crate::difficult::{difficult_to_target, target_to_difficult};
 use anyhow::{Error, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -48,7 +49,8 @@ impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
     fn calculate_next_difficulty(_config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256 {
-        difficult::get_next_work_required(reader)
+        let target = difficult::get_next_work_required(reader);
+        target_to_difficult(target)
     }
     fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
         let mut nonce = generate_nonce();
@@ -95,7 +97,8 @@ fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
     let pow_header = set_header_nonce(header, nonce);
     let pow_hash = calculate_hash(&pow_header);
     let hash_u256: U256 = pow_hash.into();
-    if hash_u256 <= difficulty {
+    let target = difficult_to_target(difficulty);
+    if hash_u256 <= target {
         return true;
     }
     return false;
