@@ -13,7 +13,7 @@ use crate::state_sync::StateSyncTaskActor;
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use network::NetworkAsyncService;
+use network::{get_unix_ts, NetworkAsyncService};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
@@ -219,9 +219,7 @@ where
                     peer_id
                 );
                 // connect block
-                Arbiter::spawn(async move {
-                    Downloader::do_block(downloader.clone(), block, None).await;
-                });
+                Downloader::do_block_and_child(downloader.clone(), block, None);
             }
             SyncNotify::ClosePeerMsg(peer_id) => {
                 info!("close peer: {:?}", peer_id,);
@@ -319,11 +317,11 @@ where
                                             sync_metadata
                                                 .update_address(&state_sync_task_address)?
                                         } else if sync_pivot.unwrap() < pivot {
-                                            // if let Some(address) = sync_metadata.get_address() {
-                                            //     &address.reset(root.state_root());
-                                            // } else {
-                                            //     info!("{:?}", "state sync reset address is none.");
-                                            // }
+                                            if let Some(address) = sync_metadata.get_address() {
+                                                &address.reset(root.state_root());
+                                            } else {
+                                                info!("{:?}", "state sync reset address is none.");
+                                            }
                                         }
                                     } else {
                                         info!("pivot {:?} : {}", sync_pivot, pivot);
@@ -428,6 +426,7 @@ where
                         begin_number = hash_number.number + 1;
                         loop {
                             //1. sync hash
+                            let _sync_begin_time = get_unix_ts();
                             if let Some((get_hash_by_number_msg, end, next_number)) =
                                 Downloader::<C>::get_hash_by_number_msg_forward(
                                     network.clone(),
@@ -437,12 +436,18 @@ where
                                 .await?
                             {
                                 begin_number = next_number;
+                                let sync_hash_begin_time = get_unix_ts();
                                 let batch_hash_by_number_msg = get_hash_by_number(
                                     &network,
                                     best_peer.get_peer_id(),
                                     get_hash_by_number_msg,
                                 )
                                 .await?;
+                                let sync_hash_end_time = get_unix_ts();
+                                debug!(
+                                    "sync hash used time {:?}",
+                                    (sync_hash_end_time - sync_hash_begin_time)
+                                );
 
                                 Downloader::put_hash_2_hash_pool(
                                     downloader.clone(),
@@ -453,16 +458,26 @@ where
                                 let hashs =
                                     Downloader::take_task_from_hash_pool(downloader.clone());
                                 if !hashs.is_empty() {
+                                    let sync_block_begin_time = get_unix_ts();
                                     let (headers, bodies, infos) =
                                         get_block_by_hash(&network, best_peer.get_peer_id(), hashs)
                                             .await?;
+                                    let sync_block_end_time = get_unix_ts();
+                                    debug!(
+                                        "sync block used time {:?}",
+                                        (sync_block_end_time - sync_block_begin_time)
+                                    );
                                     Downloader::do_blocks(
                                         downloader.clone(),
                                         headers.headers,
                                         bodies.bodies,
                                         infos.infos,
-                                    )
-                                    .await;
+                                    );
+                                    let do_block_end_time = get_unix_ts();
+                                    debug!(
+                                        "sync block used time {:?}",
+                                        (do_block_end_time - sync_block_end_time)
+                                    );
                                 } else {
                                     info!("{:?}", "hash pool is empty.");
                                 }
@@ -811,7 +826,7 @@ where
         }
     }
 
-    pub async fn do_blocks(
+    pub fn do_blocks(
         downloader: Arc<Downloader<C>>,
         headers: Vec<BlockHeader>,
         bodies: Vec<BlockBody>,
@@ -824,18 +839,28 @@ where
                 bodies.get(i).unwrap().clone().transactions,
             );
             let block_info = infos.get(i).unwrap().clone();
+            Self::do_block_and_child(downloader.clone(), block, Some(block_info));
+        }
+    }
+
+    fn do_block_and_child(
+        downloader: Arc<Downloader<C>>,
+        block: Block,
+        block_info: Option<BlockInfo>,
+    ) {
+        Arbiter::spawn(async move {
             let block_id = block.header().id();
-            if Self::do_block(downloader.clone(), block, Some(block_info)).await {
+            if Self::do_block(downloader.clone(), block, block_info).await {
                 if let Some(child) = downloader.future_blocks.take_child(&block_id) {
                     for (son_block, son_block_info) in child {
                         let _ = Self::do_block(downloader.clone(), son_block, son_block_info).await;
                     }
                 }
             }
-        }
+        });
     }
 
-    pub async fn do_block(
+    async fn do_block(
         downloader: Arc<Downloader<C>>,
         block: Block,
         block_info: Option<BlockInfo>,

@@ -22,7 +22,7 @@ mod test {
         let mut system = System::new("test");
         system.block_on(async {
             let mut miner_config = MinerConfig::default();
-            miner_config.consensus_strategy = config::ConsensusStrategy::Dummy;
+            miner_config.consensus_strategy = config::ConsensusStrategy::Argon;
             miner_config.thread_num = 4;
             let conf = Arc::new(NodeConfig::random_for_test());
             let mut miner = Miner::<ArgonConsensusHeader>::new(BusActor::launch(), conf);
@@ -37,7 +37,7 @@ mod test {
                 let body = BlockBody::default();
                 let block = Block::new(header, body);
                 let block_template = BlockTemplate::from_block(block);
-                let difficult: U256 = 2000.into();
+                let difficult: U256 = 1.into();
                 MineCtx::new(block_template, difficult)
             };
             let _addr = MinerClientActor::new(miner_config).start();

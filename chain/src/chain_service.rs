@@ -9,7 +9,7 @@ use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use network::network::NetworkAsyncService;
+use network::{get_unix_ts, network::NetworkAsyncService};
 use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
 use starcoin_sync_api::SyncMetadata;
@@ -433,6 +433,7 @@ where
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {
+        let connect_begin_time = get_unix_ts();
         if !self.sync.is_state_sync() {
             if self
                 .storage
@@ -446,12 +447,21 @@ where
                 {
                     let header = block.header();
                     let mut branch = self.find_or_fork(&header)?;
+                    let fork_end_time = get_unix_ts();
+                    debug!("fork used time: {}", (fork_end_time - connect_begin_time));
 
                     let connected = branch.apply(block.clone())?;
+                    let apply_end_time = get_unix_ts();
+                    debug!("apply used time: {}", (apply_end_time - fork_end_time));
                     if !connected {
                         Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                     } else {
                         self.select_head(branch)?;
+                        let select_head_end_time = get_unix_ts();
+                        debug!(
+                            "select head used time: {}",
+                            (select_head_end_time - apply_end_time)
+                        );
                         self.collection
                             .get_master()
                             .borrow()

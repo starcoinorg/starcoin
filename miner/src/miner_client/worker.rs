@@ -1,6 +1,7 @@
 use crate::miner_client::{nonce_generator, partition_nonce, set_header_nonce};
 use anyhow::Result;
 use config::{ConsensusStrategy, MinerConfig};
+use consensus::difficult::difficult_to_target;
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
@@ -8,7 +9,6 @@ use logger::prelude::*;
 use std::thread;
 use std::time::Duration;
 use types::{H256, U256};
-
 pub fn start_worker(
     config: &MinerConfig,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
@@ -137,7 +137,8 @@ impl Worker {
 }
 
 fn argon2_hash(input: &[u8]) -> Result<H256> {
-    let config = argon2::Config::default();
+    let mut config = argon2::Config::default();
+    config.mem_cost = 1024;
     let output = argon2::hash_raw(input, input, &config)?;
     let h_256: H256 = output.as_slice().into();
     Ok(h_256)
@@ -152,7 +153,8 @@ fn argon_solver(
     let input = set_header_nonce(pow_header, nonce);
     if let Ok(pow_hash) = argon2_hash(&input) {
         let pow_hash_u256: U256 = pow_hash.into();
-        if pow_hash_u256 <= diff {
+        let target = difficult_to_target(diff);
+        if pow_hash_u256 <= target {
             info!("Seal found {:?}", nonce);
             if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
                 error!("Failed to send nonce: {:?}", e);
