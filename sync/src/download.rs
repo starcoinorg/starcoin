@@ -426,7 +426,7 @@ where
                         begin_number = hash_number.number + 1;
                         loop {
                             //1. sync hash
-                            let sync_begin_time = get_unix_ts();
+                            let _sync_begin_time = get_unix_ts();
                             if let Some((get_hash_by_number_msg, end, next_number)) =
                                 Downloader::<C>::get_hash_by_number_msg_forward(
                                     network.clone(),
@@ -436,6 +436,7 @@ where
                                 .await?
                             {
                                 begin_number = next_number;
+                                let sync_hash_begin_time = get_unix_ts();
                                 let batch_hash_by_number_msg = get_hash_by_number(
                                     &network,
                                     best_peer.get_peer_id(),
@@ -445,7 +446,7 @@ where
                                 let sync_hash_end_time = get_unix_ts();
                                 debug!(
                                     "sync hash used time {:?}",
-                                    (sync_hash_end_time - sync_begin_time)
+                                    (sync_hash_end_time - sync_hash_begin_time)
                                 );
 
                                 Downloader::put_hash_2_hash_pool(
@@ -457,19 +458,25 @@ where
                                 let hashs =
                                     Downloader::take_task_from_hash_pool(downloader.clone());
                                 if !hashs.is_empty() {
+                                    let sync_block_begin_time = get_unix_ts();
                                     let (headers, bodies, infos) =
                                         get_block_by_hash(&network, best_peer.get_peer_id(), hashs)
                                             .await?;
+                                    let sync_block_end_time = get_unix_ts();
+                                    debug!(
+                                        "sync block used time {:?}",
+                                        (sync_block_end_time - sync_block_begin_time)
+                                    );
                                     Downloader::do_blocks(
                                         downloader.clone(),
                                         headers.headers,
                                         bodies.bodies,
                                         infos.infos,
                                     );
-                                    let sync_block_end_time = get_unix_ts();
+                                    let do_block_end_time = get_unix_ts();
                                     debug!(
                                         "sync block used time {:?}",
-                                        (sync_block_end_time - sync_hash_end_time)
+                                        (do_block_end_time - sync_block_end_time)
                                     );
                                 } else {
                                     info!("{:?}", "hash pool is empty.");
