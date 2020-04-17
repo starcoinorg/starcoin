@@ -3,7 +3,6 @@ pub mod sync_messages;
 use actix::Addr;
 use anyhow::Result;
 use dyn_clone::{clone_box, DynClone};
-use futures::executor::block_on;
 use parking_lot::RwLock;
 use starcoin_bus::{Broadcast, BusActor};
 use starcoin_config::NodeConfig;
@@ -70,7 +69,8 @@ impl SyncMetadata {
     pub fn block_sync_done(&self) -> Result<()> {
         if !self.0.read().block_sync_done {
             let mut lock = self.0.write();
-            lock.state_sync_done = true;
+            lock.block_sync_done = true;
+            drop(lock);
             let _ = self.sync_done();
             info!("block sync done.");
         }
@@ -87,13 +87,8 @@ impl SyncMetadata {
             let mut lock = self.0.write();
             lock.pivot_behind = None;
             lock.state_sync_address = None;
-            let bus = lock.bus.clone();
-            block_on(async move {
-                let _ = bus
-                    .send(Broadcast {
-                        msg: SystemEvents::SyncDone(),
-                    })
-                    .await;
+            lock.bus.do_send(Broadcast {
+                msg: SystemEvents::SyncDone(),
             });
             info!("state sync and block sync done.");
         }
