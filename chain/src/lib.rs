@@ -21,7 +21,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
-use network::network::NetworkAsyncService;
+use network::{get_unix_ts, network::NetworkAsyncService};
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use storage::Storage;
@@ -126,6 +126,7 @@ where
                 self.service.get_block_info_by_hash(hash)?,
             )),
             ChainRequest::ConnectBlock(block, mut block_info) => {
+                let begin_time = get_unix_ts();
                 let conn_state = if block_info.is_none() {
                     self.service.try_connect(block)?
                 } else {
@@ -133,6 +134,8 @@ where
                         .try_connect_with_block_info(block, block_info.take().unwrap())?
                 };
 
+                let end_time = get_unix_ts();
+                debug!("connect block used time {:?}", (end_time - begin_time));
                 Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
