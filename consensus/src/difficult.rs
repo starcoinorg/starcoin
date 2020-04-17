@@ -10,15 +10,13 @@ use logger::prelude::*;
 use traits::ChainReader;
 
 pub fn difficult_1_target() -> U256 {
-    U256::max_value() / DIFF_1_HASH_TIMES.into()
+    U256::max_value()
 }
-
-pub const DIFF_1_HASH_TIMES: u32 = 100;
 
 pub fn current_hash_rate(target: &[u8]) -> u64 {
     // current_hash_rate = (difficult_1_target/target_current) * difficult_1_hash/block_per_esc
     let target_u256: U256 = target.into();
-    ((difficult_1_target() / target_u256) * DIFF_1_HASH_TIMES).low_u64() / (BLOCK_TIME_SEC as u64)
+    (difficult_1_target() / target_u256).low_u64() / (BLOCK_TIME_SEC as u64)
 }
 
 pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
@@ -38,7 +36,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
             }
             let block_info = BlockInfo {
                 timestamp: block.header().timestamp(),
-                target: block.header().difficult(),
+                target: difficult_to_target(block.header().difficult()),
             };
             blocks.push(block_info);
             count += 1;
@@ -94,6 +92,14 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
         avg_time, time_plan, new_target
     );
     new_target
+}
+
+pub fn target_to_difficult(target: U256) -> U256 {
+    difficult_1_target() / target
+}
+
+pub fn difficult_to_target(difficult: U256) -> U256 {
+    difficult_1_target() / difficult
 }
 
 #[derive(Clone)]
