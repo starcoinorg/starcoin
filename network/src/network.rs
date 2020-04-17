@@ -511,12 +511,12 @@ impl Inner {
                 let ip_protocol = components.get(0).expect("should have ip protocol");
                 match ip_protocol {
                     Protocol::Ip4(ip) => {
-                        if ip.is_loopback() {
+                        if !ip.is_global() {
                             continue;
                         }
                     }
                     Protocol::Ip6(ip) => {
-                        if ip.is_loopback() {
+                        if !ip.is_global() {
                             continue;
                         }
                     }
