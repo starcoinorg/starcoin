@@ -317,11 +317,11 @@ where
                                             sync_metadata
                                                 .update_address(&state_sync_task_address)?
                                         } else if sync_pivot.unwrap() < pivot {
-                                            // if let Some(address) = sync_metadata.get_address() {
-                                            //     &address.reset(root.state_root());
-                                            // } else {
-                                            //     info!("{:?}", "state sync reset address is none.");
-                                            // }
+                                            if let Some(address) = sync_metadata.get_address() {
+                                                &address.reset(root.state_root());
+                                            } else {
+                                                info!("{:?}", "state sync reset address is none.");
+                                            }
                                         }
                                     } else {
                                         info!("pivot {:?} : {}", sync_pivot, pivot);
