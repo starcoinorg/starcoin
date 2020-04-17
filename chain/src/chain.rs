@@ -9,6 +9,7 @@ use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
 use executor::executor::mock_create_account_txn;
 use logger::prelude::*;
+use network::get_unix_ts;
 use once_cell::sync::Lazy;
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
@@ -389,10 +390,13 @@ where
         //TODO custom verify macro
         assert_eq!(self.head.header().id(), block.header().parent_hash());
 
+        let apply_begin_time = get_unix_ts();
         if let Err(e) = C::verify_header(self.config.clone(), self, header) {
             error!("err: {:?}", e);
             return Ok(false);
         }
+        let verify_end_time = get_unix_ts();
+        debug!("verify used time: {}", (verify_end_time - apply_begin_time));
 
         let chain_state = &self.chain_state;
         let mut txns = block
@@ -405,6 +409,7 @@ where
 
         txns.push(Transaction::BlockMetadata(block_metadata));
 
+        let exe_begin_time = get_unix_ts();
         let (accumulator_root, state_root) = BlockExecutor::block_execute(
             &self.config.vm,
             chain_state,
@@ -412,6 +417,8 @@ where
             txns,
             false,
         )?;
+        let exe_end_time = get_unix_ts();
+        debug!("exe used time: {}", (exe_end_time - exe_begin_time));
         assert_eq!(
             block.header().state_root(),
             state_root,
@@ -434,7 +441,13 @@ where
             self.accumulator.num_nodes(),
             total_difficulty,
         );
+        let commit_begin_time = get_unix_ts();
         self.commit(block, block_info)?;
+        let commit_end_time = get_unix_ts();
+        debug!(
+            "commit used time: {}",
+            (commit_end_time - commit_begin_time)
+        );
         Ok(true)
     }
 
