@@ -507,6 +507,21 @@ impl Inner {
         for peer_id in peers {
             let addrs = self.network_service.get_address(peer_id.clone()).await;
             for addr in addrs {
+                let components = addr.iter().collect::<Vec<_>>();
+                let ip_protocol = components.get(0).expect("should have ip protocol");
+                match ip_protocol {
+                    Protocol::Ip4(ip) => {
+                        if ip.is_loopback() {
+                            continue;
+                        }
+                    }
+                    Protocol::Ip6(ip) => {
+                        if ip.is_loopback() {
+                            continue;
+                        }
+                    }
+                    _ => {}
+                }
                 let new_addr = addr.with(Protocol::P2p(peer_id.clone().into()));
                 addrs_list.insert(new_addr);
             }
