@@ -515,7 +515,7 @@ impl Inner {
                             continue;
                         }
                     }
-                    Protocol::Ip6(ip) => {
+                    Protocol::Ip6(_ip) => {
                         continue;
                     }
                     _ => {}
