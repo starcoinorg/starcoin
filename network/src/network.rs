@@ -504,26 +504,14 @@ impl Inner {
             std::fs::remove_file(path.clone())?;
         }
         let mut addrs_list = HashSet::new();
+        let mut addrs_set = HashSet::new();
         for peer_id in peers {
             let addrs = self.network_service.get_address(peer_id.clone()).await;
             for addr in addrs {
-                let components = addr.iter().collect::<Vec<_>>();
-                let ip_protocol = components.get(0).expect("should have ip protocol");
-                match ip_protocol {
-                    Protocol::Ip4(ip) => {
-                        if !is_global(ip) {
-                            continue;
-                        }
-                    }
-                    // Protocol::Ip6(ip) => {
-                    //     if !is_global_v6(ip) {
-                    //         continue;
-                    //     }
-                    // }
-                    _ => {}
+                if Self::check_ip(&addr, &mut addrs_set) {
+                    let new_addr = addr.with(Protocol::P2p(peer_id.clone().into()));
+                    addrs_list.insert(new_addr);
                 }
-                let new_addr = addr.with(Protocol::P2p(peer_id.clone().into()));
-                addrs_list.insert(new_addr);
             }
         }
         let mut file = std::fs::File::create(path)?;
@@ -531,6 +519,28 @@ impl Inner {
         file.write_all(&content)?;
 
         Ok(())
+    }
+
+    fn check_ip(addr: &Multiaddr, addrs_set: &mut HashSet<Multiaddr>) -> bool {
+        if addrs_set.contains(addr) {
+            return false;
+        }
+        let components = addr.iter().collect::<Vec<_>>();
+        for protocol in components {
+            match protocol {
+                Protocol::Ip4(ip) => {
+                    if !is_global(&ip) {
+                        return false;
+                    }
+                }
+                Protocol::Ip6(_ip) => {
+                    return false;
+                }
+                _ => {}
+            }
+        }
+        addrs_set.insert(addr.clone());
+        true
     }
 
     async fn on_peer_disconnected(&self, peer_id: PeerId) {
