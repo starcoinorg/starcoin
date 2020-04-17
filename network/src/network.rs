@@ -563,9 +563,9 @@ impl Handler<SystemEvents> for NetworkActor {
                     total_difficulty,
                     block_hash,
                 );
-
+                let self_id = self.peer_id.clone();
                 Arbiter::spawn(async move {
-                    for (peer_id, mut peer_info) in peers.lock().await.iter_mut() {
+                    if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
                         debug!(
                             "total_difficulty is {},peer_info is {:?}",
                             total_difficulty, peer_info
@@ -575,7 +575,9 @@ impl Handler<SystemEvents> for NetworkActor {
                             peer_info.peer_info.block_id = block_hash;
                             peer_info.peer_info.total_difficult = total_difficulty;
                         }
+                    }
 
+                    for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                         if !peer_info.known_blocks.contains(&id) {
                             peer_info.known_blocks.put(id.clone(), ());
                         } else {
