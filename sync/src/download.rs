@@ -3,7 +3,7 @@ use crate::pool::TTLPool;
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::{format_err, Result};
-use bus::{Broadcast, BusActor, Subscription};
+use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
 use futures::channel::mpsc;
 use parking_lot::RwLock;
@@ -93,12 +93,11 @@ where
         if !self.syncing.load(Ordering::Relaxed) && self.ready.load(Ordering::Relaxed) {
             self.syncing.store(true, Ordering::Relaxed);
             Self::sync_block_from_best_peer(
-                self.sync_metadata.state_sync_mode(),
+                self.sync_metadata.clone(),
                 self.syncing.clone(),
                 self.self_peer_id.as_ref().clone(),
                 self.downloader.clone(),
                 self.network.clone(),
-                self.bus.clone(),
             );
         }
     }
@@ -265,7 +264,7 @@ where
         sync_metadata: SyncMetadata,
     ) -> Result<()> {
         if (main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network {
-            if sync_metadata.is_state_sync() {
+            if sync_metadata.state_syncing() {
                 if let Some(best_peer) = network.best_peer().await? {
                     if self_peer_id != best_peer.get_peer_id() {
                         //1. ancestor
@@ -302,7 +301,7 @@ where
                                     Self::get_pivot(&network, best_peer.get_peer_id(), pivot)
                                         .await?;
                                 let sync_pivot = sync_metadata.get_pivot()?;
-                                if sync_metadata.is_state_sync() {
+                                if sync_metadata.state_syncing() {
                                     if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
                                         sync_metadata.clone().update_pivot(pivot, min_behind)?;
                                         if sync_pivot.is_none() {
@@ -375,12 +374,11 @@ where
     }
 
     fn sync_block_from_best_peer(
-        is_state_sync: bool,
+        sync_metadata: SyncMetadata,
         syncing: Arc<AtomicBool>,
         self_peer_id: PeerId,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
-        bus: Addr<BusActor>,
     ) {
         Arbiter::spawn(async move {
             debug!("peer {:?} begin sync.", self_peer_id);
@@ -390,12 +388,8 @@ where
             {
                 error!("error: {:?}", e);
             } else {
-                if !is_state_sync {
-                    let _ = bus
-                        .send(Broadcast {
-                            msg: SystemEvents::SyncDone(),
-                        })
-                        .await;
+                if !sync_metadata.state_sync_mode() {
+                    let _ = sync_metadata.block_sync_done();
                 }
                 debug!("peer {:?} end sync.", self_peer_id);
             };
@@ -489,8 +483,6 @@ where
                                 break;
                             }
                         }
-                    } else {
-                        return Err(format_err!("{:?}", "find ancestor is none."));
                     }
                 } else {
                     return Err(format_err!("{:?}", "block header is none."));
@@ -728,6 +720,9 @@ where
                 .await;
 
                 if end || hash_with_number.is_some() {
+                    if end && hash_with_number.is_none() {
+                        return Err(format_err!("{:?}", "find ancestor is none."));
+                    }
                     break;
                 }
             } else {
