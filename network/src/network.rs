@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::helper::get_unix_ts;
+use crate::helper::{get_unix_ts, is_global};
 use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
 use crate::{NetworkMessage, PeerEvent, PeerMessage};
@@ -511,15 +511,15 @@ impl Inner {
                 let ip_protocol = components.get(0).expect("should have ip protocol");
                 match ip_protocol {
                     Protocol::Ip4(ip) => {
-                        if ip.is_loopback() {
+                        if !is_global(ip) {
                             continue;
                         }
                     }
-                    Protocol::Ip6(ip) => {
-                        if ip.is_loopback() {
-                            continue;
-                        }
-                    }
+                    // Protocol::Ip6(ip) => {
+                    //     if !is_global_v6(ip) {
+                    //         continue;
+                    //     }
+                    // }
                     _ => {}
                 }
                 let new_addr = addr.with(Protocol::P2p(peer_id.clone().into()));
