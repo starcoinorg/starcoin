@@ -60,6 +60,7 @@ struct Inner {
     peer_id: PeerId,
 }
 
+#[derive(Debug)]
 struct PeerInfoNet {
     peer_info: PeerInfo,
     known_transactions: LruCache<HashValue, ()>,
@@ -402,12 +403,28 @@ impl Inner {
                 let total_difficulty = block.get_total_difficulty();
 
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
+                    debug!(
+                        "total_difficulty is {},peer_info is {:?}",
+                        total_difficulty, peer_info
+                    );
                     if total_difficulty > peer_info.peer_info.total_difficult {
                         peer_info.peer_info.block_number = block_number;
                         peer_info.peer_info.block_id = block_hash;
                         peer_info.peer_info.total_difficult = total_difficulty;
                     }
                 }
+                if let Some(peer_info) = self.peers.lock().await.get_mut(&self.peer_id) {
+                    debug!(
+                        "total_difficulty is {},peer_info is {:?}",
+                        total_difficulty, peer_info
+                    );
+                    if total_difficulty > peer_info.peer_info.total_difficult {
+                        peer_info.peer_info.block_number = block_number;
+                        peer_info.peer_info.block_id = block_hash;
+                        peer_info.peer_info.total_difficult = total_difficulty;
+                    }
+                }
+
                 self.bus
                     .send(Broadcast {
                         msg: PeerNewBlock::new(peer_id.into(), block.get_block().clone()),
@@ -558,10 +575,15 @@ impl Handler<SystemEvents> for NetworkActor {
 
                 Arbiter::spawn(async move {
                     for (peer_id, mut peer_info) in peers.lock().await.iter_mut() {
-                        info!("send block to peer {}", peer_id);
-                        peer_info.peer_info.block_number = block_number;
-                        peer_info.peer_info.block_id = block_hash;
-                        peer_info.peer_info.total_difficult = total_difficulty;
+                        debug!(
+                            "total_difficulty is {},peer_info is {:?}",
+                            total_difficulty, peer_info
+                        );
+                        if total_difficulty > peer_info.peer_info.total_difficult {
+                            peer_info.peer_info.block_number = block_number;
+                            peer_info.peer_info.block_id = block_hash;
+                            peer_info.peer_info.total_difficult = total_difficulty;
+                        }
 
                         if !peer_info.known_blocks.contains(&id) {
                             peer_info.known_blocks.put(id.clone(), ());
