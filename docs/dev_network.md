@@ -80,4 +80,4 @@
     ```
 3. If you want connect node from another compute, please change the `127.0.0.1` of `self_address` to a right ip address.
 
-Next [Connect to test network](./test_network.md) or [Deploy Move contract](./deploy_move_contract.md).
+Next to read [Join starcoin test network](./test_network.md) or [Deploy Move contract](./deploy_move_contract.md).
