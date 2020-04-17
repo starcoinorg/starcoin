@@ -25,6 +25,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::Write;
+use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -239,13 +240,20 @@ impl NetworkActor {
         };
 
         let mut network_config = node_config.network.clone();
+        let mut seeds = HashSet::new();
+        for seed in network_config.seeds {
+            seeds.insert(seed);
+        }
         match peers_from_json {
-            Some(Ok(mut addrs)) => {
+            Some(Ok(addrs)) => {
                 info!("load peers from file {:?}", addrs);
-                network_config.seeds.append(&mut addrs);
+                for addr in addrs {
+                    seeds.insert(addr);
+                }
             }
             _ => {}
         }
+        network_config.seeds = Vec::from_iter(seeds.into_iter());
         let (service, tx, rx, event_rx, tx_command) = build_network_service(
             &network_config,
             handle.clone(),
