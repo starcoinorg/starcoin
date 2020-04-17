@@ -27,6 +27,7 @@ pub enum ChainRequest {
     ConnectBlock(Block, Option<BlockInfo>),
     GetStartupInfo(),
     GetHeadChainInfo(),
+    GetBlocksByNumber(u64, u64),
     GenTx(), // just for test
 }
 
@@ -43,6 +44,7 @@ pub enum ChainResponse {
     HashValue(HashValue),
     StartupInfo(StartupInfo),
     ChainInfo(ChainInfo),
+    VecBlock(Vec<Block>),
     None,
     Conn(ConnectResult<()>),
 }

@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state::CliState;
+use crate::cli_state::CliState;
 use anyhow::Result;
 use scmd::{CmdContext, Command};
 use starcoin_logger::prelude::*;
@@ -16,11 +16,12 @@ mod debug;
 mod dev;
 mod helper;
 mod node;
+mod state;
 mod txn;
 mod view;
 mod wallet;
 
-pub mod state;
+pub mod cli_state;
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
@@ -93,6 +94,13 @@ fn run() -> Result<()> {
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand))
         .command(
+            Command::with_name("state")
+                .subcommand(state::GetCommand)
+                .subcommand(state::GetAccountCommand)
+                .subcommand(state::GetProofCommand)
+                .subcommand(state::GetRootCommand),
+        )
+        .command(
             Command::with_name("node")
                 .subcommand(node::InfoCommand)
                 .subcommand(node::PeersCommand),
@@ -100,6 +108,8 @@ fn run() -> Result<()> {
         .command(
             Command::with_name("chain")
                 .subcommand(chain::ShowCommand)
+                .subcommand(chain::GetBlockByNumberCommand)
+                .subcommand(chain::ListBlockCommand)
                 .subcommand(chain::GetBlockCommand),
         )
         .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))

@@ -613,6 +613,15 @@ where
     fn master_startup_info(&self) -> StartupInfo {
         self.collection.to_startup_info()
     }
+
+    fn master_blocks_by_number(&self, number: u64, count: u64) -> Result<Vec<Block>> {
+        self.collection
+            .get_master()
+            .borrow()
+            .get(0)
+            .expect("master is none.")
+            .get_blocks_by_number(number, count)
+    }
 }
 
 pub fn to_block_chain_collection<C, S, P>(

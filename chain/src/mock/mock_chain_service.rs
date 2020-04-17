@@ -57,7 +57,11 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn master_block_by_number(self, _number: u64) -> Option<Block> {
+    async fn master_block_by_number(self, _number: u64) -> Result<Block> {
+        unimplemented!()
+    }
+
+    async fn master_blocks_by_number(self, _number: u64, _count: u64) -> Result<Vec<Block>> {
         unimplemented!()
     }
 

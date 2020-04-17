@@ -5,7 +5,7 @@ pub use self::gen_client::Client as ChainClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
 
 #[rpc]
@@ -16,4 +16,10 @@ pub trait ChainApi {
     // Get chain block info
     #[rpc(name = "chain.get_block_by_hash")]
     fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<Block>;
+    // Get chain blocks by number
+    #[rpc(name = "chain.get_block_by_number")]
+    fn get_block_by_number(&self, number: BlockNumber) -> FutureResult<Block>;
+    // Get chain blocks by number
+    #[rpc(name = "chain.get_blocks_by_number")]
+    fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> FutureResult<Vec<Block>>;
 }
