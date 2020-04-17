@@ -6,14 +6,13 @@ use crate::view::BlockView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use std::str::FromStr;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_block_by_number")]
 pub struct GetOpt {
-    #[structopt(name = "number")]
-    number: String,
+    #[structopt(name = "number", long, default_value = "0")]
+    number: usize,
 }
 
 pub struct GetBlockByNumberCommand;
@@ -30,7 +29,7 @@ impl CommandAction for GetBlockByNumberCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let block = client.chain_get_block_by_number(u64::from_str(&opt.number).unwrap())?;
+        let block = client.chain_get_block_by_number(opt.number as u64)?;
 
         Ok(block.into())
     }

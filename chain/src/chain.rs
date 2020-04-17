@@ -292,21 +292,37 @@ where
     fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>, Error> {
         let mut block_vec = vec![];
         ensure!(
-            number >= count,
+            (number + 1) >= count,
             "count :{} must litter than number :{} ",
             count,
             number
         );
         if let Some(branch_id) = self.get_branch_id(number) {
-            let begin = number - count;
-            for current_num in begin..number {
-                block_vec.push(
-                    self.storage
-                        .get_block_by_branch_number(branch_id, current_num)
-                        .map_err(|e| error!("get block err:{}", e))
-                        .unwrap()
-                        .unwrap(),
-                );
+            let mut tmp_count = count;
+            let mut current_num = number;
+
+            loop {
+                match self
+                    .storage
+                    .get_block_by_branch_number(branch_id, current_num)
+                {
+                    Ok(block) => {
+                        if block.is_some() {
+                            block_vec.push(block.unwrap());
+                        }
+                    }
+                    Err(_e) => {
+                        error!(
+                            "get block by branch {:?} number{:?} err.",
+                            branch_id, current_num
+                        );
+                    }
+                }
+                if current_num == 0 || tmp_count == 1 {
+                    break;
+                }
+                current_num = current_num - 1;
+                tmp_count = tmp_count - 1;
             }
         } else {
             warn!("branch id not found.");
