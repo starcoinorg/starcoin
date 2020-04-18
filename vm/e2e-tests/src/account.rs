@@ -8,7 +8,6 @@ use libra_crypto::ed25519::*;
 use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    account_config,
     event::EventHandle,
     language_storage::{StructTag, TypeTag},
     transaction::{
@@ -16,13 +15,14 @@ use libra_types::{
         TransactionArgument, TransactionPayload,
     },
 };
+use types::account_config;
 use move_vm_types::{
     identifier::create_access_path,
     loaded_data::types::{StructType, Type},
     values::{Struct, Value},
 };
 use std::time::Duration;
-use vm_genesis::GENESIS_KEYPAIR;
+use vm_runtime::genesis::GENESIS_KEYPAIR;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -83,7 +83,7 @@ impl Account {
     /// The address will be [`association_address`][account_config::association_address], and
     /// the account will use [`GENESIS_KEYPAIR`][struct@GENESIS_KEYPAIR] as its keypair.
     pub fn new_association() -> Self {
-        Self::new_genesis_account(account_config::association_address())
+        Self::new_genesis_account(account_config::core_code_address().into())
     }
 
     /// Returns the address of the account. This is a hash of the public key the account was created
@@ -98,14 +98,14 @@ impl Account {
     ///
     /// Use this to retrieve or publish the Account blob.
     pub fn make_account_access_path(&self) -> AccessPath {
-        self.make_access_path(account_config::account_struct_tag())
+        self.make_access_path(account_config::account_struct_tag().into())
     }
 
     /// Returns the AccessPath that describes the Account balance resource instance.
     ///
     /// Use this to retrieve or publish the Account balance blob.
     pub fn make_balance_access_path(&self) -> AccessPath {
-        self.make_access_path(account_config::account_balance_struct_tag())
+        self.make_access_path(account_config::account_balance_struct_tag().into())
     }
 
     // TODO: plug in the account type
@@ -327,7 +327,7 @@ impl Account {
             sequence_number,
             gas_costs::TXN_RESERVED,
             0, // gas price
-            account_config::lbr_type_tag(),
+            account_config::starcoin_type_tag().into(),
         )
     }
 
@@ -383,7 +383,7 @@ impl Balance {
     /// Returns the value layout for the account balance
     pub fn type_() -> StructType {
         StructType {
-            address: account_config::CORE_CODE_ADDRESS,
+            address: account_config::core_code_address().into(),
             module: account_config::account_module_name().to_owned(),
             name: account_config::account_balance_struct_name().to_owned(),
             is_resource: true,
@@ -465,7 +465,7 @@ impl AccountData {
 
     pub fn sent_payment_event_type() -> StructType {
         StructType {
-            address: account_config::CORE_CODE_ADDRESS,
+            address: account_config::core_code_address().into(),
             module: account_config::account_module_name().to_owned(),
             name: account_config::sent_event_name().to_owned(),
             is_resource: false,
@@ -476,7 +476,7 @@ impl AccountData {
 
     pub fn received_payment_event_type() -> StructType {
         StructType {
-            address: account_config::CORE_CODE_ADDRESS,
+            address: account_config::core_code_address().into(),
             module: account_config::account_module_name().to_owned(),
             name: account_config::received_event_name().to_owned(),
             is_resource: false,
@@ -486,31 +486,17 @@ impl AccountData {
     }
 
     pub fn event_handle_type(ty: Type) -> StructType {
-        StructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: account_config::account_module_name().to_owned(),
-            name: account_config::account_event_handle_struct_name().to_owned(),
-            is_resource: true,
-            ty_args: vec![ty],
-            layout: vec![Type::U64, Type::Vector(Box::new(Type::U8))],
-        }
+        libra_language_e2e_tests::account::AccountData::event_handle_type(ty)
     }
 
     pub fn event_handle_generator_type() -> StructType {
-        StructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: account_config::account_module_name().to_owned(),
-            name: account_config::account_event_handle_generator_struct_name().to_owned(),
-            is_resource: true,
-            ty_args: vec![],
-            layout: vec![Type::U64],
-        }
+        libra_language_e2e_tests::account::AccountData::event_handle_generator_type()
     }
 
     /// Returns the (Move value) layout of the LibraAccount::T struct
     pub fn account_type() -> StructType {
         StructType {
-            address: account_config::CORE_CODE_ADDRESS,
+            address: account_config::core_code_address().into(),
             module: account_config::account_module_name().to_owned(),
             name: account_config::account_struct_name().to_owned(),
             is_resource: true,

@@ -17,11 +17,11 @@ use move_vm_types::values::Struct;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use vm::{errors::*, CompiledModule};
-use vm_genesis;
+use vm_runtime::genesis;
 
 /// Dummy genesis ChangeSet for testing
 pub static GENESIS_CHANGE_SET: Lazy<ChangeSet> =
-    Lazy::new(vm_genesis::generate_genesis_change_set_for_testing);
+    Lazy::new(genesis::generate_genesis_change_set_for_testing);
 
 /// An in-memory implementation of [`StateView`] and [`RemoteCache`] for the VM.
 ///

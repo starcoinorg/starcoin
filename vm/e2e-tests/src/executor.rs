@@ -27,7 +27,10 @@ use libra_types::{
 use libra_vm::{LibraVM, VMExecutor, VMVerifier};
 use stdlib::{stdlib_modules, transaction_scripts::StdlibScript, StdLibOptions};
 use vm::CompiledModule;
-use vm_genesis::GENESIS_KEYPAIR;
+use vm_runtime::genesis;
+use vm_runtime::genesis::GENESIS_KEYPAIR;
+use starcoin_config::ChainNetwork;
+
 
 /// Provides an environment to run a VM instance.
 ///
@@ -95,19 +98,12 @@ impl FakeExecutor {
         let genesis_change_set = if genesis_modules.is_none() && validator_set.is_none() {
             GENESIS_CHANGE_SET.clone()
         } else {
-            let validator_set_len: usize = validator_set.as_ref().map_or(10, |s| s.payload().len());
-            let swarm = generator::validator_swarm_for_testing(validator_set_len);
-            let validator_set = validator_set.unwrap_or(swarm.validator_set);
-            let discovery_set = vm_genesis::make_placeholder_discovery_set(&validator_set);
+            let config = ChainNetwork::Dev.get_config();
             let stdlib_modules =
                 genesis_modules.unwrap_or_else(|| stdlib_modules(StdLibOptions::Staged).to_vec());
-            vm_genesis::encode_genesis_change_set(
-                &GENESIS_KEYPAIR.1,
-                &swarm.nodes,
-                validator_set,
-                discovery_set,
+            genesis::encode_genesis_change_set(
+                config,
                 &stdlib_modules,
-                publishing_options,
             )
         };
         Self::from_genesis(genesis_change_set.write_set())

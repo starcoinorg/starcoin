@@ -9,13 +9,12 @@ use crate::{
 use bytecode_verifier::verifier::{
     verify_module_dependencies, verify_script_dependencies, VerifiedModule, VerifiedScript,
 };
-use language_e2e_tests::executor::FakeExecutor;
+use starcoin_language_e2e_tests::executor::FakeExecutor;
 use libra_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::lbr_type_tag,
     block_metadata::BlockMetadata,
     language_storage::ModuleId,
     on_chain_config::VMPublishingOption,
@@ -25,6 +24,7 @@ use libra_types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
+use types::account_config::starcoin_type_tag;
 use mirai_annotations::checked_verify;
 use std::{
     fmt::{self, Debug},
@@ -310,7 +310,7 @@ fn make_script_transaction(
         script,
         params.max_gas_amount,
         params.gas_unit_price,
-        lbr_type_tag(),
+        starcoin_type_tag().into(),
         params.expiration_time,
     )
     .sign(params.privkey, params.pubkey.clone())?
@@ -334,7 +334,7 @@ fn make_module_transaction(
         module,
         params.max_gas_amount,
         params.gas_unit_price,
-        lbr_type_tag(),
+        starcoin_type_tag().into(),
         params.expiration_time,
     )
     .sign(params.privkey, params.pubkey.clone())?

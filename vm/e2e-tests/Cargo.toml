@@ -34,4 +34,7 @@ rand = "0.6.5"
 proptest = "0.9.3"
 proptest-derive = "0.1.1"
 libra-language-e2e-tests = { package="language-e2e-tests", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+types = { package="starcoin-types", path = "../../types"}
+vm-runtime = { package="starcoin-vm-runtime", path = "../vm-runtime"}
+starcoin-config = { path = "../../config"}
 

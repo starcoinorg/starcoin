@@ -7,7 +7,7 @@ use crate::{
     errors::*,
     evaluator::Stage,
 };
-use language_e2e_tests::account::Account;
+use starcoin_language_e2e_tests::account::Account;
 use libra_types::{
     language_storage::TypeTag,
     transaction::{parse_as_transaction_argument, TransactionArgument},
