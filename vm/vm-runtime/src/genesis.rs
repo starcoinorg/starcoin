@@ -11,7 +11,6 @@ use crypto::{
 };
 use libra_state_view::StateView;
 use libra_types::access_path::AccessPath;
-use libra_types::transaction::ChangeSet;
 use move_core_types::identifier::Identifier;
 use move_vm_runtime::MoveVM;
 use move_vm_state::{
@@ -21,7 +20,7 @@ use move_vm_state::{
 use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
-use starcoin_config::{ChainConfig, ChainNetwork};
+use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
 use stdlib::{stdlib_modules, StdLibOptions};
 use types::account_config;
@@ -383,57 +382,4 @@ impl StateView for GenesisStateView {
     fn is_genesis(&self) -> bool {
         true
     }
-}
-
-pub fn encode_genesis_change_set(
-    chain_config: &ChainConfig,
-    stdlib_modules: &[VerifiedModule],
-) -> ChangeSet {
-    let move_vm = MoveVM::new();
-
-    // create a data view for move_vm
-    let state_view = GenesisStateView;
-    let gas_schedule = CostTable::zero();
-    let data_cache = BlockDataCache::new(&state_view);
-
-    // create an execution context for the move_vm.
-    // It will contain the genesis WriteSet after execution
-    let mut interpreter_context =
-        TransactionExecutionContext::new(GasUnits::new(100_000_000), &data_cache);
-
-    // initialize the VM with stdlib modules.
-    // This step is needed because we are creating the main accounts and we are calling
-    // code to create those. However, code lives under an account but we have none.
-    // So we are pushing code into the VM blindly in order to create the main accounts.
-    for module in stdlib_modules {
-        move_vm.cache_module(module.clone());
-    }
-
-    // generate the genesis WriteSet
-    create_and_initialize_main_accounts(
-        chain_config,
-        &move_vm,
-        &gas_schedule,
-        &mut interpreter_context,
-        initial_gas_schedule(&move_vm, &data_cache),
-    );
-    publish_stdlib(&mut interpreter_context, stdlib_modules);
-
-    ChangeSet::new(
-        interpreter_context
-            .make_write_set()
-            .expect("Genesis WriteSet failure"),
-        interpreter_context.events().to_vec(),
-    )
-}
-
-/// Generate an artificial genesis `ChangeSet` for testing
-pub fn generate_genesis_change_set_for_testing() -> ChangeSet {
-    let stdlib_modules = stdlib_modules(StdLibOptions::Staged);
-    let config = ChainNetwork::Dev.get_config();
-
-    encode_genesis_change_set(
-        config,
-        stdlib_modules,
-    )
 }

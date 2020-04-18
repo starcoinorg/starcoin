@@ -17,7 +17,7 @@ use move_vm_types::values::Struct;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use vm::{errors::*, CompiledModule};
-use vm_runtime::genesis;
+use crate::genesis;
 
 /// Dummy genesis ChangeSet for testing
 pub static GENESIS_CHANGE_SET: Lazy<ChangeSet> =

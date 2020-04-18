@@ -22,7 +22,7 @@ use move_vm_types::{
     values::{Struct, Value},
 };
 use std::time::Duration;
-use vm_runtime::genesis::GENESIS_KEYPAIR;
+use crate::genesis::GENESIS_KEYPAIR;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -83,7 +83,7 @@ impl Account {
     /// The address will be [`association_address`][account_config::association_address], and
     /// the account will use [`GENESIS_KEYPAIR`][struct@GENESIS_KEYPAIR] as its keypair.
     pub fn new_association() -> Self {
-        Self::new_genesis_account(account_config::core_code_address().into())
+        Self::new_genesis_account(account_config::association_address().into())
     }
 
     /// Returns the address of the account. This is a hash of the public key the account was created
