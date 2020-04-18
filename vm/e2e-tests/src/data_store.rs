@@ -4,6 +4,7 @@
 //! Support for mocking the Libra data store.
 
 use crate::account::AccountData;
+use crate::genesis;
 use anyhow::Result;
 use libra_state_view::StateView;
 use libra_types::{
@@ -17,7 +18,6 @@ use move_vm_types::values::Struct;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use vm::{errors::*, CompiledModule};
-use crate::genesis;
 
 /// Dummy genesis ChangeSet for testing
 pub static GENESIS_CHANGE_SET: Lazy<ChangeSet> =

@@ -3,6 +3,7 @@
 
 //! Test infrastructure for modeling Libra accounts.
 
+use crate::genesis::GENESIS_KEYPAIR;
 use crate::{gas_costs, keygen::KeyGen};
 use libra_crypto::ed25519::*;
 use libra_types::{
@@ -15,14 +16,13 @@ use libra_types::{
         TransactionArgument, TransactionPayload,
     },
 };
-use types::account_config;
 use move_vm_types::{
     identifier::create_access_path,
     loaded_data::types::{StructType, Type},
     values::{Struct, Value},
 };
 use std::time::Duration;
-use crate::genesis::GENESIS_KEYPAIR;
+use types::account_config;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -160,9 +160,9 @@ impl Account {
             gas_unit_price,
             gas_specifier,
         )
-            .sign(&self.privkey, self.pubkey.clone())
-            .unwrap()
-            .into_inner()
+        .sign(&self.privkey, self.pubkey.clone())
+        .unwrap()
+        .into_inner()
     }
 
     pub fn create_raw_user_txn(
@@ -313,9 +313,9 @@ impl Account {
             gas_unit_price,
             gas_specifier,
         )
-            .sign(&self.privkey, self.pubkey.clone())
-            .unwrap()
-            .into_inner()
+        .sign(&self.privkey, self.pubkey.clone())
+        .unwrap()
+        .into_inner()
     }
 
     /// Create a transaction containing `script` signed by `sender` with default values for gas

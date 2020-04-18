@@ -16,9 +16,9 @@ pub mod compile;
 pub mod data_store;
 pub mod executor;
 pub mod gas_costs;
-pub mod keygen;
 pub mod genesis;
 pub mod genesis_gas_schedule;
+pub mod keygen;
 
 pub fn assert_status_eq(s1: &VMStatus, s2: &VMStatus) -> bool {
     assert_eq!(s1.major_status, s2.major_status);

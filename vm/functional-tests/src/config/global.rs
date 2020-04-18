@@ -5,13 +5,13 @@
 // A config entry starts with "//!", differentiating it from a directive.
 
 use crate::{common::strip, errors::*, genesis_accounts::make_genesis_accounts};
+use libra_config::generator;
+use libra_crypto::PrivateKey;
+use libra_types::validator_set::ValidatorSet;
 use starcoin_language_e2e_tests::{
     account::{Account, AccountData},
     keygen::KeyGen,
 };
-use libra_config::generator;
-use libra_crypto::PrivateKey;
-use libra_types::validator_set::ValidatorSet;
 use std::{
     collections::{btree_map, BTreeMap},
     str::FromStr,

@@ -265,7 +265,11 @@ impl RawUserTransaction {
         Self::new(
             AccountAddress::default(),
             0,
-            TransactionPayload::Script(Script::new(compiled_script, vec![starcoin_type_tag()], vec![])),
+            TransactionPayload::Script(Script::new(
+                compiled_script,
+                vec![starcoin_type_tag()],
+                vec![],
+            )),
             600,
             0,
             starcoin_type_tag(),

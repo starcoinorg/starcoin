@@ -9,7 +9,6 @@ use crate::{
 use bytecode_verifier::verifier::{
     verify_module_dependencies, verify_script_dependencies, VerifiedModule, VerifiedScript,
 };
-use starcoin_language_e2e_tests::executor::FakeExecutor;
 use libra_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use libra_state_view::StateView;
 use libra_types::{
@@ -24,13 +23,14 @@ use libra_types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
-use types::account_config::starcoin_type_tag;
 use mirai_annotations::checked_verify;
+use starcoin_language_e2e_tests::executor::FakeExecutor;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
     time::Duration,
 };
+use types::account_config::starcoin_type_tag;
 use vm::{
     file_format::{CompiledModule, CompiledScript},
     gas_schedule::{GasAlgebra, MAXIMUM_NUMBER_OF_GAS_UNITS},

@@ -45,6 +45,7 @@ use vm::{
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
+use vm_runtime::system_module_names::STARCOIN_MODULE;
 
 // The seed is arbitrarily picked to produce a consistent key. XXX make this more formal?
 const GENESIS_SEED: [u8; 32] = [42; 32];
@@ -255,6 +256,19 @@ fn create_and_initialize_main_accounts(
             vec![],
         )
         .expect("Failure initializing LBR");
+
+    // create the Starcoin module
+    move_vm
+        .execute_function(
+            &STARCOIN_MODULE,
+            &INITIALIZE,
+            &gas_schedule,
+            interpreter_context,
+            &txn_data,
+            vec![],
+            vec![],
+        )
+        .expect("Failure initializing Starcoin");
 
     // create the association account
     move_vm

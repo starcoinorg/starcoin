@@ -3,6 +3,8 @@
 
 //! Support for running the VM to execute and verify transactions.
 
+use crate::genesis;
+use crate::genesis::GENESIS_KEYPAIR;
 use crate::{
     account::{Account, AccountData},
     data_store::{FakeDataStore, GENESIS_CHANGE_SET},
@@ -27,9 +29,6 @@ use libra_types::{
 use libra_vm::{LibraVM, VMExecutor, VMVerifier};
 use stdlib::{stdlib_modules, transaction_scripts::StdlibScript, StdLibOptions};
 use vm::CompiledModule;
-use crate::genesis;
-use crate::genesis::GENESIS_KEYPAIR;
-
 
 /// Provides an environment to run a VM instance.
 ///

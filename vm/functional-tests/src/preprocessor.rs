@@ -25,7 +25,7 @@ pub fn substitute_addresses(config: &GlobalConfig, text: &str) -> String {
 
         format!("0x{}", config.get_account_for_name(name).unwrap().address())
     })
-        .to_string()
+    .to_string()
 }
 
 pub struct RawTransactionInput {
@@ -51,7 +51,7 @@ fn check_raw_transaction(txn: &RawTransactionInput) -> Result<()> {
             return Err(ErrorKind::Other(
                 "config options attached to empty transaction".to_string(),
             )
-                .into());
+            .into());
         }
         return Err(ErrorKind::Other("empty transaction".to_string()).into());
     }

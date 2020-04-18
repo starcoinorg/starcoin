@@ -1,8 +1,8 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_language_e2e_tests::account::Account;
 use libra_types::account_config;
+use starcoin_language_e2e_tests::account::Account;
 use std::collections::BTreeMap;
 
 // These are special-cased since they are generated in genesis, and therefore we don't want
