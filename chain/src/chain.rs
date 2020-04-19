@@ -205,11 +205,10 @@ where
             block_info.num_leaves,
             block_info.num_nodes,
             self.storage.clone(),
-        )
-        .unwrap();
+        )?;
+
         let (accumulator_root, state_root) =
-            BlockExecutor::block_execute(&self.config.vm, &chain_state, &accumulator, txns, true)
-                .unwrap();
+            BlockExecutor::block_execute(&self.config.vm, &chain_state, &accumulator, txns, true)?;
 
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -375,7 +374,7 @@ where
             None => self.current_header().id(),
         };
         assert!(self.exist_block(block_id));
-        let previous_header = self.get_header(block_id).unwrap().unwrap();
+        let previous_header = self.get_header(block_id)?.unwrap();
         self.create_block_template_inner(author, auth_key_prefix, previous_header, user_txns)
     }
 

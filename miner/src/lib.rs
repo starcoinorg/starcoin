@@ -26,6 +26,7 @@ use traits::{Consensus, ConsensusHeader};
 use types::transaction::TxStatus;
 
 pub use miner_client::miner::{Miner as MinerClient, MinerClientActor};
+
 mod headblock_pacemaker;
 mod miner;
 mod miner_client;
@@ -175,7 +176,11 @@ where
                 let block_chain =
                     BlockChain::<C, S, P>::new(config.clone(), head, storage, txpool, collection)
                         .unwrap();
-                let _ = mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain);
+                if let Err(e) =
+                    mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain)
+                {
+                    error!("Setting mint job failed: {:?}", e);
+                }
             });
         }
         .into_actor(self);
