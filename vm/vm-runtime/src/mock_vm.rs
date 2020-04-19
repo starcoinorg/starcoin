@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use starcoin_config::VMConfig;
 use starcoin_state_api::ChainState;
 use std::convert::TryInto;
-use types::account_config::lbr_type_tag;
+use types::account_config::starcoin_type_tag;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -257,7 +257,7 @@ pub fn mock_transaction_with_seq_number(
         program,
         0,
         0,
-        lbr_type_tag(),
+        starcoin_type_tag(),
         std::time::Duration::from_secs(0),
     );
 
@@ -283,7 +283,7 @@ pub fn mock_raw_transfer_txn(
         encode_transfer_program(receiver, amount),
         0,
         0,
-        lbr_type_tag(),
+        starcoin_type_tag(),
         std::time::Duration::from_secs(0),
     )
 }

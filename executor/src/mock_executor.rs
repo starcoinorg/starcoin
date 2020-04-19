@@ -11,7 +11,7 @@ use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use types::account_config::lbr_type_tag;
+use types::account_config::starcoin_type_tag;
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -133,7 +133,7 @@ pub fn get_signed_txn(
         script,
         MOCK_GAS_AMOUNT,
         MOCK_GAS_PRICE,
-        lbr_type_tag(),
+        starcoin_type_tag(),
         Duration::from_secs(expiration_time),
     );
 

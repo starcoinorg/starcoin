@@ -4,7 +4,7 @@ address 0x0:
 module LibraAccount {
     use 0x0::AddressUtil;
     use 0x0::Hash;
-    use 0x0::LBR;
+    use 0x0::Starcoin;
     use 0x0::Libra;
 //    use 0x0::LibraTransactionTimeout;
     use 0x0::Transaction;
@@ -169,7 +169,7 @@ module LibraAccount {
         };
 
         // Mint and deposit the coin
-        deposit(payee, Libra::mint<LBR::T>(amount));
+        deposit(payee, Libra::mint<Starcoin::T>(amount));
     }
 
     // Cancel the oldest burn request from `preburn_address` and return the funds.
@@ -341,7 +341,7 @@ module LibraAccount {
 
         save_account(
             Balance{
-                coin: Libra::zero<LBR::T>()
+                coin: Libra::zero<Starcoin::T>()
             },
             T {
                 authentication_key,
@@ -459,7 +459,7 @@ module LibraAccount {
 
         // Check that the account has enough balance for all of the gas
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;
-        let balance_amount = balance<LBR::T>(transaction_sender);
+        let balance_amount = balance<Starcoin::T>(transaction_sender);
         Transaction::assert(balance_amount >= max_transaction_fee, 6);
 
         // Check that the transaction sequence number matches the sequence number of the account
@@ -478,7 +478,7 @@ module LibraAccount {
     ) acquires T, Balance {
         // Load the transaction sender's account and balance resources
         let sender_account = borrow_global_mut<T>(Transaction::sender());
-        let sender_balance = borrow_global_mut<Balance<LBR::T>>(Transaction::sender());
+        let sender_balance = borrow_global_mut<Balance<Starcoin::T>>(Transaction::sender());
 
         // Charge for gas
         let transaction_fee_amount = txn_gas_price * (txn_max_gas_units - gas_units_remaining);
@@ -494,7 +494,7 @@ module LibraAccount {
         // Bump the sequence number
         sender_account.sequence_number = txn_sequence_number + 1;
         // Pay the transaction fee into the transaction fee balance
-        let transaction_fee_balance = borrow_global_mut<Balance<LBR::T>>(0xFEE);
+        let transaction_fee_balance = borrow_global_mut<Balance<Starcoin::T>>(0xFEE);
         Libra::deposit(&mut transaction_fee_balance.coin, transaction_fee);
     }
 

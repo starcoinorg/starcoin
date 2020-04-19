@@ -186,7 +186,7 @@ mod tests {
             TransactionPayload::Script(Script::new(vec![1, 2, 3], vec![], vec![])),
             100000,
             10,
-            types::account_config::lbr_type_tag(),
+            types::account_config::starcoin_type_tag(),
             Duration::from_secs(60),
         );
         let mut rng = rand::rngs::StdRng::from_seed([0; 32]);

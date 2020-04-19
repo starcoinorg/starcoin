@@ -19,8 +19,8 @@ use std::convert::{TryFrom, TryInto};
 
 //TODO rename account and coin name.
 // Starcoin
-static COIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LibraCoin").unwrap());
-static COIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
+static STARCOIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Starcoin").unwrap());
+static STARCOIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 // LBR
 static LBR_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LBR").unwrap());
 static LBR_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
@@ -45,12 +45,12 @@ pub static ACCOUNT_RESOURCE_PATH: Lazy<HashValue> =
 pub static BALANCE_RESOURCE_PATH: Lazy<HashValue> =
     Lazy::new(|| AccessPath::resource_access_vec(&account_balance_struct_tag()));
 
-pub fn coin_module_name() -> &'static IdentStr {
-    &*COIN_MODULE_NAME
+pub fn starcoin_module_name() -> &'static IdentStr {
+    &*STARCOIN_MODULE_NAME
 }
 
-pub fn coin_struct_name() -> &'static IdentStr {
-    &*COIN_STRUCT_NAME
+pub fn starcoin_struct_name() -> &'static IdentStr {
+    &*STARCOIN_STRUCT_NAME
 }
 
 pub fn account_module_name() -> &'static IdentStr {
@@ -114,7 +114,7 @@ pub fn account_balance_struct_tag() -> StructTag {
         address: core_code_address(),
         module: account_module_name().to_owned(),
         name: account_balance_struct_name().to_owned(),
-        type_params: vec![lbr_type_tag()],
+        type_params: vec![starcoin_type_tag()],
     }
 }
 
@@ -131,6 +131,19 @@ pub fn lbr_struct_tag() -> StructTag {
         address: core_code_address(),
         module: lbr_module_name().to_owned(),
         name: lbr_struct_name().to_owned(),
+        type_params: vec![],
+    }
+}
+
+pub fn starcoin_type_tag() -> TypeTag {
+    TypeTag::Struct(starcoin_struct_tag())
+}
+
+pub fn starcoin_struct_tag() -> StructTag {
+    StructTag {
+        address: core_code_address(),
+        module: starcoin_module_name().to_owned(),
+        name: starcoin_struct_name().to_owned(),
         type_params: vec![],
     }
 }
