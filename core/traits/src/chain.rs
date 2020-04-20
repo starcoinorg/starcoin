@@ -20,6 +20,7 @@ pub trait ChainReader {
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
     fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>>;
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
+    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// get transaction info by transaction info hash.
     fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
@@ -43,6 +44,7 @@ pub trait ChainWriter {
     fn apply(&mut self, block: Block) -> Result<bool>;
     /// execute and insert block to current chain.
     fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()>;
+    fn save(&mut self, block_id: HashValue, transactions: Vec<Transaction>) -> Result<()>;
     fn chain_state(&mut self) -> &dyn ChainState;
 }
 

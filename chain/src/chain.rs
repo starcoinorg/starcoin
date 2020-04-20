@@ -352,12 +352,16 @@ where
         return Ok(None);
     }
 
-    fn get_transaction(&self, _hash: HashValue) -> Result<Option<Transaction>, Error> {
-        unimplemented!()
+    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>, Error> {
+        self.storage.get_block_transactions(block_id)
     }
 
-    fn get_transaction_info(&self, _hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        unimplemented!()
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
+        self.storage.get_transaction(txn_hash)
+    }
+
+    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
+        self.storage.get_transaction_info(hash)
     }
 
     fn create_block_template(
@@ -452,7 +456,7 @@ where
             &self.config.vm,
             chain_state,
             &self.accumulator,
-            txns,
+            txns.clone(),
             false,
         )?;
         let exe_end_time = get_unix_ts();
@@ -472,7 +476,7 @@ where
         };
 
         let block_info = BlockInfo::new(
-            header.id(),
+            header.id().clone(),
             accumulator_root,
             self.accumulator.get_frozen_subtree_roots()?,
             self.accumulator.num_leaves(),
@@ -480,12 +484,14 @@ where
             total_difficulty,
         );
         let commit_begin_time = get_unix_ts();
-        self.commit(block, block_info)?;
+        self.commit(block.clone(), block_info)?;
         let commit_end_time = get_unix_ts();
         debug!(
             "commit used time: {}",
             (commit_end_time - commit_begin_time)
         );
+        // save block's transaction relationship and save transaction
+        self.save(header.id().clone(), txns.clone())?;
         Ok(true)
     }
 
@@ -507,6 +513,21 @@ where
         self.chain_state =
             ChainStateDB::new(self.storage.clone(), Some(self.head.header().state_root()));
         debug!("save block {:?} succ.", block_id);
+        Ok(())
+    }
+
+    fn save(&mut self, block_id: HashValue, transactions: Vec<Transaction>) -> Result<()> {
+        let txn_id_vec = transactions
+            .iter()
+            .cloned()
+            .map(|user_txn| user_txn.id())
+            .collect::<Vec<HashValue>>();
+        // save block's transactions
+        self.storage
+            .save_block_transactions(block_id, txn_id_vec)
+            .unwrap();
+        // save transactions
+        self.storage.save_transaction_batch(transactions).unwrap();
         Ok(())
     }
 

@@ -5,7 +5,7 @@ use crate::define_storage;
 use crate::storage::{CodecStorage, KeyCodec, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_SONS_PREFIX_NAME,
+    BLOCK_SONS_PREFIX_NAME, BLOCK_TRANSATIONS_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -47,6 +47,12 @@ define_storage!(
     HashValue,
     BLOCK_NUM_PREFIX_NAME
 );
+define_storage!(
+    BlockTransactionsStorage,
+    HashValue,
+    Vec<HashValue>,
+    BLOCK_TRANSATIONS_PREFIX_NAME
+);
 
 pub struct BlockStorage {
     block_store: BlockInnerStorage,
@@ -56,6 +62,7 @@ pub struct BlockStorage {
     body_store: BlockBodyStorage,
     number_store: BlockNumberStorage,
     branch_number_store: BranchNumberStorage,
+    block_txns_store: BlockTransactionsStorage,
 }
 
 impl ValueCodec for Block {
@@ -153,6 +160,7 @@ impl BlockStorage {
             body_store: BlockBodyStorage::new(instance.clone()),
             number_store: BlockNumberStorage::new(instance.clone()),
             branch_number_store: BranchNumberStorage::new(instance.clone()),
+            block_txns_store: BlockTransactionsStorage::new(instance.clone()),
         }
     }
     pub fn save(&self, block: Block) -> Result<()> {
@@ -406,6 +414,20 @@ impl BlockStorage {
                 number
             ),
         }
+    }
+
+    pub fn get_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
+        match self.block_txns_store.get(block_id) {
+            Ok(Some(transactions)) => Ok(transactions),
+            _ => bail!("can't find block's transaction: {:?}", block_id),
+        }
+    }
+    pub fn put_transactions(
+        &self,
+        block_id: HashValue,
+        transactions: Vec<HashValue>,
+    ) -> Result<()> {
+        self.block_txns_store.put(block_id, transactions)
     }
 
     fn get_relationship(

@@ -6,6 +6,7 @@ use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
 use crate::state_node::StateStorage;
 use crate::storage::{ColumnFamilyName, InnerStorage, KVStore, StorageInstance};
+use crate::transaction::TransactionStorage;
 use crate::transaction_info::TransactionInfoStorage;
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
@@ -13,6 +14,7 @@ use once_cell::sync::Lazy;
 use starcoin_accumulator::{
     AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter,
 };
+use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
@@ -33,7 +35,9 @@ pub mod state_node;
 pub mod storage;
 #[cfg(test)]
 mod tests;
+pub mod transaction;
 pub mod transaction_info;
+
 #[macro_use]
 pub mod storage_macros;
 
@@ -44,9 +48,11 @@ pub const BLOCK_SONS_PREFIX_NAME: ColumnFamilyName = "block_sons";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
+pub const BLOCK_TRANSATIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "startup_info";
-pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction_info";
+pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
+pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
 pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
@@ -58,9 +64,11 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         BLOCK_BODY_PREFIX_NAME,
         BLOCK_NUM_PREFIX_NAME,
         BLOCK_INFO_PREFIX_NAME,
+        BLOCK_TRANSATIONS_PREFIX_NAME,
         STATE_NODE_PREFIX_NAME,
         STARTUP_INFO_PREFIX_NAME,
         TRANSACTION_PREFIX_NAME,
+        TRANSACTION_INFO_PREFIX_NAME,
     ]
 });
 
@@ -118,6 +126,12 @@ pub trait BlockStore {
         block_id1: HashValue,
         block_id2: HashValue,
     ) -> Result<Option<HashValue>>;
+    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
+    fn save_block_transactions(
+        &self,
+        block_id: HashValue,
+        transactions: Vec<HashValue>,
+    ) -> Result<()>;
 }
 
 pub trait TransactionInfoStore {
@@ -125,8 +139,15 @@ pub trait TransactionInfoStore {
     fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()>;
 }
 
+pub trait TransactionStore {
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
+    fn save_transaction(&self, txn_info: Transaction) -> Result<()>;
+    fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<()>;
+}
+
 pub struct Storage {
     transaction_info_storage: TransactionInfoStorage,
+    transaction_storage: TransactionStorage,
     block_storage: BlockStorage,
     state_node_storage: StateStorage,
     accumulator_storage: AccumulatorStorage,
@@ -138,6 +159,7 @@ impl Storage {
     pub fn new(instance: StorageInstance) -> Result<Self> {
         Ok(Self {
             transaction_info_storage: TransactionInfoStorage::new(instance.clone()),
+            transaction_storage: TransactionStorage::new(instance.clone()),
             block_storage: BlockStorage::new(instance.clone()),
             state_node_storage: StateStorage::new(instance.clone()),
             accumulator_storage: AccumulatorStorage::new(instance.clone()),
@@ -272,6 +294,17 @@ impl BlockStore for Storage {
     ) -> Result<Option<HashValue>> {
         self.block_storage.get_common_ancestor(block_id1, block_id2)
     }
+
+    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>, Error> {
+        self.block_storage.get_transactions(block_id)
+    }
+    fn save_block_transactions(
+        &self,
+        block_id: HashValue,
+        transactions: Vec<HashValue>,
+    ) -> Result<()> {
+        self.block_storage.put_transactions(block_id, transactions)
+    }
 }
 
 impl AccumulatorTreeStore for Storage {}
@@ -318,12 +351,28 @@ impl TransactionInfoStore for Storage {
     }
 }
 
+impl TransactionStore for Storage {
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
+        self.transaction_storage.get(txn_hash)
+    }
+
+    fn save_transaction(&self, txn: Transaction) -> Result<(), Error> {
+        self.transaction_storage.put(txn.id(), txn)
+    }
+
+    fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<(), Error> {
+        self.transaction_storage.save_transaction_batch(txn_vec)
+    }
+}
+
 /// Chain storage define
 pub trait Store:
     StateNodeStore
     + BlockStore
     + AccumulatorTreeStore
     + BlockInfoStore
+    + TransactionStore
+    + TransactionInfoStore
     + IntoSuper<dyn StateNodeStore>
     + IntoSuper<dyn AccumulatorTreeStore>
 {
