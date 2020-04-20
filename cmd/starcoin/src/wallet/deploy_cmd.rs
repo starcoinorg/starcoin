@@ -79,7 +79,7 @@ impl CommandAction for DeployCommand {
             Module::new(bytecode),
             opt.max_gas_amount,
             1,
-            account_config::lbr_type_tag(),
+            account_config::starcoin_type_tag(),
             Duration::from_secs(60 * 5),
         );
 

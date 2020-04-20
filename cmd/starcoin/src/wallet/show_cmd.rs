@@ -44,7 +44,10 @@ impl CommandAction for ShowCommand {
             .map(|res| res.sequence_number());
         let balance = account_state_reader.get_balance(account.address())?;
 
+        let auth_key_prefix =
+            hex::encode(AccountAddress::authentication_key(&account.public_key).prefix());
         Ok(AccountWithStateView {
+            auth_key_prefix,
             account,
             sequence_number,
             balance,

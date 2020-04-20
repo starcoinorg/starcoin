@@ -30,9 +30,14 @@ pub struct ExecuteOpt {
         help = "script bytecode file path"
     )]
     bytecode_file: String,
-    #[structopt(short = "t", name = "type_tags", help = "type tags")]
-    type_tags: Option<String>,
-    #[structopt(long="args", name="transaction-args", parse(try_from_str = parse_as_transaction_argument))]
+    #[structopt(
+        short = "t",
+        long = "type_tag",
+        name = "type-tag",
+        help = "can specify multi type_tag"
+    )]
+    type_tags: Vec<String>,
+    #[structopt(long="arg", name="transaction-arg", help ="can specify multi arg", parse(try_from_str = parse_as_transaction_argument))]
     args: Vec<TransactionArgument>,
     #[structopt(
         short = "g",
@@ -70,13 +75,15 @@ impl CommandAction for ExecuteCommand {
                 Ok(s) => s,
             };
 
-        let type_tags = match opt.type_tags.as_ref() {
-            None => vec![],
-            Some(s) => parse_type_tags(s.as_str())?
-                .into_iter()
-                .map(|t| TypeTag::from(t))
-                .collect(),
-        };
+        let mut type_tags = vec![];
+        for type_tag in &opt.type_tags {
+            type_tags.extend(
+                parse_type_tags(type_tag.as_ref())?
+                    .into_iter()
+                    .map(|t| TypeTag::from(t)),
+            );
+        }
+
         let args = opt.args.clone();
 
         let txn_address = opt.account_address;
@@ -95,8 +102,8 @@ impl CommandAction for ExecuteCommand {
             Script::new(bytecode, type_tags, args),
             opt.max_gas_amount,
             1,
-            account_config::lbr_type_tag(),
-            Duration::from_secs(40),
+            account_config::starcoin_type_tag(),
+            Duration::from_secs(60 * 5),
         );
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
