@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::miner::{MineCtx, Miner};
+use actix_rt::Arbiter;
+use config::NodeConfig;
+use logger::prelude::*;
 use sc_stratum::*;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use traits::ChainReader;
 use traits::{Consensus, ConsensusHeader};
-
-use config::NodeConfig;
-use logger::prelude::*;
-
 use types::transaction::SignedUserTransaction;
 
 pub struct StratumManager<H>
@@ -47,6 +46,7 @@ pub fn mint<H, C>(
     miner_account: WalletAccount,
     txns: Vec<SignedUserTransaction>,
     chain: &dyn ChainReader,
+    arbiter: Arbiter,
 ) -> anyhow::Result<()>
 where
     H: ConsensusHeader,
@@ -62,8 +62,12 @@ where
     miner.set_mint_job(MineCtx::new(block_template, difficult));
     let job = miner.get_mint_job();
     info!("Push job to worker{:?}", job);
-    stratum
-        .push_work_all(job)
-        .map_err(|e| anyhow::format_err!("stratum push failed:{:?}", e))?;
+    arbiter.exec_fn(|| {
+        futures::executor::block_on(async move {
+            if let Err(e) = stratum.push_work_all(job) {
+                error!("Stratum push failed:{:?}", e);
+            }
+        })
+    });
     Ok(())
 }
