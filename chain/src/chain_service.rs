@@ -658,7 +658,7 @@ where
     let collection = Arc::new(BlockChainCollection::new());
     let master = BlockChain::new(
         config.clone(),
-        startup_info.head,
+        startup_info.master,
         storage.clone(),
         txpool.clone(),
         Arc::clone(&collection),
