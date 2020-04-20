@@ -4,6 +4,7 @@ use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
 use crypto::hash::HashValue;
 use forkable_jellyfish_merkle::node_type::Node;
+use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use futures::executor::block_on;
 use logger::prelude::*;
 use network::NetworkAsyncService;
@@ -11,8 +12,28 @@ use parking_lot::Mutex;
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use starcoin_sync_api::{StateSyncReset, SyncMetadata};
 use std::collections::{HashMap, VecDeque};
+use std::convert::TryFrom;
 use std::sync::Arc;
-use types::peer_info::PeerId;
+use types::{account_state::AccountState, peer_info::PeerId};
+
+struct Roots {
+    state: HashValue,
+    accumulator: HashValue,
+}
+
+impl Roots {
+    fn new(state: HashValue, accumulator: HashValue) -> Self {
+        Roots { state, accumulator }
+    }
+
+    fn state_root(&self) -> &HashValue {
+        &self.state
+    }
+
+    fn accumulator_root(&self) -> &HashValue {
+        &self.accumulator
+    }
+}
 
 async fn sync_state_node(
     node_key: HashValue,
@@ -59,8 +80,15 @@ pub struct StateSyncTaskRef {
 
 #[async_trait::async_trait]
 impl StateSyncReset for StateSyncTaskRef {
-    async fn reset(&self, root: HashValue) {
-        if let Err(e) = self.address.send(StateSyncEvent { root }).await {
+    async fn reset(&self, state_root: HashValue, accumulator_root: HashValue) {
+        if let Err(e) = self
+            .address
+            .send(StateSyncEvent {
+                state_root,
+                accumulator_root,
+            })
+            .await
+        {
             warn!("err : {:?}", e);
         }
     }
@@ -76,30 +104,30 @@ struct StateSyncTaskEvent {
 
 pub struct StateSyncTaskActor {
     self_peer_id: PeerId,
-    root: HashValue,
+    roots: Roots,
     state_node_storage: Arc<dyn StateNodeStore>,
     network_service: NetworkAsyncService,
-    wait_2_sync: VecDeque<HashValue>,
+    state_wait_2_sync: VecDeque<(HashValue, bool)>,
     sync_metadata: SyncMetadata,
-    syncing_nodes: Mutex<HashMap<PeerId, HashValue>>,
+    syncing_nodes: Mutex<HashMap<PeerId, (HashValue, bool)>>,
 }
 
 impl StateSyncTaskActor {
     pub fn launch(
         self_peer_id: PeerId,
-        root: HashValue,
+        roots: (HashValue, HashValue),
         state_node_storage: Arc<dyn StateNodeStore>,
         network_service: NetworkAsyncService,
         sync_metadata: SyncMetadata,
     ) -> StateSyncTaskRef {
-        let mut wait_2_sync: VecDeque<HashValue> = VecDeque::new();
-        wait_2_sync.push_back(root.clone());
+        let mut state_wait_2_sync: VecDeque<(HashValue, bool)> = VecDeque::new();
+        state_wait_2_sync.push_back((roots.0.clone(), true));
         let address = StateSyncTaskActor::create(move |_ctx| Self {
             self_peer_id,
-            root,
+            roots: Roots::new(roots.0, roots.1),
             state_node_storage,
             network_service,
-            wait_2_sync,
+            state_wait_2_sync,
             sync_metadata,
             syncing_nodes: Mutex::new(HashMap::new()),
         });
@@ -107,12 +135,12 @@ impl StateSyncTaskActor {
     }
 
     fn exe_task(&mut self, address: Addr<StateSyncTaskActor>) {
-        let node_key = self.wait_2_sync.pop_front().unwrap();
+        let (node_key, is_global) = self.state_wait_2_sync.pop_front().unwrap();
         if let Some(state_node) = self.state_node_storage.get(&node_key).unwrap() {
             debug!("find state_node {:?} in db.", node_key);
             self.syncing_nodes
                 .lock()
-                .insert(self.self_peer_id.clone(), node_key.clone());
+                .insert(self.self_peer_id.clone(), (node_key.clone(), is_global));
             if let Err(err) = address.try_send(StateSyncTaskEvent {
                 peer_id: self.self_peer_id.clone(),
                 node_key,
@@ -135,7 +163,7 @@ impl StateSyncTaskActor {
                     let network_service = self.network_service.clone();
                     self.syncing_nodes
                         .lock()
-                        .insert(best_peer.get_peer_id(), node_key.clone());
+                        .insert(best_peer.get_peer_id(), (node_key.clone(), is_global));
                     Arbiter::spawn(async move {
                         sync_state_node(
                             node_key,
@@ -152,11 +180,12 @@ impl StateSyncTaskActor {
         }
     }
 
-    pub fn reset(&mut self, root: &HashValue) {
+    pub fn reset(&mut self, state_root: &HashValue, accumulator_root: &HashValue) {
         info!("reset state sync task.");
-        self.wait_2_sync.clear();
-        self.root = root.clone();
-        self.wait_2_sync.push_back(root.clone());
+        self.state_wait_2_sync.clear();
+        self.roots = Roots::new(state_root.clone(), accumulator_root.clone());
+        self.state_wait_2_sync
+            .push_back((self.roots.state_root().clone(), true));
         self.syncing_nodes.lock().clear();
     }
 }
@@ -179,7 +208,8 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
         let mut lock = self.syncing_nodes.lock();
-        if let Some(state_node_hash) = lock.get(&task_event.peer_id) {
+        if let Some((state_node_hash, is_global)) = lock.get(&task_event.peer_id) {
+            let is_global = is_global.clone();
             //1. push back
             let current_node_key = task_event.node_key;
             if state_node_hash == &current_node_key {
@@ -191,14 +221,34 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                         .put(current_node_key, state_node.clone())
                     {
                         error!("error : {:?}", e);
-                        self.wait_2_sync.push_back(current_node_key);
+                        self.state_wait_2_sync
+                            .push_back((current_node_key, is_global));
                     } else {
                         debug!("receive state_node: {:?}", state_node);
                         match state_node.inner() {
-                            Node::Leaf(_) => {}
+                            Node::Leaf(leaf) => {
+                                if is_global {
+                                    match AccountState::try_from(leaf.blob().as_ref()) {
+                                        Err(e) => {
+                                            error!("error : {:?}", e);
+                                        }
+                                        Ok(account_state) => {
+                                            account_state.storage_roots().iter().for_each(|key| {
+                                                if key.is_some() {
+                                                    let hash = key.unwrap().clone();
+                                                    if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
+                                                        self.state_wait_2_sync
+                                                            .push_back((hash, false));
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+                            }
                             Node::Internal(n) => {
                                 for child in n.all_child() {
-                                    self.wait_2_sync.push_back(child);
+                                    self.state_wait_2_sync.push_back((child, is_global));
                                 }
                             }
                             _ => {
@@ -207,11 +257,12 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                         }
                     }
                 } else {
-                    self.wait_2_sync.push_back(current_node_key);
+                    self.state_wait_2_sync
+                        .push_back((current_node_key, is_global));
                 }
 
                 //2. exe_task
-                if self.wait_2_sync.is_empty() {
+                if self.state_wait_2_sync.is_empty() {
                     if let Err(e) = self.sync_metadata.state_sync_done() {
                         warn!("err:{:?}", e);
                     } else {
@@ -239,7 +290,8 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
 struct StateSyncEvent {
-    root: HashValue,
+    state_root: HashValue,
+    accumulator_root: HashValue,
 }
 
 impl Handler<StateSyncEvent> for StateSyncTaskActor {
@@ -247,7 +299,7 @@ impl Handler<StateSyncEvent> for StateSyncTaskActor {
 
     /// This method is called for every message received by this actor.
     fn handle(&mut self, msg: StateSyncEvent, _ctx: &mut Self::Context) -> Self::Result {
-        self.reset(&msg.root);
+        self.reset(&msg.state_root, &msg.accumulator_root);
         Ok(())
     }
 }

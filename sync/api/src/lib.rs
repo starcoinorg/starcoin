@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 #[async_trait::async_trait]
 pub trait StateSyncReset: DynClone + Send + Sync {
-    async fn reset(&self, root: HashValue);
+    async fn reset(&self, state_root: HashValue, accumulator_root: HashValue);
 }
 
 #[derive(Clone)]
