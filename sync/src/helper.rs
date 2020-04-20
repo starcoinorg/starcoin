@@ -4,6 +4,7 @@ use crypto::hash::HashValue;
 use futures::channel::mpsc::Sender;
 use futures::sink::SinkExt;
 use network::NetworkAsyncService;
+use network_api::NetworkService;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;

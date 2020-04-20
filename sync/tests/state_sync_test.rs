@@ -11,7 +11,7 @@ use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{MinerActor, MinerClientActor};
-use network_p2p_api::NetworkService;
+use network_api::NetworkService;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
