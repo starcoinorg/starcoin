@@ -4,7 +4,6 @@
 use crate::chain::BlockChain;
 use actix::prelude::*;
 use anyhow::{format_err, Result};
-use atomic_refcell::AtomicRefCell;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
@@ -19,7 +18,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use storage::Store;
 use traits::Consensus;
-use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult};
+use traits::{is_ok, ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -34,7 +33,7 @@ where
     P: TxPoolAsyncService + 'static,
     S: Store + 'static,
 {
-    master: AtomicRefCell<Vec<BlockChain<C, S, P>>>,
+    master: RwLock<Vec<BlockChain<C, S, P>>>,
     branches: RwLock<HashMap<HashValue, BlockChain<C, S, P>>>,
 }
 
@@ -46,7 +45,7 @@ where
 {
     pub fn new() -> Self {
         BlockChainCollection {
-            master: AtomicRefCell::new(Vec::new()),
+            master: RwLock::new(Vec::new()),
             branches: RwLock::new(HashMap::new()),
         }
     }
@@ -58,19 +57,15 @@ where
     }
 
     pub fn update_master(&self, new_master: BlockChain<C, S, P>) {
-        self.master.borrow_mut().insert(0, new_master)
-    }
-
-    pub fn get_master(&self) -> &AtomicRefCell<Vec<BlockChain<C, S, P>>> {
-        &self.master
+        self.master.write().insert(0, new_master)
     }
 
     pub fn get_branch_id(&self, branch_id: &HashValue, number: BlockNumber) -> Option<HashValue> {
         let mut chain_info = None;
 
         let master = self
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .get_chain_info();
@@ -104,8 +99,8 @@ where
 
     pub fn fork(&self, block_header: &BlockHeader) -> Option<ChainInfo> {
         let mut chain_info = self
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .fork(block_header);
@@ -129,14 +124,14 @@ where
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         if self
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .exist_block(block_id)
         {
-            self.get_master()
-                .borrow()
+            self.master
+                .read()
                 .get(0)
                 .expect("master is none.")
                 .create_block_template(author, auth_key_prefix, Some(block_id), user_txns)
@@ -160,8 +155,8 @@ where
 
     pub fn to_startup_info(&self) -> StartupInfo {
         let head = self
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .get_chain_info();
@@ -170,6 +165,10 @@ where
             branches.push(branch.get_chain_info());
         }
         StartupInfo::new(head, branches)
+    }
+
+    pub fn get_master_chain_info(&self) -> ChainInfo {
+        self.master.read().get(0).unwrap().get_chain_info()
     }
 }
 
@@ -223,7 +222,6 @@ where
     pub fn find_or_fork(&mut self, header: &BlockHeader) -> Result<BlockChain<C, S, P>> {
         debug!("{:?}:{:?}", header.parent_hash(), header.id());
         let chain_info = self.collection.fork(header);
-
         if chain_info.is_some() {
             Ok(BlockChain::new(
                 self.config.clone(),
@@ -247,8 +245,8 @@ where
         if total_difficulty
             > self
                 .collection
-                .get_master()
-                .borrow()
+                .master
+                .read()
                 .get(0)
                 .expect("master is none.")
                 .get_total_difficulty()?
@@ -259,8 +257,8 @@ where
             if new_branch.get_chain_info().branch_id()
                 == self
                     .collection
-                    .get_master()
-                    .borrow()
+                    .master
+                    .read()
                     .get(0)
                     .expect("master is none.")
                     .get_chain_info()
@@ -272,8 +270,8 @@ where
                 self.collection.insert_branch(BlockChain::new(
                     self.config.clone(),
                     self.collection
-                        .get_master()
-                        .borrow()
+                        .master
+                        .read()
                         .get(0)
                         .expect("master is none.")
                         .get_chain_info(),
@@ -340,8 +338,8 @@ where
         let block_enacted = &new_branch.current_header().id();
         let block_retracted = &self
             .collection
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .current_header()
@@ -376,8 +374,8 @@ where
             debug!("get block 2 {:?}.", block_retracted_tmp);
             let block_tmp = self
                 .collection
-                .get_master()
-                .borrow()
+                .master
+                .read()
                 .get(0)
                 .expect("master is none.")
                 .get_block(block_retracted_tmp)?
@@ -417,7 +415,7 @@ where
     pub fn broadcast_2_network(&self, block: BlockDetail) {
         if let Some(network) = self.network.clone() {
             Arbiter::spawn(async move {
-                info!("broadcast system event : {:?}", block.header().id());
+                debug!("broadcast system event : {:?}", block.header().id());
                 network
                     .broadcast_system_event(SystemEvents::NewHeadBlock(block))
                     .await
@@ -434,9 +432,9 @@ where
     S: Store,
 {
     //TODO define connect result.
-    fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {
+    fn try_connect(&mut self, block: Block, pivot_sync: bool) -> Result<ConnectResult<()>> {
         let connect_begin_time = get_unix_ts();
-        if !self.sync_metadata.state_syncing() {
+        if !self.sync_metadata.state_syncing() || pivot_sync {
             if self
                 .storage
                 .get_block_by_hash(block.header().id())?
@@ -446,6 +444,8 @@ where
                     .storage
                     .get_block_by_hash(block.header().parent_hash())?
                     .is_some()
+                    && (!self.sync_metadata.state_syncing()
+                        || (pivot_sync && self.sync_metadata.state_done()))
                 {
                     let header = block.header();
                     let mut branch = self.find_or_fork(&header)?;
@@ -465,8 +465,8 @@ where
                             (select_head_end_time - apply_end_time)
                         );
                         self.collection
-                            .get_master()
-                            .borrow()
+                            .master
+                            .read()
                             .get(0)
                             .expect("master is none.")
                             .latest_blocks(10);
@@ -491,54 +491,74 @@ where
         block_info: BlockInfo,
     ) -> Result<ConnectResult<()>> {
         if self.sync_metadata.state_syncing() {
-            let latest_sync_number = self.sync_metadata.get_latest();
-            if latest_sync_number.is_some() {
-                let latest_number = latest_sync_number.unwrap();
-                let current_block_number = block.header().number();
-                if latest_number >= current_block_number {
-                    //todo:1. verify block header / verify accumulator / total difficulty
-                    let mut block_chain = self.collection.get_master().borrow_mut();
-                    let master = block_chain.get_mut(0).expect("master is none.");
-                    let block_header = block.header().clone();
-                    if let Ok(_) = C::verify_header(self.config.clone(), master, &block_header) {
-                        // 2. save block
-                        let _ = master.commit(block, block_info)?;
-                        // 3. update master
-                        self.collection
-                            .get_master()
-                            .borrow()
-                            .get(0)
-                            .expect("master is none.")
-                            .latest_blocks(1);
-                        // 4. update state sync metadata
-                        if latest_number == current_block_number {
-                            if let Err(err) = self.sync_metadata.block_sync_done() {
-                                warn!("err:{:?}", err);
+            if self
+                .storage
+                .get_block_by_hash(block.header().id())?
+                .is_none()
+            {
+                if self
+                    .storage
+                    .get_block_by_hash(block.header().parent_hash())?
+                    .is_some()
+                {
+                    let pivot = self.sync_metadata.get_pivot()?;
+                    let latest_sync_number = self.sync_metadata.get_latest();
+                    if pivot.is_some() && latest_sync_number.is_some() {
+                        let pivot_number = pivot.unwrap();
+                        let latest_number = latest_sync_number.unwrap();
+                        let current_block_number = block.header().number();
+                        if pivot_number >= current_block_number {
+                            //todo:1. verify block header / verify accumulator / total difficulty
+                            let mut block_chain = self.collection.master.write();
+                            let master = block_chain.get_mut(0).expect("master is none.");
+                            let block_header = block.header().clone();
+                            if let Ok(_) =
+                                C::verify_header(self.config.clone(), master, &block_header)
+                            {
+                                // 2. commit block
+                                let _ = master.commit(block, block_info)?;
+                                Ok(ConnectResult::Ok(()))
+                            } else {
+                                Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                             }
+                        } else if latest_number >= current_block_number {
+                            let connect_result = self.try_connect(block, true)?;
+                            // 3. update sync metadata
+                            info!(
+                                "connect block : {}, {}, {:?}",
+                                latest_number, current_block_number, connect_result
+                            );
+                            if latest_number == current_block_number && is_ok(&connect_result) {
+                                if let Err(err) = self.sync_metadata.block_sync_done() {
+                                    warn!("err:{:?}", err);
+                                }
+                            }
+                            Ok(connect_result)
+                        } else {
+                            Ok(ConnectResult::Err(ConnectBlockError::Other(
+                                "block number > pivot.".to_string(),
+                            )))
                         }
-                        Ok(ConnectResult::Ok(()))
                     } else {
-                        Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
+                        Ok(ConnectResult::Err(ConnectBlockError::Other(
+                            "pivot is none.".to_string(),
+                        )))
                     }
                 } else {
-                    Ok(ConnectResult::Err(ConnectBlockError::Other(
-                        "block number > pivot.".to_string(),
-                    )))
+                    Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                 }
             } else {
-                Ok(ConnectResult::Err(ConnectBlockError::Other(
-                    "pivot is none.".to_string(),
-                )))
+                Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
             }
         } else {
-            self.try_connect(block)
+            self.try_connect(block, false)
         }
     }
 
     fn master_head_block(&self) -> Block {
         self.collection
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .head_block()
@@ -546,8 +566,8 @@ where
 
     fn master_head_header(&self) -> BlockHeader {
         self.collection
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .current_header()
@@ -559,8 +579,8 @@ where
 
     fn master_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.collection
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .get_block_by_number(number)
@@ -585,8 +605,8 @@ where
             Some(hash) => hash,
             None => self
                 .collection
-                .get_master()
-                .borrow()
+                .master
+                .read()
                 .get(0)
                 .expect("master is none.")
                 .current_header()
@@ -603,8 +623,8 @@ where
 
     fn gen_tx(&self) -> Result<()> {
         self.collection
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .gen_tx()
@@ -616,8 +636,8 @@ where
 
     fn master_blocks_by_number(&self, number: u64, count: u64) -> Result<Vec<Block>> {
         self.collection
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .get_blocks_by_number(number, count)

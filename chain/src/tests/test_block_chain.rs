@@ -63,13 +63,7 @@ async fn gen_head_chain(
             .unwrap();
             let block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
                 node_config.clone(),
-                collection
-                    .clone()
-                    .get_master()
-                    .borrow()
-                    .get(0)
-                    .unwrap()
-                    .get_chain_info(),
+                collection.get_master_chain_info(),
                 storage.clone(),
                 txpool.clone(),
                 collection,

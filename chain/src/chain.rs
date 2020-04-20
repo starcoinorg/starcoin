@@ -50,7 +50,6 @@ where
     P: TxPoolAsyncService + 'static,
 {
     pub config: Arc<NodeConfig>,
-    //TODO
     accumulator: MerkleAccumulator,
     head: Block,
     chain_state: ChainStateDB,
@@ -120,7 +119,7 @@ where
         {
             warn!("err : {:?}", e);
         }
-        info!("commit block : {:?}", block.header().id());
+        debug!("commit block : {:?}", block.header().id());
     }
 
     fn get_block_info(&self, block_id: HashValue) -> BlockInfo {
@@ -142,10 +141,9 @@ where
 
     fn gen_tx_for_test(&self) {
         let tx = mock_create_account_txn();
-        // info!("gen test txn: {:?}", tx);
         let txpool = self.txpool.clone();
         Arbiter::spawn(async move {
-            info!("gen_tx_for_test call txpool.");
+            debug!("gen_tx_for_test call txpool.");
             txpool.add(tx.try_into().unwrap()).await.unwrap();
         });
     }
@@ -422,7 +420,7 @@ where
 {
     fn apply(&mut self, block: Block) -> Result<bool> {
         let header = block.header();
-        info!(
+        debug!(
             "Apply block {:?} to {:?}",
             block.header(),
             self.head.header()
@@ -496,7 +494,18 @@ where
         self.save_block(&block);
         self.chain_info.update_head(block.header().clone());
         self.head = block;
+        self.accumulator = MerkleAccumulator::new(
+            self.chain_info.branch_id(),
+            block_info.accumulator_root,
+            block_info.frozen_subtree_roots.clone(),
+            block_info.num_leaves,
+            block_info.num_nodes,
+            self.storage.clone(),
+        )
+        .unwrap();
         self.save_block_info(block_info);
+        self.chain_state =
+            ChainStateDB::new(self.storage.clone(), Some(self.head.header().state_root()));
         debug!("save block {:?} succ.", block_id);
         Ok(())
     }
