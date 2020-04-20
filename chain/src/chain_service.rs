@@ -632,8 +632,8 @@ where
 
     fn master_blocks_by_number(&self, number: u64, count: u64) -> Result<Vec<Block>> {
         self.collection
-            .get_master()
-            .borrow()
+            .master
+            .read()
             .get(0)
             .expect("master is none.")
             .get_blocks_by_number(number, count)
