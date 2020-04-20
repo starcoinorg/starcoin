@@ -43,7 +43,6 @@ pub struct BlockHeader {
     /// Block difficult
     difficult: U256,
     /// Consensus extend header field.
-    //TODO: change to ConsensusHeader
     consensus_header: Vec<u8>,
 }
 

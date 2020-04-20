@@ -176,7 +176,6 @@ pub trait ConfigModule {
     }
 }
 
-//TODO rename NodeConfig to Config.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
