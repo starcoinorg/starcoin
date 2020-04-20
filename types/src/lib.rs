@@ -7,7 +7,6 @@ pub mod account_config;
 pub mod account_state;
 pub mod block;
 pub mod block_metadata;
-pub mod byte_array;
 pub mod change_set;
 pub mod contract_event;
 pub mod error;

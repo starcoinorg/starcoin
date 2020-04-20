@@ -41,7 +41,6 @@ pub struct ChainActor<C>
 where
     C: Consensus,
 {
-    //TODO use Generic Parameter for Executor and Consensus.
     service: ChainServiceImpl<C, Storage, TxPoolRef>,
     bus: Addr<BusActor>,
 }
