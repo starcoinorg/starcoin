@@ -165,6 +165,10 @@ where
         }
         StartupInfo::new(head, branches)
     }
+
+    pub fn get_master_chain_info(&self) -> ChainInfo {
+        self.master.read().get(0).unwrap().get_chain_info()
+    }
 }
 
 pub struct ChainServiceImpl<C, S, P>
