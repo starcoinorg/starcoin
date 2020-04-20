@@ -240,6 +240,8 @@ mod tests {
         _rt.block_on(fut);
     }
 
+    //FIXME temp ignore for #139
+    #[ignore]
     #[test]
     fn test_reconnected_nodes() {
         ::logger::init_for_test();
