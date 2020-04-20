@@ -1,4 +1,4 @@
-use crate::state::CliState;
+use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
