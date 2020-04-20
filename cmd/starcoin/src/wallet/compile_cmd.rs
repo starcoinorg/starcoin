@@ -13,15 +13,20 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "compile")]
 pub struct CompileOpt {
-    #[structopt(
-        short = "a",
-        name = "address",
-        help = "hex encoded string",
-        parse(try_from_str = parse_address)
-    )]
+    #[structopt(short = "s", long = "sender", name = "sender address", help = "hex encoded string, like 0x0, 0x1", parse(try_from_str = parse_address))]
     account_address: Option<Address>,
+
     #[structopt(short = "f", name = "source", help = "source file path")]
     source_file: String,
+
+    #[structopt(
+        short = "d",
+        name = "dependency_path",
+        long = "dep",
+        help = "path of dependency used to build, support multi deps"
+    )]
+    deps: Vec<String>,
+
     #[structopt(short = "o", name = "out_dir", help = "out dir", parse(from_os_str))]
     out_dir: PathBuf,
 }
@@ -40,12 +45,14 @@ impl CommandAction for CompileCommand {
     ) -> Result<Self::ReturnItem> {
         let address = ctx.opt().account_address.clone();
         let source_file = ctx.opt().source_file.clone();
+
+        let mut deps = stdlib::stdlib_files();
+        // add extra deps
+        deps.append(&mut ctx.opt().deps.clone());
+
         let targets = vec![source_file.clone()];
-        let (file_texts, compile_units) = move_lang::move_compile_no_report(
-            &targets,
-            stdlib::stdlib_files().as_slice(),
-            address,
-        )?;
+        let (file_texts, compile_units) =
+            move_lang::move_compile_no_report(&targets, &deps, address)?;
         let mut compile_units = match compile_units {
             Err(e) => {
                 let err = move_lang::errors::report_errors_to_color_buffer(file_texts, e);
