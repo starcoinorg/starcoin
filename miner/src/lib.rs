@@ -56,6 +56,7 @@ where
     miner: miner::Miner<H>,
     stratum: Arc<Stratum>,
     miner_account: WalletAccount,
+    arbiter: Arbiter,
 }
 
 impl<C, P, CS, S, H> MinerActor<C, P, CS, S, H>
@@ -105,6 +106,7 @@ where
                 None,
             )
             .unwrap();
+            let arbiter = Arbiter::new();
             MinerActor {
                 config,
                 txpool,
@@ -114,6 +116,7 @@ where
                 miner,
                 stratum,
                 miner_account,
+                arbiter,
             }
         });
         Ok(actor)
@@ -153,14 +156,13 @@ where
         let miner = self.miner.clone();
         let stratum = self.stratum.clone();
         let miner_account = self.miner_account.clone();
+        let arbiter = self.arbiter.clone();
         let f = async {
-            //TODO handle error.
             let txns = txpool
                 .clone()
                 .get_pending_txns(None)
                 .await
                 .unwrap_or(vec![]);
-
             let startup_info = chain.master_startup_info().await?;
             debug!("head block : {:?}, txn len: {}", startup_info, txns.len());
             let master = startup_info.master.clone();
@@ -172,7 +174,15 @@ where
             )?;
             let block_chain =
                 BlockChain::<C, S, P>::new(config.clone(), master, storage, txpool, collection)?;
-            mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain)?;
+            mint::<H, C>(
+                stratum,
+                miner,
+                config,
+                miner_account,
+                txns,
+                &block_chain,
+                arbiter,
+            )?;
             Ok(())
         }
         .map(|result: Result<()>| {

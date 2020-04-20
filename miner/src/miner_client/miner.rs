@@ -32,6 +32,7 @@ impl Miner {
     pub async fn start(&mut self) {
         info!("Miner client started");
         loop {
+            debug!("In miner client select loop");
             futures::select! {
                 job = self.job_rx.select_next_some() => {
                      let (pow_header, diff) = job;
@@ -75,15 +76,18 @@ impl Actor for MinerClientActor {
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
         let config = self.config.clone();
-        Arbiter::spawn(async move {
-            let miner_cli = Miner::new(config).await;
-            match miner_cli {
-                Err(e) => {
-                    error!("Start miner client failed: {:?}", e);
-                    System::current().stop();
+        let arbiter = Arbiter::new();
+        arbiter.exec_fn(move || {
+            futures::executor::block_on(async move {
+                let miner_cli = Miner::new(config).await;
+                match miner_cli {
+                    Err(e) => {
+                        error!("Start miner client failed: {:?}", e);
+                        System::current().stop();
+                    }
+                    Ok(mut miner_cli) => miner_cli.start().await,
                 }
-                Ok(mut miner_cli) => miner_cli.start().await,
-            }
+            })
         });
     }
 }
