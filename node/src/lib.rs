@@ -5,9 +5,15 @@ use actix::prelude::*;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_config::NodeConfig;
+use starcoin_consensus::{
+    argon::{ArgonConsensus, ArgonConsensusHeader},
+    dummy::{DummyConsensus, DummyHeader},
+};
 use starcoin_logger::prelude::*;
 use starcoin_traits::{Consensus, ConsensusHeader};
 use std::sync::Arc;
+use std::thread::JoinHandle;
+use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
 
 mod actor;
@@ -15,15 +21,45 @@ pub mod message;
 mod node;
 
 pub use actor::{NodeActor, NodeRef};
-use starcoin_consensus::argon::{ArgonConsensus, ArgonConsensusHeader};
-use starcoin_consensus::dummy::{DummyConsensus, DummyHeader};
-use std::thread::JoinHandle;
-use tokio::runtime::Runtime;
 
 pub struct NodeHandle {
     runtime: Runtime,
     thread_handle: JoinHandle<()>,
     stop_sender: oneshot::Sender<()>,
+}
+
+#[cfg(unix)]
+mod platform {
+    use futures::{future::FutureExt, pin_mut, select};
+    use tokio::signal::unix::{signal, SignalKind};
+
+    pub async fn wait_signal() {
+        println!("Waiting SIGINT or SIGTERM ...");
+        let mut sigint = signal(SignalKind::interrupt()).expect("register signal error");
+        let sigint_fut = sigint.recv().fuse();
+        let mut sigterm = signal(SignalKind::terminate()).expect("register signal error");
+        let sigterm_fut = sigterm.recv().fuse();
+        pin_mut!(sigint_fut, sigterm_fut);
+        select! {
+            _ = sigterm_fut => {
+                println!("received SIGTERM");
+            }
+             _ = sigint_fut => {
+                 println!("received SIGINT");
+             }
+        }
+    }
+}
+
+#[cfg(not(unix))]
+mod platform {
+    use std::error::Error;
+
+    pub async fn wait_signal() {
+        println!("Waiting Ctrl-C ...");
+        tokio::signal::ctrl_c().await.unwrap();
+        println!("Ctrl-C received, shutting down");
+    }
 }
 
 impl NodeHandle {
@@ -39,11 +75,8 @@ impl NodeHandle {
     }
 
     pub fn join(mut self) -> Result<()> {
-        //TODO use a more light method.
         self.runtime.block_on(async {
-            println!("Waiting Ctrl-C ...");
-            tokio::signal::ctrl_c().await.unwrap();
-            println!("Ctrl-C received, shutting down");
+            platform::wait_signal().await;
         });
         self.stop()
     }
@@ -86,7 +119,7 @@ where
         //TODO actix and tokio use same runtime, and config thread pool.
         let rt = tokio::runtime::Runtime::new().unwrap();
         let handle = rt.handle().clone();
-        let mut system = System::new("main");
+        let mut system = System::builder().stop_on_panic(true).name("main").build();
         system.block_on(async {
             //let node_actor = NodeActor::<C, H>::new(config, handle);
             //let _node_ref = node_actor.start();
