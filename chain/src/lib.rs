@@ -128,7 +128,7 @@ where
             ChainRequest::ConnectBlock(block, mut block_info) => {
                 let begin_time = get_unix_ts();
                 let conn_state = if block_info.is_none() {
-                    self.service.try_connect(block)?
+                    self.service.try_connect(block, false)?
                 } else {
                     self.service
                         .try_connect_with_block_info(block, block_info.take().unwrap())?
@@ -165,7 +165,8 @@ where
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         debug!("try connect mined block.");
         match msg {
-            SystemEvents::MinedBlock(new_block) => match self.service.try_connect(new_block) {
+            SystemEvents::MinedBlock(new_block) => match self.service.try_connect(new_block, false)
+            {
                 Ok(_) => debug!("Process mined block success."),
                 Err(e) => {
                     warn!("Process mined block fail, error: {:?}", e);
