@@ -114,7 +114,6 @@ impl BusImpl {
                                 debug!("send message to {:?}", subscription);
                                 match subscription {
                                     SubscriptionRecord::Recipient(recipient) => {
-                                        //TODO smart clone.
                                         recipient.do_send(msg.clone()).map_err(|e| {
                                             clear = true;
                                             warn!("Send message to recipient error:{:?}", e);
