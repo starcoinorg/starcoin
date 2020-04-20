@@ -58,7 +58,7 @@ impl Genesis {
     where
         C: Consensus + 'static,
     {
-        info!("Init genesis");
+        debug!("Init genesis");
         let chain_config = net.get_config();
         //TODO remove config argument, genesis not dependency NodeConfig.
         let (_state_root, chain_state_set) = Executor::init_genesis(&chain_config)?;
@@ -89,7 +89,7 @@ impl Genesis {
             chain_config.consensus_header.clone(),
         );
         assert_eq!(block.header().number(), 0);
-        info!("Genesis block id : {:?}", block.header().id());
+        debug!("Genesis block id : {:?}", block.header().id());
 
         let genesis = Self {
             state: chain_state_set,
@@ -173,7 +173,7 @@ impl Genesis {
             block.header().number() == 0,
             "Genesis block number must is 0."
         );
-        info!("Genesis block id : {:?}", block.header().id());
+        debug!("Genesis block id : {:?}", block.header().id());
 
         ensure!(
             block.header().accumulator_root() == accumulator_root,
