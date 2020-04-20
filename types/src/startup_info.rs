@@ -6,8 +6,8 @@ use anyhow::Result;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-
 use std::convert::{TryFrom, TryInto};
+use std::fmt;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
@@ -59,6 +59,16 @@ pub struct StartupInfo {
     /// head chain info
     pub head: ChainInfo,
     pub branches: Vec<ChainInfo>,
+}
+
+impl fmt::Display for StartupInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "StartupInfo {{")?;
+        write!(f, "master: {:?},", self.head)?;
+        write!(f, "branches size: {},", self.branches.len())?;
+        write!(f, "}}")?;
+        Ok(())
+    }
 }
 
 impl StartupInfo {

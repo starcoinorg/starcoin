@@ -100,7 +100,7 @@ where
             (startup_info, genesis_hash)
         }
     };
-    info!("Start chain with startup info: {:?}", startup_info);
+    info!("Start chain with startup info: {}", startup_info);
 
     let account_service = WalletActor::launch(config.clone())?;
 
