@@ -21,7 +21,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
-use network::{get_unix_ts, network::NetworkAsyncService};
+use network::{get_unix_ts, NetworkAsyncService};
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use storage::Storage;

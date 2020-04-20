@@ -49,7 +49,7 @@ tokio = { version = "0.2", features = ["full"] }
 sg_config = {path = "../config", package="starcoin-config"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-network-p2p-api = {package="network-p2p-api", path="../network-p2p/api"}
+network-p2p-api = {package="network-api", path="../network/api"}
 types = {path = "../types", package="starcoin-types"}
 stest = {path = "../commons/stest"}
 

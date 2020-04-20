@@ -7,6 +7,7 @@ use forkable_jellyfish_merkle::node_type::Node;
 use futures::executor::block_on;
 use logger::prelude::*;
 use network::NetworkAsyncService;
+use network_p2p_api::NetworkService;
 use parking_lot::Mutex;
 use starcoin_state_tree::{StateNode, StateNodeStore};
 use starcoin_sync_api::{StateSyncReset, SyncMetadata};

@@ -17,8 +17,10 @@ use futures_timer::Delay;
 use libp2p::multiaddr::Protocol;
 use libp2p::PeerId;
 use lru::LruCache;
+use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
-use network_p2p_api::messages::RawRpcRequestMessage;
+
+use async_trait::async_trait;
 use scs::SCSCodec;
 use starcoin_sync_api::sync_messages::PeerNewBlock;
 use std::collections::{HashMap, HashSet};
@@ -79,8 +81,9 @@ impl PeerInfoNet {
     }
 }
 
-impl NetworkAsyncService {
-    pub async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
+#[async_trait]
+impl NetworkService for NetworkAsyncService {
+    async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         let data = msg.encode()?;
         let network_message = NetworkMessage {
             peer_id: peer_id.into(),
@@ -91,16 +94,16 @@ impl NetworkAsyncService {
         Ok(())
     }
 
-    pub async fn broadcast_system_event(&self, event: SystemEvents) -> Result<()> {
+    async fn broadcast_system_event(&self, event: SystemEvents) -> Result<()> {
         self.addr.send(event).await?;
         Ok(())
     }
 
-    pub fn identify(&self) -> &PeerId {
+    fn identify(&self) -> &PeerId {
         &self.peer_id
     }
 
-    pub async fn send_request_bytes(
+    async fn send_request_bytes(
         &self,
         peer_id: PeerId,
         message: Vec<u8>,
@@ -135,7 +138,7 @@ impl NetworkAsyncService {
         response
     }
 
-    pub async fn peer_set(&self) -> Result<Vec<PeerInfo>> {
+    async fn peer_set(&self) -> Result<Vec<PeerInfo>> {
         let mut result = vec![];
 
         for (peer_id, peer) in self.inner.peers.lock().await.iter() {
@@ -149,28 +152,28 @@ impl NetworkAsyncService {
         Ok(result)
     }
     /// get all peers and sort by difficulty decreasely.
-    pub async fn best_peer_set(&self) -> Result<Vec<PeerInfo>> {
+    async fn best_peer_set(&self) -> Result<Vec<PeerInfo>> {
         let mut peer_infos = self.peer_set().await?;
         peer_infos.sort_by_key(|p| p.total_difficult);
         peer_infos.reverse();
         Ok(peer_infos)
     }
 
-    pub async fn get_peer(&self, peer_id: &PeerId) -> Result<Option<PeerInfo>> {
+    async fn get_peer(&self, peer_id: &PeerId) -> Result<Option<PeerInfo>> {
         match self.inner.peers.lock().await.get(peer_id) {
             Some(peer) => Ok(Some(peer.peer_info.clone())),
             None => Ok(None),
         }
     }
 
-    pub async fn get_self_peer(&self) -> Result<PeerInfo> {
+    async fn get_self_peer(&self) -> Result<PeerInfo> {
         match self.inner.peers.lock().await.get(&self.peer_id) {
             Some(peer) => Ok(peer.peer_info.clone()),
             None => bail!("Can not find self peer info."),
         }
     }
 
-    pub async fn best_peer(&self) -> Result<Option<PeerInfo>> {
+    async fn best_peer(&self) -> Result<Option<PeerInfo>> {
         let size = self.inner.peers.lock().await.len();
         if size == 0 {
             return Ok(None);
@@ -187,7 +190,7 @@ impl NetworkAsyncService {
         Ok(info)
     }
 
-    pub async fn get_peer_set_size(&self) -> Result<usize> {
+    async fn get_peer_set_size(&self) -> Result<usize> {
         let size = self.inner.peers.lock().await.len();
         Ok(size)
     }
