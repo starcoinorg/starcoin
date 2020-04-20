@@ -107,40 +107,89 @@ pub struct StateSyncTaskActor {
     roots: Roots,
     state_node_storage: Arc<dyn StateNodeStore>,
     network_service: NetworkAsyncService,
-    state_wait_2_sync: VecDeque<(HashValue, bool)>,
     sync_metadata: SyncMetadata,
-    syncing_nodes: Mutex<HashMap<PeerId, (HashValue, bool)>>,
+    state_sync_task: Arc<Mutex<SyncTask<(HashValue, bool)>>>,
+    accumulator_sync_task: Arc<Mutex<SyncTask<HashValue>>>,
+}
+
+struct SyncTask<T> {
+    wait_2_sync: VecDeque<T>,
+    syncing_nodes: HashMap<PeerId, T>,
+}
+
+impl<T> SyncTask<T> {
+    fn new() -> Self {
+        Self {
+            wait_2_sync: VecDeque::new(),
+            syncing_nodes: HashMap::new(),
+        }
+    }
+
+    fn is_empty(&mut self) -> bool {
+        self.wait_2_sync.is_empty() && self.syncing_nodes.is_empty()
+    }
+
+    pub fn push_back(&mut self, value: T) {
+        self.wait_2_sync.push_back(value)
+    }
+
+    pub fn pop_front(&mut self) -> Option<T> {
+        self.wait_2_sync.pop_front()
+    }
+
+    pub fn clear(&mut self) {
+        self.wait_2_sync.clear();
+        self.syncing_nodes.clear();
+    }
+
+    pub fn insert(&mut self, peer_id: PeerId, value: T) -> Option<T> {
+        self.syncing_nodes.insert(peer_id, value)
+    }
+
+    pub fn get(&mut self, peer_id: &PeerId) -> Option<&T> {
+        self.syncing_nodes.get(peer_id)
+    }
+
+    pub fn remove(&mut self, peer_id: &PeerId) -> Option<T> {
+        self.syncing_nodes.remove(peer_id)
+    }
 }
 
 impl StateSyncTaskActor {
     pub fn launch(
         self_peer_id: PeerId,
-        roots: (HashValue, HashValue),
+        root: (HashValue, HashValue),
         state_node_storage: Arc<dyn StateNodeStore>,
         network_service: NetworkAsyncService,
         sync_metadata: SyncMetadata,
     ) -> StateSyncTaskRef {
-        let mut state_wait_2_sync: VecDeque<(HashValue, bool)> = VecDeque::new();
-        state_wait_2_sync.push_back((roots.0.clone(), true));
+        let roots = Roots::new(root.0, root.1);
+        let mut state_sync_task = SyncTask::new();
+        state_sync_task.push_back((roots.state_root().clone(), true));
+        let mut accumulator_sync_task = SyncTask::new();
+        accumulator_sync_task.push_back(roots.accumulator_root().clone());
         let address = StateSyncTaskActor::create(move |_ctx| Self {
             self_peer_id,
-            roots: Roots::new(roots.0, roots.1),
+            roots,
             state_node_storage,
             network_service,
-            state_wait_2_sync,
             sync_metadata,
-            syncing_nodes: Mutex::new(HashMap::new()),
+            state_sync_task: Arc::new(Mutex::new(state_sync_task)),
+            accumulator_sync_task: Arc::new(Mutex::new(accumulator_sync_task)),
         });
         StateSyncTaskRef { address }
     }
 
-    fn exe_task(&mut self, address: Addr<StateSyncTaskActor>) {
-        let (node_key, is_global) = self.state_wait_2_sync.pop_front().unwrap();
+    fn sync_end(&self) -> bool {
+        self.state_sync_task.lock().is_empty() && self.accumulator_sync_task.lock().is_empty()
+    }
+
+    fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
+        let mut lock = self.state_sync_task.lock();
+        let (node_key, is_global) = lock.pop_front().unwrap();
         if let Some(state_node) = self.state_node_storage.get(&node_key).unwrap() {
             debug!("find state_node {:?} in db.", node_key);
-            self.syncing_nodes
-                .lock()
-                .insert(self.self_peer_id.clone(), (node_key.clone(), is_global));
+            lock.insert(self.self_peer_id.clone(), (node_key.clone(), is_global));
             if let Err(err) = address.try_send(StateSyncTaskEvent {
                 peer_id: self.self_peer_id.clone(),
                 node_key,
@@ -161,9 +210,7 @@ impl StateSyncTaskActor {
             if let Some(best_peer) = best_peer_info {
                 if self.self_peer_id != best_peer.get_peer_id() {
                     let network_service = self.network_service.clone();
-                    self.syncing_nodes
-                        .lock()
-                        .insert(best_peer.get_peer_id(), (node_key.clone(), is_global));
+                    lock.insert(best_peer.get_peer_id(), (node_key.clone(), is_global));
                     Arbiter::spawn(async move {
                         sync_state_node(
                             node_key,
@@ -182,11 +229,10 @@ impl StateSyncTaskActor {
 
     pub fn reset(&mut self, state_root: &HashValue, accumulator_root: &HashValue) {
         info!("reset state sync task.");
-        self.state_wait_2_sync.clear();
+        let mut lock = self.state_sync_task.lock();
+        lock.clear();
         self.roots = Roots::new(state_root.clone(), accumulator_root.clone());
-        self.state_wait_2_sync
-            .push_back((self.roots.state_root().clone(), true));
-        self.syncing_nodes.lock().clear();
+        lock.push_back((self.roots.state_root().clone(), true));
     }
 }
 
@@ -195,7 +241,7 @@ impl Actor for StateSyncTaskActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("StateSyncTaskActor actor started.");
-        self.exe_task(ctx.address());
+        self.exe_state_sync_task(ctx.address());
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
@@ -207,22 +253,20 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
     type Result = Result<()>;
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
-        let mut lock = self.syncing_nodes.lock();
+        let mut lock = self.state_sync_task.lock();
         if let Some((state_node_hash, is_global)) = lock.get(&task_event.peer_id) {
             let is_global = is_global.clone();
             //1. push back
             let current_node_key = task_event.node_key;
             if state_node_hash == &current_node_key {
                 let _ = lock.remove(&task_event.peer_id);
-                drop(lock);
                 if let Some(state_node) = task_event.state_node {
                     if let Err(e) = self
                         .state_node_storage
                         .put(current_node_key, state_node.clone())
                     {
                         error!("error : {:?}", e);
-                        self.state_wait_2_sync
-                            .push_back((current_node_key, is_global));
+                        lock.push_back((current_node_key, is_global));
                     } else {
                         debug!("receive state_node: {:?}", state_node);
                         match state_node.inner() {
@@ -237,8 +281,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                                                 if key.is_some() {
                                                     let hash = key.unwrap().clone();
                                                     if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
-                                                        self.state_wait_2_sync
-                                                            .push_back((hash, false));
+                                                        lock.push_back((hash, false));
                                                     }
                                                 }
                                             });
@@ -248,7 +291,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                             }
                             Node::Internal(n) => {
                                 for child in n.all_child() {
-                                    self.state_wait_2_sync.push_back((child, is_global));
+                                    lock.push_back((child, is_global));
                                 }
                             }
                             _ => {
@@ -257,12 +300,12 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                         }
                     }
                 } else {
-                    self.state_wait_2_sync
-                        .push_back((current_node_key, is_global));
+                    lock.push_back((current_node_key, is_global));
                 }
 
                 //2. exe_task
-                if self.state_wait_2_sync.is_empty() {
+                drop(lock);
+                if self.sync_end() {
                     if let Err(e) = self.sync_metadata.state_sync_done() {
                         warn!("err:{:?}", e);
                     } else {
@@ -271,7 +314,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                         ctx.stop();
                     }
                 } else {
-                    self.exe_task(ctx.address());
+                    self.exe_state_sync_task(ctx.address());
                 }
             } else {
                 warn!(
