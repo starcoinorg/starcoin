@@ -77,17 +77,16 @@ impl Actor for MinerClientActor {
     fn started(&mut self, _ctx: &mut Self::Context) {
         let config = self.config.clone();
         let arbiter = Arbiter::new();
-        arbiter.exec_fn(move || {
-            futures::executor::block_on(async move {
-                let miner_cli = Miner::new(config).await;
-                match miner_cli {
-                    Err(e) => {
-                        error!("Start miner client failed: {:?}", e);
-                        System::current().stop();
-                    }
-                    Ok(mut miner_cli) => miner_cli.start().await,
+        let fut = async move {
+            let miner_cli = Miner::new(config).await;
+            match miner_cli {
+                Err(e) => {
+                    error!("Start miner client failed: {:?}", e);
+                    System::current().stop();
                 }
-            })
-        });
+                Ok(mut miner_cli) => miner_cli.start().await,
+            }
+        };
+        arbiter.send(Box::pin(fut));
     }
 }

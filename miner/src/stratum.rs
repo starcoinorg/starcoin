@@ -61,13 +61,12 @@ where
     let difficult = C::calculate_next_difficulty(config, chain);
     miner.set_mint_job(MineCtx::new(block_template, difficult));
     let job = miner.get_mint_job();
-    info!("Push job to worker{:?}", job);
-    arbiter.exec_fn(|| {
-        futures::executor::block_on(async move {
-            if let Err(e) = stratum.push_work_all(job) {
-                error!("Stratum push failed:{:?}", e);
-            }
-        })
-    });
+    info!("Push job to worker {}", job);
+    let fut = async move {
+        if let Err(e) = stratum.push_work_all(job) {
+            error!("Stratum push failed:{:?}", e);
+        }
+    };
+    arbiter.send(Box::pin(fut));
     Ok(())
 }
