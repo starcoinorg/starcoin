@@ -100,7 +100,7 @@ where
             (startup_info, genesis_hash)
         }
     };
-    info!("Start chain with startup info: {:?}", startup_info);
+    info!("Start chain with startup info: {}", startup_info);
 
     let account_service = WalletActor::launch(config.clone())?;
 
@@ -119,7 +119,7 @@ where
     };
 
     let txpool = {
-        let best_block_id = startup_info.head.get_head();
+        let best_block_id = startup_info.master.get_head();
         TxPoolRef::start(
             config.tx_pool.clone(),
             storage.clone(),
@@ -127,7 +127,7 @@ where
             bus.clone(),
         )
     };
-    let head_block_hash = startup_info.head.get_head();
+    let head_block_hash = startup_info.master.get_head();
     let head_block = match storage.get_block(head_block_hash)? {
         Some(block) => block,
         None => panic!("can't get block by hash {}", head_block_hash),
@@ -145,7 +145,7 @@ where
         peer_id.clone(),
         head_block.header().number(),
         head_block_info.get_total_difficult(),
-        startup_info.head.get_head(),
+        startup_info.master.get_head(),
     );
     let network = NetworkActor::launch(
         config.clone(),
@@ -156,7 +156,7 @@ where
     );
 
     let head_block = storage
-        .get_block(startup_info.head.get_head())?
+        .get_block(startup_info.master.get_head())?
         .expect("Head block must exist.");
 
     let chain_state_service = ChainStateActor::launch(

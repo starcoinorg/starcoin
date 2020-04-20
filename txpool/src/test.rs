@@ -124,7 +124,7 @@ fn gen_pool_for_test() -> TxPoolRef {
     let pool = TxPoolRef::start(
         TxPoolConfig::default(),
         storage.clone(),
-        startup_info.head.get_head(),
+        startup_info.master.get_head(),
         bus,
     );
 

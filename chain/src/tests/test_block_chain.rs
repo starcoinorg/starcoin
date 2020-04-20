@@ -19,7 +19,7 @@ use traits::Consensus;
 use traits::{ChainReader, ChainWriter};
 use txpool::TxPoolRef;
 use types::U256;
-async fn gen_head_chain(
+async fn gen_master_chain(
     times: u64,
     delay: bool,
 ) -> (ChainActorRef<DummyConsensus>, Arc<NodeConfig>) {
@@ -31,7 +31,7 @@ async fn gen_head_chain(
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
     let txpool = {
-        let best_block_id = startup_info.head.get_head();
+        let best_block_id = startup_info.master.get_head();
         TxPoolRef::start(
             node_config.tx_pool.clone(),
             storage.clone(),
@@ -96,7 +96,7 @@ async fn gen_head_chain(
 async fn test_block_chain_head() {
     ::logger::init_for_test();
     let times = 10;
-    let (chain, _) = gen_head_chain(times, false).await;
+    let (chain, _) = gen_master_chain(times, false).await;
     assert_eq!(chain.master_head_header().await.unwrap().number(), times);
 }
 
@@ -104,13 +104,13 @@ async fn test_block_chain_head() {
 async fn test_block_chain_forks() {
     ::logger::init_for_test();
     let times = 5;
-    let (chain, _conf) = gen_head_chain(times, true).await;
+    let (chain, _conf) = gen_master_chain(times, true).await;
     let mut parent_hash = chain
         .clone()
         .master_startup_info()
         .await
         .unwrap()
-        .head
+        .master
         .branch_id();
     let miner_account = WalletAccount::random();
     if times > 0 {
@@ -152,7 +152,7 @@ async fn test_chain_apply() -> Result<()> {
     let startup_info = genesis.execute(storage.clone())?;
     let bus = BusActor::launch();
     let txpool = {
-        let best_block_id = startup_info.head.get_head();
+        let best_block_id = startup_info.master.get_head();
         TxPoolRef::start(
             config.tx_pool.clone(),
             storage.clone(),
@@ -168,7 +168,7 @@ async fn test_chain_apply() -> Result<()> {
     )?;
     let mut block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
         config.clone(),
-        startup_info.head.clone(),
+        startup_info.master.clone(),
         storage,
         txpool,
         collection,

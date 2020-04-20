@@ -10,6 +10,8 @@ use starcoin_wallet_api::WalletAccount;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountWithStateView {
     pub account: WalletAccount,
+    // hex encoded bytes
+    pub auth_key_prefix: String,
     pub sequence_number: Option<u64>,
     pub balance: Option<u64>,
 }

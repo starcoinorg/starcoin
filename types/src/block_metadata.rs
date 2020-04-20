@@ -6,7 +6,6 @@
 
 use crate::account_address::AccountAddress;
 use crate::block::BlockHeader;
-use crate::byte_array::ByteArray;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
@@ -46,8 +45,8 @@ impl BlockMetadata {
         }
     }
 
-    pub fn into_inner(self) -> Result<(ByteArray, u64, AccountAddress, Option<Vec<u8>>)> {
-        let id = ByteArray::new(self.id.to_vec());
+    pub fn into_inner(self) -> Result<(Vec<u8>, u64, AccountAddress, Option<Vec<u8>>)> {
+        let id = self.id.to_vec();
         Ok((id, self.timestamp, self.author, self.auth_key_prefix))
     }
 }

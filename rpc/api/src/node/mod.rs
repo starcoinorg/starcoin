@@ -14,7 +14,6 @@ pub struct NodeInfo {
     /// Node self peer info
     pub peer_info: PeerInfo,
     pub self_address: String,
-    //TODO add more node info
 }
 
 impl NodeInfo {

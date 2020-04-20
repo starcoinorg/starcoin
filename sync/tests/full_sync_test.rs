@@ -11,6 +11,7 @@ use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{MinerActor, MinerClientActor};
+use network_p2p_api::NetworkService;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
@@ -52,7 +53,7 @@ fn test_network_actor_rpc() {
         let genesis_hash = genesis_1.block().header().id();
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
         let txpool_1 = {
-            let best_block_id = startup_info_1.head.get_head();
+            let best_block_id = startup_info_1.master.get_head();
             TxPoolRef::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
@@ -155,7 +156,7 @@ fn test_network_actor_rpc() {
         let startup_info_2 = genesis_2.execute(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
-            let best_block_id = startup_info_2.head.get_head();
+            let best_block_id = startup_info_2.master.get_head();
             TxPoolRef::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
@@ -255,7 +256,7 @@ fn test_network_actor_rpc_2() {
         let genesis_hash = genesis_1.block().header().id();
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
         let txpool_1 = {
-            let best_block_id = startup_info_1.head.get_head();
+            let best_block_id = startup_info_1.master.get_head();
             TxPoolRef::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
@@ -337,7 +338,7 @@ fn test_network_actor_rpc_2() {
         let startup_info_2 = genesis_2.execute(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
-            let best_block_id = startup_info_2.head.get_head();
+            let best_block_id = startup_info_2.master.get_head();
             TxPoolRef::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),

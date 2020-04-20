@@ -21,7 +21,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
-use network::{get_unix_ts, network::NetworkAsyncService};
+use network::{get_unix_ts, NetworkAsyncService};
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use storage::Storage;
@@ -41,7 +41,6 @@ pub struct ChainActor<C>
 where
     C: Consensus,
 {
-    //TODO use Generic Parameter for Executor and Consensus.
     service: ChainServiceImpl<C, Storage, TxPoolRef>,
     bus: Addr<BusActor>,
 }
@@ -142,7 +141,7 @@ where
                 self.service.master_startup_info(),
             )),
             ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
-                self.service.master_startup_info().head,
+                self.service.master_startup_info().master,
             )),
             ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
                 self.service.master_blocks_by_number(number, count)?,

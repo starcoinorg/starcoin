@@ -8,6 +8,7 @@ use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use futures::executor::block_on;
 use logger::prelude::*;
 use network::NetworkAsyncService;
+use network_p2p_api::NetworkService;
 use parking_lot::Mutex;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_state_tree::StateNode;

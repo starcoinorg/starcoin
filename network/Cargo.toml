@@ -53,5 +53,5 @@ derive_more = "0.99.2"
 async-trait = "0.1.13"
 stest = {path = "../commons/stest"}
 
-network-p2p-api = {package="network-p2p-api", path="../network-p2p/api"}
+network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path = "../sync/api"}

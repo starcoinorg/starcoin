@@ -35,8 +35,8 @@ members = [
     "node",
     "network-p2p",
     "network-p2p/peerset",
-    "network-p2p/api",
     "network",
+    "network/api",
     "vm/vm-runtime",
     "vm/stdlib",
     "wallet/api",
@@ -51,3 +51,7 @@ members = [
     "vm/functional-tests",
     "vm/e2e-tests"
 ]
+
+[patch.crates-io]
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+vm = {package="vm", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"}

@@ -452,7 +452,7 @@ impl StarcoinVM {
             let args = vec![
                 Value::u64(round),
                 Value::u64(timestamp),
-                Value::vector_u8(id.into_inner()),
+                Value::vector_u8(id),
                 Value::vector_u8(vote_maps),
                 Value::address(author.into()),
                 match auth {
