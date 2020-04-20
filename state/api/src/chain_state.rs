@@ -91,11 +91,7 @@ pub trait ChainStateReader {
     /// Gets the state data for a single access path.
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>>;
 
-    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        //TODO implements proof.
-        self.get(access_path)
-            .map(|state| StateWithProof::new(state, StateProof::default()))
-    }
+    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof>;
 
     /// Gets state data for a list of access paths.
     fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
