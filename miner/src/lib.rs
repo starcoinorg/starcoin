@@ -163,7 +163,7 @@ where
 
             let startup_info = chain.master_startup_info().await?;
             debug!("head block : {:?}, txn len: {}", startup_info, txns.len());
-            let head = startup_info.head.clone();
+            let master = startup_info.master.clone();
             let collection = to_block_chain_collection(
                 config.clone(),
                 startup_info,
@@ -171,7 +171,7 @@ where
                 txpool.clone(),
             )?;
             let block_chain =
-                BlockChain::<C, S, P>::new(config.clone(), head, storage, txpool, collection)?;
+                BlockChain::<C, S, P>::new(config.clone(), master, storage, txpool, collection)?;
             mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain)?;
             Ok(())
         }

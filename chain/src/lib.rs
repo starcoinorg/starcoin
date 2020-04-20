@@ -141,7 +141,7 @@ where
                 self.service.master_startup_info(),
             )),
             ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
-                self.service.master_startup_info().head,
+                self.service.master_startup_info().master,
             )),
             ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
                 self.service.master_blocks_by_number(number, count)?,

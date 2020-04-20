@@ -52,7 +52,7 @@ fn test_state_sync() {
         let genesis_hash = genesis_1.block().header().id();
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
         let txpool_1 = {
-            let best_block_id = startup_info_1.head.get_head();
+            let best_block_id = startup_info_1.master.get_head();
             TxPoolRef::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
@@ -157,7 +157,7 @@ fn test_state_sync() {
         let startup_info_2 = genesis_2.execute(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
-            let best_block_id = startup_info_2.head.get_head();
+            let best_block_id = startup_info_2.master.get_head();
             TxPoolRef::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
