@@ -13,7 +13,9 @@ use chain::BlockChain;
 use config::{NodeConfig, PacemakerStrategy};
 use crypto::hash::HashValue;
 use futures::channel::mpsc;
+use futures::prelude::*;
 use logger::prelude::*;
+pub use miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use sc_stratum::Stratum;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
@@ -25,7 +27,6 @@ use traits::ChainAsyncService;
 use traits::{Consensus, ConsensusHeader};
 use types::transaction::TxStatus;
 
-pub use miner_client::miner::{Miner as MinerClient, MinerClientActor};
 mod headblock_pacemaker;
 mod miner;
 mod miner_client;
@@ -160,24 +161,25 @@ where
                 .await
                 .unwrap_or(vec![]);
 
-            let startup_info = chain.master_startup_info().await.unwrap();
-
+            let startup_info = chain.master_startup_info().await?;
             debug!("head block : {:?}, txn len: {}", startup_info, txns.len());
-            std::thread::spawn(move || {
-                let head = startup_info.head.clone();
-                let collection = to_block_chain_collection(
-                    config.clone(),
-                    startup_info,
-                    storage.clone(),
-                    txpool.clone(),
-                )
-                .unwrap();
-                let block_chain =
-                    BlockChain::<C, S, P>::new(config.clone(), head, storage, txpool, collection)
-                        .unwrap();
-                let _ = mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain);
-            });
+            let head = startup_info.head.clone();
+            let collection = to_block_chain_collection(
+                config.clone(),
+                startup_info,
+                storage.clone(),
+                txpool.clone(),
+            )?;
+            let block_chain =
+                BlockChain::<C, S, P>::new(config.clone(), head, storage, txpool, collection)?;
+            mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain)?;
+            Ok(())
         }
+        .map(|result: Result<()>| {
+            if let Err(err) = result {
+                error!("Failed to process generate block event:{:?}", err)
+            }
+        })
         .into_actor(self);
         ctx.spawn(f);
         Ok(())

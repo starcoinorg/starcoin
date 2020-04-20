@@ -144,6 +144,9 @@ where
             ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
                 self.service.master_startup_info().head,
             )),
+            ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
+                self.service.master_blocks_by_number(number, count)?,
+            )),
 
             ChainRequest::GenTx() => {
                 self.service.gen_tx()?;
@@ -313,17 +316,29 @@ where
         }
     }
 
-    async fn master_block_by_number(self, number: BlockNumber) -> Option<Block> {
+    async fn master_block_by_number(self, number: BlockNumber) -> Result<Block> {
         if let ChainResponse::Block(block) = self
             .address
             .send(ChainRequest::GetBlockByNumber(number))
             .await
-            .unwrap()
-            .unwrap()
+            .map_err(|e| Into::<Error>::into(e))??
         {
-            Some(block)
+            Ok(block)
         } else {
-            None
+            bail!("Get chain block by number response error.")
+        }
+    }
+
+    async fn master_blocks_by_number(self, number: u64, count: u64) -> Result<Vec<Block>> {
+        if let ChainResponse::VecBlock(blocks) = self
+            .address
+            .send(ChainRequest::GetBlocksByNumber(number, count))
+            .await
+            .map_err(|e| Into::<Error>::into(e))??
+        {
+            Ok(blocks)
+        } else {
+            bail!("Get chain blocks by number response error.")
         }
     }
 

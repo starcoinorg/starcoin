@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
-use functional_tests::{
-    compiler::{Compiler, ScriptOrModule},
-    testsuite,
-};
+use bytecode_verifier::{batch_verify_modules, VerifiedModule};
 use libra_types::account_address::AccountAddress as LibraAddress;
-use move_bytecode_verifier::{batch_verify_modules, VerifiedModule};
 use move_lang::{
     compiled_unit::CompiledUnit, move_compile, move_compile_no_report, shared::Address,
     test_utils::read_bool_var,
+};
+use starcoin_functional_tests::{
+    compiler::{Compiler, ScriptOrModule},
+    testsuite,
 };
 use std::{convert::TryFrom, fmt, io::Write, path::Path};
 use stdlib::stdlib_files;

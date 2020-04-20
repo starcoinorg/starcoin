@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state::CliState;
+use crate::cli_state::CliState;
 use crate::view::BlockView;
 use crate::StarcoinOpt;
 use anyhow::Result;
@@ -12,7 +12,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_block")]
 pub struct GetOpt {
-    #[structopt(short = "h")]
+    #[structopt(name = "hash")]
     hash: String,
 }
 

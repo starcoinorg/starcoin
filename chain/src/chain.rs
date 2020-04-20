@@ -3,7 +3,7 @@
 
 use crate::chain_service::BlockChainCollection;
 use actix::prelude::*;
-use anyhow::{format_err, Error, Result};
+use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
 use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
@@ -203,11 +203,10 @@ where
             block_info.num_leaves,
             block_info.num_nodes,
             self.storage.clone(),
-        )
-        .unwrap();
+        )?;
+
         let (accumulator_root, state_root) =
-            BlockExecutor::block_execute(&self.config.vm, &chain_state, &accumulator, txns, true)
-                .unwrap();
+            BlockExecutor::block_execute(&self.config.vm, &chain_state, &accumulator, txns, true)?;
 
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -287,6 +286,47 @@ where
         }
     }
 
+    fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>, Error> {
+        let mut block_vec = vec![];
+        ensure!(
+            (number + 1) >= count,
+            "count :{} must litter than number :{} ",
+            count,
+            number
+        );
+        if let Some(branch_id) = self.get_branch_id(number) {
+            let mut tmp_count = count;
+            let mut current_num = number;
+
+            loop {
+                match self
+                    .storage
+                    .get_block_by_branch_number(branch_id, current_num)
+                {
+                    Ok(block) => {
+                        if block.is_some() {
+                            block_vec.push(block.unwrap());
+                        }
+                    }
+                    Err(_e) => {
+                        error!(
+                            "get block by branch {:?} number{:?} err.",
+                            branch_id, current_num
+                        );
+                    }
+                }
+                if current_num == 0 || tmp_count == 1 {
+                    break;
+                }
+                current_num = current_num - 1;
+                tmp_count = tmp_count - 1;
+            }
+        } else {
+            warn!("branch id not found.");
+        }
+        Ok(block_vec)
+    }
+
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
         let block = self.storage.get_block_by_hash(hash);
         match block {
@@ -332,7 +372,7 @@ where
             None => self.current_header().id(),
         };
         assert!(self.exist_block(block_id));
-        let previous_header = self.get_header(block_id).unwrap().unwrap();
+        let previous_header = self.get_header(block_id)?.unwrap();
         self.create_block_template_inner(author, auth_key_prefix, previous_header, user_txns)
     }
 

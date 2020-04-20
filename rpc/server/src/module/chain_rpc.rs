@@ -43,4 +43,22 @@ where
             .map_err(map_err);
         Box::new(fut.compat())
     }
+
+    fn get_block_by_number(&self, number: u64) -> FutureResult<Block> {
+        let fut = self
+            .service
+            .clone()
+            .master_block_by_number(number)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
+
+    fn get_blocks_by_number(&self, number: u64, count: u64) -> FutureResult<Vec<Block>> {
+        let fut = self
+            .service
+            .clone()
+            .master_blocks_by_number(number, count)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
 }

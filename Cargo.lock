@@ -1662,7 +1662,7 @@ dependencies = [
  "anyhow",
  "bytecode-verifier",
  "datatest-stable",
- "language-e2e-tests",
+ "language-e2e-tests 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
  "libra-config",
  "libra-crypto",
  "libra-state-view",
@@ -2678,6 +2678,41 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.6.5",
+ "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
+ "transaction-builder",
+ "vm",
+ "vm-genesis",
+]
+
+[[package]]
+name = "language-e2e-tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytecode-verifier",
+ "compiler",
+ "language-e2e-tests 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
+ "libra-canonical-serialization",
+ "libra-config",
+ "libra-crypto",
+ "libra-logger",
+ "libra-proptest-helpers",
+ "libra-state-view",
+ "libra-types",
+ "libra-vm",
+ "move-core-types",
+ "move-vm-cache",
+ "move-vm-runtime",
+ "move-vm-state",
+ "move-vm-types",
+ "once_cell",
+ "parity-multiaddr 0.7.3",
+ "proptest",
+ "proptest-derive",
+ "rand 0.6.5",
+ "starcoin-config",
+ "starcoin-types",
+ "starcoin-vm-runtime",
  "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
  "transaction-builder",
  "vm",
@@ -6157,6 +6192,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-functional-tests"
+version = "0.1.0"
+dependencies = [
+ "aho-corasick",
+ "anyhow",
+ "bytecode-verifier",
+ "datatest-stable",
+ "functional-tests",
+ "language-e2e-tests 0.1.0",
+ "libra-config",
+ "libra-crypto",
+ "libra-state-view",
+ "libra-types",
+ "mirai-annotations",
+ "move-core-types",
+ "move-lang",
+ "once_cell",
+ "regex",
+ "starcoin-types",
+ "stdlib 0.1.0",
+ "tempfile",
+ "termcolor",
+ "thiserror",
+ "vm",
+]
+
+[[package]]
 name = "starcoin-genesis"
 version = "0.1.0"
 dependencies = [
@@ -6750,21 +6812,6 @@ dependencies = [
  "starcoin-types",
  "stdlib 0.1.0",
  "stest",
- "vm",
-]
-
-[[package]]
-name = "starcoin-vm-tests"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytecode-verifier",
- "datatest-stable",
- "functional-tests",
- "libra-types",
- "move-lang",
- "stdlib 0.1.0",
- "tempfile",
  "vm",
 ]
 

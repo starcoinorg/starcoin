@@ -30,7 +30,7 @@ pub trait ChainService {
     fn master_head_block(&self) -> Block;
     fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
     fn master_startup_info(&self) -> StartupInfo;
-
+    fn master_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>>;
     /////////////////////////////////////////////// just for test
     fn create_block_template(
         &self,
@@ -62,7 +62,8 @@ pub trait ChainAsyncService:
     /////////////////////////////////////////////// for master
     async fn master_head_header(self) -> Option<BlockHeader>;
     async fn master_head_block(self) -> Option<Block>;
-    async fn master_block_by_number(self, number: BlockNumber) -> Option<Block>;
+    async fn master_block_by_number(self, number: BlockNumber) -> Result<Block>;
+    async fn master_blocks_by_number(self, number: BlockNumber, count: u64) -> Result<Vec<Block>>;
     async fn master_startup_info(self) -> Result<StartupInfo>;
     async fn master_head(self) -> Result<ChainInfo>;
     /////////////////////////////////////////////// just for test

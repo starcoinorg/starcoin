@@ -18,6 +18,7 @@ pub trait ChainReader {
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
+    fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>>;
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// get transaction info by transaction info hash.
