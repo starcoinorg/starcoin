@@ -4,14 +4,15 @@
 use crate::cli_state::CliState;
 use anyhow::Result;
 use scmd::{CmdContext, Command};
+use starcoin_config::ChainNetwork;
+pub use starcoin_config::StarcoinOpt;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 
-use starcoin_config::ChainNetwork;
-pub use starcoin_config::StarcoinOpt;
-
 mod chain;
+mod cli_state;
+mod crash_handler;
 mod debug;
 mod dev;
 mod helper;
@@ -20,8 +21,6 @@ mod state;
 mod txn;
 mod view;
 mod wallet;
-
-pub mod cli_state;
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
@@ -116,13 +115,18 @@ fn run() -> Result<()> {
                 .subcommand(chain::GetBlockCommand),
         )
         .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
-        .command(Command::with_name("debug").subcommand(debug::LogLevelCommand))
+        .command(
+            Command::with_name("debug")
+                .subcommand(debug::LogLevelCommand)
+                .subcommand(debug::PanicCommand),
+        )
         .exec();
     Ok(())
 }
 
 //TODO error and crash handle.
 fn main() {
+    crash_handler::setup_panic_handler();
     match run() {
         Ok(()) => {}
         Err(e) => panic!(format!("Unexpect error: {:?}", e)),

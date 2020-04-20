@@ -6043,6 +6043,7 @@ name = "starcoin-cmd"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "backtrace",
  "crossbeam-channel",
  "hex 0.3.2",
  "move-lang",
