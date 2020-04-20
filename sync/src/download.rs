@@ -14,6 +14,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use network::{get_unix_ts, NetworkAsyncService};
+use network_p2p_api::NetworkService;
 use starcoin_state_tree::StateNodeStore;
 use starcoin_sync_api::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,

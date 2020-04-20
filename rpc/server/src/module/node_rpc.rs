@@ -5,6 +5,7 @@ use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use jsonrpc_core::Result;
+use network_api::NetworkService;
 use starcoin_config::NodeConfig;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::node::{NodeApi, NodeInfo};

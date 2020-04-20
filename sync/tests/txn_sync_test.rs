@@ -11,6 +11,7 @@ use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
+use network_p2p_api::NetworkService;
 use starcoin_genesis::Genesis;
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::sync_messages::StartSyncTxnEvent;

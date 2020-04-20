@@ -4,6 +4,7 @@ use anyhow::{bail, Result};
 use bus::{Bus, BusActor};
 use logger::prelude::*;
 use network::NetworkAsyncService;
+use network_p2p_api::NetworkService;
 use starcoin_sync_api::sync_messages::{GetTxns, StartSyncTxnEvent};
 use starcoin_txpool_api::TxPoolAsyncService;
 use txpool::TxPoolRef;

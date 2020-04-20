@@ -8,7 +8,8 @@ use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use network::{get_unix_ts, network::NetworkAsyncService};
+use network::{get_unix_ts, NetworkAsyncService};
+use network_api::NetworkService;
 use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
 use starcoin_sync_api::SyncMetadata;
@@ -416,7 +417,6 @@ where
             Arbiter::spawn(async move {
                 debug!("broadcast system event : {:?}", block.header().id());
                 network
-                    .clone()
                     .broadcast_system_event(SystemEvents::NewHeadBlock(block))
                     .await
                     .expect("broadcast new head block failed.");
