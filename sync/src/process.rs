@@ -1,5 +1,7 @@
 use crate::get_txns_handler::GetTxnsHandler;
-use crate::helper::{do_get_block_by_hash, do_get_hash_by_number, do_state_node};
+use crate::helper::{
+    do_accumulator_node, do_get_block_by_hash, do_get_hash_by_number, do_state_node,
+};
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::Result;
@@ -8,8 +10,10 @@ use chain::ChainActorRef;
 use crypto::hash::HashValue;
 use logger::prelude::*;
 use network::RawRpcRequestMessage;
+use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
-use starcoin_state_tree::{StateNode, StateNodeStore};
+use starcoin_state_tree::StateNode;
+use starcoin_storage::Store;
 /// Sync message which inbound
 use starcoin_sync_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
@@ -36,10 +40,10 @@ where
         chain_reader: ChainActorRef<C>,
         txpool: TxPoolRef,
         bus: Addr<BusActor>,
-        state_node_storage: Arc<dyn StateNodeStore>,
+        storage: Arc<dyn Store>,
     ) -> Result<Addr<ProcessActor<C>>> {
         let process_actor = ProcessActor {
-            processor: Arc::new(Processor::new(chain_reader, txpool, state_node_storage)),
+            processor: Arc::new(Processor::new(chain_reader, txpool, storage)),
             bus,
         };
         Ok(process_actor.start())
@@ -146,6 +150,23 @@ where
                         warn!("{:?}", "state_nodes is none.");
                     }
                 }
+                SyncRpcRequest::GetAccumulatorNodeByNodeHash(accumulator_node_key) => {
+                    let mut keys = Vec::new();
+                    keys.push(accumulator_node_key);
+                    let mut accumulator_nodes =
+                        Processor::handle_accumulator_node_msg(processor.clone(), keys).await;
+                    if let Some((_, accumulator_node_res)) = accumulator_nodes.pop() {
+                        if let Some(accumulator_node) = accumulator_node_res {
+                            if let Err(e) = do_accumulator_node(responder, accumulator_node).await {
+                                error!("error: {:?}", e);
+                            }
+                        } else {
+                            warn!("{:?}", "accumulator_node is none.");
+                        }
+                    } else {
+                        warn!("{:?}", "accumulator_nodes is none.");
+                    }
+                }
                 SyncRpcRequest::GetTxns(msg) => {
                     let handler = GetTxnsHandler::new(processor.txpool.clone());
                     let result = handler.handle(responder, msg).await;
@@ -167,22 +188,18 @@ where
 {
     chain_reader: ChainActorRef<C>,
     txpool: TxPoolRef,
-    state_node_storage: Arc<dyn StateNodeStore>,
+    storage: Arc<dyn Store>,
 }
 
 impl<C> Processor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    pub fn new(
-        chain_reader: ChainActorRef<C>,
-        txpool: TxPoolRef,
-        state_node_storage: Arc<dyn StateNodeStore>,
-    ) -> Self {
+    pub fn new(chain_reader: ChainActorRef<C>, txpool: TxPoolRef, storage: Arc<dyn Store>) -> Self {
         Processor {
             chain_reader,
             txpool,
-            state_node_storage,
+            storage,
         }
     }
 
@@ -279,13 +296,28 @@ where
         nodes_hash: Vec<HashValue>,
     ) -> Vec<(HashValue, Option<StateNode>)> {
         let mut state_nodes = Vec::new();
-        nodes_hash.iter().for_each(
-            |node_key| match processor.state_node_storage.get(node_key) {
+        nodes_hash
+            .iter()
+            .for_each(|node_key| match processor.storage.get(node_key) {
                 Ok(node) => state_nodes.push((node_key.clone(), node)),
+                Err(e) => error!("error: {:?}", e),
+            });
+
+        state_nodes
+    }
+
+    pub async fn handle_accumulator_node_msg(
+        processor: Arc<Processor<C>>,
+        nodes_hash: Vec<HashValue>,
+    ) -> Vec<(HashValue, Option<AccumulatorNode>)> {
+        let mut accumulator_nodes = Vec::new();
+        nodes_hash.iter().for_each(
+            |node_key| match processor.storage.get_node(node_key.clone()) {
+                Ok(node) => accumulator_nodes.push((node_key.clone(), node)),
                 Err(e) => error!("error: {:?}", e),
             },
         );
 
-        state_nodes
+        accumulator_nodes
     }
 }

@@ -12,14 +12,14 @@ use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::Storage;
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::sync_messages::StartSyncTxnEvent;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::{sync::Arc, time::Duration};
-use storage::cache_storage::CacheStorage;
-use storage::storage::StorageInstance;
-use storage::Storage;
 use txpool::TxPoolRef;
 use types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 

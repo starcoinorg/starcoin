@@ -12,17 +12,18 @@ use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{MinerActor, MinerClientActor};
 use starcoin_genesis::Genesis;
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::Storage;
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
-use storage::cache_storage::CacheStorage;
-use storage::storage::StorageInstance;
-use storage::Storage;
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::system_events::SystemEvents;
 
+#[ignore]
 #[test]
 fn test_state_sync() {
     ::logger::init_for_test();

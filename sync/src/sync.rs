@@ -9,7 +9,7 @@ use config::NodeConfig;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
-use starcoin_state_tree::StateNodeStore;
+use starcoin_storage::Store;
 use starcoin_sync_api::sync_messages::{PeerNewBlock, SyncNotify};
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
@@ -39,23 +39,19 @@ where
         chain: ChainActorRef<C>,
         txpool: TxPoolRef,
         network: NetworkAsyncService,
-        state_node_storage: Arc<dyn StateNodeStore>,
+        storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
     ) -> Result<Addr<SyncActor<C>>> {
         let txn_sync_addr = TxnSyncActor::launch(txpool.clone(), network.clone(), bus.clone());
-        let process_address = ProcessActor::launch(
-            chain.clone(),
-            txpool,
-            bus.clone(),
-            state_node_storage.clone(),
-        )?;
+        let process_address =
+            ProcessActor::launch(chain.clone(), txpool, bus.clone(), storage.clone())?;
         let download_address = DownloadActor::launch(
             node_config,
             peer_id,
             chain,
             network.clone(),
             bus.clone(),
-            state_node_storage.clone(),
+            storage.clone(),
             sync_metadata.clone(),
         )?;
 
