@@ -11,7 +11,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "loglevel")]
 pub struct LogLevelOpt {
-    #[structopt(short = "l")]
+    #[structopt(name = "level")]
     level: Level,
 }
 
