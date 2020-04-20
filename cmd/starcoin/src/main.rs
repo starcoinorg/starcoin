@@ -90,7 +90,10 @@ fn run() -> Result<()> {
                 .subcommand(wallet::SignTxnCommand)
                 .subcommand(wallet::UnlockCommand)
                 .subcommand(wallet::ExportCommand)
-                .subcommand(wallet::ImportCommand),
+                .subcommand(wallet::ImportCommand)
+                .subcommand(wallet::CompileCommand)
+                .subcommand(wallet::DeployCommand)
+                .subcommand(wallet::ExecuteCommand),
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand))
         .command(

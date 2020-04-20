@@ -6045,6 +6045,7 @@ dependencies = [
  "anyhow",
  "crossbeam-channel",
  "hex 0.3.2",
+ "move-lang",
  "notify",
  "scmd",
  "serde",
@@ -6059,8 +6060,11 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-wallet-api",
+ "stdlib 0.1.0",
  "structopt",
+ "vm",
 ]
 
 [[package]]

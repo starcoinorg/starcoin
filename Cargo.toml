@@ -51,3 +51,7 @@ members = [
     "vm/functional-tests",
     "vm/e2e-tests"
 ]
+
+[patch.crates-io]
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+vm = {package="vm", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9"}
