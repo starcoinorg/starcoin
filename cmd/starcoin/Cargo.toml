@@ -25,6 +25,10 @@ starcoin-executor = {path = "../../executor"}
 starcoin-state-api = {path = "../../state/api"}
 starcoin-wallet-api = {path = "../../wallet/api"}
 scmd = { path = "../../commons/scmd" }
+stdlib = {path = "../../vm/stdlib"}
+starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
+move-lang = "0.0.1"
+vm = "0.1.0"
 hex = { version = "0.3.2", default-features = false }
 
 [[bin]]
