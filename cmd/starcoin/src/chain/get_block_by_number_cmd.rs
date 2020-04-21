@@ -11,7 +11,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_block_by_number")]
 pub struct GetOpt {
-    #[structopt(name = "number", long, default_value = "0")]
+    #[structopt(name = "number", long, short = "n", default_value = "0")]
     number: usize,
 }
 
