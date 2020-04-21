@@ -137,6 +137,7 @@ pub trait BlockStore {
 pub trait TransactionInfoStore {
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()>;
+    fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<()>;
 }
 
 pub trait TransactionStore {
@@ -348,6 +349,11 @@ impl TransactionInfoStore for Storage {
     fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()> {
         self.transaction_info_storage
             .put(txn_info.transaction_hash(), txn_info)
+    }
+
+    fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
+        self.transaction_info_storage
+            .save_transaction_infos(vec_txn_info)
     }
 }
 

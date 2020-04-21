@@ -205,7 +205,7 @@ where
             self.storage.clone(),
         )?;
 
-        let (accumulator_root, state_root) =
+        let (accumulator_root, state_root, _) =
             BlockExecutor::block_execute(&self.config.vm, &chain_state, &accumulator, txns, true)?;
 
         Ok(BlockTemplate::new(
@@ -464,7 +464,7 @@ where
         txns.push(Transaction::BlockMetadata(block_metadata));
 
         let exe_begin_time = get_unix_ts();
-        let (accumulator_root, state_root) = BlockExecutor::block_execute(
+        let (accumulator_root, state_root, vec_transaction_info) = BlockExecutor::block_execute(
             &self.config.vm,
             chain_state,
             &self.accumulator,
@@ -495,6 +495,9 @@ where
             self.accumulator.num_nodes(),
             total_difficulty,
         );
+        // save block's transaction relationship and save transaction
+        self.save(header.id().clone(), txns.clone())?;
+        self.storage.save_transaction_infos(vec_transaction_info)?;
         let commit_begin_time = get_unix_ts();
         self.commit(block.clone(), block_info)?;
         let commit_end_time = get_unix_ts();
@@ -502,8 +505,6 @@ where
             "commit used time: {}",
             (commit_end_time - commit_begin_time)
         );
-        // save block's transaction relationship and save transaction
-        self.save(header.id().clone(), txns.clone())?;
         Ok(true)
     }
 
