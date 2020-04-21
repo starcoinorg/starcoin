@@ -10,6 +10,7 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
 use parking_lot::Mutex;
+use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
@@ -325,7 +326,7 @@ impl StateSyncTaskActor {
                         error!("error : {:?}", e);
                         lock.push_back((current_node_key, is_global));
                     } else {
-                        debug!("receive state_node: {:?}", state_node);
+                        debug!("receive state_node: {:?}", state_node.0.hash());
                         match state_node.inner() {
                             Node::Leaf(leaf) => {
                                 if is_global {
@@ -376,7 +377,7 @@ impl StateSyncTaskActor {
         if value.is_some() {
             let node_key = value.unwrap();
             if let Some(accumulator_node) = self.storage.get_node(node_key.clone()).unwrap() {
-                debug!("find state_node {:?} in db.", node_key);
+                debug!("find accumulator_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), node_key.clone());
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
                     self.self_peer_id.clone(),
@@ -392,7 +393,7 @@ impl StateSyncTaskActor {
                     peer_info
                 });
                 debug!(
-                    "sync state_node {:?} from peer {:?}.",
+                    "sync accumulator_node {:?} from peer {:?}.",
                     node_key, best_peer_info
                 );
                 if let Some(best_peer) = best_peer_info {
@@ -432,10 +433,10 @@ impl StateSyncTaskActor {
                         match accumulator_node {
                             AccumulatorNode::Leaf(_leaf) => {}
                             AccumulatorNode::Internal(n) => {
-                                if n.left() != *SPARSE_MERKLE_PLACEHOLDER_HASH {
+                                if n.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
                                     lock.push_back(n.left());
                                 }
-                                if n.right() != *SPARSE_MERKLE_PLACEHOLDER_HASH {
+                                if n.right() != *ACCUMULATOR_PLACEHOLDER_HASH {
                                     lock.push_back(n.right());
                                 }
                             }
@@ -493,6 +494,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
         }
 
         if self.sync_end() {
+            info!("sync_end");
             if let Err(e) = self.sync_metadata.state_sync_done() {
                 warn!("err:{:?}", e);
             } else {
