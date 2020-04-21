@@ -28,7 +28,7 @@ impl BlockExecutor {
         let mut vec_transaction_info = vec![];
         for txn in txns {
             let txn_hash = txn.crypto_hash();
-            let output = Executor::execute_transaction(chain_state, txn)
+            let output = Executor::execute_transaction(chain_state, txn.clone())
                 .map_err(|_err| BlockExecutorError::BlockTransactionExecuteErr(txn_hash))?;
 
             match output.status() {
@@ -43,7 +43,7 @@ impl BlockExecutor {
                     transaction_hash.push(txn_hash);
                     //TODO event root hash
                     vec_transaction_info.push(TransactionInfo::new(
-                        txn_hash,
+                        txn.clone().id(),
                         state_root.clone(),
                         HashValue::zero(),
                         output.gas_used(),
