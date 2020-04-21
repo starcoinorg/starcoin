@@ -80,24 +80,24 @@ where
                 "Can not find block by hash {}",
                 head_block_hash
             ))?;
-        let block_info = match storage.clone().get_block_info(head_block_hash) {
-            Ok(Some(block_info_1)) => block_info_1,
-            Err(e) => {
-                warn!("err : {:?}", e);
-                DEFAULT_BLOCK_INFO.clone()
-            }
-            _ => DEFAULT_BLOCK_INFO.clone(),
-        };
+        // let block_info = match storage.clone().get_block_info(head_block_hash) {
+        //     Ok(Some(block_info_1)) => block_info_1,
+        //     Err(e) => {
+        //         warn!("err : {:?}", e);
+        //         DEFAULT_BLOCK_INFO.clone()
+        //     }
+        //     _ => DEFAULT_BLOCK_INFO.clone(),
+        // };
 
         let state_root = head.header().state_root();
         let chain = Self {
             config: config.clone(),
             accumulator: MerkleAccumulator::new(
                 chain_info.branch_id(),
-                block_info.accumulator_root,
-                block_info.frozen_subtree_roots,
-                block_info.num_leaves,
-                block_info.num_nodes,
+                *ACCUMULATOR_PLACEHOLDER_HASH,
+                vec![],
+                0,
+                0,
                 storage.clone(),
             )
             .unwrap(),
@@ -195,18 +195,18 @@ where
         )));
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
-        let block_info = self.get_block_info(previous_header.id());
+        // let block_info = self.get_block_info(previous_header.id());
         let accumulator = MerkleAccumulator::new(
             self.chain_info.branch_id(),
-            block_info.accumulator_root,
-            block_info.frozen_subtree_roots,
-            block_info.num_leaves,
-            block_info.num_nodes,
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            vec![],
+            0,
+            0,
             self.storage.clone(),
         )?;
 
         let (accumulator_root, state_root) =
-            BlockExecutor::block_execute(&chain_state, &accumulator, txns, true)?;
+            BlockExecutor::block_execute( &chain_state, &accumulator, txns, true)?;
 
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -491,10 +491,10 @@ where
         self.head = block;
         self.accumulator = MerkleAccumulator::new(
             self.chain_info.branch_id(),
-            block_info.accumulator_root,
-            block_info.frozen_subtree_roots.clone(),
-            block_info.num_leaves,
-            block_info.num_nodes,
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            vec![],
+            0,
+            0,
             self.storage.clone(),
         )
         .unwrap();
