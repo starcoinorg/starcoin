@@ -4,7 +4,8 @@ use crypto::hash::HashValue;
 use futures::channel::mpsc::Sender;
 use futures::sink::SinkExt;
 use network::NetworkAsyncService;
-use network_p2p_api::NetworkService;
+use network_api::NetworkService;
+use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
 use starcoin_sync_api::sync_messages::{
@@ -124,6 +125,24 @@ pub async fn get_state_node_by_node_hash(
     }
 }
 
+pub async fn get_accumulator_node_by_node_hash(
+    network: &NetworkAsyncService,
+    peer_id: PeerId,
+    node_key: HashValue,
+) -> Result<AccumulatorNode> {
+    if let SyncRpcResponse::GetAccumulatorNodeByNodeHash(accumulator_node) = do_request(
+        &network,
+        peer_id,
+        SyncRpcRequest::GetAccumulatorNodeByNodeHash(node_key),
+    )
+    .await?
+    {
+        Ok(accumulator_node)
+    } else {
+        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////
 
 async fn do_response(responder: Sender<Vec<u8>>, resp: Vec<u8>) -> Result<()> {
@@ -160,6 +179,16 @@ pub async fn do_get_block_by_hash(
 
 pub async fn do_state_node(responder: Sender<Vec<u8>>, state_node: StateNode) -> Result<()> {
     let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetStateNodeByNodeHash(state_node))?;
+    do_response(responder, resp).await
+}
+
+pub async fn do_accumulator_node(
+    responder: Sender<Vec<u8>>,
+    accumulator_node: AccumulatorNode,
+) -> Result<()> {
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetAccumulatorNodeByNodeHash(
+        accumulator_node,
+    ))?;
     do_response(responder, resp).await
 }
 

@@ -25,7 +25,7 @@ txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-txpool-api = {path="../txpool/api"}
 futures-timer = "3.0.1"
 starcoin-genesis = {path = "../core/genesis"}
-storage = { package="starcoin-storage", path = "../storage"}
+starcoin-storage = {path = "../storage"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 consensus = {path = "../consensus", package="starcoin-consensus" }
@@ -33,15 +33,15 @@ executor = {path = "../executor", package="starcoin-executor" }
 starcoin-state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 parking_lot = "0.9"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
-network-p2p-api = {package="network-api", path="../network/api"}
+network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 async-trait = "0.1"
 starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+starcoin-accumulator = {package="starcoin-accumulator", path = "../core/accumulator"}
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
 actix-rt = "1.0"
-storage = {path = "../storage", package = "starcoin-storage" }
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.2"
 starcoin-wallet-api = { path = "../wallet/api"}

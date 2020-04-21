@@ -14,8 +14,8 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use network::{get_unix_ts, NetworkAsyncService};
-use network_p2p_api::NetworkService;
-use starcoin_state_tree::StateNodeStore;
+use network_api::NetworkService;
+use starcoin_storage::Store;
 use starcoin_sync_api::sync_messages::{
     BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType, GetDataByHashMsg,
     GetHashByNumberMsg, HashWithNumber, SyncNotify,
@@ -52,7 +52,7 @@ where
     sync_duration: Duration,
     syncing: Arc<AtomicBool>,
     ready: Arc<AtomicBool>,
-    state_node_storage: Arc<dyn StateNodeStore>,
+    storage: Arc<dyn Store>,
     sync_metadata: SyncMetadata,
     main_network: bool,
 }
@@ -67,7 +67,7 @@ where
         chain_reader: ChainActorRef<C>,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
-        state_node_storage: Arc<dyn StateNodeStore>,
+        storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
     ) -> Result<Addr<DownloadActor<C>>> {
         let download_actor = DownloadActor::create(move |ctx| {
@@ -82,7 +82,7 @@ where
                 sync_duration: Duration::from_secs(5),
                 syncing: Arc::new(AtomicBool::new(false)),
                 ready: Arc::new(AtomicBool::new(false)),
-                state_node_storage,
+                storage,
                 sync_metadata,
                 main_network: node_config.base.net().is_main(),
             }
@@ -145,7 +145,7 @@ where
 
                 let downloader = self.downloader.clone();
                 let network = self.network.clone();
-                let state_node_storage = self.state_node_storage.clone();
+                let storage = self.storage.clone();
                 let sync_metadata = self.sync_metadata.clone();
                 let is_main = self.main_network;
                 let self_peer_id = self.self_peer_id.as_ref().clone();
@@ -155,7 +155,7 @@ where
                         is_main,
                         downloader.clone(),
                         network,
-                        state_node_storage,
+                        storage,
                         sync_metadata,
                     )
                     .await;
@@ -190,7 +190,7 @@ where
     fn handle(&mut self, msg: SyncNotify, _ctx: &mut Self::Context) -> Self::Result {
         let downloader = self.downloader.clone();
         let network = self.network.clone();
-        let state_node_storage = self.state_node_storage.clone();
+        let storage = self.storage.clone();
         let sync_metadata = self.sync_metadata.clone();
         let is_main = self.main_network;
         let self_peer_id = self.self_peer_id.as_ref().clone();
@@ -205,7 +205,7 @@ where
                             is_main,
                             downloader.clone(),
                             network,
-                            state_node_storage,
+                            storage,
                             sync_metadata,
                         )
                         .await;
@@ -239,7 +239,7 @@ where
         main_network: bool,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
-        state_node_storage: Arc<dyn StateNodeStore>,
+        storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
     ) {
         if let Err(e) = Self::sync_state_inner(
@@ -247,7 +247,7 @@ where
             main_network,
             downloader,
             network,
-            state_node_storage,
+            storage,
             sync_metadata,
         )
         .await
@@ -261,7 +261,7 @@ where
         main_network: bool,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
-        state_node_storage: Arc<dyn StateNodeStore>,
+        storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
     ) -> Result<()> {
         if (main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network {
@@ -309,8 +309,8 @@ where
                                             let state_sync_task_address =
                                                 StateSyncTaskActor::launch(
                                                     self_peer_id,
-                                                    root.state_root(),
-                                                    state_node_storage,
+                                                    (root.state_root(), root.accumulator_root()),
+                                                    storage,
                                                     network.clone(),
                                                     sync_metadata.clone(),
                                                 );
@@ -318,7 +318,10 @@ where
                                                 .update_address(&state_sync_task_address)?
                                         } else if sync_pivot.unwrap() < pivot {
                                             if let Some(address) = sync_metadata.get_address() {
-                                                &address.reset(root.state_root());
+                                                &address.reset(
+                                                    root.state_root(),
+                                                    root.accumulator_root(),
+                                                );
                                             } else {
                                                 info!("{:?}", "state sync reset address is none.");
                                             }
