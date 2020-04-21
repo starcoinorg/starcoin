@@ -7,6 +7,7 @@ use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::transaction::TransactionInfo;
 
 #[rpc]
 pub trait ChainApi {
@@ -22,4 +23,10 @@ pub trait ChainApi {
     // Get chain blocks by number
     #[rpc(name = "chain.get_blocks_by_number")]
     fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> FutureResult<Vec<Block>>;
+    // Get chain transactions
+    #[rpc(name = "chain.get_transaction")]
+    fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<TransactionInfo>;
+    // Get chain transactions by block id
+    #[rpc(name = "chain.get_txn_by_block")]
+    fn get_txn_by_block(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>>;
 }

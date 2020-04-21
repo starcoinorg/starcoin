@@ -352,8 +352,20 @@ where
         return Ok(None);
     }
 
-    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>, Error> {
-        self.storage.get_block_transactions(block_id)
+    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+        let mut txn_vec = vec![];
+        match self.storage.get_block_transactions(block_id) {
+            Ok(vec_hash) => {
+                for hash in vec_hash {
+                    match self.get_transaction_info(hash) {
+                        Ok(Some(transaction_info)) => txn_vec.push(transaction_info),
+                        _ => error!("get transaction info error: {:?}", hash),
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(txn_vec)
     }
 
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {

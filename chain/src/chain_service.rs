@@ -3,7 +3,7 @@
 
 use crate::chain::BlockChain;
 use actix::prelude::*;
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Error, Result};
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
@@ -24,7 +24,7 @@ use types::{
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
-    transaction::SignedUserTransaction,
+    transaction::{SignedUserTransaction, TransactionInfo},
 };
 
 pub struct BlockChainCollection<C, S, P>
@@ -641,6 +641,24 @@ where
             .get(0)
             .expect("master is none.")
             .get_blocks_by_number(number, count)
+    }
+
+    fn get_transaction(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
+        self.collection
+            .master
+            .read()
+            .get(0)
+            .expect("master is none.")
+            .get_transaction_info(hash)
+    }
+
+    fn get_block_txn_ids(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+        self.collection
+            .master
+            .read()
+            .get(0)
+            .expect("master is none.")
+            .get_block_transactions(block_id)
     }
 }
 
