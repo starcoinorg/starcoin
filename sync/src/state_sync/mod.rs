@@ -39,7 +39,7 @@ impl Roots {
     }
 }
 
-async fn sync_accumulator_node(
+async fn _sync_accumulator_node(
     node_key: HashValue,
     peer_id: PeerId,
     network_service: NetworkAsyncService,
@@ -74,7 +74,7 @@ async fn sync_accumulator_node(
         }
     };
 
-    if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
+    if let Err(err) = address.try_send(StateSyncTaskEvent::_new_accumulator(
         peer_id,
         node_key,
         accumulator_node,
@@ -142,7 +142,7 @@ impl StateSyncReset for StateSyncTaskRef {
 #[derive(Debug, PartialEq)]
 enum TaskType {
     STATE,
-    ACCUMULATOR,
+    _ACCUMULATOR,
 }
 
 #[derive(Debug, Message)]
@@ -166,7 +166,7 @@ impl StateSyncTaskEvent {
         }
     }
 
-    pub fn new_accumulator(
+    pub fn _new_accumulator(
         peer_id: PeerId,
         node_key: HashValue,
         accumulator_node: Option<AccumulatorNode>,
@@ -176,7 +176,7 @@ impl StateSyncTaskEvent {
             node_key,
             state_node: None,
             accumulator_node,
-            task_type: TaskType::ACCUMULATOR,
+            task_type: TaskType::_ACCUMULATOR,
         }
     }
 
@@ -264,7 +264,8 @@ impl StateSyncTaskActor {
     }
 
     fn sync_end(&self) -> bool {
-        self.state_sync_task.lock().is_empty() && self.accumulator_sync_task.lock().is_empty()
+        //self.state_sync_task.lock().is_empty() && self.accumulator_sync_task.lock().is_empty()
+        self.state_sync_task.lock().is_empty()
     }
 
     fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
@@ -371,7 +372,7 @@ impl StateSyncTaskActor {
         }
     }
 
-    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn _exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let mut lock = self.accumulator_sync_task.lock();
         let value = lock.pop_front();
         if value.is_some() {
@@ -379,7 +380,7 @@ impl StateSyncTaskActor {
             if let Some(accumulator_node) = self.storage.get_node(node_key.clone()).unwrap() {
                 debug!("find accumulator_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), node_key.clone());
-                if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
+                if let Err(err) = address.try_send(StateSyncTaskEvent::_new_accumulator(
                     self.self_peer_id.clone(),
                     node_key,
                     Some(accumulator_node),
@@ -401,7 +402,7 @@ impl StateSyncTaskActor {
                         let network_service = self.network_service.clone();
                         lock.insert(best_peer.get_peer_id(), node_key.clone());
                         Arbiter::spawn(async move {
-                            sync_accumulator_node(
+                            _sync_accumulator_node(
                                 node_key,
                                 best_peer.get_peer_id(),
                                 network_service,
@@ -474,7 +475,7 @@ impl Actor for StateSyncTaskActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("StateSyncTaskActor actor started.");
         self.exe_state_sync_task(ctx.address());
-        self.exe_accumulator_sync_task(ctx.address());
+        //self.exe_accumulator_sync_task(ctx.address());
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
@@ -494,7 +495,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
         }
 
         if self.sync_end() {
-            info!("sync_end");
+            info!("state sync end");
             if let Err(e) = self.sync_metadata.state_sync_done() {
                 warn!("err:{:?}", e);
             } else {
@@ -506,7 +507,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
             if state_or_accumulator {
                 self.exe_state_sync_task(ctx.address());
             } else {
-                self.exe_accumulator_sync_task(ctx.address());
+                //self.exe_accumulator_sync_task(ctx.address());
             }
         }
         Ok(())

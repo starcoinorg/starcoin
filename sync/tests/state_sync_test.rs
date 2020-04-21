@@ -24,7 +24,6 @@ use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::system_events::SystemEvents;
 
-#[ignore]
 #[test]
 fn test_state_sync() {
     ::logger::init_for_test();
