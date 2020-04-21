@@ -10,4 +10,8 @@ pub use self::gen_client::Client as DebugClient;
 pub trait DebugApi {
     #[rpc(name = "debug.set_log_level")]
     fn set_log_level(&self, level: String) -> Result<()>;
+
+    ///Trigger the node panic, only work for dev network.
+    #[rpc(name = "debug.panic")]
+    fn panic(&self) -> Result<()>;
 }

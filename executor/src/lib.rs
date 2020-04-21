@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use crypto::HashValue;
-use starcoin_config::{ChainConfig, VMConfig};
+use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
 use types::{
     account_address::AccountAddress,
@@ -24,14 +24,12 @@ pub trait TransactionExecutor: std::marker::Unpin + Clone {
 
     /// Execute transaction, update state to state_store, and return events and TransactionStatus.
     fn execute_transaction(
-        config: &VMConfig,
         chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> Result<TransactionOutput>;
 
     /// Executes the prologue and verifies that the transaction is valid.
     fn validate_transaction(
-        config: &VMConfig,
         chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus>;

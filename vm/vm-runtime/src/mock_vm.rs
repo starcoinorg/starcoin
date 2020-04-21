@@ -6,7 +6,6 @@ use anyhow::Result;
 use crypto::keygen::KeyGen;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
-use starcoin_config::VMConfig;
 use starcoin_state_api::ChainState;
 use std::convert::TryInto;
 use types::account_config::starcoin_type_tag;
@@ -42,15 +41,11 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
 });
 
 #[derive(Clone)]
-pub struct MockVM {
-    config: VMConfig,
-}
+pub struct MockVM {}
 
 impl MockVM {
-    pub fn new(config: &VMConfig) -> Self {
-        Self {
-            config: config.clone(),
-        }
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub fn create_account(

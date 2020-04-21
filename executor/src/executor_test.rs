@@ -9,7 +9,7 @@ use crate::{
 use anyhow::Result;
 use crypto::keygen::KeyGen;
 use logger::prelude::*;
-use starcoin_config::{ChainNetwork, VMConfig};
+use starcoin_config::ChainNetwork;
 use starcoin_state_api::{ChainState, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
@@ -47,8 +47,7 @@ fn test_execute_mint_txn() -> Result<()> {
         1000,
     );
 
-    let config = VMConfig::default();
-    let output = MockExecutor::execute_transaction(&config, &chain_state, txn).unwrap();
+    let output = MockExecutor::execute_transaction(&chain_state, txn).unwrap();
 
     assert_eq!(KEEP_STATUS.clone(), *output.status());
     Ok(())
@@ -65,9 +64,9 @@ fn test_execute_transfer_txn() -> Result<()> {
     let mint_txn = encode_mint_transaction(sender_account_address, 10000);
     let transfer_txn =
         encode_transfer_transaction(sender_account_address, receiver_account_address, 100);
-    let config = VMConfig::default();
-    let output1 = MockExecutor::execute_transaction(&config, &chain_state, mint_txn).unwrap();
-    let output2 = MockExecutor::execute_transaction(&config, &chain_state, transfer_txn).unwrap();
+
+    let output1 = MockExecutor::execute_transaction(&chain_state, mint_txn).unwrap();
+    let output2 = MockExecutor::execute_transaction(&chain_state, transfer_txn).unwrap();
 
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
     assert_eq!(KEEP_STATUS.clone(), *output2.status());
@@ -78,13 +77,13 @@ fn test_execute_transfer_txn() -> Result<()> {
 fn test_validate_txn() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
-    let config = VMConfig::default();
+
     let sender_account_address = AccountAddress::random();
     let receiver_account_address = AccountAddress::random();
     let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let program = encode_transfer_program(receiver_account_address, 100);
     let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
-    let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    let output = MockExecutor::validate_transaction(&chain_state, txn);
     assert_eq!(
         output,
         Some(VMStatus::new(StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST))
@@ -97,16 +96,16 @@ fn test_validate_txn() -> Result<()> {
     let program = encode_transfer_program(receiver_account_address, 100);
     let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
     // validate again
-    let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    let output = MockExecutor::validate_transaction(&chain_state, txn);
     assert_eq!(output, None);
 
     // now we execute it
     let mint_txn = encode_mint_transaction(sender_account_address, 10000);
     let transfer_txn =
         encode_transfer_transaction(sender_account_address, receiver_account_address, 100);
-    let config = VMConfig::default();
-    let output1 = MockExecutor::execute_transaction(&config, &chain_state, mint_txn).unwrap();
-    let output2 = MockExecutor::execute_transaction(&config, &chain_state, transfer_txn).unwrap();
+
+    let output1 = MockExecutor::execute_transaction(&chain_state, mint_txn).unwrap();
+    let output2 = MockExecutor::execute_transaction(&chain_state, transfer_txn).unwrap();
 
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
     assert_eq!(KEEP_STATUS.clone(), *output2.status());
@@ -123,7 +122,7 @@ fn test_validate_txn() -> Result<()> {
         program.clone(),
     );
     // validate again
-    let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    let output = MockExecutor::validate_transaction(&chain_state, txn);
     assert_eq!(
         output,
         Some(VMStatus::new(StatusCode::SEQUENCE_NUMBER_TOO_OLD))
@@ -137,14 +136,13 @@ fn test_validate_txn() -> Result<()> {
         public_key.clone(),
         program.clone(),
     );
-    let output = MockExecutor::validate_transaction(&config, &chain_state, txn);
+    let output = MockExecutor::validate_transaction(&chain_state, txn);
     assert_eq!(output, None);
     Ok(())
 }
 
 #[stest::test]
 fn test_validate_txn_with_starcoin_vm() -> Result<()> {
-    let config = VMConfig::default();
     let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
@@ -158,7 +156,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
+    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let account2 = Account::new();
@@ -172,14 +170,13 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
         1000,
     );
     let txn2 = account1.create_user_txn_from_raw_txn(raw_txn);
-    let output = Executor::validate_transaction(&config, &chain_state, txn2);
+    let output = Executor::validate_transaction(&chain_state, txn2);
     assert_eq!(output, None);
     Ok(())
 }
 
 #[stest::test]
 fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
-    let config = VMConfig::default();
     let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
@@ -195,7 +192,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
+    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let sequence_number2 = get_sequence_number(account_config::association_address(), &chain_state);
@@ -205,7 +202,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number2, // fix me
         1_000,
     ));
-    let output2 = Executor::execute_transaction(&config, &chain_state, txn2).unwrap();
+    let output2 = Executor::execute_transaction(&chain_state, txn2).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output2.status());
 
     let sequence_number3 = get_sequence_number(account1.address().clone(), &chain_state);
@@ -215,7 +212,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number3, // fix me
         100,
     ));
-    let output3 = Executor::execute_transaction(&config, &chain_state, txn3).unwrap();
+    let output3 = Executor::execute_transaction(&chain_state, txn3).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output3.status());
 
     Ok(())
@@ -223,7 +220,6 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
-    let config = VMConfig::default();
     let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
@@ -240,7 +236,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
         1,
         1000,
     );
-    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
+    let output = Executor::execute_transaction(&chain_state, txn).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
     Ok(())
@@ -248,7 +244,6 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
-    let config = VMConfig::default();
     let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
@@ -262,7 +257,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&config, &chain_state, txn1).unwrap();
+    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let account2 = Account::new();
@@ -277,7 +272,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
     );
 
     let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
-    let output = Executor::execute_transaction(&config, &chain_state, txn2).unwrap();
+    let output = Executor::execute_transaction(&chain_state, txn2).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
     Ok(())
@@ -285,7 +280,6 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_sequence_number() -> Result<()> {
-    let config = VMConfig::default();
     let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
@@ -307,7 +301,7 @@ fn test_sequence_number() -> Result<()> {
         1,
         1000,
     );
-    let output = Executor::execute_transaction(&config, &chain_state, txn).unwrap();
+    let output = Executor::execute_transaction(&chain_state, txn).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
     let new_sequence_number =
