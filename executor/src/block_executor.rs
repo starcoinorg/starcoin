@@ -6,7 +6,6 @@ use crate::TransactionExecutor;
 use crypto::{hash::CryptoHash, HashValue};
 // use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_config::VMConfig;
 use starcoin_state_api::ChainState;
 use types::error::BlockExecutorError;
 use types::error::ExecutorResult;
@@ -19,7 +18,6 @@ pub struct BlockExecutor {}
 impl BlockExecutor {
     /// Execute block transaction, update state to state_store, and apend accumulator , verify proof.
     pub fn block_execute(
-        config: &VMConfig,
         chain_state: &dyn ChainState,
         accumulator: &MerkleAccumulator,
         txns: Vec<Transaction>,
@@ -30,7 +28,7 @@ impl BlockExecutor {
         let mut vec_transaction_info = vec![];
         for txn in txns {
             let txn_hash = txn.crypto_hash();
-            let output = Executor::execute_transaction(config, chain_state, txn)
+            let output = Executor::execute_transaction(chain_state, txn)
                 .map_err(|_err| BlockExecutorError::BlockTransactionExecuteErr(txn_hash))?;
 
             match output.status() {

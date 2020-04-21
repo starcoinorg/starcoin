@@ -352,7 +352,7 @@ impl AccumulatorCache {
                 _ => {}
             }
         } else {
-            warn!("{:?} root hash is placeholder!", root_hash);
+            debug!("{:?} root hash is placeholder!", root_hash);
         }
         Ok(cache_map)
     }

@@ -4,7 +4,7 @@
 use crate::TransactionExecutor;
 use anyhow::Result;
 use crypto::HashValue;
-use starcoin_config::{ChainConfig, VMConfig};
+use starcoin_config::ChainConfig;
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use statedb::ChainStateDB;
 use std::sync::Arc;
@@ -51,21 +51,19 @@ impl TransactionExecutor for Executor {
     }
 
     fn execute_transaction(
-        config: &VMConfig,
         chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> Result<TransactionOutput> {
-        let mut vm = StarcoinVM::new(config);
+        let mut vm = StarcoinVM::new();
         let output = vm.execute_transaction(chain_state, txn);
         Ok(output)
     }
 
     fn validate_transaction(
-        config: &VMConfig,
         chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
-        let mut vm = StarcoinVM::new(config);
+        let mut vm = StarcoinVM::new();
         vm.verify_transaction(chain_state, txn)
     }
 
