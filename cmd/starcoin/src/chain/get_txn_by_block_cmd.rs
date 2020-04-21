@@ -12,7 +12,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_txn_by_block")]
 pub struct GetOpt {
-    #[structopt(short = "h")]
+    #[structopt(name = "hash")]
     hash: String,
 }
 
