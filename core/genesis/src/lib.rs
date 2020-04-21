@@ -5,7 +5,7 @@ use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_config::{ChainNetwork, VMConfig};
+use starcoin_config::ChainNetwork;
 use starcoin_consensus::{argon::ArgonConsensus, dummy::DummyConsensus};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_executor::executor::Executor;
@@ -105,8 +105,7 @@ impl Genesis {
         let txn = Transaction::StateSet(chain_state_set);
         let txn_hash = txn.crypto_hash();
 
-        let vm_config = VMConfig::default();
-        let output = Executor::execute_transaction(&vm_config, chain_state, txn)?;
+        let output = Executor::execute_transaction(chain_state, txn)?;
         ensure!(
             output.status().vm_status().major_status == StatusCode::EXECUTED,
             "Genesis txn execute fail."

@@ -206,7 +206,7 @@ where
         )?;
 
         let (accumulator_root, state_root) =
-            BlockExecutor::block_execute(&self.config.vm, &chain_state, &accumulator, txns, true)?;
+            BlockExecutor::block_execute(&chain_state, &accumulator, txns, true)?;
 
         Ok(BlockTemplate::new(
             previous_header.id(),
@@ -448,13 +448,8 @@ where
         txns.push(Transaction::BlockMetadata(block_metadata));
 
         let exe_begin_time = get_unix_ts();
-        let (accumulator_root, state_root) = BlockExecutor::block_execute(
-            &self.config.vm,
-            chain_state,
-            &self.accumulator,
-            txns,
-            false,
-        )?;
+        let (accumulator_root, state_root) =
+            BlockExecutor::block_execute(chain_state, &self.accumulator, txns, false)?;
         let exe_end_time = get_unix_ts();
         debug!("exe used time: {}", (exe_end_time - exe_begin_time));
         assert_eq!(
