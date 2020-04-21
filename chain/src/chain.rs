@@ -195,7 +195,7 @@ where
         )));
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
-        // let block_info = self.get_block_info(previous_header.id());
+        //  let block_info = self.get_block_info(previous_header.id());
         let accumulator = MerkleAccumulator::new(
             self.chain_info.branch_id(),
             *ACCUMULATOR_PLACEHOLDER_HASH,
@@ -206,7 +206,7 @@ where
         )?;
 
         let (accumulator_root, state_root) =
-            BlockExecutor::block_execute( &chain_state, &accumulator, txns, true)?;
+            BlockExecutor::block_execute(&chain_state, &accumulator, txns, true)?;
 
         Ok(BlockTemplate::new(
             previous_header.id(),
