@@ -4,7 +4,7 @@
 use crate::TransactionExecutor;
 use anyhow::Result;
 use crypto::{ed25519::*, hash::CryptoHash, traits::SigningKey, HashValue};
-use starcoin_config::{ChainConfig, VMConfig};
+use starcoin_config::ChainConfig;
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
@@ -75,21 +75,19 @@ impl TransactionExecutor for MockExecutor {
     }
 
     fn execute_transaction(
-        config: &VMConfig,
         chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> Result<TransactionOutput> {
-        let mut vm = MockVM::new(config);
+        let mut vm = MockVM::new();
         let output = vm.execute_transaction(chain_state, txn);
         output
     }
 
     fn validate_transaction(
-        config: &VMConfig,
         chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
-        let mut vm = MockVM::new(config);
+        let mut vm = MockVM::new();
         vm.verify_transaction(chain_state, txn)
     }
 

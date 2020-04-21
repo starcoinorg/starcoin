@@ -29,7 +29,6 @@ mod rpc_config;
 mod storage_config;
 mod sync_config;
 mod txpool_config;
-mod vm_config;
 
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
@@ -40,7 +39,6 @@ pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use storage_config::StorageConfig;
 pub use txpool_config::TxPoolConfig;
-pub use vm_config::VMConfig;
 
 /// Default data dir
 static DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
@@ -186,8 +184,6 @@ pub struct NodeConfig {
     #[serde(default)]
     pub rpc: RpcConfig,
     #[serde(default)]
-    pub vm: VMConfig,
-    #[serde(default)]
     pub miner: MinerConfig,
     #[serde(default)]
     pub storage: StorageConfig,
@@ -247,7 +243,6 @@ impl ConfigModule for NodeConfig {
             base,
             network: NetworkConfig::default_with_net(net),
             rpc: RpcConfig::default_with_net(net),
-            vm: VMConfig::default_with_net(net),
             miner: MinerConfig::default_with_net(net),
             storage: StorageConfig::default_with_net(net),
             tx_pool: TxPoolConfig::default_with_net(net),
@@ -260,7 +255,6 @@ impl ConfigModule for NodeConfig {
         self.base = base.clone();
         self.network.random(base);
         self.rpc.random(base);
-        self.vm.random(base);
         self.miner.random(base);
         self.storage.random(base);
         self.tx_pool.random(base);
