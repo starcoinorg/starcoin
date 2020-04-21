@@ -23,7 +23,6 @@ use move_vm_types::identifier::create_access_path;
 use move_vm_types::loaded_data::types::Type;
 use move_vm_types::values::Value;
 use once_cell::sync::Lazy;
-use starcoin_config::VMConfig;
 use starcoin_state_api::ChainState;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -65,16 +64,14 @@ pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
 pub struct StarcoinVM {
     move_vm: Arc<MoveVM>,
     gas_schedule: Option<CostTable>,
-    config: VMConfig,
 }
 
 impl StarcoinVM {
-    pub fn new(config: &VMConfig) -> Self {
+    pub fn new() -> Self {
         let inner = MoveVM::new();
         Self {
             move_vm: Arc::new(inner),
             gas_schedule: None,
-            config: config.clone(),
         }
     }
 
