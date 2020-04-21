@@ -38,6 +38,7 @@ pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use storage_config::StorageConfig;
+use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;
 
 /// Default data dir
@@ -84,6 +85,10 @@ pub struct StarcoinOpt {
     #[structopt(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
     /// Node network private key file, only work for first init.
     pub node_key_file: Option<PathBuf>,
+
+    #[structopt(long = "sync-mode", short = "s", default_value = "fast")]
+    /// Sync mode. Included value(full, fast, light).
+    pub sync_mode: SyncMode,
 }
 
 #[derive(Clone, Debug, PartialEq)]
