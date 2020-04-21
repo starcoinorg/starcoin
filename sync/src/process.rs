@@ -161,7 +161,7 @@ where
                                 error!("error: {:?}", e);
                             }
                         } else {
-                            warn!("{:?}", "accumulator_node is none.");
+                            warn!("accumulator_node {:?} is none.", accumulator_node_key);
                         }
                     } else {
                         warn!("{:?}", "accumulator_nodes is none.");
