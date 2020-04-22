@@ -8,6 +8,9 @@ extern crate serde_derive;
 extern crate log;
 #[macro_use]
 extern crate trace_time;
+#[macro_use]
+extern crate prometheus;
+
 extern crate transaction_pool as tx_pool;
 
 pub use crate::pool::TxStatus;
@@ -27,6 +30,7 @@ use storage::{BlockStore, Store};
 #[cfg(test)]
 use types::block::BlockHeader;
 use types::{block::Block, transaction, transaction::SignedUserTransaction};
+mod counters;
 mod pool;
 mod pool_client;
 #[cfg(test)]

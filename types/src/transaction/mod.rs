@@ -681,6 +681,20 @@ pub enum TxStatus {
     Culled,
 }
 
+impl std::fmt::Display for TxStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            TxStatus::Added => "added",
+            TxStatus::Rejected => "rejected",
+            TxStatus::Dropped => "dropped",
+            TxStatus::Invalid => "invalid",
+            TxStatus::Canceled => "canceled",
+            TxStatus::Culled => "culled",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 //======================= libra type converter ============================
 
 impl Into<libra_types::transaction::TransactionPayload> for TransactionPayload {
