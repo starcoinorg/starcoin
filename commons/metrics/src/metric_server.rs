@@ -53,6 +53,13 @@ pub fn start_server(host: String, port: u16) {
         .next()
         .unwrap();
 
+    // metric process info.
+    #[cfg(target_os = "linux")]
+    prometheus::register(Box::new(
+        prometheus::process_collector::ProcessCollector::for_self(),
+    ))
+    .unwrap();
+
     thread::spawn(move || {
         let make_service =
             make_service_fn(|_| future::ok::<_, hyper::Error>(service_fn(serve_metrics)));
