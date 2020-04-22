@@ -26,12 +26,12 @@ impl ConfigModule for MetricsConfig {
         Self::default()
     }
 
-    fn random(&mut self, base: &BaseConfig) {
+    fn random(&mut self, _base: &BaseConfig) {
         let port = get_available_port();
         self.metrics_server_port = port;
     }
 
-    fn load(&mut self, base: &BaseConfig, _opt: &StarcoinOpt) -> Result<()> {
+    fn load(&mut self, _base: &BaseConfig, _opt: &StarcoinOpt) -> Result<()> {
         Ok(())
     }
 }
