@@ -113,6 +113,12 @@ where
     info!("Write log to file: {:?}", file_log_path);
     logger_handle.enable_file(true, file_log_path);
 
+    // start metric server
+    starcoin_metrics::metric_server::start_server(
+        config.metrics.address.clone(),
+        config.metrics.metrics_server_port,
+    );
+
     let (start_sender, start_receiver) = oneshot::channel();
     let (stop_sender, stop_receiver) = oneshot::channel();
     let thread_handle = std::thread::spawn(move || {
