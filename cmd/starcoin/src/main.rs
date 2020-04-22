@@ -105,7 +105,8 @@ fn run() -> Result<()> {
         .command(
             Command::with_name("node")
                 .subcommand(node::InfoCommand)
-                .subcommand(node::PeersCommand),
+                .subcommand(node::PeersCommand)
+                .subcommand(node::MetricsCommand),
         )
         .command(
             Command::with_name("chain")
