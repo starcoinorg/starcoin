@@ -27,15 +27,23 @@ impl SyncConfig {
 }
 
 impl ConfigModule for SyncConfig {
-    fn default_with_net(_net: ChainNetwork) -> Self {
+    fn default_with_net(net: ChainNetwork) -> Self {
         SyncConfig {
-            sync_mode: SyncMode::FAST_SYNC,
+            sync_mode: if net.is_dev() {
+                SyncMode::FULL
+            } else {
+                SyncMode::FAST_SYNC
+            },
         }
     }
 
-    fn load(&mut self, _base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
+    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
         info!("sync_mode : {:?}", opt.sync_mode);
-        self.sync_mode = opt.sync_mode.clone();
+        self.sync_mode = if base.net.is_dev() {
+            SyncMode::FULL
+        } else {
+            opt.sync_mode.clone()
+        };
         Ok(())
     }
 }
