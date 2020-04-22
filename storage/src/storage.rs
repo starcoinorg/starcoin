@@ -4,7 +4,7 @@
 use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use anyhow::{bail, Error, Result};
+use anyhow::{bail, Result};
 use crypto::HashValue;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -67,7 +67,7 @@ impl StorageInstance {
     }
 }
 impl InnerStore for StorageInstance {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
+    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         match self {
             StorageInstance::CACHE { cache } => cache.get(prefix_name, key.clone()),
             StorageInstance::DB { db } => db.get(prefix_name, key.clone()),
@@ -82,7 +82,7 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         match self {
             StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
             StorageInstance::DB { db } => db.put(prefix_name, key, value),
@@ -93,7 +93,7 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool, Error> {
+    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
         match self {
             StorageInstance::CACHE { cache } => cache.contains_key(prefix_name, key),
             StorageInstance::DB { db } => db.contains_key(prefix_name, key),
@@ -106,7 +106,7 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<(), Error> {
+    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         match self {
             StorageInstance::CACHE { cache } => cache.remove(prefix_name, key),
             StorageInstance::DB { db } => db.remove(prefix_name, key),
@@ -119,7 +119,7 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
+    fn write_batch(&self, batch: WriteBatch) -> Result<()> {
         match self {
             StorageInstance::CACHE { cache } => cache.write_batch(batch),
             StorageInstance::DB { db } => db.write_batch(batch),
@@ -129,7 +129,7 @@ impl InnerStore for StorageInstance {
             },
         }
     }
-    fn get_len(&self) -> Result<u64, Error> {
+    fn get_len(&self) -> Result<u64> {
         match self {
             StorageInstance::CACHE { cache } => cache.get_len(),
             StorageInstance::CacheAndDb { cache, db: _ } => cache.get_len(),
@@ -137,7 +137,7 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
+    fn keys(&self) -> Result<Vec<Vec<u8>>> {
         match self {
             StorageInstance::CACHE { cache } => cache.keys(),
             StorageInstance::CacheAndDb { cache, db: _ } => cache.keys(),
@@ -162,31 +162,31 @@ impl InnerStorage {
 }
 
 impl KVStore for InnerStorage {
-    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         self.instance.get(self.prefix_name, key.to_vec())
     }
 
-    fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+    fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         self.instance.put(self.prefix_name, key, value)
     }
 
-    fn contains_key(&self, key: Vec<u8>) -> Result<bool, Error> {
+    fn contains_key(&self, key: Vec<u8>) -> Result<bool> {
         self.instance.contains_key(self.prefix_name, key)
     }
 
-    fn remove(&self, key: Vec<u8>) -> Result<(), Error> {
+    fn remove(&self, key: Vec<u8>) -> Result<()> {
         self.instance.remove(self.prefix_name, key)
     }
 
-    fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
+    fn write_batch(&self, batch: WriteBatch) -> Result<()> {
         self.instance.write_batch(batch)
     }
 
-    fn get_len(&self) -> Result<u64, Error> {
+    fn get_len(&self) -> Result<u64> {
         self.instance.get_len()
     }
 
-    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
+    fn keys(&self) -> Result<Vec<Vec<u8>>> {
         self.instance.keys()
     }
 }
@@ -261,7 +261,7 @@ impl KeyCodec for HashValue {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, Error> {
+    fn decode_key(data: &[u8]) -> Result<Self> {
         Ok(HashValue::from_slice(data)?)
     }
 }
@@ -271,7 +271,7 @@ impl ValueCodec for HashValue {
         Ok(self.to_vec())
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, Error> {
+    fn decode_value(data: &[u8]) -> Result<Self> {
         Ok(HashValue::from_slice(data)?)
     }
 }
