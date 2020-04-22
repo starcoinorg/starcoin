@@ -16,6 +16,7 @@ tokio = { version = "0.2", features = ["full"] }
 rand = "0.6.5"
 futures = "0.3"
 async-trait = "0.1"
+starcoin-metrics = {path = "../commons/metrics"}
 starcoin-config = {path = "../config"}
 starcoin-bus = {path = "../bus"}
 starcoin-consensus = {path = "../consensus"}

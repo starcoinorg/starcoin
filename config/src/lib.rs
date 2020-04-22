@@ -23,6 +23,7 @@ use structopt::StructOpt;
 
 mod account_vault_config;
 mod chain_config;
+mod metrics_config;
 mod miner_config;
 mod network_config;
 mod rpc_config;
@@ -34,6 +35,7 @@ use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG};
 pub use libra_temppath::TempPath;
+pub use metrics_config::MetricsConfig;
 pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
@@ -198,6 +200,8 @@ pub struct NodeConfig {
     pub sync: SyncConfig,
     #[serde(default)]
     pub vault: AccountVaultConfig,
+    #[serde(default)]
+    pub metrics: MetricsConfig,
 }
 
 impl NodeConfig {
@@ -253,6 +257,7 @@ impl ConfigModule for NodeConfig {
             tx_pool: TxPoolConfig::default_with_net(net),
             sync: SyncConfig::default_with_net(net),
             vault: AccountVaultConfig::default_with_net(net),
+            metrics: MetricsConfig::default_with_net(net),
         }
     }
 
@@ -265,6 +270,7 @@ impl ConfigModule for NodeConfig {
         self.tx_pool.random(base);
         self.sync.random(base);
         self.vault.random(base);
+        self.metrics.random(base);
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
@@ -276,6 +282,7 @@ impl ConfigModule for NodeConfig {
         self.tx_pool.load(base, opt)?;
         self.sync.load(base, opt)?;
         self.vault.load(base, opt)?;
+        self.metrics.load(base, opt)?;
         Ok(())
     }
 }

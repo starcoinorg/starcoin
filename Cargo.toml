@@ -7,6 +7,7 @@ members = [
     "commons/decrypt",
     "commons/logger",
     "commons/scmd",
+    "commons/metrics",
     "types",
     "core/traits",
     "core/accumulator",
