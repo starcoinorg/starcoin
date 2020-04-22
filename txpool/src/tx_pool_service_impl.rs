@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::counters::TXN_STATUS_COUNTERS;
 use crate::pool::VerifiedTransaction;
 use crate::{
     pool,
@@ -144,6 +145,12 @@ impl StreamHandler<TxnStatusEvent> for TxPoolActor {
         // TODO: need peer info to do more accurate sending.
         let mut txns = vec![];
         for (h, s) in item.iter() {
+            // record txn status
+            let label = format!("{}", s);
+            TXN_STATUS_COUNTERS
+                .with_label_values(&vec![label.as_str()])
+                .inc();
+
             if *s != TxStatus::Added {
                 continue;
             }

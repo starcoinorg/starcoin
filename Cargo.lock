@@ -4969,6 +4969,7 @@ dependencies = [
  "lazy_static",
  "libc",
  "procfs",
+ "protobuf",
  "spin",
  "thiserror",
 ]
@@ -5054,6 +5055,12 @@ dependencies = [
  "bytes 0.5.4",
  "prost",
 ]
+
+[[package]]
+name = "protobuf"
+version = "2.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e86d370532557ae7573551a1ec8235a0f8d6cb276c7c9e6aa490b511c447485"
 
 [[package]]
 name = "quick-error"
@@ -6772,7 +6779,9 @@ dependencies = [
  "futures-channel",
  "linked-hash-map",
  "log 0.4.8",
+ "once_cell",
  "parking_lot 0.9.0",
+ "prometheus",
  "rand 0.6.5",
  "serde",
  "serde_derive",
