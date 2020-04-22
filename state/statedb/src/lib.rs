@@ -3,6 +3,7 @@
 
 use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, Result};
+use lru::LruCache;
 use merkle_tree::proof::SparseMerkleProof;
 use parking_lot::{Mutex, MutexGuard};
 use scs::SCSCodec;
@@ -21,7 +22,6 @@ use starcoin_types::{
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
-use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryInto;
 use std::sync::Arc;
 use thiserror::Error;
@@ -30,6 +30,42 @@ use thiserror::Error;
 pub enum StateError {
     #[error("the Account for key `{0}` is not exist")]
     AccountNotExist(AccountAddress),
+}
+
+enum CacheItem {
+    AccountObject(Arc<AccountStateObject>),
+    AccountNotExist(),
+}
+
+impl CacheItem {
+    fn new(obj: Arc<AccountStateObject>) -> Self {
+        CacheItem::AccountObject(obj)
+    }
+
+    fn as_object(&self) -> Option<Arc<AccountStateObject>> {
+        match self {
+            CacheItem::AccountObject(obj) => Some(obj.clone()),
+            CacheItem::AccountNotExist() => None,
+        }
+    }
+    fn flush(&self) -> Result<()> {
+        match self {
+            CacheItem::AccountObject(obj) => obj.flush(),
+            CacheItem::AccountNotExist() => Ok(()),
+        }
+    }
+    fn is_dirty(&self) -> bool {
+        match self {
+            CacheItem::AccountObject(obj) => obj.is_dirty(),
+            CacheItem::AccountNotExist() => false,
+        }
+    }
+    fn commit(&self) -> Result<AccountState> {
+        match self {
+            CacheItem::AccountObject(obj) => obj.commit(),
+            CacheItem::AccountNotExist() => unreachable!(),
+        }
+    }
 }
 
 /// represent AccountState in runtime memory.
@@ -180,15 +216,17 @@ pub struct ChainStateDB {
     store: Arc<dyn StateNodeStore>,
     ///global state tree.
     state_tree: StateTree,
-    cache: Mutex<HashMap<HashValue, Option<Arc<AccountStateObject>>>>,
+    cache: Mutex<LruCache<HashValue, CacheItem>>,
 }
+
+static DEFAULT_CACHE_SIZE: usize = 10240;
 
 impl ChainStateDB {
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
         Self {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
-            cache: Mutex::new(HashMap::new()),
+            cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
         }
     }
 
@@ -197,7 +235,7 @@ impl ChainStateDB {
         Self {
             store: self.store.clone(),
             state_tree: StateTree::new(self.store.clone(), Some(root_hash)),
-            cache: Mutex::new(HashMap::new()),
+            cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
         }
     }
 
@@ -220,9 +258,8 @@ impl ChainStateDB {
                         self.store.clone(),
                     ));
                     let address_hash = account_address.crypto_hash();
-                    self.cache
-                        .lock()
-                        .insert(address_hash, Some(account_state_object.clone()));
+                    let mut cache = self.cache.lock();
+                    cache.put(address_hash, CacheItem::new(account_state_object.clone()));
                     Ok(account_state_object)
                 } else {
                     Err(AccountNotExist(*account_address).into())
@@ -237,11 +274,11 @@ impl ChainStateDB {
     ) -> Result<Option<Arc<AccountStateObject>>> {
         let address_hash = account_address.crypto_hash();
         let mut cache = self.cache.lock();
-        let entry = cache.entry(address_hash);
-        let object = match entry {
-            Entry::Occupied(entry) => entry.get().clone(),
-            Entry::Vacant(entry) => {
-                let account_state_object =
+        let item = cache.get(&address_hash);
+        let object = match item {
+            Some(item) => item.as_object(),
+            None => {
+                let object =
                     self.get_account_state_by_hash(&address_hash)?
                         .and_then(|account_state| {
                             Some(Arc::new(AccountStateObject::new(
@@ -250,8 +287,12 @@ impl ChainStateDB {
                                 self.store.clone(),
                             )))
                         });
-                entry.insert(account_state_object.clone());
-                account_state_object
+                let cache_item = match &object {
+                    Some(object) => CacheItem::new(object.clone()),
+                    None => CacheItem::AccountNotExist(),
+                };
+                cache.put(address_hash, cache_item);
+                object
             }
         };
         Ok(object)
@@ -398,9 +439,9 @@ impl ChainStateWriter for ChainStateDB {
             balance_resource.try_into()?,
         );
 
-        self.cache.lock().insert(
+        self.cache.lock().put(
             account_address.crypto_hash(),
-            Some(Arc::new(account_state_object)),
+            CacheItem::new(Arc::new(account_state_object)),
         );
         Ok(())
     }
@@ -447,15 +488,10 @@ impl ChainStateWriter for ChainStateDB {
     fn commit(&self) -> Result<HashValue> {
         //TODO optimize
         for (address_hash, state_object) in self.cache.lock().iter() {
-            match state_object {
-                Some(state_object) => {
-                    if state_object.is_dirty() {
-                        let account_state = state_object.commit()?;
-                        self.state_tree
-                            .put(*address_hash, account_state.try_into()?);
-                    }
-                }
-                None => {}
+            if state_object.is_dirty() {
+                let account_state = state_object.commit()?;
+                self.state_tree
+                    .put(*address_hash, account_state.try_into()?);
             }
         }
         self.state_tree.commit()
@@ -465,12 +501,7 @@ impl ChainStateWriter for ChainStateDB {
     fn flush(&self) -> Result<()> {
         //TODO optimize
         for (_address_hash, state_object) in self.cache.lock().iter() {
-            match state_object {
-                Some(state_object) => {
-                    state_object.flush()?;
-                }
-                None => {}
-            }
+            state_object.flush()?;
         }
         self.state_tree.flush()
     }
@@ -588,6 +619,29 @@ mod tests {
         let global_state2 = chain_state_db2.dump()?;
         assert_eq!(global_state2.state_sets().len(), 1);
         assert_eq!(global_state, global_state2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_state_version() -> Result<()> {
+        let storage = Arc::new(MockStateNodeStore::new());
+        let chain_state_db = ChainStateDB::new(storage.clone(), None);
+        let account_address = AccountAddress::random();
+        let access_path = AccessPath::new_for_account(account_address);
+        let old_state = vec![0u8];
+        chain_state_db.set(&access_path, old_state.clone())?;
+
+        chain_state_db.commit()?;
+        chain_state_db.flush()?;
+        let old_root = chain_state_db.state_root();
+
+        let new_state = vec![1u8];
+        chain_state_db.set(&access_path, new_state)?;
+
+        let chain_state_db_ori = ChainStateDB::new(storage.clone(), Some(old_root));
+        let old_state2 = chain_state_db_ori.get(&access_path)?.unwrap();
+        assert_eq!(old_state, old_state2);
 
         Ok(())
     }
