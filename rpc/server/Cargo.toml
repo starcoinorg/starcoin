@@ -46,6 +46,7 @@ starcoin-state-api = { path = "../../state/api"}
 starcoin-state-service = { path = "../../state/service"}
 starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-network = {path = "../../network"}
+starcoin-metrics = {path = "../../commons/metrics"}
 network-api = {package="network-api", path="../../network/api"}
 
 [dev-dependencies]

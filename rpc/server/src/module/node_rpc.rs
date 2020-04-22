@@ -7,10 +7,12 @@ use futures::FutureExt;
 use jsonrpc_core::Result;
 use network_api::NetworkService;
 use starcoin_config::NodeConfig;
+use starcoin_metrics;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::node::{NodeApi, NodeInfo};
 use starcoin_rpc_api::FutureResult;
 use starcoin_types::peer_info::PeerInfo;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct NodeRpcImpl {
@@ -59,5 +61,9 @@ impl NodeApi for NodeRpcImpl {
                 .boxed()
                 .compat(),
         )
+    }
+
+    fn metrics(&self) -> Result<HashMap<String, String>> {
+        Ok(starcoin_metrics::get_all_metrics())
     }
 }

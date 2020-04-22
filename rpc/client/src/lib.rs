@@ -34,6 +34,7 @@ use starcoin_rpc_api::node::NodeInfo;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -137,6 +138,10 @@ impl RpcClient {
 
     pub fn node_info(&self) -> anyhow::Result<NodeInfo> {
         self.call_rpc_blocking(|inner| async move { inner.node_client.info().compat().await })
+            .map_err(map_err)
+    }
+    pub fn node_metrics(&self) -> anyhow::Result<HashMap<String, String>> {
+        self.call_rpc_blocking(|inner| async move { inner.node_client.metrics().compat().await })
             .map_err(map_err)
     }
 
