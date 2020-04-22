@@ -12,6 +12,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 actix-rt = "1.0"
 parking_lot = "0.10.2"
+lru = "0.4.0"
 starcoin-types = {path = "../../types"}
 starcoin-state-api = {path = "../api"}
 starcoin-crypto = {path = "../../commons/crypto"}

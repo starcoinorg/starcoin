@@ -6548,6 +6548,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "forkable-jellyfish-merkle",
+ "lru",
  "parking_lot 0.10.2",
  "serde",
  "starcoin-canonical-serialization",
