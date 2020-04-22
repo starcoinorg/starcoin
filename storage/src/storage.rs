@@ -59,8 +59,8 @@ impl StorageInstance {
             cache: Arc::new(cache),
         }
     }
-    pub fn new_db_instance(db: DBStorage) -> Self {
-        Self::DB { db: Arc::new(db) }
+    pub fn new_db_instance(db: Arc<DBStorage>) -> Self {
+        Self::DB { db }
     }
     pub fn new_cache_and_db_instance(cache: Arc<CacheStorage>, db: Arc<DBStorage>) -> Self {
         Self::CacheAndDb { cache, db }
@@ -69,14 +69,20 @@ impl StorageInstance {
 impl InnerStore for StorageInstance {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         match self {
-            StorageInstance::CACHE { cache } => cache.get(prefix_name, key.clone()),
-            StorageInstance::DB { db } => db.get(prefix_name, key.clone()),
+            StorageInstance::CACHE { cache } => cache.get(prefix_name, key),
+            StorageInstance::DB { db } => db.get(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
                 if let Ok(Some(v)) = cache.get(prefix_name, key.clone()) {
                     Ok(Some(v))
                 } else {
-                    db.get(prefix_name, key.clone())
+                    match db.get(prefix_name, key.clone())? {
+                        Some(value) => {
+                            cache.put(prefix_name, key, value.clone())?;
+                            Ok(Some(value))
+                        }
+                        None => Ok(None),
+                    }
                 }
             }
         }
