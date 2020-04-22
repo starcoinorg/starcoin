@@ -8,6 +8,7 @@ pub use self::gen_client::Client as NodeClient;
 use crate::FutureResult;
 use serde::{Deserialize, Serialize};
 use starcoin_types::peer_info::PeerInfo;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeInfo {
@@ -38,4 +39,6 @@ pub trait NodeApi {
     /// Get current node connect peers.
     #[rpc(name = "node.peers")]
     fn peers(&self) -> FutureResult<Vec<PeerInfo>>;
+    #[rpc(name = "node.metrics")]
+    fn metrics(&self) -> Result<HashMap<String, String>>;
 }
