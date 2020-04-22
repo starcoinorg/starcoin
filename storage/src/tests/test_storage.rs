@@ -8,7 +8,7 @@ use crypto::{hash::CryptoHash, HashValue};
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{InnerStore, StorageInstance, ValueCodec};
-use crate::{Storage, TRANSACTION_PREFIX_NAME};
+use crate::{Storage, TRANSACTION_INFO_PREFIX_NAME};
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;
@@ -68,7 +68,7 @@ fn test_two_level_storage() {
     //verfiy cache storage
     let value3 = cache_storage
         .clone()
-        .get(TRANSACTION_PREFIX_NAME, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap()
         .unwrap();
     let transation_info3 = TransactionInfo::decode_value(&value3).unwrap();
@@ -76,7 +76,7 @@ fn test_two_level_storage() {
     // // verify db storage
     let value4 = db_storage
         .clone()
-        .get(TRANSACTION_PREFIX_NAME, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap()
         .unwrap();
     let transaction_info4 = TransactionInfo::decode_value(&value4).unwrap();
@@ -88,12 +88,12 @@ fn test_two_level_storage() {
     // verify cache storage is null
     let value6 = cache_storage
         .clone()
-        .get(TRANSACTION_PREFIX_NAME, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
     assert_eq!(value6, None);
     let value7 = db_storage
         .clone()
-        .get(TRANSACTION_PREFIX_NAME, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
     assert_eq!(value7, None);
 }
