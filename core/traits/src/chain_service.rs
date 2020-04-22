@@ -5,6 +5,7 @@ use crate::ConnectResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -31,6 +32,8 @@ pub trait ChainService {
     fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
     fn master_startup_info(&self) -> StartupInfo;
     fn master_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>>;
+    fn get_transaction(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn get_block_txn_ids(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     /////////////////////////////////////////////// just for test
     fn create_block_template(
         &self,
@@ -66,6 +69,8 @@ pub trait ChainAsyncService:
     async fn master_blocks_by_number(self, number: BlockNumber, count: u64) -> Result<Vec<Block>>;
     async fn master_startup_info(self) -> Result<StartupInfo>;
     async fn master_head(self) -> Result<ChainInfo>;
+    async fn get_transaction(self, txn_id: HashValue) -> Result<TransactionInfo>;
+    async fn get_block_txn(self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     /////////////////////////////////////////////// just for test
     async fn gen_tx(&self) -> Result<()>;
     async fn create_block_template(

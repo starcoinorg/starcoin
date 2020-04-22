@@ -9,8 +9,8 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_state_api::ChainState;
 use types::error::BlockExecutorError;
 use types::error::ExecutorResult;
-use types::transaction::Transaction;
 use types::transaction::TransactionStatus;
+use types::transaction::{Transaction, TransactionInfo};
 
 #[derive(Clone)]
 pub struct BlockExecutor {}
@@ -22,12 +22,13 @@ impl BlockExecutor {
         accumulator: &MerkleAccumulator,
         txns: Vec<Transaction>,
         is_preview: bool,
-    ) -> ExecutorResult<(HashValue, HashValue)> {
+    ) -> ExecutorResult<(HashValue, HashValue, Vec<TransactionInfo>)> {
         let mut state_root = HashValue::zero();
         let mut transaction_hash = vec![];
+        let mut vec_transaction_info = vec![];
         for txn in txns {
             let txn_hash = txn.crypto_hash();
-            let output = Executor::execute_transaction(chain_state, txn)
+            let output = Executor::execute_transaction(chain_state, txn.clone())
                 .map_err(|_err| BlockExecutorError::BlockTransactionExecuteErr(txn_hash))?;
 
             match output.status() {
@@ -37,15 +38,23 @@ impl BlockExecutor {
                         txn_hash,
                     ))
                 }
-                TransactionStatus::Keep(_status) => {
+                TransactionStatus::Keep(status) => {
                     //continue.
+                    transaction_hash.push(txn_hash);
+                    //TODO event root hash
+                    vec_transaction_info.push(TransactionInfo::new(
+                        txn.clone().id(),
+                        state_root.clone(),
+                        HashValue::zero(),
+                        output.gas_used(),
+                        status.major_status,
+                    ));
                 }
             }
             state_root = chain_state
                 .commit()
                 .map_err(|_err| BlockExecutorError::BlockChainStateCommitErr)
                 .unwrap();
-            transaction_hash.push(txn_hash);
         }
 
         let (accumulator_root, first_leaf_idx) = accumulator
@@ -69,12 +78,11 @@ impl BlockExecutor {
                     })
                     .unwrap();
             });
-
             chain_state
                 .flush()
                 .map_err(|_err| BlockExecutorError::BlockChainStateFlushErr)?;
         }
 
-        Ok((accumulator_root, state_root))
+        Ok((accumulator_root, state_root, vec_transaction_info))
     }
 }

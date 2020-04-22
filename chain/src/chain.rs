@@ -195,7 +195,7 @@ where
         )));
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
-        //  let block_info = self.get_block_info(previous_header.id());
+        // let block_info = self.get_block_info(previous_header.id());
         let accumulator = MerkleAccumulator::new(
             self.chain_info.branch_id(),
             *ACCUMULATOR_PLACEHOLDER_HASH,
@@ -205,7 +205,7 @@ where
             self.storage.clone(),
         )?;
 
-        let (accumulator_root, state_root) =
+        let (accumulator_root, state_root, _) =
             BlockExecutor::block_execute(&chain_state, &accumulator, txns, true)?;
 
         Ok(BlockTemplate::new(
@@ -352,12 +352,28 @@ where
         return Ok(None);
     }
 
-    fn get_transaction(&self, _hash: HashValue) -> Result<Option<Transaction>, Error> {
-        unimplemented!()
+    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+        let mut txn_vec = vec![];
+        match self.storage.get_block_transactions(block_id) {
+            Ok(vec_hash) => {
+                for hash in vec_hash {
+                    match self.get_transaction_info(hash) {
+                        Ok(Some(transaction_info)) => txn_vec.push(transaction_info),
+                        _ => error!("get transaction info error: {:?}", hash),
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(txn_vec)
     }
 
-    fn get_transaction_info(&self, _hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        unimplemented!()
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
+        self.storage.get_transaction(txn_hash)
+    }
+
+    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
+        self.storage.get_transaction_info(hash)
     }
 
     fn create_block_template(
@@ -448,8 +464,8 @@ where
         txns.push(Transaction::BlockMetadata(block_metadata));
 
         let exe_begin_time = get_unix_ts();
-        let (accumulator_root, state_root) =
-            BlockExecutor::block_execute(chain_state, &self.accumulator, txns, false)?;
+        let (accumulator_root, state_root, vec_transaction_info) =
+            BlockExecutor::block_execute(chain_state, &self.accumulator, txns.clone(), false)?;
         let exe_end_time = get_unix_ts();
         debug!("exe used time: {}", (exe_end_time - exe_begin_time));
         assert_eq!(
@@ -467,15 +483,18 @@ where
         };
 
         let block_info = BlockInfo::new(
-            header.id(),
+            header.id().clone(),
             accumulator_root,
             self.accumulator.get_frozen_subtree_roots()?,
             self.accumulator.num_leaves(),
             self.accumulator.num_nodes(),
             total_difficulty,
         );
+        // save block's transaction relationship and save transaction
+        self.save(header.id().clone(), txns.clone())?;
+        self.storage.save_transaction_infos(vec_transaction_info)?;
         let commit_begin_time = get_unix_ts();
-        self.commit(block, block_info)?;
+        self.commit(block.clone(), block_info)?;
         let commit_end_time = get_unix_ts();
         debug!(
             "commit used time: {}",
@@ -502,6 +521,21 @@ where
         self.chain_state =
             ChainStateDB::new(self.storage.clone(), Some(self.head.header().state_root()));
         debug!("save block {:?} succ.", block_id);
+        Ok(())
+    }
+
+    fn save(&mut self, block_id: HashValue, transactions: Vec<Transaction>) -> Result<()> {
+        let txn_id_vec = transactions
+            .iter()
+            .cloned()
+            .map(|user_txn| user_txn.id())
+            .collect::<Vec<HashValue>>();
+        // save block's transactions
+        self.storage
+            .save_block_transactions(block_id, txn_id_vec)
+            .unwrap();
+        // save transactions
+        self.storage.save_transaction_batch(transactions).unwrap();
         Ok(())
     }
 

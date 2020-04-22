@@ -7,7 +7,7 @@ use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
-    transaction::SignedUserTransaction,
+    transaction::{SignedUserTransaction, TransactionInfo},
 };
 
 #[derive(Clone)]
@@ -27,6 +27,8 @@ pub enum ChainRequest {
     ConnectBlock(Block, Option<BlockInfo>),
     GetStartupInfo(),
     GetHeadChainInfo(),
+    GetTransaction(HashValue),
+    GetTransactionIdByBlock(HashValue),
     GetBlocksByNumber(u64, u64),
     GenTx(), // just for test
 }
@@ -44,7 +46,9 @@ pub enum ChainResponse {
     HashValue(HashValue),
     StartupInfo(StartupInfo),
     ChainInfo(ChainInfo),
+    Transaction(TransactionInfo),
     VecBlock(Vec<Block>),
+    VecTransactionInfo(Vec<TransactionInfo>),
     None,
     Conn(ConnectResult<()>),
 }

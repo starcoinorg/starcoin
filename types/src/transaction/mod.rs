@@ -643,6 +643,13 @@ impl Transaction {
             Transaction::BlockMetadata(_block_metadata) => String::from("block_metadata"),
         }
     }
+    pub fn id(&self) -> HashValue {
+        match self {
+            Transaction::UserTransaction(user_txn) => user_txn.crypto_hash(),
+            Transaction::BlockMetadata(block_meta) => block_meta.id(),
+            _ => HashValue::zero(),
+        }
+    }
 }
 
 impl TryFrom<Transaction> for SignedUserTransaction {

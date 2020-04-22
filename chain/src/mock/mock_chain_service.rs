@@ -10,7 +10,7 @@ use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockTemplate},
     startup_info::StartupInfo,
-    transaction::SignedUserTransaction,
+    transaction::{SignedUserTransaction, TransactionInfo},
 };
 
 //TODO implement Mock service
@@ -70,6 +70,14 @@ impl ChainAsyncService for MockChainService {
     }
 
     async fn master_head(self) -> Result<ChainInfo, Error> {
+        unimplemented!()
+    }
+
+    async fn get_transaction(self, _txn_id: HashValue) -> Result<TransactionInfo, Error> {
+        unimplemented!()
+    }
+
+    async fn get_block_txn(self, _block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
         unimplemented!()
     }
 

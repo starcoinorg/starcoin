@@ -49,6 +49,10 @@ impl BlockMetadata {
         let id = self.id.to_vec();
         Ok((id, self.timestamp, self.author, self.auth_key_prefix))
     }
+
+    pub fn id(&self) -> HashValue {
+        self.id
+    }
 }
 
 impl From<BlockHeader> for BlockMetadata {

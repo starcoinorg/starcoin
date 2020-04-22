@@ -33,7 +33,7 @@ use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::SystemEvents,
-    transaction::SignedUserTransaction,
+    transaction::{SignedUserTransaction, TransactionInfo},
 };
 
 /// actor for block chain.
@@ -143,9 +143,15 @@ where
             ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
                 self.service.master_startup_info().master,
             )),
+            ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(
+                self.service.get_transaction(hash)?.unwrap(),
+            )),
             ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
                 self.service.master_blocks_by_number(number, count)?,
             )),
+            ChainRequest::GetTransactionIdByBlock(block_id) => Ok(
+                ChainResponse::VecTransactionInfo(self.service.get_block_txn_ids(block_id)?),
+            ),
 
             ChainRequest::GenTx() => {
                 self.service.gen_tx()?;
@@ -366,6 +372,36 @@ where
             Ok(chain_info)
         } else {
             bail!("get head chain info error.")
+        }
+    }
+
+    async fn get_transaction(self, txn_id: HashValue) -> Result<TransactionInfo, Error> {
+        let response = self
+            .address
+            .send(ChainRequest::GetTransaction(txn_id))
+            .await
+            .map_err(|e| Into::<Error>::into(e))
+            .unwrap()
+            .unwrap();
+        if let ChainResponse::Transaction(transaction_info) = response {
+            Ok(transaction_info)
+        } else {
+            bail!("get transaction error.")
+        }
+    }
+
+    async fn get_block_txn(self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+        let response = self
+            .address
+            .send(ChainRequest::GetTransactionIdByBlock(block_id))
+            .await
+            .map_err(|e| Into::<Error>::into(e))
+            .unwrap()
+            .unwrap();
+        if let ChainResponse::VecTransactionInfo(vec_txn_id) = response {
+            Ok(vec_txn_id)
+        } else {
+            bail!("get block's transaction ids error.")
         }
     }
 
