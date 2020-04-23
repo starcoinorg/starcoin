@@ -17,6 +17,9 @@ prometheus = { version = "0.8.0", default-features = false, features = ["process
 serde_json = "1.0.51"
 tokio = "0.2"
 
+[target."cfg(not(target_os = \"linux\"))".dependencies.sysinfo]
+version = "0.14"
+
 [dev-dependencies]
 rusty-fork = "0.2.1"
 assert_approx_eq = "1.1.0"
