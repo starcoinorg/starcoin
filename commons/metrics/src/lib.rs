@@ -7,6 +7,9 @@ mod json_encoder;
 pub mod metric_server;
 mod op_counters;
 
+#[cfg(not(target_os = "linux"))]
+mod process_collector;
+
 pub use op_counters::{DurationHistogram, OpMetrics};
 // Re-export counter types from prometheus crate
 pub use prometheus::{Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec};
