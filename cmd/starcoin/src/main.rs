@@ -120,13 +120,13 @@ fn run() -> Result<()> {
         .command(
             Command::with_name("debug")
                 .subcommand(debug::LogLevelCommand)
+                .subcommand(debug::GenTxnCommand)
                 .subcommand(debug::PanicCommand),
         )
         .exec();
     Ok(())
 }
 
-//TODO error and crash handle.
 fn main() {
     crash_handler::setup_panic_handler();
     match run() {
