@@ -21,16 +21,16 @@ impl ProcessCollector {
     pub fn new(pid: i32, namespace: String) -> ProcessCollector {
         let vsize = Gauge::with_opts(
             Opts::new(
-                "process_virtual_memory_bytes",
-                "Virtual memory size in bytes.",
+                "process_virtual_memory_kilobytes",
+                "Virtual memory size in kilobytes.",
             )
             .namespace(namespace.clone()),
         )
         .unwrap();
         let rss = Gauge::with_opts(
             Opts::new(
-                "process_resident_memory_bytes",
-                "Resident memory size in bytes.",
+                "process_resident_memory_kilobytes",
+                "Resident memory size in kilobytes.",
             )
             .namespace(namespace.clone()),
         )
@@ -68,8 +68,8 @@ impl Collector for ProcessCollector {
         match process_info {
             None => vec![],
             Some(process_info) => {
-                let memory_usage = process_info.memory() * 1024;
-                let virtual_mem = process_info.virtual_memory() * 1024;
+                let memory_usage = process_info.memory();
+                let virtual_mem = process_info.virtual_memory();
                 let cpu_usage = process_info.cpu_usage();
                 self.rss.set(memory_usage as f64);
                 self.vsize.set(virtual_mem as f64);
