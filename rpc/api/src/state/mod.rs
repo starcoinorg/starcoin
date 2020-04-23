@@ -19,7 +19,7 @@ pub trait StateApi {
     #[rpc(name = "state.get_with_proof")]
     fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProof>;
 
-    #[rpc(name = "state.get_with_proof")]
+    #[rpc(name = "state.get_account_state")]
     fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>>;
 
     #[rpc(name = "state.get_state_root")]

@@ -17,8 +17,8 @@ use std::convert::TryFrom;
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateProof {
     account_state: Option<Blob>,
-    account_proof: SparseMerkleProof,
-    account_state_proof: SparseMerkleProof,
+    pub account_proof: SparseMerkleProof,
+    pub account_state_proof: SparseMerkleProof,
 }
 
 impl StateProof {

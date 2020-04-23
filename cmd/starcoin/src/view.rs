@@ -1,8 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_state_api::StateWithProof;
 use starcoin_types::block::Block;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
@@ -14,6 +16,29 @@ pub struct AccountWithStateView {
     pub auth_key_prefix: String,
     pub sequence_number: Option<u64>,
     pub balance: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountView {
+    pub sequence_number: Option<u64>,
+    pub balance: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StateWithProofView {
+    pub state: String,
+    pub account_proof: SparseMerkleProof,
+    pub account_state_proof: SparseMerkleProof,
+}
+impl From<StateWithProof> for StateWithProofView {
+    fn from(state_proof: StateWithProof) -> Self {
+        let account_state = hex::encode(state_proof.state.unwrap());
+        Self {
+            state: account_state,
+            account_proof: state_proof.proof.account_proof,
+            account_state_proof: state_proof.proof.account_state_proof,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

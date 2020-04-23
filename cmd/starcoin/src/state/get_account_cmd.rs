@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::AccountView;
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::HashValue;
+use starcoin_rpc_client::RemoteStateReader;
+use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
@@ -22,7 +24,7 @@ impl CommandAction for GetAccountCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = Vec<HashValue>;
+    type ReturnItem = AccountView;
 
     fn run(
         &self,
@@ -30,18 +32,16 @@ impl CommandAction for GetAccountCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let account_state =
-            client
-                .state_get_account_state(opt.account_address)?
-                .ok_or(format_err!(
-                    "Account with address {} state not exist.",
-                    opt.account_address
-                ))?;
+        let chain_state_reader = RemoteStateReader::new(client);
+        let account_state_reader = AccountStateReader::new(&chain_state_reader);
+        let sequence_number = account_state_reader
+            .get_account_resource(&opt.account_address)?
+            .map(|res| res.sequence_number());
+        let balance = account_state_reader.get_balance(&opt.account_address)?;
 
-        let mut result = vec![];
-        for hash in account_state.storage_roots() {
-            result.push(hash.unwrap());
-        }
-        Ok(result)
+        Ok(AccountView {
+            sequence_number,
+            balance,
+        })
     }
 }

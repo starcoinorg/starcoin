@@ -22,7 +22,7 @@ impl CommandAction for GetCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = Vec<u8>;
+    type ReturnItem = String;
 
     fn run(
         &self,
@@ -36,7 +36,6 @@ impl CommandAction for GetCommand {
                 "Account with address {} state not exist.",
                 opt.account_address
             ))?;
-
-        Ok(state)
+        Ok(hex::encode(state))
     }
 }
