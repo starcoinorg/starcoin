@@ -1,0 +1,40 @@
+name: Code Coverage Report
+on:
+  push:
+    # only build master
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+jobs:
+  code_coverage_report:
+    name: Generate code coverage report
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt,clippy
+      - name: setup environment
+        run: bash ./scripts/dev_setup.sh
+      - name: Install grcov and lcov
+        run: |
+          sudo apt-get update
+          sudo apt-get install lcov -y
+          cargo install --force grcov
+      - name: Run code coverage
+        run: ./scripts/coverage_report.sh . target/codecov --batch
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./target/codecov/lcov.info
+          flags: unittests
+          fail_ci_if_error: true
