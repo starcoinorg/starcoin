@@ -47,7 +47,7 @@ impl<T> Future for MessageFuture<T> {
                 }
             }
         }
-        return Poll::Pending;
+        Poll::Pending
     }
 }
 
@@ -68,7 +68,11 @@ where
     }
 
     pub async fn add_future(&self, id: K, sender: Sender<Result<T>>) {
-        self.tx_map.lock().await.entry(id).or_insert(sender.clone());
+        self.tx_map
+            .lock()
+            .await
+            .entry(id)
+            .or_insert_with(|| sender.clone());
     }
 
     pub async fn send_response(&self, id: K, value: T) -> Result<()> {
@@ -90,15 +94,12 @@ where
     //
     pub async fn remove_future(&self, id: K) {
         let mut tx_map = self.tx_map.lock().await;
-        match tx_map.get(&id) {
-            Some(tx) => {
-                tx.clone()
-                    .send(Err(anyhow!("future time out")))
-                    .await
-                    .unwrap();
-                tx_map.remove(&id);
-            }
-            _ => (),
+        if let Some(tx) = tx_map.get(&id) {
+            tx.clone()
+                .send(Err(anyhow!("future time out")))
+                .await
+                .unwrap();
+            tx_map.remove(&id);
         }
     }
 }

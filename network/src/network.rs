@@ -85,10 +85,7 @@ impl PeerInfoNet {
 impl NetworkService for NetworkAsyncService {
     async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         let data = msg.encode()?;
-        let network_message = NetworkMessage {
-            peer_id: peer_id.into(),
-            data,
-        };
+        let network_message = NetworkMessage { peer_id, data };
         self.tx.unbounded_send(network_message)?;
 
         Ok(())
@@ -113,7 +110,7 @@ impl NetworkService for NetworkAsyncService {
         let peer_msg = PeerMessage::RawRPCRequest(request_id, message);
         let data = peer_msg.encode()?;
         let network_message = NetworkMessage {
-            peer_id: peer_id.clone().into(),
+            peer_id: peer_id.clone(),
             data,
         };
         self.tx.unbounded_send(network_message)?;
@@ -218,10 +215,7 @@ impl NetworkActor {
         genesis_hash: HashValue,
         self_info: PeerInfo,
     ) -> NetworkAsyncService {
-        let mut has_seed = false;
-        if node_config.network.seeds.len() > 0 {
-            has_seed = true;
-        }
+        let has_seed = !node_config.network.seeds.is_empty();
 
         let path = node_config.base.data_dir();
         let file = Path::new(PEERS_FILE_NAME);
@@ -230,11 +224,10 @@ impl NetworkActor {
         let peers_from_json = match File::open(path) {
             Ok(mut f) => {
                 let mut contents = String::new();
-                let result = match f.read_to_string(&mut contents) {
+                match f.read_to_string(&mut contents) {
                     Ok(_n) => Some(serde_json::from_str::<Vec<Multiaddr>>(&contents)),
                     Err(_e) => None,
-                };
-                result
+                }
             }
             Err(_e) => {
                 debug!("no peers file ");
@@ -247,14 +240,11 @@ impl NetworkActor {
         for seed in network_config.seeds {
             seeds.insert(seed);
         }
-        match peers_from_json {
-            Some(Ok(addrs)) => {
-                info!("load peers from file {:?}", addrs);
-                for addr in addrs {
-                    seeds.insert(addr);
-                }
+        if let Some(Ok(addrs)) = peers_from_json {
+            info!("load peers from file {:?}", addrs);
+            for addr in addrs {
+                seeds.insert(addr);
             }
-            _ => {}
         }
         network_config.seeds = Vec::from_iter(seeds.into_iter());
         let (service, tx, rx, event_rx, tx_command) = build_network_service(
@@ -376,7 +366,7 @@ impl Inner {
         match message {
             Ok(msg) => {
                 inner
-                    .handle_network_message(network_msg.peer_id.into(), msg)
+                    .handle_network_message(network_msg.peer_id, msg)
                     .await?
             }
             Err(e) => {
@@ -490,7 +480,7 @@ impl Inner {
             .lock()
             .await
             .entry(peer_id.clone())
-            .or_insert(PeerInfoNet::new(peer_info));
+            .or_insert_with(|| PeerInfoNet::new(peer_info));
 
         let path = self.node_config.base.data_dir();
         let file = Path::new(PEERS_FILE_NAME);
@@ -532,7 +522,7 @@ impl Inner {
         for protocol in components {
             match protocol {
                 Protocol::Ip4(ip) => {
-                    if !is_global(&ip) {
+                    if !is_global(ip) {
                         return false;
                     }
                 }
@@ -590,7 +580,7 @@ impl Handler<SystemEvents> for NetworkActor {
                 let block_number = block.header().number();
 
                 let total_difficulty = block.get_total_difficulty();
-                let msg = PeerMessage::Block(block.clone());
+                let msg = PeerMessage::Block(block);
                 let bytes = msg.encode().unwrap();
 
                 let self_info = PeerInfo::new(
@@ -628,13 +618,10 @@ impl Handler<SystemEvents> for NetworkActor {
                 });
 
                 self.network_service.update_self_info(self_info);
-
-                ()
             }
-            _ => (),
+            SystemEvents::MinedBlock(_b) => {}
+            _ => {}
         };
-
-        ()
     }
 }
 
@@ -677,8 +664,6 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
                     .unwrap();
             }
         });
-
-        ()
     }
 }
 

@@ -23,6 +23,7 @@ use tokio::runtime::Handle;
 use types::peer_info::PeerInfo;
 
 const PROTOCOL_NAME: &[u8] = b"/starcoin/consensus/1";
+const PROTOCOL_ID: &[u8] = b"stargate";
 
 #[derive(Clone)]
 pub struct SNetworkService {
@@ -40,7 +41,7 @@ pub struct NetworkInner {
 
 impl SNetworkService {
     pub fn new(cfg: NetworkConfiguration, handle: Handle) -> Self {
-        let protocol = network_p2p::ProtocolId::from("stargate".as_bytes());
+        let protocol = network_p2p::ProtocolId::from(PROTOCOL_ID);
 
         let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
         let service = worker.service().clone();
@@ -211,7 +212,7 @@ impl NetworkInner {
                 Message::Payload(payload) => {
                     //receive message
                     let user_msg = NetworkMessage {
-                        peer_id: peer_id.clone().into(),
+                        peer_id: peer_id.clone(),
                         data: payload.data,
                     };
                     net_tx.unbounded_send(user_msg)?;
@@ -242,7 +243,7 @@ impl NetworkInner {
     async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
         let account_addr = message.peer_id.clone();
         self.service.write_notification(
-            account_addr.into(),
+            account_addr,
             PROTOCOL_NAME.into(),
             Message::new_payload(message.data).0.into_bytes(),
         );

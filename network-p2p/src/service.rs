@@ -194,7 +194,7 @@ impl NetworkWorker {
             peerset_config,
             params.protocol_id.clone(),
             chain_info,
-            boot_node_ids.clone(),
+            boot_node_ids,
         )?;
 
         // Build the swarm.
@@ -262,7 +262,7 @@ impl NetworkWorker {
             is_major_syncing: is_major_syncing.clone(),
             peerset: peerset_handle,
             local_peer_id,
-            to_worker: to_worker.clone(),
+            to_worker,
         });
 
         Ok(NetworkWorker {
@@ -322,7 +322,7 @@ impl NetworkWorker {
 				Some((peer_id.to_base58(), NetworkStatePeer {
 					endpoint,
 					version_string: swarm.node(peer_id)
-						.and_then(|i| i.client_version().map(|s| s.to_owned())).clone(),
+						.and_then(|i| i.client_version().map(|s| s.to_owned())),
 					latest_ping_time: swarm.node(peer_id).and_then(|i| i.latest_ping()),
 					enabled: swarm.user_protocol().is_enabled(&peer_id),
 					open: swarm.user_protocol().is_open(&peer_id),
@@ -345,8 +345,7 @@ impl NetworkWorker {
                         NetworkStateNotConnectedPeer {
                             version_string: swarm
                                 .node(&peer_id)
-                                .and_then(|i| i.client_version().map(|s| s.to_owned()))
-                                .clone(),
+                                .and_then(|i| i.client_version().map(|s| s.to_owned())),
                             latest_ping_time: swarm.node(&peer_id).and_then(|i| i.latest_ping()),
                             known_addresses: NetworkBehaviour::addresses_of_peer(
                                 &mut **swarm,
