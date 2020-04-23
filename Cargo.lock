@@ -6045,6 +6045,7 @@ dependencies = [
  "anyhow",
  "backtrace",
  "crossbeam-channel",
+ "forkable-jellyfish-merkle",
  "hex 0.3.2",
  "move-lang",
  "notify",

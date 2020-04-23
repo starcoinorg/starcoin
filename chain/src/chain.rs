@@ -3,7 +3,7 @@
 
 use crate::chain_service::BlockChainCollection;
 use actix::prelude::*;
-use anyhow::{ensure, format_err, Error, Result};
+use anyhow::{format_err, Error, Result};
 use config::NodeConfig;
 use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
@@ -288,15 +288,13 @@ where
 
     fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>, Error> {
         let mut block_vec = vec![];
-        ensure!(
-            (number + 1) >= count,
-            "count :{} must litter than number :{} ",
-            count,
-            number
-        );
-        if let Some(branch_id) = self.get_branch_id(number) {
+        let mut temp_number = number;
+        if number == 0 as u64 {
+            temp_number = self.current_header().number();
+        }
+        if let Some(branch_id) = self.get_branch_id(temp_number) {
             let mut tmp_count = count;
-            let mut current_num = number;
+            let mut current_num = temp_number;
 
             loop {
                 match self
