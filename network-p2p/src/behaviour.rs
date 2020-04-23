@@ -166,7 +166,7 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
             CustomMessageOutcome::NotificationStreamClosed { remote } => {
                 self.events
                     .push(BehaviourOut::Event(Event::NotificationStreamClosed {
-                        remote: remote.clone(),
+                        remote,
                     }));
             }
             CustomMessageOutcome::NotificationsReceived { remote, messages } => {
@@ -192,8 +192,7 @@ impl NetworkBehaviourEventProcess<debug_info::DebugInfoEvent> for Behaviour {
             self.discovery
                 .add_self_reported_address(&peer_id, addr.clone());
         }
-        self.protocol
-            .add_discovered_nodes(iter::once(peer_id.clone()));
+        self.protocol.add_discovered_nodes(iter::once(peer_id));
     }
 }
 

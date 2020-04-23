@@ -106,7 +106,7 @@ impl DiscoveryBehaviour {
 
         let local_id = local_public_key.clone().into_peer_id();
         let store = MemoryStore::new(local_id.clone());
-        let mut kademlia = Kademlia::new(local_id.clone(), store);
+        let mut kademlia = Kademlia::new(local_id, store);
         for (peer_id, addr) in &user_defined {
             kademlia.add_address(peer_id, addr.clone());
         }
@@ -457,8 +457,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             continue;
                         }
 
-                        self.discoveries
-                            .extend(list.into_iter().map(|(peer_id, _)| peer_id));
+                        self.discoveries.extend(list.map(|(peer_id, _)| peer_id));
                         if let Some(peer_id) = self.discoveries.pop_front() {
                             let ev = DiscoveryOut::Discovered(peer_id);
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));

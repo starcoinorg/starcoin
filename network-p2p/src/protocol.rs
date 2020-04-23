@@ -195,7 +195,7 @@ impl NetworkBehaviour for Protocol {
 
         let outcome = match event {
             GenericProtoOut::CustomProtocolOpen { peer_id, .. } => {
-                self.on_peer_connected(peer_id.clone());
+                self.on_peer_connected(peer_id);
                 CustomMessageOutcome::None
             }
             GenericProtoOut::CustomProtocolClosed { peer_id, .. } => {
@@ -348,12 +348,11 @@ impl Protocol {
 
     pub fn on_custom_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
         trace!("receive custom message from {} ", who);
-        let message = match Message::decode(&mut &data[..]) {
+        let message = match Message::decode(&data[..]) {
             Ok(message) => message,
             Err(err) => {
                 info!(target: "sync", "Couldn't decode packet sent by {}: {:?}: {}", who, data, err);
-                self.peerset_handle
-                    .report_peer(who.clone(), rep::BAD_MESSAGE);
+                self.peerset_handle.report_peer(who, rep::BAD_MESSAGE);
                 return CustomMessageOutcome::None;
             }
         };
@@ -413,7 +412,7 @@ impl Protocol {
                 return CustomMessageOutcome::None;
             }
 
-            let _info = match self.handshaking_peers.remove(&who) {
+            match self.handshaking_peers.remove(&who) {
                 Some(_handshaking) => {}
                 None => {
                     error!(target: "sync", "Received status from previously unconnected node {}", who);
@@ -427,7 +426,7 @@ impl Protocol {
         // Notify all the notification protocols as open.
         CustomMessageOutcome::NotificationStreamOpened {
             remote: who,
-            info: status.info.clone(),
+            info: status.info,
         }
     }
 
@@ -468,7 +467,7 @@ impl Protocol {
         }
 
         // lock all the the peer lists so that add/remove peer events are in order
-        let _removed = {
+        {
             self.handshaking_peers.remove(&peer);
         };
     }
@@ -476,8 +475,7 @@ impl Protocol {
     /// Called as a back-pressure mechanism if the networking detects that the peer cannot process
     /// our messaging rate fast enough.
     pub fn on_clogged_peer(&self, who: PeerId) {
-        self.peerset_handle
-            .report_peer(who.clone(), rep::CLOGGED_PEER);
+        self.peerset_handle.report_peer(who, rep::CLOGGED_PEER);
     }
 
     /// Adjusts the reputation of a node.

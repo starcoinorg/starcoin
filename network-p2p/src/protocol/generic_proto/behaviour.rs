@@ -492,8 +492,8 @@ impl GenericProto {
                 debug!(target: "sub-libp2p", "PSM => Connect({:?}): Will start to connect at \
 					until {:?}", occ_entry.key(), until);
                 *occ_entry.into_mut() = PeerState::PendingRequest {
-                    timer: futures_timer::Delay::new(until.clone() - now),
-                    timer_deadline: until.clone(),
+                    timer: futures_timer::Delay::new(*until - now),
+                    timer_deadline: *until,
                 };
             }
 
@@ -516,8 +516,8 @@ impl GenericProto {
                 *occ_entry.into_mut() = PeerState::DisabledPendingEnable {
                     connected_point: connected_point.clone(),
                     open,
-                    timer: futures_timer::Delay::new(banned.clone() - now),
-                    timer_deadline: banned.clone(),
+                    timer: futures_timer::Delay::new(*banned - now),
+                    timer_deadline: *banned,
                 };
             }
 
@@ -756,7 +756,7 @@ impl GenericProto {
 
 impl DiscoveryNetBehaviour for GenericProto {
     fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
-        self.peerset.discovered(peer_ids.into_iter().map(|peer_id| {
+        self.peerset.discovered(peer_ids.map(|peer_id| {
             debug!(target: "sub-libp2p", "PSM <= Discovered({:?})", peer_id);
             peer_id
         }));
@@ -789,7 +789,7 @@ impl NetworkBehaviour for GenericProto {
                 );
                 debug!(target: "sub-libp2p", "Handler({:?}) <= Enable", peer_id);
                 self.events.push(NetworkBehaviourAction::SendEvent {
-                    peer_id: peer_id.clone(),
+                    peer_id,
                     event: NotifsHandlerIn::Enable,
                 });
                 *st = PeerState::Enabled {
@@ -806,7 +806,7 @@ impl NetworkBehaviour for GenericProto {
                 st @ &mut PeerState::Banned { .. },
                 connected_point @ ConnectedPoint::Listener { .. },
             ) => {
-                let incoming_id = self.next_incoming_index.clone();
+                let incoming_id = self.next_incoming_index;
                 self.next_incoming_index.0 = match self.next_incoming_index.0.checked_add(1) {
                     Some(v) => v,
                     None => {
@@ -820,7 +820,7 @@ impl NetworkBehaviour for GenericProto {
 					incoming_id, peer_id, connected_point);
                 self.peerset.incoming(peer_id.clone(), incoming_id);
                 self.incoming.push(IncomingPeer {
-                    peer_id: peer_id.clone(),
+                    peer_id,
                     alive: true,
                     incoming_id,
                 });
@@ -838,7 +838,7 @@ impl NetworkBehaviour for GenericProto {
 					else than PSM, disabling", peer_id);
                 debug!(target: "sub-libp2p", "Handler({:?}) <= Disable", peer_id);
                 self.events.push(NetworkBehaviourAction::SendEvent {
-                    peer_id: peer_id.clone(),
+                    peer_id,
                     event: NotifsHandlerIn::Disable,
                 });
                 *st = PeerState::Disabled {
@@ -1042,7 +1042,7 @@ impl NetworkBehaviour for GenericProto {
 
                         debug!(target: "sub-libp2p", "Handler({:?}) <= Disable", source);
                         self.events.push(NetworkBehaviourAction::SendEvent {
-                            peer_id: source.clone(),
+                            peer_id: source,
                             event: NotifsHandlerIn::Disable,
                         });
 

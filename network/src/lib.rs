@@ -53,7 +53,7 @@ where
     where
         Self: Sized,
     {
-        Decode::decode(&mut &bytes[..]).ok_or(anyhow!("decode data error"))
+        Decode::decode(&mut &bytes[..]).ok_or_else(|| anyhow!("decode data error"))
     }
 }
 
@@ -76,7 +76,7 @@ impl Message {
         Message::Payload(PayloadMsg { id: 0, data })
     }
 
-    pub fn as_payload(self) -> Option<Vec<u8>> {
+    pub fn into_payload(self) -> Option<Vec<u8>> {
         match self {
             Message::Payload(p) => Some(p.data),
             _ => None,
