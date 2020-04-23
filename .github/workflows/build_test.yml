@@ -49,7 +49,7 @@ jobs:
           args: --all-targets --no-run
       - name: test
         env:
-          RUST_LOG: info
+          RUST_LOG: error
           RUST_BACKTRACE: full
         uses: actions-rs/cargo@v1
         with:

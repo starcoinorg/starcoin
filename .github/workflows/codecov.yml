@@ -31,6 +31,8 @@ jobs:
           sudo apt-get install lcov -y
           cargo install --force grcov
       - name: Run code coverage
+        env:
+          RUST_LOG: error
         run: ./scripts/coverage_report.sh . target/codecov --batch
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
