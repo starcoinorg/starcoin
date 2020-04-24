@@ -15,15 +15,19 @@ pub struct MetricsConfig {
 impl Default for MetricsConfig {
     fn default() -> Self {
         Self {
-            address: "0.0.0.0".to_string(),
+            address: "localhost".to_string(),
             metrics_server_port: 9101,
         }
     }
 }
 
 impl ConfigModule for MetricsConfig {
-    fn default_with_net(_net: ChainNetwork) -> Self {
-        Self::default()
+    fn default_with_net(net: ChainNetwork) -> Self {
+        let mut config = Self::default();
+        if net == ChainNetwork::Dev {
+            config.metrics_server_port = get_available_port();
+        }
+        config
     }
 
     fn random(&mut self, _base: &BaseConfig) {
