@@ -18,7 +18,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::convert::TryInto;
 use std::marker::PhantomData;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage::Store;
 use traits::Consensus;
@@ -57,7 +57,7 @@ where
     pub storage: Arc<S>,
     pub txpool: P,
     chain_info: ChainInfo,
-    pub block_chain_collection: Arc<BlockChainCollection<C, S, P>>,
+    pub block_chain_collection: Weak<BlockChainCollection<C, S, P>>,
 }
 
 impl<C, S, P> BlockChain<C, S, P>
@@ -71,7 +71,7 @@ where
         chain_info: ChainInfo,
         storage: Arc<S>,
         txpool: P,
-        block_chain_collection: Arc<BlockChainCollection<C, S, P>>,
+        block_chain_collection: Weak<BlockChainCollection<C, S, P>>,
     ) -> Result<Self> {
         let head_block_hash = chain_info.get_head();
         let head = storage
@@ -240,11 +240,29 @@ where
 
     pub fn get_branch_id(&self, number: BlockNumber) -> Option<HashValue> {
         self.block_chain_collection
+            .upgrade()
+            .unwrap()
             .get_branch_id(&self.chain_info.branch_id(), number)
     }
 
     pub fn update_head(&mut self, latest_block: BlockHeader) {
         self.chain_info.update_head(latest_block)
+    }
+}
+
+impl<C, S, P> Drop for BlockChain<C, S, P>
+where
+    C: Consensus,
+    S: Store,
+    P: TxPoolAsyncService,
+{
+    fn drop(&mut self) {
+        info!(
+            "drop BlockChain: {}, {}",
+            self.block_chain_collection.strong_count(),
+            self.block_chain_collection.weak_count()
+        );
+        drop(&self.block_chain_collection);
     }
 }
 

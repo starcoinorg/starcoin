@@ -172,8 +172,13 @@ where
                 storage.clone(),
                 txpool.clone(),
             )?;
-            let block_chain =
-                BlockChain::<C, S, P>::new(config.clone(), master, storage, txpool, collection)?;
+            let block_chain = BlockChain::<C, S, P>::new(
+                config.clone(),
+                master,
+                storage,
+                txpool,
+                Arc::downgrade(&collection),
+            )?;
             mint::<H, C>(
                 stratum,
                 miner,
@@ -183,6 +188,8 @@ where
                 &block_chain,
                 arbiter,
             )?;
+            drop(block_chain);
+            drop(collection);
             Ok(())
         }
         .map(|result: Result<()>| {
