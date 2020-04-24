@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "benchmarks",
     "commons/stest",
     "commons/scs",
     "commons/crypto",
