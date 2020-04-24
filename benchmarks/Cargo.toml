@@ -1,0 +1,20 @@
+[package]
+name = "benchmarks"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+criterion = "0.3.1"
+proptest = "0.9.6"
+executor = {path = "../executor", package="starcoin-executor"}
+types = {path = "../types", package="starcoin-types"}
+language_e2e_tests = {path = "../vm/e2e-tests", package="language-e2e-tests"}
+storage = { package="starcoin-storage", path = "../storage"}
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+[[bench]]
+name = "benchmarks"
+harness = false
