@@ -39,4 +39,4 @@ jobs:
         with:
           file: ./target/codecov/lcov.info
           flags: unittests
-          fail_ci_if_error: true
+          fail_ci_if_error: false
