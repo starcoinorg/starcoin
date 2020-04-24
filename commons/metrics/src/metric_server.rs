@@ -54,11 +54,6 @@ pub fn start_server(host: String, port: u16) {
         .unwrap();
 
     // metric process info.
-    #[cfg(target_os = "linux")]
-    prometheus::register(Box::new(
-        prometheus::process_collector::ProcessCollector::for_self(),
-    ))
-    .unwrap();
     #[cfg(not(target_os = "linux"))]
     prometheus::register(Box::new(
         crate::process_collector::ProcessCollector::for_self(),
