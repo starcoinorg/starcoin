@@ -17,6 +17,7 @@ pub use prometheus::{Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec
 use anyhow::Result;
 use prometheus::{
     core::{Collector, Metric},
+    proto,
     proto::MetricType,
     Encoder, TextEncoder,
 };
@@ -57,41 +58,52 @@ pub fn get_all_metrics() -> HashMap<String, String> {
     let all_metric_families = prometheus::gather();
     let mut all_metrics = HashMap::new();
     for metric_family in all_metric_families {
-        let values: Vec<_> = match metric_family.get_field_type() {
-            MetricType::COUNTER => metric_family
-                .get_metric()
-                .iter()
-                .map(|m| m.get_counter().get_value().to_string())
-                .collect(),
-            MetricType::GAUGE => metric_family
-                .get_metric()
-                .iter()
-                .map(|m| m.get_gauge().get_value().to_string())
-                .collect(),
-            MetricType::SUMMARY => panic!("Unsupported Metric 'SUMMARY'"),
-            MetricType::UNTYPED => panic!("Unsupported Metric 'UNTYPED'"),
-            MetricType::HISTOGRAM => metric_family
-                .get_metric()
-                .iter()
-                .map(|m| m.get_histogram().get_sample_count().to_string())
-                .collect(),
-        };
-        let metric_names = metric_family.get_metric().iter().map(|m| {
-            let label_strings: Vec<String> = m
-                .get_label()
-                .iter()
-                .map(|l| format!("{}={}", l.get_name(), l.get_value()))
-                .collect();
-            let labels_string = format!("{{{}}}", label_strings.join(","));
-            format!("{}{}", metric_family.get_name(), labels_string)
-        });
-
-        for (name, value) in metric_names.zip(values.into_iter()) {
-            all_metrics.insert(name, value);
+        let name = metric_family.get_name();
+        let metric_type = metric_family.get_field_type();
+        for m in metric_family.get_metric() {
+            match metric_type {
+                MetricType::COUNTER => {
+                    all_metrics.insert(
+                        flatten_metric_with_labels(name, m),
+                        m.get_counter().get_value().to_string(),
+                    );
+                }
+                MetricType::GAUGE => {
+                    all_metrics.insert(
+                        flatten_metric_with_labels(name, m),
+                        m.get_gauge().get_value().to_string(),
+                    );
+                }
+                MetricType::HISTOGRAM => {
+                    let h = m.get_histogram();
+                    all_metrics.insert(
+                        flatten_metric_with_labels(&format!("{}_count", name), m),
+                        h.get_sample_count().to_string(),
+                    );
+                    all_metrics.insert(
+                        flatten_metric_with_labels(&format!("{}_sum", name), m),
+                        h.get_sample_sum().to_string(),
+                    );
+                }
+                MetricType::SUMMARY => panic!("Unsupported Metric 'SUMMARY'"),
+                MetricType::UNTYPED => panic!("Unsupported Metric 'UNTYPED'"),
+            }
         }
     }
 
     all_metrics
+}
+
+fn flatten_metric_with_labels(name: &str, metric: &proto::Metric) -> String {
+    if metric.get_label().is_empty() {
+        return name.to_string();
+    }
+    let label_strings = metric
+        .get_label()
+        .iter()
+        .map(|l| format!("{}={}", l.get_name(), l.get_value()))
+        .collect::<Vec<_>>();
+    format!("{}{{{}}}", name, label_strings.join(","))
 }
 
 // Launches a background thread which will periodically collect metrics

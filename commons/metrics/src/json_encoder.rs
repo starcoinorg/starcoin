@@ -44,6 +44,7 @@ impl Encoder for JsonEncoder {
                     MetricType::HISTOGRAM => {
                         // write the sum and counts
                         let h = m.get_histogram();
+
                         export_me.insert(
                             flatten_metric_with_labels(&format!("{}_count", name), m),
                             h.get_sample_count() as f64,
