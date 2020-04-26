@@ -490,7 +490,8 @@ where
                 return Err(format_err!("{:?}", "block header is none."));
             }
         } else {
-            return Err(format_err!("{:?}", "best peer is none."));
+            //return Err(format_err!("{:?}", "best peer is none."));
+            debug!("{:?}", "best peer is none.");
         }
 
         Ok(())
