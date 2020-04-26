@@ -36,13 +36,6 @@ pub trait TxPoolAsyncService: Clone + std::marker::Unpin + Send + Sync {
         self,
     ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>>;
 
-    /// commit block
-    async fn chain_new_blocks(
-        self,
-        enacted: Vec<HashValue>,
-        retracted: Vec<HashValue>,
-    ) -> Result<()>;
-
     /// rollback
     async fn rollback(
         self,

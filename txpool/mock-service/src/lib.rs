@@ -72,14 +72,6 @@ impl TxPoolAsyncService for MockTxPoolService {
         unimplemented!()
     }
 
-    async fn chain_new_blocks(
-        self,
-        _enacted: Vec<HashValue>,
-        _retracted: Vec<HashValue>,
-    ) -> Result<()> {
-        unimplemented!()
-    }
-
     async fn rollback(
         self,
         _enacted: Vec<SignedUserTransaction>,
