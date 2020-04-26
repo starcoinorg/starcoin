@@ -1,5 +1,5 @@
 use once_cell::sync::Lazy;
-use prometheus::{IntCounterVec, IntGauge};
+use prometheus::{IntCounterVec, IntGauge, IntGaugeVec};
 
 /// Counter of txn status in tx_pool
 pub static TXN_STATUS_COUNTERS: Lazy<IntCounterVec> = Lazy::new(|| {
@@ -13,4 +13,8 @@ pub static TXN_STATUS_COUNTERS: Lazy<IntCounterVec> = Lazy::new(|| {
 
 pub static TXPOOL_TXNS_GAUGE: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!("txpool_txn_nums", "Counter of how many txns in txpool").unwrap()
+});
+
+pub static TXPOOL_STATUS_GAUGE_VEC: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!("txpool_status", "Gauge of pool status", &["name"]).unwrap()
 });

@@ -60,13 +60,13 @@ impl fmt::Display for Status {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
             fmt,
-            "Pool: {current}/{max} ({senders} senders; {mem}/{mem_max} kB) [minGasPrice: {gp} Mwei, maxGas: {max_gas}]",
+            "Pool: {current}/{max} ({senders} senders; {mem}/{mem_max} kB) [minGasPrice: {gp}, maxGas: {max_gas}]",
             current = self.status.transaction_count,
             max = self.limits.max_count,
             senders = self.status.senders,
             mem = self.status.mem_usage / 1024,
             mem_max = self.limits.max_mem_usage / 1024,
-            gp = self.options.minimal_gas_price / 1_000_000,
+            gp = self.options.minimal_gas_price,
             max_gas = cmp::min(self.options.block_gas_limit, self.options.tx_gas_limit),
         )
     }
