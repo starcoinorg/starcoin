@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::counters::TXPOOL_TXNS_GAUGE;
+use crate::counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
 use crate::pool::VerifiedTransaction;
 use crate::{
     pool,
@@ -142,6 +142,21 @@ type TxnStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 /// Listen to txn status, and propagate to remote peers if necessary.
 impl StreamHandler<TxnStatusEvent> for TxPoolActor {
     fn handle(&mut self, item: TxnStatusEvent, ctx: &mut Context<Self>) {
+        {
+            let status = self.queue.status().status;
+            let mem_usage = status.mem_usage;
+            let senders = status.senders;
+            let txn_count = status.transaction_count;
+            TXPOOL_STATUS_GAUGE_VEC
+                .with_label_values(&["mem_usage"])
+                .set(mem_usage as i64);
+            TXPOOL_STATUS_GAUGE_VEC
+                .with_label_values(&["senders"])
+                .set(senders as i64);
+            TXPOOL_STATUS_GAUGE_VEC
+                .with_label_values(&["count"])
+                .set(txn_count as i64);
+        }
         // TODO: need peer info to do more accurate sending.
         let mut txns = vec![];
         for (h, s) in item.iter() {
