@@ -44,7 +44,7 @@ where
     S: Store + 'static,
 {
     fn drop(&mut self) {
-        info!("drop BlockChainCollection");
+        debug!("drop BlockChainCollection");
         &self.master.write().pop();
         self.branches.write().clear();
     }

@@ -257,7 +257,7 @@ where
     P: TxPoolAsyncService,
 {
     fn drop(&mut self) {
-        info!(
+        debug!(
             "drop BlockChain: {}, {}",
             self.block_chain_collection.strong_count(),
             self.block_chain_collection.weak_count()
