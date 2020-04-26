@@ -14,9 +14,9 @@ pub struct ProcessCollector {
 }
 
 impl ProcessCollector {
-    pub fn for_self() -> Self {
+    pub fn for_self(namespace: String) -> Self {
         let pid = std::process::id() as i32;
-        Self::new(pid, "".to_string())
+        Self::new(pid, namespace)
     }
     pub fn new(pid: i32, namespace: String) -> ProcessCollector {
         let vsize = Gauge::with_opts(
