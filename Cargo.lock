@@ -6328,6 +6328,7 @@ name = "starcoin-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "compiler",
  "libra-temppath",
  "libra-types",
  "once_cell",

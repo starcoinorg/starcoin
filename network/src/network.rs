@@ -171,20 +171,16 @@ impl NetworkService for NetworkAsyncService {
     }
 
     async fn best_peer(&self) -> Result<Option<PeerInfo>> {
-        let size = self.inner.peers.lock().await.len();
-        if size == 0 {
-            return Ok(None);
+        let self_peer_id = types::peer_info::PeerId::new(self.peer_id.clone());
+        let best_peer_set = self.best_peer_set().await?;
+        let best_peer = best_peer_set
+            .iter()
+            .filter(|peer| self_peer_id != peer.get_peer_id())
+            .next();
+        match best_peer {
+            Some(peer) => Ok(Some(peer.clone())),
+            None => Ok(None),
         }
-        let mut info: Option<PeerInfo> = None;
-        for (_, peer) in self.inner.peers.lock().await.iter() {
-            if info.is_none()
-                || (peer.peer_info.total_difficult
-                    > info.clone().expect("info is none.").total_difficult)
-            {
-                info = Some(peer.peer_info.clone());
-            }
-        }
-        Ok(info)
     }
 
     async fn get_peer_set_size(&self) -> Result<usize> {
@@ -849,10 +845,13 @@ mod tests {
             self.event_tx.unbounded_send(()).unwrap();
         }
     }
+
     struct GetPeerTransactions;
+
     impl Message for GetPeerTransactions {
         type Result = Vec<PeerTransactions>;
     }
+
     impl Handler<GetPeerTransactions> for TestResponseActor {
         type Result = MessageResult<GetPeerTransactions>;
 

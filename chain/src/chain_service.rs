@@ -37,6 +37,19 @@ where
     branches: RwLock<HashMap<HashValue, BlockChain<C, S, P>>>,
 }
 
+impl<C, S, P> Drop for BlockChainCollection<C, S, P>
+where
+    C: Consensus,
+    P: TxPoolAsyncService + 'static,
+    S: Store + 'static,
+{
+    fn drop(&mut self) {
+        debug!("drop BlockChainCollection");
+        &self.master.write().pop();
+        self.branches.write().clear();
+    }
+}
+
 impl<C, S, P> BlockChainCollection<C, S, P>
 where
     C: Consensus,
@@ -251,7 +264,7 @@ where
                 chain_info.unwrap(),
                 self.storage.clone(),
                 self.txpool.clone(),
-                Arc::clone(&self.collection),
+                Arc::downgrade(&self.collection),
             )?;
             Ok((block_exist, Some(branch)))
         } else {
@@ -301,7 +314,7 @@ where
                         .get_chain_info(),
                     self.storage.clone(),
                     self.txpool.clone(),
-                    Arc::clone(&self.collection),
+                    Arc::downgrade(&self.collection),
                 )?);
 
                 rollback = true;
@@ -315,7 +328,7 @@ where
                 new_branch.get_chain_info(),
                 self.storage.clone(),
                 self.txpool.clone(),
-                Arc::clone(&self.collection),
+                Arc::downgrade(&self.collection),
             )?);
             if rollback {
                 let (mut enacted_tmp, mut retracted_tmp) = self.find_ancestors(&new_branch)?;
@@ -693,7 +706,7 @@ where
         startup_info.master,
         storage.clone(),
         txpool.clone(),
-        Arc::clone(&collection),
+        Arc::downgrade(&collection),
     )?;
 
     collection.update_master(master);
@@ -704,7 +717,7 @@ where
             branch_info,
             storage.clone(),
             txpool.clone(),
-            Arc::clone(&collection),
+            Arc::downgrade(&collection),
         )?);
     }
 

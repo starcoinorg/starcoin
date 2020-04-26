@@ -409,91 +409,89 @@ where
     ) -> Result<()> {
         if let Some(best_peer) = network.best_peer().await? {
             info!("peers: {:?}, {:?}", self_peer_id, best_peer.get_peer_id());
-            if self_peer_id != best_peer.get_peer_id() {
-                if let Some(header) = downloader.chain_reader.clone().master_head_header().await {
-                    let mut begin_number = header.number();
+            if let Some(header) = downloader.chain_reader.clone().master_head_header().await {
+                let mut begin_number = header.number();
 
-                    if let Some(hash_number) = Downloader::find_ancestor(
-                        downloader.clone(),
-                        best_peer.get_peer_id(),
-                        network.clone(),
-                        begin_number,
-                    )
-                    .await?
-                    {
-                        begin_number = hash_number.number + 1;
-                        loop {
-                            //1. sync hash
-                            let _sync_begin_time = get_unix_ts();
-                            if let Some((get_hash_by_number_msg, end, next_number)) =
-                                Downloader::<C>::get_hash_by_number_msg_forward(
-                                    network.clone(),
-                                    best_peer.get_peer_id(),
-                                    begin_number,
-                                )
-                                .await?
-                            {
-                                begin_number = next_number;
-                                let sync_hash_begin_time = get_unix_ts();
-                                let batch_hash_by_number_msg = get_hash_by_number(
-                                    &network,
-                                    best_peer.get_peer_id(),
-                                    get_hash_by_number_msg,
-                                )
-                                .await?;
-                                let sync_hash_end_time = get_unix_ts();
+                if let Some(hash_number) = Downloader::find_ancestor(
+                    downloader.clone(),
+                    best_peer.get_peer_id(),
+                    network.clone(),
+                    begin_number,
+                )
+                .await?
+                {
+                    begin_number = hash_number.number + 1;
+                    loop {
+                        //1. sync hash
+                        let _sync_begin_time = get_unix_ts();
+                        if let Some((get_hash_by_number_msg, end, next_number)) =
+                            Downloader::<C>::get_hash_by_number_msg_forward(
+                                network.clone(),
+                                best_peer.get_peer_id(),
+                                begin_number,
+                            )
+                            .await?
+                        {
+                            begin_number = next_number;
+                            let sync_hash_begin_time = get_unix_ts();
+                            let batch_hash_by_number_msg = get_hash_by_number(
+                                &network,
+                                best_peer.get_peer_id(),
+                                get_hash_by_number_msg,
+                            )
+                            .await?;
+                            let sync_hash_end_time = get_unix_ts();
+                            debug!(
+                                "sync hash used time {:?}",
+                                (sync_hash_end_time - sync_hash_begin_time)
+                            );
+
+                            Downloader::put_hash_2_hash_pool(
+                                downloader.clone(),
+                                best_peer.get_peer_id(),
+                                batch_hash_by_number_msg,
+                            );
+
+                            let hashs = Downloader::take_task_from_hash_pool(downloader.clone());
+                            if !hashs.is_empty() {
+                                let sync_block_begin_time = get_unix_ts();
+                                let (headers, bodies, infos) =
+                                    get_block_by_hash(&network, best_peer.get_peer_id(), hashs)
+                                        .await?;
+                                let sync_block_end_time = get_unix_ts();
                                 debug!(
-                                    "sync hash used time {:?}",
-                                    (sync_hash_end_time - sync_hash_begin_time)
+                                    "sync block used time {:?}",
+                                    (sync_block_end_time - sync_block_begin_time)
                                 );
-
-                                Downloader::put_hash_2_hash_pool(
+                                Downloader::do_blocks(
                                     downloader.clone(),
-                                    best_peer.get_peer_id(),
-                                    batch_hash_by_number_msg,
+                                    headers.headers,
+                                    bodies.bodies,
+                                    infos.infos,
                                 );
-
-                                let hashs =
-                                    Downloader::take_task_from_hash_pool(downloader.clone());
-                                if !hashs.is_empty() {
-                                    let sync_block_begin_time = get_unix_ts();
-                                    let (headers, bodies, infos) =
-                                        get_block_by_hash(&network, best_peer.get_peer_id(), hashs)
-                                            .await?;
-                                    let sync_block_end_time = get_unix_ts();
-                                    debug!(
-                                        "sync block used time {:?}",
-                                        (sync_block_end_time - sync_block_begin_time)
-                                    );
-                                    Downloader::do_blocks(
-                                        downloader.clone(),
-                                        headers.headers,
-                                        bodies.bodies,
-                                        infos.infos,
-                                    );
-                                    let do_block_end_time = get_unix_ts();
-                                    debug!(
-                                        "sync block used time {:?}",
-                                        (do_block_end_time - sync_block_end_time)
-                                    );
-                                } else {
-                                    info!("{:?}", "hash pool is empty.");
-                                }
-
-                                if end {
-                                    break;
-                                }
+                                let do_block_end_time = get_unix_ts();
+                                debug!(
+                                    "sync block used time {:?}",
+                                    (do_block_end_time - sync_block_end_time)
+                                );
                             } else {
+                                info!("{:?}", "hash pool is empty.");
+                            }
+
+                            if end {
                                 break;
                             }
+                        } else {
+                            break;
                         }
                     }
-                } else {
-                    return Err(format_err!("{:?}", "block header is none."));
                 }
+            } else {
+                return Err(format_err!("{:?}", "block header is none."));
             }
         } else {
-            return Err(format_err!("{:?}", "best peer is none."));
+            //return Err(format_err!("{:?}", "best peer is none."));
+            debug!("{:?}", "best peer is none.");
         }
 
         Ok(())

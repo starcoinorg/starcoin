@@ -66,7 +66,7 @@ async fn gen_master_chain(
                 collection.get_master_chain_info(),
                 storage.clone(),
                 txpool.clone(),
-                collection,
+                Arc::downgrade(&collection),
             )
             .unwrap();
             let block_template = chain
@@ -171,7 +171,7 @@ async fn test_chain_apply() -> Result<()> {
         startup_info.master.clone(),
         storage,
         txpool,
-        collection,
+        Arc::downgrade(&collection),
     )?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
