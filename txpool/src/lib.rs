@@ -10,9 +10,9 @@ extern crate log;
 extern crate trace_time;
 #[macro_use]
 extern crate prometheus;
-
 extern crate transaction_pool as tx_pool;
 
+use crate::counters::TXPOOL_SERVICE_HISTOGRAM;
 pub use crate::pool::TxStatus;
 use crate::tx_pool_service_impl::{
     ChainNewBlock, GetPendingTxns, ImportTxns, RemoveTxn, SubscribeTxns, TxPoolActor,
@@ -25,21 +25,17 @@ use starcoin_bus::BusActor;
 use starcoin_config::TxPoolConfig;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::{fmt::Debug, sync::Arc};
-use storage::Storage;
-use storage::{BlockStore, Store};
+use storage::Store;
 #[cfg(test)]
 use types::block::BlockHeader;
-use types::{block::Block, transaction, transaction::SignedUserTransaction};
+use types::{transaction, transaction::SignedUserTransaction};
+
 mod counters;
 mod pool;
 mod pool_client;
 #[cfg(test)]
 mod test;
 mod tx_pool_service_impl;
-
-trait BlockReader {
-    fn get_block_by_hash(&self, block_hash: HashValue) -> Result<Option<Block>>;
-}
 
 #[derive(Clone, Debug)]
 pub struct TxPoolRef {
@@ -90,9 +86,12 @@ impl TxPoolAsyncService for TxPoolRef {
         self,
         txns: Vec<SignedUserTransaction>,
     ) -> Result<Vec<Result<(), transaction::TransactionError>>> {
-        let request = self.addr.send(ImportTxns { txns });
-
-        match request.await {
+        let timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["add_txns"])
+            .start_timer();
+        let result = self.addr.send(ImportTxns { txns }).await;
+        timer.observe_duration();
+        match result {
             Err(e) => Err(e.into()),
             Ok(r) => Ok(r),
         }
@@ -103,27 +102,35 @@ impl TxPoolAsyncService for TxPoolRef {
         txn_hash: HashValue,
         is_invalid: bool,
     ) -> Result<Option<SignedUserTransaction>> {
-        match self
+        let timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["remove_txn"])
+            .start_timer();
+        let result = self
             .addr
             .send(RemoveTxn {
                 txn_hash,
                 is_invalid,
             })
-            .await
-        {
+            .await;
+        timer.observe_duration();
+        match result {
             Err(e) => Err(e.into()),
             Ok(r) => Ok(r.map(|v| v.signed().clone())),
         }
     }
 
     async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>> {
-        match self
+        let timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["get_pending_txns"])
+            .start_timer();
+        let result = self
             .addr
             .send(GetPendingTxns {
                 max_len: max_len.unwrap_or_else(|| u64::max_value()),
             })
-            .await
-        {
+            .await;
+        timer.observe_duration();
+        match result {
             Ok(r) => Ok(r.into_iter().map(|t| t.signed().clone()).collect()),
             Err(e) => Err(e.into()),
         }
@@ -132,65 +139,34 @@ impl TxPoolAsyncService for TxPoolRef {
     async fn subscribe_txns(
         self,
     ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>>> {
-        match self.addr.send(SubscribeTxns).await {
+        let timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["subscribe_txns"])
+            .start_timer();
+        let result = self.addr.send(SubscribeTxns).await;
+        timer.observe_duration();
+        match result {
             Err(e) => Err(e.into()),
             Ok(r) => Ok(r),
         }
     }
 
     /// when new block happened in chain, use this to notify txn pool
-    /// the `HashValue` of `enacted`/`retracted` is the hash of blocks.
-    /// enacted: the blocks which enter into main chain.
-    /// retracted: the blocks which is rollbacked.
-    async fn chain_new_blocks(
-        self,
-        _enacted: Vec<HashValue>,
-        _retracted: Vec<HashValue>,
-    ) -> Result<()> {
-        todo!()
-    }
-
+    /// the `HashValue` of `enacted`/`retracted` is the hash of txns.
+    /// enacted: the txns which enter into main chain.
+    /// retracted: the txns which is rollbacked.
     async fn rollback(
         self,
         enacted: Vec<SignedUserTransaction>,
         retracted: Vec<SignedUserTransaction>,
     ) -> Result<()> {
-        match self.addr.send(ChainNewBlock { enacted, retracted }).await {
+        let timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["rollback"])
+            .start_timer();
+        let result = self.addr.send(ChainNewBlock { enacted, retracted }).await;
+        timer.observe_duration();
+        match result {
             Err(e) => Err(e.into()),
             Ok(r) => Ok(r?),
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct NoneBlockReader;
-impl BlockReader for NoneBlockReader {
-    fn get_block_by_hash(&self, _block_hash: HashValue) -> Result<Option<Block>> {
-        Ok(None)
-    }
-}
-
-struct StorageBlockReader {
-    storage: Arc<Storage>,
-}
-
-/// TODO: enhance me when storage impl Debug
-impl Debug for StorageBlockReader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "storage block reader")
-    }
-}
-
-impl Clone for StorageBlockReader {
-    fn clone(&self) -> Self {
-        StorageBlockReader {
-            storage: self.storage.clone(),
-        }
-    }
-}
-
-impl BlockReader for StorageBlockReader {
-    fn get_block_by_hash(&self, block_hash: HashValue) -> Result<Option<Block>> {
-        self.storage.get_block_by_hash(block_hash)
     }
 }
