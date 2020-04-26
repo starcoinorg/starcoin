@@ -470,15 +470,11 @@ where
             }
             let blob = blob.unwrap();
             // The new leaf node will have the same nibble_path with a new version as node_key.
-            // node_key.set_version(version);
-            // Create the new leaf node with the same address but new blob content.
-            // TODO: what if the blob are same.
+            // if the blob are same, return directly
             if blob.crypto_hash() == existing_leaf_node.blob_hash() {
-                return Ok((
-                    existing_leaf_node.blob_hash(),
-                    Node::Leaf(existing_leaf_node),
-                ));
+                return Ok((node_key, Node::Leaf(existing_leaf_node)));
             } else {
+                // Else create the new leaf node with the same address but new blob content.
                 tree_cache.delete_node(&node_key, true /* is_leaf */);
                 return Ok(Self::create_leaf_node(
                     // node_key,

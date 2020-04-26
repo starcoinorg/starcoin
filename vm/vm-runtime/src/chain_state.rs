@@ -8,6 +8,7 @@ use libra_types::{
     access_path::AccessPath as LibraAccessPath,
     write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet},
 };
+use logger::prelude::*;
 use move_vm_state::data_cache::RemoteCache;
 use starcoin_state_api::ChainState;
 use types::{access_path::AccessPath, account_address::AccountAddress};
@@ -45,6 +46,7 @@ impl<'txn> StateStore<'txn> {
 
     /// Sets a (key, value) pair within state store.
     pub fn set(&mut self, access_path: AccessPath, data_blob: Vec<u8>) -> Result<()> {
+        debug!("set to chain state {:?}", access_path);
         self.chain_state.set(&access_path, data_blob)
     }
 
@@ -76,7 +78,15 @@ impl<'txn> StateStore<'txn> {
 /// read-only snapshot of the global state, to construct remote cache
 impl<'txn> StateView for StateStore<'txn> {
     fn get(&self, access_path: &LibraAccessPath) -> Result<Option<Vec<u8>>> {
-        ChainState::get(self.chain_state, &AccessPath::from(access_path.clone()))
+        debug!("get from chain state {:?}", access_path);
+        let result = ChainState::get(self.chain_state, &AccessPath::from(access_path.clone()));
+        match result {
+            Ok(remote_data) => Ok(remote_data),
+            Err(e) => {
+                error!("fail to read access_path, err: {:?}", e);
+                Err(e)
+            }
+        }
     }
 
     fn multi_get(&self, _access_paths: &[LibraAccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
