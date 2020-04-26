@@ -40,6 +40,7 @@ use log::error;
 use std::{
     borrow::Cow,
     collections::VecDeque,
+    convert::TryFrom as _,
     io, iter, mem,
     pin::Pin,
     task::{Context, Poll},
@@ -48,9 +49,8 @@ use unsigned_varint::codec::UviBytes;
 
 /// Maximum allowed size of the two handshake messages, in bytes.
 const MAX_HANDSHAKE_SIZE: usize = 1024;
-/// Maximum number of buffered messages before we consider the remote unresponsive and kill the
-/// substream.
-const MAX_PENDING_MESSAGES: usize = 256;
+/// Maximum number of buffered messages before we refuse to accept more.
+const MAX_PENDING_MESSAGES: usize = 512;
 
 /// Upgrade that accepts a substream, sends back a status message, then becomes a unidirectional
 /// stream of messages.
@@ -167,12 +167,9 @@ where
 {
     /// Sends the handshake in order to inform the remote that we accept the substream.
     pub fn send_handshake(&mut self, message: impl Into<Vec<u8>>) {
-        match self.handshake {
-            NotificationsInSubstreamHandshake::NotSent => {}
-            _ => {
-                error!(target: "sub-libp2p", "Tried to send handshake twice");
-                return;
-            }
+        if !matches!(self.handshake, NotificationsInSubstreamHandshake::NotSent) {
+            error!(target: "sub-libp2p", "Tried to send handshake twice");
+            return;
         }
 
         self.handshake = NotificationsInSubstreamHandshake::PendingSend(message.into());
@@ -194,7 +191,10 @@ where
                 NotificationsInSubstreamHandshake::Sent => {
                     return Stream::poll_next(this.socket.as_mut(), cx)
                 }
-                NotificationsInSubstreamHandshake::NotSent => return Poll::Pending,
+                NotificationsInSubstreamHandshake::NotSent => {
+                    *this.handshake = NotificationsInSubstreamHandshake::NotSent;
+                    return Poll::Pending;
+                }
                 NotificationsInSubstreamHandshake::PendingSend(msg) => {
                     match Sink::poll_ready(this.socket.as_mut(), cx) {
                         Poll::Ready(_) => {
@@ -205,7 +205,8 @@ where
                             }
                         }
                         Poll::Pending => {
-                            *this.handshake = NotificationsInSubstreamHandshake::PendingSend(msg)
+                            *this.handshake = NotificationsInSubstreamHandshake::PendingSend(msg);
+                            return Poll::Pending;
                         }
                     }
                 }
@@ -214,7 +215,10 @@ where
                         Poll::Ready(()) => {
                             *this.handshake = NotificationsInSubstreamHandshake::Sent
                         }
-                        Poll::Pending => *this.handshake = NotificationsInSubstreamHandshake::Close,
+                        Poll::Pending => {
+                            *this.handshake = NotificationsInSubstreamHandshake::Close;
+                            return Poll::Pending;
+                        }
                     }
                 }
             }
@@ -287,6 +291,25 @@ where
     }
 }
 
+impl<TSubstream> NotificationsOutSubstream<TSubstream> {
+    /// Returns the number of items in the queue, capped to `u32::max_value()`.
+    pub fn queue_len(&self) -> u32 {
+        u32::try_from(self.messages_queue.len()).unwrap_or(u32::max_value())
+    }
+
+    /// Push a message to the queue of messages.
+    ///
+    /// This has the same effect as the `Sink::start_send` implementation.
+    pub fn push_message(&mut self, item: Vec<u8>) -> Result<(), NotificationsOutError> {
+        if self.messages_queue.len() >= MAX_PENDING_MESSAGES {
+            return Err(NotificationsOutError::Clogged);
+        }
+
+        self.messages_queue.push_back(item);
+        Ok(())
+    }
+}
+
 impl<TSubstream> Sink<Vec<u8>> for NotificationsOutSubstream<TSubstream>
 where
     TSubstream: AsyncRead + AsyncWrite + Unpin,
@@ -298,12 +321,7 @@ where
     }
 
     fn start_send(mut self: Pin<&mut Self>, item: Vec<u8>) -> Result<(), Self::Error> {
-        if self.messages_queue.len() >= MAX_PENDING_MESSAGES {
-            return Err(NotificationsOutError::Clogged);
-        }
-
-        self.messages_queue.push_back(item);
-        Ok(())
+        self.push_message(item)
     }
 
     fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
