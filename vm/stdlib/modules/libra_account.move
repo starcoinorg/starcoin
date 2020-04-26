@@ -545,4 +545,13 @@ module LibraAccount {
     public fun destroy_handle<T: copyable>(handle: EventHandle<T>) {
         EventHandle<T> { counter: _, guid: _ } = handle;
     }
+
+    // Create 'Balance<Token>' resource under sender account and initialize with zero
+    public fun create_new_balance<Token>() {
+        move_to_sender(
+            Balance<Token>{
+                coin: Libra::zero<Token>()
+            }
+        );
+    }
 }

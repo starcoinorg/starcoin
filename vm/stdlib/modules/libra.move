@@ -39,13 +39,13 @@ module Libra {
 
     public fun register<Token>() {
         // Only callable by the Association address
-        Transaction::assert(Transaction::sender() == 0xA550C18, 1);
+        // Transaction::assert(Transaction::sender() == 0xA550C18, 1);
         move_to_sender(MintCapability<Token>{ });
         move_to_sender(Info<Token> { total_value: 0u128, preburn_value: 0 });
     }
 
     fun assert_is_registered<Token>() {
-        Transaction::assert(exists<Info<Token>>(0xA550C18), 12);
+        Transaction::assert(exists<Info<Token>>(Transaction::sender()), 12);
     }
 
     // Return `amount` coins.
@@ -99,7 +99,7 @@ module Libra {
         // disable the total value limitation
         // Transaction::assert(value <= 1000000000 * 1000000, 11);
         // update market cap resource to reflect minting
-        let market_cap = borrow_global_mut<Info<Token>>(0xA550C18);
+        let market_cap = borrow_global_mut<Info<Token>>(Transaction::sender());
         market_cap.total_value = market_cap.total_value + (value as u128);
 
         T<Token> { value }
@@ -194,7 +194,7 @@ module Libra {
 
     // Return the total value of all Libra in the system
     public fun market_cap<Token>(): u128 acquires Info {
-        borrow_global<Info<Token>>(0xA550C18).total_value
+        borrow_global<Info<Token>>(Transaction::sender()).total_value
     }
 
     // Return the total value of Libra to be burned
@@ -205,7 +205,7 @@ module Libra {
     // Create a new Libra::T with a value of 0
     public fun zero<Token>(): T<Token> {
         // prevent silly coin types (e.g., Libra<bool>) from being created
-        assert_is_registered<Token>();
+        // assert_is_registered<Token>();
         T { value: 0 }
     }
 

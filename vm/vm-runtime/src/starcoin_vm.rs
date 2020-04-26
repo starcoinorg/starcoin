@@ -527,7 +527,7 @@ impl StarcoinVM {
             Transaction::BlockMetadata(block_metadata) => {
                 let result = self
                     .process_block_metadata(&mut data_cache, block_metadata)
-                    .unwrap();
+                    .unwrap_or_else(discard_libra_error_output);
                 if let LibraTransactionStatus::Keep(_) = result.status() {
                     state_store.add_write_set(result.write_set())
                 };

@@ -26,4 +26,6 @@ storage = { package="starcoin-storage", path = "../storage"}
 stdlib = { package="stdlib", path = "../vm/stdlib"}
 libra_types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+compiler = { package="compiler",  git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+
 [dev-dependencies]

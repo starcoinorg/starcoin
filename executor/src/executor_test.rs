@@ -7,6 +7,7 @@ use crate::{
     TransactionExecutor,
 };
 use anyhow::Result;
+use compiler::Compiler;
 use crypto::keygen::KeyGen;
 use logger::prelude::*;
 use starcoin_config::ChainNetwork;
@@ -14,13 +15,16 @@ use starcoin_state_api::{ChainState, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config,
     account_config::AccountResource,
     account_config::BalanceResource,
+    block_metadata::BlockMetadata,
     transaction::Transaction,
+    transaction::{Module, TransactionPayload},
     vm_error::{StatusCode, VMStatus},
 };
 use vm_runtime::mock_vm::{
@@ -334,4 +338,81 @@ fn get_balance(address: AccountAddress, state_db: &dyn ChainState) -> u64 {
             .expect("decode balance resource should ok")
             .coin(),
     }
+}
+
+pub fn compile_module_with_address(
+    address: &AccountAddress,
+    file_name: &str,
+    code: &str,
+) -> TransactionPayload {
+    let addr = address.clone().into();
+    let compiler = Compiler {
+        address: addr,
+        ..Compiler::default()
+    };
+    TransactionPayload::Module(Module::new(
+        compiler.into_module_blob(file_name, code).unwrap(),
+    ))
+}
+
+#[stest::test]
+fn test_publish_module() -> Result<()> {
+    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let storage = MockStateNodeStore::new();
+    let chain_state = ChainStateDB::new(Arc::new(storage), None);
+
+    chain_state
+        .apply(state_set)
+        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 1, // fix me
+        50_000_000,
+    ));
+    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+
+    let program = String::from(
+        "
+        module M {
+
+        }
+        ",
+    );
+    // compile with account 1's address
+    let compiled_module = compile_module_with_address(account1.address(), "file_name", &program);
+
+    let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
+        *account1.address(),
+        compiled_module.into(),
+        0,
+        100_000,
+        1,
+        account_config::starcoin_type_tag().into(),
+    ));
+
+    let output = Executor::execute_transaction(&chain_state, txn).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
+
+    for _i in 0..10 {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let txn2 = Transaction::BlockMetadata(BlockMetadata::new(
+            crypto::HashValue::zero(),
+            timestamp,
+            account1.address().clone(),
+            Some(account1.auth_key_prefix()),
+        ));
+
+        let output2 = Executor::execute_transaction(&chain_state, txn2).unwrap();
+        assert_eq!(KEEP_STATUS.clone(), *output2.status());
+
+        let balance = get_balance(account1.address().clone(), &chain_state);
+        debug!("balance= {:?}", balance);
+    }
+
+    Ok(())
 }
