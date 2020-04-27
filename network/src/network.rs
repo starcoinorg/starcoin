@@ -20,6 +20,7 @@ use lru::LruCache;
 use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
 
+use crate::network_metrics::NetworkMetrics;
 use async_trait::async_trait;
 use scs::SCSCodec;
 use starcoin_sync_api::sync_messages::PeerNewBlock;
@@ -49,6 +50,7 @@ pub struct NetworkAsyncService {
     peer_id: PeerId,
     handle: Handle,
     inner: Arc<Inner>,
+    metrics: Option<NetworkMetrics>,
 }
 
 struct Inner {
@@ -120,6 +122,12 @@ impl NetworkService for NetworkAsyncService {
         info!("send request to {} with id {}", peer_id, request_id);
         let processor = self.raw_message_processor.clone();
         let peer_id_clone = peer_id.clone();
+
+        if let Some(metrics) = &self.metrics {
+            metrics.request_count.inc();
+        }
+
+        let metrics = self.metrics.clone();
         let task = async move {
             Delay::new(time_out).await;
             processor.remove_future(request_id).await;
@@ -127,6 +135,9 @@ impl NetworkService for NetworkAsyncService {
                 "send request to {} with id {} timeout",
                 peer_id_clone, request_id
             );
+            if let Some(metrics) = metrics {
+                metrics.request_timeout_count.inc();
+            }
         };
 
         self.handle.spawn(task);
@@ -288,6 +299,7 @@ impl NetworkActor {
             need_send_event.swap(true, Ordering::Acquire);
         }
 
+        let metrics = NetworkMetrics::register().ok();
         let inner = Inner {
             network_service: service,
             bus,
@@ -322,6 +334,7 @@ impl NetworkActor {
             peer_id,
             inner,
             handle,
+            metrics,
         }
     }
 

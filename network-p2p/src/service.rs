@@ -52,6 +52,7 @@ use types::peer_info::PeerInfo;
 
 use crate::behaviour::RpcRequest;
 use crate::config::{Params, TransportConfig};
+use crate::metrics::Metrics;
 use crate::net_error::Error;
 use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
@@ -64,6 +65,7 @@ use crate::{
 };
 use crate::{config::NonReservedPeerMode, transport};
 use crate::{protocol, Multiaddr};
+use bytes::Buf;
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -274,6 +276,7 @@ impl NetworkWorker {
             from_worker,
             event_streams: Vec::new(),
             rpc_streams: Vec::new(),
+            metrics: Metrics::register().ok(),
         })
     }
 
@@ -674,6 +677,8 @@ pub struct NetworkWorker {
     /// Senders for events that happen on the network.
     event_streams: Vec<mpsc::UnboundedSender<Event>>,
     rpc_streams: Vec<mpsc::UnboundedSender<RpcRequest>>,
+    /// Prometheus network metrics.
+    metrics: Option<Metrics>,
 }
 
 impl Future for NetworkWorker {
@@ -781,6 +786,23 @@ impl Future for NetworkWorker {
                     trace!(target: "sub-libp2p", "Libp2p => StartConnect({:?})", peer_id)
                 }
             };
+        }
+
+        let num_connected_peers = this
+            .network_service
+            .user_protocol_mut()
+            .num_connected_peers();
+
+        if let Some(metrics) = this.metrics.as_ref() {
+            metrics
+                .network_per_sec_bytes
+                .with_label_values(&["in"])
+                .set(this.service.bandwidth.average_download_per_sec());
+            metrics
+                .network_per_sec_bytes
+                .with_label_values(&["out"])
+                .set(this.service.bandwidth.average_upload_per_sec());
+            metrics.peers_count.set(num_connected_peers as i64);
         }
 
         Poll::Pending

@@ -53,5 +53,7 @@ derive_more = "0.99.2"
 async-trait = "0.1.13"
 stest = {path = "../commons/stest"}
 
+prometheus = "0.8"
+
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path = "../sync/api"}

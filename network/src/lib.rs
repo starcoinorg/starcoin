@@ -3,12 +3,15 @@
 
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate prometheus;
 
 mod helper;
 mod message_processor;
 mod net;
 mod net_test;
 pub mod network;
+mod network_metrics;
 
 pub use network::NetworkActor;
 pub use network_api::messages::*;
