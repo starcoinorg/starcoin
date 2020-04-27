@@ -4,23 +4,8 @@
 #![recursion_limit = "128"]
 extern crate prometheus;
 
-mod json_encoder;
-pub mod metric_server;
-mod op_counters;
-mod process_collector;
-#[macro_use]
-pub mod macros;
-
-pub use op_counters::{DurationHistogram, OpMetrics};
-// Re-export counter types from prometheus crate
-pub use prometheus::{
-    histogram_opts, labels, opts, register_counter, register_counter_vec, register_gauge,
-    register_gauge_vec, register_histogram, register_histogram_vec, register_int_counter,
-    register_int_counter_vec, register_int_gauge, register_int_gauge_vec, Histogram,
-    HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
-};
-
 use anyhow::Result;
+use prometheus::core::{AtomicU64, GenericGaugeVec};
 use prometheus::{
     core::{Collector, Metric},
     proto,
@@ -37,7 +22,22 @@ use std::{
     thread, time,
 };
 
-use prometheus::core::{AtomicU64, GenericGaugeVec};
+mod json_encoder;
+pub mod metric_server;
+mod op_counters;
+mod process_collector;
+#[macro_use]
+pub mod macros;
+
+pub use op_counters::{DurationHistogram, OpMetrics};
+// Re-export counter types from prometheus crate
+pub use prometheus::{
+    histogram_opts, labels, opts, register_counter, register_counter_vec, register_gauge,
+    register_gauge_vec, register_histogram, register_histogram_vec, register_int_counter,
+    register_int_counter_vec, register_int_gauge, register_int_gauge_vec, Error as PrometheusError,
+    Histogram, HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
+    Opts,
+};
 
 pub type UIntGaugeVec = GenericGaugeVec<AtomicU64>;
 

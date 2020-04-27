@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use jsonrpc_core::IoHandler;
+use jsonrpc_core::MetaIoHandler;
 use jsonrpc_http_server;
 use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
@@ -9,6 +9,7 @@ use jsonrpc_tcp_server;
 use jsonrpc_ws_server;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
+use starcoin_rpc_middleware::MetricMiddleware;
 use std::sync::Arc;
 
 pub struct RpcService {
@@ -19,7 +20,10 @@ pub struct RpcService {
 }
 
 impl RpcService {
-    pub fn new(config: Arc<NodeConfig>, io_handler: IoHandler) -> RpcService {
+    pub fn new(
+        config: Arc<NodeConfig>,
+        io_handler: MetaIoHandler<(), MetricMiddleware>,
+    ) -> RpcService {
         let ipc_file = config.rpc.get_ipc_file();
         let ipc = jsonrpc_ipc_server::ServerBuilder::new(io_handler.clone())
             .start(ipc_file.to_str().expect("Path to string should success."))
