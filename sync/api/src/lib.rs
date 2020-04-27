@@ -44,7 +44,7 @@ impl SyncMetadata {
     }
 
     pub fn state_syncing(&self) -> bool {
-        self.state_sync_mode() && (!self.0.read().state_sync_done || !self.0.read().block_sync_done)
+        self.fast_sync_mode() && (!self.0.read().state_sync_done || !self.0.read().block_sync_done)
     }
 
     pub fn update_pivot(&self, pivot: BlockNumber, behind: u64) -> Result<()> {
@@ -56,7 +56,7 @@ impl SyncMetadata {
     }
 
     pub fn state_sync_done(&self) -> Result<()> {
-        assert!(self.state_sync_mode(), "chain is not in fast sync mode.");
+        assert!(self.fast_sync_mode(), "chain is not in fast sync mode.");
         assert!(!self.0.read().state_sync_done, "state sync already done.");
         let mut lock = self.0.write();
         lock.state_sync_done = true;
@@ -79,8 +79,8 @@ impl SyncMetadata {
     }
 
     pub fn is_sync_done(&self) -> bool {
-        (self.state_sync_mode() && self.0.read().state_sync_done && self.0.read().block_sync_done)
-            || (!self.state_sync_mode() && self.0.read().block_sync_done)
+        (self.fast_sync_mode() && self.0.read().state_sync_done && self.0.read().block_sync_done)
+            || (!self.fast_sync_mode() && self.0.read().block_sync_done)
     }
 
     fn sync_done(&self) -> Result<()> {
@@ -100,7 +100,7 @@ impl SyncMetadata {
         self.0.read().state_sync_done
     }
 
-    pub fn state_sync_mode(&self) -> bool {
+    pub fn fast_sync_mode(&self) -> bool {
         self.0.read().is_state_sync
     }
 

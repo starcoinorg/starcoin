@@ -264,89 +264,89 @@ where
         storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
     ) -> Result<()> {
-        if (main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network {
-            if sync_metadata.state_syncing() {
-                if let Some(best_peer) = network.best_peer().await? {
-                    if self_peer_id != best_peer.get_peer_id() {
-                        //1. ancestor
-                        let begin_number = downloader
-                            .chain_reader
-                            .clone()
-                            .master_head_header()
-                            .await
-                            .unwrap()
-                            .number();
+        if !sync_metadata.state_syncing() {
+            warn!("not fast sync mode.");
+            return Ok(());
+        }
 
-                        if let Some(hash_with_number) = Downloader::find_ancestor(
-                            downloader.clone(),
-                            best_peer.get_peer_id(),
-                            network.clone(),
-                            begin_number,
-                        )
-                        .await?
-                        {
-                            let ancestor = hash_with_number.number;
+        if sync_metadata.state_done() {
+            info!("state sync already done.");
+            return Ok(());
+        }
 
-                            // 2. pivot
-                            let latest_number = best_peer.get_block_number();
-                            let min_behind = if main_network {
-                                MAIN_MIN_BLOCKS_BEHIND
-                            } else {
-                                MIN_BLOCKS_BEHIND
-                            };
-                            if (ancestor + min_behind) <= latest_number {
-                                let pivot = latest_number - min_behind;
+        if !((main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network)
+        {
+            warn!("condition is not satisfied when sync state.");
+            return Ok(());
+        }
 
-                                // 3. StateSyncActor
-                                let root =
-                                    Self::get_pivot(&network, best_peer.get_peer_id(), pivot)
-                                        .await?;
-                                let sync_pivot = sync_metadata.get_pivot()?;
-                                if sync_metadata.state_syncing() {
-                                    if sync_pivot.is_none() || sync_pivot.unwrap() < pivot {
-                                        sync_metadata.clone().update_pivot(pivot, min_behind)?;
-                                        if sync_pivot.is_none() {
-                                            let state_sync_task_address =
-                                                StateSyncTaskActor::launch(
-                                                    self_peer_id,
-                                                    (root.state_root(), root.accumulator_root()),
-                                                    storage,
-                                                    network.clone(),
-                                                    sync_metadata.clone(),
-                                                );
-                                            sync_metadata
-                                                .update_address(&state_sync_task_address)?
-                                        } else if sync_pivot.unwrap() < pivot {
-                                            if let Some(address) = sync_metadata.get_address() {
-                                                &address.reset(
-                                                    root.state_root(),
-                                                    root.accumulator_root(),
-                                                );
-                                            } else {
-                                                info!("{:?}", "state sync reset address is none.");
-                                            }
-                                        }
-                                    } else {
-                                        info!("pivot {:?} : {}", sync_pivot, pivot);
-                                    }
-                                } else {
-                                    info!("{:?}", "not state sync mode.");
-                                }
-                            }
-                        } else {
-                            info!("{:?}", "find_ancestor return none.");
-                        }
-                    } else {
-                        info!("{:?}", "self is best peer.");
-                    }
+        if let Some(best_peer) = network.best_peer().await? {
+            //1. ancestor
+            let begin_number = downloader
+                .chain_reader
+                .clone()
+                .master_head_header()
+                .await
+                .unwrap()
+                .number();
+
+            if let Some(hash_with_number) = Downloader::find_ancestor(
+                downloader.clone(),
+                best_peer.get_peer_id(),
+                network.clone(),
+                begin_number,
+            )
+            .await?
+            {
+                let ancestor = hash_with_number.number;
+
+                // 2. pivot
+                let latest_number = best_peer.get_block_number();
+                let min_behind = if main_network {
+                    MAIN_MIN_BLOCKS_BEHIND
                 } else {
-                    info!("{:?}", "best peer is none.");
+                    MIN_BLOCKS_BEHIND
+                };
+                if !((ancestor + min_behind) <= latest_number) {
+                    return Ok(());
+                }
+                let pivot = latest_number - min_behind;
+
+                // 3. StateSyncActor
+                let root = Self::get_pivot(&network, best_peer.get_peer_id(), pivot).await?;
+                let sync_pivot = sync_metadata.get_pivot()?;
+                if !(sync_pivot.is_none() || sync_pivot.unwrap() < pivot) {
+                    info!("pivot {:?} : {}", sync_pivot, pivot);
+                    return Ok(());
+                }
+
+                if sync_metadata.state_done() {
+                    info!("state sync already done during find_ancestor.");
+                    return Ok(());
+                }
+                sync_metadata.clone().update_pivot(pivot, min_behind)?;
+                if sync_pivot.is_none() {
+                    let state_sync_task_address = StateSyncTaskActor::launch(
+                        self_peer_id,
+                        (root.state_root(), root.accumulator_root()),
+                        storage,
+                        network.clone(),
+                        sync_metadata.clone(),
+                    );
+                    sync_metadata.update_address(&state_sync_task_address)?
+                } else if sync_pivot.unwrap() < pivot {
+                    if let Some(address) = sync_metadata.get_address() {
+                        &address.reset(root.state_root(), root.accumulator_root());
+                    } else {
+                        info!("state sync reset address is none.");
+                    }
                 }
             } else {
-                info!("{:?}", "not state sync mode.");
+                warn!("find_ancestor return none.");
             }
         } else {
-            info!("{:?}", "nothing todo when sync state.");
+            warn!("best peer is none.");
+            let _ = sync_metadata.state_sync_done();
         }
 
         Ok(())
@@ -392,9 +392,7 @@ where
             {
                 error!("error: {:?}", e);
             } else {
-                if !sync_metadata.state_sync_mode() {
-                    let _ = sync_metadata.block_sync_done();
-                }
+                let _ = sync_metadata.block_sync_done();
                 debug!("peer {:?} end sync.", self_peer_id);
             };
 

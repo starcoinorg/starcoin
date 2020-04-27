@@ -320,52 +320,53 @@ impl StateSyncTaskActor {
             let is_global = is_global.clone();
             //1. push back
             let current_node_key = task_event.node_key;
-            if state_node_hash == &current_node_key {
-                let _ = lock.remove(&task_event.peer_id);
-                if let Some(state_node) = task_event.state_node {
-                    if let Err(e) = self.storage.put(current_node_key, state_node.clone()) {
-                        error!("error : {:?}", e);
-                        lock.push_back((current_node_key, is_global));
-                    } else {
-                        debug!("receive state_node: {:?}", state_node.0.hash());
-                        match state_node.inner() {
-                            Node::Leaf(leaf) => {
-                                if is_global {
-                                    match AccountState::try_from(leaf.blob().as_ref()) {
-                                        Err(e) => {
-                                            error!("error : {:?}", e);
-                                        }
-                                        Ok(account_state) => {
-                                            account_state.storage_roots().iter().for_each(|key| {
-                                                if key.is_some() {
-                                                    let hash = key.unwrap().clone();
-                                                    if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
-                                                        lock.push_back((hash, false));
-                                                    }
-                                                }
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                            Node::Internal(n) => {
-                                for child in n.all_child() {
-                                    lock.push_back((child, is_global));
-                                }
-                            }
-                            _ => {
-                                warn!("node {:?} is null.", current_node_key);
-                            }
-                        }
-                    }
-                } else {
-                    lock.push_back((current_node_key, is_global));
-                }
-            } else {
+            if state_node_hash != &current_node_key {
                 warn!(
                     "hash not match {:} : {:?}",
                     state_node_hash, current_node_key
                 );
+                return;
+            }
+            let _ = lock.remove(&task_event.peer_id);
+            if let Some(state_node) = task_event.state_node {
+                if let Err(e) = self.storage.put(current_node_key, state_node.clone()) {
+                    error!("error : {:?}", e);
+                    lock.push_back((current_node_key, is_global));
+                } else {
+                    debug!("receive state_node: {:?}", state_node.0.hash());
+                    match state_node.inner() {
+                        Node::Leaf(leaf) => {
+                            if !is_global {
+                                return;
+                            }
+                            match AccountState::try_from(leaf.blob().as_ref()) {
+                                Err(e) => {
+                                    error!("error : {:?}", e);
+                                }
+                                Ok(account_state) => {
+                                    account_state.storage_roots().iter().for_each(|key| {
+                                        if key.is_some() {
+                                            let hash = key.unwrap().clone();
+                                            if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
+                                                lock.push_back((hash, false));
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        Node::Internal(n) => {
+                            for child in n.all_child() {
+                                lock.push_back((child, is_global));
+                            }
+                        }
+                        _ => {
+                            warn!("node {:?} is null.", current_node_key);
+                        }
+                    }
+                }
+            } else {
+                lock.push_back((current_node_key, is_global));
             }
         } else {
             warn!("discard state event : {:?}", task_event);
@@ -423,37 +424,37 @@ impl StateSyncTaskActor {
         if let Some(accumulator_node_hash) = lock.get(&task_event.peer_id) {
             //1. push back
             let current_node_key = task_event.node_key;
-            if accumulator_node_hash == &current_node_key {
-                let _ = lock.remove(&task_event.peer_id);
-                if let Some(accumulator_node) = task_event.accumulator_node {
-                    if let Err(e) = self.storage.save_node(accumulator_node.clone()) {
-                        error!("error : {:?}", e);
-                        lock.push_back(current_node_key);
-                    } else {
-                        debug!("receive accumulator_node: {:?}", accumulator_node);
-                        match accumulator_node {
-                            AccumulatorNode::Leaf(_leaf) => {}
-                            AccumulatorNode::Internal(n) => {
-                                if n.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
-                                    lock.push_back(n.left());
-                                }
-                                if n.right() != *ACCUMULATOR_PLACEHOLDER_HASH {
-                                    lock.push_back(n.right());
-                                }
-                            }
-                            _ => {
-                                warn!("node {:?} is null.", current_node_key);
-                            }
-                        }
-                    }
-                } else {
-                    lock.push_back(current_node_key);
-                }
-            } else {
+            if accumulator_node_hash != &current_node_key {
                 warn!(
                     "hash not match {:} : {:?}",
                     accumulator_node_hash, current_node_key
                 );
+                return;
+            }
+            let _ = lock.remove(&task_event.peer_id);
+            if let Some(accumulator_node) = task_event.accumulator_node {
+                if let Err(e) = self.storage.save_node(accumulator_node.clone()) {
+                    error!("error : {:?}", e);
+                    lock.push_back(current_node_key);
+                } else {
+                    debug!("receive accumulator_node: {:?}", accumulator_node);
+                    match accumulator_node {
+                        AccumulatorNode::Leaf(_leaf) => {}
+                        AccumulatorNode::Internal(n) => {
+                            if n.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
+                                lock.push_back(n.left());
+                            }
+                            if n.right() != *ACCUMULATOR_PLACEHOLDER_HASH {
+                                lock.push_back(n.right());
+                            }
+                        }
+                        _ => {
+                            warn!("node {:?} is null.", current_node_key);
+                        }
+                    }
+                }
+            } else {
+                lock.push_back(current_node_key);
             }
         } else {
             warn!("discard state event : {:?}", task_event);
