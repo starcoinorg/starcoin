@@ -49,9 +49,11 @@ tokio = { version = "0.2", features = ["full"] }
 sg_config = {path = "../config", package="starcoin-config"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-metrics = {path = "../commons/metrics",package="starcoin-metrics"}
 network-p2p-api = {package="network-api", path="../network/api"}
 types = {path = "../types", package="starcoin-types"}
 stest = {path = "../commons/stest"}
+prometheus = "0.8"
 
 [dev-dependencies]
 async-std = "1.5"

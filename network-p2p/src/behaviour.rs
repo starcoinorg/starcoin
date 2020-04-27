@@ -159,7 +159,7 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
             CustomMessageOutcome::NotificationStreamOpened { remote, info } => {
                 self.events
                     .push(BehaviourOut::Event(Event::NotificationStreamOpened {
-                        remote: remote.clone(),
+                        remote,
                         info,
                     }));
             }

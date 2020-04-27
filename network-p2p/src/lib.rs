@@ -7,6 +7,10 @@
 #![allow(unused_must_use)]
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate prometheus;
+#[macro_use]
+extern crate starcoin_metrics;
 
 pub use crate::protocol::event::Event;
 pub use crate::protocol::generic_proto::GenericProtoOut;
@@ -23,14 +27,14 @@ mod behaviour;
 mod config;
 mod debug_info;
 mod discovery;
+mod metrics;
 mod net_error;
 mod network_state;
 mod protocol;
 mod service;
+mod service_test;
 mod transport;
 mod utils;
-
-mod service_test;
 
 use serde::Serialize;
 use std::{
