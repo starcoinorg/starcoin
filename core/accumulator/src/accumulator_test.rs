@@ -51,7 +51,7 @@ fn test_error_on_bad_parameters() {
         Arc::new(mock_store),
     )
     .unwrap();
-    assert!(accumulator.get_proof(HashValue::random()).is_err());
+    assert!(accumulator.get_proof(10).is_err());
 }
 
 #[test]
@@ -86,16 +86,16 @@ fn test_multiple_chain() {
     let (_root_hash2, _) = accumulator.append(&leaves2).unwrap();
     let (_root_hash3, _) = accumulator2.append(&leaves3).unwrap();
 
-    // assert_eq!(
-    //     accumulator.get_leaf(1).unwrap().unwrap(),
-    //     accumulator2.get_leaf(1).unwrap().unwrap()
-    // );
-    // for i in 3..accumulator2.num_nodes() {
-    //     assert_ne!(
-    //         accumulator.get_leaf(i).unwrap().unwrap(),
-    //         accumulator2.get_leaf(i).unwrap().unwrap()
-    //     );
-    // }
+    assert_eq!(
+        accumulator.get_leaf(1).unwrap().unwrap(),
+        accumulator2.get_leaf(1).unwrap().unwrap()
+    );
+    for i in 3..accumulator2.num_nodes() {
+        assert_ne!(
+            accumulator.get_leaf(i).unwrap().unwrap(),
+            accumulator2.get_leaf(i).unwrap().unwrap()
+        );
+    }
 }
 
 #[test]
@@ -251,7 +251,7 @@ fn proof_verify(
 ) {
     leaves.iter().enumerate().for_each(|(i, hash)| {
         let leaf_index = first_leaf_idx + i as u64;
-        let proof = accumulator.get_proof(*hash).unwrap().unwrap();
+        let proof = accumulator.get_proof(leaf_index).unwrap().unwrap();
         proof.verify(root_hash, *hash, leaf_index).unwrap();
     });
 }

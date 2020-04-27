@@ -1,17 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, Error, Result};
+use anyhow::{ensure, Error, Result};
 
 use starcoin_crypto::HashValue;
 
+use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
-use lru::LruCache;
+use logger::prelude::*;
 pub use node::AccumulatorNode;
-use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 #[cfg(test)]
@@ -28,19 +27,17 @@ pub type NodeCount = u64;
 pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 pub const MAX_ACCUMULATOR_LEAVES: LeafCount = 1 << MAX_ACCUMULATOR_PROOF_DEPTH;
 pub const MAC_CACHE_SIZE: usize = 65535;
-/// Global node cache
-pub static GLOBAL_NODE_CACHE: Lazy<Mutex<LruCache<HashValue, AccumulatorNode>>> =
-    Lazy::new(|| Mutex::new(LruCache::new(MAC_CACHE_SIZE)));
-/// Global node parent mapping cache.
-pub static GLOBAL_NODE_PARENT_CACHE: Lazy<Mutex<LruCache<HashValue, HashValue>>> =
-    Lazy::new(|| Mutex::new(LruCache::new(MAC_CACHE_SIZE)));
 
 /// accumulator method define
 pub trait Accumulator {
     /// Append leaves and return new root
     fn append(&self, leaves: &[HashValue]) -> Result<(HashValue, u64), Error>;
-    /// Get proof by leaf hash.
-    fn get_proof(&self, leaf_hash: HashValue) -> Result<Option<AccumulatorProof>>;
+    /// Get leaf node by index.
+    fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error>;
+    /// Get proof by leaf index.
+    fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
+    /// Flush node to storage
+    fn flush(&self) -> Result<()>;
     /// Get current accumulator tree root hash.
     fn root_hash(&self) -> HashValue;
     /// Get current accumulator tree number of leaves.
@@ -61,6 +58,8 @@ pub trait AccumulatorReader {
 pub trait AccumulatorWriter {
     /// save node
     fn save_node(&self, node: AccumulatorNode) -> Result<()>;
+    /// batch save nodes
+    fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<()>;
     ///delete node
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()>;
 }
@@ -72,6 +71,7 @@ pub trait AccumulatorTreeStore:
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
 pub struct MerkleAccumulator {
+    update_nodes: Mutex<Vec<AccumulatorNode>>,
     tree: Mutex<AccumulatorTree>,
     node_store: Arc<dyn AccumulatorTreeStore>,
 }
@@ -86,6 +86,7 @@ impl MerkleAccumulator {
         node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<Self> {
         Ok(Self {
+            update_nodes: Mutex::new(vec![]),
             tree: Mutex::new(AccumulatorTree::new(
                 accumulator_id,
                 frozen_subtree_roots,
@@ -103,16 +104,41 @@ impl Accumulator for MerkleAccumulator {
     fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
         let mut tree_guard = self.tree.lock();
         let first_index_leaf = tree_guard.num_leaves;
-        let (root_hash, _frozen_nodes) = tree_guard.append_leaves(new_leaves).unwrap();
+        let (root_hash, frozen_nodes) = tree_guard.append_leaves(new_leaves).unwrap();
+        self.update_nodes.lock().extend_from_slice(&frozen_nodes);
         Ok((root_hash, first_index_leaf))
     }
 
-    fn get_proof(&self, leaf_hash: HashValue) -> Result<Option<AccumulatorProof>, Error> {
+    fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error> {
+        Ok(Some(
+            self.tree
+                .lock()
+                .get_node_hash(NodeIndex::new(leaf_index))
+                .unwrap(),
+        ))
+    }
+
+    fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>, Error> {
         let tree_guard = self.tree.lock();
-        match tree_guard.get_siblings(leaf_hash) {
-            Ok(siblings) => Ok(Some(AccumulatorProof::new(siblings))),
-            _ => bail!("get proof error:{:?}", leaf_hash),
+        ensure!(
+            leaf_index < tree_guard.num_leaves as u64,
+            "get proof invalid leaf_index {}, num_leaves {}",
+            leaf_index,
+            tree_guard.num_leaves
+        );
+
+        let siblings = tree_guard.get_siblings(leaf_index, |_p| true)?;
+        Ok(Some(AccumulatorProof::new(siblings)))
+    }
+
+    fn flush(&self) -> Result<(), Error> {
+        let mut nodes = self.update_nodes.lock();
+        if !nodes.is_empty() {
+            self.node_store.save_nodes(nodes.to_vec());
+            nodes.clear();
+            info!("flush node to storage ok!");
         }
+        Ok(())
     }
 
     fn root_hash(&self) -> HashValue {
@@ -122,7 +148,6 @@ impl Accumulator for MerkleAccumulator {
     fn num_leaves(&self) -> u64 {
         self.tree.lock().num_leaves
     }
-
     fn num_nodes(&self) -> u64 {
         self.tree.lock().num_nodes
     }

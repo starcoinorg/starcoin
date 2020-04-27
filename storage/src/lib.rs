@@ -325,6 +325,11 @@ impl AccumulatorWriter for Storage {
     fn save_node(&self, node: AccumulatorNode) -> Result<()> {
         self.accumulator_storage.save_node(node)
     }
+
+    fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<(), Error> {
+        self.accumulator_storage.save_nodes(nodes)
+    }
+
     ///delete node
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()> {
         self.accumulator_storage.delete_nodes(node_hash_vec)
