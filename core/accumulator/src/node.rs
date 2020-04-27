@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::node_index::{NodeIndex, NODE_ERROR_INDEX};
+use anyhow::Result;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
@@ -52,7 +53,6 @@ impl AccumulatorNode {
         }
     }
 
-    #[cfg(test)]
     pub fn is_empty(&self) -> bool {
         if let AccumulatorNode::Empty = self {
             true
@@ -65,35 +65,27 @@ impl AccumulatorNode {
 /// An internal node.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
 pub struct InternalNode {
-    // /// The hash of this internal node which is the root hash of the subtree.
-    // #[serde(skip)]
-    // hash: Cell<Option<HashValue>>,
     index: NodeIndex,
     left: HashValue,
     right: HashValue,
+    is_frozen: bool,
 }
 
 impl InternalNode {
     pub fn new(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
         InternalNode {
-            // hash: Cell::new(None),
             index,
             left,
             right,
+            is_frozen: right != *ACCUMULATOR_PLACEHOLDER_HASH,
         }
     }
 
     pub fn hash(&self) -> HashValue {
-        // match self.hash.get() {
-        //     Some(hash) => hash,
-        //     None => {
         let mut bytes = self.left.to_vec();
         bytes.extend(self.right.to_vec());
         let hash = HashValue::from_sha3_256(bytes.as_slice());
-        // self.hash.set(Some(hash));
         hash
-        //     }
-        // }
     }
 
     pub fn index(&self) -> NodeIndex {
@@ -104,6 +96,10 @@ impl InternalNode {
     }
     pub fn right(&self) -> HashValue {
         self.right
+    }
+    pub fn set_frozen(&mut self) -> Result<()> {
+        self.is_frozen = true;
+        Ok(())
     }
 }
 
@@ -126,9 +122,3 @@ impl LeafNode {
         self.index
     }
 }
-
-// impl CryptoHash for LeafNode {
-//     fn crypto_hash(&self) -> HashValue {
-//         self.0
-//     }
-// }
