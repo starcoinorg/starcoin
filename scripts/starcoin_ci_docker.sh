@@ -3,11 +3,11 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 SEED_NODE_KEY=a52cb7fe64b154d192cebd35a0b129c80481f89dd94f2aa2978b71417304a858
-SEED_PORT=8840
+SEED_PORT=9840
 SEED_HOST=206.189.89.104
 SEED=/ip4/$SEED_HOST/tcp/$SEED_PORT/p2p/QmcejhDq4ubxLnx7sNENECJroAuepMiL6Zkjp63LMmwVaT
 
-cfg_root=/root/workspaces/starcoin_cfg
+cfg_root=/mnt/volume_01/starcoin_cfg
 
 function docker_rebuild(){
     echo  -e "*\n"'!'"starcoin"> $DIR/../target/debug/.dockerignore
@@ -38,5 +38,5 @@ function clean_all(){
 docker_rebuild
 #TODO: start failed, clean all env and restart
 start_halley_seed starcoin-0 $SEED_PORT
-start_halley_node starcoin-1 8841
-start_halley_node starcoin-2 8842
+start_halley_node starcoin-1 9841
+start_halley_node starcoin-2 9842
