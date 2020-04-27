@@ -45,6 +45,7 @@ members = [
     "wallet/lib",
     "wallet/service",
     "rpc/api",
+    "rpc/middleware",
     "rpc/client",
     "rpc/server",
     "cmd/starcoin",

@@ -1,0 +1,25 @@
+[package]
+name = "starcoin-rpc-middleware"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+
+[dependencies]
+anyhow = "1.0"
+thiserror = "1.0"
+# for RpcError convert.
+failure = "0.1"
+# for ipc connect
+once_cell = "1.3"
+jsonrpc-core = "14.0"
+futures = { version = "0.3.2", features = ["compat"] }
+futures01 = "0.1.29"
+starcoin-logger = { path = "../../commons/logger"}
+starcoin-metrics = { path = "../../commons/metrics"}
+
+[dev-dependencies]
+stest = { path = "../../commons/stest"}
+rand = "0.7.3"
