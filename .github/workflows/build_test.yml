@@ -59,3 +59,5 @@ jobs:
         with:
           command: test
           args: --all-targets
+      - name: deploy node
+        run: bash ./scripts/starcoin_ci_docker.sh
