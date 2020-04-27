@@ -35,6 +35,7 @@ txpool = {path = "../../txpool", package="starcoin-txpool"}
 starcoin-logger = { path = "../../commons/logger"}
 stest = { path = "../../commons/stest"}
 starcoin-rpc-api = { path = "../api"}
+starcoin-rpc-middleware = { path = "../middleware"}
 starcoin-wallet-api = { path = "../../wallet/api"}
 starcoin-chain = {path ="../../chain"}
 starcoin-wallet-service = { path = "../../wallet/service"}

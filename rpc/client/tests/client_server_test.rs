@@ -4,7 +4,6 @@
 use actix::prelude::*;
 use anyhow::Result;
 use futures::channel::oneshot;
-use jsonrpc_core::IoHandler;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::node::NodeApi;
@@ -29,10 +28,12 @@ fn test_multi_client() -> Result<()> {
 
     system.block_on(async {
         let (stop_sender, stop_receiver) = oneshot::channel::<bool>();
-        let mut io_handler = IoHandler::new();
         //io_handler.add_method("status", |_params: Params| Ok(Value::Bool(true)));
-        io_handler.extend_with(NodeApi::to_delegate(NodeRpcImpl::new(config.clone(), None)));
-        let (_rpc_actor, iohandler) = RpcActor::launch_with_handler(config, io_handler).unwrap();
+        let (_rpc_actor, _) = RpcActor::launch_with_method(
+            config.clone(),
+            NodeRpcImpl::new(config, None).to_delegate(),
+        )
+        .unwrap();
 
         let client_task = move || {
             info!("client thread start.");
@@ -48,10 +49,11 @@ fn test_multi_client() -> Result<()> {
             info!("ipc_client status: {}", status1);
             assert_eq!(status, status1);
 
-            let local_client = RpcClient::connect_local(iohandler);
-            let status2 = local_client.node_status().unwrap();
-            info!("local_client status: {}", status2);
-            assert!(status2);
+            // json_rpc's LocalRpc is not support middleware MetaIoHandler.
+            // let local_client = RpcClient::connect_local(iohandler);
+            // let status2 = local_client.node_status().unwrap();
+            // info!("local_client status: {}", status2);
+            // assert!(status2);
 
             drop(stop_sender);
         };
