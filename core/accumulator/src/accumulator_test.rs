@@ -165,8 +165,9 @@ fn test_multiple_tree() {
     let batch1 = create_leaves(0..8);
     let mock_store = MockAccumulatorStore::new();
     let arc_store = Arc::new(mock_store);
+    let accumulator_id = HashValue::random();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
+        accumulator_id,
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -178,7 +179,7 @@ fn test_multiple_tree() {
     proof_verify(&accumulator, root_hash1, &batch1, 0);
     let frozen_hash = accumulator.get_frozen_subtree_roots().unwrap();
     let accumulator2 = MerkleAccumulator::new(
-        HashValue::random(),
+        accumulator_id,
         root_hash1,
         frozen_hash.clone(),
         8,

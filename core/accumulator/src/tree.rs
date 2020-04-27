@@ -99,6 +99,7 @@ impl AccumulatorTree {
                         internal_node.hash()
                     }
                     None => {
+                        println!("gen internel {:?}", sibling);
                         internal_node = AccumulatorNode::new_internal(
                             pos.parent(),
                             self.get_node_hash(sibling).unwrap(),
@@ -115,35 +116,57 @@ impl AccumulatorTree {
             left_siblings.push((pos, hash));
         }
 
+        let mut not_frozen_nodes = vec![];
         // Now reconstruct the final root hash by walking up to root level and adding
         // placeholder hash nodes as needed on the right, and left siblings that have either
         // been newly created or read from storage.
         let (mut pos, mut hash) = left_siblings.pop().expect("Must have at least one node");
         for _ in pos.level()..root_level as u32 {
             hash = if pos.is_left_child() {
-                AccumulatorNode::new_internal(pos.parent(), hash, *ACCUMULATOR_PLACEHOLDER_HASH)
-                    .hash()
+                let not_frozen = AccumulatorNode::new_internal(
+                    pos.parent(),
+                    hash,
+                    *ACCUMULATOR_PLACEHOLDER_HASH,
+                );
+                not_frozen_nodes.push(not_frozen.clone());
+                not_frozen.hash()
             } else {
                 let sibling = pos.sibling();
                 match left_siblings.pop() {
                     Some((x, left_hash)) => {
                         assert_eq!(x, sibling);
-                        AccumulatorNode::new_internal(pos.parent(), left_hash, hash).hash()
+                        let not_frozen =
+                            AccumulatorNode::new_internal(pos.parent(), left_hash, hash);
+                        not_frozen_nodes.push(not_frozen.clone());
+                        not_frozen.hash()
                     }
-                    None => AccumulatorNode::new_internal(
-                        pos.parent(),
-                        self.get_node_hash(sibling).unwrap(),
-                        hash,
-                    )
-                    .hash(),
+                    None => {
+                        println!("cuc root: {:?}", sibling);
+                        let not_frozen = AccumulatorNode::new_internal(
+                            pos.parent(),
+                            self.get_node_hash(sibling).unwrap(),
+                            hash,
+                        );
+                        not_frozen_nodes.push(not_frozen.clone());
+                        not_frozen.hash()
+                    }
                 }
             };
             pos = pos.parent();
         }
         assert!(left_siblings.is_empty());
-
+        //update frozen tag
+        to_freeze = to_freeze
+            .iter()
+            .map(|mut node| {
+                node.clone().frozen();
+                node.clone()
+            })
+            .collect();
+        //aggregator all nodes
+        not_frozen_nodes.extend_from_slice(&to_freeze);
         // udpate to cache
-        self.update_cache(to_freeze.clone());
+        self.update_cache(not_frozen_nodes.clone());
         // update self properties
         self.root_hash = hash;
         self.frozen_subtree_roots = RefCell::new(
@@ -154,7 +177,7 @@ impl AccumulatorTree {
         self.num_leaves = last_new_leaf_count;
         self.num_nodes = new_num_nodes;
 
-        Ok((hash, to_freeze))
+        Ok((hash, not_frozen_nodes))
     }
 
     /// Get accumulator node by hash.
@@ -242,7 +265,42 @@ impl AccumulatorTree {
         } else {
             let node_hash = AccumulatorCache::get_node_hash(self.id, node_index);
             if node_hash == HashValue::zero() {
-                //TODO get from storage
+                println!("get node hash null: {:?}", node_index);
+                // get from to storage
+                let parent = node_index.parent();
+                let parent_hash = AccumulatorCache::get_node_hash(self.id, node_index);
+                for i in 0..self.num_nodes {
+                    println!(
+                        "index: {:?} -- {:?}",
+                        i,
+                        AccumulatorCache::get_node_hash(self.id, NodeIndex::new(i)).short_str()
+                    );
+                }
+                if parent_hash != HashValue::zero() {
+                    // let parent_node = AccumulatorCache::get_node(parent_hash);
+                    // match parent_node {
+                    //     AccumulatorNode::Internal(node) => {
+                    //         let right_node = AccumulatorCache::get_node(node.right());
+                    //         if node_index == right_node.index() {
+                    //             Ok(right_node.hash());
+                    //         } else {
+                    //             let left_node = AccumulatorCache::get_node(node.left());
+                    //             if node_index == left_node.index() {
+                    //                 Ok(left_node.hash());
+                    //             } else {
+                    //                 error!("get node from storage null: {:?}", node_index);
+                    //                 Ok(HashValue::zero());
+                    //             }
+                    //         }
+                    //     }
+                    //     _ => Ok(HashValue::zero()),
+                    // }
+                    println!("parent:{:?}", parent);
+                } else {
+                    println!("parent null:{:?}", parent);
+                    error!("get parent node null: {:?}", parent);
+                    // Ok(HashValue::zero())
+                }
             }
             Ok(node_hash)
         }

@@ -53,6 +53,14 @@ impl AccumulatorNode {
         }
     }
 
+    pub fn frozen(&mut self) -> Result<()> {
+        let node = match self {
+            AccumulatorNode::Internal(internal) => internal.set_frozen(),
+            _ => Ok(()),
+        };
+        Ok(())
+    }
+
     pub fn is_empty(&self) -> bool {
         if let AccumulatorNode::Empty = self {
             true
