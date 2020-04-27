@@ -1,0 +1,6 @@
+# Only for starcoin ci
+FROM ubuntu:18.04
+RUN apt update && apt install openssl -y
+COPY starcoin /starcoin/
+WORKDIR /starcoin
+ENTRYPOINT ["./starcoin"]
