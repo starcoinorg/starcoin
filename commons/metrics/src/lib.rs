@@ -14,7 +14,10 @@ pub mod macros;
 pub use op_counters::{DurationHistogram, OpMetrics};
 // Re-export counter types from prometheus crate
 pub use prometheus::{
-    Error as PrometheusError, Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Opts,
+    histogram_opts, labels, opts, register_counter, register_counter_vec, register_gauge,
+    register_gauge_vec, register_histogram, register_histogram_vec, register_int_counter,
+    register_int_counter_vec, register_int_gauge, register_int_gauge_vec, Histogram,
+    HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
 };
 
 use anyhow::Result;
@@ -83,14 +86,23 @@ pub fn get_all_metrics() -> HashMap<String, String> {
                 }
                 MetricType::HISTOGRAM => {
                     let h = m.get_histogram();
+                    let count = h.get_sample_count();
                     all_metrics.insert(
                         flatten_metric_with_labels(&format!("{}_count", name), m),
-                        h.get_sample_count().to_string(),
+                        count.to_string(),
                     );
+                    let sum = h.get_sample_sum();
                     all_metrics.insert(
                         flatten_metric_with_labels(&format!("{}_sum", name), m),
-                        h.get_sample_sum().to_string(),
+                        sum.to_string(),
                     );
+                    if count > 0 {
+                        let average = sum / (count as f64);
+                        all_metrics.insert(
+                            flatten_metric_with_labels(&format!("{}_average", name), m),
+                            average.to_string(),
+                        );
+                    }
                 }
                 MetricType::SUMMARY => panic!("Unsupported Metric 'SUMMARY'"),
                 MetricType::UNTYPED => panic!("Unsupported Metric 'UNTYPED'"),
