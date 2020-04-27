@@ -70,6 +70,18 @@ fn test_multiple_chain() {
     let (root_hash, _index1) = accumulator.append(&leaves).unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
     let frozen_node = accumulator.get_frozen_subtree_roots().unwrap();
+    for node in frozen_node.clone() {
+        let acc = accumulator.get_node(node).unwrap();
+        match acc {
+            AccumulatorNode::Internal(internal) => {
+                let left = accumulator.get_node(internal.left()).unwrap();
+                println!("left: {:?}", left);
+                let right = accumulator.get_node(internal.right()).unwrap();
+                println!("right: {:?}", right);
+            }
+            _ => {}
+        }
+    }
     let accumulator2 = MerkleAccumulator::new(
         HashValue::random(),
         root_hash,

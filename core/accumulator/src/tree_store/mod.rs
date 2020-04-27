@@ -47,6 +47,19 @@ impl AccumulatorCache {
             }
         }
     }
+    pub fn get_nodes(hashes: Vec<HashValue>) -> Vec<AccumulatorNode> {
+        let mut cache = GLOBAL_NODE_CACHE.lock();
+        let mut node_vec = vec![];
+        for hash in hashes {
+            match cache.get(&hash) {
+                Some(node) => {
+                    node_vec.push(node.clone());
+                }
+                None => {}
+            }
+        }
+        node_vec
+    }
     pub fn get_node_hash(accumulator_id: HashValue, index: NodeIndex) -> HashValue {
         match GLOBAL_NODE_INDEX_CACHE
             .lock()

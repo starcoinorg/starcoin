@@ -8,6 +8,7 @@ use starcoin_crypto::HashValue;
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
+use crate::tree_store::AccumulatorCache;
 use logger::prelude::*;
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
@@ -36,6 +37,7 @@ pub trait Accumulator {
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error>;
     /// Get proof by leaf index.
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
+    fn get_node(&self, hash: HashValue) -> Result<AccumulatorNode>;
     /// Flush node to storage
     fn flush(&self) -> Result<()>;
     /// Get current accumulator tree root hash.
@@ -129,6 +131,10 @@ impl Accumulator for MerkleAccumulator {
 
         let siblings = tree_guard.get_siblings(leaf_index, |_p| true)?;
         Ok(Some(AccumulatorProof::new(siblings)))
+    }
+
+    fn get_node(&self, hash: HashValue) -> Result<AccumulatorNode, Error> {
+        Ok(AccumulatorCache::get_node(hash))
     }
 
     fn flush(&self) -> Result<(), Error> {

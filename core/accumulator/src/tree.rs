@@ -6,7 +6,7 @@ use crate::node_index::{FrozenSubTreeIterator, NODE_ERROR_INDEX};
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::AccumulatorCache;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount};
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use logger::prelude::*;
 use mirai_annotations::*;
 use starcoin_crypto::HashValue;
@@ -38,6 +38,7 @@ impl AccumulatorTree {
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
         trace!("accumulator cache new: {:?}", accumulator_id.short_str());
+        Self::restore_index_cache(accumulator_id, frozen_subtree_roots.clone(), store.clone());
         Self {
             id: accumulator_id,
             frozen_subtree_roots: RefCell::new(frozen_subtree_roots),
@@ -99,7 +100,6 @@ impl AccumulatorTree {
                         internal_node.hash()
                     }
                     None => {
-                        println!("gen internel {:?}", sibling);
                         internal_node = AccumulatorNode::new_internal(
                             pos.parent(),
                             self.get_node_hash(sibling).unwrap(),
@@ -141,7 +141,6 @@ impl AccumulatorTree {
                         not_frozen.hash()
                     }
                     None => {
-                        println!("cuc root: {:?}", sibling);
                         let not_frozen = AccumulatorNode::new_internal(
                             pos.parent(),
                             self.get_node_hash(sibling).unwrap(),
@@ -189,6 +188,23 @@ impl AccumulatorTree {
                 AccumulatorNode::new_empty()
             }
         }
+    }
+    /// Get accumulator node by hash, first from cache ,if not exist,then through store.
+    fn get_node_through_cache(
+        hash: HashValue,
+        store: Arc<dyn AccumulatorTreeStore>,
+    ) -> AccumulatorNode {
+        let mut node = AccumulatorCache::get_node(hash);
+        if node.is_empty() {
+            node = match store.clone().get_node(hash) {
+                Ok(Some(node)) => node,
+                _ => {
+                    error!("get accumulator node from store err:{:?}", hash);
+                    AccumulatorNode::new_empty()
+                }
+            }
+        }
+        node
     }
 
     /// Computes the root hash of an accumulator given the frozen subtree roots and the number of
@@ -265,45 +281,46 @@ impl AccumulatorTree {
         } else {
             let node_hash = AccumulatorCache::get_node_hash(self.id, node_index);
             if node_hash == HashValue::zero() {
-                println!("get node hash null: {:?}", node_index);
                 // get from to storage
                 let parent = node_index.parent();
                 let parent_hash = AccumulatorCache::get_node_hash(self.id, node_index);
-                for i in 0..self.num_nodes {
-                    println!(
-                        "index: {:?} -- {:?}",
-                        i,
-                        AccumulatorCache::get_node_hash(self.id, NodeIndex::new(i)).short_str()
-                    );
-                }
                 if parent_hash != HashValue::zero() {
-                    // let parent_node = AccumulatorCache::get_node(parent_hash);
-                    // match parent_node {
-                    //     AccumulatorNode::Internal(node) => {
-                    //         let right_node = AccumulatorCache::get_node(node.right());
-                    //         if node_index == right_node.index() {
-                    //             Ok(right_node.hash());
-                    //         } else {
-                    //             let left_node = AccumulatorCache::get_node(node.left());
-                    //             if node_index == left_node.index() {
-                    //                 Ok(left_node.hash());
-                    //             } else {
-                    //                 error!("get node from storage null: {:?}", node_index);
-                    //                 Ok(HashValue::zero());
-                    //             }
-                    //         }
-                    //     }
-                    //     _ => Ok(HashValue::zero()),
-                    // }
-                    println!("parent:{:?}", parent);
                 } else {
-                    println!("parent null:{:?}", parent);
                     error!("get parent node null: {:?}", parent);
                     // Ok(HashValue::zero())
                 }
             }
             Ok(node_hash)
         }
+    }
+
+    pub(crate) fn restore_index_cache(
+        accumulator_id: HashValue,
+        hashes: Vec<HashValue>,
+        store: Arc<dyn AccumulatorTreeStore>,
+    ) -> Result<()> {
+        ensure!(hashes.len() > 0, "frozen sub root len must large than 0");
+        for hash in hashes {
+            let node = AccumulatorTree::get_node_through_cache(hash, store.clone());
+            match node {
+                AccumulatorNode::Internal(internal) => {
+                    AccumulatorCache::save_node_index(accumulator_id, internal.index(), hash);
+                    let mut two_hash = vec![];
+                    two_hash.push(internal.left());
+                    two_hash.push(internal.right());
+                    AccumulatorTree::restore_index_cache(
+                        accumulator_id,
+                        two_hash.clone(),
+                        store.clone(),
+                    );
+                }
+                AccumulatorNode::Leaf(leaf) => {
+                    AccumulatorCache::save_node_index(accumulator_id, leaf.index(), hash);
+                }
+                _ => {}
+            }
+        }
+        Ok(())
     }
 
     /// update node to cache
