@@ -2,15 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![recursion_limit = "128"]
+extern crate prometheus;
 
 mod json_encoder;
 pub mod metric_server;
 mod op_counters;
 mod process_collector;
+#[macro_use]
+pub mod macros;
 
 pub use op_counters::{DurationHistogram, OpMetrics};
 // Re-export counter types from prometheus crate
-pub use prometheus::{Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec};
+pub use prometheus::{
+    Error as PrometheusError, Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Opts,
+};
 
 use anyhow::Result;
 use prometheus::{
@@ -28,6 +33,10 @@ use std::{
     path::Path,
     thread, time,
 };
+
+use prometheus::core::{AtomicU64, GenericGaugeVec};
+
+pub type UIntGaugeVec = GenericGaugeVec<AtomicU64>;
 
 fn get_metrics_file<P: AsRef<Path>>(dir_path: &P, file_name: &str) -> File {
     create_dir_all(dir_path).expect("Create metrics dir failed");

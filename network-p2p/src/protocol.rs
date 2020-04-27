@@ -511,6 +511,11 @@ impl Protocol {
         }
     }
 
+    /// Returns the number of peers we're connected to.
+    pub fn num_connected_peers(&self) -> usize {
+        self.context_data.peers.values().count()
+    }
+
     /// Send a notification to the given peer we're connected to.
     ///
     /// Doesn't do anything if we don't have a notifications substream for that protocol with that
