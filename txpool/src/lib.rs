@@ -65,7 +65,7 @@ impl TxPoolRef {
 
     #[cfg(test)]
     pub fn start_with_best_block_header(
-        storage: Arc<Storage>,
+        storage: Arc<dyn Store>,
         best_block_header: BlockHeader,
         bus: actix::Addr<BusActor>,
     ) -> TxPoolRef {
