@@ -132,3 +132,11 @@ impl TryInto<Vec<u8>> for StartupInfo {
         self.encode()
     }
 }
+
+impl Into<Vec<ChainInfo>> for StartupInfo {
+    fn into(self) -> Vec<ChainInfo> {
+        let mut branches = self.branches;
+        branches.insert(0, self.master);
+        branches
+    }
+}

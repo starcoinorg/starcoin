@@ -333,16 +333,14 @@ where
         }
     }
 
-    fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>, Error> {
+    fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
         let mut block_vec = vec![];
-        let mut temp_number = number;
-        if number == 0 as u64 {
-            temp_number = self.current_header().number();
-        }
-        if let Some(branch_id) = self.get_branch_id(temp_number) {
+        let mut current_num = match number {
+            None => self.current_header().number(),
+            Some(number) => number,
+        };
+        if let Some(branch_id) = self.get_branch_id(current_num) {
             let mut tmp_count = count;
-            let mut current_num = temp_number;
-
             loop {
                 match self
                     .storage
@@ -367,7 +365,7 @@ where
                 tmp_count = tmp_count - 1;
             }
         } else {
-            warn!("branch id not found.");
+            warn!("branch id of block_number {:?} not found.", number);
         }
         Ok(block_vec)
     }

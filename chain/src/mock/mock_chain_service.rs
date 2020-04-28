@@ -8,7 +8,7 @@ use crypto::HashValue;
 use types::startup_info::ChainInfo;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::StartupInfo,
     transaction::{SignedUserTransaction, TransactionInfo},
 };
@@ -61,7 +61,11 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn master_blocks_by_number(self, _number: u64, _count: u64) -> Result<Vec<Block>> {
+    async fn master_blocks_by_number(
+        self,
+        _number: Option<BlockNumber>,
+        _count: u64,
+    ) -> Result<Vec<Block>> {
         unimplemented!()
     }
 
