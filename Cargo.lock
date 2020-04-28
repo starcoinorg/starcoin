@@ -6258,6 +6258,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-context"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "futures 0.3.4",
+]
+
+[[package]]
 name = "starcoin-crypto"
 version = "0.1.0"
 dependencies = [
