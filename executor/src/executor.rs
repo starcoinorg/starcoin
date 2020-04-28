@@ -12,7 +12,10 @@ use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use types::{
     account_address::AccountAddress,
     state_set::ChainStateSet,
-    transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
+    transaction::{
+        RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput,
+        TransactionStatus,
+    },
     vm_error::VMStatus,
 };
 use vm_runtime::genesis::generate_genesis_state_set;
@@ -22,6 +25,7 @@ use vm_runtime::{
         create_account_txn_sent_as_association, peer_to_peer_txn_sent_as_association,
         raw_peer_to_peer_txn,
     },
+    counters::{TXN_EXECUTION_HISTOGRAM, TXN_STATUS_COUNTERS},
     starcoin_vm::StarcoinVM,
 };
 
@@ -37,6 +41,10 @@ impl Executor {
 
 impl TransactionExecutor for Executor {
     fn init_genesis(chain_config: &ChainConfig) -> Result<(HashValue, ChainStateSet)> {
+        let timer = TXN_EXECUTION_HISTOGRAM
+            .with_label_values(&["init_genesis"])
+            .start_timer();
+
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
@@ -47,6 +55,7 @@ impl TransactionExecutor for Executor {
         chain_state_db.flush()?;
 
         let dump = chain_state_db.dump()?;
+        timer.observe_duration();
         Ok((chain_state_db.state_root(), dump))
     }
 
@@ -54,8 +63,22 @@ impl TransactionExecutor for Executor {
         chain_state: &dyn ChainState,
         txn: Transaction,
     ) -> Result<TransactionOutput> {
+        let timer = TXN_EXECUTION_HISTOGRAM
+            .with_label_values(&["execute_transaction"])
+            .start_timer();
         let mut vm = StarcoinVM::new();
         let output = vm.execute_transaction(chain_state, txn);
+        timer.observe_duration();
+
+        match output.status().clone() {
+            TransactionStatus::Keep(_status) => {
+                TXN_STATUS_COUNTERS.with_label_values(&["KEEP"]).inc();
+            }
+            TransactionStatus::Discard(_status) => {
+                TXN_STATUS_COUNTERS.with_label_values(&["DISCARD"]).inc();
+            }
+        }
+
         Ok(output)
     }
 
@@ -63,8 +86,13 @@ impl TransactionExecutor for Executor {
         chain_state: &dyn ChainState,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
+        let timer = TXN_EXECUTION_HISTOGRAM
+            .with_label_values(&["validate_transaction"])
+            .start_timer();
         let mut vm = StarcoinVM::new();
-        vm.verify_transaction(chain_state, txn)
+        let result = vm.verify_transaction(chain_state, txn);
+        timer.observe_duration();
+        result
     }
 
     fn build_mint_txn(
