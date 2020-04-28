@@ -10,6 +10,7 @@ use starcoin_types::{
     account_address::AccountAddress,
     account_config::{AccountResource, BalanceResource},
     account_state::AccountState,
+    language_storage::TypeTag,
     state_set::ChainStateSet,
 };
 use std::convert::TryFrom;
@@ -162,6 +163,22 @@ impl<'a> AccountStateReader<'a> {
         Ok(self
             .reader
             .get(&AccessPath::new_for_balance(*address))
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(BalanceResource::make_from(bytes.as_slice())?)),
+                None => Ok(None),
+            })?
+            .map(|resource| resource.coin()))
+    }
+
+    /// Get token balance by address
+    pub fn get_token_balance(
+        &self,
+        address: &AccountAddress,
+        type_tag: &TypeTag,
+    ) -> Result<Option<u64>> {
+        Ok(self
+            .reader
+            .get(&AccessPath::new_for_token_balance(*address, type_tag)?)
             .and_then(|bytes| match bytes {
                 Some(bytes) => Ok(Some(BalanceResource::make_from(bytes.as_slice())?)),
                 None => Ok(None),

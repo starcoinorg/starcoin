@@ -40,14 +40,18 @@
 
 use crate::{
     account_address::AccountAddress,
-    account_config::{ACCOUNT_RESOURCE_PATH, BALANCE_RESOURCE_PATH},
-    language_storage::{ModuleId, ResourceKey, StructTag},
+    account_config::{
+        account_balance_struct_name, account_module_name, core_code_address, ACCOUNT_RESOURCE_PATH,
+        BALANCE_RESOURCE_PATH,
+    },
+    language_storage::{ModuleId, ResourceKey, StructTag, TypeTag},
 };
 use move_core_types::identifier::{IdentStr, Identifier};
 
 use mirai_annotations::*;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, HashValue};
 use std::{fmt, slice::Iter};
@@ -267,6 +271,23 @@ impl AccessPath {
     /// Given an address, returns the corresponding access path that stores the Balance resource.
     pub fn new_for_balance(address: AccountAddress) -> Self {
         Self::new(address, DataType::RESOURCE, *BALANCE_RESOURCE_PATH)
+    }
+
+    /// Given an address and token type tag, returns the corresponding access path that stores the Balance resource.
+    pub fn new_for_token_balance(address: AccountAddress, type_tag: &TypeTag) -> Result<Self> {
+        let token_tag = StructTag {
+            address: core_code_address(),
+            module: account_module_name().to_owned(),
+            name: account_balance_struct_name().to_owned(),
+            type_params: vec![type_tag.clone()],
+        };
+
+        let path = AccessPath::resource_access_vec(&token_tag);
+        Ok(AccessPath {
+            address,
+            data_type: DataType::RESOURCE,
+            data_hash: path,
+        })
     }
 
     pub fn resource_access_vec(tag: &StructTag) -> HashValue {
