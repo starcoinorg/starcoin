@@ -170,13 +170,14 @@ where
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         debug!("try connect mined block.");
         match msg {
-            SystemEvents::MinedBlock(new_block) => match self.service.try_connect(new_block, false)
-            {
-                Ok(_) => debug!("Process mined block success."),
-                Err(e) => {
-                    warn!("Process mined block fail, error: {:?}", e);
+            SystemEvents::MinedBlock(new_block) => {
+                match self.service.try_connect(new_block.as_ref().clone(), false) {
+                    Ok(_) => debug!("Process mined block success."),
+                    Err(e) => {
+                        warn!("Process mined block fail, error: {:?}", e);
+                    }
                 }
-            },
+            }
             _ => {}
         }
     }

@@ -9,6 +9,7 @@ use starcoin_types::block::BlockDetail;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::SignedUserTransaction;
+use std::sync::Arc;
 
 #[derive(Message)]
 #[rtype(result = "u64")]
@@ -19,7 +20,7 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Message)]
 pub enum PeerMessage {
     UserTransactions(Vec<SignedUserTransaction>),
-    Block(BlockDetail),
+    Block(Arc<BlockDetail>),
     RawRPCRequest(u128, Vec<u8>),
     RawRPCResponse(u128, Vec<u8>),
 }

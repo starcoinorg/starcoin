@@ -14,16 +14,6 @@ pub trait CryptoHash {
     fn crypto_hash(&self) -> HashValue;
 }
 
-// impl<T: serde::Serialize> CryptoHash for T {
-//     fn crypto_hash(&self) -> HashValue {
-//         HashValue::from_sha3_256(
-//             scs::to_bytes(self)
-//                 .expect("Serialization should work.")
-//                 .as_slice(),
-//         )
-//     }
-// }
-
 impl CryptoHash for &str {
     fn crypto_hash(&self) -> HashValue {
         HashValue::from_sha3_256(

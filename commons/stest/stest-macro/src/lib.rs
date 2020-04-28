@@ -116,36 +116,34 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         }
+    } else if has_test_attr {
+        quote! {
+            #(#attrs)*
+            fn #name() #ret {
+                stest::init_test_logger();
+                let (tx,mut rx) = stest::make_channel();
+
+                let mut system = actix_rt::System::new("test");
+                actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
+                actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
+
+                system.block_on(stest::wait_result(rx))
+            }
+        }
     } else {
-        if has_test_attr {
-            quote! {
-                #(#attrs)*
-                fn #name() #ret {
-                    stest::init_test_logger();
-                    let (tx,mut rx) = stest::make_channel();
+        quote! {
+            #[test]
+            #(#attrs)*
+            fn #name() #ret {
+                stest::init_test_logger();
+                let (tx,mut rx) = stest::make_channel();
 
-                    let mut system = actix_rt::System::new("test");
-                    actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
-                    actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
+                let mut system = actix_rt::System::new("test");
+                actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
+                actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
-                    system.block_on(stest::wait_result(rx))
-                }
-            }
-        } else {
-            quote! {
-                #[test]
-                #(#attrs)*
-                fn #name() #ret {
-                    stest::init_test_logger();
-                    let (tx,mut rx) = stest::make_channel();
-
-                    let mut system = actix_rt::System::new("test");
-                    actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
-                    actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
-
-                    system.block_on(stest::wait_result(rx))
-                 }
-            }
+                system.block_on(stest::wait_result(rx))
+             }
         }
     };
 

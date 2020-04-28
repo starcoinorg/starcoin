@@ -3,15 +3,16 @@
 
 use crate::block::{Block, BlockDetail};
 use actix::prelude::*;
+use std::sync::Arc;
 
 //TODO this type should at another crate and avoid starcoin-types dependency actix ?.
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
 pub enum SystemEvents {
     /// Find new head block.
-    NewHeadBlock(BlockDetail),
+    NewHeadBlock(Arc<BlockDetail>),
     /// Mint new Block.
-    MinedBlock(Block),
+    MinedBlock(Arc<Block>),
     /// Begin to sync
     SyncBegin(),
     /// Sync done

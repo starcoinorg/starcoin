@@ -125,7 +125,7 @@ impl Into<libra_types::transaction::TransactionArgument> for TransactionArgument
                 libra_types::transaction::TransactionArgument::Address(address.into())
             }
             TransactionArgument::U8Vector(vec) => {
-                libra_types::transaction::TransactionArgument::U8Vector(vec.clone())
+                libra_types::transaction::TransactionArgument::U8Vector(vec)
             }
         }
     }

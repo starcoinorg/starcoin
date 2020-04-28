@@ -444,23 +444,20 @@ where
 
     pub fn broadcast_2_bus(&self, block: BlockDetail) {
         let bus = self.bus.clone();
-        Arbiter::spawn(async move {
-            let _ = bus
-                .send(Broadcast {
-                    msg: SystemEvents::NewHeadBlock(block),
-                })
-                .await;
+        bus.do_send(Broadcast {
+            msg: SystemEvents::NewHeadBlock(Arc::new(block)),
         });
     }
 
     pub fn broadcast_2_network(&self, block: BlockDetail) {
         if let Some(network) = self.network.clone() {
             Arbiter::spawn(async move {
-                debug!("broadcast system event : {:?}", block.header().id());
-                network
-                    .broadcast_system_event(SystemEvents::NewHeadBlock(block))
+                let id = block.header().id();
+                let is_ok = network
+                    .broadcast_system_event(SystemEvents::NewHeadBlock(Arc::new(block)))
                     .await
-                    .expect("broadcast new head block failed.");
+                    .is_ok();
+                debug!("broadcast system event : {:?}, is_ok:{}", id, is_ok);
             });
         };
     }
