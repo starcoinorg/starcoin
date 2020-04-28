@@ -36,8 +36,7 @@ impl ProcessCollector {
         )
         .unwrap();
         let cpu_usage = Gauge::with_opts(
-            Opts::new("process_cpu_usage", "Total user and system CPU time")
-                .namespace(namespace.clone()),
+            Opts::new("process_cpu_usage", "Total user and system CPU time").namespace(namespace),
         )
         .unwrap();
         let mut descs = vec![];
