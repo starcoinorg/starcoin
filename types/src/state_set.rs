@@ -19,6 +19,10 @@ impl StateSet {
         self.0.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn iter(&self) -> ::std::slice::Iter<(HashValue, Vec<u8>)> {
         self.into_iter()
     }
@@ -109,6 +113,10 @@ impl ChainStateSet {
 
     pub fn len(&self) -> usize {
         self.state_sets.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.state_sets.is_empty()
     }
 }
 

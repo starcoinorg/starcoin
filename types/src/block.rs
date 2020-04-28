@@ -192,8 +192,8 @@ impl Ord for BlockHeader {
             ordering => return ordering,
         }
         match self.timestamp.cmp(&other.timestamp) {
-            Ordering::Equal => return self.gas_used.cmp(&other.gas_used).reverse(),
-            ordering => return ordering,
+            Ordering::Equal => self.gas_used.cmp(&other.gas_used).reverse(),
+            ordering => ordering,
         }
     }
 }
@@ -414,7 +414,7 @@ impl BlockTemplate {
     where
         H: Into<Vec<u8>>,
     {
-        let header = BlockHeader::new_with_auth(
+        BlockHeader::new_with_auth(
             self.parent_hash,
             self.timestamp,
             self.number,
@@ -426,8 +426,7 @@ impl BlockTemplate {
             self.gas_limit,
             difficult,
             consensus_header.into(),
-        );
-        header
+        )
     }
 
     pub fn from_block(block: Block) -> Self {

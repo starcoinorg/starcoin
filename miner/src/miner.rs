@@ -78,7 +78,7 @@ where
         let block = block_template.into_block(consensus_header, difficult);
         info!("Miner new block: {:?}", block);
         self.bus.do_send(Broadcast {
-            msg: SystemEvents::MinedBlock(block),
+            msg: SystemEvents::MinedBlock(Arc::new(block)),
         });
         Ok(())
     }

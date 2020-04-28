@@ -143,10 +143,10 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
 }
 
 fn env_log_level(default_level: &str) -> LevelFilter {
-    let level = std::env::var("RUST_LOG").unwrap_or(default_level.to_string());
+    let level = std::env::var("RUST_LOG").unwrap_or_else(|_| default_level.to_string());
     level
         .parse()
-        .expect(format!("Unexpect log level: {}", level).as_str())
+        .unwrap_or_else(|_| panic!("Unexpect log level: {}", level))
 }
 
 lazy_static! {
@@ -164,7 +164,7 @@ pub fn init_with_default_level(default_level: &str) -> Arc<LoggerHandle> {
             build_config(LoggerConfigArg::new(true, level, None)).expect("build log config fail.");
         let handle = match log4rs::init_config(config) {
             Ok(handle) => handle,
-            Err(e) => panic!(format!("{}", e.to_string())),
+            Err(e) => panic!(e.to_string()),
         };
         let logger_handle = LoggerHandle::new(true, level, None, handle);
 

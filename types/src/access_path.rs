@@ -206,13 +206,13 @@ pub enum DataType {
 impl DataType {
     pub const LENGTH: usize = 2;
 
-    pub fn is_code(&self) -> bool {
+    pub fn is_code(self) -> bool {
         match self {
             DataType::CODE => true,
             _ => false,
         }
     }
-    pub fn is_resource(&self) -> bool {
+    pub fn is_resource(self) -> bool {
         match self {
             DataType::RESOURCE => true,
             _ => false,
@@ -220,13 +220,13 @@ impl DataType {
     }
 
     #[inline]
-    pub fn type_index(&self) -> u8 {
-        self.clone().into()
+    pub fn type_index(self) -> u8 {
+        self.into()
     }
 
     /// Every DataType has a storage root in AccountState
     #[inline]
-    pub fn storage_index(&self) -> usize {
+    pub fn storage_index(self) -> usize {
         self.type_index() as usize
     }
 }
@@ -261,12 +261,12 @@ impl AccessPath {
 
     /// Given an address, returns the corresponding access path that stores the Account resource.
     pub fn new_for_account(address: AccountAddress) -> Self {
-        Self::new(address, DataType::RESOURCE, ACCOUNT_RESOURCE_PATH.clone())
+        Self::new(address, DataType::RESOURCE, *ACCOUNT_RESOURCE_PATH)
     }
 
     /// Given an address, returns the corresponding access path that stores the Balance resource.
     pub fn new_for_balance(address: AccountAddress) -> Self {
-        Self::new(address, DataType::RESOURCE, BALANCE_RESOURCE_PATH.clone())
+        Self::new(address, DataType::RESOURCE, *BALANCE_RESOURCE_PATH)
     }
 
     pub fn resource_access_vec(tag: &StructTag) -> HashValue {

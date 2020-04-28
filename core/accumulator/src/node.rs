@@ -87,6 +87,8 @@ pub struct InternalNode {
     is_frozen: bool,
 }
 
+//FIXME
+#[allow(clippy::all)]
 impl InternalNode {
     pub fn new(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
         InternalNode {
