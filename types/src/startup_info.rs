@@ -83,7 +83,7 @@ impl StartupInfo {
             if branch.branch_id == branch_id {
                 return Some(index);
             }
-            index += index;
+            index += 1;
         }
 
         return None;

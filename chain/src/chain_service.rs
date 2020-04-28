@@ -252,7 +252,9 @@ where
     }
 
     fn select_head(&mut self, new_branch: BlockChain<C, S, P>) -> Result<()> {
+        let branch_id = new_branch.get_chain_info().branch_id();
         let block = new_branch.head_block();
+        let block_id = block.header().id();
         let total_difficulty = new_branch.get_total_difficulty()?;
         if total_difficulty > self.collection.get_master().get_total_difficulty()? {
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
@@ -302,6 +304,7 @@ where
             self.collection.insert_branch(new_branch);
         }
 
+        self.storage.save_branch(branch_id, block_id)?;
         self.save_startup()
     }
 
@@ -444,7 +447,7 @@ where
                                 "select head used time: {}",
                                 (select_head_end_time - apply_end_time)
                             );
-                            self.collection.get_master().latest_blocks(10);
+                            self.collection.get_master().latest_blocks(1);
                             Ok(ConnectResult::Ok(()))
                         }
                     } else {

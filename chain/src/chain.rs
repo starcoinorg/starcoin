@@ -268,7 +268,7 @@ where
             if block_id == block_header.id() {
                 return Ok(true);
             } else {
-                warn!(
+                debug!(
                     "block is miss match {:?} : {:?}",
                     block_id,
                     block_header.id()
@@ -328,7 +328,7 @@ where
         if let Some(branch_id) = self.get_branch_id(number) {
             self.storage.get_block_by_branch_number(branch_id, number)
         } else {
-            warn!("branch id not found.");
+            debug!("branch id not found.");
             Ok(None)
         }
     }
@@ -365,7 +365,7 @@ where
                 tmp_count = tmp_count - 1;
             }
         } else {
-            warn!("branch id of block_number {:?} not found.", number);
+            debug!("branch id of block_number {:?} not found.", number);
         }
         Ok(block_vec)
     }
@@ -381,7 +381,7 @@ where
                 }
             }
             None => {
-                warn!("Get block from storage return none.");
+                debug!("Get block from storage return none.");
             }
         }
 
