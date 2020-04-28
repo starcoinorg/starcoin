@@ -115,7 +115,8 @@ fn run() -> Result<()> {
                 .subcommand(chain::ListBlockCommand)
                 .subcommand(chain::GetTransactionCommand)
                 .subcommand(chain::GetTxnByBlockCommand)
-                .subcommand(chain::GetBlockCommand),
+                .subcommand(chain::GetBlockCommand)
+                .subcommand(chain::BranchesCommand),
         )
         .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
         .command(

@@ -6,9 +6,9 @@ on:
       - master
     paths-ignore:
       - '**.md'
-  pull_request:
-    paths-ignore:
-      - '**.md'
+#  pull_request:
+#    paths-ignore:
+#      - '**.md'
 jobs:
   code_coverage_report:
     name: Generate code coverage report
