@@ -35,7 +35,7 @@ where
 {
     startup_info: RwLock<StartupInfo>,
     master: RwLock<Option<Arc<BlockChain<C, S, P>>>>,
-    branches: RwLock<HashMap<HashValue, BlockChain<C, S, P>>>,
+    storage: Arc<S>,
 }
 
 impl<C, S, P> Drop for BlockChainCollection<C, S, P>
@@ -55,11 +55,11 @@ where
     P: TxPoolAsyncService + 'static,
     S: Store + 'static,
 {
-    pub fn new(startup_info: StartupInfo) -> Self {
+    pub fn new(startup_info: StartupInfo, storage: Arc<S>) -> Self {
         BlockChainCollection {
             startup_info: RwLock::new(startup_info),
             master: RwLock::new(None),
-            branches: RwLock::new(HashMap::new()),
+            storage,
         }
     }
 
@@ -79,13 +79,9 @@ where
         self.startup_info
             .write()
             .insert_branch(branch.get_chain_info());
-        self.branches
-            .write()
-            .insert(branch.get_chain_info().branch_id(), branch);
     }
 
     pub fn remove_branch(&self, branch_id: &HashValue) {
-        self.branches.write().remove(branch_id);
         self.startup_info.write().remove_branch(branch_id.clone());
     }
 
@@ -113,11 +109,8 @@ where
     pub fn fork(&self, block_header: &BlockHeader) -> Option<ChainInfo> {
         let mut chain_info = self.get_master().fork(block_header);
         if chain_info.is_none() {
-            for branch in self.branches.read().values() {
-                chain_info = branch.fork(block_header);
-                if chain_info.is_some() {
-                    break;
-                }
+            if let Some(branch_id) = self.storage.get_branch(block_header.parent_hash())? {
+                return self.startup_info.read().get_branch(branch_id);
             }
         }
 
@@ -125,17 +118,10 @@ where
     }
 
     pub fn block_exist(&self, block_id: HashValue) -> bool {
-        let mut exist = self.get_master().exist_block(block_id);
-        if !exist {
-            for branch in self.branches.read().values() {
-                exist = branch.exist_block(block_id);
-                if exist {
-                    break;
-                }
-            }
+        if let Ok(branch_id) = self.storage.get_branch(block_id) {
+            branch_id.is_some()
         }
-
-        exist
+        false
     }
 
     pub fn create_block_template(
@@ -155,15 +141,13 @@ where
         } else {
             // just for test
             let mut tmp = None;
-            for branch in self.branches.read().values() {
-                if branch.exist_block(block_id) {
-                    tmp = Some(branch.create_block_template(
-                        author,
-                        auth_key_prefix.clone(),
-                        Some(block_id),
-                        user_txns.clone(),
-                    ));
-                }
+            if let Ok(Some(branch_id)) = self.storage.get_branch(block_id) {
+                tmp = Some(branch.create_block_template(
+                    author,
+                    auth_key_prefix.clone(),
+                    Some(block_id),
+                    user_txns.clone(),
+                ));
             }
 
             Ok(tmp.unwrap().unwrap())
@@ -607,25 +591,15 @@ where
     S: Store + 'static,
 {
     let master_chain_info = startup_info.master.clone();
-    let collection = Arc::new(BlockChainCollection::new(startup_info));
+    let collection = Arc::new(BlockChainCollection::new(startup_info, storage.clone()));
     let master = BlockChain::new(
-        config.clone(),
+        config,
         master_chain_info,
-        storage.clone(),
-        txpool.clone(),
+        storage,
+        txpool,
         Arc::downgrade(&collection),
     )?;
     collection.init_master(master);
-
-    // for branch_info in startup_info.branches {
-    //     collection.insert_branch(BlockChain::new(
-    //         config.clone(),
-    //         branch_info,
-    //         storage.clone(),
-    //         txpool.clone(),
-    //         Arc::downgrade(&collection),
-    //     )?);
-    // }
 
     Ok(collection)
 }
