@@ -198,6 +198,19 @@ where
     }
 }
 
+impl<State, GlobalOpt, Opt, ReturnItem, Action> Default
+    for Command<State, GlobalOpt, Opt, ReturnItem, Action>
+where
+    GlobalOpt: StructOpt,
+    Opt: StructOpt,
+    ReturnItem: serde::Serialize + 'static,
+    Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<State, GlobalOpt, Opt, ReturnItem, Action> CommandExec<State, GlobalOpt>
     for Command<State, GlobalOpt, Opt, ReturnItem, Action>
 where
