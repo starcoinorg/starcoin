@@ -9,6 +9,7 @@ use logger::prelude::*;
 use std::thread;
 use std::time::Duration;
 use types::{H256, U256};
+
 pub fn start_worker(
     config: &MinerConfig,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
@@ -100,7 +101,10 @@ impl Worker {
         }
     }
 
-    fn run<G: FnMut() -> u64, S: Fn(&[u8], u64, U256, mpsc::UnboundedSender<(Vec<u8>, u64)>)>(
+    fn run<
+        G: FnMut() -> u64,
+        S: Fn(&[u8], u64, U256, mpsc::UnboundedSender<(Vec<u8>, u64)>) -> bool,
+    >(
         &mut self,
         mut rng: G,
         solver: S,
@@ -109,11 +113,13 @@ impl Worker {
             self.refresh_new_work();
             if self.start {
                 if let Some(pow_header) = self.pow_header.clone() {
-                    solver(&pow_header, rng(), self.diff.clone(), self.nonce_tx.clone());
+                    if solver(&pow_header, rng(), self.diff.clone(), self.nonce_tx.clone()) {
+                        self.start = false;
+                    }
                 }
             } else {
                 // Wait next work
-                thread::sleep(Duration::from_millis(300));
+                thread::sleep(Duration::from_millis(500));
             }
         }
     }
@@ -149,7 +155,7 @@ fn argon_solver(
     nonce: u64,
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
-) {
+) -> bool {
     let input = set_header_nonce(pow_header, nonce);
     if let Ok(pow_hash) = argon2_hash(&input) {
         let pow_hash_u256: U256 = pow_hash.into();
@@ -158,9 +164,12 @@ fn argon_solver(
             info!("Seal found {:?}", nonce);
             if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
                 error!("Failed to send nonce: {:?}", e);
+                return false;
             };
+            return true;
         }
     }
+    return false;
 }
 
 fn dummy_solver(
@@ -168,11 +177,13 @@ fn dummy_solver(
     nonce: u64,
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
-) {
+) -> bool {
     let time: u64 = diff.as_u64();
     debug!("DummyConsensus rand sleep time : {}", time);
     thread::sleep(Duration::from_millis(time));
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
+        return false;
     };
+    return true;
 }
