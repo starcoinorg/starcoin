@@ -135,7 +135,9 @@ fn main() {
                     warn!("submit status: {}", s);
                     // if txn is rejected, recheck sequence number, and start over
                     if !s {
-                        tx_mocker.recheck_sequence_number();
+                        if let Err(e) = tx_mocker.recheck_sequence_number() {
+                            error!("fail to start over, err: {:?}", e);
+                        }
                     }
                 }
                 Err(e) => {
@@ -205,13 +207,16 @@ impl TxnMocker {
         self.next_sequence_number = match seq_number_in_pool {
             Some(n) => n,
             None => {
-                let state_reader = RemoteStateReader::new(&client);
+                let state_reader = RemoteStateReader::new(&self.client);
                 let account_state_reader = AccountStateReader::new(&state_reader);
 
                 let account_resource =
-                    account_state_reader.get_account_resource(&account_address)?;
+                    account_state_reader.get_account_resource(&self.account_address)?;
                 if account_resource.is_none() {
-                    bail!("account {} not exists, please faucet it", account_address);
+                    bail!(
+                        "account {} not exists, please faucet it",
+                        &self.account_address
+                    );
                 }
                 account_resource.unwrap().sequence_number()
             }
