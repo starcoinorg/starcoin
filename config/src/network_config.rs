@@ -6,12 +6,12 @@ use crate::{
 };
 use anyhow::{bail, ensure, Result};
 use libp2p::multiaddr::{Multiaddr, Protocol};
-use logger::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
 };
+use starcoin_logger::prelude::*;
 use starcoin_types::peer_info::PeerId;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -53,7 +53,7 @@ impl NetworkConfig {
             .clone()
             .replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
             .expect("Replace multi address fail.");
-        let mut p2p_address = host.clone();
+        let mut p2p_address = host;
         p2p_address.push(Protocol::P2p(peer_id.clone().into()));
         self.self_address = Some(p2p_address);
         self.self_peer_id = Some(peer_id);
