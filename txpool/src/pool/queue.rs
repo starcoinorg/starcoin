@@ -458,25 +458,24 @@ impl TransactionQueue {
         debug!(target: "txqueue", "Removed {} stalled transactions. {}", removed, self.status());
     }
 
-    // /// Returns next valid nonce for given sender
-    // /// or `None` if there are no pending transactions from that sender.
-    // pub fn next_nonce<C: client::NonceClient>(
-    //     &self,
-    //     client: C,
-    //     address: &Address,
-    // ) -> Option<Nonce> {
-    //     // Do not take nonce_cap into account when determining next nonce.
-    //     let nonce_cap = None;
-    //     // Also we ignore stale transactions in the queue.
-    //     let stale_id = None;
-    //
-    //     let state_readiness = ready::State::new(client, stale_id, nonce_cap);
-    //
-    //     self.pool
-    //         .pending_from_sender(state_readiness, address)
-    //         .last()
-    //         .map(|tx| tx.signed().sequence_number().saturating_add(1))
-    // }
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender.
+    pub fn next_sequence_number<C: client::AccountSeqNumberClient>(
+        &self,
+        client: C,
+        address: &Address,
+    ) -> Option<SeqNumber> {
+        // Also we ignore stale transactions in the queue.
+        let stale_id = None;
+
+        let state_readiness = ready::State::new(client, stale_id, None);
+
+        self.pool
+            .read()
+            .pending_from_sender(state_readiness, address)
+            .last()
+            .map(|tx| tx.signed().sequence_number().saturating_add(1))
+    }
 
     /// Retrieve a transaction from the pool.
     ///

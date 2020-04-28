@@ -9,6 +9,7 @@ use starcoin_types::transaction::SignedUserTransaction;
 use crate::module::map_err;
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;
+use starcoin_types::account_address::AccountAddress;
 
 pub struct TxPoolRpcImpl<S>
 where
@@ -32,6 +33,14 @@ where
 {
     fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<bool> {
         let fut = self.service.clone().add(txn).map_err(map_err);
+        Box::new(fut.compat())
+    }
+    fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {
+        let fut = self
+            .service
+            .clone()
+            .next_sequence_number(address)
+            .map_err(map_err);
         Box::new(fut.compat())
     }
 }
