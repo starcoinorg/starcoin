@@ -112,6 +112,16 @@ where
         Ok(chain)
     }
 
+    pub fn new_chain(&self, chain_info: ChainInfo) -> Result<Self> {
+        Self::new(
+            self.config.clone(),
+            chain_info,
+            self.storage.clone(),
+            self.txpool.clone(),
+            self.block_chain_collection.clone(),
+        )
+    }
+
     pub fn save_block(&self, block: &Block) {
         if let Err(e) = self
             .storage
