@@ -7,6 +7,7 @@ use futures_channel::mpsc;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
+use types::account_address::AccountAddress;
 use types::transaction;
 use types::transaction::SignedUserTransaction;
 
@@ -64,6 +65,9 @@ impl TxPoolAsyncService for MockTxPoolService {
                 .collect::<Vec<_>>()),
             None => Ok(self.pool.lock().unwrap().clone()),
         }
+    }
+    async fn next_sequence_number(self, address: AccountAddress) -> Result<Option<u64>> {
+        todo!()
     }
 
     async fn subscribe_txns(

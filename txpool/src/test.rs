@@ -17,6 +17,7 @@ use storage::db_storage::DBStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
 use types::account_address::AccountAddress;
+use types::account_config;
 
 #[derive(Clone, Debug)]
 struct MockNonceClient {
@@ -59,6 +60,12 @@ async fn test_tx_pool() -> Result<()> {
     assert!(result.pop().unwrap().is_ok());
     let mut pending_txns = pool.clone().get_pending_txns(Some(10)).await?;
     assert_eq!(pending_txns.pop().unwrap().crypto_hash(), txn_hash);
+
+    let next_sequence_number = pool
+        .clone()
+        .next_sequence_number(account_config::association_address())
+        .await?;
+    assert_eq!(next_sequence_number, Some(2));
     Ok(())
 }
 
