@@ -1,7 +1,7 @@
 use crate::{BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
 use anyhow::{format_err, Result};
-use logger::prelude::*;
 use serde::{Deserialize, Serialize};
+use starcoin_logger::prelude::*;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 

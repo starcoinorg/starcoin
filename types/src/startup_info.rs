@@ -42,7 +42,7 @@ impl ChainInfo {
     }
 
     pub fn branch_id(&self) -> HashValue {
-        self.branch_id.clone()
+        self.branch_id
     }
 
     pub fn start_number(&self) -> BlockNumber {

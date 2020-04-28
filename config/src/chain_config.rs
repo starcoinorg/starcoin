@@ -76,24 +76,25 @@ impl FromStr for ChainNetwork {
 }
 
 impl ChainNetwork {
-    pub fn chain_id(&self) -> u64 {
-        (*self).into()
+    pub fn chain_id(self) -> u64 {
+        self.into()
     }
-    pub fn is_dev(&self) -> bool {
+
+    pub fn is_dev(self) -> bool {
         match self {
             ChainNetwork::Dev => true,
             _ => false,
         }
     }
 
-    pub fn is_main(&self) -> bool {
+    pub fn is_main(self) -> bool {
         match self {
             ChainNetwork::Main => true,
             _ => false,
         }
     }
 
-    pub fn get_config(&self) -> &ChainConfig {
+    pub fn get_config(self) -> &'static ChainConfig {
         match self {
             ChainNetwork::Dev => &DEV_CHAIN_CONFIG,
             ChainNetwork::Halley => &HALLEY_CHAIN_CONFIG,
@@ -159,7 +160,7 @@ pub struct ChainConfig {
     pub pre_mine_config: Option<PreMineConfig>,
 }
 
-pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1000_000;
+pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
 
 const STATIC_SEED: [u8; 32] = [42; 32];
 pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
@@ -169,7 +170,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
 
     ChainConfig {
         total_supply: STARCOIN_TOTAL_SUPPLY,
-        base_block_reward: 5000 * 1000_000,
+        base_block_reward: 5000 * 1_000_000,
         reward_halving_interval: 100,
         reward_delay: 1,
         difficult: U256::zero(),
@@ -184,7 +185,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
 
 static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
-    base_block_reward: 5000 * 1000_000,
+    base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 1000,
     reward_delay: 3,
     difficult: U256::max_value(),
@@ -201,7 +202,7 @@ static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
 
 static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
-    base_block_reward: 5000 * 1000_000,
+    base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 10000,
     reward_delay: 7,
     difficult: U256::max_value(),
@@ -211,7 +212,7 @@ static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
 
 static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
-    base_block_reward: 5000 * 1000_000,
+    base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 52500,
     reward_delay: 7,
     difficult: U256::max_value(),
