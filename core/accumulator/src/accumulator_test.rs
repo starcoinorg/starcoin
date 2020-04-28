@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::tree_store::AccumulatorCache;
 use crate::{
     node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, tree_store::MockAccumulatorStore,
     Accumulator, AccumulatorNode, LeafCount, MerkleAccumulator,
@@ -72,14 +73,11 @@ fn test_multiple_chain() {
     let frozen_node = accumulator.get_frozen_subtree_roots().unwrap();
     for node in frozen_node.clone() {
         let acc = accumulator.get_node(node).unwrap();
-        match acc {
-            AccumulatorNode::Internal(internal) => {
-                let left = accumulator.get_node(internal.left()).unwrap();
-                println!("left: {:?}", left);
-                let right = accumulator.get_node(internal.right()).unwrap();
-                println!("right: {:?}", right);
-            }
-            _ => {}
+        if let AccumulatorNode::Internal(internal) = acc {
+            let left = accumulator.get_node(internal.left()).unwrap();
+            assert_eq!(left.is_frozen(), true);
+            let right = accumulator.get_node(internal.right()).unwrap();
+            assert_eq!(right.is_frozen(), true);
         }
     }
     let accumulator2 = MerkleAccumulator::new(
@@ -88,7 +86,7 @@ fn test_multiple_chain() {
         frozen_node,
         2,
         3,
-        mock_store.clone(),
+        mock_store,
     )
     .unwrap();
     assert_eq!(accumulator.root_hash(), accumulator2.root_hash());
@@ -254,6 +252,35 @@ fn test_update_right_leaf() {
     // leaves.truncate(7);
     // leaves.extend_from_slice(&new_leaves);
     // proof_verify(&accumulator, new_root_hash, &leaves, 0);
+}
+#[test]
+fn test_flush() {
+    let leaves = create_leaves(0..20);
+    let mock_store = MockAccumulatorStore::new();
+    let accumulator = MerkleAccumulator::new(
+        HashValue::random(),
+        *ACCUMULATOR_PLACEHOLDER_HASH,
+        vec![],
+        0,
+        0,
+        Arc::new(mock_store),
+    )
+    .unwrap();
+    let (_root_hash, _) = accumulator.append(&leaves).unwrap();
+    //get from cache
+    for node_hash in leaves.clone() {
+        let node = accumulator.get_node_from_cache(node_hash);
+        assert!(!node.is_empty());
+    }
+    for node in AccumulatorCache::get_nodes(leaves.clone()) {
+        assert!(!node.is_empty());
+    }
+    accumulator.flush().unwrap();
+    //get from storage
+    for node_hash in leaves.clone() {
+        let node = accumulator.get_node_from_storage(node_hash);
+        assert!(!node.is_empty());
+    }
 }
 
 fn proof_verify(

@@ -61,6 +61,14 @@ impl AccumulatorNode {
         Ok(())
     }
 
+    pub fn is_frozen(&self) -> bool {
+        match self {
+            AccumulatorNode::Internal(internal) => internal.is_frozen,
+            AccumulatorNode::Leaf(_) => true,
+            AccumulatorNode::Empty => false,
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         if let AccumulatorNode::Empty = self {
             true
@@ -92,8 +100,7 @@ impl InternalNode {
     pub fn hash(&self) -> HashValue {
         let mut bytes = self.left.to_vec();
         bytes.extend(self.right.to_vec());
-        let hash = HashValue::from_sha3_256(bytes.as_slice());
-        hash
+        HashValue::from_sha3_256(bytes.as_slice())
     }
 
     pub fn index(&self) -> NodeIndex {
@@ -105,6 +112,7 @@ impl InternalNode {
     pub fn right(&self) -> HashValue {
         self.right
     }
+
     pub fn set_frozen(&mut self) -> Result<()> {
         self.is_frozen = true;
         Ok(())

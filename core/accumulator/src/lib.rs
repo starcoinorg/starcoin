@@ -1,17 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, Error, Result};
-
-use starcoin_crypto::HashValue;
-
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
 use crate::tree_store::AccumulatorCache;
+use anyhow::{ensure, Error, Result};
 use logger::prelude::*;
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
+use starcoin_crypto::HashValue;
 use std::sync::Arc;
 
 #[cfg(test)]
@@ -37,6 +35,7 @@ pub trait Accumulator {
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error>;
     /// Get proof by leaf index.
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
+    /// Get accumulator node by hash.
     fn get_node(&self, hash: HashValue) -> Result<AccumulatorNode>;
     /// Flush node to storage.
     fn flush(&self) -> Result<()>;
@@ -100,6 +99,14 @@ impl MerkleAccumulator {
             node_store: node_store.clone(),
         })
     }
+    #[cfg(test)]
+    pub fn get_node_from_cache(&self, hash: HashValue) -> AccumulatorNode {
+        AccumulatorCache::get_node(hash)
+    }
+    #[cfg(test)]
+    pub fn get_node_from_storage(&self, hash: HashValue) -> AccumulatorNode {
+        self.node_store.get_node(hash).unwrap().unwrap()
+    }
 }
 
 impl Accumulator for MerkleAccumulator {
@@ -134,7 +141,7 @@ impl Accumulator for MerkleAccumulator {
     }
 
     fn get_node(&self, hash: HashValue) -> Result<AccumulatorNode, Error> {
-        Ok(AccumulatorCache::get_node(hash))
+        self.tree.lock().get_node(hash)
     }
 
     fn flush(&self) -> Result<(), Error> {
@@ -150,7 +157,6 @@ impl Accumulator for MerkleAccumulator {
     fn root_hash(&self) -> HashValue {
         self.tree.lock().root_hash
     }
-
     fn num_leaves(&self) -> u64 {
         self.tree.lock().num_leaves
     }

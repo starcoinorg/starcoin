@@ -21,7 +21,7 @@ pub static GLOBAL_NODE_CACHE: Lazy<Mutex<LruCache<HashValue, AccumulatorNode>>> 
 pub static GLOBAL_NODE_INDEX_CACHE: Lazy<Mutex<LruCache<NodeCacheKey, HashValue>>> =
     Lazy::new(|| Mutex::new(LruCache::new(MAC_CACHE_SIZE)));
 
-/// Node index prefix
+/// Node index cache key.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeCacheKey {
     id: HashValue,
@@ -51,11 +51,8 @@ impl AccumulatorCache {
         let mut cache = GLOBAL_NODE_CACHE.lock();
         let mut node_vec = vec![];
         for hash in hashes {
-            match cache.get(&hash) {
-                Some(node) => {
-                    node_vec.push(node.clone());
-                }
-                None => {}
+            if let Some(node) = cache.get(&hash) {
+                node_vec.push(node.clone());
             }
         }
         node_vec
@@ -72,7 +69,7 @@ impl AccumulatorCache {
             }
         }
     }
-    pub fn save_node(node: AccumulatorNode) -> Result<()> {
+    pub fn _save_node(node: AccumulatorNode) -> Result<()> {
         match GLOBAL_NODE_CACHE.lock().put(node.hash(), node.clone()) {
             Some(_) => Ok(()),
             None => {
