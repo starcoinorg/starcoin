@@ -308,7 +308,7 @@ impl RpcClient {
     }
     pub fn chain_get_blocks_by_number(
         &self,
-        number: BlockNumber,
+        number: Option<BlockNumber>,
         count: u64,
     ) -> anyhow::Result<Vec<Block>> {
         self.call_rpc_blocking(|inner| async move {
