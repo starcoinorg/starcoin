@@ -148,7 +148,7 @@ where
 {
     type Result = Result<()>;
 
-    fn handle(&mut self, _event: GenerateBlockEvent, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _event: GenerateBlockEvent, _ctx: &mut Self::Context) -> Self::Result {
         let txpool = self.txpool.clone();
         let storage = self.storage.clone();
         let chain = self.chain.clone();
@@ -156,7 +156,6 @@ where
         let miner = self.miner.clone();
         let stratum = self.stratum.clone();
         let miner_account = self.miner_account.clone();
-        let arbiter = self.arbiter.clone();
         let f = async {
             let txns = txpool
                 .clone()
@@ -179,15 +178,7 @@ where
                 txpool,
                 Arc::downgrade(&collection),
             )?;
-            mint::<H, C>(
-                stratum,
-                miner,
-                config,
-                miner_account,
-                txns,
-                &block_chain,
-                arbiter,
-            )?;
+            mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain)?;
             drop(block_chain);
             drop(collection);
             Ok(())
@@ -196,9 +187,8 @@ where
             if let Err(err) = result {
                 error!("Failed to process generate block event:{:?}", err)
             }
-        })
-        .into_actor(self);
-        ctx.spawn(f);
+        });
+        self.arbiter.send(Box::pin(f));
         Ok(())
     }
 }
