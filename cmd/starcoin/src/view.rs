@@ -16,6 +16,7 @@ pub struct AccountWithStateView {
     pub auth_key_prefix: String,
     pub sequence_number: Option<u64>,
     pub balance: Option<u64>,
+    pub token_balance: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
