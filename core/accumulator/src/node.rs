@@ -73,6 +73,8 @@ pub struct InternalNode {
     right: HashValue,
 }
 
+//FIXME
+#[allow(clippy::all)]
 impl InternalNode {
     pub fn new(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
         InternalNode {
