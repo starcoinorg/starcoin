@@ -232,7 +232,7 @@ fn test_update_left_leaf() {
 #[test]
 fn test_update_right_leaf() {
     // construct a accumulator
-    let mut leaves = create_leaves(0..20);
+    let leaves = create_leaves(0..20);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
         HashValue::random(),

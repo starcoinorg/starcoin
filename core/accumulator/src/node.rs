@@ -54,7 +54,7 @@ impl AccumulatorNode {
     }
 
     pub fn frozen(&mut self) -> Result<()> {
-        let node = match self {
+        let _node = match self {
             AccumulatorNode::Internal(internal) => internal.set_frozen(),
             _ => Ok(()),
         };

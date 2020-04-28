@@ -37,8 +37,9 @@ impl AccumulatorTree {
         root_hash: HashValue,
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
-        trace!("accumulator cache new: {:?}", accumulator_id.short_str());
-        Self::restore_index_cache(accumulator_id, frozen_subtree_roots.clone(), store.clone());
+        info!("accumulator cache new: {:?}", accumulator_id.short_str());
+        Self::restore_index_cache(accumulator_id, frozen_subtree_roots.clone(), store.clone())
+            .unwrap();
         Self {
             id: accumulator_id,
             frozen_subtree_roots: RefCell::new(frozen_subtree_roots),
@@ -157,15 +158,15 @@ impl AccumulatorTree {
         //update frozen tag
         to_freeze = to_freeze
             .iter()
-            .map(|mut node| {
-                node.clone().frozen();
+            .map(|node| {
+                node.clone().frozen().unwrap();
                 node.clone()
             })
             .collect();
         //aggregator all nodes
         not_frozen_nodes.extend_from_slice(&to_freeze);
         // udpate to cache
-        self.update_cache(not_frozen_nodes.clone());
+        self.update_cache(not_frozen_nodes.clone())?;
         // update self properties
         self.root_hash = hash;
         self.frozen_subtree_roots = RefCell::new(
@@ -205,44 +206,6 @@ impl AccumulatorTree {
             }
         }
         node
-    }
-
-    /// Computes the root hash of an accumulator given the frozen subtree roots and the number of
-    /// leaves in this accumulator.
-    fn compute_root_hash(frozen_subtree_roots: &[HashValue], num_leaves: LeafCount) -> HashValue {
-        match frozen_subtree_roots.len() {
-            0 => return *ACCUMULATOR_PLACEHOLDER_HASH,
-            1 => return frozen_subtree_roots[0],
-            _ => (),
-        }
-
-        // The trailing zeros do not matter since anything below the lowest frozen subtree is
-        // already represented by the subtree roots.
-        let mut bitmap = num_leaves >> num_leaves.trailing_zeros();
-        let mut current_hash = *ACCUMULATOR_PLACEHOLDER_HASH;
-        let mut frozen_subtree_iter = frozen_subtree_roots.iter().rev();
-
-        while bitmap > 0 {
-            current_hash = if bitmap & 1 != 0 {
-                AccumulatorNode::new_internal(
-                    NODE_ERROR_INDEX.to_owned(),
-                    *frozen_subtree_iter
-                        .next()
-                        .expect("This frozen subtree should exist."),
-                    current_hash,
-                )
-            } else {
-                AccumulatorNode::new_internal(
-                    NODE_ERROR_INDEX.to_owned(),
-                    current_hash,
-                    *ACCUMULATOR_PLACEHOLDER_HASH,
-                )
-            }
-            .hash();
-            bitmap >>= 1;
-        }
-
-        current_hash
     }
 
     pub(crate) fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>> {
@@ -299,12 +262,11 @@ impl AccumulatorTree {
         hashes: Vec<HashValue>,
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<()> {
-        ensure!(hashes.len() > 0, "frozen sub root len must large than 0");
         for hash in hashes {
             let node = AccumulatorTree::get_node_through_cache(hash, store.clone());
             match node {
                 AccumulatorNode::Internal(internal) => {
-                    AccumulatorCache::save_node_index(accumulator_id, internal.index(), hash);
+                    AccumulatorCache::save_node_index(accumulator_id, internal.index(), hash)?;
                     let mut two_hash = vec![];
                     two_hash.push(internal.left());
                     two_hash.push(internal.right());
@@ -312,10 +274,10 @@ impl AccumulatorTree {
                         accumulator_id,
                         two_hash.clone(),
                         store.clone(),
-                    );
+                    )?;
                 }
                 AccumulatorNode::Leaf(leaf) => {
-                    AccumulatorCache::save_node_index(accumulator_id, leaf.index(), hash);
+                    AccumulatorCache::save_node_index(accumulator_id, leaf.index(), hash)?;
                 }
                 _ => {}
             }
@@ -326,7 +288,7 @@ impl AccumulatorTree {
     /// update node to cache
     fn update_cache(&self, node_vec: Vec<AccumulatorNode>) -> Result<()> {
         info!("accumulator update cache.");
-        AccumulatorCache::save_nodes(node_vec.clone());
+        AccumulatorCache::save_nodes(node_vec.clone())?;
         AccumulatorCache::save_node_indexes(self.id, node_vec)
     }
 

@@ -81,7 +81,7 @@ impl Genesis {
         let txn_info_hash = transaction_info.crypto_hash();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
-
+        accumulator.flush()?;
         let block = Block::genesis_block(
             accumulator_root,
             transaction_info.state_root_hash(),
@@ -167,7 +167,7 @@ impl Genesis {
         let txn_info_hash = transaction_info.crypto_hash();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
-
+        accumulator.flush()?;
         ensure!(
             block.header().number() == 0,
             "Genesis block number must is 0."
