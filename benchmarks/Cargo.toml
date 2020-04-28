@@ -15,6 +15,7 @@ types = {path = "../types", package="starcoin-types"}
 language_e2e_tests = {path = "../vm/e2e-tests", package="language-e2e-tests"}
 storage = { package="starcoin-storage", path = "../storage"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
 [[bench]]
 name = "benchmarks"
 harness = false

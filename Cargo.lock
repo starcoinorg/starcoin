@@ -534,6 +534,7 @@ dependencies = [
  "criterion",
  "language-e2e-tests 0.1.0",
  "proptest",
+ "starcoin-accumulator",
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-storage",
