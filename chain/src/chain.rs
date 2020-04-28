@@ -453,7 +453,7 @@ where
     fn exist_block(&self, block_id: HashValue) -> bool {
         if let Ok(Some(header)) = self.storage.get_block_header_by_hash(block_id.clone()) {
             if let Ok(exist) = self.block_exist_by_number(block_id.clone(), header.number()) {
-                return true;
+                return exist;
             }
         }
         false

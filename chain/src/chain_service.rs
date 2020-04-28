@@ -14,7 +14,6 @@ use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolAsyncService;
-use std::collections::HashMap;
 use std::sync::Arc;
 use storage::Store;
 use traits::Consensus;
@@ -107,10 +106,20 @@ where
     }
 
     pub fn fork(&self, block_header: &BlockHeader) -> Option<ChainInfo> {
-        let mut chain_info = self.get_master().fork(block_header);
+        let chain_info = self.get_master().fork(block_header);
         if chain_info.is_none() {
-            if let Some(branch_id) = self.storage.get_branch(block_header.parent_hash())? {
-                return self.startup_info.read().get_branch(branch_id);
+            if let Ok(Some(branch_id)) = self.storage.get_branch(block_header.parent_hash()) {
+                if let Some(chain_info) = self.startup_info.read().get_branch(branch_id) {
+                    return if chain_info.get_head() == block_header.parent_hash() {
+                        Some(chain_info)
+                    } else {
+                        Some(ChainInfo::new(
+                            Some(chain_info.branch_id()),
+                            block_header.parent_hash(),
+                            block_header,
+                        ))
+                    };
+                }
             }
         }
 
@@ -119,7 +128,7 @@ where
 
     pub fn block_exist(&self, block_id: HashValue) -> bool {
         if let Ok(branch_id) = self.storage.get_branch(block_id) {
-            branch_id.is_some()
+            return branch_id.is_some();
         }
         false
     }
@@ -141,13 +150,16 @@ where
         } else {
             // just for test
             let mut tmp = None;
-            if let Ok(Some(branch_id)) = self.storage.get_branch(block_id) {
-                tmp = Some(branch.create_block_template(
-                    author,
-                    auth_key_prefix.clone(),
-                    Some(block_id),
-                    user_txns.clone(),
-                ));
+            if let Some(branch_id) = self.storage.get_branch(block_id)? {
+                if let Some(branch) = self.startup_info.read().get_branch(branch_id) {
+                    let chain = self.get_master().new_chain(branch)?;
+                    tmp = Some(chain.create_block_template(
+                        author,
+                        auth_key_prefix.clone(),
+                        Some(block_id),
+                        user_txns.clone(),
+                    ));
+                }
             }
 
             Ok(tmp.unwrap().unwrap())
