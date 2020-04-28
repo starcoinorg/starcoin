@@ -15,7 +15,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 toml = { version = "0.5.3", default-features = false }
-libp2p = "0.15.0"
+libp2p = "0.16.2"
 structopt = "0.3.2"
 starcoin-crypto = { path = "../commons/crypto"}
 rand = "0.6.5"
@@ -23,5 +23,5 @@ once_cell="1.3"
 hex="0.4"
 num_enum = "0.4.1"
 starcoin-types = { path = "../types" }
-logger = {path = "../commons/logger", package="starcoin-logger"}
+starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
 libra-temppath = { git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }

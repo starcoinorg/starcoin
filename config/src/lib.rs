@@ -58,7 +58,7 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
 pub fn temp_path() -> TempPath {
     let temp_path = TempPath::new();
     temp_path.create_as_dir().expect("Create temp dir fail.");
-    return temp_path;
+    temp_path
 }
 
 #[derive(Debug, Clone, StructOpt, Default)]
@@ -139,7 +139,7 @@ impl BaseConfig {
         let data_dir = base_data_dir.as_ref().join(net.to_string());
         if !data_dir.exists() {
             create_dir_all(data_dir.as_path())
-                .expect(format!("Create data dir {:?} fail.", data_dir).as_str());
+                .unwrap_or_else(|_| panic!("Create data dir {:?} fail.", data_dir));
         }
         Self {
             net,
@@ -222,8 +222,7 @@ impl NodeConfig {
         let mut config: NodeConfig = if config_file_path.exists() {
             load_config(&config_file_path)?
         } else {
-            let default_config = NodeConfig::default_with_net(base.net);
-            default_config
+            NodeConfig::default_with_net(base.net)
         };
         config.load(&base, opt)?;
         save_config(&config, &config_file_path)?;
@@ -365,14 +364,14 @@ pub fn get_available_port_multi(num: usize) -> Vec<u16> {
         let mut retry_times = 0;
         while ports.contains(&port) {
             port = get_available_port();
-            retry_times = retry_times + 1;
+            retry_times += 1;
             if retry_times > 3 {
                 panic!("Error: could not find an available port");
             }
         }
         ports[i] = port;
     }
-    return ports;
+    ports
 }
 
 fn get_ephemeral_port() -> ::std::io::Result<u16> {
