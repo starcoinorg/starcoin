@@ -136,9 +136,8 @@ where
     }
 
     pub fn exec(mut self) {
-        match self.exec_inner() {
-            Err(e) => println!("{}", e.to_string()),
-            Ok(_) => {}
+        if let Err(e) = self.exec_inner() {
+            println!("{}", e.to_string())
         }
     }
 
