@@ -80,13 +80,10 @@ impl actix::Handler<SystemEvents> for ChainStateActor {
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            SystemEvents::NewHeadBlock(block) => {
-                let state_root = block.header().state_root();
-                info!("ChainStateActor change StateRoot to : {:?}", state_root);
-                self.service.change_root(state_root);
-            }
-            _ => {}
+        if let SystemEvents::NewHeadBlock(block) = msg {
+            let state_root = block.header().state_root();
+            info!("ChainStateActor change StateRoot to : {:?}", state_root);
+            self.service.change_root(state_root);
         }
     }
 }
