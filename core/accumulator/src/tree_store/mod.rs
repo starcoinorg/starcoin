@@ -42,7 +42,7 @@ impl AccumulatorCache {
         match GLOBAL_NODE_CACHE.lock().get(&hash) {
             Some(node) => node.clone(),
             None => {
-                error!("get node from cache error:{:}", hash);
+                warn!("get node from cache error:{:}", hash);
                 AccumulatorNode::new_empty()
             }
         }
@@ -62,47 +62,47 @@ impl AccumulatorCache {
             .lock()
             .get(&NodeCacheKey::new(accumulator_id, index))
         {
-            Some(node_hash) => node_hash.clone(),
+            Some(node_hash) => *node_hash,
             None => {
-                error!("get node index hash error:{:?}", index);
+                error!(
+                    "get node index hash error:{:?}-{:?}",
+                    accumulator_id.short_str(),
+                    index
+                );
                 HashValue::zero()
             }
         }
     }
     pub fn _save_node(node: AccumulatorNode) -> Result<()> {
-        match GLOBAL_NODE_CACHE.lock().put(node.hash(), node.clone()) {
-            Some(_) => Ok(()),
-            None => {
-                error!("save node cache error: {:?}", node);
-                Ok(())
-            }
+        if let Some(old) = GLOBAL_NODE_CACHE.lock().put(node.hash(), node.clone()) {
+            warn!("save node cache exist: {:?}", old);
         }
+        Ok(())
     }
     pub fn save_node_index(
         accumulator_id: HashValue,
         index: NodeIndex,
         node_hash: HashValue,
     ) -> Result<()> {
-        match GLOBAL_NODE_INDEX_CACHE
+        if let Some(hash) = GLOBAL_NODE_INDEX_CACHE
             .lock()
             .put(NodeCacheKey::new(accumulator_id, index), node_hash)
         {
-            Some(_) => Ok(()),
-            None => {
-                error!("save node index cache error: {:?}", index);
-                Ok(())
-            }
+            warn!(
+                "save node index cache exist: {:?}-{:?}-{:?}",
+                accumulator_id.short_str(),
+                index,
+                hash,
+            );
         }
+        Ok(())
     }
 
     pub fn save_nodes(nodes: Vec<AccumulatorNode>) -> Result<()> {
         let mut cache = GLOBAL_NODE_CACHE.lock();
         for node in nodes {
-            match cache.put(node.hash(), node.clone()) {
-                Some(_) => {}
-                None => {
-                    error!("save node cache error: {:?}", node);
-                }
+            if let Some(old) = cache.put(node.hash(), node.clone()) {
+                warn!("cache exist node:{:?}", old);
             }
         }
         Ok(())
@@ -111,11 +111,15 @@ impl AccumulatorCache {
     pub fn save_node_indexes(accumulator_id: HashValue, nodes: Vec<AccumulatorNode>) -> Result<()> {
         let mut cache = GLOBAL_NODE_INDEX_CACHE.lock();
         for node in nodes {
-            match cache.put(NodeCacheKey::new(accumulator_id, node.index()), node.hash()) {
-                Some(_) => {}
-                None => {
-                    error!("save node index cache error: {:?}", node);
-                }
+            if let Some(old) =
+                cache.put(NodeCacheKey::new(accumulator_id, node.index()), node.hash())
+            {
+                warn!(
+                    "cache exist node hash: {:?}-{:?}-{:?}",
+                    accumulator_id.short_str(),
+                    node.index(),
+                    old
+                );
             }
         }
         Ok(())
@@ -127,10 +131,16 @@ pub struct MockAccumulatorStore {
 }
 
 impl MockAccumulatorStore {
-    pub fn new() -> Self {
-        Self {
+    pub fn new() -> MockAccumulatorStore {
+        MockAccumulatorStore {
             node_store: Mutex::new(HashMap::new()),
         }
+    }
+}
+
+impl Default for MockAccumulatorStore {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

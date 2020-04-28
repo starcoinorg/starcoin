@@ -4,13 +4,13 @@
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
-use crate::tree_store::AccumulatorCache;
 use anyhow::{ensure, Error, Result};
 use logger::prelude::*;
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
 use std::sync::Arc;
+use tree_store::AccumulatorCache;
 
 #[cfg(test)]
 mod accumulator_test;
@@ -18,7 +18,7 @@ pub mod node;
 pub mod node_index;
 mod proof;
 mod tree;
-mod tree_store;
+pub mod tree_store;
 
 pub type LeafCount = u64;
 pub type NodeCount = u64;
@@ -99,7 +99,7 @@ impl MerkleAccumulator {
             node_store: node_store.clone(),
         })
     }
-    #[cfg(test)]
+
     pub fn get_node_from_cache(&self, hash: HashValue) -> AccumulatorNode {
         AccumulatorCache::get_node(hash)
     }

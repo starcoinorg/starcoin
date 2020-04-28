@@ -186,7 +186,7 @@ impl AccumulatorTree {
             node = match store.clone().get_node(hash) {
                 Ok(Some(node)) => node,
                 _ => {
-                    error!("get accumulator node from store err:{:?}", hash);
+                    error!("get accumulator node from store err:{:?}", hash.short_str());
                     AccumulatorNode::new_empty()
                 }
             }

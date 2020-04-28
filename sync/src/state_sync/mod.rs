@@ -373,7 +373,7 @@ impl StateSyncTaskActor {
         }
     }
 
-    fn _exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let mut lock = self.accumulator_sync_task.lock();
         let value = lock.pop_front();
         if value.is_some() {
@@ -476,7 +476,7 @@ impl Actor for StateSyncTaskActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("StateSyncTaskActor actor started.");
         self.exe_state_sync_task(ctx.address());
-        //self.exe_accumulator_sync_task(ctx.address());
+        self.exe_accumulator_sync_task(ctx.address());
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
@@ -508,7 +508,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
             if state_or_accumulator {
                 self.exe_state_sync_task(ctx.address());
             } else {
-                //self.exe_accumulator_sync_task(ctx.address());
+                self.exe_accumulator_sync_task(ctx.address());
             }
         }
         Ok(())
