@@ -661,7 +661,11 @@ where
         self.collection.to_startup_info()
     }
 
-    fn master_blocks_by_number(&self, number: u64, count: u64) -> Result<Vec<Block>> {
+    fn master_blocks_by_number(
+        &self,
+        number: Option<BlockNumber>,
+        count: u64,
+    ) -> Result<Vec<Block>> {
         self.collection
             .master
             .read()

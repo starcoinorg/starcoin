@@ -334,7 +334,11 @@ where
         }
     }
 
-    async fn master_blocks_by_number(self, number: u64, count: u64) -> Result<Vec<Block>> {
+    async fn master_blocks_by_number(
+        self,
+        number: Option<BlockNumber>,
+        count: u64,
+    ) -> Result<Vec<Block>> {
         if let ChainResponse::VecBlock(blocks) = self
             .address
             .send(ChainRequest::GetBlocksByNumber(number, count))
