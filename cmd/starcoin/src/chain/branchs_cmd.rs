@@ -8,23 +8,24 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_types::startup_info::ChainInfo;
 use structopt::StructOpt;
 
+/// List branches of current chain, first is master.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "show")]
-pub struct ShowOpt {}
+#[structopt(name = "branches")]
+pub struct BranchesOpt {}
 
-pub struct ShowCommand;
+pub struct BranchesCommand;
 
-impl CommandAction for ShowCommand {
+impl CommandAction for BranchesCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ShowOpt;
-    type ReturnItem = ChainInfo;
+    type Opt = BranchesOpt;
+    type ReturnItem = Vec<ChainInfo>;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        client.chain_head()
+        client.chain_branches()
     }
 }
