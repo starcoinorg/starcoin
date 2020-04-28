@@ -163,7 +163,11 @@ where
                 .await
                 .unwrap_or(vec![]);
             let startup_info = chain.master_startup_info().await?;
-            debug!("head block : {:?}, txn len: {}", startup_info, txns.len());
+            debug!(
+                "On GenerateBlockEvent, master: {:?}, txn len: {}",
+                startup_info.master,
+                txns.len()
+            );
             let master = startup_info.master.clone();
             let collection = to_block_chain_collection(
                 config.clone(),

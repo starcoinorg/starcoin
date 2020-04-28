@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::module::map_err;
-use futures::future::TryFutureExt;
+use futures::future::{FutureExt, TryFutureExt};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::FutureResult;
@@ -81,6 +81,16 @@ where
             .service
             .clone()
             .get_block_txn(block_id)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
+
+    fn branches(&self) -> FutureResult<Vec<ChainInfo>> {
+        let fut = self
+            .service
+            .clone()
+            .master_startup_info()
+            .map(|result| Ok(Into::<Vec<ChainInfo>>::into(result?)))
             .map_err(map_err);
         Box::new(fut.compat())
     }

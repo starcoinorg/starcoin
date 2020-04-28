@@ -337,6 +337,12 @@ impl RpcClient {
         })
         .map_err(map_err)
     }
+
+    pub fn chain_branches(&self) -> anyhow::Result<Vec<ChainInfo>> {
+        self.call_rpc_blocking(|inner| async move { inner.chain_client.branches().compat().await })
+            .map_err(map_err)
+    }
+
     fn call_rpc_blocking<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F,

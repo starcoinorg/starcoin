@@ -30,7 +30,12 @@ pub trait ChainApi {
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
     fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<TransactionInfo>;
+
     /// Get chain transactions by block id
     #[rpc(name = "chain.get_txn_by_block")]
     fn get_txn_by_block(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>>;
+
+    /// Get branches of current chain, first is master.
+    #[rpc(name = "chain.branches")]
+    fn branches(&self) -> FutureResult<Vec<ChainInfo>>;
 }
