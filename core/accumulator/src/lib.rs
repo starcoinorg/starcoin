@@ -79,7 +79,7 @@ pub struct MerkleAccumulator {
 
 impl MerkleAccumulator {
     pub fn new(
-        accumulator_id: HashValue,
+        _accumulator_id: HashValue,
         root_hash: HashValue,
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: LeafCount,
@@ -89,7 +89,7 @@ impl MerkleAccumulator {
         Ok(Self {
             update_nodes: Mutex::new(vec![]),
             tree: Mutex::new(AccumulatorTree::new(
-                accumulator_id,
+                HashValue::random(),
                 frozen_subtree_roots,
                 num_leaves,
                 num_notes,
