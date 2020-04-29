@@ -101,7 +101,7 @@ fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
     if hash_u256 <= target {
         return true;
     }
-    return false;
+    false
 }
 
 pub fn calculate_hash(header: &[u8]) -> H256 {

@@ -26,7 +26,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
         let current_block = chain.head_block();
         let mut current_number = current_block.header().number() + 1;
         loop {
-            if count == BLOCK_WINDOW || current_number <= 0 {
+            if count == BLOCK_WINDOW || current_number == 0 {
                 break;
             }
             current_number -= 1;
@@ -65,7 +65,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
         avg_target = avg_target + blocks[latest_block_index].target / block_n.into();
         latest_block_index += 1
     }
-    avg_time = avg_time / ((block_n as u64) * ((block_n + 1) as u64) / 2);
+    avg_time /= (block_n as u64) * ((block_n + 1) as u64) / 2;
     if avg_time == 0 {
         avg_time = 1
     }
