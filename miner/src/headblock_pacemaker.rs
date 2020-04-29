@@ -49,9 +49,8 @@ impl Handler<SystemEvents> for HeadBlockPacemaker {
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            SystemEvents::NewHeadBlock(_block) => self.send_event(),
-            _ => {}
+        if let SystemEvents::NewHeadBlock(_block) = msg {
+            self.send_event();
         }
     }
 }

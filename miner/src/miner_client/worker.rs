@@ -40,12 +40,11 @@ pub fn start_worker(
         ConsensusStrategy::Dummy => {
             let (worker_tx, worker_rx) = mpsc::unbounded();
             let worker_name = "starcoin-miner-dummy-worker".to_owned();
-            let nonce_tx_clone = nonce_tx.clone();
             let nonce_range = partition_nonce(1 as u64, 2 as u64);
             thread::Builder::new()
                 .name(worker_name)
                 .spawn(move || {
-                    let mut worker = Worker::new(worker_rx, nonce_tx_clone);
+                    let mut worker = Worker::new(worker_rx, nonce_tx);
                     let rng = nonce_generator(nonce_range);
                     worker.run(rng, dummy_solver);
                 })
@@ -113,7 +112,7 @@ impl Worker {
             self.refresh_new_work();
             if self.start {
                 if let Some(pow_header) = self.pow_header.clone() {
-                    if solver(&pow_header, rng(), self.diff.clone(), self.nonce_tx.clone()) {
+                    if solver(&pow_header, rng(), self.diff, self.nonce_tx.clone()) {
                         self.start = false;
                     }
                 }

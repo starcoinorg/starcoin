@@ -109,7 +109,9 @@ impl PushWorkHandler for Stratum {
 impl Drop for Stratum {
     fn drop(&mut self) {
         // shut down rpc server
-        self.rpc_server.take().map(|server| server.close());
+        if let Some(server) = self.rpc_server.take() {
+            server.close()
+        };
     }
 }
 
@@ -218,7 +220,7 @@ impl StratumImpl {
                 if *counter == ::std::u32::MAX {
                     *counter = NOTIFY_COUNTER_INITIAL;
                 } else {
-                    *counter = *counter + 1
+                    *counter += 1
                 }
                 *counter
             };
@@ -234,7 +236,7 @@ impl StratumImpl {
                 match tcp_dispatcher.push_message(addr, workers_msg.clone()) {
                     Err(PushMessageError::NoSuchPeer) => {
                         trace!(target: "stratum", "Worker no longer connected: {}", &addr);
-                        hup_peers.insert(*addr.clone());
+                        hup_peers.insert((*addr).clone());
                     }
                     Err(e) => {
                         warn!(target: "stratum", "Unexpected transport error: {:?}", e);
@@ -266,16 +268,16 @@ impl StratumImpl {
         }
         let mut que = payloads;
         let mut addr_index = 0;
-        while que.len() > 0 {
+        while !que.is_empty() {
             let next_worker = addrs[addr_index];
             let mut next_payload = que.drain(0..1);
             tcp_dispatcher.push_message(
                 next_worker,
                 next_payload
-                    .nth(0)
+                    .next()
                     .expect("drained successfully of 0..1, so 0-th element should exist"),
             )?;
-            addr_index = addr_index + 1;
+            addr_index += 1;
         }
         Ok(())
     }
@@ -339,11 +341,9 @@ pub fn dummy_request(addr: &SocketAddr, data: &str) -> Vec<u8> {
             io::read_to_end(stream, Vec::with_capacity(2048))
         })
         .and_then(|(_stream, read_buf)| future::ok(read_buf));
-    let result = runtime
+    runtime
         .block_on(stream)
-        .expect("Runtime should run with no errors");
-
-    result
+        .expect("Runtime should run with no errors")
 }
 
 #[cfg(test)]
