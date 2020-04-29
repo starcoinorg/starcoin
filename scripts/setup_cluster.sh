@@ -1,10 +1,12 @@
 #!/bin/bash
 # use for init cluster
-ACCESS_TOKEN=EMPTY_TOKEN
+
+cfg_root=/mnt/volume_01/starcoin_cfg
+
 create_node(){
     local node=$1
-    #Todo: remove the token
-    docker-machine  create --driver digitalocean --digitalocean-region sgp1 --digitalocean-image "ubuntu-18-04-x64" --digitalocean-size "c-2" --digitalocean-access-token  $ACCESS_TOKEN $node
+    local access_token=$2
+    docker-machine  create --driver digitalocean --digitalocean-region sgp1 --digitalocean-image "ubuntu-18-04-x64" --digitalocean-size "c-2" --digitalocean-access-token  $access_token $node
 }
 
 create_nodes(){
@@ -25,8 +27,16 @@ remove_nodes(){
     done
 }
 
+clean_cfg(){
+    for((c=0; c<$1;c++));do
+	docker-machine ssh starcoin-$c rm -rf $cfg_root
+    done
+    
+}
+
 usage(){
-    echo "Usage $(basename $0) [stop, start] nodes_number"
+    echo "Usage $(basename $0)  [stop, start, clean_node] nodes_number [access_token]"
+    exit -1
 }
 
 
@@ -34,7 +44,7 @@ if [ $# -lt 2 ]; then
     usage;
 fi
 
-case $"$1" in
+case $1 in
     start)
 	shift;
 	remove_nodes $@
@@ -43,5 +53,9 @@ case $"$1" in
     stop)
 	shift;
 	remove_nodes $@
+	;;
+    clean_node)
+	shift;
+	clean_cfg $@
 	;;
 esac
