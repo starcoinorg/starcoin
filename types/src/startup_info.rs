@@ -3,6 +3,7 @@
 
 use crate::block::{BlockHeader, BlockNumber};
 use anyhow::Result;
+use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -103,14 +104,22 @@ impl StartupInfo {
     }
 
     pub fn insert_branch(&mut self, chain_info: ChainInfo) {
+        debug!("startup_info branch insert {:?}", chain_info);
         self.remove_branch(chain_info.branch_id());
         self.branches.push(chain_info);
     }
 
     pub fn update_master(&mut self, chain_info: ChainInfo) {
         if chain_info.branch_id() != self.master.branch_id() {
-            let tmp = self.master.clone();
-            self.branches.push(tmp);
+            let exist = self.get_branch(self.master.branch_id());
+            if exist.is_none() {
+                let tmp = self.master.clone();
+                debug!(
+                    "startup_info branch update_master move {:?}, {:?}",
+                    chain_info, tmp
+                );
+                self.branches.push(tmp);
+            }
         }
 
         self.master = chain_info;
@@ -135,8 +144,9 @@ impl TryInto<Vec<u8>> for StartupInfo {
 
 impl Into<Vec<ChainInfo>> for StartupInfo {
     fn into(self) -> Vec<ChainInfo> {
-        let mut branches = self.branches;
-        branches.insert(0, self.master);
+        let mut branches = Vec::new();
+        branches.push(self.master);
+        branches.append(&mut self.branches.clone());
         branches
     }
 }
