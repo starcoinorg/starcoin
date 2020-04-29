@@ -33,7 +33,7 @@ pub fn print_action_result(value: Value, format: OutputFormat) -> Result<()> {
 
 pub fn print_json(value: Value) -> Result<()> {
     let result = json!({ "result": value });
-    let json = serde_json::to_string_pretty(&result).map_err(|e| Into::<anyhow::Error>::into(e))?;
+    let json = serde_json::to_string_pretty(&result)?;
     println!("{}", json);
     Ok(())
 }

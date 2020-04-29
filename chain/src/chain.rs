@@ -112,6 +112,16 @@ where
         Ok(chain)
     }
 
+    pub fn new_chain(&self, chain_info: ChainInfo) -> Result<Self> {
+        Self::new(
+            self.config.clone(),
+            chain_info,
+            self.storage.clone(),
+            self.txpool.clone(),
+            self.block_chain_collection.clone(),
+        )
+    }
+
     pub fn save_block(&self, block: &Block) {
         if let Err(e) = self
             .storage
@@ -248,6 +258,26 @@ where
     pub fn update_head(&mut self, latest_block: BlockHeader) {
         self.chain_info.update_head(latest_block)
     }
+
+    pub fn block_exist_by_number(
+        &self,
+        block_id: HashValue,
+        block_num: BlockNumber,
+    ) -> Result<bool> {
+        if let Some(block_header) = self.get_header_by_number(block_num)? {
+            if block_id == block_header.id() {
+                return Ok(true);
+            } else {
+                debug!(
+                    "block is miss match {:?} : {:?}",
+                    block_id,
+                    block_header.id()
+                );
+            }
+        }
+
+        Ok(false)
+    }
 }
 
 impl<C, S, P> Drop for BlockChain<C, S, P>
@@ -262,7 +292,6 @@ where
             self.block_chain_collection.strong_count(),
             self.block_chain_collection.weak_count()
         );
-        drop(&self.block_chain_collection);
     }
 }
 
@@ -299,21 +328,19 @@ where
         if let Some(branch_id) = self.get_branch_id(number) {
             self.storage.get_block_by_branch_number(branch_id, number)
         } else {
-            warn!("branch id not found.");
+            debug!("branch id not found.");
             Ok(None)
         }
     }
 
-    fn get_blocks_by_number(&self, number: BlockNumber, count: u64) -> Result<Vec<Block>, Error> {
+    fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
         let mut block_vec = vec![];
-        let mut temp_number = number;
-        if number == 0 as u64 {
-            temp_number = self.current_header().number();
-        }
-        if let Some(branch_id) = self.get_branch_id(temp_number) {
+        let mut current_num = match number {
+            None => self.current_header().number(),
+            Some(number) => number,
+        };
+        if let Some(branch_id) = self.get_branch_id(current_num) {
             let mut tmp_count = count;
-            let mut current_num = temp_number;
-
             loop {
                 match self
                     .storage
@@ -338,30 +365,23 @@ where
                 tmp_count = tmp_count - 1;
             }
         } else {
-            warn!("branch id not found.");
+            debug!("branch id of block_number {:?} not found.", number);
         }
         Ok(block_vec)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        let block = self.storage.get_block_by_hash(hash);
+        let block = self.storage.get_block_by_hash(hash)?;
         match block {
-            Ok(tmp) => match tmp {
-                Some(b) => {
-                    if let Ok(Some(block_header)) = self.get_header_by_number(b.header().number()) {
-                        if block_header.id() == b.header().id() {
-                            return Ok(Some(b));
-                        } else {
-                            warn!("block is miss match {:?} : {:?}", hash, block_header.id());
-                        }
-                    }
+            Some(b) => {
+                let block_exit =
+                    self.block_exist_by_number(b.header().id(), b.header().number())?;
+                if block_exit {
+                    return Ok(Some(b));
                 }
-                None => {
-                    warn!("Get block from storage return none.");
-                }
-            },
-            Err(e) => {
-                warn!("err:{:?}", e);
+            }
+            None => {
+                debug!("Get block from storage return none.");
             }
         }
 
@@ -370,16 +390,11 @@ where
 
     fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
         let mut txn_vec = vec![];
-        match self.storage.get_block_transactions(block_id) {
-            Ok(vec_hash) => {
-                for hash in vec_hash {
-                    match self.get_transaction_info(hash) {
-                        Ok(Some(transaction_info)) => txn_vec.push(transaction_info),
-                        _ => error!("get transaction info error: {:?}", hash),
-                    }
-                }
+        let vec_hash = self.storage.get_block_transactions(block_id)?;
+        for hash in vec_hash {
+            if let Some(transaction_info) = self.get_transaction_info(hash)? {
+                txn_vec.push(transaction_info);
             }
-            _ => {}
         }
         Ok(txn_vec)
     }
@@ -436,11 +451,12 @@ where
     }
 
     fn exist_block(&self, block_id: HashValue) -> bool {
-        if let Ok(Some(_)) = self.get_block(block_id) {
-            true
-        } else {
-            false
+        if let Ok(Some(header)) = self.storage.get_block_header_by_hash(block_id.clone()) {
+            if let Ok(exist) = self.block_exist_by_number(block_id.clone(), header.number()) {
+                return exist;
+            }
         }
+        false
     }
 }
 

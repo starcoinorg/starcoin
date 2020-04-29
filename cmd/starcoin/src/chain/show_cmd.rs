@@ -25,8 +25,6 @@ impl CommandAction for ShowCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let chain_info = client.chain_head()?;
-
-        Ok(chain_info)
+        client.chain_head()
     }
 }

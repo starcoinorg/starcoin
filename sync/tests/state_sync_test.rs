@@ -203,7 +203,7 @@ fn test_state_sync() {
             sync_metadata_actor_2.clone(),
         )
         .unwrap();
-        Delay::new(Duration::from_secs(1)).await;
+        Delay::new(Duration::from_secs(5)).await;
         let _ = bus_2
             .clone()
             .send(Broadcast {

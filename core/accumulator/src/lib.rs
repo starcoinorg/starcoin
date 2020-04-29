@@ -158,6 +158,8 @@ pub struct AccumulatorCache {
     node_store: Arc<dyn AccumulatorTreeStore>,
 }
 
+//FIXME
+#[allow(clippy::all)]
 impl AccumulatorCache {
     pub fn new(
         accumulator_id: HashValue,
@@ -635,6 +637,8 @@ impl MerkleAccumulator {
     }
 }
 
+//FIXME
+#[allow(clippy::all)]
 impl Accumulator for MerkleAccumulator {
     fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
         let mut cache_guard = self.cache.lock().unwrap();
@@ -716,10 +720,14 @@ impl Accumulator for MerkleAccumulator {
     }
 }
 
+//FIXME
+#[allow(clippy::all)]
 pub struct MockAccumulatorStore {
     node_store: Mutex<HashMap<HashValue, AccumulatorNode>>,
 }
 
+//FIXME
+#[allow(clippy::all)]
 impl MockAccumulatorStore {
     pub fn new() -> Self {
         Self {

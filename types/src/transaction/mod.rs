@@ -11,9 +11,11 @@ use crate::{
     vm_error::{StatusCode, StatusType, VMStatus},
 };
 use anyhow::{format_err, Error, Result};
-use starcoin_crypto::{ed25519::*, hash::CryptoHash, traits::*, HashValue};
-
+use rand::rngs::{EntropyRng, StdRng};
+use rand::{Rng, SeedableRng};
 use serde::{de, ser, Deserialize, Serialize};
+use starcoin_crypto::{ed25519::*, hash::CryptoHash, traits::*, HashValue};
+use std::ops::Deref;
 use std::{convert::TryFrom, fmt, time::Duration};
 
 pub mod authenticator;
@@ -28,10 +30,7 @@ pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
 pub use pending_transaction::{Condition, PendingTransaction};
-use rand::rngs::{EntropyRng, StdRng};
-use rand::{Rng, SeedableRng};
 pub use script::{Script, SCRIPT_HASH_LENGTH};
-use std::ops::Deref;
 pub use transaction_argument::{parse_as_transaction_argument, TransactionArgument};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
@@ -734,10 +733,10 @@ impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
     fn from(status: libra_types::transaction::TransactionStatus) -> Self {
         match status {
             libra_types::transaction::TransactionStatus::Discard(vm_status) => {
-                TransactionStatus::Discard(vm_status.clone().into())
+                TransactionStatus::Discard(vm_status.into())
             }
             libra_types::transaction::TransactionStatus::Keep(vm_status) => {
-                TransactionStatus::Keep(vm_status.clone().into())
+                TransactionStatus::Keep(vm_status.into())
             }
             libra_types::transaction::TransactionStatus::Retry => {
                 TransactionStatus::Discard(VMStatus::new(StatusCode::UNKNOWN_VALIDATION_STATUS))

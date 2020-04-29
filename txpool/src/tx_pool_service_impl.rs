@@ -201,7 +201,7 @@ impl actix::Handler<SystemEvents> for TxPoolActor {
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
             SystemEvents::NewHeadBlock(block) => {
-                self.chain_header = block.get_block().clone().into_inner().0;
+                self.chain_header = block.get_block().header().clone();
                 self.sequence_number_cache.clear();
 
                 // NOTICE: as the new head block event is sepeated with chain_new_block event,

@@ -170,13 +170,14 @@ where
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         debug!("try connect mined block.");
         match msg {
-            SystemEvents::MinedBlock(new_block) => match self.service.try_connect(new_block, false)
-            {
-                Ok(_) => debug!("Process mined block success."),
-                Err(e) => {
-                    warn!("Process mined block fail, error: {:?}", e);
+            SystemEvents::MinedBlock(new_block) => {
+                match self.service.try_connect(new_block.as_ref().clone(), false) {
+                    Ok(_) => debug!("Process mined block success."),
+                    Err(e) => {
+                        warn!("Process mined block fail, error: {:?}", e);
+                    }
                 }
-            },
+            }
             _ => {}
         }
     }
@@ -334,7 +335,11 @@ where
         }
     }
 
-    async fn master_blocks_by_number(self, number: u64, count: u64) -> Result<Vec<Block>> {
+    async fn master_blocks_by_number(
+        self,
+        number: Option<BlockNumber>,
+        count: u64,
+    ) -> Result<Vec<Block>> {
         if let ChainResponse::VecBlock(blocks) = self
             .address
             .send(ChainRequest::GetBlocksByNumber(number, count))

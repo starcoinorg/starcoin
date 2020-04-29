@@ -99,10 +99,9 @@ fn aes_encrypt(encryption_param: &EncryptionParams, key: [u8; 32], plain: &[u8])
     let key = GenericArray::from(key);
     let nonce = GenericArray::clone_from_slice(&encryption_param.nonce);
     let cipher = aes_gcm::Aes256Gcm::new(key);
-    let ciphertext = cipher
+    cipher
         .encrypt(&nonce, plain)
-        .expect("encryption should never failure!");
-    ciphertext
+        .expect("encryption should never failure!")
 }
 fn aes_decrypt(
     encryption_param: &EncryptionParams,

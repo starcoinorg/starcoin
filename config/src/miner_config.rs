@@ -73,12 +73,10 @@ impl ConfigModule for MinerConfig {
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
-        if base.net.is_dev() {
-            if opt.dev_period > 0 {
-                self.dev_period = opt.dev_period;
-                self.pacemaker_strategy = PacemakerStrategy::Schedule;
-                self.consensus_strategy = ConsensusStrategy::Dummy;
-            }
+        if base.net.is_dev() && opt.dev_period > 0 {
+            self.dev_period = opt.dev_period;
+            self.pacemaker_strategy = PacemakerStrategy::Schedule;
+            self.consensus_strategy = ConsensusStrategy::Dummy;
         }
         Ok(())
     }

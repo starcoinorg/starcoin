@@ -5,7 +5,7 @@ use crypto::HashValue;
 use traits::ConnectResult;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, TransactionInfo},
 };
@@ -21,7 +21,8 @@ pub enum ChainRequest {
         Option<Vec<u8>>,
         Option<HashValue>,
         Vec<SignedUserTransaction>,
-    ), // just fot test
+    ),
+    // just fot test
     GetBlockByHash(HashValue),
     GetBlockInfoByHash(HashValue),
     ConnectBlock(Block, Option<BlockInfo>),
@@ -29,7 +30,7 @@ pub enum ChainRequest {
     GetHeadChainInfo(),
     GetTransaction(HashValue),
     GetTransactionIdByBlock(HashValue),
-    GetBlocksByNumber(u64, u64),
+    GetBlocksByNumber(Option<BlockNumber>, u64),
     GenTx(), // just for test
 }
 
