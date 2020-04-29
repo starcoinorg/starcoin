@@ -35,8 +35,8 @@ pub use prometheus::{
     histogram_opts, labels, opts, register_counter, register_counter_vec, register_gauge,
     register_gauge_vec, register_histogram, register_histogram_vec, register_int_counter,
     register_int_counter_vec, register_int_gauge, register_int_gauge_vec, Error as PrometheusError,
-    Histogram, HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
-    Opts,
+    Histogram, HistogramOpts, HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge,
+    IntGaugeVec, Opts,
 };
 
 pub type UIntGaugeVec = GenericGaugeVec<AtomicU64>;

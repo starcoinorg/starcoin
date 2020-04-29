@@ -6394,6 +6394,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
+ "starcoin-metrics",
  "starcoin-miner",
  "starcoin-network",
  "starcoin-state-tree",

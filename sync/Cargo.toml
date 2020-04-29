@@ -38,6 +38,7 @@ starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 async-trait = "0.1"
 starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-accumulator = {package="starcoin-accumulator", path = "../core/accumulator"}
+starcoin-metrics = {path = "../commons/metrics"}
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

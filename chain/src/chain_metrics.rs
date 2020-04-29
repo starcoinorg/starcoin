@@ -1,9 +1,13 @@
+use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    register_int_counter, register_int_gauge, IntCounter, IntGauge, Opts, PrometheusError,
+    register_histogram_vec, register_int_counter, register_int_gauge, HistogramOpts, HistogramVec,
+    IntCounter, IntGauge, Opts, PrometheusError,
 };
 
 const SC_NS: &str = "starcoin";
 const PRIFIX: &str = "starcoin_chain_";
+
+pub static CHAIN_METRICS: Lazy<ChainMetrics> = Lazy::new(|| ChainMetrics::register().unwrap());
 
 #[derive(Clone)]
 pub struct ChainMetrics {
@@ -12,7 +16,7 @@ pub struct ChainMetrics {
     pub rollback_count: IntCounter,
     pub broadcast_head_count: IntCounter,
     pub verify_fail_count: IntCounter,
-    pub exe_block_total_time: IntCounter,
+    pub exe_block_time: HistogramVec,
     pub branch_total_count: IntGauge,
 }
 
@@ -48,11 +52,14 @@ impl ChainMetrics {
         )
         .namespace(SC_NS))?;
 
-        let exe_block_total_time = register_int_counter!(Opts::new(
-            format!("{}{}", PRIFIX, "exe_block_total_time"),
-            "execute block total time".to_string()
-        )
-        .namespace(SC_NS))?;
+        let exe_block_time = register_histogram_vec!(
+            HistogramOpts::new(
+                format!("{}{}", PRIFIX, "exe_block_time"),
+                "execute block time".to_string()
+            )
+            .namespace(SC_NS),
+            &["time"]
+        )?;
 
         let branch_total_count = register_int_gauge!(Opts::new(
             format!("{}{}", PRIFIX, "branch_total_count"),
@@ -66,7 +73,7 @@ impl ChainMetrics {
             rollback_count,
             broadcast_head_count,
             verify_fail_count,
-            exe_block_total_time,
+            exe_block_time,
             branch_total_count,
         })
     }
