@@ -22,10 +22,8 @@ pub struct StratumClient {
 
 impl StratumClient {
     pub fn new(config: &MinerConfig) -> Result<Self> {
-        let tcp_stream = task::block_on(async {
-            let tcp_stream = TcpStream::connect(&config.stratum_server).await;
-            tcp_stream
-        })?;
+        let tcp_stream =
+            task::block_on(async { TcpStream::connect(&config.stratum_server).await })?;
         let tcp_stream = Arc::new(tcp_stream);
         let (request_tx, mut request_rx) = mpsc::unbounded::<Vec<u8>>();
         let writer = tcp_stream.clone();
@@ -74,14 +72,14 @@ impl StratumClient {
         let nonce = hex::encode(buf);
         let params = vec![json!(0), json!(0), json!(nonce)];
         let method = "mining.submit".to_owned();
-        let _ = self.request(method, params, 0).await?;
+        self.request(method, params, 0).await?;
         Ok(())
     }
 
     async fn auth(&mut self, tcp_stream: Arc<TcpStream>) -> Result<bool> {
         let params = vec![json!("miner"), json!("")];
         let method = "mining.authorize".to_owned();
-        let _ = self.request(method, params, 0).await?;
+        self.request(method, params, 0).await?;
         let mut buf = String::new();
         BufReader::new(&*tcp_stream).read_line(&mut buf).await?;
         let output =
@@ -105,7 +103,7 @@ impl StratumClient {
             let header = values.pop().unwrap().as_str().unwrap().as_bytes().to_vec();
             return Ok((header, difficulty));
         }
-        return Err(anyhow::anyhow!("mining.notify with bad params"));
+        Err(anyhow::anyhow!("mining.notify with bad params"))
     }
 
     async fn request(&mut self, method: String, params: Vec<Value>, id: u64) -> Result<()> {
@@ -121,7 +119,7 @@ impl StratumClient {
             "Request to stratum: {}",
             String::from_utf8(req.clone()).unwrap()
         );
-        let _ = self.request_tx.send(req).await?;
+        self.request_tx.send(req).await?;
         Ok(())
     }
 }
