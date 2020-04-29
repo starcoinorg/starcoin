@@ -10,6 +10,7 @@ use parking_lot::RwLock;
 // use itertools;
 use crate::helper::{get_block_by_hash, get_hash_by_number, get_header_by_hash};
 use crate::state_sync::StateSyncTaskActor;
+use crate::sync_metrics::{LABEL_BLOCK, LABEL_HASH, LABEL_STATE, SYNC_METRICS};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
@@ -242,6 +243,10 @@ where
         storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
     ) {
+        SYNC_METRICS
+            .sync_count
+            .with_label_values(&[LABEL_STATE])
+            .inc();
         if let Err(e) = Self::sync_state_inner(
             self_peer_id,
             main_network,
@@ -253,6 +258,11 @@ where
         .await
         {
             error!("error : {:?}", e);
+        } else {
+            SYNC_METRICS
+                .sync_done_count
+                .with_label_values(&[LABEL_STATE])
+                .inc();
         }
     }
 
@@ -386,6 +396,10 @@ where
     ) {
         Arbiter::spawn(async move {
             debug!("peer {:?} begin sync.", self_peer_id);
+            SYNC_METRICS
+                .sync_count
+                .with_label_values(&[LABEL_BLOCK])
+                .inc();
             if let Err(e) =
                 Self::sync_block_from_best_peer_inner(self_peer_id.clone(), downloader, network)
                     .await
@@ -393,6 +407,10 @@ where
                 error!("error: {:?}", e);
             } else {
                 let _ = sync_metadata.block_sync_done();
+                SYNC_METRICS
+                    .sync_done_count
+                    .with_label_values(&[LABEL_BLOCK])
+                    .inc();
                 debug!("peer {:?} end sync.", self_peer_id);
             };
 
@@ -432,12 +450,21 @@ where
                         {
                             begin_number = next_number;
                             let sync_hash_begin_time = get_unix_ts();
+                            SYNC_METRICS
+                                .sync_total_count
+                                .with_label_values(&[LABEL_HASH])
+                                .inc_by(get_hash_by_number_msg.numbers.len() as i64);
+                            let hash_timer = SYNC_METRICS
+                                .sync_done_time
+                                .with_label_values(&[LABEL_HASH])
+                                .start_timer();
                             let batch_hash_by_number_msg = get_hash_by_number(
                                 &network,
                                 best_peer.get_peer_id(),
                                 get_hash_by_number_msg,
                             )
                             .await?;
+                            hash_timer.observe_duration();
                             let sync_hash_end_time = get_unix_ts();
                             debug!(
                                 "sync hash used time {:?}",
@@ -452,10 +479,23 @@ where
 
                             let hashs = Downloader::take_task_from_hash_pool(downloader.clone());
                             if !hashs.is_empty() {
+                                SYNC_METRICS
+                                    .sync_total_count
+                                    .with_label_values(&[LABEL_BLOCK])
+                                    .inc_by(hashs.len() as i64);
                                 let sync_block_begin_time = get_unix_ts();
+                                let block_timer = SYNC_METRICS
+                                    .sync_done_time
+                                    .with_label_values(&[LABEL_BLOCK])
+                                    .start_timer();
                                 let (headers, bodies, infos) =
                                     get_block_by_hash(&network, best_peer.get_peer_id(), hashs)
                                         .await?;
+                                block_timer.observe_duration();
+                                SYNC_METRICS
+                                    .sync_succ_count
+                                    .with_label_values(&[LABEL_BLOCK])
+                                    .inc_by(headers.headers.len() as i64);
                                 let sync_block_end_time = get_unix_ts();
                                 debug!(
                                     "sync block used time {:?}",
@@ -780,6 +820,10 @@ where
             downloader
                 .hash_pool
                 .insert(peer.clone(), hash.number.clone(), hash);
+            SYNC_METRICS
+                .sync_succ_count
+                .with_label_values(&[LABEL_HASH])
+                .inc();
         }
     }
 
