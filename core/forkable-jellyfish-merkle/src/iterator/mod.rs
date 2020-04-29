@@ -132,11 +132,11 @@ where
                 Some(child) => {
                     // If this child exists, we just push the node onto stack and repeat.
                     parent_stack.push(NodeVisitInfo::new_next_child_to_visit(
-                        current_node_key.clone(),
+                        current_node_key,
                         internal_node.clone(),
                         child_index,
                     ));
-                    current_node_key = child.hash.clone();
+                    current_node_key = child.hash;
                     // current_node_key.gen_child_node_key(child.version, child_index);
                 }
                 None => {
