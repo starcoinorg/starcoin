@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::bus::BusImpl;
+use crate::bus::SysBus;
 use actix::prelude::*;
 use anyhow::Result;
 use futures::{
@@ -11,7 +11,7 @@ use futures::{
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-mod bus;
+pub mod bus;
 
 #[derive(Debug, Message)]
 #[rtype(result = "()")]
@@ -23,7 +23,7 @@ where
     pub recipient: Recipient<M>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Channel<M: 'static>
 where
     M: Message + Send + Clone + Debug,
@@ -52,7 +52,7 @@ where
     type Result = Result<mpsc::UnboundedReceiver<M>>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Oneshot<M: 'static>
 where
     M: Message + Send + Clone + Debug,
@@ -115,14 +115,12 @@ pub trait Bus {
 }
 
 pub struct BusActor {
-    bus: BusImpl,
+    bus: SysBus,
 }
 
 impl BusActor {
     pub fn launch() -> Addr<BusActor> {
-        let bus = BusActor {
-            bus: BusImpl::new(),
-        };
+        let bus = BusActor { bus: SysBus::new() };
         bus.start()
     }
 }
@@ -198,7 +196,7 @@ impl Bus for Addr<BusActor> {
     {
         self.send(Channel::<M>::new())
             .await
-            .map_err(|e| Into::<anyhow::Error>::into(e))?
+            .map_err(Into::<anyhow::Error>::into)?
     }
 
     async fn oneshot<M: 'static>(self) -> Result<M>
@@ -209,9 +207,7 @@ impl Bus for Addr<BusActor> {
         self.send(Oneshot::<M>::new())
             .then(|result| async {
                 match result {
-                    Ok(receiver) => receiver?
-                        .await
-                        .map_err(|err| Into::<anyhow::Error>::into(err)),
+                    Ok(receiver) => receiver?.await.map_err(Into::<anyhow::Error>::into),
                     Err(err) => Err(Into::<anyhow::Error>::into(err)),
                 }
             })
