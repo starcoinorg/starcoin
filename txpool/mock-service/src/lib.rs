@@ -66,7 +66,7 @@ impl TxPoolAsyncService for MockTxPoolService {
             None => Ok(self.pool.lock().unwrap().clone()),
         }
     }
-    async fn next_sequence_number(self, address: AccountAddress) -> Result<Option<u64>> {
+    async fn next_sequence_number(self, _address: AccountAddress) -> Result<Option<u64>> {
         todo!()
     }
 
