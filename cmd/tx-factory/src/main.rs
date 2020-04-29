@@ -31,7 +31,7 @@ pub struct TxFactoryOpt {
     #[structopt(
         long,
         short = "i",
-        default_value = "3000",
+        default_value = "1000",
         help = "interval(in ms) of txn gen"
     )]
     pub interval: u64,
@@ -62,7 +62,6 @@ pub struct TxFactoryOpt {
 fn get_wallet_account(
     client: &RpcClient,
     account_address: Option<AccountAddress>,
-    account_password: String,
 ) -> Result<WalletAccount> {
     let account = match account_address {
         None => {
@@ -81,13 +80,6 @@ fn get_wallet_account(
         },
     };
 
-    // try unlock account
-    client.wallet_unlock(
-        account.address,
-        account_password,
-        Duration::from_secs(60 * 10),
-    )?;
-
     Ok(account)
 }
 
@@ -100,7 +92,7 @@ fn main() {
     let account_password = opts.account_password.clone();
 
     let client = RpcClient::connect_ipc(opts.ipc_path).expect("ipc connect success");
-    let account = get_wallet_account(&client, account_address, account_password.clone()).unwrap();
+    let account = get_wallet_account(&client, account_address).unwrap();
 
     let receiver_address = opts.receiver_address.unwrap_or(association_address());
     let receiver_public_key = opts.receiver_public_key.clone();
@@ -114,13 +106,19 @@ fn main() {
 
     let txn_generator =
         MockTxnGenerator::new(account.clone(), receiver_address, receiver_auth_key_prefix);
-    let mut tx_mocker = TxnMocker {
+    let tx_mocker = TxnMocker::new(
         client,
-        generator: txn_generator,
-        unlock_duration: Duration::from_secs(60 * 10),
-        account_unlock_time: None,
-        account_address: account.address,
+        txn_generator,
+        account.address,
         account_password,
+        Duration::from_secs(60 * 10),
+    );
+
+    let mut tx_mocker = match tx_mocker {
+        Ok(t) => t,
+        Err(e) => {
+            panic!("mocker init error: {:?}", e);
+        }
     };
 
     let stopping_signal = Arc::new(AtomicBool::new(false));
@@ -135,6 +133,12 @@ fn main() {
             match success {
                 Ok(s) => {
                     warn!("submit status: {}", s);
+                    // if txn is rejected, recheck sequence number, and start over
+                    if !s {
+                        if let Err(e) = tx_mocker.recheck_sequence_number() {
+                            error!("fail to start over, err: {:?}", e);
+                        }
+                    }
                 }
                 Err(e) => {
                     error!("fail to generate/submit mock txn, err: {:?}", &e);
@@ -150,19 +154,83 @@ fn main() {
 struct TxnMocker {
     client: RpcClient,
     generator: MockTxnGenerator,
-    account_unlock_time: Option<Instant>,
     account_address: AccountAddress,
     account_password: String,
     unlock_duration: Duration,
+
+    next_sequence_number: u64,
+    account_unlock_time: Option<Instant>,
 }
 
 impl TxnMocker {
-    fn gen_and_submit_txn(&mut self) -> Result<bool> {
-        let state_reader = RemoteStateReader::new(&self.client);
+    pub fn new(
+        client: RpcClient,
+        generator: MockTxnGenerator,
+        account_address: AccountAddress,
+        account_password: String,
+        unlock_duration: Duration,
+    ) -> Result<Self> {
+        let state_reader = RemoteStateReader::new(&client);
         let account_state_reader = AccountStateReader::new(&state_reader);
+
+        let account_resource = account_state_reader.get_account_resource(&account_address)?;
+        if account_resource.is_none() {
+            bail!("account {} not exists, please faucet it", account_address);
+        }
+        let account_resource = account_resource.unwrap();
+        let mut next_sequence_number = account_resource.sequence_number();
+        // if txpool already has some future txn, use the sequence number after that.
+        let seq_number_in_txpool = client.next_sequence_number_in_txpool(account_address)?;
+        if let Some(n) = seq_number_in_txpool {
+            if n > next_sequence_number {
+                next_sequence_number = n;
+            }
+        }
+        Ok(Self {
+            client,
+            generator,
+            account_address,
+            account_password,
+            unlock_duration,
+            account_unlock_time: None,
+            next_sequence_number,
+        })
+    }
+}
+
+impl TxnMocker {
+    fn recheck_sequence_number(&mut self) -> Result<()> {
+        let seq_number_in_pool = self
+            .client
+            .next_sequence_number_in_txpool(self.account_address)?;
+
+        self.next_sequence_number = match seq_number_in_pool {
+            Some(n) => n,
+            None => {
+                let state_reader = RemoteStateReader::new(&self.client);
+                let account_state_reader = AccountStateReader::new(&state_reader);
+
+                let account_resource =
+                    account_state_reader.get_account_resource(&self.account_address)?;
+                if account_resource.is_none() {
+                    bail!(
+                        "account {} not exists, please faucet it",
+                        &self.account_address
+                    );
+                }
+                account_resource.unwrap().sequence_number()
+            }
+        };
+        Ok(())
+    }
+    fn gen_and_submit_txn(&mut self) -> Result<bool> {
+        // check txpool, in case some txn is failed, and the sequence number will be gap-ed.
+        // let seq_number_in_pool = self.client.next_sequence_number_in_txpool(self.account_address)?;
+        // if let Some(n) = seq_number_in_pool {
+        // }
         let raw_txn = self
             .generator
-            .generate_mock_txn::<Executor>(&account_state_reader)?;
+            .generate_mock_txn::<Executor>(self.next_sequence_number)?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
         let unlock_time = self.account_unlock_time.clone();
@@ -197,6 +265,12 @@ impl TxnMocker {
             user_txn.sender(),
             user_txn.sequence_number(),
         );
-        self.client.submit_transaction(user_txn)
+        let result = self.client.submit_transaction(user_txn);
+
+        // increase sequence number if added in pool.
+        if matches!(result, Ok(t) if t) {
+            self.next_sequence_number += 1;
+        }
+        result
     }
 }

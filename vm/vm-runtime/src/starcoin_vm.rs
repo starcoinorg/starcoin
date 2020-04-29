@@ -488,9 +488,9 @@ impl StarcoinVM {
     ) -> TransactionOutput {
         let mut state_store = StateStore::new(chain_state);
         let mut data_cache = BlockDataCache::new(&state_store);
-        self.load_gas_schedule(&data_cache);
         match txn {
             Transaction::UserTransaction(txn) => {
+                self.load_gas_schedule(&data_cache);
                 let libra_txn = txn.clone().into();
                 let txn_data = TransactionMetadata::new(&libra_txn);
 
@@ -525,6 +525,7 @@ impl StarcoinVM {
                 output
             }
             Transaction::BlockMetadata(block_metadata) => {
+                self.load_gas_schedule(&data_cache);
                 let result = self
                     .process_block_metadata(&mut data_cache, block_metadata)
                     .unwrap_or_else(discard_libra_error_output);

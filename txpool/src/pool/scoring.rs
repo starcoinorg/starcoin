@@ -110,7 +110,8 @@ where
         }
     }
 
-    fn should_ignore_sender_limit(&self, new: &P) -> bool {
-        new.priority().is_local()
+    fn should_ignore_sender_limit(&self, _new: &P) -> bool {
+        false
+        // new.priority().is_local()
     }
 }

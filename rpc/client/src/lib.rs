@@ -150,6 +150,20 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn next_sequence_number_in_txpool(
+        &self,
+        address: AccountAddress,
+    ) -> anyhow::Result<Option<u64>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .txpool_client
+                .next_sequence_number(address)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<bool> {
         self.call_rpc_blocking(|inner| async move {
             inner.txpool_client.submit_transaction(txn).compat().await
