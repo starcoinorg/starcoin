@@ -35,7 +35,7 @@ function start_txfactory() {
     docker_rebuild
     docker rm -f $name 1>/dev/null
     # docker-machine ssh $host_name rm -f $cfg_root/$name/*/starcoin.ipc
-    docker run -td --restart=on-failure:1 -v $cfg_root/$name:/.starcoin --name $name ./txfactory --ipc-path /.starcoin/halley/starcoin.ipc $@
+    docker run -td --restart=on-failure:1 -v $cfg_root/$name:/.starcoin --name $name --entrypoint "/starcoin/txfactory" starcoin:latest --ipc-path /.starcoin/halley/starcoin.ipc $@
 }
 
 function start_halley_seed(){
