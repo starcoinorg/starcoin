@@ -33,6 +33,7 @@ pub mod block_info;
 pub mod branch;
 pub mod cache_storage;
 pub mod db_storage;
+mod metrics;
 pub mod state_node;
 pub mod storage;
 #[cfg(test)]
