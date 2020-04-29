@@ -6191,6 +6191,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-metrics",
  "starcoin-state-tree",
  "starcoin-types",
 ]
