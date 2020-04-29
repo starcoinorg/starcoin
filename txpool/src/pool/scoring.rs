@@ -95,7 +95,7 @@ where
                     super::Priority::Retracted => 10,
                     super::Priority::Regular => 0,
                 };
-                scores[i] = scores[i] << boost;
+                scores[i] <<= boost;
             }
             // We are only sending an event in case of penalization.
             // So just lower the priority of all non-local transactions.
@@ -103,7 +103,7 @@ where
                 for (score, tx) in scores.iter_mut().zip(txs) {
                     // Never penalize local transactions.
                     if !tx.priority().is_local() {
-                        *score = *score >> 3;
+                        *score >>= 3;
                     }
                 }
             }

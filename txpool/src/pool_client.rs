@@ -75,7 +75,7 @@ impl CachedSeqNumberClient {
     }
 
     fn latest_sequence_number(&self, address: &AccountAddress) -> u64 {
-        let access_path = AccessPath::new_for_account(address.clone());
+        let access_path = AccessPath::new_for_account(*address);
         let state = self
             .statedb
             .get(&access_path)

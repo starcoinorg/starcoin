@@ -199,23 +199,20 @@ impl actix::Handler<SystemEvents> for TxPoolActor {
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            SystemEvents::NewHeadBlock(block) => {
-                self.chain_header = block.get_block().header().clone();
-                self.sequence_number_cache.clear();
+        if let SystemEvents::NewHeadBlock(block) = msg {
+            self.chain_header = block.get_block().header().clone();
+            self.sequence_number_cache.clear();
 
-                // NOTICE: as the new head block event is sepeated with chain_new_block event,
-                // we need to remove invalid txn here.
-                // In fact, it would be better if caller can make it into one.
-                // In this situation, we don't need to reimport invalid txn on chain_new_block.
-                let client = PoolClient::new(
-                    self.chain_header.clone(),
-                    self.storage.clone(),
-                    self.sequence_number_cache.clone(),
-                );
-                self.queue.cull(client)
-            }
-            _ => {}
+            // NOTICE: as the new head block event is sepeated with chain_new_block event,
+            // we need to remove invalid txn here.
+            // In fact, it would be better if caller can make it into one.
+            // In this situation, we don't need to reimport invalid txn on chain_new_block.
+            let client = PoolClient::new(
+                self.chain_header.clone(),
+                self.storage.clone(),
+                self.sequence_number_cache.clone(),
+            );
+            self.queue.cull(client)
         }
     }
 }
@@ -380,7 +377,7 @@ impl actix::Handler<ChainNewBlock> for TxPoolActor {
         let txns = retracted
             .into_iter()
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
-        let _ = self.queue.import(client.clone(), txns);
+        let _ = self.queue.import(client, txns);
         // ignore import result
         // for r in import_result {
         //     r?;
