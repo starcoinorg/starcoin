@@ -8,22 +8,20 @@ use starcoin_crypto::HashValue;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
 
+#[derive(Default)]
 pub struct MockStateNodeStore {
     nodes: Mutex<HashMap<HashValue, StateNode>>,
 }
 
 impl MockStateNodeStore {
     pub fn new() -> Self {
-        let instance = Self {
-            nodes: Mutex::new(HashMap::new()),
-        };
+        Self::default()
         // instance.put(*SPARSE_MERKLE_PLACEHOLDER_HASH, Node::new_null().into());
-        instance
     }
 
     pub fn all_nodes(&self) -> Vec<(HashValue, StateNode)> {
         let nodes = self.nodes.lock().unwrap();
-        nodes.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+        nodes.iter().map(|(k, v)| (*k, v.clone())).collect()
     }
 }
 

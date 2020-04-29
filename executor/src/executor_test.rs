@@ -11,7 +11,7 @@ use compiler::Compiler;
 use crypto::keygen::KeyGen;
 use logger::prelude::*;
 use starcoin_config::ChainNetwork;
-use starcoin_state_api::{ChainState, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 use std::sync::Arc;
@@ -30,6 +30,7 @@ use types::{
 use vm_runtime::mock_vm::{
     encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, KEEP_STATUS,
 };
+use vm_runtime::type_tag_parser::parse_type_tags;
 use vm_runtime::{
     account::Account,
     common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn},
@@ -412,7 +413,23 @@ fn test_publish_module() -> Result<()> {
 
         let balance = get_balance(account1.address().clone(), &chain_state);
         debug!("balance= {:?}", balance);
+
+        let token = String::from("0x0::Starcoin::T");
+        let token_balance =
+            get_token_balance(account1.address().clone(), &chain_state, token)?.unwrap();
+        assert_eq!(balance, token_balance);
     }
 
     Ok(())
+}
+
+fn get_token_balance(
+    address: AccountAddress,
+    state_db: &dyn ChainStateReader,
+    token: String,
+) -> Result<Option<u64>> {
+    let account_state_reader = AccountStateReader::new(state_db);
+    let type_tag = parse_type_tags(token.as_ref())?[0].clone().into();
+    debug!("type_tag= {:?}", type_tag);
+    account_state_reader.get_token_balance(&address, &type_tag)
 }

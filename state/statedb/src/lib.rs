@@ -88,7 +88,7 @@ impl AccountStateObject {
             .storage_roots()
             .iter()
             .map(|root| match root {
-                Some(root) => Some(StateTree::new(store.clone(), Some(root.clone()))),
+                Some(root) => Some(StateTree::new(store.clone(), Some(*root))),
                 None => None,
             })
             .collect();
@@ -278,15 +278,15 @@ impl ChainStateDB {
         let object = match item {
             Some(item) => item.as_object(),
             None => {
-                let object =
-                    self.get_account_state_by_hash(&address_hash)?
-                        .and_then(|account_state| {
-                            Some(Arc::new(AccountStateObject::new(
-                                *account_address,
-                                account_state,
-                                self.store.clone(),
-                            )))
-                        });
+                let object = self
+                    .get_account_state_by_hash(&address_hash)?
+                    .map(|account_state| {
+                        Arc::new(AccountStateObject::new(
+                            *account_address,
+                            account_state,
+                            self.store.clone(),
+                        ))
+                    });
                 let cache_item = match &object {
                     Some(object) => CacheItem::new(object.clone()),
                     None => CacheItem::AccountNotExist(),
@@ -361,12 +361,12 @@ impl ChainStateReader for ChainStateDB {
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
         Ok(self
             .get_account_state_object_option(address)?
-            .and_then(|state_object| Some(state_object.to_state())))
+            .map(|state_object| state_object.to_state()))
     }
 
     fn is_genesis(&self) -> bool {
         //TODO
-        return false;
+        false
     }
 
     fn state_root(&self) -> HashValue {
@@ -392,7 +392,7 @@ impl ChainStateReader for ChainStateDB {
             }
             let account_state_set = AccountStateSet::new(state_sets);
 
-            account_states.push((address_hash.clone(), account_state_set));
+            account_states.push((*address_hash, account_state_set));
         }
         Ok(ChainStateSet::new(account_states))
     }
@@ -450,7 +450,7 @@ impl ChainStateWriter for ChainStateDB {
         for (address_hash, account_state_set) in chain_state_set.state_sets() {
             let account_state = self
                 .get_account_state_by_hash(address_hash)?
-                .unwrap_or(AccountState::default());
+                .unwrap_or_default();
             let mut new_storage_roots = vec![];
             for (storage_root, state_set) in account_state
                 .storage_roots()

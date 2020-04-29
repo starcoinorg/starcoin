@@ -1,4 +1,4 @@
-use 0x2f1ea8901faef384366c615447e460da::MyToken;
+use 0xeae6b71b9583150c1c32bc9500ee5d15::MyToken;
 use 0x0::LibraAccount;
 
 fun main(payee: address, auth_key_prefix: vector<u8>, amount: u64) {

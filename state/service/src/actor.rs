@@ -65,14 +65,14 @@ impl Handler<StateRequest> for ChainStateActor {
         let response = match msg {
             StateRequest::Get(access_path) => StateResponse::State(self.service.get(&access_path)?),
             StateRequest::GetWithProof(access_path) => {
-                StateResponse::StateWithProof(self.service.get_with_proof(&access_path)?)
+                StateResponse::StateWithProof(Box::new(self.service.get_with_proof(&access_path)?))
             }
             StateRequest::GetAccountState(address) => {
                 StateResponse::AccountState(self.service.get_account_state(&address)?)
             }
             StateRequest::StateRoot() => StateResponse::StateRoot(self.service.state_root()),
         };
-        return Ok(response);
+        Ok(response)
     }
 }
 
@@ -110,7 +110,7 @@ impl ChainStateAsyncService for ChainStateActorRef {
             .0
             .send(StateRequest::Get(access_path))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(Into::<Error>::into)??;
         if let StateResponse::State(state) = response {
             Ok(state)
         } else {
@@ -123,9 +123,9 @@ impl ChainStateAsyncService for ChainStateActorRef {
             .0
             .send(StateRequest::GetWithProof(access_path))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(Into::<Error>::into)??;
         if let StateResponse::StateWithProof(state) = response {
-            Ok(state)
+            Ok(*state)
         } else {
             panic!("Unexpect response type.")
         }
@@ -136,7 +136,7 @@ impl ChainStateAsyncService for ChainStateActorRef {
             .0
             .send(StateRequest::GetAccountState(address))
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(Into::<Error>::into)??;
         if let StateResponse::AccountState(state) = response {
             Ok(state)
         } else {
@@ -149,7 +149,7 @@ impl ChainStateAsyncService for ChainStateActorRef {
             .0
             .send(StateRequest::StateRoot())
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(Into::<Error>::into)??;
         if let StateResponse::StateRoot(root) = response {
             Ok(root)
         } else {

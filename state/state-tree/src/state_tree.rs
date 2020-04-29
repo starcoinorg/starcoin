@@ -78,7 +78,7 @@ impl StateCache {
                         .stale_node_index_batch
                         .insert(StaleNodeIndex {
                             stale_since_version: root_hash,
-                            node_key: stale_node.node_key.clone(),
+                            node_key: stale_node.node_key,
                         });
                 }
                 Some(n) => {
@@ -210,7 +210,7 @@ impl StateTree {
         let mut guard = self.updates.write().unwrap();
         let updates = guard
             .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
+            .map(|(k, v)| (*k, v.clone()))
             .collect::<Vec<_>>();
         let new_root_hash = self.updates(updates)?;
         guard.clear();

@@ -1,6 +1,6 @@
 # Starcoin
 
-![Build and Test](https://github.com/starcoinorg/starcoin/workflows/Build%20and%20Test/badge.svg)
+[![Build and Test](https://github.com/starcoinorg/starcoin/workflows/Build%20and%20Test/badge.svg)](https://github.com/starcoinorg/starcoin/actions?query=workflow%3A%22Build+and+Test%22+branch%3Amaster)
 [![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/starcoinorg/starcoin/branch/master/graph/badge.svg)](https://codecov.io/gh/starcoinorg/starcoin)
 

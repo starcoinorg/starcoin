@@ -10,7 +10,7 @@ SEED=/ip4/$SEED_HOST/tcp/$SEED_PORT/p2p/QmcejhDq4ubxLnx7sNENECJroAuepMiL6Zkjp63L
 cfg_root=/mnt/volume_01/starcoin_cfg
 
 function docker_rebuild(){
-    echo  -e "*\n"'!'"starcoin"> $DIR/../target/debug/.dockerignore
+    echo  -e "*\n"'!'"starcoin""\n!txfactory"> $DIR/../target/debug/.dockerignore
     docker build -f $DIR/DockerfileCi -t starcoin:latest  $DIR/../target/debug/
 
 }
@@ -28,6 +28,16 @@ function start_starcoin(){
     docker run -td --restart=on-failure:1 -p $port:9840 -p $m_port:9101 -v $cfg_root/$name:/.starcoin --name $name starcoin -d /.starcoin $@
 }
 
+function start_txfactory() {
+    local host_name=$1
+    local name=$2
+    shift 2;
+    docker_rebuild
+    docker rm -f $name 1>/dev/null
+    # docker-machine ssh $host_name rm -f $cfg_root/$name/*/starcoin.ipc
+    docker run -td --restart=on-failure:1 -v $cfg_root/$name:/.starcoin --name $name --entrypoint "/starcoin/txfactory" starcoin:latest --ipc-path /.starcoin/halley/starcoin.ipc $@
+}
+
 function start_halley_seed(){
     start_starcoin $1 $2 $3 $4 -n halley -s full --node-key $SEED_NODE_KEY
 }
@@ -40,3 +50,4 @@ function start_halley_node(){
 start_halley_seed starcoin-0 starcoin-0 $SEED_PORT 9101
 start_halley_node starcoin-0 starcoin-1 9841 9102
 start_halley_node starcoin-0 starcoin-2 9842 9103
+start_txfactory starcoin-0 txfactory-0

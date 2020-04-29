@@ -276,7 +276,7 @@ impl TransactionQueue {
             transaction_to_replace,
         );
 
-        let mut replace =
+        let replace =
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
         let mut results = Vec::new();
@@ -297,7 +297,7 @@ impl TransactionQueue {
                 .and_then(|verified| {
                     self.pool
                         .write()
-                        .import(verified, &mut replace)
+                        .import(verified, &replace)
                         .map_err(convert_error)
                 });
 
@@ -385,16 +385,14 @@ impl TransactionQueue {
         match ordering {
             // In case we don't have a cached set, but we don't care about order
             // just return the unordered set.
-            PendingOrdering::Unordered => {
-                return self
-                    .pool
-                    .read()
-                    .unordered_pending(ready)
-                    .take(max_len)
-                    .collect()
-            }
+            PendingOrdering::Unordered => self
+                .pool
+                .read()
+                .unordered_pending(ready)
+                .take(max_len)
+                .collect(),
             PendingOrdering::Priority => {
-                let pending = self.pool.read().pending(ready).take(max_len).collect();
+                self.pool.read().pending(ready).take(max_len).collect()
                 // *cached_pending = CachedPending {
                 //     block_number,
                 //     current_timestamp,
@@ -403,7 +401,6 @@ impl TransactionQueue {
                 //     pending: Some(pending.clone()),
                 //     max_len,
                 // };
-                pending
             }
         }
     }
@@ -447,8 +444,7 @@ impl TransactionQueue {
         let mut removed = 0;
         let senders: Vec<_> = {
             let pool = &self.pool.read();
-            let senders = pool.senders().cloned().collect();
-            senders
+            pool.senders().cloned().collect()
         };
         for chunk in senders.chunks(CULL_SENDERS_CHUNK) {
             trace_time!("pool::cull::chunk");

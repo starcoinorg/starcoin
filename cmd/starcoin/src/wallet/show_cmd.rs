@@ -9,11 +9,19 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_runtime::type_tag_parser::parse_type_tags;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "show")]
 pub struct ShowOpt {
+    #[structopt(
+        short = "t",
+        long = "token",
+        name = "token_type",
+        help = "token's type tag, for example: 0x0::Starcoin::T"
+    )]
+    type_tag: Option<String>,
     #[structopt(name = "account_address")]
     account_address: AccountAddress,
 }
@@ -42,7 +50,16 @@ impl CommandAction for ShowCommand {
         let sequence_number = account_state_reader
             .get_account_resource(account.address())?
             .map(|res| res.sequence_number());
+
         let balance = account_state_reader.get_balance(account.address())?;
+
+        let token_balance = match opt.type_tag.clone() {
+            Some(token) => {
+                let tag = parse_type_tags(token.as_ref())?[0].clone().into();
+                account_state_reader.get_token_balance(account.address(), &tag)?
+            }
+            None => None,
+        };
 
         let auth_key_prefix =
             hex::encode(AccountAddress::authentication_key(&account.public_key).prefix());
@@ -51,6 +68,7 @@ impl CommandAction for ShowCommand {
             account,
             sequence_number,
             balance,
+            token_balance,
         })
     }
 }

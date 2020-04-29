@@ -67,7 +67,7 @@ where
                 // With replacement transactions we can safely return `InsertNew` here, because
                 // we don't need to remove `old` (worst transaction in the pool) since `new` will replace
                 // some other transaction in the pool so we will never go above limit anyway.
-                if let Some(txs) = (&new).pooled_by_sender {
+                if let Some(txs) = new.pooled_by_sender {
                     if let Ok(index) = txs.binary_search_by(|old| self.scoring.compare(old, &new)) {
                         return match self.scoring.choose(&txs[index], &new) {
                             Choice::ReplaceOld => Choice::InsertNew,

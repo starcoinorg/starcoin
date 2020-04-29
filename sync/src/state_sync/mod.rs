@@ -1,4 +1,5 @@
 use crate::helper::{get_accumulator_node_by_node_hash, get_state_node_by_node_hash};
+use crate::sync_metrics::{LABEL_STATE, SYNC_METRICS, _LABEL_ACCUMULATOR};
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
@@ -45,6 +46,10 @@ async fn _sync_accumulator_node(
     network_service: NetworkAsyncService,
     address: Addr<StateSyncTaskActor>,
 ) {
+    let accumulator_timer = SYNC_METRICS
+        .sync_done_time
+        .with_label_values(&[_LABEL_ACCUMULATOR])
+        .start_timer();
     let accumulator_node = match get_accumulator_node_by_node_hash(
         &network_service,
         peer_id.clone(),
@@ -58,8 +63,16 @@ async fn _sync_accumulator_node(
                 accumulator_node
             );
             if node_key == accumulator_node.hash() {
+                SYNC_METRICS
+                    .sync_succ_count
+                    .with_label_values(&[_LABEL_ACCUMULATOR])
+                    .inc();
                 Some(accumulator_node)
             } else {
+                SYNC_METRICS
+                    .sync_verify_fail_count
+                    .with_label_values(&[_LABEL_ACCUMULATOR])
+                    .inc();
                 warn!(
                     "accumulator node hash not match {} :{:?}",
                     node_key,
@@ -69,10 +82,15 @@ async fn _sync_accumulator_node(
             }
         }
         Err(e) => {
+            SYNC_METRICS
+                .sync_fail_count
+                .with_label_values(&[_LABEL_ACCUMULATOR])
+                .inc();
             error!("error: {:?}", e);
             None
         }
     };
+    accumulator_timer.observe_duration();
 
     if let Err(err) = address.try_send(StateSyncTaskEvent::_new_accumulator(
         peer_id,
@@ -91,13 +109,25 @@ async fn sync_state_node(
 ) {
     debug!("sync_state_node : {:?}", node_key);
 
+    let state_timer = SYNC_METRICS
+        .sync_done_time
+        .with_label_values(&[LABEL_STATE])
+        .start_timer();
     let state_node =
         match get_state_node_by_node_hash(&network_service, peer_id.clone(), node_key).await {
             Ok(state_node) => {
                 debug!("get_state_node_by_node_hash_resp:{:?}", state_node);
                 if node_key == state_node.0.hash() {
+                    SYNC_METRICS
+                        .sync_succ_count
+                        .with_label_values(&[LABEL_STATE])
+                        .inc();
                     Some(state_node)
                 } else {
+                    SYNC_METRICS
+                        .sync_verify_fail_count
+                        .with_label_values(&[LABEL_STATE])
+                        .inc();
                     warn!(
                         "state node hash not match {} :{:?}",
                         node_key,
@@ -107,10 +137,15 @@ async fn sync_state_node(
                 }
             }
             Err(e) => {
+                SYNC_METRICS
+                    .sync_fail_count
+                    .with_label_values(&[LABEL_STATE])
+                    .inc();
                 error!("error: {:?}", e);
                 None
             }
         };
+    state_timer.observe_duration();
 
     if let Err(err) = address.try_send(StateSyncTaskEvent::new_state(peer_id, node_key, state_node))
     {
@@ -273,6 +308,10 @@ impl StateSyncTaskActor {
         let value = lock.pop_front();
         if value.is_some() {
             let (node_key, is_global) = value.unwrap();
+            SYNC_METRICS
+                .sync_total_count
+                .with_label_values(&[LABEL_STATE])
+                .inc();
             if let Some(state_node) = self.storage.get(&node_key).unwrap() {
                 debug!("find state_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), (node_key.clone(), is_global));
@@ -378,6 +417,10 @@ impl StateSyncTaskActor {
         let value = lock.pop_front();
         if value.is_some() {
             let node_key = value.unwrap();
+            SYNC_METRICS
+                .sync_total_count
+                .with_label_values(&[_LABEL_ACCUMULATOR])
+                .inc();
             if let Some(accumulator_node) = self.storage.get_node(node_key.clone()).unwrap() {
                 debug!("find accumulator_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), node_key.clone());
