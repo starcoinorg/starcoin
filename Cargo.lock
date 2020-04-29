@@ -535,6 +535,7 @@ dependencies = [
  "language-e2e-tests 0.1.0",
  "proptest",
  "starcoin-accumulator",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-storage",
@@ -5960,7 +5961,6 @@ name = "starcoin-genesis"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "libra-temppath",
  "serde",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",

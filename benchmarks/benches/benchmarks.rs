@@ -18,7 +18,7 @@ use storage::Storage;
 fn storage_transaction(c: &mut Criterion) {
     c.bench_function("storage_transaction", |b| {
         let cache_storage = Arc::new(CacheStorage::new());
-        let db_storage = Arc::new(DBStorage::new(std::env::temp_dir()));
+        let db_storage = Arc::new(DBStorage::new(starcoin_config::temp_path().as_ref()));
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             cache_storage,
             db_storage,

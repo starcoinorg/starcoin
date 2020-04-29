@@ -55,10 +55,10 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
     NodeConfig::load_with_opt(opt)
 }
 
-pub fn temp_path() -> TempPath {
+pub fn temp_path() -> DataDirPath {
     let temp_path = TempPath::new();
     temp_path.create_as_dir().expect("Create temp dir fail.");
-    temp_path
+    DataDirPath::TempPath(Arc::from(temp_path))
 }
 
 #[derive(Debug, Clone, StructOpt, Default)]
@@ -130,7 +130,7 @@ impl BaseConfig {
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
             None => {
                 if net.is_dev() {
-                    DataDirPath::TempPath(Arc::new(temp_path()))
+                    temp_path()
                 } else {
                     DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
                 }
