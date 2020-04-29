@@ -296,7 +296,7 @@ where
 
         // Start insertion from the root node.
         let (new_root_node_key, _) = Self::insert_at(
-            root_node_key.clone(),
+            *root_node_key,
             // version,
             &mut nibble_iter,
             blob,
@@ -367,7 +367,7 @@ where
         let (new_child_key, new_child_node) = match internal_node.child(child_index) {
             Some(child) => {
                 // let child_node_key = node_key.gen_child_node_key(child.version, child_index);
-                let child_node_key = child.hash.clone();
+                let child_node_key = child.hash;
                 Self::insert_at(child_node_key, nibble_iter, blob, tree_cache)?
             }
             None if blob.is_some() => {
@@ -381,7 +381,7 @@ where
         // we can use node_key without recompute node hash
         let child_not_changed = internal_node
             .child(child_index)
-            .filter(|old| &old.hash == &new_child_key && old.is_leaf == new_child_node.is_leaf())
+            .filter(|old| old.hash == new_child_key && old.is_leaf == new_child_node.is_leaf())
             .is_some();
 
         // don't need to prune it if no change happens.
