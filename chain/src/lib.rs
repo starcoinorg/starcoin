@@ -5,6 +5,7 @@ mod chain;
 
 pub use chain::BlockChain;
 
+mod chain_metrics;
 pub mod chain_service;
 pub mod message;
 pub mod mock;
