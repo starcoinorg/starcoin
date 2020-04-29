@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain::BlockChain;
+use crate::chain_metrics::CHAIN_METRICS;
 use actix::prelude::*;
 use anyhow::{format_err, Error, Result};
 use bus::{Broadcast, BusActor};
@@ -230,6 +231,7 @@ where
         &mut self,
         header: &BlockHeader,
     ) -> Result<(bool, Option<BlockChain<C, S, P>>)> {
+        CHAIN_METRICS.try_connect_count.inc();
         let chain_info = self.collection.fork(header);
         debug!(
             "startup_info branch find_or_fork : {:?}, {:?}, :{:?}",
@@ -270,6 +272,7 @@ where
             {
                 enacted.append(&mut block.transactions().clone().to_vec());
             } else {
+                CHAIN_METRICS.rollback_count.inc();
                 debug!("rollback branch.");
                 self.collection.insert_branch(BlockChain::new(
                     self.config.clone(),
@@ -300,7 +303,7 @@ where
 
             self.commit_2_txpool(enacted, retracted);
             if self.sync_metadata.is_sync_done() {
-                info!("broadcast new header: {:?}", block.header().id());
+                CHAIN_METRICS.broadcast_head_count.inc();
                 let block_detail = BlockDetail::new(block, total_difficulty);
                 self.broadcast_2_bus(block_detail.clone());
 
@@ -310,8 +313,10 @@ where
             self.collection.insert_branch(new_branch);
         }
 
-        debug!("startup_info branch save: {:?}, {:?}", branch_id, block_id);
-        self.storage.save_branch(block_id, branch_id)?;
+        self.storage.save_branch(branch_id, block_id)?;
+        CHAIN_METRICS
+            .branch_total_count
+            .set(self.collection.startup_info.read().branches.len() as i64);
         self.save_startup()
     }
 
@@ -439,16 +444,25 @@ where
                     block_exist
                 );
                 if block_exist {
+                    CHAIN_METRICS.duplicate_conn_count.inc();
                     Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
                 } else {
                     if let Some(mut branch) = fork {
                         let fork_end_time = get_unix_ts();
                         debug!("fork used time: {}", (fork_end_time - connect_begin_time));
 
+                        let timer = CHAIN_METRICS
+                            .exe_block_time
+                            .with_label_values(&["time"])
+                            .start_timer();
+
                         let connected = branch.apply(block.clone())?;
+                        timer.observe_duration();
                         let apply_end_time = get_unix_ts();
-                        debug!("apply used time: {}", (apply_end_time - fork_end_time));
+                        let apply_total_time = apply_end_time - fork_end_time;
+                        debug!("apply used time: {}", apply_total_time);
                         if !connected {
+                            CHAIN_METRICS.verify_fail_count.inc();
                             Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                         } else {
                             self.select_head(branch)?;
@@ -490,6 +504,7 @@ where
                     //todo:1. verify block header / verify accumulator / total difficulty
                     let (block_exist, fork) = self.find_or_fork(block.header())?;
                     if block_exist {
+                        CHAIN_METRICS.duplicate_conn_count.inc();
                         Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
                     } else {
                         if let Some(mut branch) = fork {

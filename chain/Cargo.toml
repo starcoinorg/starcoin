@@ -42,6 +42,7 @@ bus = {path = "../bus", package="starcoin-bus" }
 starcoin-genesis = {path = "../core/genesis"}
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
+starcoin-metrics = {path = "../commons/metrics"}
 
 [dev-dependencies]
 starcoin-wallet-api = { path = "../wallet/api"}

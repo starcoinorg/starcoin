@@ -3,7 +3,6 @@
 
 use crate::block::{BlockHeader, BlockNumber};
 use anyhow::Result;
-use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -104,7 +103,6 @@ impl StartupInfo {
     }
 
     pub fn insert_branch(&mut self, chain_info: ChainInfo) {
-        debug!("startup_info branch insert {:?}", chain_info);
         self.remove_branch(chain_info.branch_id());
         self.branches.push(chain_info);
     }
@@ -114,10 +112,6 @@ impl StartupInfo {
             let exist = self.get_branch(self.master.branch_id());
             if exist.is_none() {
                 let tmp = self.master.clone();
-                debug!(
-                    "startup_info branch update_master move {:?}, {:?}",
-                    chain_info, tmp
-                );
                 self.branches.push(tmp);
             }
         }
