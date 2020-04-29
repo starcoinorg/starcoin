@@ -113,7 +113,7 @@ impl fmt::Debug for TransactionsPoolNotifier {
 
 impl tx_pool::Listener<Transaction> for TransactionsPoolNotifier {
     fn added(&mut self, tx: &Arc<Transaction>, _old: Option<&Arc<Transaction>>) {
-        self.tx_statuses.push((tx.hash.clone(), TxStatus::Added));
+        self.tx_statuses.push((tx.hash, TxStatus::Added));
     }
 
     fn rejected<H: fmt::Debug + fmt::LowerHex>(
@@ -121,23 +121,23 @@ impl tx_pool::Listener<Transaction> for TransactionsPoolNotifier {
         tx: &Arc<Transaction>,
         _reason: &tx_pool::Error<H>,
     ) {
-        self.tx_statuses.push((tx.hash.clone(), TxStatus::Rejected));
+        self.tx_statuses.push((tx.hash, TxStatus::Rejected));
     }
 
     fn dropped(&mut self, tx: &Arc<Transaction>, _new: Option<&Transaction>) {
-        self.tx_statuses.push((tx.hash.clone(), TxStatus::Dropped));
+        self.tx_statuses.push((tx.hash, TxStatus::Dropped));
     }
 
     fn invalid(&mut self, tx: &Arc<Transaction>) {
-        self.tx_statuses.push((tx.hash.clone(), TxStatus::Invalid));
+        self.tx_statuses.push((tx.hash, TxStatus::Invalid));
     }
 
     fn canceled(&mut self, tx: &Arc<Transaction>) {
-        self.tx_statuses.push((tx.hash.clone(), TxStatus::Canceled));
+        self.tx_statuses.push((tx.hash, TxStatus::Canceled));
     }
 
     fn culled(&mut self, tx: &Arc<Transaction>) {
-        self.tx_statuses.push((tx.hash.clone(), TxStatus::Culled));
+        self.tx_statuses.push((tx.hash, TxStatus::Culled));
     }
 }
 

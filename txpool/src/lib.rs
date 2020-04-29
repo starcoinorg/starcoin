@@ -127,7 +127,7 @@ impl TxPoolAsyncService for TxPoolRef {
         let result = self
             .addr
             .send(GetPendingTxns {
-                max_len: max_len.unwrap_or_else(|| u64::max_value()),
+                max_len: max_len.unwrap_or(u64::max_value()),
             })
             .await;
         timer.observe_duration();

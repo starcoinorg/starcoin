@@ -11,14 +11,14 @@ use types::account_address::AccountAddress;
 use types::transaction;
 use types::transaction::SignedUserTransaction;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct MockTxPoolService {
     pool: Arc<Mutex<Vec<SignedUserTransaction>>>,
 }
 
 impl MockTxPoolService {
     pub fn new() -> Self {
-        Self::new_with_txns(vec![])
+        Self::default()
     }
 
     pub fn new_with_txns(txns: Vec<SignedUserTransaction>) -> Self {
@@ -61,7 +61,7 @@ impl TxPoolAsyncService for MockTxPoolService {
                 .unwrap()
                 .iter()
                 .take(max as usize)
-                .map(|c| c.clone())
+                .cloned()
                 .collect::<Vec<_>>()),
             None => Ok(self.pool.lock().unwrap().clone()),
         }

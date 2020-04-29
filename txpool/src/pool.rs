@@ -80,8 +80,8 @@ pub enum Priority {
 }
 
 impl Priority {
-    fn is_local(&self) -> bool {
-        match *self {
+    fn is_local(self) -> bool {
+        match self {
             Priority::Local => true,
             _ => false,
         }
@@ -110,8 +110,8 @@ impl PoolTransaction {
     /// Return transaction hash
     pub fn hash(&self) -> HashValue {
         match *self {
-            PoolTransaction::Unverified(ref tx) => tx.hash().clone(),
-            PoolTransaction::Retracted(ref tx) => tx.hash().clone(),
+            PoolTransaction::Unverified(ref tx) => *tx.hash(),
+            PoolTransaction::Retracted(ref tx) => *tx.hash(),
             PoolTransaction::Local(ref tx) => CryptoHash::crypto_hash(tx.deref()),
         }
     }
