@@ -60,7 +60,7 @@ pub enum SyncRpcResponse {
 #[rtype(result = "()")]
 pub enum SyncNotify {
     ClosePeerMsg(PeerId),
-    NewHeadBlock(PeerId, Block),
+    NewHeadBlock(PeerId, Box<Block>),
     NewPeerMsg(PeerId),
 }
 
@@ -86,10 +86,8 @@ pub struct HashWithNumber {
 impl Ord for HashWithNumber {
     fn cmp(&self, other: &HashWithNumber) -> Ordering {
         match self.number.cmp(&other.number) {
-            Ordering::Equal => {
-                return self.hash.cmp(&other.hash);
-            }
-            ordering => return ordering,
+            Ordering::Equal => self.hash.cmp(&other.hash),
+            ordering => ordering,
         }
     }
 }
@@ -131,7 +129,7 @@ impl PartialOrd for BlockBody {
 
 impl Ord for BlockBody {
     fn cmp(&self, other: &BlockBody) -> Ordering {
-        return self.hash.cmp(&other.hash);
+        self.hash.cmp(&other.hash)
     }
 }
 

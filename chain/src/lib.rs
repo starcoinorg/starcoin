@@ -101,16 +101,18 @@ where
 
     fn handle(&mut self, msg: ChainRequest, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(
+            ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(
                 self.service.master_head_header(),
-            )),
-            ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeader(
+            ))),
+            ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeader(Box::new(
                 self.service.get_header_by_hash(hash)?.unwrap(),
-            )),
-            ChainRequest::HeadBlock() => Ok(ChainResponse::Block(self.service.master_head_block())),
-            ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(
+            ))),
+            ChainRequest::HeadBlock() => Ok(ChainResponse::Block(Box::new(
+                self.service.master_head_block(),
+            ))),
+            ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(Box::new(
                 self.service.master_block_by_number(number)?.unwrap(),
-            )),
+            ))),
             ChainRequest::CreateBlockTemplate(author, auth_key_prefix, parent_hash, txs) => Ok(
                 ChainResponse::BlockTemplate(self.service.create_block_template(
                     author,
@@ -120,7 +122,11 @@ where
                 )?),
             ),
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
-                self.service.get_block_by_hash(hash)?,
+                if let Some(block) = self.service.get_block_by_hash(hash)? {
+                    Some(Box::new(block))
+                } else {
+                    None
+                },
             )),
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(
                 self.service.get_block_info_by_hash(hash)?,
@@ -128,10 +134,10 @@ where
             ChainRequest::ConnectBlock(block, mut block_info) => {
                 let begin_time = get_unix_ts();
                 let conn_state = if block_info.is_none() {
-                    self.service.try_connect(block, false)?
+                    self.service.try_connect(*block, false)?
                 } else {
                     self.service
-                        .try_connect_with_block_info(block, block_info.take().unwrap())?
+                        .try_connect_with_block_info(*block, *block_info.take().unwrap())?
                 };
 
                 let end_time = get_unix_ts();
@@ -170,16 +176,13 @@ where
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
         debug!("try connect mined block.");
-        match msg {
-            SystemEvents::MinedBlock(new_block) => {
-                match self.service.try_connect(new_block.as_ref().clone(), false) {
-                    Ok(_) => debug!("Process mined block success."),
-                    Err(e) => {
-                        warn!("Process mined block fail, error: {:?}", e);
-                    }
+        if let SystemEvents::MinedBlock(new_block) = msg {
+            match self.service.try_connect(new_block.as_ref().clone(), false) {
+                Ok(_) => debug!("Process mined block success."),
+                Err(e) => {
+                    warn!("Process mined block fail, error: {:?}", e);
                 }
             }
-            _ => {}
         }
     }
 }
@@ -218,7 +221,7 @@ where
     async fn try_connect(self, block: Block) -> Result<ConnectResult<()>> {
         if let ChainResponse::Conn(conn_result) = self
             .address
-            .send(ChainRequest::ConnectBlock(block, None))
+            .send(ChainRequest::ConnectBlock(Box::new(block), None))
             .await
             .map_err(|e| Into::<Error>::into(e))??
         {
@@ -231,12 +234,12 @@ where
     async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
             .address
-            .send(ChainRequest::GetHeaderByHash(hash.clone()))
+            .send(ChainRequest::GetHeaderByHash(*hash))
             .await
             .unwrap()
             .unwrap()
         {
-            Some(header)
+            Some(*header)
         } else {
             None
         }
@@ -246,13 +249,13 @@ where
         debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlock(block) = self
             .address
-            .send(ChainRequest::GetBlockByHash(hash.clone()))
+            .send(ChainRequest::GetBlockByHash(hash))
             .await
             .unwrap()
             .unwrap()
         {
             match block {
-                Some(b) => Ok(b),
+                Some(b) => Ok(*b),
                 None => bail!("get block by hash is none: {:?}", hash),
             }
         } else {
@@ -267,7 +270,10 @@ where
     ) -> Result<ConnectResult<()>> {
         if let ChainResponse::Conn(conn_result) = self
             .address
-            .send(ChainRequest::ConnectBlock(block, Some(block_info)))
+            .send(ChainRequest::ConnectBlock(
+                Box::new(block),
+                Some(Box::new(block_info)),
+            ))
             .await
             .map_err(|e| Into::<Error>::into(e))??
         {
@@ -281,7 +287,7 @@ where
         debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlockInfo(block_info) = self
             .address
-            .send(ChainRequest::GetBlockInfoByHash(hash.clone()))
+            .send(ChainRequest::GetBlockInfoByHash(*hash))
             .await
             .unwrap()
             .unwrap()
@@ -303,7 +309,7 @@ where
             .unwrap()
             .unwrap()
         {
-            Some(header)
+            Some(*header)
         } else {
             None
         }
@@ -317,7 +323,7 @@ where
             .unwrap()
             .unwrap()
         {
-            Some(block)
+            Some(*block)
         } else {
             None
         }
@@ -330,7 +336,7 @@ where
             .await
             .map_err(|e| Into::<Error>::into(e))??
         {
-            Ok(block)
+            Ok(*block)
         } else {
             bail!("Get chain block by number response error.")
         }
