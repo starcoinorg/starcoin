@@ -10,7 +10,6 @@ pub use node::AccumulatorNode;
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
 use std::sync::Arc;
-use tree_store::AccumulatorCache;
 
 #[cfg(test)]
 mod accumulator_test;
@@ -99,9 +98,6 @@ impl MerkleAccumulator {
         })
     }
 
-    pub fn get_node_from_cache(&self, hash: HashValue) -> AccumulatorNode {
-        AccumulatorCache::get_node(hash)
-    }
     #[cfg(test)]
     pub fn get_node_from_storage(&self, hash: HashValue) -> AccumulatorNode {
         self.node_store.get_node(hash).unwrap().unwrap()

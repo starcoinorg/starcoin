@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tree_store::AccumulatorCache;
 use crate::{
     node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, tree_store::MockAccumulatorStore,
     Accumulator, AccumulatorNode, LeafCount, MerkleAccumulator,
@@ -66,6 +65,7 @@ fn test_multiple_chain() {
     )
     .unwrap();
     let (root_hash, _index1) = accumulator.append(&leaves).unwrap();
+    accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
     let frozen_node = accumulator.get_frozen_subtree_roots().unwrap();
     for node in frozen_node.clone() {
@@ -83,7 +83,9 @@ fn test_multiple_chain() {
     let leaves3 = create_leaves(60..64);
 
     let (_root_hash2, _) = accumulator.append(&leaves2).unwrap();
+    accumulator.flush().unwrap();
     let (_root_hash3, _) = accumulator2.append(&leaves3).unwrap();
+    accumulator2.flush().unwrap();
     assert_eq!(
         accumulator.get_leaf(1).unwrap().unwrap(),
         accumulator2.get_leaf(1).unwrap().unwrap()
@@ -169,7 +171,8 @@ fn test_multiple_tree() {
     )
     .unwrap();
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
-    // proof_verify(&accumulator, root_hash1, &batch1, 0);
+    accumulator.flush().unwrap();
+    proof_verify(&accumulator, root_hash1, &batch1, 0);
     let frozen_hash = accumulator.get_frozen_subtree_roots().unwrap();
     let accumulator2 =
         MerkleAccumulator::new(root_hash1, frozen_hash.clone(), 8, 15, arc_store.clone()).unwrap();
@@ -240,14 +243,6 @@ fn test_flush() {
     )
     .unwrap();
     let (_root_hash, _) = accumulator.append(&leaves).unwrap();
-    //get from cache
-    for node_hash in leaves.clone() {
-        let node = accumulator.get_node_from_cache(node_hash);
-        assert!(!node.is_empty());
-    }
-    for node in AccumulatorCache::get_nodes(leaves.clone()) {
-        assert!(!node.is_empty());
-    }
     accumulator.flush().unwrap();
     //get from storage
     for node_hash in leaves.clone() {

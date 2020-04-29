@@ -4,7 +4,7 @@
 use crate::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use crate::node_index::FrozenSubTreeIterator;
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
-use crate::tree_store::{AccumulatorCache, NodeCacheKey};
+use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAC_CACHE_SIZE};
 use anyhow::Result;
 use logger::prelude::*;
@@ -175,24 +175,14 @@ impl AccumulatorTree {
 
     /// Get node for self package.
     pub(crate) fn get_node(&self, hash: HashValue) -> Result<AccumulatorNode> {
-        Ok(Self::get_node_through_cache(hash, self.store.clone()))
-    }
-    /// Get accumulator node by hash, first from cache ,if not exist,then through store.
-    fn get_node_through_cache(
-        hash: HashValue,
-        store: Arc<dyn AccumulatorTreeStore>,
-    ) -> AccumulatorNode {
-        let mut node = AccumulatorCache::get_node(hash);
-        if node.is_empty() {
-            node = match store.clone().get_node(hash) {
-                Ok(Some(node)) => node,
-                _ => {
-                    error!("get accumulator node from store err:{:?}", hash.short_str());
-                    AccumulatorNode::new_empty()
-                }
+        let node = match self.store.clone().get_node(hash) {
+            Ok(Some(node)) => node,
+            _ => {
+                error!("get accumulator node from store err:{:?}", hash.short_str());
+                AccumulatorNode::new_empty()
             }
-        }
-        node
+        };
+        Ok(node)
     }
 
     pub(crate) fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>> {
@@ -258,7 +248,6 @@ impl AccumulatorTree {
     /// Update node to cache.
     fn update_cache(&self, node_vec: Vec<AccumulatorNode>) -> Result<()> {
         info!("accumulator update cache.");
-        AccumulatorCache::save_nodes(node_vec.clone())?;
         self.save_node_indexes(node_vec)
     }
 
