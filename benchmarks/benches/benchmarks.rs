@@ -51,7 +51,6 @@ fn accumulator_append(c: &mut Criterion) {
         b.iter_batched(
             || {
                 MerkleAccumulator::new(
-                    HashValue::random(),
                     *ACCUMULATOR_PLACEHOLDER_HASH,
                     vec![],
                     0,

@@ -79,7 +79,6 @@ pub struct MerkleAccumulator {
 
 impl MerkleAccumulator {
     pub fn new(
-        _accumulator_id: HashValue,
         root_hash: HashValue,
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: LeafCount,

@@ -93,7 +93,6 @@ where
         let chain = Self {
             config: config.clone(),
             accumulator: MerkleAccumulator::new(
-                chain_info.branch_id(),
                 block_info.accumulator_root,
                 block_info.frozen_subtree_roots,
                 block_info.num_leaves,
@@ -197,7 +196,6 @@ where
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
         let block_info = self.get_block_info(previous_header.id());
         let accumulator = MerkleAccumulator::new(
-            self.chain_info.branch_id(),
             block_info.accumulator_root,
             block_info.frozen_subtree_roots,
             block_info.num_leaves,
@@ -523,7 +521,6 @@ where
         self.chain_info.update_head(block.header().clone());
         self.head = block;
         self.accumulator = MerkleAccumulator::new(
-            self.chain_info.branch_id(),
             block_info.accumulator_root,
             block_info.frozen_subtree_roots.clone(),
             block_info.num_leaves,

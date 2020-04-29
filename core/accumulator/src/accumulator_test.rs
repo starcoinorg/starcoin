@@ -22,7 +22,6 @@ fn test_accumulator_append() {
     let leaves = create_leaves(2000..2100);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -44,7 +43,6 @@ fn test_accumulator_append() {
 fn test_error_on_bad_parameters() {
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -60,7 +58,6 @@ fn test_multiple_chain() {
     let leaves = create_leaves(50..52);
     let mock_store = Arc::new(MockAccumulatorStore::new());
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -80,15 +77,7 @@ fn test_multiple_chain() {
             assert_eq!(right.is_frozen(), true);
         }
     }
-    let accumulator2 = MerkleAccumulator::new(
-        HashValue::random(),
-        root_hash,
-        frozen_node,
-        2,
-        3,
-        mock_store,
-    )
-    .unwrap();
+    let accumulator2 = MerkleAccumulator::new(root_hash, frozen_node, 2, 3, mock_store).unwrap();
     assert_eq!(accumulator.root_hash(), accumulator2.root_hash());
     let leaves2 = create_leaves(54..58);
     let leaves3 = create_leaves(60..64);
@@ -112,7 +101,6 @@ fn test_one_leaf() {
     let hash = HashValue::random();
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -134,7 +122,6 @@ fn test_one_leaf() {
 fn test_proof() {
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -153,7 +140,6 @@ fn test_multiple_leaves() {
     let mut batch1 = create_leaves(600..608);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -174,9 +160,7 @@ fn test_multiple_tree() {
     let batch1 = create_leaves(700..708);
     let mock_store = MockAccumulatorStore::new();
     let arc_store = Arc::new(mock_store);
-    let accumulator_id = HashValue::random();
     let accumulator = MerkleAccumulator::new(
-        accumulator_id,
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -187,15 +171,8 @@ fn test_multiple_tree() {
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
     // proof_verify(&accumulator, root_hash1, &batch1, 0);
     let frozen_hash = accumulator.get_frozen_subtree_roots().unwrap();
-    let accumulator2 = MerkleAccumulator::new(
-        accumulator_id,
-        root_hash1,
-        frozen_hash.clone(),
-        8,
-        15,
-        arc_store.clone(),
-    )
-    .unwrap();
+    let accumulator2 =
+        MerkleAccumulator::new(root_hash1, frozen_hash.clone(), 8, 15, arc_store.clone()).unwrap();
     let root_hash2 = accumulator2.root_hash();
     assert_eq!(root_hash1, root_hash2);
     proof_verify(&accumulator2, root_hash2, &batch1, 0);
@@ -207,7 +184,6 @@ fn test_update_left_leaf() {
     let leaves = create_leaves(800..820);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -232,7 +208,6 @@ fn test_update_right_leaf() {
     let leaves = create_leaves(900..920);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
@@ -257,7 +232,6 @@ fn test_flush() {
     let leaves = create_leaves(1000..1020);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
-        HashValue::random(),
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
