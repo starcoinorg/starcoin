@@ -10,7 +10,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-bech32 = "0.6.0"
 byteorder = { version = "1.3.2", default-features = false }
 bytes = "0.5"
 chrono = { version = "0.4.7", default-features = false, features = ["clock"] }
@@ -32,10 +31,8 @@ num_enum = "0.4.1"
 actix = "0.9"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
-starcoin-accumulator = { path = "../core/accumulator"}
 libra-types = { git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 libp2p = "0.16.2"
-logger = {path = "../commons/logger", package="starcoin-logger"}
 move-core-types = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 futures = "0.3.4"
 

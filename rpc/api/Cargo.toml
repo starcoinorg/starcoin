@@ -16,15 +16,10 @@ actix = "0.9"
 actix-rt = "1.0"
 jsonrpc-core = "14.0"
 jsonrpc-derive = "14.0"
-jsonrpc-http-server = "14.0"
-jsonrpc-tcp-server = "14.0"
-jsonrpc-ipc-server = "14.0"
-jsonrpc-ws-server = "14.0"
 jsonrpc-server-utils = "14.0"
 jsonrpc-pubsub = "14.0"
 jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws"]}
 futures = { version = "0.3.2", features = ["compat"] }
-futures01 = "0.1.29"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}
 starcoin-wallet-api = { path = "../../wallet/api"}

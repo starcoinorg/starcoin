@@ -10,7 +10,6 @@ edition = "2018"
 anyhow = "1.0"
 backtrace = "0.3.46"
 serde = { version = "1.0" }
-notify = "5.0.0-pre.2"
 crossbeam-channel = "0.4.0"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 structopt = "0.3.2"

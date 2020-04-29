@@ -10,7 +10,6 @@ edition = "2018"
 anyhow = "1.0"
 once_cell = "1.2.0"
 prometheus = "0.8"
-starcoin-metrics = {path = "../../commons/metrics",package="starcoin-metrics"}
 types = { package="starcoin-types", path = "../../types"}
 libra-state-view = { package="libra-state-view", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 move-core-types = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
@@ -18,7 +17,6 @@ move-vm-runtime = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5
 move-vm-types = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 move-vm-state = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
 vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
-traits = {package="starcoin-traits", path = "../../core/traits"}
 starcoin-state-api = {path="../../state/api"}
 starcoin-config = { path = "../../config"}
 libra_types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }

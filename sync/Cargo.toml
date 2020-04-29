@@ -16,10 +16,8 @@ network = {path = "../network", package="starcoin-network"}
 types = {path = "../types", package = "starcoin-types" }
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 itertools = { version = "0.8.0", default-features = false }
-atomic_refcell = "0.1.3"
 traits = {path = "../core/traits", package="starcoin-traits"}
 futures = "0.3"
-futures_locks = { version = "0.5.0", package = "futures-locks"}
 bus = { path = "../bus", package = "starcoin-bus"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-txpool-api = {path="../txpool/api"}

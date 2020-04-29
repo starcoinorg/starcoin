@@ -289,12 +289,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9a60d744a80c30fcb657dfe2c1b22bcb3e814c1a1e3674f32bf5820b570fbff"
 
 [[package]]
-name = "anymap"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33954243bd79057c2de7338850b85983a44588021f8a5fee574a8888c6de4344"
-
-[[package]]
 name = "arc-swap"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -439,12 +433,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic_refcell"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bc31dce067eab974c815a9deb95f6217806de7b53685d7fc31f8ccf3fb2539f"
-
-[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -521,21 +509,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d5ca2cd0adc3f48f9e9ea5a6bbdf9ccc0bfade884847e484d452414c7ccffb3"
 
 [[package]]
-name = "bech32"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58946044516aa9dc922182e0d6e9d124a31aafe6b421614654eb27cf90cec09c"
-
-[[package]]
 name = "benchmarks"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "criterion",
- "language-e2e-tests 0.1.0",
  "proptest",
  "starcoin-crypto",
- "starcoin-executor",
  "starcoin-storage",
  "starcoin-types",
 ]
@@ -846,16 +826,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77d2058ba29594f69c75e8a9018e0485e3914ca5084e3613cd64529042f5423b"
 dependencies = [
  "constant_time_eq",
-]
-
-[[package]]
-name = "chashmap"
-version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff41a3c2c1e39921b9003de14bf0439c7b63a9039637c291e1a64925d8ddfa45"
-dependencies = [
- "owning_ref",
- "parking_lot 0.4.8",
 ]
 
 [[package]]
@@ -1597,18 +1567,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 
 [[package]]
-name = "filetime"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f59efc38004c988e4201d11d263b8171f49a2e7ec0bdbb71773433f271504a5e"
-dependencies = [
- "cfg-if",
- "libc",
- "redox_syscall",
- "winapi 0.3.8",
-]
-
-[[package]]
 name = "fixed-hash"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1692,25 +1650,6 @@ dependencies = [
  "starcoin-crypto",
  "thiserror",
  "tiny-keccak 1.5.0",
-]
-
-[[package]]
-name = "fsevent"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1616e68919f49d311720c3cf316e0a3522d8f2bd08f8da35f6b8a0fa12f9234b"
-dependencies = [
- "bitflags",
- "fsevent-sys",
-]
-
-[[package]]
-name = "fsevent-sys"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a41f1722e9bf862f62429d192f37d0c82c589aa18783aa06f0c4e5c3c90649fb"
-dependencies = [
- "libc",
 ]
 
 [[package]]
@@ -1838,17 +1777,6 @@ name = "futures-io"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a638959aa96152c7a4cddf50fcb1e3fede0583b27157c26e67d6f99904090dc6"
-
-[[package]]
-name = "futures-locks"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4297dd1d9d6268237e4f93aeb9c90fc1bf0d8cec7e1cef22798939e4c43a251"
-dependencies = [
- "futures 0.1.29",
- "tokio-current-thread",
- "tokio-executor 0.1.10",
-]
 
 [[package]]
 name = "futures-macro"
@@ -2399,26 +2327,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "inotify"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc39ee997811267bf8aa0b10e1674c5bea6caacc1957eede5ea45251fe33c6d5"
-dependencies = [
- "bitflags",
- "inotify-sys",
- "libc",
-]
-
-[[package]]
-name = "inotify-sys"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e74a1aa87c59aeff6ef2cc2fa62d41bc43f54952f55652656b18a02fd5e356c0"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "iovec"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2796,7 +2704,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9)",
- "transaction-builder",
  "vm",
  "vm-genesis",
 ]
@@ -3913,8 +3820,6 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
- "starcoin-state-tree",
- "starcoin-sync-api",
  "starcoin-types",
 ]
 
@@ -3940,7 +3845,6 @@ dependencies = [
  "linked_hash_set",
  "log 0.4.8",
  "lru",
- "network-api",
  "nohash-hasher",
  "parity-scale-codec",
  "parking_lot 0.10.2",
@@ -4024,27 +3928,6 @@ checksum = "2ad2a91a8e869eeb30b9cb3119ae87773a8f4ae617f41b1eb9c154b2905f7bd6"
 dependencies = [
  "memchr",
  "version_check 0.1.5",
-]
-
-[[package]]
-name = "notify"
-version = "5.0.0-pre.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b00c0b65188bffb5598c302e19b062feb94adef02c31f15622a163c95d673c3"
-dependencies = [
- "anymap",
- "bitflags",
- "chashmap",
- "crossbeam-channel",
- "filetime",
- "fsevent",
- "fsevent-sys",
- "inotify",
- "libc",
- "mio",
- "mio-extras",
- "walkdir",
- "winapi 0.3.8",
 ]
 
 [[package]]
@@ -4186,15 +4069,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18869315e81473c951eb56ad5558bbc56978562d3ecfb87abb7a1e944cea4518"
 dependencies = [
  "num-traits",
-]
-
-[[package]]
-name = "owning_ref"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdf84f41639e037b484f93433aa3897863b561ed65c6e59c7073d7c561710f37"
-dependencies = [
- "stable_deref_trait",
 ]
 
 [[package]]
@@ -4341,16 +4215,6 @@ dependencies = [
 
 [[package]]
 name = "parking_lot"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "149d8f5b97f3c1133e3cfcd8886449959e856b557ff281e292b733d7c69e005e"
-dependencies = [
- "owning_ref",
- "parking_lot_core 0.2.14",
-]
-
-[[package]]
-name = "parking_lot"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa7767817701cce701d5585b9c4db3cdd02086398322c1d7e8bf5094a96a2ce7"
@@ -4379,18 +4243,6 @@ checksum = "d3a704eb390aafdc107b0e392f56a82b668e3a71366993b5340f5833fd62505e"
 dependencies = [
  "lock_api 0.3.4",
  "parking_lot_core 0.7.1",
-]
-
-[[package]]
-name = "parking_lot_core"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4db1a8ccf734a7bce794cc19b3df06ed87ab2f3907036b693c68f56b4d4537fa"
-dependencies = [
- "libc",
- "rand 0.4.6",
- "smallvec 0.6.13",
- "winapi 0.3.8",
 ]
 
 [[package]]
@@ -5733,7 +5585,6 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
- "atomic_refcell",
  "futures 0.3.4",
  "futures-timer 3.0.2",
  "libra-temppath",
@@ -5774,7 +5625,6 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "hex 0.3.2",
  "move-lang",
- "notify",
  "scmd",
  "serde",
  "starcoin-canonical-serialization",
@@ -5904,7 +5754,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-runtime",
  "stdlib 0.1.0",
@@ -6094,7 +5943,6 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-sync-api",
- "starcoin-traits",
  "starcoin-tx-relay",
  "starcoin-types",
  "stest",
@@ -6149,16 +5997,11 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "futures 0.3.4",
- "futures01",
  "jsonrpc-core 14.1.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
- "jsonrpc-http-server",
- "jsonrpc-ipc-server",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils 14.1.0",
- "jsonrpc-tcp-server 14.1.0",
- "jsonrpc-ws-server",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -6182,12 +6025,8 @@ dependencies = [
  "jsonrpc-core 14.1.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
- "jsonrpc-http-server",
- "jsonrpc-ipc-server",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils 14.1.0",
- "jsonrpc-tcp-server 14.1.0",
- "jsonrpc-ws-server",
  "serde",
  "serde_json",
  "starcoin-canonical-serialization",
@@ -6300,7 +6139,6 @@ dependencies = [
  "starcoin-logger",
  "starcoin-state-api",
  "starcoin-statedb",
- "starcoin-traits",
  "starcoin-types",
  "stest",
 ]
@@ -6380,10 +6218,8 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
- "atomic_refcell",
  "forkable-jellyfish-merkle",
  "futures 0.3.4",
- "futures-locks",
  "futures-timer 3.0.2",
  "hex 0.4.2",
  "itertools 0.8.2",
@@ -6505,7 +6341,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-tx-relay",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -6544,7 +6379,6 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "anyhow",
- "bech32",
  "byteorder 1.3.4",
  "bytes 0.5.4",
  "chrono",
@@ -6566,10 +6400,8 @@ dependencies = [
  "rand 0.6.5",
  "ref-cast",
  "serde",
- "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
- "starcoin-logger",
  "thiserror",
  "tiny-keccak 1.5.0",
 ]
@@ -6595,9 +6427,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
- "starcoin-metrics",
  "starcoin-state-api",
- "starcoin-traits",
  "starcoin-types",
  "stdlib 0.1.0",
  "stest",
@@ -6613,9 +6443,7 @@ dependencies = [
  "rand 0.6.5",
  "serde",
  "starcoin-crypto",
- "starcoin-logger",
  "starcoin-types",
- "stest",
  "thiserror",
 ]
 
@@ -6632,10 +6460,8 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-decrypt",
- "starcoin-logger",
  "starcoin-types",
  "starcoin-wallet-api",
- "stest",
  "tempfile",
 ]
 
