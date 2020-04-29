@@ -24,7 +24,7 @@ impl Message for StateRequest {
 #[derive(Debug, Clone)]
 pub enum StateResponse {
     State(Option<Vec<u8>>),
-    StateWithProof(StateWithProof),
+    StateWithProof(Box<StateWithProof>),
     StateRoot(HashValue),
     AccountState(Option<AccountState>),
     None,
