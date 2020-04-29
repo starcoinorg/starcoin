@@ -7,6 +7,7 @@ mod pool;
 mod process;
 pub mod state_sync;
 mod sync;
+mod sync_metrics;
 mod txn_sync;
 
 use std::time::Duration;
