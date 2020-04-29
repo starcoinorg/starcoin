@@ -17,7 +17,7 @@ anyhow = "1.0"
 rand = { version = "0.6.5", default-features = false }
 structopt = "0.3.2"
 ctrlc = { version = "3.0", features = ["termination"] }
-futures = { version = "0.3.2"}
+futures = { version = "0.3"}
 tokio = { version = "0.2", features = ["full"] }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}

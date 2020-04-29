@@ -18,9 +18,9 @@ derive_more = "0.99.2"
 either = "1.5.3"
 erased-serde = "0.3.9"
 fnv = "1.0.6"
-futures = "0.3.1"
-futures_codec = "0.3.3"
-futures-timer = "3.0.1"
+futures = "0.3"
+futures_codec = "0.3"
+futures-timer = "3.0"
 
 libp2p = "0.16.2"
 linked-hash-map = "0.5.2"
@@ -50,7 +50,6 @@ sg_config = {path = "../config", package="starcoin-config"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-metrics = {path = "../commons/metrics",package="starcoin-metrics"}
-network-p2p-api = {package="network-api", path="../network/api"}
 types = {path = "../types", package="starcoin-types"}
 stest = {path = "../commons/stest"}
 prometheus = "0.8"

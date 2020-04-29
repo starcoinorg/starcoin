@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0"
 actix = "0.9"
 actix-rt = "1.0"
-futures = { version = "0.3.2"}
+futures = { version = "0.3"}
 config = {path = "../config", package="starcoin-config"}
 network = {path = "../network", package="starcoin-network"}
 chain = {path = "../chain", package="starcoin-chain" }
@@ -37,13 +37,13 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 rust-argon2 = "0.8"
 rand = { version = "0.6.5", default-features = false }
-byteorder = "1.3.1"
+byteorder = "1.3.2"
 libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
-futures-timer = "3.0.1"
+futures-timer = "3.0"
 async-std = "1.5.0"
 starcoin-wallet-api = { path = "../wallet/api"}
 starcoin-txpool-api = {path = "../txpool/api"}
-hex = { version = "0.3.2", default-features = false }
+hex = { version = "0.4.2", default-features = false }
 thiserror = "1.0"
 structopt = "0.3.2"
 
