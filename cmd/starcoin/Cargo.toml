@@ -10,7 +10,6 @@ edition = "2018"
 anyhow = "1.0"
 backtrace = "0.3.46"
 serde = { version = "1.0" }
-notify = "5.0.0-pre.2"
 crossbeam-channel = "0.4.0"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 structopt = "0.3.2"
@@ -31,7 +30,7 @@ starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
 move-lang = "0.0.1"
 vm = "0.1.0"
-hex = { version = "0.3.2", default-features = false }
+hex = { version = "0.4.2", default-features = false }
 
 [[bin]]
 name = "starcoin"

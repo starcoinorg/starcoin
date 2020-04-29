@@ -15,7 +15,8 @@ extern crate transaction_pool as tx_pool;
 use crate::counters::TXPOOL_SERVICE_HISTOGRAM;
 pub use crate::pool::TxStatus;
 use crate::tx_pool_service_impl::{
-    ChainNewBlock, GetPendingTxns, ImportTxns, RemoveTxn, SubscribeTxns, TxPoolActor,
+    ChainNewBlock, GetPendingTxns, ImportTxns, NextSequenceNumber, RemoveTxn, SubscribeTxns,
+    TxPoolActor,
 };
 use actix::prelude::*;
 use anyhow::Result;
@@ -28,7 +29,7 @@ use std::{fmt::Debug, sync::Arc};
 use storage::Store;
 #[cfg(test)]
 use types::block::BlockHeader;
-use types::{transaction, transaction::SignedUserTransaction};
+use types::{account_address::AccountAddress, transaction, transaction::SignedUserTransaction};
 
 mod counters;
 mod pool;
@@ -134,6 +135,14 @@ impl TxPoolAsyncService for TxPoolRef {
             Ok(r) => Ok(r.into_iter().map(|t| t.signed().clone()).collect()),
             Err(e) => Err(e.into()),
         }
+    }
+    async fn next_sequence_number(self, address: AccountAddress) -> Result<Option<u64>> {
+        let timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["next_sequence_number"])
+            .start_timer();
+        let result = self.addr.send(NextSequenceNumber { address }).await;
+        timer.observe_duration();
+        result.map_err(|e| e.into())
     }
 
     async fn subscribe_txns(

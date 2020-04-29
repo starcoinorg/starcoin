@@ -15,7 +15,7 @@ pub struct MetricsConfig {
 impl Default for MetricsConfig {
     fn default() -> Self {
         Self {
-            address: "localhost".to_string(),
+            address: "0.0.0.0".to_string(),
             metrics_server_port: 9101,
         }
     }

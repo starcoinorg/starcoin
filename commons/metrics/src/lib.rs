@@ -5,7 +5,7 @@
 extern crate prometheus;
 
 use anyhow::Result;
-use prometheus::core::{AtomicU64, GenericGaugeVec};
+use prometheus::core::{AtomicU64, GenericGauge, GenericGaugeVec};
 use prometheus::{
     core::{Collector, Metric},
     proto,
@@ -32,14 +32,15 @@ pub mod macros;
 pub use op_counters::{DurationHistogram, OpMetrics};
 // Re-export counter types from prometheus crate
 pub use prometheus::{
-    histogram_opts, labels, opts, register_counter, register_counter_vec, register_gauge,
+    histogram_opts, labels, opts, register, register_counter, register_counter_vec, register_gauge,
     register_gauge_vec, register_histogram, register_histogram_vec, register_int_counter,
     register_int_counter_vec, register_int_gauge, register_int_gauge_vec, Error as PrometheusError,
-    Histogram, HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
-    Opts,
+    Histogram, HistogramOpts, HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge,
+    IntGaugeVec, Opts,
 };
 
 pub type UIntGaugeVec = GenericGaugeVec<AtomicU64>;
+pub type UIntGauge = GenericGauge<AtomicU64>;
 
 fn get_metrics_file<P: AsRef<Path>>(dir_path: &P, file_name: &str) -> File {
     create_dir_all(dir_path).expect("Create metrics dir failed");

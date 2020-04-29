@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
+use crate::metrics::{record_metrics, CACHE_ITEMS};
 use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
@@ -26,42 +27,57 @@ impl CacheStorage {
     }
 }
 
+impl Default for CacheStorage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InnerStore for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        let compose = compose_key(prefix_name.to_string(), key)?;
-        Ok(self.cache.lock().get(&compose).map(|v| v.to_vec()))
+        record_metrics("cache", prefix_name, "get").end_with(|| {
+            compose_key(prefix_name.to_string(), key)
+                .and_then(|key| Ok(self.cache.lock().get(&key).map(|v| v.to_vec())))
+        })
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        &self
-            .cache
-            .lock()
-            .put(compose_key(prefix_name.to_string(), key)?, value);
-        Ok(())
+        record_metrics("cache", prefix_name, "put").end_with(|| {
+            let mut cache = self.cache.lock();
+            cache.put(compose_key(prefix_name.to_string(), key)?, value);
+            CACHE_ITEMS.set(cache.len() as u64);
+            Ok(())
+        })
     }
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
-        let compose = compose_key(prefix_name.to_string(), key)?;
-        Ok(self.cache.lock().contains(&compose))
+        record_metrics("cache", prefix_name, "contains_key").end_with(|| {
+            let compose = compose_key(prefix_name.to_string(), key)?;
+            Ok(self.cache.lock().contains(&compose))
+        })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
-        let compose = compose_key(prefix_name.to_string(), key)?;
-        self.cache.lock().pop(&compose).unwrap();
-        Ok(())
+        record_metrics("cache", prefix_name, "remove").end_with(|| {
+            let compose = compose_key(prefix_name.to_string(), key)?;
+            self.cache.lock().pop(&compose).unwrap();
+            Ok(())
+        })
     }
 
-    fn write_batch(&self, batch: WriteBatch) -> Result<(), Error> {
-        for (prefix_name, rows) in &batch.rows {
-            for (key, write_op) in rows {
-                match write_op {
-                    WriteOp::Value(value) => {
-                        self.put(prefix_name, key.to_vec(), value.to_vec()).unwrap()
-                    }
-                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
-                };
+    fn write_batch(&self, batch: WriteBatch) -> Result<()> {
+        record_metrics("cache", "batch", "write_batch").end_with(|| {
+            for (prefix_name, rows) in &batch.rows {
+                for (key, write_op) in rows {
+                    match write_op {
+                        WriteOp::Value(value) => {
+                            self.put(prefix_name, key.to_vec(), value.to_vec()).unwrap()
+                        }
+                        WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
+                    };
+                }
             }
-        }
-        Ok(())
+            Ok(())
+        })
     }
 
     fn get_len(&self) -> Result<u64, Error> {

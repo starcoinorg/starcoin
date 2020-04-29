@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
+use crate::metrics::record_metrics;
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::VEC_PREFIX_NAME;
 use anyhow::{bail, format_err, Error, Result};
@@ -175,62 +176,71 @@ impl DBStorage {
 
 impl InnerStore for DBStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
-        match self
-            .db
-            .get_cf(cf_handle, key.as_slice())
-            .map_err(Self::convert_rocksdb_err)
-        {
-            Ok(Some(value)) => Ok(Some(value.to_vec())),
-            _ => Ok(None),
-        }
+        record_metrics("db", prefix_name, "get").end_with(|| {
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            match self
+                .db
+                .get_cf(cf_handle, key.as_slice())
+                .map_err(Self::convert_rocksdb_err)
+            {
+                Ok(Some(value)) => Ok(Some(value.to_vec())),
+                _ => Ok(None),
+            }
+        })
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
-        self.db
-            .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())
-            .map_err(Self::convert_rocksdb_err)
+        record_metrics("db", prefix_name, "put").end_with(|| {
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            self.db
+                .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())
+                .map_err(Self::convert_rocksdb_err)
+        })
     }
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
-        match self.get(prefix_name, key) {
-            Ok(Some(_)) => Ok(true),
-            _ => Ok(false),
-        }
+        record_metrics("db", prefix_name, "contains_key").end_with(|| {
+            match self.get(prefix_name, key) {
+                Ok(Some(_)) => Ok(true),
+                _ => Ok(false),
+            }
+        })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
-        self.db
-            .delete_cf(cf_handle, &key)
-            .map_err(Self::convert_rocksdb_err)
+        record_metrics("db", prefix_name, "remove").end_with(|| {
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            self.db
+                .delete_cf(cf_handle, &key)
+                .map_err(Self::convert_rocksdb_err)
+        })
     }
 
     /// Writes a group of records wrapped in a WriteBatch.
     fn write_batch(&self, batch: WriteBatch) -> Result<()> {
-        let db_batch = DBWriteBatch::new();
-        for (cf_name, rows) in &batch.rows {
-            let cf_handle = self.get_cf_handle(cf_name)?;
-            for (key, write_op) in rows {
-                match write_op {
-                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
-                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+        record_metrics("db", "", "write_batch").end_with(|| {
+            let db_batch = DBWriteBatch::new();
+            for (cf_name, rows) in &batch.rows {
+                let cf_handle = self.get_cf_handle(cf_name)?;
+                for (key, write_op) in rows {
+                    match write_op {
+                        WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                        WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                    }
+                    .map_err(Self::convert_rocksdb_err)?;
                 }
-                .map_err(Self::convert_rocksdb_err)?;
             }
-        }
 
-        self.db
-            .write_opt(&db_batch, &Self::default_write_options())
-            .map_err(Self::convert_rocksdb_err)?;
-        Ok(())
+            self.db
+                .write_opt(&db_batch, &Self::default_write_options())
+                .map_err(Self::convert_rocksdb_err)
+        })
     }
 
-    fn get_len(&self) -> Result<u64, Error> {
+    fn get_len(&self) -> Result<u64> {
         unimplemented!()
     }
 
-    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
+    fn keys(&self) -> Result<Vec<Vec<u8>>> {
         unimplemented!()
     }
 }

@@ -87,7 +87,7 @@ where
                 PacemakerStrategy::Ondemand => {
                     OndemandPacemaker::new(
                         bus.clone(),
-                        sender.clone(),
+                        sender,
                         transaction_receiver.take().unwrap(),
                     )
                     .start();
@@ -161,7 +161,7 @@ where
                 .clone()
                 .get_pending_txns(None)
                 .await
-                .unwrap_or(vec![]);
+                .unwrap_or_else(|_| vec![]);
             let startup_info = chain.master_startup_info().await?;
             debug!(
                 "On GenerateBlockEvent, master: {:?}, txn len: {}",

@@ -76,6 +76,48 @@ impl StartupInfo {
     pub fn new(master: ChainInfo, branches: Vec<ChainInfo>) -> Self {
         Self { master, branches }
     }
+
+    fn get_branch_index(&self, branch_id: HashValue) -> Option<usize> {
+        let mut index = 0;
+        for branch in &self.branches {
+            if branch.branch_id == branch_id {
+                return Some(index);
+            }
+            index += 1;
+        }
+
+        return None;
+    }
+
+    pub fn remove_branch(&mut self, branch_id: HashValue) {
+        if let Some(index) = self.get_branch_index(branch_id) {
+            let _ = self.branches.remove(index);
+        }
+    }
+
+    pub fn get_branch(&self, branch_id: HashValue) -> Option<ChainInfo> {
+        if let Some(index) = self.get_branch_index(branch_id) {
+            return Some(self.branches.get(index).unwrap().clone());
+        }
+        None
+    }
+
+    pub fn insert_branch(&mut self, chain_info: ChainInfo) {
+        self.remove_branch(chain_info.branch_id());
+        self.branches.push(chain_info);
+    }
+
+    pub fn update_master(&mut self, chain_info: ChainInfo) {
+        if chain_info.branch_id() != self.master.branch_id() {
+            let exist = self.get_branch(self.master.branch_id());
+            if exist.is_none() {
+                let tmp = self.master.clone();
+                self.branches.push(tmp);
+            }
+        }
+
+        self.master = chain_info;
+    }
 }
 
 impl TryFrom<Vec<u8>> for StartupInfo {
@@ -96,8 +138,9 @@ impl TryInto<Vec<u8>> for StartupInfo {
 
 impl Into<Vec<ChainInfo>> for StartupInfo {
     fn into(self) -> Vec<ChainInfo> {
-        let mut branches = self.branches;
-        branches.insert(0, self.master);
+        let mut branches = Vec::new();
+        branches.push(self.master);
+        branches.append(&mut self.branches.clone());
         branches
     }
 }

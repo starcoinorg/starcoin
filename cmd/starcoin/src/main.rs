@@ -1,6 +1,5 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
 use crate::cli_state::CliState;
 use anyhow::Result;
 use scmd::{CmdContext, Command};
@@ -89,10 +88,7 @@ fn run() -> Result<()> {
                 .subcommand(wallet::SignTxnCommand)
                 .subcommand(wallet::UnlockCommand)
                 .subcommand(wallet::ExportCommand)
-                .subcommand(wallet::ImportCommand)
-                .subcommand(wallet::CompileCommand)
-                .subcommand(wallet::DeployCommand)
-                .subcommand(wallet::ExecuteCommand),
+                .subcommand(wallet::ImportCommand),
         )
         .command(Command::with_name("txn").subcommand(txn::TransferCommand))
         .command(
@@ -118,7 +114,13 @@ fn run() -> Result<()> {
                 .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::BranchesCommand),
         )
-        .command(Command::with_name("dev").subcommand(dev::GetCoinCommand))
+        .command(
+            Command::with_name("dev")
+                .subcommand(dev::GetCoinCommand)
+                .subcommand(dev::CompileCommand)
+                .subcommand(dev::DeployCommand)
+                .subcommand(dev::ExecuteCommand),
+        )
         .command(
             Command::with_name("debug")
                 .subcommand(debug::LogLevelCommand)
