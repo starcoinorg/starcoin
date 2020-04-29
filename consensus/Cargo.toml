@@ -10,7 +10,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-futures = { version = "0.3.2"}
+futures = { version = "0.3"}
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
 traits = {path = "../core/traits", package="starcoin-traits"}
@@ -19,7 +19,7 @@ rand = { version = "0.6.5", default-features = false }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 blake2-rfc = "0.2"
 async-std = { version = "1.0.1", features = ["unstable"]}
-byteorder = "1.3.1"
+byteorder = "1.3.2"
 rust-argon2 = "0.8"
-hex = { version = "0.3.2", default-features = false }
+hex = { version = "0.4.2", default-features = false }
 

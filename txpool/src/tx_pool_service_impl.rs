@@ -21,7 +21,7 @@ use std::sync::Arc;
 use storage::Store;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
 use types::{
-    block::BlockHeader, system_events::SystemEvents, transaction,
+    account_address::AccountAddress, block::BlockHeader, system_events::SystemEvents, transaction,
     transaction::SignedUserTransaction,
 };
 
@@ -297,6 +297,30 @@ impl actix::Handler<GetPendingTxns> for TxPoolActor {
     fn handle(&mut self, msg: GetPendingTxns, _ctx: &mut Self::Context) -> Self::Result {
         let GetPendingTxns { max_len } = msg;
         let result = self.get_pending(max_len);
+        actix::MessageResult(result)
+    }
+}
+
+pub(crate) struct NextSequenceNumber {
+    pub(crate) address: AccountAddress,
+}
+
+impl actix::Message for NextSequenceNumber {
+    type Result = Option<u64>;
+}
+
+impl actix::Handler<NextSequenceNumber> for TxPoolActor {
+    type Result = actix::MessageResult<NextSequenceNumber>;
+
+    fn handle(&mut self, msg: NextSequenceNumber, _ctx: &mut Self::Context) -> Self::Result {
+        let NextSequenceNumber { address } = msg;
+        let client = PoolClient::new(
+            self.chain_header.clone(),
+            self.storage.clone(),
+            self.sequence_number_cache.clone(),
+        );
+        let result = self.queue.next_sequence_number(client, &address);
+
         actix::MessageResult(result)
     }
 }

@@ -10,12 +10,12 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-futures = "0.3.4"
+futures = "0.3"
 
 actix = "0.9"
 actix-rt = "1.0"
 yamux = "0.4.2"
-futures-timer = "3.0.1"
+futures-timer = "3.0"
 log = "0.4.8"
 hex = "0.4.2"
 bytes = "0.5.0"

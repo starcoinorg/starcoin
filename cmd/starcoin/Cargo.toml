@@ -30,7 +30,7 @@ starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
 move-lang = "0.0.1"
 vm = "0.1.0"
-hex = { version = "0.3.2", default-features = false }
+hex = { version = "0.4.2", default-features = false }
 
 [[bin]]
 name = "starcoin"
