@@ -68,11 +68,7 @@ impl Handler<SystemEvents> for OndemandPacemaker {
 }
 
 impl StreamHandler<TransactionStatusEvent> for OndemandPacemaker {
-    fn handle(&mut self, tx_item: Arc<Vec<(HashValue, TxStatus)>>, _ctx: &mut Self::Context) {
-        tx_item.iter().for_each(|(_tx, tx_status)| {
-            if *tx_status == TxStatus::Added {
-                self.send_event();
-            }
-        });
+    fn handle(&mut self, _tx_item: Arc<Vec<(HashValue, TxStatus)>>, _ctx: &mut Self::Context) {
+        self.send_event();
     }
 }

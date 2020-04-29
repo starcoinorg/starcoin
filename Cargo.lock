@@ -5561,6 +5561,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "async-std",
  "async-trait",
  "futures 0.3.4",
  "starcoin-logger",
