@@ -9,12 +9,12 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 
 //TODO implement Mock service
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct MockChainStateService {}
 
 impl MockChainStateService {
     pub fn new() -> MockChainStateService {
-        Self {}
+        Self::default()
     }
 }
 

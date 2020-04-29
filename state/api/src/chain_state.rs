@@ -28,7 +28,7 @@ impl StateProof {
         account_state_proof: SparseMerkleProof,
     ) -> Self {
         Self {
-            account_state: account_state.map(|data| Blob::from(data)),
+            account_state: account_state.map(Blob::from),
             account_proof,
             account_state_proof,
         }
