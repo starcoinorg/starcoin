@@ -230,8 +230,13 @@ where
         &mut self,
         header: &BlockHeader,
     ) -> Result<(bool, Option<BlockChain<C, S, P>>)> {
-        debug!("{:?}:{:?}", header.parent_hash(), header.id());
         let chain_info = self.collection.fork(header);
+        debug!(
+            "startup_info branch find_or_fork : {:?}, {:?}, :{:?}",
+            header.parent_hash(),
+            header.id(),
+            chain_info
+        );
         if chain_info.is_some() {
             let block_exist = self.collection.block_exist(header.id());
             let branch = BlockChain::new(
@@ -295,6 +300,7 @@ where
 
             self.commit_2_txpool(enacted, retracted);
             if self.sync_metadata.is_sync_done() {
+                info!("broadcast new header: {:?}", block.header().id());
                 let block_detail = BlockDetail::new(block, total_difficulty);
                 self.broadcast_2_bus(block_detail.clone());
 
@@ -304,7 +310,8 @@ where
             self.collection.insert_branch(new_branch);
         }
 
-        self.storage.save_branch(branch_id, block_id)?;
+        debug!("startup_info branch save: {:?}, {:?}", branch_id, block_id);
+        self.storage.save_branch(block_id, branch_id)?;
         self.save_startup()
     }
 
@@ -425,6 +432,12 @@ where
                 || (pivot_sync && self.sync_metadata.state_done())
             {
                 let (block_exist, fork) = self.find_or_fork(block.header())?;
+                debug!(
+                    "startup_info branch try_connect : {:?}, {:?}, :{:?}",
+                    block.header().parent_hash(),
+                    block.header().id(),
+                    block_exist
+                );
                 if block_exist {
                     Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
                 } else {

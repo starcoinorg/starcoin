@@ -147,7 +147,7 @@ pub trait TransactionInfoStore {
 
 pub trait BranchStore {
     fn get_branch(&self, block_id: HashValue) -> Result<Option<HashValue>>;
-    fn save_branch(&self, branch_id: HashValue, block_id: HashValue) -> Result<()>;
+    fn save_branch(&self, block_id: HashValue, branch_id: HashValue) -> Result<()>;
 }
 
 pub trait TransactionStore {
