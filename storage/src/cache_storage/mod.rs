@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::metrics::record_metrics;
+use crate::metrics::{record_metrics, CACHE_ITEMS};
 use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
@@ -43,9 +43,9 @@ impl InnerStore for CacheStorage {
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         record_metrics("cache", prefix_name, "put").end_with(|| {
-            self.cache
-                .lock()
-                .put(compose_key(prefix_name.to_string(), key)?, value);
+            let mut cache = self.cache.lock();
+            cache.put(compose_key(prefix_name.to_string(), key)?, value);
+            CACHE_ITEMS.set(cache.len() as u64);
             Ok(())
         })
     }
