@@ -3,7 +3,8 @@
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    register_histogram_vec, register_int_counter_vec, HistogramTimer, HistogramVec, IntCounterVec,
+    self, register_histogram_vec, register_int_counter_vec, register_uint_gauge, HistogramTimer,
+    HistogramVec, IntCounterVec, UIntGauge,
 };
 
 pub static STORAGE_COUNTERS: Lazy<IntCounterVec> = Lazy::new(|| {
@@ -23,6 +24,9 @@ pub static STORAGE_TIMES: Lazy<HistogramVec> = Lazy::new(|| {
     )
     .unwrap()
 });
+
+pub static CACHE_ITEMS: Lazy<UIntGauge> =
+    Lazy::new(|| register_uint_gauge!("starcoin_cache_items", "How many items in cache").unwrap());
 
 pub enum ResultType {
     NONE,
