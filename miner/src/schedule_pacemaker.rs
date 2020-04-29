@@ -32,7 +32,7 @@ impl Actor for SchedulePacemaker {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let duration = self.duration.clone();
+        let duration = self.duration;
         ctx.run_later(duration, move |_act, ctx| {
             ctx.run_interval(duration, move |act, _ctx| {
                 info!("send GenerateBlockEvent.");

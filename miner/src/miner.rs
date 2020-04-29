@@ -66,13 +66,12 @@ where
     }
 
     pub fn submit(&self, payload: String) -> Result<()> {
-        //TODO:error handle
         let state = self.state.lock().unwrap();
         let block_template = state.as_ref().unwrap().block_template.clone();
         let payload = hex::decode(payload).unwrap();
         let consensus_header = match H::try_from(payload) {
             Ok(h) => h,
-            Err(_e) => panic!("failed to submit payload"),
+            Err(_) => return Err(anyhow::anyhow!("Invalid payload submit")),
         };
         let difficult = state.as_ref().unwrap().difficult;
         let block = block_template.into_block(consensus_header, difficult);

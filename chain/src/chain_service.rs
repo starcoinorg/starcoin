@@ -232,8 +232,13 @@ where
         header: &BlockHeader,
     ) -> Result<(bool, Option<BlockChain<C, S, P>>)> {
         CHAIN_METRICS.try_connect_count.inc();
-        debug!("{:?}:{:?}", header.parent_hash(), header.id());
         let chain_info = self.collection.fork(header);
+        debug!(
+            "startup_info branch find_or_fork : {:?}, {:?}, :{:?}",
+            header.parent_hash(),
+            header.id(),
+            chain_info
+        );
         if chain_info.is_some() {
             let block_exist = self.collection.block_exist(header.id());
             let branch = BlockChain::new(
@@ -432,6 +437,12 @@ where
                 || (pivot_sync && self.sync_metadata.state_done())
             {
                 let (block_exist, fork) = self.find_or_fork(block.header())?;
+                debug!(
+                    "startup_info branch try_connect : {:?}, {:?}, :{:?}",
+                    block.header().parent_hash(),
+                    block.header().id(),
+                    block_exist
+                );
                 if block_exist {
                     CHAIN_METRICS.duplicate_conn_count.inc();
                     Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))

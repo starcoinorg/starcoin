@@ -20,7 +20,6 @@ stest = {path = "../../commons/stest"}
 starcoin-types = { path = "../../types"}
 starcoin-config = { path = "../../config"}
 starcoin-state-api = { path = "../api"}
-starcoin-traits = { path = "../../core/traits"}
 starcoin-statedb = { path = "../statedb"}
 starcoin_bus = {path = "../../bus", package="starcoin-bus"}
 

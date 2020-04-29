@@ -15,8 +15,6 @@ actix = "0.9"
 actix-rt = "1.0"
 async-trait = "0.1"
 rand="0.6"
-starcoin-logger = {path = "../../commons/logger"}
-stest = {path = "../../commons/stest"}
 wallet-api = {path = "../api",package = "starcoin-wallet-api"}
 scs ={package= "starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}

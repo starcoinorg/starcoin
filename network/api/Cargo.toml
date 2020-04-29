@@ -10,11 +10,9 @@ edition = "2018"
 starcoin-types = {path = "../../types"}
 actix = "0.9"
 anyhow = "1.0"
-futures = "0.3.4"
+futures = "0.3"
 serde = { version = "1.0.99", default-features = false }
 starcoin-crypto = { path = "../../commons/crypto"}
-starcoin-state-tree={path = "../../state/state-tree"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 async-trait = "0.1.13"
 libp2p = "0.16.2"
-starcoin-sync-api = {package="starcoin-sync-api", path = "../../sync/api"}
