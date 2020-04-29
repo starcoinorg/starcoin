@@ -39,7 +39,7 @@ fn accumulator_append(c: &mut Criterion) {
         //     Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         // );
         let cache_storage = Arc::new(CacheStorage::new());
-        let db_storage = Arc::new(DBStorage::new(std::env::temp_dir()));
+        let db_storage = Arc::new(DBStorage::new(starcoin_config::temp_path().as_ref()));
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
                 cache_storage,

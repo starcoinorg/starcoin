@@ -6433,7 +6433,6 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
- "starcoin-metrics",
  "starcoin-state-api",
  "starcoin-types",
  "stdlib 0.1.0",
