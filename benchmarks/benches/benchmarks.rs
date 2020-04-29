@@ -61,7 +61,7 @@ fn accumulator_append(c: &mut Criterion) {
                 .unwrap()
             },
             |bench| {
-                bench.append(&leaves);
+                bench.append(&leaves).unwrap();
                 bench.flush().unwrap();
             },
             BatchSize::LargeInput,
