@@ -25,6 +25,7 @@ use std::{
 mod json_encoder;
 pub mod metric_server;
 mod op_counters;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 mod process_collector;
 #[macro_use]
 pub mod macros;
