@@ -32,7 +32,7 @@ use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::runtime::Handle;
 use tx_relay::*;
 use types::peer_info::PeerInfo;
@@ -129,17 +129,15 @@ impl NetworkService for NetworkAsyncService {
 
         let metrics = self.metrics.clone();
         let task = async move {
-            let start = Instant::now();
             Delay::new(time_out).await;
-            processor.remove_future(request_id).await;
+            let timeout = processor.remove_future(request_id).await;
+            if !timeout {
+                return;
+            }
             warn!(
                 "send request to {} with id {} timeout",
                 peer_id_clone, request_id
             );
-            let end = Instant::now();
-            if (end - start) < time_out {
-                return;
-            }
             if let Some(metrics) = metrics {
                 metrics.request_timeout_count.inc();
             }
