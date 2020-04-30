@@ -60,4 +60,6 @@ jobs:
           command: test
           args: --all-targets
       - name: deploy node
+        # only deploy master branch build.
+        if: github.ref == 'refs/heads/master'
         run: bash ./scripts/starcoin_ci_docker.sh
