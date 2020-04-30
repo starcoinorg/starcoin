@@ -76,10 +76,7 @@ where
         let head_block_hash = chain_info.get_head();
         let head = storage
             .get_block_by_hash(head_block_hash)?
-      .ok_or(format_err!(
-                "Can not find block by hash {}",
-                head_block_hash
-            ))?;
+            .ok_or_else(|| format_err!("Can not find block by hash {}", head_block_hash))?;
         let block_info = match storage.clone().get_block_info(head_block_hash) {
             Ok(Some(block_info_1)) => block_info_1,
             Err(e) => {
