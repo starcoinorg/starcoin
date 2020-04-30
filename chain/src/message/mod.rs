@@ -25,7 +25,7 @@ pub enum ChainRequest {
     // just fot test
     GetBlockByHash(HashValue),
     GetBlockInfoByHash(HashValue),
-    ConnectBlock(Block, Option<BlockInfo>),
+    ConnectBlock(Box<Block>, Option<Box<BlockInfo>>),
     GetStartupInfo(),
     GetHeadChainInfo(),
     GetTransaction(HashValue),
@@ -40,10 +40,10 @@ impl Message for ChainRequest {
 
 pub enum ChainResponse {
     BlockTemplate(BlockTemplate),
-    Block(Block),
-    OptionBlock(Option<Block>),
+    Block(Box<Block>),
+    OptionBlock(Option<Box<Block>>),
     OptionBlockInfo(Option<BlockInfo>),
-    BlockHeader(BlockHeader),
+    BlockHeader(Box<BlockHeader>),
     HashValue(HashValue),
     StartupInfo(StartupInfo),
     ChainInfo(ChainInfo),

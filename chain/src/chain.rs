@@ -76,10 +76,7 @@ where
         let head_block_hash = chain_info.get_head();
         let head = storage
             .get_block_by_hash(head_block_hash)?
-            .ok_or(format_err!(
-                "Can not find block by hash {}",
-                head_block_hash
-            ))?;
+            .ok_or_else(|| format_err!("Can not find block by hash {}", head_block_hash))?;
         // let block_info = match storage.clone().get_block_info(head_block_hash) {
         //     Ok(Some(block_info_1)) => block_info_1,
         //     Err(e) => {
@@ -91,7 +88,7 @@ where
 
         let state_root = head.header().state_root();
         let chain = Self {
-            config: config.clone(),
+            config,
             accumulator: MerkleAccumulator::new(
                 chain_info.branch_id(),
                 *ACCUMULATOR_PLACEHOLDER_HASH,
@@ -133,15 +130,14 @@ where
     }
 
     fn get_block_info(&self, block_id: HashValue) -> BlockInfo {
-        let block_info = match self.storage.get_block_info(block_id) {
+        match self.storage.get_block_info(block_id) {
             Ok(Some(block_info_1)) => block_info_1,
             Err(e) => {
                 warn!("err : {:?}", e);
                 DEFAULT_BLOCK_INFO.clone()
             }
             _ => DEFAULT_BLOCK_INFO.clone(),
-        };
-        block_info
+        }
     }
     pub fn save_block_info(&self, block_info: BlockInfo) {
         if let Err(e) = self.storage.save_block_info(block_info) {
@@ -175,7 +171,7 @@ where
                 .unwrap()
                 .unwrap()
                 .clone();
-            count = count + 1;
+            count += 1;
         }
     }
 
@@ -347,8 +343,8 @@ where
                     .get_block_by_branch_number(branch_id, current_num)
                 {
                     Ok(block) => {
-                        if block.is_some() {
-                            block_vec.push(block.unwrap());
+                        if let Some(b) = block {
+                            block_vec.push(b);
                         }
                     }
                     Err(_e) => {
@@ -361,8 +357,8 @@ where
                 if current_num == 0 || tmp_count == 1 {
                     break;
                 }
-                current_num = current_num - 1;
-                tmp_count = tmp_count - 1;
+                current_num -= 1;
+                tmp_count -= 1;
             }
         } else {
             debug!("branch id of block_number {:?} not found.", number);
@@ -385,7 +381,7 @@ where
             }
         }
 
-        return Ok(None);
+        Ok(None)
     }
 
     fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
@@ -515,7 +511,7 @@ where
         };
 
         let block_info = BlockInfo::new(
-            header.id().clone(),
+            header.id(),
             accumulator_root,
             self.accumulator.get_frozen_subtree_roots()?,
             self.accumulator.num_leaves(),
@@ -523,7 +519,7 @@ where
             total_difficulty,
         );
         // save block's transaction relationship and save transaction
-        self.save(header.id().clone(), txns.clone())?;
+        self.save(header.id().clone(), txns)?;
         self.storage.save_transaction_infos(vec_transaction_info)?;
         let commit_begin_time = get_unix_ts();
         self.commit(block.clone(), block_info)?;

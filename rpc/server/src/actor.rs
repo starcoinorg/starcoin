@@ -170,7 +170,7 @@ mod tests {
         let txpool = MockTxPoolService::new();
         let account_service = MockWalletService::new().unwrap();
         let state_service = MockChainStateService::new();
-        let chain_service = MockChainService::new();
+        let chain_service = MockChainService::default();
         let _rpc_actor = RpcActor::launch(
             config,
             txpool,

@@ -96,14 +96,12 @@ where
         if let Some(tmp) = chain_info {
             if number >= tmp.start_number() {
                 return Some(tmp.branch_id());
-            } else {
-                if let Some(parent_branch) = tmp.parent_branch() {
-                    return self.get_branch_id(&parent_branch, number);
-                }
+            } else if let Some(parent_branch) = tmp.parent_branch() {
+                return self.get_branch_id(&parent_branch, number);
             }
         }
 
-        return None;
+        None
     }
 
     pub fn fork(&self, block_header: &BlockHeader) -> Option<ChainInfo> {
@@ -156,9 +154,9 @@ where
                     let chain = self.get_master().new_chain(branch)?;
                     tmp = Some(chain.create_block_template(
                         author,
-                        auth_key_prefix.clone(),
+                        auth_key_prefix,
                         Some(block_id),
-                        user_txns.clone(),
+                        user_txns,
                     ));
                 }
             }
@@ -239,11 +237,11 @@ where
             header.id(),
             chain_info
         );
-        if chain_info.is_some() {
+        if let Some(info) = chain_info {
             let block_exist = self.collection.block_exist(header.id());
             let branch = BlockChain::new(
                 self.config.clone(),
-                chain_info.unwrap(),
+                info,
                 self.storage.clone(),
                 self.txpool.clone(),
                 Arc::downgrade(&self.collection),
@@ -285,8 +283,7 @@ where
                 rollback = true;
             }
 
-            let _ = self
-                .collection
+            self.collection
                 .remove_branch(&new_branch.get_chain_info().branch_id());
             self.collection.update_master(BlockChain::new(
                 self.config.clone(),
@@ -354,7 +351,7 @@ where
             .get_common_ancestor(block_enacted.clone(), block_retracted.clone())?
             .unwrap();
 
-        let mut block_enacted_tmp = block_enacted.clone();
+        let mut block_enacted_tmp = *block_enacted;
 
         debug!("ancestor block is : {:?}", ancestor);
         loop {
@@ -370,7 +367,7 @@ where
             enacted.push(block_tmp);
         }
 
-        let mut block_retracted_tmp = block_retracted.clone();
+        let mut block_retracted_tmp = *block_retracted;
         loop {
             if block_retracted_tmp == ancestor {
                 break;
@@ -446,37 +443,35 @@ where
                 if block_exist {
                     CHAIN_METRICS.duplicate_conn_count.inc();
                     Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
-                } else {
-                    if let Some(mut branch) = fork {
-                        let fork_end_time = get_unix_ts();
-                        debug!("fork used time: {}", (fork_end_time - connect_begin_time));
+                } else if let Some(mut branch) = fork {
+                    let fork_end_time = get_unix_ts();
+                    debug!("fork used time: {}", (fork_end_time - connect_begin_time));
 
-                        let timer = CHAIN_METRICS
-                            .exe_block_time
-                            .with_label_values(&["time"])
-                            .start_timer();
+                    let timer = CHAIN_METRICS
+                        .exe_block_time
+                        .with_label_values(&["time"])
+                        .start_timer();
 
-                        let connected = branch.apply(block.clone())?;
-                        timer.observe_duration();
-                        let apply_end_time = get_unix_ts();
-                        let apply_total_time = apply_end_time - fork_end_time;
-                        debug!("apply used time: {}", apply_total_time);
-                        if !connected {
-                            CHAIN_METRICS.verify_fail_count.inc();
-                            Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
-                        } else {
-                            self.select_head(branch)?;
-                            let select_head_end_time = get_unix_ts();
-                            debug!(
-                                "select head used time: {}",
-                                (select_head_end_time - apply_end_time)
-                            );
-                            self.collection.get_master().latest_blocks(1);
-                            Ok(ConnectResult::Ok(()))
-                        }
+                    let connected = branch.apply(block)?;
+                    timer.observe_duration();
+                    let apply_end_time = get_unix_ts();
+                    let apply_total_time = apply_end_time - fork_end_time;
+                    debug!("apply used time: {}", apply_total_time);
+                    if !connected {
+                        CHAIN_METRICS.verify_fail_count.inc();
+                        Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                     } else {
-                        Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
+                        self.select_head(branch)?;
+                        let select_head_end_time = get_unix_ts();
+                        debug!(
+                            "select head used time: {}",
+                            (select_head_end_time - apply_end_time)
+                        );
+                        self.collection.get_master().latest_blocks(1);
+                        Ok(ConnectResult::Ok(()))
                     }
+                } else {
+                    Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                 }
             } else {
                 Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
@@ -496,9 +491,7 @@ where
         if self.sync_metadata.state_syncing() {
             let pivot = self.sync_metadata.get_pivot()?;
             let latest_sync_number = self.sync_metadata.get_latest();
-            if pivot.is_some() && latest_sync_number.is_some() {
-                let pivot_number = pivot.unwrap();
-                let latest_number = latest_sync_number.unwrap();
+            if let (Some(pivot_number), Some(latest_number)) = (pivot, latest_sync_number) {
                 let current_block_number = block.header().number();
                 if pivot_number >= current_block_number {
                     //todo:1. verify block header / verify accumulator / total difficulty
@@ -506,21 +499,17 @@ where
                     if block_exist {
                         CHAIN_METRICS.duplicate_conn_count.inc();
                         Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
-                    } else {
-                        if let Some(mut branch) = fork {
-                            if let Ok(_) =
-                                C::verify_header(self.config.clone(), &branch, block.header())
-                            {
-                                // 2. commit block
-                                branch.commit(block, block_info)?;
-                                self.select_head(branch)?;
-                                Ok(ConnectResult::Ok(()))
-                            } else {
-                                Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
-                            }
+                    } else if let Some(mut branch) = fork {
+                        if C::verify_header(self.config.clone(), &branch, block.header()).is_ok() {
+                            // 2. commit block
+                            branch.commit(block, block_info)?;
+                            self.select_head(branch)?;
+                            Ok(ConnectResult::Ok(()))
                         } else {
-                            Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
+                            Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                         }
+                    } else {
+                        Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                     }
                 } else if latest_number >= current_block_number {
                     let connect_result = self.try_connect(block, true)?;

@@ -14,14 +14,8 @@ use types::{
 };
 
 //TODO implement Mock service
-#[derive(Clone)]
-pub struct MockChainService {}
-
-impl MockChainService {
-    pub fn new() -> MockChainService {
-        Self {}
-    }
-}
+#[derive(Clone, Default)]
+pub struct MockChainService;
 
 #[async_trait::async_trait]
 impl ChainAsyncService for MockChainService {
