@@ -8,6 +8,7 @@ use hyper::{
     Body, Method, Request, Response, Server, StatusCode,
 };
 use prometheus::{Encoder, TextEncoder};
+use starcoin_logger::prelude::*;
 use std::{
     net::{SocketAddr, ToSocketAddrs},
     thread,
@@ -54,10 +55,19 @@ pub fn start_server(host: String, port: u16) {
         .unwrap();
 
     // metric process info.
-    prometheus::register(Box::new(
-        crate::process_collector::ProcessCollector::for_self("starcoin".to_string()),
-    ))
-    .unwrap();
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let process_collector =
+            crate::process_collector::ProcessCollector::for_self("starcoin".to_string());
+        match process_collector {
+            Ok(p) => {
+                prometheus::register(Box::new(p)).unwrap();
+            }
+            Err(e) => {
+                error!("{:?}", e);
+            }
+        }
+    }
 
     thread::spawn(move || {
         let make_service =
