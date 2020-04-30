@@ -70,18 +70,12 @@ impl Genesis {
 
         let transaction_info = Self::execute_genesis_txn(chain_state_set.clone(), &chain_state_db)?;
 
-        let accumulator = MerkleAccumulator::new(
-            HashValue::zero(),
-            *ACCUMULATOR_PLACEHOLDER_HASH,
-            vec![],
-            0,
-            0,
-            storage.clone(),
-        )?;
+        let accumulator =
+            MerkleAccumulator::new(*ACCUMULATOR_PLACEHOLDER_HASH, vec![], 0, 0, storage.clone())?;
         let txn_info_hash = transaction_info.crypto_hash();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
-
+        accumulator.flush()?;
         let block = Block::genesis_block(
             accumulator_root,
             transaction_info.state_root_hash(),
@@ -157,7 +151,6 @@ impl Genesis {
         );
 
         let accumulator = MerkleAccumulator::new(
-            block.header().id(),
             *ACCUMULATOR_PLACEHOLDER_HASH,
             vec![],
             0,
@@ -167,7 +160,7 @@ impl Genesis {
         let txn_info_hash = transaction_info.crypto_hash();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
-
+        accumulator.flush()?;
         ensure!(
             block.header().number() == 0,
             "Genesis block number must is 0."

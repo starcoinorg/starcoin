@@ -44,8 +44,8 @@ impl NodeIndex {
     pub fn from_level_and_pos(level: u32, pos: u64) -> Self {
         precondition!(level < 63);
         assume!(1u64 << level > 0); // bitwise and integer operations don't mix.
-        let level_one_bits = (1u64 << level) - 1;
-        let shifted_pos = pos << (level + 1);
+        let level_one_bits = (1u64 << level as u64) - 1;
+        let shifted_pos = pos << (level + 1) as u64;
         NodeIndex(shifted_pos | level_one_bits)
     }
     pub fn from_leaf_index(leaf_index: u64) -> Self {
@@ -112,7 +112,7 @@ impl NodeIndex {
     /// Right most child is a Position, could be itself, at level 0
     pub fn right_most_child(self) -> Self {
         let level = self.level();
-        Self(self.0 + (1_u64 << level) - 1)
+        Self(self.0 + (1_u64 << level as u64) - 1)
     }
 
     pub fn is_placeholder(self, leaf_index: u64) -> bool {
@@ -265,7 +265,7 @@ fn isolate_rightmost_zero_bit(v: u64) -> u64 {
 /// Turn off n right most bits
 fn turn_off_right_most_n_bits(v: u64, n: u32) -> u64 {
     precondition!(n < 64);
-    (v >> n) << n
+    (v >> n as u64) << n as u64
 }
 
 #[derive(Debug)]
