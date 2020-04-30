@@ -41,7 +41,7 @@ impl AccumulatorTree {
         root_hash: HashValue,
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
-        info!("accumulator cache new: {:?}", accumulator_id.short_str());
+        trace!("accumulator cache new: {:?}", accumulator_id.short_str());
         Self {
             id: accumulator_id,
             frozen_subtree_roots,
