@@ -227,7 +227,7 @@ impl AccumulatorTree {
     fn restore_index_cache(&self, hashes: Vec<HashValue>) -> Result<()> {
         for hash in hashes {
             let node = self.get_node(hash).unwrap();
-            info!("restore node {:?}--{:?}", self.id.short_str(), node);
+            trace!("restore node {:?}--{:?}", self.id.short_str(), node);
             match node {
                 AccumulatorNode::Internal(internal) => {
                     self.save_node_index(internal.index(), hash)?;
@@ -247,7 +247,7 @@ impl AccumulatorTree {
 
     /// Update node to cache.
     fn update_cache(&self, node_vec: Vec<AccumulatorNode>) -> Result<()> {
-        info!("accumulator update cache.");
+        trace!("accumulator update cache.");
         self.save_node_indexes(node_vec)
     }
 
@@ -256,7 +256,7 @@ impl AccumulatorTree {
         let index_key = NodeCacheKey::new(self.id, index);
         let mut node_hash = self.get_node_index(index_key);
         if node_hash == HashValue::zero() {
-            info!(
+            trace!(
                 "get index from cache is null,then restore from frozen:{:?}",
                 index
             );
@@ -265,7 +265,7 @@ impl AccumulatorTree {
                 .unwrap();
             node_hash = self.get_node_index(index_key);
             if node_hash == HashValue::zero() {
-                info!("after restore is null,{:?}", index);
+                trace!("after restore is null,{:?}", index);
                 // get parent hash from to storage
                 let parent = index.parent();
                 let parent_hash = self.get_node_index(NodeCacheKey::new(self.id, parent));
