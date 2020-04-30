@@ -13,6 +13,8 @@ proptest = "0.9.6"
 types = {path = "../types", package="starcoin-types"}
 storage = { package="starcoin-storage", path = "../storage"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-config = { path = "../config"}
+starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
 [[bench]]
 name = "benchmarks"
 harness = false

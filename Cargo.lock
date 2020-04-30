@@ -515,6 +515,8 @@ dependencies = [
  "anyhow",
  "criterion",
  "proptest",
+ "starcoin-accumulator",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-storage",
  "starcoin-types",
@@ -5543,8 +5545,10 @@ dependencies = [
  "anyhow",
  "byteorder 1.3.4",
  "itertools 0.8.2",
+ "lru",
  "mirai-annotations",
  "once_cell",
+ "parking_lot 0.10.2",
  "proptest",
  "proptest-derive",
  "rand 0.6.5",
@@ -5817,7 +5821,6 @@ name = "starcoin-genesis"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "libra-temppath",
  "serde",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",

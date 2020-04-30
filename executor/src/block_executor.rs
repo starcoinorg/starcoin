@@ -78,6 +78,7 @@ impl BlockExecutor {
                     })
                     .unwrap();
             });
+            accumulator.flush().unwrap();
             chain_state
                 .flush()
                 .map_err(|_err| BlockExecutorError::BlockChainStateFlushErr)?;
