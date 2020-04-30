@@ -101,11 +101,11 @@ where
 
     fn handle(&mut self, msg: ChainRequest, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(
+            ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(Some(
                 self.service.master_head_header(),
-            ))),
+            )))),
             ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeader(Box::new(
-                self.service.get_header_by_hash(hash)?.unwrap(),
+                self.service.get_header_by_hash(hash)?,
             ))),
             ChainRequest::HeadBlock() => Ok(ChainResponse::Block(Box::new(
                 self.service.master_head_block(),
@@ -239,10 +239,11 @@ where
             .unwrap()
             .unwrap()
         {
-            Some(*header)
-        } else {
-            None
+            if let Some(h) = *header {
+                return Some(h);
+            }
         }
+        None
     }
 
     async fn get_block_by_hash(self, hash: HashValue) -> Result<Block> {
@@ -309,10 +310,11 @@ where
             .unwrap()
             .unwrap()
         {
-            Some(*header)
-        } else {
-            None
+            if let Some(h) = *header {
+                return Some(h);
+            }
         }
+        None
     }
 
     async fn master_head_block(self) -> Option<Block> {
