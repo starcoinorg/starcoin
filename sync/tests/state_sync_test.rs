@@ -119,7 +119,7 @@ fn test_state_sync() {
             miner_account,
         );
         MinerClientActor::new(node_config_1.miner.clone()).start();
-        Delay::new(Duration::from_secs(20)).await;
+        Delay::new(Duration::from_secs(30)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
         let number = block_1.header().number();
         debug!("first chain :{:?}", number);
