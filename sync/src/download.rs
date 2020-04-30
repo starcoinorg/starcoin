@@ -220,7 +220,7 @@ where
                     peer_id
                 );
                 // connect block
-                Downloader::do_block_and_child(downloader.clone(), block, None);
+                Downloader::do_block_and_child(downloader.clone(), *block, None);
             }
             SyncNotify::ClosePeerMsg(peer_id) => {
                 info!("close peer: {:?}", peer_id,);

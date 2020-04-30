@@ -78,15 +78,13 @@ impl StartupInfo {
     }
 
     fn get_branch_index(&self, branch_id: HashValue) -> Option<usize> {
-        let mut index = 0;
-        for branch in &self.branches {
+        for (index, branch) in self.branches.iter().enumerate() {
             if branch.branch_id == branch_id {
                 return Some(index);
             }
-            index += 1;
         }
 
-        return None;
+        None
     }
 
     pub fn remove_branch(&mut self, branch_id: HashValue) {

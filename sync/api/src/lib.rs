@@ -105,14 +105,14 @@ impl SyncMetadata {
     }
 
     pub fn get_pivot(&self) -> Result<Option<BlockNumber>> {
-        Ok(match self.0.read().pivot_behind.clone() {
+        Ok(match self.0.read().pivot_behind {
             None => None,
             Some((pivot, _behind)) => Some(pivot),
         })
     }
 
     pub fn get_latest(&self) -> Option<BlockNumber> {
-        match self.0.read().pivot_behind.clone() {
+        match self.0.read().pivot_behind {
             None => None,
             Some((pivot, behind)) => Some(pivot + behind),
         }
