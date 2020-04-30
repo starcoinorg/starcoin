@@ -92,7 +92,7 @@ where
         Ok(())
     }
     //
-    pub async fn remove_future(&self, id: K) {
+    pub async fn remove_future(&self, id: K) -> bool {
         let mut tx_map = self.tx_map.lock().await;
         if let Some(tx) = tx_map.get(&id) {
             tx.clone()
@@ -100,6 +100,9 @@ where
                 .await
                 .unwrap();
             tx_map.remove(&id);
+            // if find tx ,means timeout
+            return true;
         }
+        false
     }
 }
