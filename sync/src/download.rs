@@ -308,6 +308,13 @@ where
                     MIN_BLOCKS_BEHIND
                 };
                 if (ancestor + min_behind) > latest_number {
+                    info!(
+                        "do not need sync state : {:?}, {:?}, {:?}",
+                        ancestor, min_behind, latest_number
+                    );
+                    if sync_metadata.get_address().is_none() {
+                        let _ = sync_metadata.state_sync_done();
+                    }
                     return Ok(());
                 }
                 let pivot = latest_number - min_behind;
