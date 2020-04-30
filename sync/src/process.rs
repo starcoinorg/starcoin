@@ -94,43 +94,39 @@ where
                     }
                 }
                 SyncRpcRequest::GetDataByHashMsg(get_data_by_hash_msg) => {
-                    match get_data_by_hash_msg.data_type {
-                        DataType::HEADER => {
-                            let batch_header_msg = Processor::handle_get_header_by_hash_msg(
-                                processor.clone(),
-                                get_data_by_hash_msg.clone(),
-                            )
-                            .await;
-                            let batch_body_msg = Processor::handle_get_body_by_hash_msg(
-                                processor.clone(),
-                                get_data_by_hash_msg.clone(),
-                            )
-                            .await;
-                            let batch_block_info_msg =
-                                Processor::handle_get_block_info_by_hash_msg(
-                                    processor.clone(),
-                                    get_data_by_hash_msg,
-                                )
-                                .await;
-                            debug!(
-                                "batch block size: {} : {} : {}",
-                                batch_header_msg.headers.len(),
-                                batch_body_msg.bodies.len(),
-                                batch_block_info_msg.infos.len()
-                            );
+                    if let DataType::HEADER = get_data_by_hash_msg.data_type {
+                        let batch_header_msg = Processor::handle_get_header_by_hash_msg(
+                            processor.clone(),
+                            get_data_by_hash_msg.clone(),
+                        )
+                        .await;
+                        let batch_body_msg = Processor::handle_get_body_by_hash_msg(
+                            processor.clone(),
+                            get_data_by_hash_msg.clone(),
+                        )
+                        .await;
+                        let batch_block_info_msg = Processor::handle_get_block_info_by_hash_msg(
+                            processor.clone(),
+                            get_data_by_hash_msg,
+                        )
+                        .await;
+                        debug!(
+                            "batch block size: {} : {} : {}",
+                            batch_header_msg.headers.len(),
+                            batch_body_msg.bodies.len(),
+                            batch_block_info_msg.infos.len()
+                        );
 
-                            if let Err(e) = do_get_block_by_hash(
-                                responder,
-                                batch_header_msg,
-                                batch_body_msg,
-                                batch_block_info_msg,
-                            )
-                            .await
-                            {
-                                error!("error: {:?}", e);
-                            }
+                        if let Err(e) = do_get_block_by_hash(
+                            responder,
+                            batch_header_msg,
+                            batch_body_msg,
+                            batch_block_info_msg,
+                        )
+                        .await
+                        {
+                            error!("error: {:?}", e);
                         }
-                        _ => {}
                     }
                 }
                 SyncRpcRequest::GetStateNodeByNodeHash(state_node_key) => {
@@ -299,7 +295,7 @@ where
         nodes_hash
             .iter()
             .for_each(|node_key| match processor.storage.get(node_key) {
-                Ok(node) => state_nodes.push((node_key.clone(), node)),
+                Ok(node) => state_nodes.push((*node_key, node)),
                 Err(e) => error!("error: {:?}", e),
             });
 
@@ -313,7 +309,7 @@ where
         let mut accumulator_nodes = Vec::new();
         nodes_hash.iter().for_each(
             |node_key| match processor.storage.get_node(node_key.clone()) {
-                Ok(node) => accumulator_nodes.push((node_key.clone(), node)),
+                Ok(node) => accumulator_nodes.push((*node_key, node)),
                 Err(e) => error!("error: {:?}", e),
             },
         );

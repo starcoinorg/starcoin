@@ -56,7 +56,7 @@ where
 {
     type Result = Result<()>;
     fn handle(&mut self, event: SyncBodyEvent, _ctx: &mut Self::Context) -> Self::Result {
-        let hashs: Vec<HashValue> = event.headers.iter().map(|h| h.id().clone()).collect();
+        let hashs: Vec<HashValue> = event.headers.iter().map(|h| h.id()).collect();
 
         let network = self.network.clone();
         let peers = event.peers.clone();

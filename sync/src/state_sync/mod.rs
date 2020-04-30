@@ -264,7 +264,7 @@ impl<T> SyncTask<T> {
         self.syncing_nodes.insert(peer_id, value)
     }
 
-    pub fn get(&mut self, peer_id: &PeerId) -> Option<&T> {
+    pub fn get(&self, peer_id: &PeerId) -> Option<&T> {
         self.syncing_nodes.get(peer_id)
     }
 
@@ -283,7 +283,7 @@ impl StateSyncTaskActor {
     ) -> StateSyncTaskRef {
         let roots = Roots::new(root.0, root.1);
         let mut state_sync_task = SyncTask::new();
-        state_sync_task.push_back((roots.state_root().clone(), true));
+        state_sync_task.push_back((*roots.state_root(), true));
         let mut accumulator_sync_task = SyncTask::new();
         accumulator_sync_task.push_back(roots.accumulator_root().clone());
         let address = StateSyncTaskActor::create(move |_ctx| Self {
@@ -306,15 +306,14 @@ impl StateSyncTaskActor {
     fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let mut lock = self.state_sync_task.lock();
         let value = lock.pop_front();
-        if value.is_some() {
-            let (node_key, is_global) = value.unwrap();
+        if let Some((node_key, is_global)) = value {
             SYNC_METRICS
                 .sync_total_count
                 .with_label_values(&[LABEL_STATE])
                 .inc();
             if let Some(state_node) = self.storage.get(&node_key).unwrap() {
                 debug!("find state_node {:?} in db.", node_key);
-                lock.insert(self.self_peer_id.clone(), (node_key.clone(), is_global));
+                lock.insert(self.self_peer_id.clone(), (node_key, is_global));
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_state(
                     self.self_peer_id.clone(),
                     node_key,
@@ -324,10 +323,8 @@ impl StateSyncTaskActor {
                 };
             } else {
                 let network_service = self.network_service.clone();
-                let best_peer_info = block_on(async move {
-                    let peer_info = network_service.best_peer().await.unwrap();
-                    peer_info
-                });
+                let best_peer_info =
+                    block_on(async move { network_service.best_peer().await.unwrap() });
                 debug!(
                     "sync state_node {:?} from peer {:?}.",
                     node_key, best_peer_info
@@ -335,7 +332,7 @@ impl StateSyncTaskActor {
                 if let Some(best_peer) = best_peer_info {
                     if self.self_peer_id != best_peer.get_peer_id() {
                         let network_service = self.network_service.clone();
-                        lock.insert(best_peer.get_peer_id(), (node_key.clone(), is_global));
+                        lock.insert(best_peer.get_peer_id(), (node_key, is_global));
                         Arbiter::spawn(async move {
                             sync_state_node(
                                 node_key,
@@ -356,7 +353,7 @@ impl StateSyncTaskActor {
     fn handle_state_sync(&mut self, task_event: StateSyncTaskEvent) {
         let mut lock = self.state_sync_task.lock();
         if let Some((state_node_hash, is_global)) = lock.get(&task_event.peer_id) {
-            let is_global = is_global.clone();
+            let is_global = *is_global;
             //1. push back
             let current_node_key = task_event.node_key;
             if state_node_hash != &current_node_key {
@@ -384,10 +381,9 @@ impl StateSyncTaskActor {
                                 }
                                 Ok(account_state) => {
                                     account_state.storage_roots().iter().for_each(|key| {
-                                        if key.is_some() {
-                                            let hash = key.unwrap().clone();
-                                            if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
-                                                lock.push_back((hash, false));
+                                        if let Some(hash) = key {
+                                            if *hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
+                                                lock.push_back((*hash, false));
                                             }
                                         }
                                     });
@@ -415,8 +411,7 @@ impl StateSyncTaskActor {
     fn _exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let mut lock = self.accumulator_sync_task.lock();
         let value = lock.pop_front();
-        if value.is_some() {
-            let node_key = value.unwrap();
+        if let Some(node_key) = value {
             SYNC_METRICS
                 .sync_total_count
                 .with_label_values(&[_LABEL_ACCUMULATOR])
@@ -433,10 +428,8 @@ impl StateSyncTaskActor {
                 };
             } else {
                 let network_service = self.network_service.clone();
-                let best_peer_info = block_on(async move {
-                    let peer_info = network_service.best_peer().await.unwrap();
-                    peer_info
-                });
+                let best_peer_info =
+                    block_on(async move { network_service.best_peer().await.unwrap() });
                 debug!(
                     "sync accumulator_node {:?} from peer {:?}.",
                     node_key, best_peer_info
@@ -508,8 +501,8 @@ impl StateSyncTaskActor {
         info!("reset state sync task.");
         let mut lock = self.state_sync_task.lock();
         lock.clear();
-        self.roots = Roots::new(state_root.clone(), accumulator_root.clone());
-        lock.push_back((self.roots.state_root().clone(), true));
+        self.roots = Roots::new(*state_root, *accumulator_root);
+        lock.push_back((*self.roots.state_root(), true));
     }
 }
 
@@ -547,12 +540,10 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
 
                 ctx.stop();
             }
+        } else if state_or_accumulator {
+            self.exe_state_sync_task(ctx.address());
         } else {
-            if state_or_accumulator {
-                self.exe_state_sync_task(ctx.address());
-            } else {
-                //self.exe_accumulator_sync_task(ctx.address());
-            }
+            //self.exe_accumulator_sync_task(ctx.address());
         }
         Ok(())
     }

@@ -49,10 +49,10 @@ where
             node_config,
             peer_id,
             chain,
-            network.clone(),
+            network,
             bus.clone(),
             storage.clone(),
-            sync_metadata.clone(),
+            sync_metadata,
         )?;
 
         let actor = SyncActor {
@@ -106,7 +106,6 @@ where
             .into_actor(self)
             .then(|_result, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-        ()
     }
 }
 

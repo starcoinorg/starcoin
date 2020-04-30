@@ -139,35 +139,28 @@ where
     type Result = ();
 
     fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            SystemEvents::SyncBegin() => {
-                info!("received SyncBegin event.");
-                self.ready.store(true, Ordering::Relaxed);
+        if let SystemEvents::SyncBegin() = msg {
+            info!("received SyncBegin event.");
+            self.ready.store(true, Ordering::Relaxed);
 
-                let downloader = self.downloader.clone();
-                let network = self.network.clone();
-                let storage = self.storage.clone();
-                let sync_metadata = self.sync_metadata.clone();
-                let is_main = self.main_network;
-                let self_peer_id = self.self_peer_id.as_ref().clone();
-                Arbiter::spawn(async move {
-                    Self::sync_state(
-                        self_peer_id,
-                        is_main,
-                        downloader.clone(),
-                        network,
-                        storage,
-                        sync_metadata,
-                    )
-                    .await;
-                });
-            }
-            _ => {
-                info!("do nothing.");
-            }
+            let downloader = self.downloader.clone();
+            let network = self.network.clone();
+            let storage = self.storage.clone();
+            let sync_metadata = self.sync_metadata.clone();
+            let is_main = self.main_network;
+            let self_peer_id = self.self_peer_id.as_ref().clone();
+            Arbiter::spawn(async move {
+                Self::sync_state(
+                    self_peer_id,
+                    is_main,
+                    downloader.clone(),
+                    network,
+                    storage,
+                    sync_metadata,
+                )
+                .await;
+            });
         }
-
-        ()
     }
 }
 
@@ -220,14 +213,12 @@ where
                     peer_id
                 );
                 // connect block
-                Downloader::do_block_and_child(downloader.clone(), *block, None);
+                Downloader::do_block_and_child(downloader, *block, None);
             }
             SyncNotify::ClosePeerMsg(peer_id) => {
                 info!("close peer: {:?}", peer_id,);
             }
         }
-
-        ()
     }
 }
 
@@ -284,8 +275,7 @@ where
             return Ok(());
         }
 
-        if !((main_network && network.get_peer_set_size().await? >= MIN_PEER_SIZE) || !main_network)
-        {
+        if main_network && network.get_peer_set_size().await? < MIN_PEER_SIZE {
             warn!("condition is not satisfied when sync state.");
             return Ok(());
         }
@@ -317,7 +307,7 @@ where
                 } else {
                     MIN_BLOCKS_BEHIND
                 };
-                if !((ancestor + min_behind) <= latest_number) {
+                if (ancestor + min_behind) > latest_number {
                     return Ok(());
                 }
                 let pivot = latest_number - min_behind;
@@ -344,11 +334,15 @@ where
                         sync_metadata.clone(),
                     );
                     sync_metadata.update_address(&state_sync_task_address)?
-                } else if sync_pivot.unwrap() < pivot {
-                    if let Some(address) = sync_metadata.get_address() {
-                        &address.reset(root.state_root(), root.accumulator_root());
-                    } else {
-                        info!("state sync reset address is none.");
+                } else if let Some(tmp) = sync_pivot {
+                    if tmp < pivot {
+                        if let Some(address) = sync_metadata.get_address() {
+                            address
+                                .reset(root.state_root(), root.accumulator_root())
+                                .await;
+                        } else {
+                            info!("state sync reset address is none.");
+                        }
                     }
                 }
             } else {
@@ -734,38 +728,34 @@ where
     ) -> Result<Option<HashWithNumber>> {
         let mut hash_with_number = None;
         let mut begin_number = block_number;
-        loop {
-            if let Some((get_hash_by_number_msg, end, next_number)) =
-                Downloader::<C>::get_hash_by_number_msg_backward(
-                    network.clone(),
-                    peer_id.clone(),
-                    begin_number,
-                )
-                .await?
-            {
-                begin_number = next_number;
-                info!(
-                    "peer: {:?} , numbers : {}",
-                    peer_id.clone(),
-                    get_hash_by_number_msg.numbers.len()
-                );
-                let batch_hash_by_number_msg =
-                    get_hash_by_number(&network, peer_id.clone(), get_hash_by_number_msg).await?;
-                debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
-                hash_with_number = Downloader::do_ancestor(
-                    downloader.clone(),
-                    peer_id.clone(),
-                    batch_hash_by_number_msg,
-                )
-                .await;
+        while let Some((get_hash_by_number_msg, end, next_number)) =
+            Downloader::<C>::get_hash_by_number_msg_backward(
+                network.clone(),
+                peer_id.clone(),
+                begin_number,
+            )
+            .await?
+        {
+            begin_number = next_number;
+            info!(
+                "peer: {:?} , numbers : {}",
+                peer_id.clone(),
+                get_hash_by_number_msg.numbers.len()
+            );
+            let batch_hash_by_number_msg =
+                get_hash_by_number(&network, peer_id.clone(), get_hash_by_number_msg).await?;
+            debug!("batch_hash_by_number_msg:{:?}", batch_hash_by_number_msg);
+            hash_with_number = Downloader::do_ancestor(
+                downloader.clone(),
+                peer_id.clone(),
+                batch_hash_by_number_msg,
+            )
+            .await;
 
-                if end || hash_with_number.is_some() {
-                    if end && hash_with_number.is_none() {
-                        return Err(format_err!("{:?}", "find ancestor is none."));
-                    }
-                    break;
+            if end || hash_with_number.is_some() {
+                if end && hash_with_number.is_none() {
+                    return Err(format_err!("{:?}", "find ancestor is none."));
                 }
-            } else {
                 break;
             }
         }
@@ -923,20 +913,18 @@ where
             Ok(connect) => {
                 if is_ok(&connect) {
                     return true;
-                } else {
-                    if let Err(err) = connect {
-                        match err {
-                            ConnectBlockError::FutureBlock => {
-                                downloader.future_blocks.add_future_block(block, block_info)
-                            }
-                            _ => error!("err: {:?}", err),
+                } else if let Err(err) = connect {
+                    match err {
+                        ConnectBlockError::FutureBlock => {
+                            downloader.future_blocks.add_future_block(block, block_info)
                         }
+                        _ => error!("err: {:?}", err),
                     }
                 }
             }
             Err(e) => error!("err: {:?}", e),
         }
 
-        return false;
+        false
     }
 }

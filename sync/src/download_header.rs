@@ -62,7 +62,7 @@ where
     fn handle(&mut self, event: SyncHeaderEvent, _ctx: &mut Self::Context) -> Self::Result {
         let network = self.network.clone();
         let peers = event.peers.clone();
-        let hashs = event.hashs.clone();
+        let hashs = event.hashs;
         let download_body = self.download_body.clone();
         Arbiter::spawn(async move {
             for peer in peers.clone() {

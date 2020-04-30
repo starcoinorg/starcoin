@@ -50,10 +50,8 @@ where
 {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.block_number.cmp(&other.block_number) {
-            Ordering::Equal => {
-                return self.data.cmp(&other.data);
-            }
-            ordering => return ordering,
+            Ordering::Equal => self.data.cmp(&other.data),
+            ordering => ordering,
         }
     }
 }
