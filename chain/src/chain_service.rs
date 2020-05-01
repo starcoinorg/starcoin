@@ -107,8 +107,16 @@ where
     pub fn fork(&self, block_header: &BlockHeader) -> Option<ChainInfo> {
         let chain_info = self.get_master().fork(block_header);
         if chain_info.is_none() {
-            if let Ok(Some(branch_id)) = self.storage.get_branch(block_header.parent_hash()) {
-                if let Some(chain_info) = self.startup_info.read().get_branch(branch_id) {
+            let parent_branch = self.storage.get_branch(block_header.parent_hash());
+            debug!(
+                "get_branch 1 {:?} : {:?}",
+                block_header.parent_hash(),
+                parent_branch
+            );
+            if let Ok(Some(branch_id)) = parent_branch {
+                let branch = self.startup_info.read().get_branch(branch_id);
+                debug!("get_branch 2 {:?} : {:?}", branch_id, branch);
+                if let Some(chain_info) = branch {
                     return if chain_info.get_head() == block_header.parent_hash() {
                         Some(chain_info)
                     } else {
@@ -310,7 +318,7 @@ where
             self.collection.insert_branch(new_branch);
         }
 
-        self.storage.save_branch(branch_id, block_id)?;
+        self.storage.save_branch(block_id, branch_id)?;
         CHAIN_METRICS
             .branch_total_count
             .set(self.collection.startup_info.read().branches.len() as i64);
@@ -434,7 +442,7 @@ where
                 || (pivot_sync && self.sync_metadata.state_done())
             {
                 let (block_exist, fork) = self.find_or_fork(block.header())?;
-                debug!(
+                info!(
                     "startup_info branch try_connect : {:?}, {:?}, :{:?}",
                     block.header().parent_hash(),
                     block.header().id(),
@@ -452,12 +460,13 @@ where
                         .with_label_values(&["time"])
                         .start_timer();
 
-                    let connected = branch.apply(block)?;
+                    let connected = branch.apply(block.clone())?;
                     timer.observe_duration();
                     let apply_end_time = get_unix_ts();
                     let apply_total_time = apply_end_time - fork_end_time;
                     debug!("apply used time: {}", apply_total_time);
                     if !connected {
+                        debug!("connected failed {:?}", block.header().id());
                         CHAIN_METRICS.verify_fail_count.inc();
                         Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                     } else {
@@ -467,13 +476,15 @@ where
                             "select head used time: {}",
                             (select_head_end_time - apply_end_time)
                         );
-                        self.collection.get_master().latest_blocks(1);
+                        self.collection.get_master().latest_blocks(10);
                         Ok(ConnectResult::Ok(()))
                     }
                 } else {
+                    debug!("future block 1 {:?}", block.header().id());
                     Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                 }
             } else {
+                debug!("future block 1 {:?}", block.header().id());
                 Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
             }
         } else {
@@ -496,6 +507,12 @@ where
                 if pivot_number >= current_block_number {
                     //todo:1. verify block header / verify accumulator / total difficulty
                     let (block_exist, fork) = self.find_or_fork(block.header())?;
+                    debug!(
+                        "startup_info branch try_connect_with_block_info : {:?}, {:?}, :{:?}",
+                        block.header().parent_hash(),
+                        block.header().id(),
+                        block_exist
+                    );
                     if block_exist {
                         CHAIN_METRICS.duplicate_conn_count.inc();
                         Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
@@ -504,11 +521,14 @@ where
                             // 2. commit block
                             branch.commit(block, block_info)?;
                             self.select_head(branch)?;
+                            self.collection.get_master().latest_blocks(5);
                             Ok(ConnectResult::Ok(()))
                         } else {
+                            debug!("verify failed {:?}", block.header().id());
                             Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                         }
                     } else {
+                        debug!("block future {:?}", block.header().id());
                         Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                     }
                 } else if latest_number >= current_block_number {
