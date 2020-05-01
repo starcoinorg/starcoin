@@ -52,6 +52,8 @@ function start_txfactory() {
 
 function start_halley_seed() {
   start_starcoin $1 $2 $3 $4 -n halley -s full --node-key $SEED_NODE_KEY
+  echo "Copy starcoin bin to node"
+  docker-machine scp $DIR/../target/debug/starcoin $1:/usr/local/bin/
 }
 
 function start_halley_node() {
