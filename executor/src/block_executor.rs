@@ -57,27 +57,27 @@ impl BlockExecutor {
                 .unwrap();
         }
 
-        let (accumulator_root, _first_leaf_idx) = accumulator
+        let (accumulator_root, first_leaf_idx) = accumulator
             .append(&transaction_hash)
             .map_err(|_err| BlockExecutorError::BlockAccumulatorAppendErr)
             .unwrap();
 
         // transaction verify proof
         if !is_preview {
-            // transaction_hash.iter().enumerate().for_each(|(i, hash)| {
-            //     let leaf_index = first_leaf_idx + i as u64;
-            //     let proof = accumulator
-            //         .get_proof(leaf_index)
-            //         .map_err(|_err| BlockExecutorError::BlockAccumulatorGetProofErr)
-            //         .unwrap()
-            //         .unwrap();
-            //     proof
-            //         .verify(accumulator_root, *hash, leaf_index)
-            //         .map_err(|_err| {
-            //             BlockExecutorError::BlockAccumulatorVerifyErr(accumulator_root, leaf_index)
-            //         })
-            //         .unwrap();
-            // });
+            transaction_hash.iter().enumerate().for_each(|(i, hash)| {
+                let leaf_index = first_leaf_idx + i as u64;
+                let proof = accumulator
+                    .get_proof(leaf_index)
+                    .map_err(|_err| BlockExecutorError::BlockAccumulatorGetProofErr)
+                    .unwrap()
+                    .unwrap();
+                proof
+                    .verify(accumulator_root, *hash, leaf_index)
+                    .map_err(|_err| {
+                        BlockExecutorError::BlockAccumulatorVerifyErr(accumulator_root, leaf_index)
+                    })
+                    .unwrap();
+            });
             accumulator.flush().unwrap();
             chain_state
                 .flush()
