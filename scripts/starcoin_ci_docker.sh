@@ -20,7 +20,8 @@ check_errs() {
 }
 
 function docker_rebuild() {
-  echo -e "*\n"'!'"starcoin""\n!txfactory" >$DIR/../target/debug/.dockerignore
+  echo -e "*\n"'!'"starcoin""\n!txfactory\n"'!'"start.sh" >$DIR/../target/debug/.dockerignore
+  cp $DIR/start.sh $DIR/../target/debug/
   docker build -f $DIR/DockerfileCi -t starcoin:latest $DIR/../target/debug/
   check_errs $? "Docker build error"
 }
@@ -34,8 +35,7 @@ function start_starcoin() {
   eval $(docker-machine env $host_name)
   docker_rebuild
   docker rm -f $name 1>/dev/null
-  docker-machine ssh $host_name rm -f $cfg_root/$name/*/starcoin.ipc
-  docker run -td --restart=on-failure:1 -p $port:9840 -p $m_port:9101 -v $cfg_root/$name:/.starcoin --name $name starcoin -d /.starcoin $@
+  docker run -td --log-opt mode=non-blocking --log-opt max-buffer-size=1m --restart=on-failure:1 -p $port:9840 -p $m_port:9101 -v $cfg_root/$name:/.starcoin --name $name starcoin $@
   check_errs $? "Docker run starcoin error"
 }
 
@@ -46,18 +46,18 @@ function start_txfactory() {
   docker_rebuild
   docker rm -f $name 1>/dev/null
   # docker-machine ssh $host_name rm -f $cfg_root/$name/*/starcoin.ipc
-  docker run -td --restart=on-failure:1 -v $cfg_root/$starcoin_name:/.starcoin --name $name --entrypoint "/starcoin/txfactory" starcoin:latest --ipc-path /.starcoin/halley/starcoin.ipc $@
+  docker run -td --restart=on-failure:10 -v $cfg_root/$starcoin_name:/.starcoin --name $name --entrypoint "/starcoin/txfactory" starcoin:latest --ipc-path /.starcoin/halley/starcoin.ipc $@
   check_errs $? "Docker run txfactory error"
 }
 
 function start_halley_seed() {
-  start_starcoin $1 $2 $3 $4 -n halley -s full --node-key $SEED_NODE_KEY
+  start_starcoin $1 $2 $3 $4 --node-key $SEED_NODE_KEY
   echo "Copy starcoin bin to node"
-  docker-machine scp $DIR/../target/debug/starcoin $1:/usr/local/bin/
+  #docker-machine scp $DIR/../target/debug/starcoin $1:/usr/local/bin/
 }
 
 function start_halley_node() {
-  start_starcoin $1 $2 $3 $4 -n halley -s full --seed $SEED
+  start_starcoin $1 $2 $3 $4 --seed $SEED
 }
 
 #TODO: start failed, clean all env and restart
