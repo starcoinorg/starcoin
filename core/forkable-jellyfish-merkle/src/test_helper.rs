@@ -33,7 +33,7 @@ pub fn init_mock_db(kvs: &HashMap<HashValue, Blob>) -> (MockTreeStore, Option<Ha
     let mut current_state_root = None;
     for (_i, (key, value)) in kvs.iter().enumerate() {
         let (_root_hash, write_batch) = tree
-            .put_blob_set(current_state_root, vec![(*key, value.clone())])
+            .insert_all(current_state_root, vec![(*key, value.clone())])
             .unwrap();
         db.write_tree_update_batch(write_batch).unwrap();
         current_state_root = Some(_root_hash);
