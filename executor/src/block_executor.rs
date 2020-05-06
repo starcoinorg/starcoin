@@ -53,32 +53,32 @@ impl BlockExecutor {
             }
             state_root = chain_state
                 .commit()
-                .map_err(|_err| BlockExecutorError::BlockChainStateCommitErr)
-                .unwrap();
+                .map_err(|_err| BlockExecutorError::BlockChainStateCommitErr)?;
         }
 
         let (accumulator_root, first_leaf_idx) = accumulator
             .append(&transaction_hash)
-            .map_err(|_err| BlockExecutorError::BlockAccumulatorAppendErr)
-            .unwrap();
+            .map_err(|_err| BlockExecutorError::BlockAccumulatorAppendErr)?;
 
         // transaction verify proof
         if !is_preview {
             transaction_hash.iter().enumerate().for_each(|(i, hash)| {
                 let leaf_index = first_leaf_idx + i as u64;
-                let proof = accumulator
+                if let Some(proof) = accumulator
                     .get_proof(leaf_index)
-                    .map_err(|_err| BlockExecutorError::BlockAccumulatorGetProofErr)
-                    .unwrap()
-                    .unwrap();
-                proof
-                    .verify(accumulator_root, *hash, leaf_index)
-                    .map_err(|_err| {
-                        BlockExecutorError::BlockAccumulatorVerifyErr(accumulator_root, leaf_index)
-                    })
-                    .unwrap();
+                    .map_err(|_err| BlockExecutorError::BlockAccumulatorGetProofErr)?
+                {
+                    proof
+                        .verify(accumulator_root, *hash, leaf_index)
+                        .map_err(|_err| {
+                            BlockExecutorError::BlockAccumulatorVerifyErr(
+                                accumulator_root,
+                                leaf_index,
+                            )
+                        })?;
+                }
             });
-            accumulator.flush().unwrap();
+            accumulator.flush()?;
             chain_state
                 .flush()
                 .map_err(|_err| BlockExecutorError::BlockChainStateFlushErr)?;
