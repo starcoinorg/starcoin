@@ -61,8 +61,7 @@ function start_halley_node() {
 }
 
 #TODO: start failed, clean all env and restart
-#start_halley_seed starcoin-0 starcoin-0 $SEED_PORT 9101
-#start_halley_node starcoin-0 starcoin-1 9841 9102
-#start_halley_node starcoin-0 starcoin-2 9842 9103
-#start_txfactory starcoin-0 txfactory-0
-start_halley_node starcoin-0 starcoin-3 9843 9104
+start_halley_seed starcoin-0 starcoin-0 $SEED_PORT 9101
+start_halley_node starcoin-0 starcoin-1 9841 9102
+start_halley_node starcoin-0 starcoin-2 9842 9103
+start_txfactory starcoin-0 txfactory-0
