@@ -138,7 +138,7 @@ impl Default for NetworkConfiguration {
             node_name: "unknown".into(),
             transport: TransportConfig::Normal {
                 enable_mdns: false,
-                allow_private_ipv4: true,
+                allow_private_ipv4: false,
                 wasm_external_transport: None,
                 use_yamux_flow_control: false,
             },
