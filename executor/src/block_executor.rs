@@ -62,14 +62,15 @@ impl BlockExecutor {
 
         // transaction verify proof
         if !is_preview {
-            transaction_hash.iter().enumerate().for_each(|(i, hash)| {
+            let mut i = 0;
+            for hash in transaction_hash {
                 let leaf_index = first_leaf_idx + i as u64;
                 if let Some(proof) = accumulator
                     .get_proof(leaf_index)
                     .map_err(|_err| BlockExecutorError::BlockAccumulatorGetProofErr)?
                 {
                     proof
-                        .verify(accumulator_root, *hash, leaf_index)
+                        .verify(accumulator_root, hash, leaf_index)
                         .map_err(|_err| {
                             BlockExecutorError::BlockAccumulatorVerifyErr(
                                 accumulator_root,
@@ -77,8 +78,12 @@ impl BlockExecutor {
                             )
                         })?;
                 }
-            });
-            accumulator.flush()?;
+                i += 1;
+            }
+
+            accumulator
+                .flush()
+                .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
             chain_state
                 .flush()
                 .map_err(|_err| BlockExecutorError::BlockChainStateFlushErr)?;
