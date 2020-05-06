@@ -305,7 +305,7 @@ impl AccumulatorTree {
             .lock()
             .put(NodeCacheKey::new(self.id, index), node_hash)
         {
-            warn!(
+            trace!(
                 "save node index cache exist: {:?}-{:?}-{:?}",
                 self.id.short_str(),
                 index,
