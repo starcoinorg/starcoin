@@ -24,7 +24,7 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
 
     /// Calculate new block consensus header
     // TODO use &HashValue to replace &[u8] for parent_hash
-    fn solve_consensus_header(parent_hash: &[u8], difficult: U256) -> Self::ConsensusHeader;
+    fn solve_consensus_header(parent_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader;
 
     fn verify_header(
         config: Arc<NodeConfig>,

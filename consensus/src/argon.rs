@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::difficult;
-use crate::difficult::{difficult_to_target, target_to_difficult};
+use crate::difficulty;
+use crate::difficulty::{difficult_to_target, target_to_difficulty};
 use anyhow::{Error, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -49,8 +49,8 @@ impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
     fn calculate_next_difficulty(_config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256 {
-        let target = difficult::get_next_work_required(reader);
-        target_to_difficult(target)
+        let target = difficulty::get_next_work_required(reader);
+        target_to_difficulty(target)
     }
     fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
         let mut nonce = generate_nonce();
@@ -70,7 +70,7 @@ impl Consensus for ArgonConsensus {
         _reader: &dyn ChainReader,
         header: &BlockHeader,
     ) -> Result<()> {
-        let difficulty = header.difficult();
+        let difficulty = header.difficulty();
         let consensus_header: ArgonConsensusHeader =
             ArgonConsensusHeader::try_from(header.consensus_header().to_vec())?;
         let nonce = consensus_header.nonce;

@@ -1,7 +1,7 @@
 use crate::miner_client::{nonce_generator, partition_nonce, set_header_nonce};
 use anyhow::Result;
 use config::{ConsensusStrategy, MinerConfig};
-use consensus::difficult::difficult_to_target;
+use consensus::difficulty::difficult_to_target;
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;

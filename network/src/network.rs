@@ -165,7 +165,7 @@ impl NetworkService for NetworkAsyncService {
     /// get all peers and sort by difficulty decreasely.
     async fn best_peer_set(&self) -> Result<Vec<PeerInfo>> {
         let mut peer_infos = self.peer_set().await?;
-        peer_infos.sort_by_key(|p| p.total_difficult);
+        peer_infos.sort_by_key(|p| p.total_difficulty);
         peer_infos.reverse();
         Ok(peer_infos)
     }
@@ -422,10 +422,10 @@ impl Inner {
                         "total_difficulty is {},peer_info is {:?}",
                         total_difficulty, peer_info
                     );
-                    if total_difficulty > peer_info.peer_info.total_difficult {
+                    if total_difficulty > peer_info.peer_info.total_difficulty {
                         peer_info.peer_info.block_number = block_number;
                         peer_info.peer_info.block_id = block_hash;
-                        peer_info.peer_info.total_difficult = total_difficulty;
+                        peer_info.peer_info.total_difficulty = total_difficulty;
                     }
                 }
 
@@ -608,10 +608,10 @@ impl Handler<SystemEvents> for NetworkActor {
                             "total_difficulty is {},peer_info is {:?}",
                             total_difficulty, peer_info
                         );
-                        if total_difficulty > peer_info.peer_info.total_difficult {
+                        if total_difficulty > peer_info.peer_info.total_difficulty {
                             peer_info.peer_info.block_number = block_number;
                             peer_info.peer_info.block_id = block_hash;
-                            peer_info.peer_info.total_difficult = total_difficulty;
+                            peer_info.peer_info.total_difficulty = total_difficulty;
                         }
                     }
 

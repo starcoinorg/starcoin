@@ -36,7 +36,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
             }
             let block_info = BlockInfo {
                 timestamp: block.header().timestamp(),
-                target: difficult_to_target(block.header().difficult()),
+                target: difficult_to_target(block.header().difficulty()),
             };
             blocks.push(block_info);
             count += 1;
@@ -45,7 +45,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
     };
     if blocks.len() <= 1 {
         info!(
-            "Block length less than 1, set target to 1 difficult:{:?}",
+            "Block length less than 1, set target to 1 difficulty:{:?}",
             difficult_1_target() / 100.into()
         );
         return difficult_1_target() / 100.into();
@@ -84,7 +84,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
                 new_target
             }
         } else {
-            info!("target large than max value, set to 1_difficult");
+            info!("target large than max value, set to 1_difficulty");
             difficult_1_target()
         };
     info!(
@@ -94,12 +94,12 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
     new_target
 }
 
-pub fn target_to_difficult(target: U256) -> U256 {
+pub fn target_to_difficulty(target: U256) -> U256 {
     difficult_1_target() / target
 }
 
-pub fn difficult_to_target(difficult: U256) -> U256 {
-    difficult_1_target() / difficult
+pub fn difficult_to_target(difficulty: U256) -> U256 {
+    difficult_1_target() / difficulty
 }
 
 #[derive(Clone)]

@@ -505,7 +505,7 @@ where
             let pre_total_difficulty = self
                 .get_block_info(block.header().parent_hash())
                 .total_difficulty;
-            pre_total_difficulty + header.difficult().into()
+            pre_total_difficulty + header.difficulty().into()
         };
 
         let block_info = BlockInfo::new(
