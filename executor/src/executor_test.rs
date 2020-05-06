@@ -1,15 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    executor::Executor,
-    mock_executor::{get_signed_txn, MockExecutor},
-    TransactionExecutor,
-};
+use crate::{executor::Executor, TransactionExecutor};
 use anyhow::Result;
 use compiler::Compiler;
-use crypto::keygen::KeyGen;
 use logger::prelude::*;
+use once_cell::sync::Lazy;
 use starcoin_config::ChainNetwork;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use state_tree::mock::MockStateNodeStore;
@@ -24,11 +20,9 @@ use types::{
     account_config::BalanceResource,
     block_metadata::BlockMetadata,
     transaction::Transaction,
+    transaction::TransactionStatus,
     transaction::{Module, TransactionPayload},
     vm_error::{StatusCode, VMStatus},
-};
-use vm_runtime::mock_vm::{
-    encode_mint_transaction, encode_transfer_program, encode_transfer_transaction, KEEP_STATUS,
 };
 use vm_runtime::type_tag_parser::parse_type_tags;
 use vm_runtime::{
@@ -36,115 +30,15 @@ use vm_runtime::{
     common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn},
 };
 
-#[stest::test]
-fn test_execute_mint_txn() -> Result<()> {
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-    let account = Account::new();
+pub static KEEP_STATUS: Lazy<TransactionStatus> =
+    Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
 
-    let receiver_account_address = account.address().clone();
-    chain_state.create_account(AccountAddress::default())?;
-    chain_state.create_account(receiver_account_address)?;
-    let txn = MockExecutor::build_mint_txn(
-        account.address().clone(),
-        account.auth_key_prefix(),
-        1,
-        1000,
-    );
-
-    let output = MockExecutor::execute_transaction(&chain_state, txn).unwrap();
-
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
-    Ok(())
-}
-
-#[stest::test]
-fn test_execute_transfer_txn() -> Result<()> {
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-    let sender_account_address = AccountAddress::random();
-    let receiver_account_address = AccountAddress::random();
-    chain_state.create_account(sender_account_address)?;
-    chain_state.create_account(receiver_account_address)?;
-    let mint_txn = encode_mint_transaction(sender_account_address, 10000);
-    let transfer_txn =
-        encode_transfer_transaction(sender_account_address, receiver_account_address, 100);
-
-    let output1 = MockExecutor::execute_transaction(&chain_state, mint_txn).unwrap();
-    let output2 = MockExecutor::execute_transaction(&chain_state, transfer_txn).unwrap();
-
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
-    assert_eq!(KEEP_STATUS.clone(), *output2.status());
-    Ok(())
-}
-
-#[stest::test]
-fn test_validate_txn() -> Result<()> {
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    let sender_account_address = AccountAddress::random();
-    let receiver_account_address = AccountAddress::random();
-    let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-    let program = encode_transfer_program(receiver_account_address, 100);
-    let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
-    let output = MockExecutor::validate_transaction(&chain_state, txn);
-    assert_eq!(
-        output,
-        Some(VMStatus::new(StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST))
-    );
-
-    // now we create the account
-    chain_state.create_account(sender_account_address)?;
-    chain_state.create_account(receiver_account_address)?;
-    let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-    let program = encode_transfer_program(receiver_account_address, 100);
-    let txn = get_signed_txn(sender_account_address, 0, &private_key, public_key, program);
-    // validate again
-    let output = MockExecutor::validate_transaction(&chain_state, txn);
-    assert_eq!(output, None);
-
-    // now we execute it
-    let mint_txn = encode_mint_transaction(sender_account_address, 10000);
-    let transfer_txn =
-        encode_transfer_transaction(sender_account_address, receiver_account_address, 100);
-
-    let output1 = MockExecutor::execute_transaction(&chain_state, mint_txn).unwrap();
-    let output2 = MockExecutor::execute_transaction(&chain_state, transfer_txn).unwrap();
-
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
-    assert_eq!(KEEP_STATUS.clone(), *output2.status());
-
-    // after execute, the seq numebr should be 2.
-    // and then validate again
-    let (private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-    let program = encode_transfer_program(receiver_account_address, 100);
-    let txn = get_signed_txn(
-        sender_account_address,
-        0,
-        &private_key,
-        public_key.clone(),
-        program.clone(),
-    );
-    // validate again
-    let output = MockExecutor::validate_transaction(&chain_state, txn);
-    assert_eq!(
-        output,
-        Some(VMStatus::new(StatusCode::SEQUENCE_NUMBER_TOO_OLD))
-    );
-
-    // use right seq number
-    let txn = get_signed_txn(
-        sender_account_address,
-        2,
-        &private_key,
-        public_key.clone(),
-        program.clone(),
-    );
-    let output = MockExecutor::validate_transaction(&chain_state, txn);
-    assert_eq!(output, None);
-    Ok(())
-}
+// We use 10 as the assertion error code for insufficient balance within the Libra coin contract.
+pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
+    TransactionStatus::Discard(
+        VMStatus::new(StatusCode::ABORTED).with_sub_status(StatusCode::REJECTED_WRITE_SET.into()),
+    )
+});
 
 #[stest::test]
 fn test_validate_txn_with_starcoin_vm() -> Result<()> {

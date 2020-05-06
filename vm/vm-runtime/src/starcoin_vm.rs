@@ -499,7 +499,7 @@ impl StarcoinVM {
                     Err(_) => Err(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
                 };
 
-               match signature_checked_txn {
+                match signature_checked_txn {
                     Ok(txn) => {
                         let verified_payload = self.verify_transaction_impl(
                             &txn,

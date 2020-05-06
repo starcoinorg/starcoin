@@ -16,7 +16,6 @@ pub mod block_executor;
 pub mod executor;
 #[cfg(test)]
 pub mod executor_test;
-pub mod mock_executor;
 
 pub trait TransactionExecutor: std::marker::Unpin + Clone {
     /// Create genesis state, return state root and state set.
