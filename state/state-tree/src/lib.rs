@@ -7,7 +7,8 @@ mod state_tree;
 #[cfg(test)]
 mod state_tree_test;
 
-pub use state_tree::{StateNode, StateNodeStore, StateTree};
+pub use starcoin_state_store_api::{StateNode, StateNodeStore};
+pub use state_tree::StateTree;
 
 use starcoin_crypto::HashValue;
 

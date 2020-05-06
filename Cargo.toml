@@ -18,6 +18,7 @@ members = [
     "state/api",
     "state/state-tree",
     "state/statedb",
+    "state/state-store-api",
     "state/service",
     "config",
     "config/config-generator",
