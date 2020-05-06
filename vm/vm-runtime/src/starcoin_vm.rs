@@ -59,7 +59,7 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
 pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
     Lazy::new(|| GasUnits::new(100_000_000));
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
     move_vm: Arc<MoveVM>,
@@ -233,7 +233,7 @@ impl StarcoinVM {
             TypeTag::Address => Type::Address,
             TypeTag::Vector(tag) => Type::Vector(Box::new(self.resolve_type_argument(ctx, tag)?)),
             TypeTag::Struct(struct_tag) => {
-                let module_id = ModuleId::new(struct_tag.address.into(), struct_tag.module.clone());
+                let module_id = ModuleId::new(struct_tag.address, struct_tag.module.clone());
                 let ty_args = struct_tag
                     .type_params
                     .iter()
@@ -256,7 +256,6 @@ impl StarcoinVM {
         remote_cache: &dyn RemoteCache,
         txn_data: &TransactionMetadata,
     ) -> Result<VerifiedTranscationPayload, VMStatus> {
-        info!("very transaction");
         let mut ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
         self.check_gas(transaction)?;
         self.load_gas_schedule(remote_cache);
@@ -276,14 +275,14 @@ impl StarcoinVM {
                         ty_args,
                         script.args().to_vec(),
                     )),
-                    Err(e) => return Err(e.into()),
+                    Err(e) => Err(e.into()),
                 }
             }
             TransactionPayload::Module(module) => {
                 let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
                 match result {
                     Ok(_) => Ok(VerifiedTranscationPayload::Module(module.code().to_vec())),
-                    Err(e) => return Err(e.into()),
+                    Err(e) => Err(e.into()),
                 }
             }
             _ => Err(VMStatus::new(StatusCode::UNREACHABLE)),
@@ -500,7 +499,7 @@ impl StarcoinVM {
                     Err(_) => Err(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
                 };
 
-                let output = match signature_checked_txn {
+               match signature_checked_txn {
                     Ok(txn) => {
                         let verified_payload = self.verify_transaction_impl(
                             &txn,
@@ -521,8 +520,7 @@ impl StarcoinVM {
                         TransactionOutput::from(result)
                     }
                     Err(e) => discard_error_output(e),
-                };
-                output
+                }
             }
             Transaction::BlockMetadata(block_metadata) => {
                 self.load_gas_schedule(&data_cache);

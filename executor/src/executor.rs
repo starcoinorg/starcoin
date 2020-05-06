@@ -29,7 +29,7 @@ use vm_runtime::{
     starcoin_vm::StarcoinVM,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Executor {}
 
 impl Executor {
