@@ -8,7 +8,7 @@ use crate::STATE_NODE_PREFIX_NAME;
 use anyhow::{Error, Result};
 use crypto::HashValue;
 use forkable_jellyfish_merkle::node_type::Node;
-use state_tree::{StateNode, StateNodeStore};
+use starcoin_state_store_api::{StateNode, StateNodeStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

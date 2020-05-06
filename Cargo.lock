@@ -6206,14 +6206,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-state-tree"
+name = "starcoin-state-store-api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
  "serde",
  "starcoin-crypto",
+]
+
+[[package]]
+name = "starcoin-state-tree"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "criterion",
+ "forkable-jellyfish-merkle",
+ "rand 0.5.6",
+ "serde",
+ "starcoin-crypto",
+ "starcoin-state-store-api",
+ "starcoin-storage",
  "starcoin-types",
+ "tempfile",
 ]
 
 [[package]]
@@ -6254,7 +6269,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-metrics",
- "starcoin-state-tree",
+ "starcoin-state-store-api",
  "starcoin-types",
 ]
 

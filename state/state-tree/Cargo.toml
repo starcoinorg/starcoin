@@ -16,3 +16,14 @@ serde = { version = "1.0" }
 #logger = {path = "../../commons/logger", package="starcoin-logger"}
 #stest = {path = "../../commons/stest"}
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
+starcoin-state-store-api = {path = "../state-store-api"}
+
+[dev-dependencies]
+starcoin-storage = {path = "../../storage"}
+criterion = "0.3"
+rand = "0.5"
+tempfile = "3"
+
+[[bench]]
+name = "bench_tree"
+harness = false

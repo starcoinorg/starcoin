@@ -1,31 +1,40 @@
-use forkable_jellyfish_merkle::{
-    blob::Blob, mock_tree_store::MockTreeStore, nibble::Nibble, JellyfishMerkleTree,
-};
-
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use criterion::{criterion_group, criterion_main, Criterion};
+use forkable_jellyfish_merkle::{blob::Blob, mock_tree_store::MockTreeStore, JellyfishMerkleTree};
+use rand::{rngs::StdRng, SeedableRng};
 use starcoin_crypto::hash::*;
 use std::collections::HashMap;
 
-use criterion::{black_box, criterion_group, criterion_main, Bencher, BenchmarkId, Criterion};
-
-fn bench_get_1000_keys(c: &mut Criterion) {
-    let seed: &[u8] = &[1, 2, 3, 4];
-    let (kvs, db, root) = prepare_tree(seed, 1000);
-    // c.bench_with_input("bench_1000_keys".into(), &(kvs, db), |b, input| {
-    //     b.iter_batched()
-    // });
-    c.bench_function("bench_1000_keys", |b| {
-        // b.iter_batched(|| kvs),
+fn bench_get_with_proof(c: &mut Criterion) {
+    let (kvs, db, root) = prepare_tree(&[1, 2, 3, 4], 1000);
+    c.bench_function("get_with_proof", |b| {
         let tree = JellyfishMerkleTree::new(&db);
-        b.iter(|| {
-            for (k, v) in &kvs {
-                let (value, proof) = tree.get_with_proof(root, *k).unwrap();
-                assert_eq!(value.unwrap(), *v);
-                // assert!(proof.verify(root, *k, Some(v)).is_ok());
-            }
-        });
+        let ks = kvs.keys().collect::<Vec<_>>();
+        let k_len = ks.len();
+        let mut i = 0usize;
+
+        b.iter_with_setup(
+            || {
+                let k = ks[i % k_len];
+                i = i + 1;
+                k
+            },
+            |k| {
+                let (value, _proof) = tree.get_with_proof(root, *k).unwrap();
+                assert_eq!(&value.unwrap(), kvs.get(k).unwrap())
+            },
+        );
+        // b.iter(|| {
+        //     for (k, v) in &kvs {
+        //         let (value, proof) = tree.get_with_proof(root, *k).unwrap();
+        //         assert_eq!(value.unwrap(), *v);
+        //         // assert!(proof.verify(root, *k, Some(v)).is_ok());
+        //     }
+        // });
     });
 }
+
+criterion_group!(benches, bench_get_with_proof);
+criterion_main!(benches);
 
 fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValue, Blob> {
     assert!(seed.len() < 32);
@@ -56,6 +65,3 @@ fn prepare_tree(
     db.write_tree_update_batch(batch).unwrap();
     (kvs, db, root)
 }
-
-criterion_group!(benches, bench_get_1000_keys);
-criterion_main!(benches);

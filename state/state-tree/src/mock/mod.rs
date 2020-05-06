@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{StateNode, StateNodeStore};
 use anyhow::{Error, Result};
+use starcoin_state_store_api::{StateNode, StateNodeStore};
 
 use starcoin_crypto::HashValue;
 use std::collections::{BTreeMap, HashMap};
