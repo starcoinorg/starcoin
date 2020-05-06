@@ -86,6 +86,10 @@ fn test_multiple_chain() {
     accumulator.flush().unwrap();
     let (_root_hash3, _) = accumulator2.append(&leaves3).unwrap();
     accumulator2.flush().unwrap();
+    assert_eq!(
+        accumulator.get_leaf(1).unwrap().unwrap(),
+        accumulator2.get_leaf(1).unwrap().unwrap()
+    );
     for i in 3..accumulator2.num_nodes() {
         assert_ne!(
             accumulator.get_leaf(i).unwrap().unwrap(),
@@ -131,7 +135,6 @@ fn test_proof() {
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
-    println!("node length: {:?}", accumulator.num_nodes());
 }
 
 #[test]

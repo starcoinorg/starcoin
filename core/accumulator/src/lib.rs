@@ -5,7 +5,6 @@ use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
 use anyhow::{ensure, Error, Result};
-use logger::prelude::*;
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
@@ -71,7 +70,6 @@ pub trait AccumulatorTreeStore:
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
 pub struct MerkleAccumulator {
-    update_nodes: Mutex<Vec<AccumulatorNode>>,
     tree: Mutex<AccumulatorTree>,
     node_store: Arc<dyn AccumulatorTreeStore>,
 }
@@ -85,7 +83,6 @@ impl MerkleAccumulator {
         node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<Self> {
         Ok(Self {
-            update_nodes: Mutex::new(vec![]),
             tree: Mutex::new(AccumulatorTree::new(
                 HashValue::random(),
                 frozen_subtree_roots,
@@ -98,6 +95,10 @@ impl MerkleAccumulator {
         })
     }
 
+    pub fn get_id(&self) -> HashValue {
+        self.tree.lock().get_id()
+    }
+
     #[cfg(test)]
     pub fn get_node_from_storage(&self, hash: HashValue) -> AccumulatorNode {
         self.node_store.get_node(hash).unwrap().unwrap()
@@ -108,8 +109,7 @@ impl Accumulator for MerkleAccumulator {
     fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
         let mut tree_guard = self.tree.lock();
         let first_index_leaf = tree_guard.num_leaves;
-        let (root_hash, frozen_nodes) = tree_guard.append_leaves(new_leaves).unwrap();
-        self.update_nodes.lock().extend_from_slice(&frozen_nodes);
+        let root_hash = tree_guard.append_leaves(new_leaves).unwrap();
         Ok((root_hash, first_index_leaf))
     }
 
@@ -140,13 +140,7 @@ impl Accumulator for MerkleAccumulator {
     }
 
     fn flush(&self) -> Result<(), Error> {
-        let mut nodes = self.update_nodes.lock();
-        if !nodes.is_empty() {
-            self.node_store.save_nodes(nodes.to_vec())?;
-            nodes.clear();
-            info!("flush node to storage ok!");
-        }
-        Ok(())
+        self.tree.lock().flush()
     }
 
     fn root_hash(&self) -> HashValue {
