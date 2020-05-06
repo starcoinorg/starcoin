@@ -28,16 +28,16 @@ where
 pub struct MineCtx {
     header_hash: HashValue,
     block_template: BlockTemplate,
-    difficult: U256,
+    difficulty: U256,
 }
 
 impl MineCtx {
-    pub fn new(block_template: BlockTemplate, difficult: U256) -> MineCtx {
+    pub fn new(block_template: BlockTemplate, difficulty: U256) -> MineCtx {
         let header_hash = block_template.parent_hash;
         MineCtx {
             header_hash,
             block_template,
-            difficult,
+            difficulty,
         }
     }
 }
@@ -62,7 +62,7 @@ where
     pub fn get_mint_job(&mut self) -> String {
         let state = self.state.lock().unwrap();
         let x = state.as_ref().unwrap().to_owned();
-        format!(r#"["{:x}","{:x}"]"#, x.header_hash, x.difficult)
+        format!(r#"["{:x}","{:x}"]"#, x.header_hash, x.difficulty)
     }
 
     pub fn submit(&self, payload: String) -> Result<()> {
@@ -73,8 +73,8 @@ where
             Ok(h) => h,
             Err(_) => return Err(anyhow::anyhow!("Invalid payload submit")),
         };
-        let difficult = state.as_ref().unwrap().difficult;
-        let block = block_template.into_block(consensus_header, difficult);
+        let difficulty = state.as_ref().unwrap().difficulty;
+        let block = block_template.into_block(consensus_header, difficulty);
         info!("Miner new block: {:?}", block);
         self.bus.do_send(Broadcast {
             msg: SystemEvents::MinedBlock(Arc::new(block)),

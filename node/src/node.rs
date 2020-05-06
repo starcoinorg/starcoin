@@ -144,7 +144,7 @@ where
     let self_info = PeerInfo::new(
         peer_id.clone(),
         head_block.header().number(),
-        head_block_info.get_total_difficult(),
+        head_block_info.get_total_difficulty(),
         startup_info.master.get_head(),
     );
     let network = NetworkActor::launch(

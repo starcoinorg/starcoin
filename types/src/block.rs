@@ -40,8 +40,8 @@ pub struct BlockHeader {
     gas_used: u64,
     /// Block gas limit.
     gas_limit: u64,
-    /// Block difficult
-    difficult: U256,
+    /// Block difficulty
+    difficulty: U256,
     /// Consensus extend header field.
     consensus_header: Vec<u8>,
 }
@@ -56,7 +56,7 @@ impl BlockHeader {
         state_root: HashValue,
         gas_used: u64,
         gas_limit: u64,
-        difficult: U256,
+        difficulty: U256,
         consensus_header: H,
     ) -> BlockHeader
     where
@@ -72,7 +72,7 @@ impl BlockHeader {
             state_root,
             gas_used,
             gas_limit,
-            difficult,
+            difficulty,
             consensus_header,
         )
     }
@@ -87,7 +87,7 @@ impl BlockHeader {
         state_root: HashValue,
         gas_used: u64,
         gas_limit: u64,
-        difficult: U256,
+        difficulty: U256,
         consensus_header: H,
     ) -> BlockHeader
     where
@@ -103,7 +103,7 @@ impl BlockHeader {
             state_root,
             gas_used,
             gas_limit,
-            difficult,
+            difficulty,
             consensus_header: consensus_header.into(),
         }
     }
@@ -156,14 +156,14 @@ impl BlockHeader {
             self.auth_key_prefix,
         )
     }
-    pub fn difficult(&self) -> U256 {
-        self.difficult
+    pub fn difficulty(&self) -> U256 {
+        self.difficulty
     }
 
     pub fn genesis_block_header(
         accumulator_root: HashValue,
         state_root: HashValue,
-        difficult: U256,
+        difficulty: U256,
         consensus_header: Vec<u8>,
     ) -> Self {
         Self {
@@ -179,7 +179,7 @@ impl BlockHeader {
             gas_used: 0,
             //TODO
             gas_limit: 0,
-            difficult,
+            difficulty,
             consensus_header,
         }
     }
@@ -255,13 +255,13 @@ impl Block {
     pub fn genesis_block(
         accumulator_root: HashValue,
         state_root: HashValue,
-        difficult: U256,
+        difficulty: U256,
         consensus_header: Vec<u8>,
     ) -> Self {
         let header = BlockHeader::genesis_block_header(
             accumulator_root,
             state_root,
-            difficult,
+            difficulty,
             consensus_header,
         );
         Self {
@@ -319,7 +319,7 @@ impl BlockInfo {
         self.crypto_hash()
     }
 
-    pub fn get_total_difficult(&self) -> U512 {
+    pub fn get_total_difficulty(&self) -> U512 {
         self.total_difficulty
     }
 }
@@ -388,7 +388,7 @@ impl BlockTemplate {
         }
     }
 
-    pub fn into_block<H>(self, consensus_header: H, difficult: U256) -> Block
+    pub fn into_block<H>(self, consensus_header: H, difficulty: U256) -> Block
     where
         H: Into<Vec<u8>>,
     {
@@ -402,7 +402,7 @@ impl BlockTemplate {
             self.state_root,
             self.gas_used,
             self.gas_limit,
-            difficult,
+            difficulty,
             consensus_header.into(),
         );
         Block {
@@ -410,7 +410,7 @@ impl BlockTemplate {
             body: self.body,
         }
     }
-    pub fn into_block_header<H>(self, consensus_header: H, difficult: U256) -> BlockHeader
+    pub fn into_block_header<H>(self, consensus_header: H, difficulty: U256) -> BlockHeader
     where
         H: Into<Vec<u8>>,
     {
@@ -424,7 +424,7 @@ impl BlockTemplate {
             self.state_root,
             self.gas_used,
             self.gas_limit,
-            difficult,
+            difficulty,
             consensus_header.into(),
         )
     }

@@ -79,7 +79,7 @@ impl Genesis {
         let block = Block::genesis_block(
             accumulator_root,
             transaction_info.state_root_hash(),
-            chain_config.difficult,
+            chain_config.difficulty,
             chain_config.consensus_header.clone(),
         );
         assert_eq!(block.header().number(), 0);

@@ -37,8 +37,8 @@ mod test {
                 let body = BlockBody::default();
                 let block = Block::new(header, body);
                 let block_template = BlockTemplate::from_block(block);
-                let difficult: U256 = 1.into();
-                MineCtx::new(block_template, difficult)
+                let difficulty: U256 = 1.into();
+                MineCtx::new(block_template, difficulty)
             };
             let _addr = MinerClientActor::new(miner_config).start();
             miner.set_mint_job(mine_ctx);

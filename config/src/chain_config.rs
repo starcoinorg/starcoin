@@ -152,8 +152,8 @@ pub struct ChainConfig {
     pub reward_halving_interval: u64,
     /// How many block to delay before rewarding miners.
     pub reward_delay: u64,
-    /// Genesis difficult, should match consensus in different ChainNetwork.
-    pub difficult: U256,
+    /// Genesis difficulty, should match consensus in different ChainNetwork.
+    pub difficulty: U256,
     /// Genesis consensus header.
     pub consensus_header: Vec<u8>,
     /// Pre mine to Association account config, if not preset, Not do pre mine, and association account only can be used in genesis.
@@ -173,7 +173,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         base_block_reward: 5000 * 1_000_000,
         reward_halving_interval: 100,
         reward_delay: 1,
-        difficult: U256::zero(),
+        difficulty: U256::zero(),
         consensus_header: vec![],
         pre_mine_config: Some(PreMineConfig {
             public_key,
@@ -188,7 +188,7 @@ static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 1000,
     reward_delay: 3,
-    difficult: U256::max_value(),
+    difficulty: U256::max_value(),
     consensus_header: vec![],
     pre_mine_config: Some(PreMineConfig {
         public_key: Ed25519PublicKey::from_encoded_string(
@@ -205,7 +205,7 @@ static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 10000,
     reward_delay: 7,
-    difficult: U256::max_value(),
+    difficulty: U256::max_value(),
     consensus_header: vec![],
     pre_mine_config: None,
 });
@@ -215,7 +215,7 @@ static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 52500,
     reward_delay: 7,
-    difficult: U256::max_value(),
+    difficulty: U256::max_value(),
     consensus_header: vec![],
     pre_mine_config: None,
 });

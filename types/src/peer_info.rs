@@ -143,7 +143,7 @@ impl fmt::Display for PeerId {
 pub struct PeerInfo {
     pub peer_id: PeerId,
     pub block_number: BlockNumber,
-    pub total_difficult: U512,
+    pub total_difficulty: U512,
     pub block_id: HashValue,
 }
 
@@ -152,7 +152,7 @@ impl PeerInfo {
         PeerInfo {
             peer_id,
             block_number: 0,
-            total_difficult: U512::zero(),
+            total_difficulty: U512::zero(),
             block_id: HashValue::random(),
         }
     }
@@ -160,13 +160,13 @@ impl PeerInfo {
     pub fn new(
         peer_id: PeerId,
         block_number: BlockNumber,
-        total_difficult: U512,
+        total_difficulty: U512,
         block_id: HashValue,
     ) -> Self {
         PeerInfo {
             peer_id,
             block_number,
-            total_difficult,
+            total_difficulty,
             block_id,
         }
     }
@@ -183,7 +183,7 @@ impl PeerInfo {
         Self {
             peer_id: PeerId::random(),
             block_number: 0,
-            total_difficult: U512::from(0),
+            total_difficulty: U512::from(0),
             block_id: HashValue::default(),
         }
     }
