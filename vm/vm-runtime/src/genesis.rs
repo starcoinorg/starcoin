@@ -286,7 +286,7 @@ fn create_and_initialize_main_accounts(
     if let Some(pre_mine_config) = &chain_config.pre_mine_config {
         let association_balance =
             chain_config.total_supply * pre_mine_config.pre_mine_percent / 100;
-        miner_reward_balance = miner_reward_balance - association_balance;
+        miner_reward_balance -= association_balance;
         move_vm
             .execute_function(
                 &ACCOUNT_MODULE,

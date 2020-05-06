@@ -11,7 +11,7 @@ use libra_types::{
 use logger::prelude::*;
 use move_vm_state::data_cache::RemoteCache;
 use starcoin_state_api::ChainState;
-use types::{access_path::AccessPath, account_address::AccountAddress};
+use types::access_path::AccessPath;
 use vm::errors::VMResult;
 //TODO this adaptor may be remove?
 /// Adaptor for chain state
@@ -22,10 +22,6 @@ pub struct StateStore<'txn> {
 impl<'txn> StateStore<'txn> {
     pub fn new(chain_state: &'txn dyn ChainState) -> Self {
         StateStore { chain_state }
-    }
-
-    pub fn get_from_statedb(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        ChainState::get(self.chain_state, access_path)
     }
 
     /// Adds a [`WriteSet`] to state store.
@@ -53,10 +49,6 @@ impl<'txn> StateStore<'txn> {
     /// Deletes a key from state store.
     pub fn remove(&mut self, access_path: &AccessPath) -> Result<()> {
         self.chain_state.remove(access_path)
-    }
-
-    pub fn create_account(&self, account_address: AccountAddress) -> Result<()> {
-        self.chain_state.create_account(account_address)
     }
 
     #[allow(dead_code)]
