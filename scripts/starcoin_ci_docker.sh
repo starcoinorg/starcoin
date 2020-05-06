@@ -35,7 +35,7 @@ function start_starcoin() {
   eval $(docker-machine env $host_name)
   docker_rebuild
   docker rm -f $name 1>/dev/null
-  docker run -td --log-opt mode=non-blocking --log-opt max-buffer-size=1m --restart=on-failure:1 -p $port:9840 -p $m_port:9101 -v $cfg_root/$name:/.starcoin --name $name starcoin $@
+  docker run -td --log-opt mode=non-blocking --log-opt max-size=1m --restart=on-failure:1 -p $port:9840 -p $m_port:9101 -v $cfg_root/$name:/.starcoin --name $name starcoin $@
   check_errs $? "Docker run starcoin error"
 }
 
@@ -61,7 +61,8 @@ function start_halley_node() {
 }
 
 #TODO: start failed, clean all env and restart
-start_halley_seed starcoin-0 starcoin-0 $SEED_PORT 9101
-start_halley_node starcoin-0 starcoin-1 9841 9102
-start_halley_node starcoin-0 starcoin-2 9842 9103
-start_txfactory starcoin-0 txfactory-0
+#start_halley_seed starcoin-0 starcoin-0 $SEED_PORT 9101
+#start_halley_node starcoin-0 starcoin-1 9841 9102
+#start_halley_node starcoin-0 starcoin-2 9842 9103
+#start_txfactory starcoin-0 txfactory-0
+start_halley_node starcoin-0 starcoin-3 9843 9104
