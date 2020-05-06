@@ -133,8 +133,8 @@ fn test_proof() {
     .unwrap();
     let batch1 = create_leaves(500..600);
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
+    accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
-    println!("node length: {:?}", accumulator.num_nodes());
 }
 
 #[test]
@@ -196,14 +196,6 @@ fn test_update_left_leaf() {
     .unwrap();
     let (root_hash, _) = accumulator.append(&leaves).unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
-
-    // update index from 8
-    // let new_leaves = create_leaves(0..8);
-    // let (new_root_hash, _first_idx) = accumulator.update(8, &new_leaves).unwrap();
-    // proof_verify(&accumulator, new_root_hash, &new_leaves, 4);
-    // leaves.truncate(4);
-    // leaves.extend_from_slice(&new_leaves);
-    // proof_verify(&accumulator, new_root_hash, &leaves, 0);
 }
 #[test]
 fn test_update_right_leaf() {
@@ -219,16 +211,7 @@ fn test_update_right_leaf() {
     )
     .unwrap();
     let (root_hash, _) = accumulator.append(&leaves).unwrap();
-
     proof_verify(&accumulator, root_hash, &leaves, 0);
-
-    // update index from 14
-    // let new_leaves = create_leaves(0..8);
-    // let (new_root_hash, _first_idx) = accumulator.update(14, &new_leaves).unwrap();
-    // proof_verify(&accumulator, new_root_hash, &new_leaves, 7);
-    // leaves.truncate(7);
-    // leaves.extend_from_slice(&new_leaves);
-    // proof_verify(&accumulator, new_root_hash, &leaves, 0);
 }
 #[test]
 fn test_flush() {

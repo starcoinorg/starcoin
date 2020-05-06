@@ -28,7 +28,7 @@ impl NodeIndex {
         right_most_child.0 <= leaf.0
     }
 
-    fn is_leaf(self) -> bool {
+    pub fn is_leaf(self) -> bool {
         self.0 & 1 == 0
     }
 

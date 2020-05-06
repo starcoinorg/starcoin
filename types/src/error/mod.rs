@@ -20,6 +20,8 @@ pub enum BlockExecutorError {
     BlockAccumulatorVerifyErr(HashValue, u64),
     #[error("block chain state commit error")]
     BlockChainStateCommitErr,
+    #[error("block accumulator flush error")]
+    BlockAccumulatorFlushErr,
     #[error("block chain state flush error")]
     BlockChainStateFlushErr,
     #[error("block transaction {0} execute error")]

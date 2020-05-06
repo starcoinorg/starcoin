@@ -6,13 +6,14 @@ use crate::node_index::FrozenSubTreeIterator;
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAC_CACHE_SIZE};
-use anyhow::Result;
+use anyhow::{bail, Result};
 use logger::prelude::*;
 use lru::LruCache;
 use mirai_annotations::*;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct AccumulatorTree {
@@ -30,6 +31,8 @@ pub struct AccumulatorTree {
     index_cache: Lazy<Mutex<LruCache<NodeCacheKey, HashValue>>>,
     /// The storage of accumulator.
     store: Arc<dyn AccumulatorTreeStore>,
+    /// The temp update nodes
+    update_nodes: Mutex<HashMap<HashValue, AccumulatorNode>>,
 }
 
 impl AccumulatorTree {
@@ -50,21 +53,23 @@ impl AccumulatorTree {
             num_nodes,
             root_hash,
             store,
+            update_nodes: Mutex::new(HashMap::new()),
         }
     }
 
+    pub fn get_id(&self) -> HashValue {
+        self.id
+    }
+
     ///append from multiple leaves
-    pub(crate) fn append_leaves(
-        &mut self,
-        new_leaves: &[HashValue],
-    ) -> Result<(HashValue, Vec<AccumulatorNode>)> {
+    pub(crate) fn append_leaves(&mut self, new_leaves: &[HashValue]) -> Result<HashValue> {
         // Deal with the case where new_leaves is empty
         if new_leaves.is_empty() {
-            if self.num_leaves == 0 {
-                return Ok((*ACCUMULATOR_PLACEHOLDER_HASH, Vec::new()));
+            return if self.num_leaves == 0 {
+                Ok(*ACCUMULATOR_PLACEHOLDER_HASH)
             } else {
-                return Ok((self.root_hash, Vec::new()));
-            }
+                Ok(self.root_hash)
+            };
         }
 
         let num_new_leaves = new_leaves.len();
@@ -149,6 +154,7 @@ impl AccumulatorTree {
             };
             pos = pos.parent();
         }
+
         assert!(left_siblings.is_empty());
         //update frozen tag
         to_freeze = to_freeze
@@ -160,21 +166,37 @@ impl AccumulatorTree {
             .collect();
         //aggregator all nodes
         not_frozen_nodes.extend_from_slice(&to_freeze);
+        self.update_temp_nodes(not_frozen_nodes.clone())?;
         // udpate to cache
         self.update_cache(not_frozen_nodes.clone())?;
         // update self properties
         self.root_hash = hash;
+        self.num_leaves = last_new_leaf_count;
         self.frozen_subtree_roots = FrozenSubTreeIterator::new(last_new_leaf_count)
             .map(|p| self.get_node_hash(p).unwrap())
             .collect::<Vec<_>>();
-        self.num_leaves = last_new_leaf_count;
         self.num_nodes = new_num_nodes;
 
-        Ok((hash, not_frozen_nodes))
+        Ok(hash)
     }
 
     /// Get node for self package.
     pub(crate) fn get_node(&self, hash: HashValue) -> Result<AccumulatorNode> {
+        if hash == HashValue::zero() {
+            error!(
+                "{:?} get accumulator node hash is zero.",
+                self.id.short_str()
+            );
+            return Ok(AccumulatorNode::new_empty());
+        }
+
+        let updates = self.update_nodes.lock();
+        if !updates.is_empty() {
+            if let Some(node) = updates.get(&hash) {
+                return Ok(node.clone());
+            }
+        }
+
         let node = match self.store.clone().get_node(hash) {
             Ok(Some(node)) => node,
             _ => {
@@ -182,7 +204,20 @@ impl AccumulatorTree {
                 AccumulatorNode::new_empty()
             }
         };
+        // println!("id:{:?} get node store: {:?}", self.id.short_str(), node);
         Ok(node)
+    }
+
+    /// Flush node to storage
+    pub(crate) fn flush(&self) -> Result<()> {
+        let mut nodes = self.update_nodes.lock();
+        if !nodes.is_empty() {
+            let nodes_vec = nodes.iter().map(|(_, node)| node.clone()).collect();
+            self.store.save_nodes(nodes_vec)?;
+            nodes.clear();
+            info!("flush node to storage ok!");
+        }
+        Ok(())
     }
 
     pub(crate) fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>> {
@@ -219,30 +254,14 @@ impl AccumulatorTree {
         if node_index.is_placeholder(idx) {
             Ok(*ACCUMULATOR_PLACEHOLDER_HASH)
         } else {
-            let node_hash = self.get_node_hash_always(node_index);
-            Ok(node_hash)
+            self.get_node_hash_always(node_index)
+            // println!(
+            //     "get id:{:?}, index: {:?}, hash: {:?}",
+            //     self.id.short_str(),
+            //     node_index,
+            //     node_hash.short_str()
+            // );
         }
-    }
-
-    fn restore_index_cache(&self, hashes: Vec<HashValue>) -> Result<()> {
-        for hash in hashes {
-            let node = self.get_node(hash).unwrap();
-            trace!("restore node {:?}--{:?}", self.id.short_str(), node);
-            match node {
-                AccumulatorNode::Internal(internal) => {
-                    self.save_node_index(internal.index(), hash)?;
-                    let mut two_hash = vec![];
-                    two_hash.push(internal.left());
-                    two_hash.push(internal.right());
-                    self.restore_index_cache(two_hash.clone())?;
-                }
-                AccumulatorNode::Leaf(leaf) => {
-                    self.save_node_index(leaf.index(), hash)?;
-                }
-                _ => {}
-            }
-        }
-        Ok(())
     }
 
     /// Update node to cache.
@@ -251,68 +270,86 @@ impl AccumulatorTree {
         self.save_node_indexes(node_vec)
     }
 
+    fn update_temp_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<()> {
+        let mut updates = self.update_nodes.lock();
+        for node in nodes {
+            updates.insert(node.hash(), node);
+        }
+        Ok(())
+    }
+
+    fn get_node_index(&self, key: NodeCacheKey) -> Option<HashValue> {
+        match self.index_cache.lock().get(&key) {
+            Some(node_hash) => Some(*node_hash),
+            None => {
+                warn!("get node index hash error:{:?}", key);
+                None
+            }
+        }
+    }
+
     /// Get node hash always.
-    fn get_node_hash_always(&self, index: NodeIndex) -> HashValue {
-        let index_key = NodeCacheKey::new(self.id, index);
-        let mut node_hash = self.get_node_index(index_key);
-        if node_hash == HashValue::zero() {
-            trace!(
-                "get index from cache is null,then restore from frozen:{:?}",
-                index
-            );
-            // restore index from frozen root
-            self.restore_index_cache(self.frozen_subtree_roots.clone())
-                .unwrap();
-            node_hash = self.get_node_index(index_key);
-            if node_hash == HashValue::zero() {
-                trace!("after restore is null,{:?}", index);
-                // get parent hash from to storage
-                let parent = index.parent();
-                let parent_hash = self.get_node_index(NodeCacheKey::new(self.id, parent));
-                if parent_hash != HashValue::zero() {
-                    if let Ok(AccumulatorNode::Internal(internal)) = self.get_node(parent_hash) {
-                        let left_node = self.get_node(internal.left()).unwrap();
-                        if left_node.index() == index {
-                            node_hash = left_node.hash();
-                        }
-                        let right_node = self.get_node(internal.right()).unwrap();
-                        if right_node.index() == index {
-                            node_hash = right_node.hash();
+    fn get_node_hash_always(&self, index: NodeIndex) -> Result<HashValue> {
+        // get hash from cache
+        let mut temp_index = index;
+        let mut index_key = NodeCacheKey::new(self.id, temp_index);
+        if let Some(node_hash) = self.get_node_index(index_key) {
+            return Ok(node_hash);
+        }
+        // find parent hash,then get node by parent hash
+        let root_index = NodeIndex::root_from_leaf_count(self.num_leaves);
+        let level = root_index.level() + 1;
+        let mut parent_hash = None;
+        for _i in 0..level {
+            index_key = NodeCacheKey::new(self.id, temp_index.parent());
+            if let Some(internal_parent_hash) = self.get_node_index(index_key) {
+                parent_hash = Some(internal_parent_hash);
+                break;
+            }
+            temp_index = temp_index.parent();
+        }
+
+        let parent_hash = parent_hash.unwrap_or(self.root_hash);
+        // println!(
+        //     "id:{:?}, leaves:{:?},index {:?} ,parent {:?}",
+        //     self.id.short_str(),
+        //     self.num_leaves,
+        //     index,
+        //     parent_hash.short_str()
+        // );
+        // get node by hash
+        let mut hash_vec = vec![parent_hash];
+        for _i in 0..level {
+            while let Some(temp_node_hash) = hash_vec.pop() {
+                match self.get_node(temp_node_hash) {
+                    Ok(AccumulatorNode::Internal(internal)) => {
+                        let internal_index = internal.index();
+                        if internal_index == index {
+                            return Ok(internal.hash());
+                        } else if internal_index == index.parent() {
+                            if internal_index.left_child() == index {
+                                return Ok(internal.left());
+                            }
+                            if internal_index.right_child() == index {
+                                return Ok(internal.right());
+                            }
+                        } else {
+                            hash_vec.push(internal.left());
+                            hash_vec.push(internal.right());
                         }
                     }
-                } else {
-                    //TODO Recursive parent to root node
-                    error!("get parent node null: {:?}", parent);
+                    Ok(AccumulatorNode::Leaf(leaf)) => {
+                        if leaf.index() == index {
+                            return Ok(leaf.value());
+                        }
+                    }
+                    _ => {
+                        error!("get node error:{:?}", temp_node_hash);
+                    }
                 }
             }
         }
-        node_hash
-    }
-
-    fn get_node_index(&self, key: NodeCacheKey) -> HashValue {
-        match self.index_cache.lock().get(&key) {
-            Some(node_hash) => *node_hash,
-            None => {
-                warn!("get node index hash error:{:?}", key);
-                HashValue::zero()
-            }
-        }
-    }
-
-    fn save_node_index(&self, index: NodeIndex, node_hash: HashValue) -> Result<()> {
-        if let Some(hash) = self
-            .index_cache
-            .lock()
-            .put(NodeCacheKey::new(self.id, index), node_hash)
-        {
-            trace!(
-                "save node index cache exist: {:?}-{:?}-{:?}",
-                self.id.short_str(),
-                index,
-                hash,
-            );
-        }
-        Ok(())
+        bail!("node hash not found:{:?}", index)
     }
 
     fn save_node_indexes(&self, nodes: Vec<AccumulatorNode>) -> Result<()> {
