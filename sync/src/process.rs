@@ -9,6 +9,7 @@ use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
 use crypto::hash::HashValue;
 use logger::prelude::*;
+use network::get_unix_ts;
 use network::RawRpcRequestMessage;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
@@ -204,13 +205,20 @@ where
         get_hash_by_number_msg: GetHashByNumberMsg,
     ) -> BatchHashByNumberMsg {
         let mut hashs = Vec::new();
+        let handle_hash_begin_time = get_unix_ts();
         for number in get_hash_by_number_msg.numbers {
             info!("get block from get_block_by_number with {}", number);
+            let get_hash_begin_time = get_unix_ts();
             let block = processor
                 .chain_reader
                 .clone()
                 .master_block_by_number(number)
                 .await;
+            let get_hash_end_time = get_unix_ts();
+            debug!(
+                "get hash used time: {}",
+                (get_hash_end_time - get_hash_begin_time)
+            );
             match block {
                 Ok(b) => {
                     debug!(
@@ -230,6 +238,11 @@ where
                 }
             }
         }
+        let handle_hash_end_time = get_unix_ts();
+        debug!(
+            "handle hash used time: {}",
+            (handle_hash_end_time - handle_hash_begin_time)
+        );
 
         BatchHashByNumberMsg { hashs }
     }

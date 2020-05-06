@@ -508,6 +508,7 @@ where
             pre_total_difficulty + header.difficulty().into()
         };
 
+        let new_block_info_begin_time = get_unix_ts();
         let block_info = BlockInfo::new(
             header.id(),
             accumulator_root,
@@ -516,10 +517,24 @@ where
             self.accumulator.num_nodes(),
             total_difficulty,
         );
+        let new_block_info_end_time = get_unix_ts();
+        debug!(
+            "new block info used time: {}",
+            (new_block_info_end_time - new_block_info_begin_time)
+        );
         // save block's transaction relationship and save transaction
         self.save(header.id().clone(), txns)?;
+        let save_block_end_time = get_unix_ts();
+        debug!(
+            "save block used time: {}",
+            (save_block_end_time - new_block_info_end_time)
+        );
         self.storage.save_transaction_infos(vec_transaction_info)?;
         let commit_begin_time = get_unix_ts();
+        debug!(
+            "new transaction info used time: {}",
+            (commit_begin_time - save_block_end_time)
+        );
         self.commit(block.clone(), block_info)?;
         let commit_end_time = get_unix_ts();
         debug!(

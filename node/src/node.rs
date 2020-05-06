@@ -11,7 +11,7 @@ use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
-use starcoin_network::NetworkActor;
+use starcoin_network::{NetworkActor, NetworkAsyncService};
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
 use starcoin_storage::block_info::BlockInfoStore;
@@ -147,13 +147,20 @@ where
         head_block_info.get_total_difficulty(),
         startup_info.master.get_head(),
     );
-    let network = NetworkActor::launch(
-        config.clone(),
-        bus.clone(),
-        handle.clone(),
-        genesis_hash,
-        self_info,
-    );
+    let network_config = config.clone();
+    let network_bus = bus.clone();
+    let network_handle = handle.clone();
+    let network = Arbiter::new()
+        .exec(move || -> NetworkAsyncService {
+            NetworkActor::launch(
+                network_config,
+                network_bus,
+                network_handle,
+                genesis_hash,
+                self_info,
+            )
+        })
+        .await?;
 
     let head_block = storage
         .get_block(startup_info.master.get_head())?
@@ -166,15 +173,26 @@ where
         Some(head_block.header().state_root()),
     )?;
 
-    let chain = ChainActor::launch(
-        config.clone(),
-        startup_info,
-        storage.clone(),
-        Some(network.clone()),
-        bus.clone(),
-        txpool.clone(),
-        sync_metadata.clone(),
-    )?;
+    let chain_config = config.clone();
+    let chain_storage = storage.clone();
+    let chain_network = network.clone();
+    let chain_bus = bus.clone();
+    let chain_txpool = txpool.clone();
+    let chain_sync_metadata = sync_metadata.clone();
+
+    let chain = Arbiter::new()
+        .exec(move || -> Result<ChainActorRef<C>> {
+            ChainActor::launch(
+                chain_config,
+                startup_info,
+                chain_storage,
+                Some(chain_network),
+                chain_bus,
+                chain_txpool,
+                chain_sync_metadata,
+            )
+        })
+        .await??;
 
     let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
@@ -201,16 +219,27 @@ where
             .expect("Self connect address must has been set.")
     );
     let peer_id = Arc::new(peer_id);
-    let sync = SyncActor::launch(
-        config.clone(),
-        bus.clone(),
-        peer_id,
-        chain.clone(),
-        txpool.clone(),
-        network.clone(),
-        storage.clone(),
-        sync_metadata.clone(),
-    )?;
+    let sync_config = config.clone();
+    let sync_bus = bus.clone();
+    let sync_chain = chain.clone();
+    let sync_txpool = txpool.clone();
+    let sync_network = network.clone();
+    let sync_storage = storage.clone();
+    let sync_sync_metadata = sync_metadata.clone();
+    let sync = Arbiter::new()
+        .exec(move || -> Result<Addr<SyncActor<C>>> {
+            SyncActor::launch(
+                sync_config,
+                sync_bus,
+                peer_id,
+                sync_chain,
+                sync_txpool,
+                sync_network,
+                sync_storage,
+                sync_sync_metadata,
+            )
+        })
+        .await??;
 
     delay_for(Duration::from_secs(1)).await;
     bus.clone().broadcast(SystemEvents::SyncBegin()).await?;
