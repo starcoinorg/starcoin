@@ -510,7 +510,7 @@ where
                                 );
                                 let do_block_end_time = get_unix_ts();
                                 debug!(
-                                    "sync block used time {:?}",
+                                    "do block used time {:?}",
                                     (do_block_end_time - sync_block_end_time)
                                 );
                             } else {
