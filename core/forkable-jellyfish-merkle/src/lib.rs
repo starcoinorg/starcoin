@@ -75,15 +75,13 @@ pub mod blob;
 pub mod iterator;
 #[cfg(test)]
 mod jellyfish_merkle_test;
-#[cfg(test)]
-mod mock_tree_store;
-mod nibble;
-mod nibble_path;
+pub mod mock_tree_store;
+pub mod nibble;
+pub mod nibble_path;
 pub mod node_type;
 pub mod proof;
 pub mod restore;
-#[cfg(test)]
-mod test_helper;
+pub mod test_helper;
 pub mod tree_cache;
 
 use anyhow::{bail, ensure, format_err, Result};
@@ -177,9 +175,6 @@ where
         Self { reader }
     }
 
-    /// This is a convenient function that calls
-    /// [`put_blob_sets`](struct.JellyfishMerkleTree.html#method.put_blob_sets) with a single
-    /// `keyed_blob_set`.
     #[cfg(test)]
     pub fn put_blob_set(
         &self,
@@ -201,6 +196,19 @@ where
         key: HashValue,
     ) -> Result<(HashValue, TreeUpdateBatch)> {
         self.updates(state_root_hash, vec![(key, None)])
+    }
+
+    /// Insert all kvs in `blob_set` into tree, return updated root hash and tree updates
+    pub fn insert_all(
+        &self,
+        state_root_hash: Option<HashValue>,
+        blob_set: Vec<(HashValue, Blob)>,
+    ) -> Result<(HashValue, TreeUpdateBatch)> {
+        let blob_set = blob_set
+            .into_iter()
+            .map(|(k, v)| (k, Some(v)))
+            .collect::<Vec<_>>();
+        self.updates(state_root_hash, blob_set)
     }
 
     pub fn updates(
