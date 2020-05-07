@@ -177,7 +177,7 @@ where
         });
     });
     if block_on(async { start_receiver.await }).is_err() {
-        info!("Wait start receiver error.");
+        std::process::exit(1);
     }
     NodeHandle::new(thread_handle, stop_sender)
 }

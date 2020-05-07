@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::{clock::delay_for, prelude::*};
-use anyhow::{bail, Result};
+use anyhow::Result;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
@@ -77,7 +77,8 @@ where
                 .expect("Load genesis file must exist in data_dir.");
             let expect_genesis = Genesis::build(config.net())?;
             if genesis.block().header().id() != expect_genesis.block().header().id() {
-                bail!("Genesis version mismatch, please clean you data_dir.")
+                error!("Genesis version mismatch, please clean you data_dir.");
+                std::process::exit(120);
             }
             //TODO verify genesis block in db.
             (startup_info, genesis.block().header().id())
