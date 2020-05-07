@@ -1,19 +1,24 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{get_available_port_multi, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
+use crate::{
+    get_available_port, get_available_port_multi, BaseConfig, ChainNetwork, ConfigModule,
+    StarcoinOpt,
+};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use starcoin_logger::prelude::*;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 
-const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024; //10M
+const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
+//10M
+const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
+const DEFAULT_HTTP_PORT: u16 = 9850;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RpcConfig {
-    /// The ipc file name.
-    ipc_file: PathBuf,
     /// The address for http rpc.
     pub http_address: Option<SocketAddr>,
     /// The address for tcp rpc notification.
@@ -38,13 +43,27 @@ impl RpcConfig {
             .as_ref()
             .expect("config should init first.")
     }
+
+    pub fn get_http_address(&self) -> Option<String> {
+        self.http_address
+            .as_ref()
+            .map(|addr| format!("http://{}", addr))
+    }
+
+    pub fn get_ipc_file_by_base(base: &BaseConfig) -> PathBuf {
+        base.data_dir().join(DEFAULT_IPC_FILE)
+    }
 }
 
 impl ConfigModule for RpcConfig {
-    fn default_with_net(_net: ChainNetwork) -> Self {
+    fn default_with_net(net: ChainNetwork) -> Self {
+        let port = match net {
+            ChainNetwork::Dev => get_available_port(),
+            _ => DEFAULT_HTTP_PORT,
+        };
+        let http_address = format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap();
         Self {
-            ipc_file: "starcoin.ipc".into(),
-            http_address: None,
+            http_address: Some(http_address),
             ws_address: None,
             tcp_address: None,
             max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
@@ -70,11 +89,14 @@ impl ConfigModule for RpcConfig {
                 .parse::<SocketAddr>()
                 .unwrap(),
         );
-        self.ipc_file_path = Some(base.data_dir().join(self.ipc_file.as_path()))
+        self.ipc_file_path = Some(Self::get_ipc_file_by_base(base))
     }
 
     fn load(&mut self, base: &BaseConfig, _opt: &StarcoinOpt) -> Result<()> {
-        self.ipc_file_path = Some(base.data_dir().join(self.ipc_file.as_path()));
+        let ipc_file_path = Self::get_ipc_file_by_base(base);
+        info!("Ipc file path: {:?}", ipc_file_path);
+        info!("Http rpc address: {}", self.http_address.unwrap());
+        self.ipc_file_path = Some(ipc_file_path);
         Ok(())
     }
 }
