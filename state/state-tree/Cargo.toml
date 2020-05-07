@@ -16,3 +16,5 @@ serde = { version = "1.0" }
 #logger = {path = "../../commons/logger", package="starcoin-logger"}
 #stest = {path = "../../commons/stest"}
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
+starcoin-state-store-api = {path = "../state-store-api"}
+

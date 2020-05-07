@@ -30,6 +30,12 @@ starcoin-crypto = { path = "../../commons/crypto", version = "0.1.0" }
 rand = "0.6.5"
 proptest = "0.9.2"
 proptest-derive = "0.1.2"
+criterion = "0.3"
 
 [features]
 default = []
+
+
+[[bench]]
+name = "bench_merkle_tree"
+harness = false

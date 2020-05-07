@@ -437,7 +437,7 @@ impl Inner {
             }
             PeerMessage::RawRPCRequest(id, request) => {
                 info!("do request.");
-                let (tx, mut rx) = mpsc::channel(1);
+                let (tx, rx) = mpsc::channel(1);
                 self.bus
                     .send(Broadcast {
                         msg: RawRpcRequestMessage {
@@ -447,13 +447,8 @@ impl Inner {
                     })
                     .await?;
                 let network_service = self.network_service.clone();
-                let task = async move {
-                    let response = rx.next().await.unwrap();
-                    let peer_msg = PeerMessage::RawRPCResponse(id, response);
-                    let data = peer_msg.encode().unwrap();
-                    network_service.send_message(peer_id, data).await.unwrap();
-                };
-                self.handle.spawn(task);
+                self.handle
+                    .spawn(Self::handle_response(id, peer_id, rx, network_service));
                 info!("receive rpc request");
             }
             PeerMessage::RawRPCResponse(id, response) => {
@@ -464,6 +459,27 @@ impl Inner {
             }
         }
         Ok(())
+    }
+
+    async fn handle_response(
+        id: u128,
+        peer_id: PeerId,
+        mut rx: mpsc::Receiver<Vec<u8>>,
+        network_service: SNetworkService,
+    ) -> Result<()> {
+        let response = rx.next().await;
+        match response {
+            Some(response) => {
+                let peer_msg = PeerMessage::RawRPCResponse(id, response);
+                let data = peer_msg.encode()?;
+                network_service.send_message(peer_id, data).await?;
+                Ok(())
+            }
+            None => {
+                info!("can't get response by id {}", id);
+                Ok(())
+            }
+        }
     }
 
     async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) -> Result<()> {
@@ -593,7 +609,7 @@ impl Handler<SystemEvents> for NetworkActor {
 
                 let total_difficulty = block.get_total_difficulty();
                 let msg = PeerMessage::Block(block);
-                let bytes = msg.encode().unwrap();
+                let bytes = msg.encode().expect("should encode succ");
 
                 let self_info = PeerInfo::new(
                     self.peer_id.clone().into(),
@@ -625,7 +641,7 @@ impl Handler<SystemEvents> for NetworkActor {
                         network_service
                             .send_message(peer_id.clone(), bytes.clone())
                             .await
-                            .unwrap();
+                            .expect("send message failed ,check network service please");
                     }
                 });
 
@@ -669,11 +685,11 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
 
                 let msg = PeerMessage::UserTransactions(txns_unhandled);
 
-                let bytes = msg.encode().unwrap();
+                let bytes = msg.encode().expect("encode should succ");
                 network_service
                     .send_message(peer_id.clone(), bytes)
                     .await
-                    .unwrap();
+                    .expect("check network service");
             }
         });
     }

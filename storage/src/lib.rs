@@ -15,13 +15,13 @@ use once_cell::sync::Lazy;
 use starcoin_accumulator::{
     AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter,
 };
+use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
     transaction::TransactionInfo,
 };
-use state_tree::{StateNode, StateNodeStore};
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::sync::Arc;

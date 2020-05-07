@@ -15,8 +15,7 @@ pub fn start_worker(
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> WorkerController {
     match config.consensus_strategy {
-        ConsensusStrategy::Argon => {
-            let thread_num = config.thread_num;
+        ConsensusStrategy::Argon(thread_num) => {
             let worker_txs = (0..thread_num)
                 .map(|i| {
                     let (worker_tx, worker_rx) = mpsc::unbounded();
@@ -37,7 +36,7 @@ pub fn start_worker(
                 .collect();
             WorkerController::new(worker_txs)
         }
-        ConsensusStrategy::Dummy => {
+        ConsensusStrategy::Dummy(_dev_period) => {
             let (worker_tx, worker_rx) = mpsc::unbounded();
             let worker_name = "starcoin-miner-dummy-worker".to_owned();
             let nonce_range = partition_nonce(1 as u64, 2 as u64);

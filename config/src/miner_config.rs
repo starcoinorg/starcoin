@@ -16,7 +16,10 @@ pub struct MinerConfig {
     /// The real use time is a random value between 0 and dev_period.
     pub dev_period: u64,
     pub thread_num: u16,
+    pub enable: bool,
+    #[serde(skip)]
     pub pacemaker_strategy: PacemakerStrategy,
+    #[serde(skip)]
     pub consensus_strategy: ConsensusStrategy,
 }
 
@@ -29,8 +32,8 @@ impl Default for MinerConfig {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type")]
 pub enum ConsensusStrategy {
-    Argon,
-    Dummy,
+    Argon(u16),
+    Dummy(u64),
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -44,8 +47,8 @@ pub enum PacemakerStrategy {
 impl ConfigModule for MinerConfig {
     fn default_with_net(net: ChainNetwork) -> Self {
         let (pacemaker_strategy, consensus_strategy) = match net {
-            ChainNetwork::Dev => (PacemakerStrategy::Ondemand, ConsensusStrategy::Dummy),
-            _ => (PacemakerStrategy::HeadBlock, ConsensusStrategy::Argon),
+            ChainNetwork::Dev => (PacemakerStrategy::Ondemand, ConsensusStrategy::Dummy(0)),
+            _ => (PacemakerStrategy::HeadBlock, ConsensusStrategy::Argon(1)),
         };
         let port = match net {
             ChainNetwork::Dev => get_available_port(),
@@ -56,9 +59,10 @@ impl ConfigModule for MinerConfig {
                 .parse::<SocketAddr>()
                 .expect("parse address must success."),
             dev_period: 0,
+            thread_num: 1,
+            enable: true,
             pacemaker_strategy,
             consensus_strategy,
-            thread_num: 1,
         }
     }
 
@@ -67,16 +71,22 @@ impl ConfigModule for MinerConfig {
             .parse::<SocketAddr>()
             .unwrap();
         self.pacemaker_strategy = PacemakerStrategy::Schedule;
-        self.consensus_strategy = ConsensusStrategy::Dummy;
-        self.dev_period = 1;
-        self.thread_num = 1;
+        self.consensus_strategy = ConsensusStrategy::Dummy(1);
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
         if base.net.is_dev() && opt.dev_period > 0 {
-            self.dev_period = opt.dev_period;
             self.pacemaker_strategy = PacemakerStrategy::Schedule;
-            self.consensus_strategy = ConsensusStrategy::Dummy;
+            self.consensus_strategy = ConsensusStrategy::Dummy(opt.dev_period);
+        } else if !base.net.is_dev() {
+            if let Some(thread_num) = opt.miner_thread {
+                self.thread_num = thread_num;
+            }
+            self.pacemaker_strategy = PacemakerStrategy::HeadBlock;
+            self.consensus_strategy = ConsensusStrategy::Argon(self.thread_num);
+        }
+        if let Some(enable) = opt.enable_mine {
+            self.enable = enable;
         }
         Ok(())
     }

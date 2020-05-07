@@ -17,7 +17,7 @@ create_nodes(){
 
 stop_nodes(){
     for((c=0; c<$1;c++));do
-	docker-machine stop starcoin-$c
+	docker-machine stop starcoin-node-$c
     done
 }
 
@@ -27,15 +27,22 @@ remove_nodes(){
     done
 }
 
+clean_data(){
+    for((c=0; c<$1;c++));do
+	docker-machine ssh starcoin-node-$c rm -rf $cfg_root
+    done
+}
+
 clean_cfg(){
     for((c=0; c<$1;c++));do
-	docker-machine ssh starcoin-$c rm -rf $cfg_root
+	docker-machine ssh starcoin-node-$c rm -rf $cfg_root/starcoin-$c/halley/config.toml
     done
     
 }
 
+
 usage(){
-    echo "Usage $(basename $0)  [stop, start, clean_node] nodes_number [access_token]"
+    echo "Usage $(basename $0)  [stop, start, clean_node, clean_cfg] nodes_number [access_token]"
     exit -1
 }
 
@@ -53,8 +60,11 @@ case $1 in
 	shift;
 	remove_nodes $@
 	;;
-    clean_node)
+    clean_data)
+	shift;
+	clean_data $@
+	;;
+    clean_cfg)
 	shift;
 	clean_cfg $@
-	;;
 esac

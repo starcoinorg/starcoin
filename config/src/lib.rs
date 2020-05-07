@@ -101,6 +101,14 @@ pub struct StarcoinOpt {
     #[structopt(long = "disable-file-log")]
     /// Disable std error log output.
     pub disable_file_log: bool,
+
+    #[structopt(long = "mine", short = "m", parse(try_from_str))]
+    /// Start a miner client in node, default is true
+    pub enable_mine: Option<bool>,
+
+    #[structopt(long = "miner_thread")]
+    /// Miner thread number, not work for dev network, default is 1
+    pub miner_thread: Option<u16>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

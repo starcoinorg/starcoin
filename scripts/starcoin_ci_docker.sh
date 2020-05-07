@@ -24,6 +24,7 @@ function docker_rebuild() {
   cp $DIR/start.sh $DIR/../target/debug/
   docker build -f $DIR/DockerfileCi -t starcoin:latest $DIR/../target/debug/
   check_errs $? "Docker build error"
+  docker image prune -f
 }
 
 function start_starcoin() {
