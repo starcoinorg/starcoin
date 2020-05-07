@@ -21,7 +21,6 @@ starcoin-state-tree = {path = "../state/state-tree"}
 
 [dev-dependencies]
 rand = "0.5"
-tempfile = "3"
 
 [[bench]]
 name = "benchmarks"

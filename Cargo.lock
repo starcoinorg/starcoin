@@ -524,7 +524,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-storage",
  "starcoin-types",
- "tempfile",
 ]
 
 [[package]]
