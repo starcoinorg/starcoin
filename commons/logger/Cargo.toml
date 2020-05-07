@@ -10,5 +10,5 @@ edition = "2018"
 anyhow = "1.0"
 log = "0.4.8"
 chrono = "0.4.11"
-log4rs = "0.11.0"
+log4rs = { version="0.11.0", features = ["background_rotation", "gzip"]}
 lazy_static = "1.4.0"
