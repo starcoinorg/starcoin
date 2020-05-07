@@ -10,7 +10,7 @@ use anyhow::Result;
 use bus::BusActor;
 use chain::to_block_chain_collection;
 use chain::BlockChain;
-use config::{NodeConfig, PacemakerStrategy};
+use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
 use crypto::hash::HashValue;
 use futures::channel::mpsc;
 use futures::prelude::*;
@@ -92,10 +92,14 @@ where
                     )
                     .start();
                 }
-                PacemakerStrategy::Schedule => {
-                    SchedulePacemaker::new(Duration::from_secs(config.miner.dev_period), sender)
-                        .start();
-                }
+                PacemakerStrategy::Schedule => match config.miner.consensus_strategy {
+                    ConsensusStrategy::Dummy(dev_period) => {
+                        SchedulePacemaker::new(Duration::from_secs(dev_period), sender).start();
+                    }
+                    ConsensusStrategy::Argon(_) => {
+                        panic!("Incompatible consensus strategy");
+                    }
+                },
             };
 
             let miner = miner::Miner::new(bus.clone(), config.clone());

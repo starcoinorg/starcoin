@@ -36,8 +36,7 @@ fn test_miner_with_schedule_pacemaker() {
         let peer_id = Arc::new(PeerId::random());
         let mut config = NodeConfig::random_for_test();
         config.miner.pacemaker_strategy = PacemakerStrategy::Schedule;
-        config.miner.dev_period = 1;
-        config.miner.consensus_strategy = ConsensusStrategy::Dummy;
+        config.miner.consensus_strategy = ConsensusStrategy::Dummy(1);
         let config = Arc::new(config);
         let bus = BusActor::launch();
         let storage = Arc::new(
@@ -125,7 +124,7 @@ fn test_miner_with_ondemand_pacemaker() {
         let peer_id = Arc::new(PeerId::random());
         let mut conf = NodeConfig::random_for_test();
         conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
-        conf.miner.consensus_strategy = ConsensusStrategy::Dummy;
+        conf.miner.consensus_strategy = ConsensusStrategy::Dummy(1);
         let config = Arc::new(conf);
         let bus = BusActor::launch();
         let storage = Arc::new(

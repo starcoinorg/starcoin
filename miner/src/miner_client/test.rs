@@ -22,8 +22,7 @@ mod test {
         let mut system = System::new("test");
         system.block_on(async {
             let mut miner_config = MinerConfig::default();
-            miner_config.consensus_strategy = config::ConsensusStrategy::Argon;
-            miner_config.thread_num = 4;
+            miner_config.consensus_strategy = config::ConsensusStrategy::Argon(4);
             let conf = Arc::new(NodeConfig::random_for_test());
             let mut miner = Miner::<ArgonConsensusHeader>::new(BusActor::launch(), conf);
             let stratum = {
