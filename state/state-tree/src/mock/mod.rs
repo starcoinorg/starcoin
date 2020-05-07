@@ -6,11 +6,10 @@ use starcoin_state_store_api::{StateNode, StateNodeStore};
 
 use starcoin_crypto::HashValue;
 use std::collections::{BTreeMap, HashMap};
-use std::sync::Mutex;
-
+use std::sync::RwLock;
 #[derive(Default)]
 pub struct MockStateNodeStore {
-    nodes: Mutex<HashMap<HashValue, StateNode>>,
+    nodes: RwLock<HashMap<HashValue, StateNode>>,
 }
 
 impl MockStateNodeStore {
@@ -20,27 +19,29 @@ impl MockStateNodeStore {
     }
 
     pub fn all_nodes(&self) -> Vec<(HashValue, StateNode)> {
-        let nodes = self.nodes.lock().unwrap();
+        let nodes = self.nodes.read().unwrap();
         nodes.iter().map(|(k, v)| (*k, v.clone())).collect()
     }
 }
 
 impl StateNodeStore for MockStateNodeStore {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        let nodes = self.nodes.lock().unwrap();
+        let nodes = self.nodes.read().unwrap();
         Ok(nodes.get(hash).cloned())
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
-        let mut nodes = self.nodes.lock().unwrap();
+        let mut nodes = self.nodes.write().unwrap();
         nodes.insert(key, node);
         Ok(())
     }
 
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
-        for (node_key, node) in nodes.iter() {
-            self.put(*node_key, node.clone()).unwrap();
-        }
+        let mut store_nodes = self.nodes.write().unwrap();
+        store_nodes.extend(nodes.into_iter());
+        // for (node_key, node) in nodes.iter() {
+        //     self.put(*node_key, node.clone()).unwrap();
+        // }
         Ok(())
     }
 }
