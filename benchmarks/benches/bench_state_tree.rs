@@ -13,8 +13,8 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 
 fn bench_get_with_proof(c: &mut Criterion) {
-    let tmp_dir = tempfile::tempdir().unwrap();
-    let db_store = new_empty_store(tmp_dir.path()) as Arc<dyn StateNodeStore>;
+    let tmp_dir = starcoin_config::temp_path();
+    let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
 
     let mem_store = Arc::new(MockStateNodeStore::new()) as Arc<dyn StateNodeStore>;
 
@@ -46,8 +46,8 @@ fn bench_get_with_proof(c: &mut Criterion) {
 fn bench_put_and_commit(c: &mut Criterion) {
     let mut group = c.benchmark_group("put_and_commit");
     for i in vec![1u64, 5, 10, 50, 100].into_iter() {
-        let tmp_dir = tempfile::tempdir().unwrap();
-        let db_store = new_empty_store(tmp_dir.path()) as Arc<dyn StateNodeStore>;
+        let tmp_dir = starcoin_config::temp_path();
+        let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
         let mem_store = Arc::new(MockStateNodeStore::new()) as Arc<dyn StateNodeStore>;
         let mut rng: StdRng = {
             let seed = [1u8, 2, 3, 4];
