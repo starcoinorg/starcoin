@@ -18,12 +18,11 @@ fn main() {
     let opts: StarcoinOpt = StarcoinOpt::from_args();
     let config = {
         let mut cfg = MinerConfig::default();
-        cfg.consensus_strategy = ConsensusStrategy::Argon;
+        cfg.consensus_strategy = ConsensusStrategy::Argon(opts.thread_num);
         cfg.stratum_server = opts
             .stratum_server
             .parse()
             .expect("Invalid stratum server address");
-        cfg.thread_num = opts.thread_num;
         cfg
     };
     executor::block_on(async move {

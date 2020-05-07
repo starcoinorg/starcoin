@@ -40,7 +40,7 @@ where
     _miner_actor: Addr<MinerActor<C, TxPoolRef, ChainActorRef<C>, Storage, H>>,
     _sync_actor: Addr<SyncActor<C>>,
     _rpc_actor: Addr<RpcActor>,
-    _miner_client: Addr<MinerClientActor>,
+    _miner_client: Option<Addr<MinerClientActor>>,
 }
 
 pub async fn start<C, H>(
@@ -259,7 +259,11 @@ where
         receiver,
         default_account,
     )?;
-    let miner_client = MinerClientActor::new(config.miner.clone()).start();
+    let miner_client = if config.miner.enable {
+        Some(MinerClientActor::new(config.miner.clone()).start())
+    } else {
+        None
+    };
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,
