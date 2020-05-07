@@ -1,17 +1,16 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use crypto::hash::*;
 use forkable_jellyfish_merkle::blob::Blob;
 use rand::{rngs::StdRng, SeedableRng};
-use starcoin_crypto::hash::*;
+use starcoin_state_store_api::StateNodeStore;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::StateTree;
-
-use starcoin_state_store_api::StateNodeStore;
-use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
+use storage::db_storage::DBStorage;
+use storage::storage::StorageInstance;
+use storage::Storage;
 
 fn bench_get_with_proof(c: &mut Criterion) {
     let tmp_dir = tempfile::tempdir().unwrap();
