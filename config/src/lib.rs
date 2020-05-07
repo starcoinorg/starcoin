@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_vault_config::AccountVaultConfig;
+use crate::sync_config::SyncConfig;
 use anyhow::{ensure, Result};
 use dirs;
 use libp2p::core::Multiaddr;
@@ -23,6 +25,7 @@ use structopt::StructOpt;
 
 mod account_vault_config;
 mod chain_config;
+mod logger_config;
 mod metrics_config;
 mod miner_config;
 mod network_config;
@@ -31,16 +34,15 @@ mod storage_config;
 mod sync_config;
 mod txpool_config;
 
-use crate::account_vault_config::AccountVaultConfig;
-use crate::sync_config::SyncConfig;
 pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG};
 pub use libra_temppath::TempPath;
+pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use storage_config::StorageConfig;
-use sync_config::SyncMode;
+pub use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;
 
 /// Default data dir
@@ -91,6 +93,14 @@ pub struct StarcoinOpt {
     #[structopt(long = "sync-mode", short = "s", default_value = "fast")]
     /// Sync mode. Included value(full, fast, light).
     pub sync_mode: SyncMode,
+
+    #[structopt(long = "disable-std-log")]
+    /// Disable std error log output.
+    pub disable_std_log: bool,
+
+    #[structopt(long = "disable-file-log")]
+    /// Disable std error log output.
+    pub disable_file_log: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -202,6 +212,8 @@ pub struct NodeConfig {
     pub vault: AccountVaultConfig,
     #[serde(default)]
     pub metrics: MetricsConfig,
+    #[serde(default)]
+    pub logger: LoggerConfig,
 }
 
 impl NodeConfig {
@@ -257,6 +269,7 @@ impl ConfigModule for NodeConfig {
             sync: SyncConfig::default_with_net(net),
             vault: AccountVaultConfig::default_with_net(net),
             metrics: MetricsConfig::default_with_net(net),
+            logger: LoggerConfig::default_with_net(net),
         }
     }
 
@@ -270,6 +283,7 @@ impl ConfigModule for NodeConfig {
         self.sync.random(base);
         self.vault.random(base);
         self.metrics.random(base);
+        self.logger.random(base);
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
@@ -282,6 +296,7 @@ impl ConfigModule for NodeConfig {
         self.sync.load(base, opt)?;
         self.vault.load(base, opt)?;
         self.metrics.load(base, opt)?;
+        self.logger.load(base, opt)?;
         Ok(())
     }
 }

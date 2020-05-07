@@ -108,10 +108,20 @@ where
     H: ConsensusHeader + 'static,
 {
     let logger_handle = starcoin_logger::init();
-
-    let file_log_path = config.data_dir().join("starcoin.log");
-    info!("Write log to file: {:?}", file_log_path);
-    logger_handle.enable_file(true, file_log_path);
+    if config.logger.enable_file() {
+        let file_log_path = config.logger.get_log_path();
+        info!("Write log to file: {:?}", file_log_path);
+        logger_handle.enable_file(
+            file_log_path,
+            config.logger.max_file_size,
+            config.logger.max_backup,
+        );
+    }
+    if config.logger.enable_stderr {
+        logger_handle.enable_stderr();
+    } else {
+        logger_handle.disable_stderr();
+    }
 
     // start metric server
     starcoin_metrics::metric_server::start_server(

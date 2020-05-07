@@ -1,14 +1,21 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use lazy_static::lazy_static;
 use log::LevelFilter;
-use log4rs::append::console::{ConsoleAppender, Target};
-use log4rs::append::file::FileAppender;
-use log4rs::config::{Appender, Config, Root};
-use log4rs::encode::pattern::PatternEncoder;
-use log4rs::Handle;
+use log4rs::{
+    append::{
+        console::{ConsoleAppender, Target},
+        rolling_file::policy::compound::{
+            roll::fixed_window::FixedWindowRoller, trigger::size::SizeTrigger, CompoundPolicy,
+        },
+        rolling_file::RollingFileAppender,
+    },
+    config::{Appender, Config, Root},
+    encode::pattern::PatternEncoder,
+    Handle,
+};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::sync::{Arc, Once};
@@ -23,14 +30,18 @@ struct LoggerConfigArg {
     enable_stderr: bool,
     level: LevelFilter,
     log_path: Option<PathBuf>,
+    max_file_size: u64,
+    max_backup: u32,
 }
 
 impl LoggerConfigArg {
-    pub fn new(enable_stderr: bool, level: LevelFilter, log_path: Option<PathBuf>) -> Self {
+    pub fn new(enable_stderr: bool, level: LevelFilter) -> Self {
         Self {
             enable_stderr,
             level,
-            log_path,
+            log_path: None,
+            max_file_size: 0,
+            max_backup: 0,
         }
     }
 }
@@ -41,18 +52,9 @@ pub struct LoggerHandle {
 }
 
 impl LoggerHandle {
-    fn new(
-        enable_stderr: bool,
-        level: LevelFilter,
-        log_path: Option<PathBuf>,
-        handle: Handle,
-    ) -> Self {
+    fn new(arg: LoggerConfigArg, handle: Handle) -> Self {
         Self {
-            arg: Mutex::new(LoggerConfigArg {
-                enable_stderr,
-                level,
-                log_path,
-            }),
+            arg: Mutex::new(arg),
             handle,
         }
     }
@@ -69,10 +71,11 @@ impl LoggerHandle {
         self.update_logger(arg);
     }
 
-    pub fn enable_file(&self, enable_stderr: bool, log_path: PathBuf) {
+    pub fn enable_file(&self, log_path: PathBuf, max_file_size: u64, max_backup: u32) {
         let mut arg = self.arg.lock().unwrap().clone();
-        arg.enable_stderr = enable_stderr;
         arg.log_path = Some(log_path);
+        arg.max_file_size = max_file_size;
+        arg.max_backup = max_backup;
         self.update_logger(arg);
     }
 
@@ -113,6 +116,8 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         enable_stderr,
         level,
         log_path,
+        max_file_size,
+        max_backup,
     } = arg;
     if !enable_stderr && log_path.is_none() {
         println!("Logger is disabled.");
@@ -128,10 +133,22 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         root_builder = root_builder.appender("stderr");
     }
     if let Some(log_path) = log_path {
-        let file_appender = FileAppender::builder()
+        let log_file_backup_pattern =
+            format!("{}.{{}}.gz", log_path.to_str().expect("invalid log_path"));
+        let file_appender = RollingFileAppender::builder()
             .encoder(Box::new(PatternEncoder::new(LOG_PATTERN)))
-            .build(log_path)
-            .unwrap();
+            .build(
+                log_path,
+                Box::new(CompoundPolicy::new(
+                    Box::new(SizeTrigger::new(max_file_size)),
+                    Box::new(
+                        FixedWindowRoller::builder()
+                            .build(log_file_backup_pattern.as_str(), max_backup)
+                            .map_err(|e| format_err!("{:?}", e))?,
+                    ),
+                )),
+            )
+            .expect("build file logger fail.");
 
         builder = builder.appender(Appender::builder().build("file", Box::new(file_appender)));
         root_builder = root_builder.appender("file");
@@ -160,13 +177,13 @@ pub fn init() -> Arc<LoggerHandle> {
 pub fn init_with_default_level(default_level: &str) -> Arc<LoggerHandle> {
     let level = env_log_level(default_level);
     LOG_INIT.call_once(|| {
-        let config =
-            build_config(LoggerConfigArg::new(true, level, None)).expect("build log config fail.");
+        let arg = LoggerConfigArg::new(true, level);
+        let config = build_config(arg.clone()).expect("build log config fail.");
         let handle = match log4rs::init_config(config) {
             Ok(handle) => handle,
             Err(e) => panic!(e.to_string()),
         };
-        let logger_handle = LoggerHandle::new(true, level, None, handle);
+        let logger_handle = LoggerHandle::new(arg, handle);
 
         *LOGGER_HANDLE.lock().unwrap() = Some(Arc::new(logger_handle));
     });
