@@ -279,10 +279,7 @@ impl AccumulatorTree {
     }
 
     fn get_node_index(&self, key: NodeCacheKey) -> Option<HashValue> {
-        match self.index_cache.lock().get(&key) {
-            Some(node_hash) => Some(*node_hash),
-            None => None,
-        }
+        self.index_cache.lock().get(&key).map(|value| *value)
     }
 
     /// Get node hash always.
