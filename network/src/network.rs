@@ -437,7 +437,7 @@ impl Inner {
             }
             PeerMessage::RawRPCRequest(id, request) => {
                 info!("do request.");
-                let (tx, mut rx) = mpsc::channel(1);
+                let (tx, rx) = mpsc::channel(1);
                 self.bus
                     .send(Broadcast {
                         msg: RawRpcRequestMessage {
@@ -447,14 +447,8 @@ impl Inner {
                     })
                     .await?;
                 let network_service = self.network_service.clone();
-                let task = async move {
-                    let response = rx.next().await?;
-                    let peer_msg = PeerMessage::RawRPCResponse(id, response);
-                    let data = peer_msg.encode()?;
-                    network_service.send_message(peer_id, data).await?;
-                    Ok(())
-                };
-                self.handle.spawn(task);
+                self.handle
+                    .spawn(Self::handle_response(id, peer_id, rx, network_service));
                 info!("receive rpc request");
             }
             PeerMessage::RawRPCResponse(id, response) => {
@@ -465,6 +459,27 @@ impl Inner {
             }
         }
         Ok(())
+    }
+
+    async fn handle_response(
+        id: u128,
+        peer_id: PeerId,
+        mut rx: mpsc::Receiver<Vec<u8>>,
+        network_service: SNetworkService,
+    ) -> Result<()> {
+        let response = rx.next().await;
+        match response {
+            Some(response) => {
+                let peer_msg = PeerMessage::RawRPCResponse(id, response);
+                let data = peer_msg.encode()?;
+                network_service.send_message(peer_id, data).await?;
+                Ok(())
+            }
+            None => {
+                info!("can't get response by id {}", id);
+                Ok(())
+            }
+        }
     }
 
     async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) -> Result<()> {
