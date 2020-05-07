@@ -12,8 +12,8 @@ pub mod mock;
 
 pub use chain_service::to_block_chain_collection;
 pub use chain_service::BlockChainCollection;
+pub use chain_service::ChainServiceImpl;
 
-use crate::chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;
 use actix::prelude::*;
 use anyhow::{bail, format_err, Error, Result};

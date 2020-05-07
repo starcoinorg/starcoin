@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::dev::DummyHeader;
-use anyhow::{Result};
+use anyhow::Result;
 use config::NodeConfig;
 use rand::prelude::*;
 use std::sync::Arc;
 use traits::ChainReader;
-use traits::{Consensus};
+use traits::Consensus;
 use types::block::BlockHeader;
 use types::U256;
 
