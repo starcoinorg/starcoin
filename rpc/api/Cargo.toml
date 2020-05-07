@@ -24,4 +24,5 @@ scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}
 starcoin-wallet-api = { path = "../../wallet/api"}
 starcoin-state-api = { path = "../../state/api"}
+starcoin-config = { path = "../../config"}
 starcoin-crypto = { path = "../../commons/crypto"}

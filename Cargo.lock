@@ -6070,6 +6070,7 @@ dependencies = [
  "jsonrpc-server-utils 14.1.0",
  "serde",
  "starcoin-canonical-serialization",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-state-api",
  "starcoin-types",

@@ -3,11 +3,10 @@
 use crate::cli_state::CliState;
 use anyhow::Result;
 use scmd::{CmdContext, Command};
-use starcoin_config::ChainNetwork;
+use starcoin_config::Connect;
 pub use starcoin_config::StarcoinOpt;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
-use std::sync::Arc;
 
 mod chain;
 mod cli_state;
@@ -26,28 +25,43 @@ fn run() -> Result<()> {
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {:?}", opt);
-            let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
-            info!("Final data-dir is : {:?}", config.data_dir());
-            info!(
-                "Attach a new console by command: starcoin -n {} -d {} console",
-                config.net(),
-                config.base.base_data_dir().to_str().unwrap()
-            );
-            let ipc_file = config.rpc.get_ipc_file();
-            let node_handle = if !ipc_file.exists() {
-                let node_handle = match config.net() {
-                    ChainNetwork::Dev => starcoin_node::run_dev_node(config.clone()),
-                    _ => starcoin_node::run_normal_node(config.clone()),
-                };
-                info!("Waiting node start...");
-                helper::wait_until_file_created(ipc_file)?;
-                Some(node_handle)
-            } else {
-                None
+            let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));
+            let (client, node_handle) = match connect {
+                Connect::IPC(ipc_file) => {
+                    if let Some(ipc_file) = ipc_file {
+                        info!("Try to connect node by ipc: {:?}", ipc_file);
+                        let client = RpcClient::connect_ipc(ipc_file)?;
+                        (client, None)
+                    } else {
+                        info!("Start starcoin node...");
+                        let (node_handle, config) = starcoin_node::run_node_by_opt(opt)?;
+                        let ipc_file = config.rpc.get_ipc_file();
+                        helper::wait_until_file_created(ipc_file)?;
+                        info!(
+                            "Attach a new console by ipc: starcoin -c {} console",
+                            ipc_file.to_str().expect("invalid ipc file path.")
+                        );
+                        if let Some(http_address) = config.rpc.get_http_address() {
+                            info!(
+                                "Attach a new console by rpc: starcoin -c {} console",
+                                http_address
+                            );
+                        }
+                        info!("Starcoin node started.");
+                        info!("Try to connect node by ipc: {:?}", ipc_file);
+                        let client = RpcClient::connect_ipc(ipc_file)?;
+                        (client, node_handle)
+                    }
+                }
+                Connect::RPC(address) => {
+                    info!("Try to connect node by rpc: {:?}", address);
+                    let client = RpcClient::connect_http(address)?;
+                    (client, None)
+                }
             };
-            info!("Try to connect node by ipc: {:?}", ipc_file);
-            let client = RpcClient::connect_ipc(ipc_file)?;
-            let state = CliState::new(config, client, node_handle);
+
+            let node_info = client.node_info()?;
+            let state = CliState::new(node_info.net, client, node_handle);
             Ok(state)
         },
         |_, _, state| {

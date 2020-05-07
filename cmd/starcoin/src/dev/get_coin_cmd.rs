@@ -38,8 +38,7 @@ impl CommandAction for GetCoinCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let config = ctx.state().config();
-        let net = config.net();
+        let net = ctx.state().net();
         if !net.is_dev() {
             bail!(
                 "This command only available in dev network, current network is: {}",

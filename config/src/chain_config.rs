@@ -94,6 +94,13 @@ impl ChainNetwork {
         }
     }
 
+    pub fn is_halley(self) -> bool {
+        match self {
+            ChainNetwork::Halley => true,
+            _ => false,
+        }
+    }
+
     pub fn get_config(self) -> &'static ChainConfig {
         match self {
             ChainNetwork::Dev => &DEV_CHAIN_CONFIG,

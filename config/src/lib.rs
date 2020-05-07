@@ -41,6 +41,7 @@ pub use metrics_config::MetricsConfig;
 pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
+use std::str::FromStr;
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;
@@ -63,16 +64,49 @@ pub fn temp_path() -> DataDirPath {
     DataDirPath::TempPath(Arc::from(temp_path))
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Connect {
+    /// Connect by ipc file path, if Path is absent, use default ipc file.
+    IPC(Option<PathBuf>),
+    /// Connect by json rpc address.
+    RPC(String),
+}
+
+impl Default for Connect {
+    fn default() -> Self {
+        Connect::IPC(None)
+    }
+}
+
+impl FromStr for Connect {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            return Ok(Self::default());
+        }
+        if s.starts_with("http://") {
+            Ok(Connect::RPC(s.to_string()))
+        } else {
+            Ok(Connect::IPC(Some(PathBuf::from_str(s)?)))
+        }
+    }
+}
+
 #[derive(Debug, Clone, StructOpt, Default)]
 #[structopt(name = "starcoin", about = "Starcoin")]
 pub struct StarcoinOpt {
+    #[structopt(long, short = "c")]
+    /// Connect and attach to a node
+    pub connect: Option<Connect>,
+
     #[structopt(long, short = "d", parse(from_os_str))]
     /// Path to data dir
     pub data_dir: Option<PathBuf>,
 
-    #[structopt(long, short = "n", default_value = "dev")]
+    #[structopt(long, short = "n")]
     /// Chain Network
-    pub net: ChainNetwork,
+    pub net: Option<ChainNetwork>,
 
     #[structopt(long)]
     /// P2P network seed, if want add more seeds, please edit config file.
@@ -233,7 +267,7 @@ impl NodeConfig {
     }
 
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
-        let base = BaseConfig::new(opt.net, opt.data_dir.clone());
+        let base = BaseConfig::new(opt.net.unwrap_or_default(), opt.data_dir.clone());
         let data_dir = base.data_dir();
         ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
 

@@ -30,8 +30,8 @@ impl CommandAction for PanicCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let client = ctx.state().client();
-        let config = ctx.state().config();
-        if !config.net().is_dev() {
+        let net = ctx.state().net();
+        if !net.is_dev() {
             bail!("This command only work for dev network");
         }
         if opt.remote {
