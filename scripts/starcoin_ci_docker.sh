@@ -35,7 +35,7 @@ function start_starcoin() {
   eval $(docker-machine env $host_name)
   docker_rebuild
   docker rm -f $name 1>/dev/null
-  docker run -td --log-opt mode=non-blocking --log-opt max-size=1m --restart=on-failure:1 -p $port:9840 -p $m_port:9101 -v $cfg_root/$name:/.starcoin --name $name starcoin $@
+  docker run -td --log-opt mode=non-blocking --log-opt max-size=1m --restart=on-failure:10 -p $port:9840 -p $m_port:9101 -v $cfg_root/$name:/.starcoin --name $name starcoin $@
   check_errs $? "Docker run starcoin error"
 }
 
