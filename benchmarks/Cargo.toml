@@ -15,6 +15,18 @@ storage = { package="starcoin-storage", path = "../storage"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-config = { path = "../config"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
+forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
+starcoin-state-store-api = {path = "../state/state-store-api"}
+starcoin-state-tree = {path = "../state/state-tree"}
+
+[dev-dependencies]
+rand = "0.5"
+tempfile = "3"
+
 [[bench]]
 name = "benchmarks"
+harness = false
+
+[[bench]]
+name = "bench_state_tree"
 harness = false
