@@ -11,7 +11,9 @@ module Libra {
     }
 
     // A singleton resource that grants access to `Libra::mint`. Only the Association has one.
-    resource struct MintCapability<Token> { }
+    resource struct MintCapability<Token> {
+        t: Token,
+    }
 
     resource struct Info<Token> {
         // The sum of the values of all Libra::T resources in the system
@@ -37,10 +39,10 @@ module Libra {
         is_approved: bool,
     }
 
-    public fun register<Token>() {
+    public fun register<Token>(t: Token) {
         // Only callable by the Association address
         // Transaction::assert(Transaction::sender() == 0xA550C18, 1);
-        move_to_sender(MintCapability<Token>{ });
+        move_to_sender(MintCapability<Token>{ t });
         move_to_sender(Info<Token> { total_value: 0u128, preburn_value: 0 });
     }
 

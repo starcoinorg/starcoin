@@ -3,14 +3,18 @@ address 0xeae6b71b9583150c1c32bc9500ee5d15:
 module MyToken {
      use 0x0::Libra;
      use 0x0::LibraAccount;
+     use 0x0::Transaction;
 
      struct T { }
 
      public fun issue(amount: u64) {
-         // register token
-         Libra::register<T>();
+         // only specific address can issue the token
+         Transaction::assert(Transaction::sender() == 0xeae6b71b9583150c1c32bc9500ee5d15, 8000);
 
-         // mint 'amount' tokens and check that the market cap increases appropriately
+         // register token
+         Libra::register<T>(T{});
+
+         // mint 'amount' tokens
          let coin = Libra::mint<T>(amount);
 
          // create 'Balance<Token>' resource under sender account

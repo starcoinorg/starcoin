@@ -8,6 +8,6 @@ module LBR {
 
     public fun initialize() {
         Transaction::assert(Transaction::sender() == 0xA550C18, 0);
-        Libra::register<T>();
+        Libra::register<T>(T{});
     }
 }

@@ -11,7 +11,7 @@ module MyToken {
 
     public fun new() {
         Transaction::assert(Transaction::sender() == {{alice}}, 8000);
-        Libra::register<T>();
+        Libra::register<T>(T{});
         // mint 100 coins and check that the market cap increases appropriately
         let old_market_cap = Libra::market_cap<T>();
         let coin = Libra::mint<T>(10000);
