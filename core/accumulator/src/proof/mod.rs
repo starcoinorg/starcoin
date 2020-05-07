@@ -41,7 +41,7 @@ impl AccumulatorProof {
             MAX_ACCUMULATOR_PROOF_DEPTH,
             self.siblings.len()
         );
-        info!("accumulator verify proof: {:?}", expected_root_hash);
+        debug!("accumulator verify proof: {:?}", expected_root_hash);
         let actual_root_hash = self
             .siblings
             .iter()

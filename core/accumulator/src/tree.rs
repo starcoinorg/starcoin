@@ -281,10 +281,7 @@ impl AccumulatorTree {
     fn get_node_index(&self, key: NodeCacheKey) -> Option<HashValue> {
         match self.index_cache.lock().get(&key) {
             Some(node_hash) => Some(*node_hash),
-            None => {
-                warn!("get node index hash error:{:?}", key);
-                None
-            }
+            None => None,
         }
     }
 
@@ -334,8 +331,12 @@ impl AccumulatorTree {
                                 return Ok(internal.right());
                             }
                         } else {
-                            hash_vec.push(internal.left());
-                            hash_vec.push(internal.right());
+                            if internal.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
+                                hash_vec.push(internal.left());
+                            }
+                            if internal.right() != *ACCUMULATOR_PLACEHOLDER_HASH {
+                                hash_vec.push(internal.right());
+                            }
                         }
                     }
                     Ok(AccumulatorNode::Leaf(leaf)) => {
@@ -344,7 +345,7 @@ impl AccumulatorTree {
                         }
                     }
                     _ => {
-                        error!("get node error:{:?}", temp_node_hash);
+                        debug!("get node error:{:?}", temp_node_hash);
                     }
                 }
             }
