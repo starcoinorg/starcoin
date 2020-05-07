@@ -6,12 +6,12 @@ cfg_root=/mnt/volume_01/starcoin_cfg
 create_node(){
     local node=$1
     local access_token=$2
-    docker-machine  create --driver digitalocean --digitalocean-region sgp1 --digitalocean-image "ubuntu-18-04-x64" --digitalocean-size "c-2" --digitalocean-access-token  $access_token $node
+    docker-machine  create --driver digitalocean --digitalocean-region sgp1 --digitalocean-image "ubuntu-18-04-x64" --digitalocean-size "c-4" --digitalocean-access-token  $access_token $node
 }
 
 create_nodes(){
     for((c=0; c<$1; c++));do
-	create_node starcoin-$c
+	create_node starcoin-node-$c $2
     done
 }
 
@@ -23,7 +23,7 @@ stop_nodes(){
 
 remove_nodes(){
     for((c=0; c<$1;c++));do
-	docker-machine rm starcoin-$c -f -y
+	docker-machine rm starcoin-node-$c -f -y
     done
 }
 
@@ -47,7 +47,6 @@ fi
 case $1 in
     start)
 	shift;
-	remove_nodes $@
 	create_nodes $@
 	;;
     stop)

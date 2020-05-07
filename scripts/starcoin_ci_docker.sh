@@ -4,7 +4,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 SEED_NODE_KEY=a52cb7fe64b154d192cebd35a0b129c80481f89dd94f2aa2978b71417304a858
 SEED_PORT=9840
-SEED_HOST=$(docker-machine ip starcoin-0)
+SEED_HOST=$(docker-machine ip starcoin-node-0)
 SEED=/ip4/$SEED_HOST/tcp/$SEED_PORT/p2p/QmcejhDq4ubxLnx7sNENECJroAuepMiL6Zkjp63LMmwVaT
 
 cfg_root=/mnt/volume_01/starcoin_cfg
@@ -40,12 +40,13 @@ function start_starcoin() {
 }
 
 function start_txfactory() {
-  local starcoin_name=$1
-  local name=$2
-  shift 2
+  local host_name=$1
+  local starcoin_name=$2
+  local name=$3
+  shift 3
+  eval $(docker-machine env $host_name)
   docker_rebuild
   docker rm -f $name 1>/dev/null
-  # docker-machine ssh $host_name rm -f $cfg_root/$name/*/starcoin.ipc
   docker run -td --restart=on-failure:10 -v $cfg_root/$starcoin_name:/.starcoin --name $name --entrypoint "/starcoin/txfactory" starcoin:latest --ipc-path /.starcoin/halley/starcoin.ipc $@
   check_errs $? "Docker run txfactory error"
 }
@@ -61,7 +62,7 @@ function start_halley_node() {
 }
 
 #TODO: start failed, clean all env and restart
-start_halley_seed starcoin-0 starcoin-0 $SEED_PORT 9101
-start_halley_node starcoin-0 starcoin-1 9841 9102
-start_halley_node starcoin-0 starcoin-2 9842 9103
-start_txfactory starcoin-0 txfactory-0
+#start_halley_seed starcoin-node-0 starcoin-0 $SEED_PORT 9101
+#start_halley_node starcoin-node-1 starcoin-1 9841 9102
+#start_halley_node starcoin-node-2 starcoin-2 9842 9103
+start_txfactory starcoin-node-0 starcoin-0 txfactory-0
