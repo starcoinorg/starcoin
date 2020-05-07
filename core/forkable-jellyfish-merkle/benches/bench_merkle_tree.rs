@@ -6,12 +6,11 @@ use std::collections::HashMap;
 
 fn bench_get_with_proof(c: &mut Criterion) {
     let (kvs, db, root) = prepare_tree(&[1, 2, 3, 4], 1000);
+    let tree = JellyfishMerkleTree::new(&db);
+    let ks = kvs.keys().collect::<Vec<_>>();
+    let k_len = ks.len();
     c.bench_function("get_with_proof", |b| {
-        let tree = JellyfishMerkleTree::new(&db);
-        let ks = kvs.keys().collect::<Vec<_>>();
-        let k_len = ks.len();
         let mut i = 0usize;
-
         b.iter_with_setup(
             || {
                 let k = ks[i % k_len];

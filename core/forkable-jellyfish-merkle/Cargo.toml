@@ -37,5 +37,5 @@ default = []
 
 
 [[bench]]
-name = "my_benchmark"
+name = "bench_merkle_tree"
 harness = false
