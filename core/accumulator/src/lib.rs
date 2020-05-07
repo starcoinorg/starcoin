@@ -114,10 +114,7 @@ impl Accumulator for MerkleAccumulator {
 
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error> {
         Ok(Some(
-            self.tree
-                .lock()
-                .get_node_hash(NodeIndex::new(leaf_index))
-                .unwrap(),
+            self.tree.lock().get_node_hash(NodeIndex::new(leaf_index))?,
         ))
     }
 

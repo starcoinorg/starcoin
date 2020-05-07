@@ -104,7 +104,7 @@ impl AccumulatorTree {
                     }
                     None => AccumulatorNode::new_internal(
                         pos.parent(),
-                        self.get_node_hash(sibling).unwrap(),
+                        self.get_node_hash(sibling)?,
                         hash,
                     ),
                 };
@@ -144,7 +144,7 @@ impl AccumulatorTree {
                     None => {
                         let not_frozen = AccumulatorNode::new_internal(
                             pos.parent(),
-                            self.get_node_hash(sibling).unwrap(),
+                            self.get_node_hash(sibling)?,
                             hash,
                         );
                         not_frozen_nodes.push(not_frozen.clone());
