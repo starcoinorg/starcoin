@@ -58,6 +58,8 @@ fn bench_put_and_commit(c: &mut Criterion) {
         };
         for (id, store) in vec![("mem_store", mem_store), ("db_store", db_store)].into_iter() {
             let tree = StateTree::new(store, None);
+            // init tree with 10w keys.
+            let _ = prepare_tree(&tree, &[2u8, 3, 4, 5], 100000);
             group.bench_with_input(BenchmarkId::new(id, i), &(tree, i), |b, input| {
                 let (tree, n) = input;
                 b.iter_with_setup(
