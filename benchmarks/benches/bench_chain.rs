@@ -12,7 +12,7 @@ fn block_try_connect(c: &mut Criterion) {
             let mut system = System::new("test");
             let fut = async move { BusActor::launch() };
             let bus = system.block_on(fut);
-            let bencher = ChainBencher::new(Some(10000), bus);
+            let bencher = ChainBencher::new(Some(1000), bus);
             bencher.bench(b)
         })
         .sample_size(10),

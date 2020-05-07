@@ -36,7 +36,7 @@ rand = "0.5"
 name = "benchmarks"
 harness = false
 [[bench]]
-name = "chain"
+name = "bench_chain"
 harness = false
 
 [[bench]]
