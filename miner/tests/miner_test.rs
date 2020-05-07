@@ -3,7 +3,7 @@ use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
-use consensus::dummy::{DummyConsensus, DummyHeader};
+use consensus::dev::{DevConsensus, DummyHeader};
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -77,9 +77,9 @@ fn test_miner_with_schedule_pacemaker() {
         .unwrap();
         let miner_account = WalletAccount::random();
         let _miner = MinerActor::<
-            DummyConsensus,
+            DevConsensus,
             TxPoolRef,
-            ChainActorRef<DummyConsensus>,
+            ChainActorRef<DevConsensus>,
             Storage,
             DummyHeader,
         >::launch(
@@ -168,9 +168,9 @@ fn test_miner_with_ondemand_pacemaker() {
         let receiver = txpool.clone().subscribe_txns().await.unwrap();
         let miner_account = WalletAccount::random();
         let _miner = MinerActor::<
-            DummyConsensus,
+            DevConsensus,
             TxPoolRef,
-            ChainActorRef<DummyConsensus>,
+            ChainActorRef<DevConsensus>,
             Storage,
             DummyHeader,
         >::launch(

@@ -7,7 +7,7 @@ use futures::executor::block_on;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::{
     argon::{ArgonConsensus, ArgonConsensusHeader},
-    dummy::{DummyConsensus, DummyHeader},
+    dev::{DevConsensus, DummyHeader},
 };
 use starcoin_logger::prelude::*;
 use starcoin_traits::{Consensus, ConsensusHeader};
@@ -94,7 +94,7 @@ impl NodeHandle {
 }
 
 pub fn run_dev_node(config: Arc<NodeConfig>) -> NodeHandle {
-    run_node::<DummyConsensus, DummyHeader>(config)
+    run_node::<DevConsensus, DummyHeader>(config)
 }
 
 pub fn run_normal_node(config: Arc<NodeConfig>) -> NodeHandle {
