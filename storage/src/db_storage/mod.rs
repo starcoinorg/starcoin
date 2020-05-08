@@ -4,7 +4,7 @@
 use crate::batch::WriteBatch;
 use crate::metrics::record_metrics;
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
-use crate::VEC_PREFIX_NAME;
+use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
 use anyhow::{bail, format_err, Error, Result};
 use logger::prelude::*;
 use rocksdb::{
@@ -13,8 +13,6 @@ use rocksdb::{
 };
 use std::collections::HashMap;
 use std::path::Path;
-
-pub const DEFAULT_CF_NAME: ColumnFamilyName = "default";
 
 /// Type alias to improve readability.
 pub type ColumnFamilyOptionsMap = HashMap<ColumnFamilyName, ColumnFamilyOptions>;
@@ -36,7 +34,7 @@ impl DBStorage {
         for prefix_name in &VEC_PREFIX_NAME.to_vec() {
             cf_opts_map.insert(prefix_name, ColumnFamilyOptions::default());
         }
-        cf_opts_map.insert(DEFAULT_CF_NAME, ColumnFamilyOptions::default());
+        cf_opts_map.insert(DEFAULT_PREFIX_NAME, ColumnFamilyOptions::default());
 
         let path = db_root_path.as_ref().join("starcoindb");
 
@@ -86,7 +84,7 @@ impl DBStorage {
                 format_err!("Path {:?} can not be converted to string.", path.as_ref())
             })?,
             vec![cf_opts_map
-                .remove_entry(&DEFAULT_CF_NAME)
+                .remove_entry(&DEFAULT_PREFIX_NAME)
                 .ok_or_else(|| format_err!("No \"default\" column family name found"))?],
         ) {
             Ok(db) => db,
@@ -219,17 +217,14 @@ impl InnerStore for DBStorage {
     fn write_batch(&self, batch: WriteBatch) -> Result<()> {
         record_metrics("db", "", "write_batch").end_with(|| {
             let db_batch = DBWriteBatch::new();
-            for (cf_name, rows) in &batch.rows {
-                let cf_handle = self.get_cf_handle(cf_name)?;
-                for (key, write_op) in rows {
-                    match write_op {
-                        WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
-                        WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
-                    }
-                    .map_err(Self::convert_rocksdb_err)?;
+            let cf_handle = self.get_cf_handle(batch.get_prefix_name())?;
+            for (key, write_op) in &batch.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
                 }
+                .map_err(Self::convert_rocksdb_err)?;
             }
-
             self.db
                 .write_opt(&db_batch, &Self::default_write_options())
                 .map_err(Self::convert_rocksdb_err)

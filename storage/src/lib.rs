@@ -43,7 +43,7 @@ pub mod transaction_info;
 
 #[macro_use]
 pub mod storage_macros;
-
+pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";

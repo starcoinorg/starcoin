@@ -39,11 +39,9 @@ impl TransactionStore for TransactionStorage {
     }
 
     fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<(), Error> {
-        let mut batch = WriteBatch::new();
+        let mut batch = WriteBatch::new_with_name(TRANSACTION_PREFIX_NAME);
         for transaction in txn_vec {
-            batch
-                .put(TRANSACTION_PREFIX_NAME, transaction.id(), transaction)
-                .unwrap();
+            batch.put(transaction.id(), transaction)?;
         }
         self.store.write_batch(batch)
     }

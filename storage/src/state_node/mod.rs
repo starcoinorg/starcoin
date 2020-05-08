@@ -35,11 +35,9 @@ impl StateNodeStore for StateStorage {
     }
 
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
-        let mut batch = WriteBatch::new();
+        let mut batch = WriteBatch::new_with_name(STATE_NODE_PREFIX_NAME);
         for (key, node) in nodes.iter() {
-            batch
-                .put::<HashValue, StateNode>(STATE_NODE_PREFIX_NAME, *key, node.clone())
-                .unwrap();
+            batch.put(*key, node.clone())?;
         }
         self.store.write_batch(batch)
     }
