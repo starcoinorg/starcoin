@@ -2,5 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod argon;
+pub mod dev;
 pub mod difficulty;
 pub mod dummy;

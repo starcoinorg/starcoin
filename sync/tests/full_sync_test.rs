@@ -5,7 +5,7 @@ use actix_rt::System;
 use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
-use consensus::dummy::DummyConsensus;
+use consensus::dev::DevConsensus;
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
@@ -109,11 +109,11 @@ fn test_network_actor_rpc() {
         let miner_account = WalletAccount::random();
         // miner
         let _miner_1 = MinerActor::<
-            DummyConsensus,
+            DevConsensus,
             TxPoolRef,
-            ChainActorRef<DummyConsensus>,
+            ChainActorRef<DevConsensus>,
             Storage,
-            consensus::dummy::DummyHeader,
+            consensus::dev::DummyHeader,
         >::launch(
             node_config_1.clone(),
             bus_1.clone(),
@@ -176,7 +176,7 @@ fn test_network_actor_rpc() {
         let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone(), bus_2.clone());
 
         // chain
-        let second_chain = ChainActor::<DummyConsensus>::launch(
+        let second_chain = ChainActor::<DevConsensus>::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -188,7 +188,7 @@ fn test_network_actor_rpc() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DevConsensus>::launch(
             node_config_2.clone(),
             bus_2.clone(),
             Arc::clone(&second_p),
@@ -276,7 +276,7 @@ fn test_network_actor_rpc_2() {
 
         let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone(), bus_1.clone());
         // chain
-        let first_chain = ChainActor::<DummyConsensus>::launch(
+        let first_chain = ChainActor::<DevConsensus>::launch(
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
@@ -365,7 +365,7 @@ fn test_network_actor_rpc_2() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DevConsensus>::launch(
             node_config_2.clone(),
             bus_2.clone(),
             Arc::clone(&second_p),

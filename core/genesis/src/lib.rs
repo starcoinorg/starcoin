@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::ChainNetwork;
-use starcoin_consensus::{argon::ArgonConsensus, dummy::DummyConsensus};
+use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
@@ -49,7 +49,7 @@ impl Display for Genesis {
 impl Genesis {
     pub fn build(net: ChainNetwork) -> Result<Self> {
         match net {
-            ChainNetwork::Dev => Self::do_build::<DummyConsensus>(ChainNetwork::Dev),
+            ChainNetwork::Dev => Self::do_build::<DevConsensus>(ChainNetwork::Dev),
             net => Self::do_build::<ArgonConsensus>(net),
         }
     }

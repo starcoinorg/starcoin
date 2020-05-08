@@ -15,6 +15,16 @@ storage = { package="starcoin-storage", path = "../storage"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-config = { path = "../config"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
+starcoin-chain = { path = "../chain"}
+starcoin-consensus = { path = "../consensus" }
+starcoin-txpool = { path = "../txpool"}
+starcoin-genesis = {path = "../core/genesis"}
+starcoin-sync-api = {path = "../sync/api"}
+starcoin-bus = {path = "../bus"}
+traits = {path = "../core/traits", package="starcoin-traits"}
+starcoin-wallet-api = { path = "../wallet/api"}
+parking_lot = "0.9"
+actix = "0.9"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}
@@ -24,6 +34,9 @@ rand = "0.5"
 
 [[bench]]
 name = "benchmarks"
+harness = false
+[[bench]]
+name = "bench_chain"
 harness = false
 
 [[bench]]
