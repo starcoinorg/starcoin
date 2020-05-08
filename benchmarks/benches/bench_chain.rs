@@ -6,7 +6,7 @@ use criterion::{criterion_group, criterion_main, Benchmark, Criterion};
 use starcoin_bus::BusActor;
 
 fn block_try_connect(c: &mut Criterion) {
-    for i in vec![100u64, 500, 1000].into_iter() {
+    for i in vec![100u64, 500].into_iter() {
         c.bench(
             "block_try_connect",
             Benchmark::new(format!("connect_branch_{:?}", i), move |b| {
@@ -22,7 +22,7 @@ fn block_try_connect(c: &mut Criterion) {
 }
 
 fn block_chain_branch(c: &mut Criterion) {
-    for i in vec![100u64, 500, 1000].into_iter() {
+    for i in vec![100u64, 500].into_iter() {
         for j in vec![2u64, 5, 10].into_iter() {
             for id in [format!("branches_{:?}_{:?}", i, j)].iter() {
                 c.bench(

@@ -1,3 +1,4 @@
+use crate::random_txn;
 use actix::Addr;
 use criterion::{BatchSize, Bencher};
 use parking_lot::RwLock;
@@ -12,6 +13,7 @@ use starcoin_genesis::Genesis;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool::TxPoolRef;
 use starcoin_wallet_api::WalletAccount;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
@@ -27,6 +29,7 @@ pub struct ChainBencher {
     txpool: TxPoolRef,
     block_num: u64,
     account: WalletAccount,
+    count: AtomicU64,
 }
 
 impl ChainBencher {
@@ -80,13 +83,14 @@ impl ChainBencher {
             txpool,
             collection,
             account: miner_account,
+            count: AtomicU64::new(0),
         }
     }
 
     fn execute(&self, proportion: Option<u64>) {
         let mut latest_id = None;
         let mut rng: StdRng = StdRng::from_seed([0; 32]);
-        for _i in 0..self.block_num {
+        for i in 0..self.block_num {
             let block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
                 self.config.clone(),
                 self.collection.get_master_chain_info(),
@@ -96,13 +100,21 @@ impl ChainBencher {
             )
             .unwrap();
 
-            let mut parent = None;
+            let mut branch_flag = false;
             if let Some(p) = proportion {
                 let random = rng.next_u64();
                 if (random % p) == 0 {
-                    parent = latest_id;
+                    branch_flag = true;
                 };
             };
+            let parent = if branch_flag && i > 0 {
+                latest_id
+            } else {
+                self.count.fetch_add(1, Ordering::Relaxed);
+                None
+            };
+            let mut txn_vec = Vec::new();
+            txn_vec.push(random_txn(self.count.load(Ordering::Relaxed)));
             let block_template = self
                 .chain
                 .read()
@@ -110,13 +122,13 @@ impl ChainBencher {
                     *self.account.address(),
                     Some(self.account.get_auth_key().prefix().to_vec()),
                     parent,
-                    Vec::new(),
+                    txn_vec,
                 )
                 .unwrap();
             let block =
                 DummyConsensus::create_block(self.config.clone(), &block_chain, block_template)
                     .unwrap();
-            latest_id = Some(block.header().id());
+            latest_id = Some(block.header().parent_hash());
             self.chain
                 .write()
                 .try_connect(block, false)

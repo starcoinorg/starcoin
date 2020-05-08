@@ -29,6 +29,7 @@ forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}
 rand = "0.5"
+starcoin-vm-runtime = { path = "../vm/vm-runtime"}
 
 [dev-dependencies]
 
