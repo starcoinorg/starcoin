@@ -1,6 +1,7 @@
 use actix::Addr;
 use criterion::{BatchSize, Bencher};
 use parking_lot::RwLock;
+use rand::{RngCore, SeedableRng, StdRng};
 use starcoin_bus::BusActor;
 use starcoin_chain::{
     to_block_chain_collection, BlockChain, BlockChainCollection, ChainServiceImpl,
@@ -82,7 +83,9 @@ impl ChainBencher {
         }
     }
 
-    fn execute(&self) {
+    fn execute(&self, proportion: Option<u64>) {
+        let mut latest_id = None;
+        let mut rng: StdRng = StdRng::from_seed([0; 32]);
         for _i in 0..self.block_num {
             let block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
                 self.config.clone(),
@@ -92,19 +95,28 @@ impl ChainBencher {
                 Arc::downgrade(&self.collection),
             )
             .unwrap();
+
+            let mut parent = None;
+            if let Some(p) = proportion {
+                let random = rng.next_u64();
+                if (random % p) == 0 {
+                    parent = latest_id;
+                };
+            };
             let block_template = self
                 .chain
                 .read()
                 .create_block_template(
                     *self.account.address(),
                     Some(self.account.get_auth_key().prefix().to_vec()),
-                    None,
+                    parent,
                     Vec::new(),
                 )
                 .unwrap();
             let block =
                 DummyConsensus::create_block(self.config.clone(), &block_chain, block_template)
                     .unwrap();
+            latest_id = Some(block.header().id());
             self.chain
                 .write()
                 .try_connect(block, false)
@@ -113,7 +125,11 @@ impl ChainBencher {
         }
     }
 
-    pub fn bench(&self, b: &mut Bencher) {
-        b.iter_batched(|| self, |bench| bench.execute(), BatchSize::LargeInput)
+    pub fn bench(&self, b: &mut Bencher, proportion: Option<u64>) {
+        b.iter_batched(
+            || (self, proportion),
+            |(bench, p)| bench.execute(p),
+            BatchSize::LargeInput,
+        )
     }
 }
