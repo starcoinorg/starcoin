@@ -1,4 +1,4 @@
-use jsonrpc_core::{futures, Error, ErrorCode, Result as RpcResult, Value};
+use jsonrpc_core::{Error, ErrorCode, Value};
 use std::fmt;
 
 pub fn invalid_params<T: fmt::Debug>(param: &str, details: T) -> Error {

@@ -8,7 +8,7 @@ use jsonrpc_pubsub::{PubSubMetadata, Session};
 /// RPC methods metadata.
 #[derive(Clone, Default, Debug)]
 pub struct Metadata {
-    /// Request origin
+    // /// Request origin
     // pub origin: Origin,
     /// Request PubSub Session
     pub session: Option<Arc<Session>>,

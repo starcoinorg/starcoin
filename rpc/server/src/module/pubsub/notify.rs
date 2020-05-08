@@ -1,5 +1,5 @@
-use super::pubsub;
-use actix::{Addr, ContextFutureSpawner, Handler, WrapFuture};
+
+use actix::{Addr, ContextFutureSpawner, WrapFuture};
 use futures::compat::Future01CompatExt;
 use jsonrpc_pubsub::typed::Sink;
 use starcoin_logger::prelude::*;

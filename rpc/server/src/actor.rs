@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+use crate::metadata::Metadata;
 use crate::module::{
     ChainRpcImpl, DebugRpcImpl, NodeRpcImpl, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl,
 };
@@ -25,7 +26,7 @@ use std::sync::Arc;
 
 pub struct RpcActor {
     config: Arc<NodeConfig>,
-    io_handler: MetaIoHandler<(), MetricMiddleware>,
+    io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
     server: Option<RpcService>,
 }
 
@@ -39,7 +40,7 @@ impl RpcActor {
         //TODO after network async service provide trait, remove Option.
         network_service: Option<NetworkAsyncService>,
         logger_handle: Option<Arc<LoggerHandle>>,
-    ) -> Result<(Addr<RpcActor>, MetaIoHandler<(), MetricMiddleware>)>
+    ) -> Result<(Addr<RpcActor>, MetaIoHandler<Metadata, MetricMiddleware>)>
     where
         CS: ChainAsyncService + 'static,
         TS: TxPoolAsyncService + 'static,
@@ -65,7 +66,7 @@ impl RpcActor {
         account_api: Option<A>,
         state_api: Option<S>,
         debug_api: Option<D>,
-    ) -> Result<(Addr<Self>, MetaIoHandler<(), MetricMiddleware>)>
+    ) -> Result<(Addr<Self>, MetaIoHandler<Metadata, MetricMiddleware>)>
     where
         N: NodeApi,
         C: ChainApi,
@@ -75,7 +76,7 @@ impl RpcActor {
         D: DebugApi,
     {
         let mut io_handler =
-            MetaIoHandler::<(), MetricMiddleware>::with_middleware(MetricMiddleware);
+            MetaIoHandler::<Metadata, MetricMiddleware>::with_middleware(MetricMiddleware);
         io_handler.extend_with(NodeApi::to_delegate(node_api));
         if let Some(chain_api) = chain_api {
             io_handler.extend_with(ChainApi::to_delegate(chain_api));
@@ -97,8 +98,8 @@ impl RpcActor {
 
     pub fn launch_with_handler(
         config: Arc<NodeConfig>,
-        io_handler: MetaIoHandler<(), MetricMiddleware>,
-    ) -> Result<(Addr<Self>, MetaIoHandler<(), MetricMiddleware>)> {
+        io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
+    ) -> Result<(Addr<Self>, MetaIoHandler<Metadata, MetricMiddleware>)> {
         let actor = RpcActor {
             config,
             server: None,
@@ -110,12 +111,12 @@ impl RpcActor {
     pub fn launch_with_method<F>(
         config: Arc<NodeConfig>,
         method: F,
-    ) -> Result<(Addr<Self>, MetaIoHandler<(), MetricMiddleware>)>
+    ) -> Result<(Addr<Self>, MetaIoHandler<Metadata, MetricMiddleware>)>
     where
-        F: IntoIterator<Item = (String, RemoteProcedure<()>)>,
+        F: IntoIterator<Item = (String, RemoteProcedure<Metadata>)>,
     {
         let mut io_handler =
-            MetaIoHandler::<(), MetricMiddleware>::with_middleware(MetricMiddleware);
+            MetaIoHandler::<Metadata, MetricMiddleware>::with_middleware(MetricMiddleware);
         io_handler.extend_with(method);
         Self::launch_with_handler(config, io_handler)
     }

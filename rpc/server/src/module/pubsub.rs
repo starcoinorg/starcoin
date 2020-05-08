@@ -1,21 +1,23 @@
 use crate::errors;
+use crate::metadata::Metadata;
 use crate::module::pubsub::notify::SubscriberNotifyActor;
 
-use actix::{Actor, Addr};
+use actix::{Addr};
 use futures_channel::mpsc;
 use jsonrpc_core::Result;
-use jsonrpc_pubsub::typed::{Sink, Subscriber};
+use jsonrpc_pubsub::typed::{Subscriber};
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::{pubsub::StarcoinPubSub, types::metadata::Metadata, types::pubsub};
-use std::collections::HashMap;
+use starcoin_rpc_api::{pubsub::StarcoinPubSub, types::pubsub};
+
 use std::sync::{atomic, Arc};
 
 mod notify;
 mod subscribers;
 mod txn_subscription_actor;
 
+use starcoin_txpool_api::TxPoolAsyncService;
 use subscribers::Subscribers;
 use txn_subscription_actor::TransactionSubscriptionActor;
 
@@ -40,13 +42,17 @@ impl PubSubImpl {
         }
     }
 
-    pub fn start_transaction_subscription_handler(
+    pub fn start_transaction_subscription_handler<P>(
         &self,
+        _tx_pool: P,
         txn_receiver: mpsc::UnboundedReceiver<Arc<Vec<HashValue>>>,
-    ) {
+    ) where
+        P: TxPoolAsyncService + 'static,
+    {
         let actor =
             TransactionSubscriptionActor::new(self.transactions_subscribers.clone(), txn_receiver);
-        actix::Actor::start_in_arbiter(&self.spawner, |_| actor);
+
+        actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
     }
 }
 

@@ -1,6 +1,6 @@
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{from_value, Value};
+use serde_json::Value;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockHeader;
 

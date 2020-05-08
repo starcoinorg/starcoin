@@ -1,12 +1,12 @@
 use super::notify;
 use super::pubsub;
-use super::Subscribers;
+
 use super::TxnSubscribers;
 
 use actix;
 use actix::AsyncContext;
 use futures_channel::mpsc;
-use parking_lot::RwLock;
+
 use starcoin_crypto::HashValue;
 use std::sync::Arc;
 
