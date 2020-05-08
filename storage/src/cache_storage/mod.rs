@@ -65,7 +65,7 @@ impl InnerStore for CacheStorage {
     }
 
     fn write_batch(&self, batch: WriteBatch) -> Result<()> {
-        record_metrics("cache", "batch", "write_batch").end_with(|| {
+        record_metrics("cache", "batch", batch.get_prefix_name()).end_with(|| {
             let prefix_name = batch.get_prefix_name();
             for (key, write_op) in &batch.rows {
                 match write_op {

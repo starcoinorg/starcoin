@@ -148,7 +148,7 @@ impl InnerStore for DBStorage {
 
     /// Writes a group of records wrapped in a WriteBatch.
     fn write_batch(&self, batch: WriteBatch) -> Result<()> {
-        record_metrics("db", "", "write_batch").end_with(|| {
+        record_metrics("db", "", batch.get_prefix_name()).end_with(|| {
             let mut db_batch = DBWriteBatch::default();
             let cf_handle = self.get_cf_handle(batch.get_prefix_name())?;
             for (key, write_op) in &batch.rows {
