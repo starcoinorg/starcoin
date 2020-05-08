@@ -109,3 +109,34 @@ fn test_cache_batch() {
         transaction_info2.clone()
     );
 }
+
+#[test]
+fn test_batch_comm() {
+    let tmpdir = libra_temppath::TempPath::new();
+    let key = HashValue::random();
+    let value = HashValue::zero();
+    let db = DBStorage::new(tmpdir.path());
+    let mut write_batch = WriteBatch::new();
+    write_batch.put::<HashValue, HashValue>(key, value).unwrap();
+    write_batch.delete::<HashValue>(key).unwrap();
+    let result = db.write_batch(write_batch.clone());
+    assert!(result.is_ok());
+    let result = db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
+    assert_eq!(result, None);
+    let mut key_vec = vec![];
+    write_batch.clone().clear().unwrap();
+    let mut new_batch = write_batch.clone();
+    for _i in 0..100 {
+        let key = HashValue::random();
+        key_vec.push(key);
+        new_batch.put::<HashValue, HashValue>(key, value).unwrap();
+    }
+    let result = db.write_batch(new_batch);
+    assert!(result.is_ok());
+    let mut new_batch2 = write_batch.clone();
+    for key in key_vec {
+        new_batch2.delete::<HashValue>(key).unwrap();
+    }
+    let result = db.write_batch(new_batch2);
+    assert!(result.is_ok());
+}

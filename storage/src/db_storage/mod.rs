@@ -4,11 +4,10 @@
 use crate::batch::WriteBatch;
 use crate::metrics::record_metrics;
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
-use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
-use anyhow::{bail, ensure, format_err, Error, Result};
-use logger::prelude::*;
+use crate::VEC_PREFIX_NAME;
+use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{WriteBatch as DBWriteBatch, WriteOptions, DB};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::Path;
 
 pub struct DBStorage {
@@ -41,8 +40,6 @@ impl DBStorage {
             db_opts.set_max_total_wal_size(1 << 30);
             Self::open_inner(&db_opts, path, column_families)?
         };
-
-        info!("Opened StarcoinDB at {:?}", path.as_ref());
 
         Ok(DBStorage { db })
     }
@@ -78,25 +75,28 @@ impl DBStorage {
 
     pub fn drop_cf(&mut self) -> Result<(), Error> {
         for cf in &VEC_PREFIX_NAME.to_vec() {
-            self.db
-                .drop_cf(cf)
-                .map_err(Self::convert_rocksdb_err)
-                .unwrap();
+            self.db.drop_cf(cf)?;
         }
         Ok(())
     }
 
-    fn db_exists(path: &Path) -> bool {
+    /// Flushes all memtable data. This is only used for testing `get_approximate_sizes_cf` in unit
+    /// tests.
+    pub fn flush_all(&self) -> Result<()> {
+        for cf_name in VEC_PREFIX_NAME.to_vec() {
+            let cf_handle = self.get_cf_handle(cf_name)?;
+            self.db.flush_cf(cf_handle)?;
+        }
+        Ok(())
+    }
+
+    fn _db_exists(path: &Path) -> bool {
         let rocksdb_current_file = path.join("CURRENT");
         rocksdb_current_file.is_file()
     }
 
-    pub fn convert_rocksdb_err(msg: String) -> anyhow::Error {
-        format_err!("RocksDB internal error: {}.", msg)
-    }
-
     fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
-        self.inner.cf_handle(cf_name).ok_or_else(|| {
+        self.db.cf_handle(cf_name).ok_or_else(|| {
             format_err!(
                 "DB::cf_handle not found for column family name: {}",
                 cf_name
@@ -113,17 +113,20 @@ impl DBStorage {
 
 impl InnerStore for DBStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        record_metrics("db", prefix_name, "get").end_with(|| -> Result<Option<Vec<u8>>> {
+        record_metrics("db", prefix_name, "get").end_with(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
-            self.db.get_cf(cf_handle, key.as_slice())
+            let result = self.db.get_cf(cf_handle, key.as_slice())?;
+            Ok(result)
         })
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         record_metrics("db", prefix_name, "put").end_with(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
-            self.db
-                .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())
+            let result =
+                self.db
+                    .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
+            Ok(result)
         })
     }
 
@@ -138,7 +141,8 @@ impl InnerStore for DBStorage {
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("db", prefix_name, "remove").end_with(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
-            self.db.delete_cf(cf_handle, &key)
+            self.db.delete_cf(cf_handle, &key)?;
+            Ok(())
         })
     }
 
@@ -151,12 +155,11 @@ impl InnerStore for DBStorage {
                 match write_op {
                     WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
                     WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
-                }
-                .map_err(Self::convert_rocksdb_err)?;
+                };
             }
             self.db
-                .write_opt(&db_batch, &Self::default_write_options())
-                .map_err(Self::convert_rocksdb_err)
+                .write_opt(db_batch, &Self::default_write_options())?;
+            Ok(())
         })
     }
 

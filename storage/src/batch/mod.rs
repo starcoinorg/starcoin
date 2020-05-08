@@ -48,4 +48,10 @@ impl WriteBatch {
         self.rows.insert(key, WriteOp::Deletion);
         Ok(())
     }
+
+    ///Clear all operation to the next batch.
+    pub fn clear(&mut self) -> Result<()> {
+        self.rows.clear();
+        Ok(())
+    }
 }

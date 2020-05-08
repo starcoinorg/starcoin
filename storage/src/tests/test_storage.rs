@@ -8,11 +8,50 @@ use crypto::{hash::CryptoHash, HashValue};
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{InnerStore, StorageInstance, ValueCodec};
-use crate::{Storage, TRANSACTION_INFO_PREFIX_NAME};
+use crate::{Storage, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
 use anyhow::Result;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;
+
+#[test]
+fn test_reopen() {
+    let tmpdir = libra_temppath::TempPath::new();
+    let key = HashValue::random();
+    let value = HashValue::zero();
+    {
+        let db = DBStorage::new(tmpdir.path());
+        db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec())
+            .unwrap();
+        assert_eq!(
+            db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap(),
+            Some(value.to_vec())
+        );
+    }
+    {
+        let db = DBStorage::new(tmpdir.path());
+        assert_eq!(
+            db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap(),
+            Some(value.to_vec())
+        );
+    }
+}
+
+#[test]
+fn test_open_read_only() {
+    let tmpdir = libra_temppath::TempPath::new();
+    let db = DBStorage::new(tmpdir.path());
+    let key = HashValue::random();
+    let value = HashValue::zero();
+    let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
+    assert!(result.is_ok());
+    let path = tmpdir.as_ref().join("starcoindb");
+    let db = DBStorage::open(path.clone(), true).unwrap();
+    let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
+    assert!(result.is_err());
+    let result = db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
+    assert_eq!(result, Some(value.to_vec()));
+}
 
 #[test]
 fn test_storage() {
