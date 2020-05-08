@@ -25,10 +25,7 @@ use async_trait::async_trait;
 use scs::SCSCodec;
 use starcoin_sync_api::sync_messages::PeerNewBlock;
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::prelude::*;
 use std::io::Write;
-use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -227,38 +224,8 @@ impl NetworkActor {
     ) -> NetworkAsyncService {
         let has_seed = !node_config.network.seeds.is_empty();
 
-        let path = node_config.base.data_dir();
-        let file = Path::new(PEERS_FILE_NAME);
-
-        let path = path.join(file);
-        let peers_from_json = match File::open(path) {
-            Ok(mut f) => {
-                let mut contents = String::new();
-                match f.read_to_string(&mut contents) {
-                    Ok(_n) => Some(serde_json::from_str::<Vec<Multiaddr>>(&contents)),
-                    Err(_e) => None,
-                }
-            }
-            Err(_e) => {
-                debug!("no peers file ");
-                None
-            }
-        };
-
-        let mut network_config = node_config.network.clone();
-        let mut seeds = HashSet::new();
-        for seed in network_config.seeds {
-            seeds.insert(seed);
-        }
-        if let Some(Ok(addrs)) = peers_from_json {
-            info!("load peers from file {:?}", addrs);
-            for addr in addrs {
-                seeds.insert(addr);
-            }
-        }
-        network_config.seeds = Vec::from_iter(seeds.into_iter());
         let (service, tx, rx, event_rx, tx_command) = build_network_service(
-            &network_config,
+            &node_config.network,
             handle.clone(),
             genesis_hash,
             self_info.clone(),

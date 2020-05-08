@@ -4,7 +4,7 @@
 use actix::prelude::*;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
-use starcoin_config::NodeConfig;
+use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt};
 use starcoin_consensus::{
     argon::{ArgonConsensus, ArgonConsensusHeader},
     dev::{DevConsensus, DummyHeader},
@@ -93,6 +93,23 @@ impl NodeHandle {
     }
 }
 
+pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<NodeConfig>)> {
+    let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
+    let ipc_file = config.rpc.get_ipc_file();
+    let node_handle = if !ipc_file.exists() {
+        let node_handle = match config.net() {
+            ChainNetwork::Dev => run_dev_node(config.clone()),
+            _ => run_normal_node(config.clone()),
+        };
+        Some(node_handle)
+    } else {
+        //TODO check ipc file is available.
+        info!("Node has started at {:?}", ipc_file);
+        None
+    };
+    Ok((node_handle, config))
+}
+
 pub fn run_dev_node(config: Arc<NodeConfig>) -> NodeHandle {
     run_node::<DevConsensus, DummyHeader>(config)
 }
@@ -108,6 +125,7 @@ where
     H: ConsensusHeader + 'static,
 {
     let logger_handle = starcoin_logger::init();
+    info!("Final data-dir is : {:?}", config.data_dir());
     if config.logger.enable_file() {
         let file_log_path = config.logger.get_log_path();
         info!("Write log to file: {:?}", file_log_path);
@@ -159,7 +177,7 @@ where
         });
     });
     if block_on(async { start_receiver.await }).is_err() {
-        info!("Wait start receiver error.");
+        std::process::exit(1);
     }
     NodeHandle::new(thread_handle, stop_sender)
 }

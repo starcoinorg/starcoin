@@ -41,9 +41,10 @@ impl NodeApi for NodeRpcImpl {
             .as_ref()
             .expect("self address must exist in runtime.")
             .to_string();
+        let net = self.config.net();
         let fut = async move {
             let peer_info = service.get_self_peer().await?;
-            let node_info = NodeInfo::new(peer_info, self_address);
+            let node_info = NodeInfo::new(peer_info, self_address, net);
             Ok(node_info)
         };
         Box::new(
