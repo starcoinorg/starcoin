@@ -6,6 +6,7 @@ use starcoin_logger::prelude::*;
 mod chain_rpc;
 mod debug_rpc;
 mod node_rpc;
+mod pubsub;
 mod state_rpc;
 mod txpool_rpc;
 mod wallet_rpc;
