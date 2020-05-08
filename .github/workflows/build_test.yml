@@ -62,4 +62,4 @@ jobs:
       - name: deploy node
         # only deploy master branch build.
         if: github.ref == 'refs/heads/master'
-        run: bash ./scripts/starcoin_ci_docker.sh
+        run: bash ./scripts/starcoin_ci_docker.sh 3 starcoin-node halley
