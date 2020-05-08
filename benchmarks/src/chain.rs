@@ -1,6 +1,8 @@
+use crate::random_txn;
 use actix::Addr;
 use criterion::{BatchSize, Bencher};
 use parking_lot::RwLock;
+use rand::{RngCore, SeedableRng, StdRng};
 use starcoin_bus::BusActor;
 use starcoin_chain::{
     to_block_chain_collection, BlockChain, BlockChainCollection, ChainServiceImpl,
@@ -11,6 +13,7 @@ use starcoin_genesis::Genesis;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool::TxPoolRef;
 use starcoin_wallet_api::WalletAccount;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
@@ -26,6 +29,7 @@ pub struct ChainBencher {
     txpool: TxPoolRef,
     block_num: u64,
     account: WalletAccount,
+    count: AtomicU64,
 }
 
 impl ChainBencher {
@@ -79,11 +83,14 @@ impl ChainBencher {
             txpool,
             collection,
             account: miner_account,
+            count: AtomicU64::new(0),
         }
     }
 
-    fn execute(&self) {
-        for _i in 0..self.block_num {
+    fn execute(&self, proportion: Option<u64>) {
+        let mut latest_id = None;
+        let mut rng: StdRng = StdRng::from_seed([0; 32]);
+        for i in 0..self.block_num {
             let block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
                 self.config.clone(),
                 self.collection.get_master_chain_info(),
@@ -92,19 +99,36 @@ impl ChainBencher {
                 Arc::downgrade(&self.collection),
             )
             .unwrap();
+
+            let mut branch_flag = false;
+            if let Some(p) = proportion {
+                let random = rng.next_u64();
+                if (random % p) == 0 {
+                    branch_flag = true;
+                };
+            };
+            let parent = if branch_flag && i > 0 {
+                latest_id
+            } else {
+                self.count.fetch_add(1, Ordering::Relaxed);
+                None
+            };
+            let mut txn_vec = Vec::new();
+            txn_vec.push(random_txn(self.count.load(Ordering::Relaxed)));
             let block_template = self
                 .chain
                 .read()
                 .create_block_template(
                     *self.account.address(),
                     Some(self.account.get_auth_key().prefix().to_vec()),
-                    None,
-                    Vec::new(),
+                    parent,
+                    txn_vec,
                 )
                 .unwrap();
             let block =
                 DummyConsensus::create_block(self.config.clone(), &block_chain, block_template)
                     .unwrap();
+            latest_id = Some(block.header().parent_hash());
             self.chain
                 .write()
                 .try_connect(block, false)
@@ -113,7 +137,11 @@ impl ChainBencher {
         }
     }
 
-    pub fn bench(&self, b: &mut Bencher) {
-        b.iter_batched(|| self, |bench| bench.execute(), BatchSize::LargeInput)
+    pub fn bench(&self, b: &mut Bencher, proportion: Option<u64>) {
+        b.iter_batched(
+            || (self, proportion),
+            |(bench, p)| bench.execute(p),
+            BatchSize::LargeInput,
+        )
     }
 }

@@ -533,6 +533,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-txpool",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-wallet-api",
 ]
 
