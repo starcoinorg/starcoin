@@ -63,7 +63,7 @@ function start_cluster(){
     
     start_starcoin $cluster_name-0 starcoin-0 $SEED_PORT $SEED_METRICS_PORT $net --node-key $SEED_NODE_KEY -s full
     for((c=1; c<$number;c++));do
-n	start_starcoin $cluster_name-$c starcoin-$c $((SEED_PORT + c)) $((SEED_METRICS_PORT + c)) $net --seed $SEED -s full
+	start_starcoin $cluster_name-$c starcoin-$c $((SEED_PORT + c)) $((SEED_METRICS_PORT + c)) $net --seed $SEED -s full
     done
     start_txfactory $cluster_name-0 starcoin-0 txfactory-0 $net
 }
