@@ -5,8 +5,6 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 SEED_NODE_KEY=a52cb7fe64b154d192cebd35a0b129c80481f89dd94f2aa2978b71417304a858
 SEED_PORT=9840
 SEED_METRICS_PORT=9101
-SEED_HOST=$(docker-machine ip starcoin-node-0)
-SEED=/ip4/$SEED_HOST/tcp/$SEED_PORT/p2p/QmcejhDq4ubxLnx7sNENECJroAuepMiL6Zkjp63LMmwVaT
 
 cfg_root=/mnt/volume_01/starcoin_cfg
 
@@ -60,22 +58,20 @@ function start_cluster(){
     local cluster_name=$2;
     local net=$3
     shift 3;
-
+    SEED_HOST=$(docker-machine ip $cluster_name-0)
+    SEED=/ip4/$SEED_HOST/tcp/$SEED_PORT/p2p/QmcejhDq4ubxLnx7sNENECJroAuepMiL6Zkjp63LMmwVaT
+    
     start_starcoin $cluster_name-0 starcoin-0 $SEED_PORT $SEED_METRICS_PORT $net --node-key $SEED_NODE_KEY -s full
     for((c=1; c<$number;c++));do
-	start_starcoin $cluster_name-$c starcoin-$c $((SEED_PORT + c)) $((SEED_METRICS_PORT + c)) $net --node-key $SEED_NODE_KEY -s full
+n	start_starcoin $cluster_name-$c starcoin-$c $((SEED_PORT + c)) $((SEED_METRICS_PORT + c)) $net --seed $SEED -s full
     done
     start_txfactory $cluster_name-0 starcoin-0 txfactory-0 $net
 }
-
-
-
 
 usage(){
     echo "Usage $(basename $0)  [number, cluster_name, network]"
     exit -1
 }
-
 
 if [ $# -lt 3 ]; then
     usage;

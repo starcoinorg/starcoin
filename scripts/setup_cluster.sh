@@ -52,7 +52,7 @@ clean_cfg(){
 }
 
 usage(){
-    echo "Usage $(basename $0)  [stop, start, clean_node, clean_cfg] cluster_name nodes_number [access_token]"
+    echo "Usage $(basename $0)  [stop, start, clean_data, clean_cfg] cluster_name nodes_number [access_token]"
     exit -1
 }
 
