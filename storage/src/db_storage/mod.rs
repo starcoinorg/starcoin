@@ -5,17 +5,11 @@ use crate::batch::WriteBatch;
 use crate::metrics::record_metrics;
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{bail, ensure, format_err, Error, Result};
 use logger::prelude::*;
-use rocksdb::{
-    CFHandle, ColumnFamilyOptions, DBOptions, Writable, WriteBatch as DBWriteBatch, WriteOptions,
-    DB,
-};
-use std::collections::HashMap;
+use rocksdb::{WriteBatch as DBWriteBatch, WriteOptions, DB};
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
-
-/// Type alias to improve readability.
-pub type ColumnFamilyOptionsMap = HashMap<ColumnFamilyName, ColumnFamilyOptions>;
 
 pub struct DBStorage {
     db: DB,
@@ -23,118 +17,63 @@ pub struct DBStorage {
 
 impl DBStorage {
     pub fn new<P: AsRef<Path> + Clone>(db_root_path: P) -> Self {
-        Self::open(db_root_path, false, None).expect("Unable to open StarcoinDB")
-    }
-    pub fn open<P: AsRef<Path> + Clone>(
-        db_root_path: P,
-        readonly: bool,
-        log_dir: Option<P>,
-    ) -> Result<Self> {
-        let mut cf_opts_map = ColumnFamilyOptionsMap::new();
-        for prefix_name in &VEC_PREFIX_NAME.to_vec() {
-            cf_opts_map.insert(prefix_name, ColumnFamilyOptions::default());
-        }
-        cf_opts_map.insert(DEFAULT_PREFIX_NAME, ColumnFamilyOptions::default());
-
         let path = db_root_path.as_ref().join("starcoindb");
+        Self::open(path.clone(), false).expect("Unable to open StarcoinDB")
+    }
+    pub fn open(path: impl AsRef<Path>, readonly: bool) -> Result<Self> {
+        let column_families = VEC_PREFIX_NAME.to_vec();
+        {
+            let cfs_set: HashSet<_> = column_families.iter().collect();
+            ensure!(
+                cfs_set.len() == column_families.len(),
+                "Duplicate column family name found.",
+            );
+        }
 
         let db = if readonly {
-            let db_log_dir = log_dir
-                .ok_or_else(|| format_err!("Must provide log_dir if opening in readonly mode."))?;
-            if !db_log_dir.as_ref().is_dir() {
-                bail!("Invalid log directory: {:?}", db_log_dir.as_ref());
-            }
-            info!("log stored at {:?}", db_log_dir.as_ref());
-            Self::open_readonly(path.clone(), cf_opts_map, db_log_dir.as_ref().to_path_buf())?
+            Self::open_readonly(path, column_families)?
         } else {
-            Self::open_inner(path.clone(), cf_opts_map)?
+            let mut db_opts = rocksdb::Options::default();
+            db_opts.create_if_missing(true);
+            db_opts.create_missing_column_families(true);
+            // For now we set the max total WAL size to be 1G. This config can be useful when column
+            // families are updated at non-uniform frequencies.
+            db_opts.set_max_total_wal_size(1 << 30);
+            Self::open_inner(&db_opts, path, column_families)?
         };
 
-        info!("Opened StarcoinDB at {:?}", path);
+        info!("Opened StarcoinDB at {:?}", path.as_ref());
 
         Ok(DBStorage { db })
     }
 
-    fn open_inner<P: AsRef<Path>>(path: P, mut cf_opts_map: ColumnFamilyOptionsMap) -> Result<DB> {
-        let mut db_opts = DBOptions::new();
-        // For now we set the max total WAL size to be 1G. This config can be useful when column
-        // families are updated at non-uniform frequencies.
-        db_opts.set_max_total_wal_size(1 << 30);
-
-        // If db exists, just open it with all cfs.
-        if Self::db_exists(path.as_ref()) {
-            match DB::open_cf(
-                db_opts,
-                path.as_ref().to_str().ok_or_else(|| {
-                    format_err!("Path {:?} can not be converted to string.", path.as_ref())
-                })?,
-                cf_opts_map.into_iter().collect(),
-            ) {
-                Ok(db) => return Ok(db),
-                Err(e) => bail!("open cf err: {:?}", e),
-            }
-        }
-
-        // If db doesn't exist, create a db first with all column families.
-        db_opts.create_if_missing(true);
-
-        let mut db = match DB::open_cf(
-            db_opts.clone(),
-            path.as_ref().to_str().ok_or_else(|| {
-                format_err!("Path {:?} can not be converted to string.", path.as_ref())
-            })?,
-            vec![cf_opts_map
-                .remove_entry(&DEFAULT_PREFIX_NAME)
-                .ok_or_else(|| format_err!("No \"default\" column family name found"))?],
-        ) {
-            Ok(db) => db,
-            Err(e) => bail!("open cf err: {:?}", e),
-        };
-
-        cf_opts_map
-            .into_iter()
-            .map(|(cf_name, cf_opts)| {
-                let _cf_handle = db
-                    .create_cf((cf_name, cf_opts))
-                    .map_err(Self::convert_rocksdb_err)?;
-                Ok(())
-            })
-            .collect::<Result<Vec<_>>>()?;
-        Ok(db)
+    fn open_inner(
+        opts: &rocksdb::Options,
+        path: impl AsRef<Path>,
+        column_families: Vec<ColumnFamilyName>,
+    ) -> Result<DB> {
+        let inner = rocksdb::DB::open_cf_descriptors(
+            opts,
+            path,
+            column_families.iter().map(|cf_name| {
+                let mut cf_opts = rocksdb::Options::default();
+                cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
+                rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
+            }),
+        )?;
+        Ok(inner)
     }
 
-    fn open_readonly<P: AsRef<Path>>(
-        path: P,
-        cf_opts_map: ColumnFamilyOptionsMap,
-        db_log_dir: P,
-    ) -> Result<DB> {
-        if !Self::db_exists(path.as_ref()) {
-            bail!("DB doesn't exists.");
-        }
-
-        let mut db_opts = DBOptions::new();
-
-        db_opts.create_if_missing(false);
-        db_opts.set_db_log_dir(db_log_dir.as_ref().to_str().ok_or_else(|| {
-            format_err!(
-                "db_log_dir {:?} can not be converted to string.",
-                db_log_dir.as_ref()
-            )
-        })?);
-
-        Ok(
-            match DB::open_cf_for_read_only(
-                db_opts,
-                path.as_ref().to_str().ok_or_else(|| {
-                    format_err!("Path {:?} can not be converted to string.", path.as_ref())
-                })?,
-                cf_opts_map.into_iter().collect(),
-                true,
-            ) {
-                Ok(db) => db,
-                Err(e) => bail!("open cf err: {:?}", e),
-            },
-        )
+    fn open_readonly(path: impl AsRef<Path>, column_families: Vec<ColumnFamilyName>) -> Result<DB> {
+        let db_opts = rocksdb::Options::default();
+        let error_if_log_file_exists = false;
+        let inner = rocksdb::DB::open_cf_for_read_only(
+            &db_opts,
+            path,
+            &column_families,
+            error_if_log_file_exists,
+        )?;
+        Ok(inner)
     }
 
     pub fn drop_cf(&mut self) -> Result<(), Error> {
@@ -156,8 +95,8 @@ impl DBStorage {
         format_err!("RocksDB internal error: {}.", msg)
     }
 
-    fn get_cf_handle(&self, cf_name: &str) -> Result<&CFHandle> {
-        self.db.cf_handle(cf_name).ok_or_else(|| {
+    fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
+        self.inner.cf_handle(cf_name).ok_or_else(|| {
             format_err!(
                 "DB::cf_handle not found for column family name: {}",
                 cf_name
@@ -174,16 +113,9 @@ impl DBStorage {
 
 impl InnerStore for DBStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        record_metrics("db", prefix_name, "get").end_with(|| {
+        record_metrics("db", prefix_name, "get").end_with(|| -> Result<Option<Vec<u8>>> {
             let cf_handle = self.get_cf_handle(prefix_name)?;
-            match self
-                .db
-                .get_cf(cf_handle, key.as_slice())
-                .map_err(Self::convert_rocksdb_err)
-            {
-                Ok(Some(value)) => Ok(Some(value.to_vec())),
-                _ => Ok(None),
-            }
+            self.db.get_cf(cf_handle, key.as_slice())
         })
     }
 
@@ -192,7 +124,6 @@ impl InnerStore for DBStorage {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             self.db
                 .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())
-                .map_err(Self::convert_rocksdb_err)
         })
     }
 
@@ -207,16 +138,14 @@ impl InnerStore for DBStorage {
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("db", prefix_name, "remove").end_with(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
-            self.db
-                .delete_cf(cf_handle, &key)
-                .map_err(Self::convert_rocksdb_err)
+            self.db.delete_cf(cf_handle, &key)
         })
     }
 
     /// Writes a group of records wrapped in a WriteBatch.
     fn write_batch(&self, batch: WriteBatch) -> Result<()> {
         record_metrics("db", "", "write_batch").end_with(|| {
-            let db_batch = DBWriteBatch::new();
+            let mut db_batch = DBWriteBatch::default();
             let cf_handle = self.get_cf_handle(batch.get_prefix_name())?;
             for (key, write_op) in &batch.rows {
                 match write_op {
