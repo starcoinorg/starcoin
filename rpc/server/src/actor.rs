@@ -3,7 +3,7 @@
 
 use crate::metadata::Metadata;
 use crate::module::{
-    ChainRpcImpl, DebugRpcImpl, NodeRpcImpl, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl,
+    ChainRpcImpl, DebugRpcImpl, NodeRpcImpl, PubSubImpl, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl,
 };
 use crate::service::RpcService;
 use actix::prelude::*;
@@ -16,7 +16,7 @@ use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::debug::DebugApi;
 use starcoin_rpc_api::wallet::WalletApi;
-use starcoin_rpc_api::{node::NodeApi, state::StateApi, txpool::TxPoolApi};
+use starcoin_rpc_api::{node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi};
 use starcoin_rpc_middleware::MetricMiddleware;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_traits::ChainAsyncService;
@@ -47,26 +47,32 @@ impl RpcActor {
         AS: WalletAsyncService + 'static,
         SS: ChainStateAsyncService + 'static,
     {
-        Self::launch_with_apis(
-            config.clone(),
+        let config_clone = config.clone();
+        let mut io_handler = Self::extend_apis(
             NodeRpcImpl::new(config.clone(), network_service),
             Some(ChainRpcImpl::new(chain_service)),
-            Some(TxPoolRpcImpl::new(txpool_service)),
+            Some(TxPoolRpcImpl::new(txpool_service.clone())),
             Some(WalletRpcImpl::new(account_service)),
             Some(StateRpcImpl::new(state_service)),
-            logger_handle.map(|logger_handle| DebugRpcImpl::new(config, logger_handle)),
-        )
+            logger_handle.map(|logger_handle| DebugRpcImpl::new(config_clone, logger_handle)),
+        )?;
+
+        // extend pubsub related
+        let pubsub_impl = PubSubImpl::new();
+        pubsub_impl.start_transaction_subscription_handler(txpool_service);
+        io_handler.extend_with(StarcoinPubSub::to_delegate(pubsub_impl));
+
+        Self::launch_with_handler(config.clone(), io_handler)
     }
 
-    pub fn launch_with_apis<C, N, T, A, S, D>(
-        config: Arc<NodeConfig>,
+    pub fn extend_apis<C, N, T, A, S, D>(
         node_api: N,
         chain_api: Option<C>,
         txpool_api: Option<T>,
         account_api: Option<A>,
         state_api: Option<S>,
         debug_api: Option<D>,
-    ) -> Result<(Addr<Self>, MetaIoHandler<Metadata, MetricMiddleware>)>
+    ) -> Result<MetaIoHandler<Metadata, MetricMiddleware>>
     where
         N: NodeApi,
         C: ChainApi,
@@ -93,7 +99,8 @@ impl RpcActor {
         if let Some(debug_api) = debug_api {
             io_handler.extend_with(DebugApi::to_delegate(debug_api));
         }
-        Self::launch_with_handler(config, io_handler)
+        Ok(io_handler)
+        // Self::launch_with_handler(config, io_handler)
     }
 
     pub fn launch_with_handler(

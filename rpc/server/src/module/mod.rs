@@ -14,6 +14,7 @@ mod wallet_rpc;
 pub use self::chain_rpc::ChainRpcImpl;
 pub use self::debug_rpc::DebugRpcImpl;
 pub use self::node_rpc::NodeRpcImpl;
+pub use self::pubsub::PubSubImpl;
 pub use self::state_rpc::StateRpcImpl;
 pub use self::txpool_rpc::TxPoolRpcImpl;
 pub use self::wallet_rpc::WalletRpcImpl;
