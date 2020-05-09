@@ -3,7 +3,7 @@ use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
-use consensus::dev::{DevConsensus, DummyHeader};
+use consensus::dev::DevConsensus;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -75,21 +75,16 @@ fn test_miner_with_schedule_pacemaker() {
         )
         .unwrap();
         let miner_account = WalletAccount::random();
-        let _miner = MinerActor::<
-            DevConsensus,
-            TxPoolRef,
-            ChainActorRef<DevConsensus>,
-            Storage,
-            DummyHeader,
-        >::launch(
-            config.clone(),
-            bus.clone(),
-            storage.clone(),
-            txpool.clone(),
-            chain.clone(),
-            None,
-            miner_account,
-        );
+        let _miner =
+            MinerActor::<DevConsensus, TxPoolRef, ChainActorRef<DevConsensus>, Storage>::launch(
+                config.clone(),
+                bus.clone(),
+                storage.clone(),
+                txpool.clone(),
+                chain.clone(),
+                None,
+                miner_account,
+            );
         MinerClientActor::new(config.miner.clone()).start();
         let _sync = SyncActor::launch(
             config.clone(),
@@ -166,21 +161,16 @@ fn test_miner_with_ondemand_pacemaker() {
         .unwrap();
         let receiver = txpool.clone().subscribe_txns().await.unwrap();
         let miner_account = WalletAccount::random();
-        let _miner = MinerActor::<
-            DevConsensus,
-            TxPoolRef,
-            ChainActorRef<DevConsensus>,
-            Storage,
-            DummyHeader,
-        >::launch(
-            config.clone(),
-            bus.clone(),
-            storage.clone(),
-            txpool.clone(),
-            chain.clone(),
-            Some(receiver),
-            miner_account,
-        );
+        let _miner =
+            MinerActor::<DevConsensus, TxPoolRef, ChainActorRef<DevConsensus>, Storage>::launch(
+                config.clone(),
+                bus.clone(),
+                storage.clone(),
+                txpool.clone(),
+                chain.clone(),
+                Some(receiver),
+                miner_account,
+            );
         MinerClientActor::new(config.miner.clone()).start();
         let _sync = SyncActor::launch(
             config.clone(),
