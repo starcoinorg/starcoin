@@ -81,6 +81,13 @@ impl StarcoinPubSub for PubSubImpl {
             }
             (pubsub::Kind::NewPendingTransactions, _) => {
                 errors::invalid_params("newPendingTransactions", "Expected no parameters.")
+            }
+            (pubsub::Kind::Events, Some(params)) => {
+                // TODO: impl me
+                return;
+            }
+            (pubsub::Kind::Events, None) => {
+                errors::invalid_params("events", "Expected a filter object.")
             } // _ => errors::unimplemented(None),
         };
 
