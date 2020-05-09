@@ -16,6 +16,8 @@ use std::sync::{atomic, Arc};
 
 mod notify;
 mod subscribers;
+#[cfg(test)]
+pub mod tests;
 mod txn_subscription_actor;
 
 use starcoin_txpool_api::TxPoolAsyncService;

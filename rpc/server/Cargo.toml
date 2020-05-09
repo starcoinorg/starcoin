@@ -55,3 +55,4 @@ network-api = {package="network-api", path="../../network/api"}
 [dev-dependencies]
 starcoin-rpc-client = { path = "../client"}
 starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
+starcoin-executor={path="../../executor"}

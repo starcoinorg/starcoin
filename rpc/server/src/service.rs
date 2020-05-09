@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::extractors::RpcExtractor;
+use crate::extractors::{RpcExtractor, WsExtractor};
 use crate::metadata::Metadata;
 use jsonrpc_core::MetaIoHandler;
 use jsonrpc_http_server;
@@ -56,17 +56,30 @@ impl RpcService {
                     .session_meta_extractor(RpcExtractor)
                     .start(address)
                     .expect("rpc: start tcp server should ok");
-                info!("RPC: tcp servr start at: {}", address);
+                info!("Rpc: tcp server start at: {}", address);
                 Some(tcp_server)
             }
             None => None,
+        };
+
+        let ws_server = match &config.rpc.ws_address {
+            None => None,
+            Some(address) => {
+                let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler.clone())
+                    .session_meta_extractor(WsExtractor)
+                    .max_payload(config.rpc.max_request_body_size)
+                    .start(address)
+                    .expect("rpc: start ws server should ok");
+                info!("Rpc: websocket server start at: {}", address);
+                Some(ws_server)
+            }
         };
 
         RpcService {
             ipc,
             http,
             tcp: tcp_server,
-            ws: None,
+            ws: ws_server,
         }
     }
 
