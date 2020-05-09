@@ -20,7 +20,7 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::SyncMetadata;
-use starcoin_traits::{Consensus, ConsensusHeader};
+use starcoin_traits::Consensus;
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::peer_info::PeerInfo;
@@ -32,25 +32,23 @@ use std::time::Duration;
 use tokio::runtime::Handle;
 use tokio::stream::StreamExt;
 
-pub struct NodeStartHandle<C, H>
+pub struct NodeStartHandle<C>
 where
     C: Consensus + 'static,
-    H: ConsensusHeader + 'static,
 {
-    _miner_actor: Addr<MinerActor<C, TxPoolRef, ChainActorRef<C>, Storage, H>>,
+    _miner_actor: Addr<MinerActor<C, TxPoolRef, ChainActorRef<C>, Storage>>,
     _sync_actor: Addr<SyncActor<C>>,
     _rpc_actor: Addr<RpcActor>,
     _miner_client: Option<Addr<MinerClientActor>>,
 }
 
-pub async fn start<C, H>(
+pub async fn start<C>(
     config: Arc<NodeConfig>,
     logger_handle: Arc<LoggerHandle>,
     handle: Handle,
-) -> Result<NodeStartHandle<C, H>>
+) -> Result<NodeStartHandle<C>>
 where
     C: Consensus + 'static,
-    H: ConsensusHeader + 'static,
 {
     let bus = BusActor::launch();
 
@@ -251,7 +249,7 @@ where
         .expect("Subscribe system event error.");
     sync_event_receiver.any(|event| event.is_sync_done()).await;
     info!("Waiting sync finished.");
-    let miner = MinerActor::<C, TxPoolRef, ChainActorRef<C>, Storage, H>::launch(
+    let miner = MinerActor::<C, TxPoolRef, ChainActorRef<C>, Storage>::launch(
         config.clone(),
         bus,
         storage.clone(),

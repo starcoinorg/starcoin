@@ -8,28 +8,28 @@ use sc_stratum::*;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use traits::ChainReader;
-use traits::{Consensus, ConsensusHeader};
+use traits::Consensus;
 use types::transaction::SignedUserTransaction;
 
-pub struct StratumManager<H>
+pub struct StratumManager<C>
 where
-    H: ConsensusHeader + Sync + Send + 'static,
+    C: Consensus + Sync + Send + 'static,
 {
-    miner: Miner<H>,
+    miner: Miner<C>,
 }
 
-impl<H> StratumManager<H>
+impl<C> StratumManager<C>
 where
-    H: ConsensusHeader + Sync + Send + 'static,
+    C: Consensus + Sync + Send + 'static,
 {
-    pub fn new(miner: Miner<H>) -> Self {
+    pub fn new(miner: Miner<C>) -> Self {
         Self { miner }
     }
 }
 
-impl<H> JobDispatcher for StratumManager<H>
+impl<C> JobDispatcher for StratumManager<C>
 where
-    H: ConsensusHeader + Sync + Send + 'static,
+    C: Consensus + Sync + Send + 'static,
 {
     fn submit(&self, payload: Vec<String>) -> Result<(), Error> {
         //todo:: error handle
@@ -38,16 +38,15 @@ where
     }
 }
 
-pub fn mint<H, C>(
+pub fn mint<C>(
     stratum: Arc<Stratum>,
-    mut miner: Miner<H>,
+    mut miner: Miner<C>,
     config: Arc<NodeConfig>,
     miner_account: WalletAccount,
     txns: Vec<SignedUserTransaction>,
     chain: &dyn ChainReader,
 ) -> anyhow::Result<()>
 where
-    H: ConsensusHeader,
     C: Consensus,
 {
     let block_template = chain.create_block_template(

@@ -108,21 +108,16 @@ fn test_network_actor_rpc() {
 
         let miner_account = WalletAccount::random();
         // miner
-        let _miner_1 = MinerActor::<
-            DevConsensus,
-            TxPoolRef,
-            ChainActorRef<DevConsensus>,
-            Storage,
-            consensus::dev::DummyHeader,
-        >::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            storage_1.clone(),
-            txpool_1.clone(),
-            first_chain.clone(),
-            None,
-            miner_account,
-        );
+        let _miner_1 =
+            MinerActor::<DevConsensus, TxPoolRef, ChainActorRef<DevConsensus>, Storage>::launch(
+                node_config_1.clone(),
+                bus_1.clone(),
+                storage_1.clone(),
+                txpool_1.clone(),
+                first_chain.clone(),
+                None,
+                miner_account,
+            );
         MinerClientActor::new(node_config_1.miner.clone()).start();
         Delay::new(Duration::from_secs(20)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
