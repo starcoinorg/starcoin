@@ -332,7 +332,7 @@ impl StarcoinVM {
             self.run_epilogue(&mut gas_free_ctx, txn_data).ok();
             failed_transaction_output(&mut gas_free_ctx, txn_data, err)
         });
-        info!("{:?}", output);
+        debug!("{:?}", output);
         output
     }
 

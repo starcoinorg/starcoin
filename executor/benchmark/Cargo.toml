@@ -1,0 +1,31 @@
+[package]
+name = "starcoin-executor-benchmark"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+itertools = { version = "0.9.0", default-features = false }
+rand = "0.7.3"
+rayon = "1"
+structopt = "0.3"
+tokio = { version = "0.2.12", features = ["full"] }
+
+executor = {path = "../../executor", package="starcoin-executor" }
+#libra-config = { path = "../../config", version = "0.1.0" }
+crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+logger = {path = "../../commons/logger", package="starcoin-logger"}
+types = { package="starcoin-types", path = "../../types"}
+#storage-client = { path = "../../storage/storage-client", version = "0.1.0" }
+#transaction-builder = { path = "../../language/transaction-builder", version = "0.1.0" }
+vm-runtime = { package="starcoin-vm-runtime", path = "../../vm/vm-runtime"}
+starcoin-accumulator = {path = "../../core/accumulator", package="starcoin-accumulator"}
+storage = { package="starcoin-storage", path = "../../storage"}
+starcoin-config = { path = "../../config"}
+statedb = {path = "../../state/statedb", package="starcoin-statedb" }
+starcoin-state-api = {path="../../state/api"}
+
+[features]

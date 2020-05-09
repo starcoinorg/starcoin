@@ -159,3 +159,35 @@ pub fn raw_peer_to_peer_txn(
         Duration::from_secs(DEFAULT_EXPIRATION_TIME),
     )
 }
+
+pub fn encode_create_account_script(
+    account_address: &AccountAddress,
+    auth_key_prefix: Vec<u8>,
+    initial_balance: u64,
+) -> Script {
+    Script::new(
+        CREATE_ACCOUNT_TXN.clone(),
+        vec![],
+        vec![
+            TransactionArgument::Address(*account_address),
+            TransactionArgument::U8Vector(auth_key_prefix),
+            TransactionArgument::U64(initial_balance),
+        ],
+    )
+}
+
+pub fn encode_transfer_script(
+    recipient: &AccountAddress,
+    auth_key_prefix: Vec<u8>,
+    amount: u64,
+) -> Script {
+    Script::new(
+        PEER_TO_PEER_TXN.clone(),
+        vec![starcoin_type_tag()],
+        vec![
+            TransactionArgument::Address(*recipient),
+            TransactionArgument::U8Vector(auth_key_prefix),
+            TransactionArgument::U64(amount),
+        ],
+    )
+}
