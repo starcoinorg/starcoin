@@ -8,7 +8,6 @@ use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-// use starcoin_wallet_api::mock::{KeyPairWallet, MemWalletStore};
 use starcoin_wallet_lib::{file_wallet_store::FileWalletStore, keystore_wallet::KeyStoreWallet};
 
 use starcoin_wallet_api::error::AccountServiceError;
@@ -40,20 +39,20 @@ impl Handler<WalletRequest> for WalletActor {
 
     fn handle(&mut self, msg: WalletRequest, _ctx: &mut Self::Context) -> Self::Result {
         let response = match msg {
-            WalletRequest::CreateAccount(password) => {
-                WalletResponse::WalletAccount(self.service.create_account(password.as_str())?)
-            }
+            WalletRequest::CreateAccount(password) => WalletResponse::WalletAccount(Box::new(
+                self.service.create_account(password.as_str())?,
+            )),
             WalletRequest::GetDefaultAccount() => {
-                WalletResponse::WalletAccountOption(self.service.get_default_account()?)
+                WalletResponse::WalletAccountOption(Box::new(self.service.get_default_account()?))
             }
             WalletRequest::GetAccounts() => {
                 WalletResponse::AccountList(self.service.get_accounts()?)
             }
             WalletRequest::GetAccount(address) => {
-                WalletResponse::Account(self.service.get_account(&address)?)
+                WalletResponse::WalletAccountOption(Box::new(self.service.get_account(&address)?))
             }
             WalletRequest::SignTxn(raw_txn) => {
-                WalletResponse::SignedTxn(self.service.sign_txn(raw_txn)?)
+                WalletResponse::SignedTxn(Box::new(self.service.sign_txn(*raw_txn)?))
             }
             WalletRequest::UnlockAccount(address, password, duration) => {
                 self.service
@@ -72,10 +71,10 @@ impl Handler<WalletRequest> for WalletActor {
                 let account =
                     self.service
                         .import_account(address, private_key, password.as_str())?;
-                WalletResponse::ImportAccountResponse(account)
+                WalletResponse::WalletAccount(Box::new(account))
             }
         };
-        return Ok(response);
+        Ok(response)
     }
 }
 
@@ -103,7 +102,7 @@ impl WalletAsyncService for WalletActorRef {
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::WalletAccount(account) = response {
-            Ok(account)
+            Ok(*account)
         } else {
             panic!("Unexpect response type.")
         }
@@ -116,7 +115,7 @@ impl WalletAsyncService for WalletActorRef {
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::WalletAccountOption(account) = response {
-            Ok(account)
+            Ok(*account)
         } else {
             panic!("Unexpect response type.")
         }
@@ -141,8 +140,8 @@ impl WalletAsyncService for WalletActorRef {
             .send(WalletRequest::GetAccount(address))
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
-        if let WalletResponse::Account(account) = response {
-            Ok(account)
+        if let WalletResponse::WalletAccountOption(account) = response {
+            Ok(*account)
         } else {
             panic!("Unexpect response type.")
         }
@@ -151,11 +150,11 @@ impl WalletAsyncService for WalletActorRef {
     async fn sign_txn(self, raw_txn: RawUserTransaction) -> ServiceResult<SignedUserTransaction> {
         let response = self
             .0
-            .send(WalletRequest::SignTxn(raw_txn))
+            .send(WalletRequest::SignTxn(Box::new(raw_txn)))
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::SignedTxn(txn) = response {
-            Ok(txn)
+            Ok(*txn)
         } else {
             panic!("Unexpect response type.")
         }
@@ -194,8 +193,8 @@ impl WalletAsyncService for WalletActorRef {
             })
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
-        if let WalletResponse::ImportAccountResponse(account) = response {
-            Ok(account)
+        if let WalletResponse::WalletAccount(account) = response {
+            Ok(*account)
         } else {
             panic!("Unexpect response type.")
         }
