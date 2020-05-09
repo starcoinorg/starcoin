@@ -15,6 +15,7 @@ const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 //10M
 const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
 const DEFAULT_HTTP_PORT: u16 = 9850;
+const DEFAULT_TCP_PORT: u16 = 9851;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
@@ -62,10 +63,17 @@ impl ConfigModule for RpcConfig {
             _ => DEFAULT_HTTP_PORT,
         };
         let http_address = format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap();
+        let tcp_address = {
+            let port = match net {
+                ChainNetwork::Dev => get_available_port(),
+                _ => DEFAULT_TCP_PORT,
+            };
+            format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap()
+        };
         Self {
             http_address: Some(http_address),
             ws_address: None,
-            tcp_address: None,
+            tcp_address: Some(tcp_address),
             max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
             threads: None,
             ipc_file_path: None,

@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::extractors::RpcExtractor;
+use crate::metadata::Metadata;
 use jsonrpc_core::MetaIoHandler;
 use jsonrpc_http_server;
 use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
@@ -22,16 +24,18 @@ pub struct RpcService {
 impl RpcService {
     pub fn new(
         config: Arc<NodeConfig>,
-        io_handler: MetaIoHandler<(), MetricMiddleware>,
+        io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
     ) -> RpcService {
         let ipc_file = config.rpc.get_ipc_file();
         let ipc = jsonrpc_ipc_server::ServerBuilder::new(io_handler.clone())
+            .session_meta_extractor(RpcExtractor)
             .start(ipc_file.to_str().expect("Path to string should success."))
             .expect(format!("Unable to start IPC server with ipc file: {:?}", ipc_file).as_str());
         info!("Ipc rpc server start at :{:?}", ipc_file);
         let http = match &config.rpc.http_address {
             Some(address) => {
-                let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
+                let http = jsonrpc_http_server::ServerBuilder::new(io_handler.clone())
+                    .meta_extractor(RpcExtractor)
                     .cors(DomainsValidation::AllowOnly(vec![
                         AccessControlAllowOrigin::Null,
                         AccessControlAllowOrigin::Any,
@@ -46,11 +50,22 @@ impl RpcService {
             }
             None => None,
         };
+        let tcp_server = match &config.rpc.tcp_address {
+            Some(address) => {
+                let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler.clone())
+                    .session_meta_extractor(RpcExtractor)
+                    .start(address)
+                    .expect("rpc: start tcp server should ok");
+                info!("RPC: tcp servr start at: {}", address);
+                Some(tcp_server)
+            }
+            None => None,
+        };
 
         RpcService {
             ipc,
             http,
-            tcp: None,
+            tcp: tcp_server,
             ws: None,
         }
     }
