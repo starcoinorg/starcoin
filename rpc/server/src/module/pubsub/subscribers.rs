@@ -1,11 +1,14 @@
-use actix::{Addr};
-use jsonrpc_pubsub::typed::{Subscriber};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use actix::Addr;
+use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use starcoin_logger::prelude::*;
 use std::collections::HashMap;
 use std::sync::{atomic, Arc};
 
-use super::notify::{SubscriberNotifyActor};
+use super::notify::SubscriberNotifyActor;
 
 pub struct Subscribers<T> {
     subscriber_id: Arc<atomic::AtomicU64>,
