@@ -6170,6 +6170,7 @@ dependencies = [
  "starcoin-chain",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-executor",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-network",

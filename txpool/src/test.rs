@@ -1,3 +1,4 @@
+use super::test_helper;
 use crate::pool::AccountSeqNumberClient;
 use crate::TxPoolRef;
 use anyhow::Result;
@@ -18,7 +19,6 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 use types::account_address::AccountAddress;
 use types::account_config;
-
 #[derive(Clone, Debug)]
 struct MockNonceClient {
     cache: Arc<RwLock<HashMap<AccountAddress, u64>>>,
@@ -47,7 +47,7 @@ impl AccountSeqNumberClient for MockNonceClient {
 
 #[actix_rt::test]
 async fn test_tx_pool() -> Result<()> {
-    let pool = gen_pool_for_test();
+    let pool = test_helper::start_txpool();
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = AccountAddress::from_public_key(&public_key);
     let auth_prefix = AccountAddress::authentication_key(&public_key)
@@ -77,7 +77,7 @@ async fn test_subscribe_txns() {
 
 #[actix_rt::test]
 async fn test_rollback() -> Result<()> {
-    let pool = gen_pool_for_test();
+    let pool = test_helper::start_txpool();
     let txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = AccountAddress::from_public_key(&public_key);
@@ -110,30 +110,4 @@ async fn test_rollback() -> Result<()> {
         CryptoHash::crypto_hash(&new_txn)
     );
     Ok(())
-}
-
-fn gen_pool_for_test() -> TxPoolRef {
-    let cache_storage = Arc::new(CacheStorage::new());
-    let tmpdir = tempfile::tempdir().unwrap();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Arc::new(
-        Storage::new(StorageInstance::new_cache_and_db_instance(
-            cache_storage,
-            db_storage,
-        ))
-        .unwrap(),
-    );
-    let node_config = NodeConfig::random_for_test();
-
-    let genesis = Genesis::build(node_config.net()).unwrap();
-    let startup_info = genesis.execute(storage.clone()).unwrap();
-    let bus = BusActor::launch();
-    let pool = TxPoolRef::start(
-        TxPoolConfig::default(),
-        storage.clone(),
-        startup_info.master.get_head(),
-        bus,
-    );
-
-    pool
 }
