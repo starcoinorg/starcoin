@@ -62,7 +62,6 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
 
     let raw_txn = Executor::build_transfer_txn(
         account1.address().clone(),
-        account1.auth_key_prefix(),
         account2.address().clone(),
         account2.auth_key_prefix(),
         0,
@@ -163,7 +162,6 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
     let raw_txn = Executor::build_transfer_txn(
         account1.address().clone(),
-        account1.auth_key_prefix(),
         account2.address().clone(),
         account2.auth_key_prefix(),
         0,

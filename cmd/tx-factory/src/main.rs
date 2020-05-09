@@ -5,7 +5,6 @@ use anyhow::{bail, ensure, Result};
 use ctrlc;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::ValidKeyStringExt;
-use starcoin_executor::executor::Executor;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_rpc_client::RpcClient;
@@ -230,7 +229,7 @@ impl TxnMocker {
         // }
         let raw_txn = self
             .generator
-            .generate_mock_txn::<Executor>(self.next_sequence_number)?;
+            .generate_mock_txn(self.next_sequence_number)?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
         let unlock_time = self.account_unlock_time.clone();

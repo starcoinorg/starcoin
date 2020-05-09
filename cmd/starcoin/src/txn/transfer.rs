@@ -86,7 +86,6 @@ impl CommandAction for TransferCommand {
             ))?;
         let raw_txn = Executor::build_transfer_txn(
             sender.address,
-            vec![],
             to,
             to_auth_key_prefix,
             account_resource.sequence_number(),
