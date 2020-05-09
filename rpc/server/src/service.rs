@@ -34,7 +34,7 @@ impl RpcService {
         info!("Ipc rpc server start at :{:?}", ipc_file);
         let http = match &config.rpc.http_address {
             Some(address) => {
-                let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
+                let http = jsonrpc_http_server::ServerBuilder::new(io_handler.clone())
                     .meta_extractor(RpcExtractor)
                     .cors(DomainsValidation::AllowOnly(vec![
                         AccessControlAllowOrigin::Null,
@@ -50,11 +50,22 @@ impl RpcService {
             }
             None => None,
         };
+        let tcp_server = match &config.rpc.tcp_address {
+            Some(address) => {
+                let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler.clone())
+                    .session_meta_extractor(RpcExtractor)
+                    .start(address)
+                    .expect("rpc: start tcp server should ok");
+                info!("RPC: tcp servr start at: {}", address);
+                Some(tcp_server)
+            }
+            None => None,
+        };
 
         RpcService {
             ipc,
             http,
-            tcp: None,
+            tcp: tcp_server,
             ws: None,
         }
     }

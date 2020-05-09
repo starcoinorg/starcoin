@@ -1,12 +1,10 @@
 use crate::metadata::Metadata;
 
-
 use jsonrpc_http_server::hyper;
 use jsonrpc_ipc_server;
 use jsonrpc_pubsub::Session;
 use jsonrpc_tcp_server;
-use jsonrpc_tcp_server::RequestContext;
-
+use jsonrpc_ws_server;
 use std::sync::Arc;
 
 /// Common HTTP & IPC & TCP metadata extractor.
@@ -25,9 +23,17 @@ impl jsonrpc_ipc_server::MetaExtractor<Metadata> for RpcExtractor {
     }
 }
 impl jsonrpc_tcp_server::MetaExtractor<Metadata> for RpcExtractor {
-    fn extract(&self, context: &RequestContext) -> Metadata {
+    fn extract(&self, context: &jsonrpc_tcp_server::RequestContext) -> Metadata {
         Metadata {
             session: Some(Arc::new(Session::new(context.sender.clone()))),
         }
+    }
+}
+
+pub struct WsExtractor;
+impl jsonrpc_ws_server::MetaExtractor<Metadata> for WsExtractor {
+    fn extract(&self, req: &jsonrpc_ws_server::RequestContext) -> Metadata {
+        let session = Some(Arc::new(Session::new(req.sender())));
+        Metadata { session }
     }
 }
