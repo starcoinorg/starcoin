@@ -1,22 +1,14 @@
 use super::test_helper;
 use crate::pool::AccountSeqNumberClient;
-use crate::TxPoolRef;
 use anyhow::Result;
 use common_crypto::hash::CryptoHash;
 use common_crypto::keygen::KeyGen;
 use parking_lot::RwLock;
-use starcoin_bus::BusActor;
-use starcoin_config::{NodeConfig, TxPoolConfig};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
-use starcoin_genesis::Genesis;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::collections::HashMap;
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
-use storage::db_storage::DBStorage;
-use storage::storage::StorageInstance;
-use storage::Storage;
 use types::account_address::AccountAddress;
 use types::account_config;
 #[derive(Clone, Debug)]
@@ -71,7 +63,7 @@ async fn test_tx_pool() -> Result<()> {
 
 #[actix_rt::test]
 async fn test_subscribe_txns() {
-    let pool = gen_pool_for_test();
+    let pool = test_helper::start_txpool();
     let _ = pool.subscribe_txns().await.unwrap();
 }
 
