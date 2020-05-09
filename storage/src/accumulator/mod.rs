@@ -74,7 +74,7 @@ impl AccumulatorWriter for AccumulatorStorage {
     }
 
     fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<(), Error> {
-        let mut batch = WriteBatch::new_with_name(ACCUMULATOR_NODE_PREFIX_NAME);
+        let mut batch = WriteBatch::new();
         for node in nodes {
             batch.put(node.hash(), node)?;
         }
@@ -82,7 +82,7 @@ impl AccumulatorWriter for AccumulatorStorage {
     }
 
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
-        let mut batch = WriteBatch::new_with_name(ACCUMULATOR_NODE_PREFIX_NAME);
+        let mut batch = WriteBatch::new();
         for key in node_hash_vec {
             batch.delete(key)?;
         }

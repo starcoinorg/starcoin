@@ -38,7 +38,7 @@ impl TransactionInfoStore for TransactionInfoStorage {
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
-        let mut batch = WriteBatch::new_with_name(TRANSACTION_INFO_PREFIX_NAME);
+        let mut batch = WriteBatch::new();
         for txn_info in vec_txn_info {
             batch.put(txn_info.transaction_hash(), txn_info)?;
         }

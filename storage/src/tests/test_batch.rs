@@ -38,7 +38,9 @@ fn test_db_batch() {
     write_batch
         .put::<HashValue, TransactionInfo>(id2, transaction_info2.clone())
         .unwrap();
-    db_storage.write_batch(write_batch).unwrap();
+    db_storage
+        .write_batch(DEFAULT_PREFIX_NAME, write_batch)
+        .unwrap();
     assert_eq!(
         TransactionInfo::decode_value(
             &db_storage
@@ -87,7 +89,9 @@ fn test_cache_batch() {
     write_batch
         .put::<HashValue, TransactionInfo>(id2, transaction_info2.clone())
         .unwrap();
-    cache_storage.write_batch(write_batch).unwrap();
+    cache_storage
+        .write_batch(DEFAULT_PREFIX_NAME, write_batch)
+        .unwrap();
     assert_eq!(
         TransactionInfo::decode_value(
             &cache_storage
@@ -119,7 +123,7 @@ fn test_batch_comm() {
     let mut write_batch = WriteBatch::new();
     write_batch.put::<HashValue, HashValue>(key, value).unwrap();
     write_batch.delete::<HashValue>(key).unwrap();
-    let result = db.write_batch(write_batch.clone());
+    let result = db.write_batch(DEFAULT_PREFIX_NAME, write_batch.clone());
     assert!(result.is_ok());
     let result = db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
     assert_eq!(result, None);
@@ -131,12 +135,12 @@ fn test_batch_comm() {
         key_vec.push(key);
         new_batch.put::<HashValue, HashValue>(key, value).unwrap();
     }
-    let result = db.write_batch(new_batch);
+    let result = db.write_batch(DEFAULT_PREFIX_NAME, new_batch);
     assert!(result.is_ok());
     let mut new_batch2 = write_batch.clone();
     for key in key_vec {
         new_batch2.delete::<HashValue>(key).unwrap();
     }
-    let result = db.write_batch(new_batch2);
+    let result = db.write_batch(DEFAULT_PREFIX_NAME, new_batch2);
     assert!(result.is_ok());
 }
