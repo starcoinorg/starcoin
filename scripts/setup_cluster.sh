@@ -10,39 +10,49 @@ create_node(){
 }
 
 create_nodes(){
-    for((c=0; c<$1; c++));do
-	create_node starcoin-node-$c $2
+    local cluster_name=$1
+    local num=$2
+    local token=$3
+    for((c=0; c<$num; c++));do
+	create_node $cluster_name-$c $token
     done
 }
 
 stop_nodes(){
-    for((c=0; c<$1;c++));do
-	docker-machine stop starcoin-node-$c
+    local cluster_name=$1
+    local num=$2
+    for((c=0; c<$num;c++));do
+	docker-machine stop $cluster_name-$c
     done
 }
 
 remove_nodes(){
-    for((c=0; c<$1;c++));do
-	docker-machine rm starcoin-node-$c -f -y
+    local cluster_name=$1
+    local num=$2
+    for((c=0; c<$num;c++));do
+	docker-machine rm $cluster_name-$c -f -y	
     done
 }
 
 clean_data(){
-    for((c=0; c<$1;c++));do
-	docker-machine ssh starcoin-node-$c rm -rf $cfg_root
+    local cluster_name=$1
+    local num=$2
+    for((c=0; c<$num;c++));do
+	docker-machine ssh $cluster_name-$c rm -rf $cfg_root	
     done
 }
 
 clean_cfg(){
-    for((c=0; c<$1;c++));do
-	docker-machine ssh starcoin-node-$c rm -rf $cfg_root/starcoin-$c/halley/config.toml
+    local cluster_name=$1
+    local num=$2
+    for((c=0; c<$num;c++));do
+	docker-machine ssh $cluster_name-$c rm -rf $cfg_root/starcoin-$c/*/config.toml
     done
     
 }
 
-
 usage(){
-    echo "Usage $(basename $0)  [stop, start, clean_node, clean_cfg] nodes_number [access_token]"
+    echo "Usage $(basename $0)  [stop, start, clean_data, clean_cfg] cluster_name nodes_number [access_token]"
     exit -1
 }
 
