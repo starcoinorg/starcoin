@@ -2,6 +2,7 @@ use crate::random_txn;
 use actix::Addr;
 use criterion::{BatchSize, Bencher};
 use parking_lot::RwLock;
+use rand::prelude::*;
 use rand::{RngCore, SeedableRng, StdRng};
 use starcoin_bus::BusActor;
 use starcoin_chain::{
@@ -87,7 +88,7 @@ impl ChainBencher {
         }
     }
 
-    fn execute(&self, proportion: Option<u64>) {
+    pub fn execute(&self, proportion: Option<u64>) {
         let mut latest_id = None;
         let mut rng: StdRng = StdRng::from_seed([0; 32]);
         for i in 0..self.block_num {
@@ -135,6 +136,28 @@ impl ChainBencher {
                 .unwrap()
                 .unwrap();
         }
+    }
+
+    fn execute_query(&self, times: u64) {
+        let max_num = self.chain.read().master_head_header().number();
+        let mut rng = rand::thread_rng();
+        for _i in 0..times {
+            let number = rng.gen_range(0, max_num);
+            assert!(self
+                .chain
+                .read()
+                .master_block_by_number(number)
+                .unwrap()
+                .is_some());
+        }
+    }
+
+    pub fn query_bench(&self, b: &mut Bencher, times: u64) {
+        b.iter_batched(
+            || (self, times),
+            |(bench, t)| bench.execute_query(t),
+            BatchSize::LargeInput,
+        )
     }
 
     pub fn bench(&self, b: &mut Bencher, proportion: Option<u64>) {
