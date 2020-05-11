@@ -197,7 +197,7 @@ where
     let pubsub_service = {
         let service = PubSubService::new();
         service.start_transaction_subscription_handler(txpool.clone());
-        service.start_event_subscription_handler(bus.clone(), storage.clone());
+        service.start_chain_notify_handler(bus.clone(), storage.clone());
         service
     };
 

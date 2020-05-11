@@ -2,6 +2,7 @@ use super::notify;
 use super::pubsub;
 
 use super::EventSubscribers;
+use super::NewHeaderSubscribers;
 use actix;
 use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
 use anyhow::Result;
@@ -9,31 +10,34 @@ use starcoin_bus::{Bus, BusActor};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::event::Event;
 use starcoin_storage::Store;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::system_events::SystemEvents;
 use std::sync::Arc;
 
-pub struct EventSubscriptionActor {
+pub struct ChainNotifyHandlerActor {
     subscribers: EventSubscribers,
+    new_header_subscribers: NewHeaderSubscribers,
     bus: actix::Addr<BusActor>,
     store: Arc<dyn Store>,
 }
-impl EventSubscriptionActor {
+impl ChainNotifyHandlerActor {
     pub fn new(
         subscribers: EventSubscribers,
+        new_header_subscribers: NewHeaderSubscribers,
         bus: actix::Addr<BusActor>,
         store: Arc<dyn Store>,
     ) -> Self {
         Self {
             subscribers,
+            new_header_subscribers,
             bus,
             store,
         }
     }
 }
 
-impl actix::Actor for EventSubscriptionActor {
+impl actix::Actor for ChainNotifyHandlerActor {
     type Context = actix::Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         self.bus
@@ -55,10 +59,13 @@ impl actix::Actor for EventSubscriptionActor {
             .wait(ctx);
     }
 }
-impl actix::StreamHandler<SystemEvents> for EventSubscriptionActor {
+impl actix::StreamHandler<SystemEvents> for ChainNotifyHandlerActor {
     fn handle(&mut self, item: SystemEvents, _ctx: &mut Self::Context) {
         if let SystemEvents::NewHeadBlock(block_detail) = item {
             let block = block_detail.get_block();
+            // notify header.
+            self.notify_new_header(block.header());
+            // notify events
             if let Err(e) = self.notify_events(block, self.store.clone()) {
                 error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
             }
@@ -66,7 +73,13 @@ impl actix::StreamHandler<SystemEvents> for EventSubscriptionActor {
     }
 }
 
-impl EventSubscriptionActor {
+impl ChainNotifyHandlerActor {
+    pub fn notify_new_header(&self, header: &BlockHeader) {
+        for subscriber in self.new_header_subscribers.read().values() {
+            notify::notify(subscriber, pubsub::Result::Header(Box::new(header.clone())));
+        }
+    }
+
     pub fn notify_events(&self, block: &Block, store: Arc<dyn Store>) -> Result<()> {
         // let block = store.get_block(block_id)?;
         // if block.is_none() {
