@@ -302,6 +302,82 @@ impl TryInto<Vec<u8>> for BalanceResource {
     }
 }
 
+/// Struct that represents a SentPaymentEvent.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SentPaymentEvent {
+    amount: u64,
+    receiver: AccountAddress,
+    metadata: Vec<u8>,
+}
+
+impl SentPaymentEvent {
+    // TODO: should only be used for libra client testing and be removed eventually
+    pub fn new(amount: u64, receiver: AccountAddress, metadata: Vec<u8>) -> Self {
+        Self {
+            amount,
+            receiver,
+            metadata,
+        }
+    }
+
+    pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
+        scs::from_bytes(bytes).map_err(Into::into)
+    }
+
+    /// Get the sender of this transaction event.
+    pub fn receiver(&self) -> AccountAddress {
+        self.receiver
+    }
+
+    /// Get the amount sent or received
+    pub fn amount(&self) -> u64 {
+        self.amount
+    }
+
+    /// Get the metadata associated with this event
+    pub fn metadata(&self) -> &Vec<u8> {
+        &self.metadata
+    }
+}
+
+/// Struct that represents a ReceivedPaymentEvent.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReceivedPaymentEvent {
+    amount: u64,
+    sender: AccountAddress,
+    metadata: Vec<u8>,
+}
+
+impl ReceivedPaymentEvent {
+    // TODO: should only be used for libra client testing and be removed eventually
+    pub fn new(amount: u64, sender: AccountAddress, metadata: Vec<u8>) -> Self {
+        Self {
+            amount,
+            sender,
+            metadata,
+        }
+    }
+
+    pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
+        scs::from_bytes(bytes).map_err(Into::into)
+    }
+
+    /// Get the receiver of this transaction event.
+    pub fn sender(&self) -> AccountAddress {
+        self.sender
+    }
+
+    /// Get the amount sent or received
+    pub fn amount(&self) -> u64 {
+        self.amount
+    }
+
+    /// Get the metadata associated with this event
+    pub fn metadata(&self) -> &Vec<u8> {
+        &self.metadata
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
