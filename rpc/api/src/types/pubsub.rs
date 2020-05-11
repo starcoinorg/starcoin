@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::event::Event;
+use crate::errors;
+use jsonrpc_core::error::Error as JsonRpcError;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockHeader;
-use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::event::{EventHandle, EventKey};
+use starcoin_types::event::EventKey;
+use starcoin_types::filter::Filter;
+use std::convert::TryInto;
 /// Subscription kind.
 #[derive(Debug, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(deny_unknown_fields)]
@@ -29,7 +32,7 @@ pub enum Result {
     Header(Box<BlockHeader>),
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
-    Events(Box<Event>),
+    Event(Box<Event>),
 }
 
 impl Serialize for Result {
@@ -84,13 +87,30 @@ impl<'a> Deserialize<'a> for Params {
 #[serde(rename_all = "camelCase")]
 pub struct EventFilter {
     /// From Block
-    pub from_block: Option<u64>,
+    pub from_block: u64,
     /// To Block
-    pub to_block: Option<u64>,
-    /// Block hash
-    pub block_hash: Option<HashValue>,
-    /// Event key
-    pub event_key: Option<EventKey>,
+    pub to_block: u64,
+    /// Event keys
+    pub event_keys: Vec<EventKey>,
     /// Limit: from latest to oldest
     pub limit: Option<usize>,
+}
+
+impl TryInto<Filter> for EventFilter {
+    type Error = JsonRpcError;
+
+    fn try_into(self) -> std::result::Result<Filter, Self::Error> {
+        if self.from_block > self.to_block {
+            return Err(errors::invalid_params(
+                "fromBlock",
+                "fromBlock should not greater than toBlock",
+            ));
+        }
+        Ok(Filter {
+            from_block: self.from_block,
+            to_block: self.to_block,
+            event_keys: self.event_keys,
+            limit: self.limit,
+        })
+    }
 }

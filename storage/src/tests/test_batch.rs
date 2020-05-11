@@ -19,6 +19,7 @@ fn test_db_batch() {
         HashValue::random(),
         HashValue::zero(),
         HashValue::zero(),
+        vec![],
         0,
         StatusCode::ABORTED,
     );
@@ -30,6 +31,7 @@ fn test_db_batch() {
         HashValue::random(),
         HashValue::zero(),
         HashValue::zero(),
+        vec![],
         1,
         StatusCode::ABORTED,
     );
@@ -68,6 +70,7 @@ fn test_cache_batch() {
         HashValue::random(),
         HashValue::zero(),
         HashValue::zero(),
+        vec![],
         0,
         StatusCode::ABORTED,
     );
@@ -79,6 +82,7 @@ fn test_cache_batch() {
         HashValue::random(),
         HashValue::zero(),
         HashValue::zero(),
+        vec![],
         1,
         StatusCode::ABORTED,
     );
