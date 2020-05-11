@@ -516,6 +516,7 @@ impl StateSyncTaskActor {
         lock.clear();
         self.roots = Roots::new(*state_root, *accumulator_root);
         lock.push_back((*self.roots.state_root(), true));
+        drop(lock);
         self.activation_task(address);
     }
 
@@ -571,14 +572,14 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
     }
 }
 
-#[derive(Default, Debug, Message)]
+#[derive(Debug, Message)]
 #[rtype(result = "Result<()>")]
 enum StateSyncEvent {
     RESET(RestRoots),
     ACT,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 struct RestRoots {
     state_root: HashValue,
     accumulator_root: HashValue,
@@ -591,7 +592,7 @@ impl Handler<StateSyncEvent> for StateSyncTaskActor {
     fn handle(&mut self, msg: StateSyncEvent, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             StateSyncEvent::ACT => self.activation_task(ctx.address()),
-            StateSyncEvent::REST(roots) => {
+            StateSyncEvent::RESET(roots) => {
                 self.reset(&roots.state_root, &roots.accumulator_root, ctx.address());
             }
         }

@@ -104,7 +104,7 @@ impl SyncMetadata {
             let mut lock = self.0.write();
             lock.pivot_behind = None;
             lock.state_sync_address = None;
-            lock.forward_sync_failed = None;
+            lock.state_sync_failed = None;
             lock.bus.do_send(Broadcast {
                 msg: SystemEvents::SyncDone(),
             });
