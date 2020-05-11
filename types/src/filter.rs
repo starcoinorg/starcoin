@@ -25,11 +25,10 @@ pub struct Filter {
 
 impl Filter {
     pub fn matching(&self, block_number: BlockNumber, e: &ContractEvent) -> bool {
-        if self.from_block <= block_number
-            && block_number <= self.to_block
-            && self.event_keys.contains(e.key())
-        {
-            return true;
+        if self.from_block <= block_number && block_number <= self.to_block {
+            if self.event_keys.is_empty() || self.event_keys.contains(e.key()) {
+                return true;
+            }
         }
         false
     }
