@@ -747,8 +747,9 @@ impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
 
 impl From<libra_types::transaction::TransactionOutput> for TransactionOutput {
     fn from(output: libra_types::transaction::TransactionOutput) -> Self {
+        let events = output.events().iter().map(|event| event.into()).collect();
         TransactionOutput::new(
-            vec![], // ToDo: support ContractEvent
+            events,
             output.gas_used(),
             TransactionStatus::from(output.status().clone()),
         )

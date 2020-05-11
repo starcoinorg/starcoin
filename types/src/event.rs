@@ -1,7 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_address::AccountAddress;
+use crate::account_address::{AccountAddress, ADDRESS_LENGTH};
 use anyhow::{ensure, Error, Result};
 use hex;
 use rand::{rngs::OsRng, RngCore};
@@ -14,7 +14,7 @@ use std::{
 };
 
 /// Size of an event key.
-pub const EVENT_KEY_LENGTH: usize = 40;
+pub const EVENT_KEY_LENGTH: usize = ADDRESS_LENGTH + 8;
 
 /// A struct that represents a globally unique id for an Event stream that a user can listen to.
 pub struct EventKey([u8; EVENT_KEY_LENGTH]);
@@ -220,5 +220,13 @@ impl fmt::Display for EventKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         // Forward to the LowerHex impl with a "0x" prepended (the # flag).
         write!(f, "{:#x}", self)
+    }
+}
+
+impl From<libra_types::event::EventKey> for EventKey {
+    fn from(libra_key: libra_types::event::EventKey) -> Self {
+        let mut key = [0; EVENT_KEY_LENGTH];
+        key.copy_from_slice(libra_key.as_bytes());
+        EventKey::new(key)
     }
 }

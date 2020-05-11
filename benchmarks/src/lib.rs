@@ -9,6 +9,7 @@ use types::transaction::SignedUserTransaction;
 pub mod chain;
 pub mod helper;
 pub mod storage;
+pub mod sync;
 pub mod transactions;
 
 pub fn random_txn(seq_num: u64) -> SignedUserTransaction {

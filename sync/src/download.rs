@@ -641,6 +641,10 @@ where
         }
     }
 
+    pub fn get_chain_reader(&self) -> ChainActorRef<C> {
+        self.chain_reader.clone()
+    }
+
     /// for ancestors
     pub async fn get_hash_by_number_msg_backward(
         network: NetworkAsyncService,
@@ -808,7 +812,7 @@ where
         ancestor
     }
 
-    fn put_hash_2_hash_pool(
+    pub fn put_hash_2_hash_pool(
         downloader: Arc<Downloader<C>>,
         peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
