@@ -3,7 +3,8 @@
 
 use crate::metadata::Metadata;
 use crate::module::{
-    ChainRpcImpl, DebugRpcImpl, NodeRpcImpl, PubSubImpl, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl,
+    ChainRpcImpl, DebugRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl,
+    TxPoolRpcImpl, WalletRpcImpl,
 };
 use crate::service::RpcService;
 use actix::prelude::*;
@@ -37,6 +38,7 @@ impl RpcActor {
         chain_service: CS,
         account_service: AS,
         state_service: SS,
+        pubsub_service: Option<PubSubService>,
         //TODO after network async service provide trait, remove Option.
         network_service: Option<NetworkAsyncService>,
         logger_handle: Option<Arc<LoggerHandle>>,
@@ -48,29 +50,26 @@ impl RpcActor {
         SS: ChainStateAsyncService + 'static,
     {
         let config_clone = config.clone();
-        let mut io_handler = Self::extend_apis(
+        let io_handler = Self::extend_apis(
             NodeRpcImpl::new(config.clone(), network_service),
             Some(ChainRpcImpl::new(chain_service)),
             Some(TxPoolRpcImpl::new(txpool_service.clone())),
             Some(WalletRpcImpl::new(account_service)),
             Some(StateRpcImpl::new(state_service)),
+            pubsub_service.map(|s| PubSubImpl::new(s)),
             logger_handle.map(|logger_handle| DebugRpcImpl::new(config_clone, logger_handle)),
         )?;
-
-        // extend pubsub related
-        let pubsub_impl = PubSubImpl::new();
-        pubsub_impl.start_transaction_subscription_handler(txpool_service);
-        io_handler.extend_with(StarcoinPubSub::to_delegate(pubsub_impl));
 
         Self::launch_with_handler(config.clone(), io_handler)
     }
 
-    pub fn extend_apis<C, N, T, A, S, D>(
+    pub fn extend_apis<C, N, T, A, S, D, P>(
         node_api: N,
         chain_api: Option<C>,
         txpool_api: Option<T>,
         account_api: Option<A>,
         state_api: Option<S>,
+        pubsub_api: Option<P>,
         debug_api: Option<D>,
     ) -> Result<MetaIoHandler<Metadata, MetricMiddleware>>
     where
@@ -79,6 +78,7 @@ impl RpcActor {
         T: TxPoolApi,
         A: WalletApi,
         S: StateApi,
+        P: StarcoinPubSub<Metadata = Metadata>,
         D: DebugApi,
     {
         let mut io_handler =
@@ -95,6 +95,9 @@ impl RpcActor {
         }
         if let Some(state_api) = state_api {
             io_handler.extend_with(StateApi::to_delegate(state_api));
+        }
+        if let Some(pubsub_api) = pubsub_api {
+            io_handler.extend_with(StarcoinPubSub::to_delegate(pubsub_api));
         }
         if let Some(debug_api) = debug_api {
             io_handler.extend_with(DebugApi::to_delegate(debug_api));
@@ -185,6 +188,7 @@ mod tests {
             chain_service,
             account_service,
             state_service,
+            None,
             None,
             Some(logger_handle),
         )

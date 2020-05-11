@@ -12,6 +12,8 @@ use jsonrpc_core::Result;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
+use starcoin_bus::BusActor;
+use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolAsyncService;
@@ -31,39 +33,12 @@ type TxnSubscribers = Arc<RwLock<Subscribers<ClientNotifier>>>;
 type EventSubscribers = Arc<RwLock<Subscribers<(ClientNotifier, Filter)>>>;
 
 pub struct PubSubImpl {
-    subscriber_id: Arc<atomic::AtomicU64>,
-    spawner: actix_rt::Arbiter,
-    transactions_subscribers: TxnSubscribers,
-    events_subscribers: EventSubscribers,
+    service: PubSubService,
 }
 
 impl PubSubImpl {
-    pub fn new() -> Self {
-        let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
-        let transactions_subscribers =
-            Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
-        let events_subscribers = Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
-        Self {
-            spawner: actix_rt::Arbiter::new(),
-            subscriber_id: subscriber_id.clone(),
-            transactions_subscribers,
-            events_subscribers,
-        }
-    }
-
-    pub fn start_event_subscription_handler(&self, store: Arc<dyn Store>) {
-        let actor = EventSubscriptionActor::new(self.events_subscribers.clone(), store);
-        actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
-    }
-
-    pub fn start_transaction_subscription_handler<P>(&self, txpool: P)
-    where
-        P: TxPoolAsyncService + 'static,
-    {
-        let actor =
-            TransactionSubscriptionActor::new(self.transactions_subscribers.clone(), txpool);
-
-        actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
+    pub fn new(s: PubSubService) -> Self {
+        Self { service: s }
     }
 }
 
@@ -85,24 +60,15 @@ impl StarcoinPubSub for PubSubImpl {
                 errors::invalid_params("newHeads", "Expected no parameters.")
             }
             (pubsub::Kind::NewPendingTransactions, None) => {
-                self.transactions_subscribers
-                    .write()
-                    .add(&self.spawner, subscriber);
+                self.service.add_new_txn_subscription(subscriber);
                 return;
             }
             (pubsub::Kind::NewPendingTransactions, _) => {
                 errors::invalid_params("newPendingTransactions", "Expected no parameters.")
             }
             (pubsub::Kind::Events, Some(pubsub::Params::Events(filter))) => {
-                match filter.try_into() {
-                    Err(e) => e,
-                    Ok(f) => {
-                        self.events_subscribers
-                            .write()
-                            .add(&self.spawner, subscriber, f);
-                        return;
-                    }
-                }
+                self.service.add_event_subscription(subscriber, filter);
+                return;
             }
             (pubsub::Kind::Events, _) => {
                 errors::invalid_params("events", "Expected a filter object.")
@@ -113,6 +79,69 @@ impl StarcoinPubSub for PubSubImpl {
     }
 
     fn unsubscribe(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool> {
+        self.service.unsubscribe(id)
+    }
+}
+
+pub struct PubSubService {
+    subscriber_id: Arc<atomic::AtomicU64>,
+    spawner: actix_rt::Arbiter,
+    transactions_subscribers: TxnSubscribers,
+    events_subscribers: EventSubscribers,
+}
+
+impl PubSubService {
+    pub fn new() -> Self {
+        let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
+        let transactions_subscribers =
+            Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
+        let events_subscribers = Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
+        Self {
+            spawner: actix_rt::Arbiter::new(),
+            subscriber_id: subscriber_id.clone(),
+            transactions_subscribers,
+            events_subscribers,
+        }
+    }
+
+    pub fn start_event_subscription_handler(&self, _bus: Addr<BusActor>, store: Arc<dyn Store>) {
+        let actor = EventSubscriptionActor::new(self.events_subscribers.clone(), store);
+        actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
+    }
+
+    pub fn start_transaction_subscription_handler<P>(&self, txpool: P)
+    where
+        P: TxPoolAsyncService + 'static,
+    {
+        let actor =
+            TransactionSubscriptionActor::new(self.transactions_subscribers.clone(), txpool);
+
+        actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
+    }
+
+    pub fn add_new_txn_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
+        self.transactions_subscribers
+            .write()
+            .add(&self.spawner, subscriber);
+    }
+
+    pub fn add_event_subscription(
+        &self,
+        subscriber: Subscriber<pubsub::Result>,
+        filter: EventFilter,
+    ) {
+        match filter.try_into() {
+            Ok(f) => {
+                self.events_subscribers
+                    .write()
+                    .add(&self.spawner, subscriber, f);
+            }
+            Err(e) => {
+                let _ = subscriber.reject(e);
+            }
+        };
+    }
+    pub fn unsubscribe(&self, id: SubscriptionId) -> Result<bool> {
         let res1 = self.events_subscribers.write().remove(&id).is_some();
         let res2 = self.transactions_subscribers.write().remove(&id).is_some();
 
