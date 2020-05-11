@@ -1,5 +1,5 @@
 use crate::helper::{get_accumulator_node_by_node_hash, get_state_node_by_node_hash};
-use crate::sync_metrics::{LABEL_STATE, SYNC_METRICS, _LABEL_ACCUMULATOR};
+use crate::sync_metrics::{LABEL_ACCUMULATOR, LABEL_STATE, SYNC_METRICS};
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
@@ -40,7 +40,7 @@ impl Roots {
     }
 }
 
-async fn _sync_accumulator_node(
+async fn sync_accumulator_node(
     node_key: HashValue,
     peer_id: PeerId,
     network_service: NetworkAsyncService,
@@ -48,7 +48,7 @@ async fn _sync_accumulator_node(
 ) {
     let accumulator_timer = SYNC_METRICS
         .sync_done_time
-        .with_label_values(&[_LABEL_ACCUMULATOR])
+        .with_label_values(&[LABEL_ACCUMULATOR])
         .start_timer();
     let accumulator_node = match get_accumulator_node_by_node_hash(
         &network_service,
@@ -65,13 +65,13 @@ async fn _sync_accumulator_node(
             if node_key == accumulator_node.hash() {
                 SYNC_METRICS
                     .sync_succ_count
-                    .with_label_values(&[_LABEL_ACCUMULATOR])
+                    .with_label_values(&[LABEL_ACCUMULATOR])
                     .inc();
                 Some(accumulator_node)
             } else {
                 SYNC_METRICS
                     .sync_verify_fail_count
-                    .with_label_values(&[_LABEL_ACCUMULATOR])
+                    .with_label_values(&[LABEL_ACCUMULATOR])
                     .inc();
                 warn!(
                     "accumulator node hash not match {} :{:?}",
@@ -84,7 +84,7 @@ async fn _sync_accumulator_node(
         Err(e) => {
             SYNC_METRICS
                 .sync_fail_count
-                .with_label_values(&[_LABEL_ACCUMULATOR])
+                .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
             error!("error: {:?}", e);
             None
@@ -92,7 +92,7 @@ async fn _sync_accumulator_node(
     };
     accumulator_timer.observe_duration();
 
-    if let Err(err) = address.try_send(StateSyncTaskEvent::_new_accumulator(
+    if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
         peer_id,
         node_key,
         accumulator_node,
@@ -163,12 +163,18 @@ impl StateSyncReset for StateSyncTaskRef {
     async fn reset(&self, state_root: HashValue, accumulator_root: HashValue) {
         if let Err(e) = self
             .address
-            .send(StateSyncEvent {
+            .send(StateSyncEvent::RESET(RestRoots {
                 state_root,
                 accumulator_root,
-            })
+            }))
             .await
         {
+            warn!("err : {:?}", e);
+        }
+    }
+
+    async fn act(&self) {
+        if let Err(e) = self.address.send(StateSyncEvent::ACT {}).await {
             warn!("err : {:?}", e);
         }
     }
@@ -177,7 +183,7 @@ impl StateSyncReset for StateSyncTaskRef {
 #[derive(Debug, PartialEq)]
 enum TaskType {
     STATE,
-    _ACCUMULATOR,
+    ACCUMULATOR,
 }
 
 #[derive(Debug, Message)]
@@ -201,7 +207,7 @@ impl StateSyncTaskEvent {
         }
     }
 
-    pub fn _new_accumulator(
+    pub fn new_accumulator(
         peer_id: PeerId,
         node_key: HashValue,
         accumulator_node: Option<AccumulatorNode>,
@@ -211,7 +217,7 @@ impl StateSyncTaskEvent {
             node_key,
             state_node: None,
             accumulator_node,
-            task_type: TaskType::_ACCUMULATOR,
+            task_type: TaskType::ACCUMULATOR,
         }
     }
 
@@ -345,6 +351,7 @@ impl StateSyncTaskActor {
                     }
                 } else {
                     warn!("{:?}", "best peer is none.");
+                    self.sync_metadata.update_failed(true);
                 }
             }
         }
@@ -414,12 +421,12 @@ impl StateSyncTaskActor {
         if let Some(node_key) = value {
             SYNC_METRICS
                 .sync_total_count
-                .with_label_values(&[_LABEL_ACCUMULATOR])
+                .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
             if let Some(accumulator_node) = self.storage.get_node(node_key.clone()).unwrap() {
                 debug!("find accumulator_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), node_key.clone());
-                if let Err(err) = address.try_send(StateSyncTaskEvent::_new_accumulator(
+                if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
                     self.self_peer_id.clone(),
                     node_key,
                     Some(accumulator_node),
@@ -439,7 +446,7 @@ impl StateSyncTaskActor {
                         let network_service = self.network_service.clone();
                         lock.insert(best_peer.get_peer_id(), node_key.clone());
                         Arbiter::spawn(async move {
-                            _sync_accumulator_node(
+                            sync_accumulator_node(
                                 node_key,
                                 best_peer.get_peer_id(),
                                 network_service,
@@ -450,6 +457,7 @@ impl StateSyncTaskActor {
                     }
                 } else {
                     warn!("{:?}", "best peer is none.");
+                    self.sync_metadata.update_failed(true);
                 }
             }
         }
@@ -497,12 +505,26 @@ impl StateSyncTaskActor {
         }
     }
 
-    pub fn reset(&mut self, state_root: &HashValue, accumulator_root: &HashValue) {
+    pub fn reset(
+        &mut self,
+        state_root: &HashValue,
+        accumulator_root: &HashValue,
+        address: Addr<StateSyncTaskActor>,
+    ) {
         info!("reset state sync task.");
         let mut lock = self.state_sync_task.lock();
         lock.clear();
         self.roots = Roots::new(*state_root, *accumulator_root);
         lock.push_back((*self.roots.state_root(), true));
+        self.activation_task(address);
+    }
+
+    fn activation_task(&mut self, address: Addr<StateSyncTaskActor>) {
+        if self.sync_metadata.is_failed() {
+            self.sync_metadata.update_failed(false);
+            self.exe_state_sync_task(address.clone());
+            self.exe_accumulator_sync_task(address);
+        }
     }
 }
 
@@ -551,7 +573,13 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
-struct StateSyncEvent {
+enum StateSyncEvent {
+    RESET(RestRoots),
+    ACT,
+}
+
+#[derive(Default, Debug, Clone)]
+struct RestRoots {
     state_root: HashValue,
     accumulator_root: HashValue,
 }
@@ -560,8 +588,13 @@ impl Handler<StateSyncEvent> for StateSyncTaskActor {
     type Result = Result<()>;
 
     /// This method is called for every message received by this actor.
-    fn handle(&mut self, msg: StateSyncEvent, _ctx: &mut Self::Context) -> Self::Result {
-        self.reset(&msg.state_root, &msg.accumulator_root);
+    fn handle(&mut self, msg: StateSyncEvent, ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            StateSyncEvent::ACT => self.activation_task(ctx.address()),
+            StateSyncEvent::REST(roots) => {
+                self.reset(&roots.state_root, &roots.accumulator_root, ctx.address());
+            }
+        }
         Ok(())
     }
 }
