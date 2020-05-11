@@ -87,12 +87,16 @@ impl<'a> Deserialize<'a> for Params {
 #[serde(rename_all = "camelCase")]
 pub struct EventFilter {
     /// From Block
-    pub from_block: u64,
+    #[serde(default)]
+    pub from_block: Option<u64>,
     /// To Block
-    pub to_block: u64,
+    #[serde(default)]
+    pub to_block: Option<u64>,
     /// Event keys
+    #[serde(default)]
     pub event_keys: Vec<EventKey>,
     /// Limit: from latest to oldest
+    #[serde(default)]
     pub limit: Option<usize>,
 }
 
@@ -100,15 +104,18 @@ impl TryInto<Filter> for EventFilter {
     type Error = JsonRpcError;
 
     fn try_into(self) -> std::result::Result<Filter, Self::Error> {
-        if self.from_block > self.to_block {
-            return Err(errors::invalid_params(
-                "fromBlock",
-                "fromBlock should not greater than toBlock",
-            ));
+        match (self.from_block, self.to_block) {
+            (Some(f), Some(t)) if f > t => {
+                return Err(errors::invalid_params(
+                    "fromBlock",
+                    "fromBlock should not greater than toBlock",
+                ));
+            }
+            _ => {}
         }
         Ok(Filter {
-            from_block: self.from_block,
-            to_block: self.to_block,
+            from_block: self.from_block.unwrap_or(0),
+            to_block: self.to_block.unwrap_or(std::u64::MAX),
             event_keys: self.event_keys,
             limit: self.limit,
         })
