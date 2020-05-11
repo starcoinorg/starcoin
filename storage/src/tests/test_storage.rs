@@ -67,6 +67,7 @@ fn test_storage() {
         HashValue::random(),
         HashValue::zero(),
         HashValue::zero(),
+        vec![],
         0,
         StatusCode::ABORTED,
     );
@@ -94,6 +95,7 @@ fn test_two_level_storage() {
         HashValue::random(),
         HashValue::zero(),
         HashValue::zero(),
+        vec![],
         0,
         StatusCode::ABORTED,
     );
@@ -144,6 +146,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
         HashValue::random(),
         HashValue::zero(),
         HashValue::zero(),
+        vec![],
         0,
         StatusCode::ABORTED,
     );

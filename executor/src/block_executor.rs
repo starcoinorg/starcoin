@@ -46,6 +46,7 @@ impl BlockExecutor {
                         txn.clone().id(),
                         state_root.clone(),
                         HashValue::zero(),
+                        output.events().to_vec(),
                         output.gas_used(),
                         status.major_status,
                     ));

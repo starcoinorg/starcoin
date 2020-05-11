@@ -111,6 +111,7 @@ impl Genesis {
             state_root,
             //TODO genesis event.
             HashValue::zero(),
+            output.events().to_vec(),
             0,
             output.status().vm_status().major_status,
         ))

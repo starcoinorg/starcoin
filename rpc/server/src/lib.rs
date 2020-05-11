@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2
 #![allow(dead_code)]
 mod actor;
-mod errors;
 mod extractors;
 mod metadata;
 pub mod module;

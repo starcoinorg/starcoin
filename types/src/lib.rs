@@ -11,6 +11,7 @@ pub mod change_set;
 pub mod contract_event;
 pub mod error;
 pub mod event;
+pub mod filter;
 pub mod language_storage;
 pub mod peer_info;
 pub mod proof;
