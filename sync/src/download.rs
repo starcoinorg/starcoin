@@ -357,7 +357,15 @@ where
             }
         } else {
             warn!("best peer is none.");
-            let _ = sync_metadata.state_sync_done();
+            if !sync_metadata.is_failed() {
+                let _ = sync_metadata.state_sync_done();
+            }
+        }
+
+        if sync_metadata.is_failed() {
+            if let Some(address) = sync_metadata.get_address() {
+                address.act().await;
+            }
         }
 
         Ok(())
