@@ -1,5 +1,6 @@
 use crate::metadata::Metadata;
 use crate::module::PubSubImpl;
+use crate::module::PubSubService;
 use anyhow::Result;
 use jsonrpc_core::futures as futures01;
 use jsonrpc_core::MetaIoHandler;
@@ -22,8 +23,10 @@ use starcoin_executor::TransactionExecutor;
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
     let txpool = start_txpool();
-    let pubsub = PubSubImpl::new();
-    pubsub.start_transaction_subscription_handler(txpool.clone());
+    let service = PubSubService::new();
+
+    service.start_transaction_subscription_handler(txpool.clone());
+    let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
 
     let mut io = MetaIoHandler::default();
@@ -35,7 +38,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
 
     // Fail if params are provided
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newPendingTransactions", {}], "id": 1}"#;
-    let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Invalid params: Invalid Pub-Sub parameters."},"id":1}"#;
+    let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: newPendingTransactions","data":"\"Expected no parameters.\""},"id":1}"#;
     assert_eq!(
         io.handle_request_sync(request, metadata.clone()),
         Some(response.to_owned())
