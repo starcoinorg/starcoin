@@ -10,7 +10,7 @@ const PRIFIX: &str = "starcoin_sync_";
 pub const LABEL_BLOCK: &str = "block";
 pub const LABEL_HASH: &str = "hash";
 pub const LABEL_STATE: &str = "state";
-pub const _LABEL_ACCUMULATOR: &str = "accumulator";
+pub const LABEL_ACCUMULATOR: &str = "accumulator";
 
 pub static SYNC_METRICS: Lazy<SyncMetrics> = Lazy::new(|| SyncMetrics::register().unwrap());
 
