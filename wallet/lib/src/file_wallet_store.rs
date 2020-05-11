@@ -25,12 +25,13 @@ pub struct FileWalletStore {
 
 impl FileWalletStore {
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
-        if !path.as_ref().is_dir() {
-            fs::create_dir(path.as_ref()).unwrap();
+        let path = path.as_ref();
+        if !path.is_dir() {
+            fs::create_dir(path).expect("Create wallet dir fail.");
         }
 
         Self {
-            root_path: PathBuf::from(path.as_ref().clone()),
+            root_path: path.to_owned(),
         }
     }
 
@@ -38,7 +39,7 @@ impl FileWalletStore {
         let path_str = address.to_string();
         let path = self.root_path.join(path_str);
         if !path.is_dir() && is_create {
-            fs::create_dir(path.as_path()).unwrap();
+            fs::create_dir(path.as_path())?;
         }
         let path = path.join(key);
         Ok(path)
@@ -48,15 +49,12 @@ impl FileWalletStore {
         //get account dir from root path
         let root_dir = &self.root_path;
         let mut result = vec![];
-        match fs::read_dir(root_dir) {
-            Ok(paths) => {
-                for path in paths {
-                    let tmp_path = path.unwrap().path();
-                    let tmp_path = tmp_path.join(DEFAULT_ACCOUNT_FILE_NAME);
-                    result.push(tmp_path);
-                }
+        if let Ok(paths) = fs::read_dir(root_dir) {
+            for path in paths {
+                let tmp_path = path.unwrap().path();
+                let tmp_path = tmp_path.join(DEFAULT_ACCOUNT_FILE_NAME);
+                result.push(tmp_path);
             }
-            _ => {}
         }
         result
     }
@@ -64,17 +62,15 @@ impl FileWalletStore {
 
 impl WalletStore for FileWalletStore {
     fn get_account(&self, address: &AccountAddress) -> Result<Option<WalletAccount>> {
-        let path = self
-            .get_path(address, DEFAULT_ACCOUNT_FILE_NAME, false)
-            .unwrap();
+        let path = self.get_path(address, DEFAULT_ACCOUNT_FILE_NAME, false)?;
         if path.exists() {
             let file = File::open(&path);
             match file {
                 Ok(mut file) => {
                     let mut buffer = vec![];
                     file.read_to_end(&mut buffer)?;
-                    let wallnet_account = WalletAccount::decode(buffer.as_slice()).unwrap();
-                    Ok(Some(wallnet_account))
+                    let wallet_account = WalletAccount::decode(buffer.as_slice())?;
+                    Ok(Some(wallet_account))
                 }
                 Err(e) => {
                     bail!("open file err: {}", e);

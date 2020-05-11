@@ -86,7 +86,7 @@ where
         let key_pair: KeyPair = KeyPair::generate(&mut rng);
         let address = AccountAddress::from_public_key(&key_pair.public_key);
         //first account is default.
-        let is_default = self.get_accounts()?.len() == 0;
+        let is_default = self.get_accounts()?.is_empty();
         let account = WalletAccount::new(address, key_pair.public_key.clone(), is_default);
         self.save_account(account.clone(), key_pair)?;
         Ok(account)
@@ -136,12 +136,12 @@ where
     fn sign_txn(&self, raw_txn: RawUserTransaction) -> WalletResult<SignedUserTransaction> {
         let address = raw_txn.sender();
         if !self.contains(&address)? {
-            return Err(WalletError::AccountNotExist(address.clone()));
+            return Err(WalletError::AccountNotExist(address));
         }
         let key_pair = self.get_key_pair(&address)?;
         key_pair
             .sign_txn(raw_txn)
-            .map_err(|e| WalletError::TransactionSignError(e))
+            .map_err(WalletError::TransactionSignError)
     }
 
     fn get_default_account(&self) -> WalletResult<Option<WalletAccount>> {
@@ -160,7 +160,7 @@ where
     fn set_default(&self, address: &AccountAddress) -> WalletResult<()> {
         let mut target = self
             .get_account(address)?
-            .ok_or(WalletError::AccountNotExist(address.clone()))?;
+            .ok_or(WalletError::AccountNotExist(*address))?;
 
         let default = self.get_default_account()?;
         if let Some(mut default) = default {
@@ -179,14 +179,11 @@ where
 
     fn remove_account(&self, address: &AccountAddress) -> WalletResult<()> {
         let account = self.get_account(address)?;
-        match account {
-            Some(account) => {
-                if account.is_default {
-                    return Err(WalletError::RemoveDefaultAccountError(address.clone()));
-                }
-                self.store.remove_account(address)?;
+        if let Some(account) = account {
+            if account.is_default {
+                return Err(WalletError::RemoveDefaultAccountError(*address));
             }
-            None => {}
+            self.store.remove_account(address)?;
         }
         Ok(())
     }

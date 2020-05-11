@@ -57,7 +57,6 @@ fn transfer_tx(
 ) -> RawUserTransaction {
     let raw_txn = Executor::build_transfer_txn(
         sender.address,
-        sender.get_auth_key().prefix().to_vec(),
         receiver,
         receiver_auth_key_prefix,
         seq_num,

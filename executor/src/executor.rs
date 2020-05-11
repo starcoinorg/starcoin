@@ -111,20 +111,12 @@ impl TransactionExecutor for Executor {
 
     fn build_transfer_txn(
         sender: AccountAddress,
-        sender_auth_key_prefix: Vec<u8>,
         receiver: AccountAddress,
         receiver_auth_key_prefix: Vec<u8>,
         seq_num: u64,
         amount: u64,
     ) -> RawUserTransaction {
-        raw_peer_to_peer_txn(
-            sender,
-            sender_auth_key_prefix,
-            receiver,
-            receiver_auth_key_prefix,
-            amount,
-            seq_num,
-        )
+        raw_peer_to_peer_txn(sender, receiver, receiver_auth_key_prefix, amount, seq_num)
     }
 }
 

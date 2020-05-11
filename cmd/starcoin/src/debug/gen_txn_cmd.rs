@@ -116,7 +116,6 @@ impl CommandAction for GenTxnCommand {
 
             let raw_txn = Executor::build_transfer_txn(
                 sender.address,
-                vec![],
                 to,
                 to_auth_key_prefix,
                 sequence_number + i as u64,

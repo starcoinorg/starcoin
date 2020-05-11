@@ -42,7 +42,6 @@ pub trait TransactionExecutor: std::marker::Unpin + Clone {
 
     fn build_transfer_txn(
         sender: AccountAddress,
-        sender_auth_key_prefix: Vec<u8>,
         receiver: AccountAddress,
         receiver_auth_key_prefix: Vec<u8>,
         seq_num: u64,

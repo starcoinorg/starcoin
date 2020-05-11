@@ -46,9 +46,9 @@ impl KeyCache {
         match self.cache.remove(account) {
             None => None,
             Some((ttl, kp)) => {
-                if &Instant::now() < &ttl {
+                if Instant::now() < ttl {
                     self.cache.insert(account.clone(), (ttl, kp));
-                    return self.cache.get(account).map(|t| &t.1);
+                    self.cache.get(account).map(|t| &t.1)
                 } else {
                     None
                 }
@@ -72,7 +72,7 @@ where
         let address = AccountAddress::from_public_key(&keypair.public_key);
         let existed_accounts = self.store.get_accounts()?;
         //first account is default.
-        let is_default = existed_accounts.len() == 0;
+        let is_default = existed_accounts.is_empty();
         let account = WalletAccount::new(address, keypair.public_key.clone(), is_default);
         self.save_account(account.clone(), keypair, password.to_string())?;
         Ok(account)
@@ -137,7 +137,7 @@ where
             None => Err(WalletError::AccountLocked(address)),
             Some(k) => k
                 .sign_txn(raw_txn)
-                .map_err(|err| WalletError::TransactionSignError(err)),
+                .map_err(WalletError::TransactionSignError),
         }
     }
 
@@ -164,7 +164,7 @@ where
     fn set_default(&self, address: &AccountAddress) -> Result<()> {
         let mut target = self
             .get_account(address)?
-            .ok_or(WalletError::AccountNotExist(address.clone()))?;
+            .ok_or_else(|| WalletError::AccountNotExist(*address))?;
 
         let default = self.get_default_account()?;
         if let Some(mut default) = default {
@@ -185,7 +185,7 @@ where
     fn remove_account(&self, address: &AccountAddress) -> Result<()> {
         if let Some(account) = self.get_account(address)? {
             if account.is_default {
-                return Err(WalletError::RemoveDefaultAccountError(address.clone()));
+                return Err(WalletError::RemoveDefaultAccountError(*address));
             }
             self.store.remove_account(address)?;
         }
@@ -242,9 +242,9 @@ where
             Some(pub_key) => pub_key,
             None => match self.store.get_account(address)? {
                 None => {
-                    return Err(WalletError::AccountNotExist(address.clone()));
+                    return Err(WalletError::AccountNotExist(*address));
                 }
-                Some(account) => account.public_key.clone(),
+                Some(account) => account.public_key,
             },
         };
 
@@ -252,20 +252,20 @@ where
             .store
             .get_from_account(address, KEY_NAME_ENCRYPTED_PRIVATE_KEY)?;
         if key_data.is_none() {
-            return Err(WalletError::AccountPrivateKeyMissing(address.clone()));
+            return Err(WalletError::AccountPrivateKeyMissing(*address));
         }
 
         let key_data = key_data.unwrap();
         let plain_key_data = decrypt(password.as_bytes(), &key_data)
-            .map_err(|_e| WalletError::InvalidPassword(address.clone()))?;
+            .map_err(|_e| WalletError::InvalidPassword(*address))?;
         let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice()).map_err(|_e| {
             WalletError::StoreError(format_err!("underline vault store corrupted"))
         })?;
         let keypair = KeyPair::from(private_key);
 
         // check the private key does correspond the declared public key
-        if &keypair.public_key.to_bytes() != &account_public_key.to_bytes() {
-            return Err(WalletError::InvalidPassword(address.clone()));
+        if keypair.public_key.to_bytes() != account_public_key.to_bytes() {
+            return Err(WalletError::InvalidPassword(*address));
         }
         Ok(keypair)
     }

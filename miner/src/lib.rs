@@ -24,7 +24,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use storage::Store;
 use traits::ChainAsyncService;
-use traits::{Consensus, ConsensusHeader};
+use traits::Consensus;
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
@@ -40,32 +40,30 @@ pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 #[rtype(result = "Result<()>")]
 pub struct GenerateBlockEvent {}
 
-pub struct MinerActor<C, P, CS, S, H>
+pub struct MinerActor<C, P, CS, S>
 where
     C: Consensus + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
-    H: ConsensusHeader + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
     txpool: P,
     storage: Arc<S>,
     phantom_c: PhantomData<C>,
     chain: CS,
-    miner: miner::Miner<H>,
+    miner: miner::Miner<C>,
     stratum: Arc<Stratum>,
     miner_account: WalletAccount,
     arbiter: Arbiter,
 }
 
-impl<C, P, CS, S, H> MinerActor<C, P, CS, S, H>
+impl<C, P, CS, S> MinerActor<C, P, CS, S>
 where
     C: Consensus + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
-    H: ConsensusHeader + Sync + Send + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -127,13 +125,12 @@ where
     }
 }
 
-impl<C, P, CS, S, H> Actor for MinerActor<C, P, CS, S, H>
+impl<C, P, CS, S> Actor for MinerActor<C, P, CS, S>
 where
     C: Consensus + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
-    H: ConsensusHeader + Sync + Send + 'static,
 {
     type Context = Context<Self>;
 
@@ -142,13 +139,12 @@ where
     }
 }
 
-impl<C, P, CS, S, H> Handler<GenerateBlockEvent> for MinerActor<C, P, CS, S, H>
+impl<C, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, P, CS, S>
 where
     C: Consensus + Sync + Send + 'static,
     P: TxPoolAsyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
-    H: ConsensusHeader + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
@@ -186,7 +182,7 @@ where
                 txpool,
                 Arc::downgrade(&collection),
             )?;
-            mint::<H, C>(stratum, miner, config, miner_account, txns, &block_chain)?;
+            mint::<C>(stratum, miner, config, miner_account, txns, &block_chain)?;
             drop(block_chain);
             drop(collection);
             Ok(())

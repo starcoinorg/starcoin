@@ -70,7 +70,6 @@ impl CommandAction for GetCoinCommand {
         let amount = opt.amount.unwrap_or(balance * 20 / 100);
         let raw_txn = Executor::build_transfer_txn(
             pre_mine_address,
-            vec![],
             to.address,
             to_auth_key_prefix.to_vec(),
             account_resource.sequence_number(),
