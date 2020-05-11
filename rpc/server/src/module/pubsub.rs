@@ -6,7 +6,7 @@ use crate::module::pubsub::notify::SubscriberNotifyActor;
 use subscribers::Subscribers;
 use txn_subscription_actor::TransactionSubscriptionActor;
 
-use crate::module::pubsub::event_subscription_actor::EventSubscriptionActor;
+use crate::module::pubsub::event_subscription_actor::ChainNotifyHandlerActor;
 use actix::Addr;
 use jsonrpc_core::Result;
 use jsonrpc_pubsub::typed::Subscriber;
@@ -27,10 +27,6 @@ mod subscribers;
 #[cfg(test)]
 pub mod tests;
 mod txn_subscription_actor;
-
-type ClientNotifier = Addr<SubscriberNotifyActor<pubsub::Result>>;
-type TxnSubscribers = Arc<RwLock<Subscribers<ClientNotifier>>>;
-type EventSubscribers = Arc<RwLock<Subscribers<(ClientNotifier, Filter)>>>;
 
 pub struct PubSubImpl {
     service: PubSubService,
@@ -83,11 +79,17 @@ impl StarcoinPubSub for PubSubImpl {
     }
 }
 
+type ClientNotifier = Addr<SubscriberNotifyActor<pubsub::Result>>;
+type TxnSubscribers = Arc<RwLock<Subscribers<ClientNotifier>>>;
+type EventSubscribers = Arc<RwLock<Subscribers<(ClientNotifier, Filter)>>>;
+type NewHeaderSubscribers = Arc<RwLock<Subscribers<ClientNotifier>>>;
+
 pub struct PubSubService {
     subscriber_id: Arc<atomic::AtomicU64>,
     spawner: actix_rt::Arbiter,
     transactions_subscribers: TxnSubscribers,
     events_subscribers: EventSubscribers,
+    new_header_subscribers: NewHeaderSubscribers,
 }
 
 impl PubSubService {
@@ -96,16 +98,23 @@ impl PubSubService {
         let transactions_subscribers =
             Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
         let events_subscribers = Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
+        let new_header_subscribers = Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
         Self {
             spawner: actix_rt::Arbiter::new(),
             subscriber_id: subscriber_id.clone(),
             transactions_subscribers,
             events_subscribers,
+            new_header_subscribers,
         }
     }
 
-    pub fn start_event_subscription_handler(&self, _bus: Addr<BusActor>, store: Arc<dyn Store>) {
-        let actor = EventSubscriptionActor::new(self.events_subscribers.clone(), _bus, store);
+    pub fn start_chain_notify_handler(&self, bus: Addr<BusActor>, store: Arc<dyn Store>) {
+        let actor = ChainNotifyHandlerActor::new(
+            self.events_subscribers.clone(),
+            self.new_header_subscribers.clone(),
+            bus,
+            store,
+        );
         actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
     }
 
@@ -124,7 +133,11 @@ impl PubSubService {
             .write()
             .add(&self.spawner, subscriber);
     }
-
+    pub fn add_new_header_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
+        self.new_header_subscribers
+            .write()
+            .add(&self.spawner, subscriber);
+    }
     pub fn add_event_subscription(
         &self,
         subscriber: Subscriber<pubsub::Result>,
