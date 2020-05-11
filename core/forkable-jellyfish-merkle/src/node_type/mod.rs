@@ -148,7 +148,7 @@ pub(crate) type Children = HashMap<Nibble, Child>;
 /// Though we choose the same internal node structure as that of Patricia Merkle tree, the root hash
 /// computation logic is similar to a 4-level sparse Merkle tree except for some customizations. See
 /// the `CryptoHash` trait implementation below for details.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, CryptoHasher)]
 pub struct InternalNode {
     // Up to 16 children.
     children: Children,
@@ -201,7 +201,8 @@ pub struct InternalNode {
 /// Note: @ denotes placeholder hash.
 /// ```
 impl CryptoHash for InternalNode {
-    fn crypto_hash(&self) -> HashValue {
+    type Hasher = InternalNodeHasher;
+    fn hash(&self) -> HashValue {
         self.merkle_hash(
             0,  // start index
             16, // the number of leaves in the subtree of which we want the hash of root
@@ -465,7 +466,7 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
 }
 
 /// Represents an account.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
 pub struct LeafNode {
     // The hashed account address associated with this leaf node.
     account_key: HashValue,
@@ -504,7 +505,8 @@ impl LeafNode {
 
 /// Computes the hash of a [`LeafNode`].
 impl CryptoHash for LeafNode {
-    fn crypto_hash(&self) -> HashValue {
+    type Hasher = LeafNodeHasher;
+    fn hash(&self) -> HashValue {
         SparseMerkleLeafNode::new(self.account_key, self.blob_hash).crypto_hash()
     }
 }
@@ -614,6 +616,7 @@ impl Node {
     }
 }
 
+#[derive(CryptoHasher)]
 pub struct SparseMerkleInternalNode {
     left_child: HashValue,
     right_child: HashValue,
@@ -629,7 +632,8 @@ impl SparseMerkleInternalNode {
 }
 
 impl CryptoHash for SparseMerkleInternalNode {
-    fn crypto_hash(&self) -> HashValue {
+    type Hasher = SparseMerkleInternalNodeHasher;
+    fn hash(&self) -> HashValue {
         from_iter_sha3(vec![
             self.left_child.as_ref().as_ref(),
             self.right_child.as_ref().as_ref(),
@@ -637,6 +641,7 @@ impl CryptoHash for SparseMerkleInternalNode {
     }
 }
 
+#[derive(CryptoHasher)]
 pub struct SparseMerkleLeafNode {
     key: HashValue,
     value_hash: HashValue,
@@ -649,7 +654,8 @@ impl SparseMerkleLeafNode {
 }
 
 impl CryptoHash for SparseMerkleLeafNode {
-    fn crypto_hash(&self) -> HashValue {
+    type Hasher = SparseMerkleLeafNodeHasher;
+    fn hash(&self) -> HashValue {
         from_iter_sha3(vec![
             self.key.as_ref().as_ref(),
             self.value_hash.as_ref().as_ref(),

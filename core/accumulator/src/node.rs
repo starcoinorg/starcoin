@@ -6,7 +6,7 @@ use anyhow::Result;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
-    hash::{create_literal_hash, CryptoHash},
+    hash::{create_literal_hash, CryptoHash, CryptoHasher},
     HashValue,
 };
 
@@ -14,7 +14,7 @@ use starcoin_crypto::{
 pub static ACCUMULATOR_PLACEHOLDER_HASH: Lazy<HashValue> =
     Lazy::new(|| create_literal_hash("ACCUMULATOR_PLACEHOLDER_HASH"));
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub enum AccumulatorNode {
     Internal(InternalNode),
     Leaf(LeafNode),
@@ -79,7 +79,7 @@ impl AccumulatorNode {
 }
 
 /// An internal node.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct InternalNode {
     index: NodeIndex,
     left: HashValue,
@@ -121,7 +121,7 @@ impl InternalNode {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct LeafNode {
     index: NodeIndex,
     hash: HashValue,

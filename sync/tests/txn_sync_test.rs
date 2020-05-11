@@ -5,7 +5,7 @@ use bus::{Bus, BusActor};
 use chain::ChainActor;
 use config::{get_available_port, NodeConfig};
 use consensus::dev::DevConsensus;
-use crypto::{hash::CryptoHash, keygen::KeyGen};
+use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use executor::{executor::Executor, TransactionExecutor};
 use futures_timer::Delay;
 use gen_network::gen_network;

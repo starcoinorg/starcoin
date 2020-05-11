@@ -7,7 +7,7 @@ use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
 use starcoin_logger::prelude::*;

@@ -2,7 +2,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::{CryptoHash, HashValue};
+use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -107,7 +107,7 @@ impl CommandAction for ExecuteCommand {
         );
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
-        let txn_hash = CryptoHash::crypto_hash(&signed_txn);
+        let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
         if succ {
             Ok(txn_hash)

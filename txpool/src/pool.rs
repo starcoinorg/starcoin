@@ -11,7 +11,7 @@ pub(crate) mod scoring;
 pub(crate) mod verifier;
 
 pub use client::{AccountSeqNumberClient, Client};
-use common_crypto::hash::{CryptoHash, HashValue};
+use common_crypto::hash::{HashValue, PlainCryptoHash};
 pub use queue::{Status, TransactionQueue};
 use std::ops::Deref;
 use transaction_pool as tx_pool;
@@ -46,7 +46,7 @@ impl From<UnverifiedUserTransaction> for transaction::SignedUserTransaction {
 
 impl From<transaction::SignedUserTransaction> for UnverifiedUserTransaction {
     fn from(user_txn: transaction::SignedUserTransaction) -> Self {
-        let hash = CryptoHash::crypto_hash(&user_txn);
+        let hash = user_txn.crypto_hash();
         UnverifiedUserTransaction {
             txn: user_txn,
             hash,
@@ -112,7 +112,7 @@ impl PoolTransaction {
         match *self {
             PoolTransaction::Unverified(ref tx) => *tx.hash(),
             PoolTransaction::Retracted(ref tx) => *tx.hash(),
-            PoolTransaction::Local(ref tx) => CryptoHash::crypto_hash(tx.deref()),
+            PoolTransaction::Local(ref tx) => tx.crypto_hash(),
         }
     }
 
@@ -182,7 +182,7 @@ impl VerifiedTransaction {
     /// 1. for tests
     /// 2. In case we are converting pending block transactions that are already in the queue to match the function signature.
     pub fn from_pending_block_transaction(tx: transaction::SignedUserTransaction) -> Self {
-        let hash = CryptoHash::crypto_hash(&tx);
+        let hash = tx.crypto_hash();
         let sender = tx.sender();
         VerifiedTransaction {
             transaction: tx.into(),

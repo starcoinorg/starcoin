@@ -10,7 +10,7 @@ use anyhow::{bail, Result};
 use bitflags::_core::sync::atomic::Ordering;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::{hash::PlainCryptoHash, HashValue};
 use futures::lock::Mutex;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
 use futures_timer::Delay;

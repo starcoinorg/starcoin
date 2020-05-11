@@ -23,3 +23,7 @@ pub mod traits {
 
 pub use crate::hash::HashValue;
 pub use crate::traits::*;
+
+// Reexport once_cell for use in CryptoHasher Derive implementation
+#[doc(hidden)]
+pub use once_cell as _once_cell;
