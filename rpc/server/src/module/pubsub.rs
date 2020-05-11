@@ -105,7 +105,7 @@ impl PubSubService {
     }
 
     pub fn start_event_subscription_handler(&self, _bus: Addr<BusActor>, store: Arc<dyn Store>) {
-        let actor = EventSubscriptionActor::new(self.events_subscribers.clone(), store);
+        let actor = EventSubscriptionActor::new(self.events_subscribers.clone(), _bus, store);
         actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
     }
 
