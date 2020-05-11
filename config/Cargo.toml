@@ -15,7 +15,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 toml = { version = "0.5.3", default-features = false }
-libp2p = "0.16.2"
+libp2p = "0.18.1"
 structopt = "0.3.2"
 starcoin-crypto = { path = "../commons/crypto"}
 rand = "0.6.5"

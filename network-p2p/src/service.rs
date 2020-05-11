@@ -43,7 +43,14 @@ use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
 };
-use libp2p::swarm::{NetworkBehaviour, SwarmBuilder, SwarmEvent};
+use libp2p::core::{
+    connection::{ConnectionError, PendingConnectionError},
+    either::EitherError,
+};
+use libp2p::ping::handler::PingFailure;
+use libp2p::swarm::{
+    protocols_handler::NodeHandlerWrapperError, NetworkBehaviour, SwarmBuilder, SwarmEvent,
+};
 use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
 use parking_lot::Mutex;
@@ -52,16 +59,17 @@ use types::peer_info::PeerInfo;
 
 use crate::behaviour::RpcRequest;
 use crate::config::{Params, TransportConfig};
+use crate::discovery::DiscoveryConfig;
 use crate::metrics::Metrics;
 use crate::net_error::Error;
 use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
 use crate::protocol::event::Event;
-use crate::protocol::{ChainInfo, Protocol};
+use crate::protocol::{ChainInfo, LegacyConnectionKillError, Protocol};
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
-    parse_addr, parse_str_addr,
+    parse_addr, parse_str_addr, ConnectedPoint,
 };
 use crate::{config::NonReservedPeerMode, transport};
 use crate::{protocol, Multiaddr};
@@ -205,28 +213,37 @@ impl NetworkWorker {
                 "{} ({})",
                 params.network_config.client_version, params.network_config.node_name
             );
-            let rpc_handler = {
-                let config = protocol::rpc_handle::Config::new(&params.protocol_id);
-                protocol::rpc_handle::RpcHandler::new(config, peerset_handle.clone())
+
+            let discovery_config = {
+                let mut config = DiscoveryConfig::new(local_public.clone());
+                config.with_user_defined(known_addresses);
+                config.discovery_limit(u64::from(params.network_config.out_peers) + 15);
+                config.add_protocol(params.protocol_id.clone());
+                config.allow_non_globals_in_dht(false);
+
+                match params.network_config.transport {
+                    TransportConfig::MemoryOnly => {
+                        config.with_mdns(false);
+                        config.allow_private_ipv4(false);
+                    }
+                    TransportConfig::Normal {
+                        enable_mdns,
+                        allow_private_ipv4,
+                        ..
+                    } => {
+                        config.with_mdns(enable_mdns);
+                        config.allow_private_ipv4(allow_private_ipv4);
+                    }
+                }
+
+                config
             };
 
             let behaviour = futures::executor::block_on(Behaviour::new(
                 protocol,
                 user_agent,
                 local_public,
-                known_addresses,
-                match params.network_config.transport {
-                    TransportConfig::MemoryOnly => false,
-                    TransportConfig::Normal { enable_mdns, .. } => enable_mdns,
-                },
-                match params.network_config.transport {
-                    TransportConfig::MemoryOnly => false,
-                    TransportConfig::Normal {
-                        allow_private_ipv4, ..
-                    } => allow_private_ipv4,
-                },
-                u64::from(params.network_config.out_peers) + 15,
-                rpc_handler,
+                discovery_config,
             ));
             let (transport, bandwidth) = {
                 let (config_mem, config_wasm, flowctrl) = match params.network_config.transport {
@@ -763,11 +780,74 @@ impl Future for NetworkWorker {
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Request(ev))) => this
                     .rpc_streams
                     .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
-                Poll::Ready(SwarmEvent::Connected(peer_id)) => {
-                    trace!(target: "sub-libp2p", "Libp2p => Connected({:?})", peer_id)
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(
+                    protocol,
+                ))) => {}
+                Poll::Ready(SwarmEvent::ConnectionEstablished {
+                    peer_id, endpoint, ..
+                }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => Connected({:?})", peer_id);
+                    if let Some(metrics) = this.metrics.as_ref() {
+                        match endpoint {
+                            ConnectedPoint::Dialer { .. } => metrics
+                                .connections_opened_total
+                                .with_label_values(&["out"])
+                                .inc(),
+                            ConnectedPoint::Listener { .. } => metrics
+                                .connections_opened_total
+                                .with_label_values(&["in"])
+                                .inc(),
+                        }
+                    }
                 }
-                Poll::Ready(SwarmEvent::Disconnected(peer_id)) => {
-                    trace!(target: "sub-libp2p", "Libp2p => Disconnected({:?})", peer_id)
+                Poll::Ready(SwarmEvent::ConnectionClosed {
+                    peer_id,
+                    cause,
+                    endpoint,
+                    ..
+                }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => Disconnected({:?}, {:?})", peer_id, cause);
+                    if let Some(metrics) = this.metrics.as_ref() {
+                        let dir = match endpoint {
+                            ConnectedPoint::Dialer { .. } => "out",
+                            ConnectedPoint::Listener { .. } => "in",
+                        };
+
+                        match cause {
+                            ConnectionError::IO(_) => metrics
+                                .connections_closed_total
+                                .with_label_values(&[dir, "transport-error"])
+                                .inc(),
+                            // ConnectionError::Handler(NodeHandlerWrapperError::Handler(
+                            //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
+                            //         EitherError::B(EitherError::A(PingFailure::Timeout)),
+                            //     )))),
+                            // )) => metrics
+                            //     .connections_closed_total
+                            //     .with_label_values(&[dir, "ping-timeout"])
+                            //     .inc(),
+                            // ConnectionError::Handler(NodeHandlerWrapperError::Handler(
+                            //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
+                            //         EitherError::A(EitherError::B(LegacyConnectionKillError)),
+                            //     )))),
+                            // )) => metrics
+                            //     .connections_closed_total
+                            //     .with_label_values(&[dir, "force-closed"])
+                            //     .inc(),
+                            ConnectionError::Handler(NodeHandlerWrapperError::Handler(_)) => {
+                                metrics
+                                    .connections_closed_total
+                                    .with_label_values(&[dir, "protocol-error"])
+                                    .inc()
+                            }
+                            ConnectionError::Handler(NodeHandlerWrapperError::KeepAliveTimeout) => {
+                                metrics
+                                    .connections_closed_total
+                                    .with_label_values(&[dir, "keep-alive-timeout"])
+                                    .inc()
+                            }
+                        }
+                    }
                 }
                 Poll::Ready(SwarmEvent::NewListenAddr(addr)) => {
                     trace!(target: "sub-libp2p", "Libp2p => NewListenAddr({})", addr)
@@ -779,11 +859,41 @@ impl Future for NetworkWorker {
                     peer_id,
                     address,
                     error,
+                    ..
                 }) => {
                     trace!(target: "sub-libp2p", "Libp2p => Failed to reach {:?} through {:?}: {}", peer_id, address, error)
                 }
-                Poll::Ready(SwarmEvent::StartConnect(peer_id)) => {
-                    trace!(target: "sub-libp2p", "Libp2p => StartConnect({:?})", peer_id)
+                Poll::Ready(SwarmEvent::Dialing(peer_id)) => {
+                    trace!(target: "sub-libp2p", "Libp2p => Dialing({:?})", peer_id)
+                }
+                Poll::Ready(SwarmEvent::IncomingConnection {
+                    local_addr,
+                    send_back_addr,
+                }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => IncomingConnection({},{}))",
+                           local_addr, send_back_addr);
+                }
+                Poll::Ready(SwarmEvent::IncomingConnectionError {
+                    local_addr,
+                    send_back_addr,
+                    error,
+                }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => IncomingConnectionError({},{}): {}",
+                           local_addr, send_back_addr, error);
+                }
+                Poll::Ready(SwarmEvent::BannedPeer { peer_id, endpoint }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => BannedPeer({}). Connected via {:?}.",
+                           peer_id, endpoint);
+                }
+                Poll::Ready(SwarmEvent::UnknownPeerUnreachableAddr { address, error }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => UnknownPeerUnreachableAddr({}): {}",
+                           address, error)
+                }
+                Poll::Ready(SwarmEvent::ListenerClosed { reason, addresses }) => {
+                    warn!(target: "sub-libp2p", "Libp2p => ListenerClosed: {:?}", reason);
+                }
+                Poll::Ready(SwarmEvent::ListenerError { error }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => ListenerError: {}", error);
                 }
             };
         }
