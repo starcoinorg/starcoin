@@ -24,13 +24,13 @@ pub struct Filter {
 }
 
 impl Filter {
-    pub fn matching(&self, _e: &ContractEvent) -> bool {
-        true
-        // TODO: wait contract event done
-        // match (&self.block_hash, &e.block_hash) {
-        //     (None, _) => true,
-        //     (Some(h),) => false,
-        //     _ => true,
-        // }
+    pub fn matching(&self, block_number: BlockNumber, e: &ContractEvent) -> bool {
+        if self.from_block <= block_number
+            && block_number <= self.to_block
+            && self.event_keys.contains(e.key())
+        {
+            return true;
+        }
+        false
     }
 }
