@@ -94,11 +94,7 @@ impl EventSubscriptionActor {
         for (_id, (c, filter)) in self.subscribers.read().iter() {
             let filtered_events = all_events
                 .iter()
-                .filter(|e| {
-                    filter.matching(*e)
-                        && filter.from_block <= block_number
-                        && block_number <= filter.to_block
-                })
+                .filter(|e| filter.matching(block_number, *e))
                 .take(filter.limit.unwrap_or(std::usize::MAX));
             let mut to_send_events = Vec::new();
             for evt in filtered_events {
