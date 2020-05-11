@@ -7,7 +7,7 @@ use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
-    ed25519::*, hash::CryptoHash, PrivateKey, SigningKey, Uniform, ValidKeyStringExt,
+    ed25519::*, hash::PlainCryptoHash, PrivateKey, SigningKey, Uniform, ValidKeyStringExt,
 };
 use starcoin_types::{
     transaction::{

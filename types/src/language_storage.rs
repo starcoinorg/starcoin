@@ -8,7 +8,7 @@ use crate::account_address::AccountAddress;
 
 use move_core_types::identifier::{IdentStr, Identifier};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::{CryptoHash, HashValue, LibraCryptoHash};
+use starcoin_crypto::hash::{CryptoHash, CryptoHasher, HashValue};
 
 //pub use libra_types::language_storage::TypeTag;
 
@@ -55,7 +55,9 @@ impl From<libra_types::language_storage::TypeTag> for TypeTag {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[derive(
+    Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHasher,
+)]
 pub struct StructTag {
     pub address: AccountAddress,
     pub module: Identifier,
@@ -90,17 +92,30 @@ impl From<libra_types::language_storage::StructTag> for StructTag {
 }
 
 impl CryptoHash for StructTag {
-    fn crypto_hash(&self) -> HashValue {
-        //TODO fixme.
-        //Use libra CryptoHash temporarily
-        let struct_tag: libra_types::language_storage::StructTag = self.clone().into();
-        LibraCryptoHash::hash(&struct_tag)
+    type Hasher = StructTagHasher;
+
+    fn hash(&self) -> HashValue {
+        //FIXME
+        let libra_struct_tag: libra_types::language_storage::StructTag = self.clone().into();
+        libra_struct_tag.hash()
     }
 }
 
 /// Represents the intitial key into global storage where we first index by the address, and then
 /// the struct tag
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Debug,
+    PartialEq,
+    Hash,
+    Eq,
+    Clone,
+    PartialOrd,
+    Ord,
+    CryptoHasher,
+    CryptoHash,
+)]
 pub struct ResourceKey {
     address: AccountAddress,
     type_: StructTag,
@@ -124,7 +139,19 @@ impl ResourceKey {
 
 /// Represents the initial key into global storage where we first index by the address, and then
 /// the struct tag
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord, CryptoHash)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Debug,
+    PartialEq,
+    Hash,
+    Eq,
+    Clone,
+    PartialOrd,
+    Ord,
+    CryptoHasher,
+    CryptoHash,
+)]
 pub struct ModuleId {
     address: AccountAddress,
     name: Identifier,

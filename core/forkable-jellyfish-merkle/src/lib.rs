@@ -90,7 +90,7 @@ use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
 use once_cell::sync::Lazy;
 use proof::{SparseMerkleProof, SparseMerkleRangeProof};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use std::collections::{BTreeMap, BTreeSet};
 use tree_cache::TreeCache;
 

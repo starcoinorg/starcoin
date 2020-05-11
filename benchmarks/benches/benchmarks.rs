@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use benchmarks::storage::StorageBencher;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::HashValue;
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use std::sync::Arc;
@@ -68,7 +68,7 @@ fn accumulator_append(c: &mut Criterion) {
     });
 }
 fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
-    nums.map(|x| x.to_be_bytes().as_ref().crypto_hash())
+    nums.map(|x| HashValue::from_sha3_256(x.to_be_bytes().as_ref()))
         .collect()
 }
 criterion_group!(starcoin_benches, storage_transaction, accumulator_append);

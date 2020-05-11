@@ -8,7 +8,10 @@ use crate::account_address::AccountAddress;
 use crate::block::BlockHeader;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{
+    hash::{CryptoHash, CryptoHasher},
+    HashValue,
+};
 
 /// Struct that will be persisted on chain to store the information of the current block.
 ///
@@ -21,7 +24,7 @@ use starcoin_crypto::{hash::CryptoHash, HashValue};
 /// 3. Once that special resource is modified, the other user transactions can read the consensus
 ///    info by calling into the read method of that resource, which would thus give users the
 ///    information such as the current leader.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockMetadata {
     id: HashValue,
     timestamp: u64,

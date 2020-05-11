@@ -1,7 +1,7 @@
 use super::test_helper;
 use crate::pool::AccountSeqNumberClient;
 use anyhow::Result;
-use common_crypto::hash::CryptoHash;
+use common_crypto::hash::PlainCryptoHash;
 use common_crypto::keygen::KeyGen;
 use parking_lot::RwLock;
 use starcoin_executor::executor::Executor;
@@ -97,9 +97,6 @@ async fn test_rollback() -> Result<()> {
     let txns = pool.clone().get_pending_txns(Some(100)).await?;
     assert_eq!(txns.len(), 1);
     let pending = txns.into_iter().next().unwrap();
-    assert_eq!(
-        CryptoHash::crypto_hash(&pending),
-        CryptoHash::crypto_hash(&new_txn)
-    );
+    assert_eq!(pending.crypto_hash(), new_txn.crypto_hash());
     Ok(())
 }

@@ -7,7 +7,7 @@ use lru::LruCache;
 use merkle_tree::proof::SparseMerkleProof;
 use parking_lot::{Mutex, MutexGuard};
 use scs::SCSCodec;
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{
     ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,

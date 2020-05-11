@@ -18,7 +18,7 @@ use starcoin_crypto::{Genesis, PrivateKey};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
 
-#[actix_rt::test]
+#[stest::test]
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
     let txpool = start_txpool();
@@ -63,7 +63,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     txpool.clone().add_txns(vec![txn]).await?;
     let mut receiver = receiver.compat();
     let res = receiver.next().await.transpose().unwrap();
-    let response = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":["592bd89e88bc9261ad6c3ecd48c26d73f4e040052e68dc3a08c9bca2455be90e"],"subscription":0}}"#;
+    let response = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":["c224e1ab9542528a15cdb39d9aa09ff21999330f92d387dca92a6748cf1827cb"],"subscription":0}}"#;
     assert_eq!(res, Some(response.into()));
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;

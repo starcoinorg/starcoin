@@ -9,7 +9,11 @@ use anyhow::{ensure, Error, Result};
 use bytes::Bytes;
 use rand::{rngs::OsRng, Rng};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use starcoin_crypto::{ed25519::Ed25519PublicKey, hash::CryptoHash, HashValue};
+use starcoin_crypto::{
+    ed25519::Ed25519PublicKey,
+    hash::{CryptoHash, CryptoHasher},
+    HashValue,
+};
 use std::borrow::Cow;
 use std::{convert::TryFrom, fmt, str::FromStr};
 
@@ -19,7 +23,7 @@ pub const AUTHENTICATION_KEY_LENGTH: usize = ADDRESS_LENGTH * 2;
 const SHORT_STRING_LENGTH: usize = 4;
 
 /// A struct that represents an account address.
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy, CryptoHasher)]
 pub struct AccountAddress([u8; ADDRESS_LENGTH]);
 
 impl AccountAddress {
@@ -82,6 +86,16 @@ impl AccountAddress {
 
     pub fn into_inner(self) -> [u8; ADDRESS_LENGTH] {
         self.0
+    }
+}
+
+impl CryptoHash for AccountAddress {
+    type Hasher = AccountAddressHasher;
+
+    fn hash(&self) -> HashValue {
+        let mut state = Self::Hasher::default();
+        state.write(&self.0);
+        state.finish()
     }
 }
 
@@ -233,12 +247,6 @@ impl Serialize for AccountAddress {
 }
 
 //======================= after libra ============================
-
-impl CryptoHash for AccountAddress {
-    fn crypto_hash(&self) -> HashValue {
-        HashValue::from_sha3_256(self.as_ref())
-    }
-}
 
 impl Into<libra_types::account_address::AccountAddress> for AccountAddress {
     fn into(self) -> libra_types::account_address::AccountAddress {
