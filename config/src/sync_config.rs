@@ -13,7 +13,7 @@ pub struct SyncConfig {
 
 impl SyncConfig {
     pub fn is_state_sync(&self) -> bool {
-        self.sync_mode == SyncMode::FAST_SYNC
+        self.sync_mode == SyncMode::FAST
     }
 
     pub fn is_light(&self) -> bool {
@@ -22,7 +22,11 @@ impl SyncConfig {
 
     //just for test
     pub fn fast_sync_mode(&mut self) {
-        self.sync_mode = SyncMode::FAST_SYNC;
+        self.sync_mode = SyncMode::FAST;
+    }
+
+    pub fn full_sync_mode(&mut self) {
+        self.sync_mode = SyncMode::FULL;
     }
 }
 
@@ -32,7 +36,7 @@ impl ConfigModule for SyncConfig {
             sync_mode: if net.is_dev() {
                 SyncMode::FULL
             } else {
-                SyncMode::FAST_SYNC
+                SyncMode::FAST
             },
         }
     }
@@ -59,7 +63,7 @@ impl Default for SyncConfig {
 #[serde(tag = "type")]
 pub enum SyncMode {
     LIGHT,
-    FAST_SYNC,
+    FAST,
     FULL,
 }
 
@@ -69,7 +73,7 @@ impl FromStr for SyncMode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "light" => Ok(SyncMode::LIGHT),
-            "fast" => Ok(SyncMode::FAST_SYNC),
+            "fast" => Ok(SyncMode::FAST),
             "full" => Ok(SyncMode::FULL),
             _ => Err(format_err!("")),
         }
@@ -80,7 +84,7 @@ impl Display for SyncMode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             SyncMode::LIGHT => write!(f, "light"),
-            SyncMode::FAST_SYNC => write!(f, "fast"),
+            SyncMode::FAST => write!(f, "fast"),
             SyncMode::FULL => write!(f, "full"),
         }
     }
