@@ -6,8 +6,8 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::{PrivateKey, ValidKeyStringExt};
-use starcoin_types::account_address::AccountAddress;
+use starcoin_crypto::{PrivateKey, ValidCryptoMaterialStringExt};
+use starcoin_types::account_address::{self, AccountAddress};
 use starcoin_wallet_api::WalletAccount;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -62,7 +62,7 @@ impl CommandAction for ImportCommand {
 
         let address = opt
             .account_address
-            .unwrap_or_else(|| AccountAddress::from_public_key(&private_key.public_key()));
+            .unwrap_or_else(|| account_address::from_public_key(&private_key.public_key()));
         let account = client.wallet_import(
             address,
             private_key.to_bytes().to_vec(),

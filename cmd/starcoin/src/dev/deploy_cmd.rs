@@ -8,12 +8,11 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::transaction::{Module, RawUserTransaction};
+use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule};
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::time::Duration;
 use structopt::StructOpt;
-use vm as move_vm;
-use vm::access::ModuleAccess;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "deploy")]
@@ -52,7 +51,7 @@ impl CommandAction for DeployCommand {
             .open(bytecode_path)?;
         let mut bytecode = vec![];
         file.read_to_end(&mut bytecode)?;
-        let compiled_module = match move_vm::CompiledModule::deserialize(bytecode.as_slice()) {
+        let compiled_module = match CompiledModule::deserialize(bytecode.as_slice()) {
             Err(e) => {
                 bail!("invalid bytecode file, cannot deserialize as module, {}", e);
             }

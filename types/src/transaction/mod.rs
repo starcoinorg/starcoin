@@ -6,37 +6,38 @@ use crate::{
     account_config::starcoin_type_tag,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
-    language_storage::TypeTag,
     state_set::ChainStateSet,
     vm_error::{StatusCode, StatusType, VMStatus},
 };
 use anyhow::{format_err, Error, Result};
-use rand::rngs::{EntropyRng, StdRng};
-use rand::{Rng, SeedableRng};
 use serde::{de, ser, Deserialize, Serialize};
+use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::{
     ed25519::*,
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     traits::*,
     HashValue,
 };
+use starcoin_vm_types::language_storage::TypeTag;
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt, time::Duration};
 
-pub mod authenticator;
+pub mod authenticator {
+    pub use libra_types::transaction::authenticator::{
+        AuthenticationKey, AuthenticationKeyPreimage, Scheme, TransactionAuthenticator,
+    };
+}
+
 mod error;
 pub mod helpers;
-mod module;
 mod pending_transaction;
-mod script;
-mod transaction_argument;
 
 pub use error::CallError;
 pub use error::Error as TransactionError;
-pub use module::Module;
+pub use libra_types::transaction::Module;
+pub use libra_types::transaction::{parse_as_transaction_argument, TransactionArgument};
+pub use libra_types::transaction::{Script, SCRIPT_HASH_LENGTH};
 pub use pending_transaction::{Condition, PendingTransaction};
-pub use script::{Script, SCRIPT_HASH_LENGTH};
-pub use transaction_argument::{parse_as_transaction_argument, TransactionArgument};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
@@ -257,7 +258,7 @@ impl RawUserTransaction {
         Self::new(
             sender,
             0,
-            TransactionPayload::Script(Script::default()),
+            TransactionPayload::Script(Script::new(vec![], vec![], vec![])),
             0,
             0,
             starcoin_type_tag(),
@@ -435,25 +436,17 @@ impl SignedUserTransaction {
 
     //TODO
     pub fn mock() -> Self {
-        let seed: [u8; 32] = EntropyRng::new().gen();
-        let mut rng = StdRng::from_seed(seed);
-        let key_pair = starcoin_crypto::test_utils::KeyPair::generate(&mut rng);
+        let mut gen = KeyGen::from_os_rng();
+        let (private_key, public_key) = gen.generate_keypair();
         let raw_txn = RawUserTransaction::mock();
-        raw_txn
-            .sign(&key_pair.private_key, key_pair.public_key)
-            .unwrap()
-            .into_inner()
+        raw_txn.sign(&private_key, public_key).unwrap().into_inner()
     }
 
     pub fn mock_from(compiled_script: Vec<u8>) -> Self {
-        let seed: [u8; 32] = EntropyRng::new().gen();
-        let mut rng = StdRng::from_seed(seed);
-        let key_pair = starcoin_crypto::test_utils::KeyPair::generate(&mut rng);
+        let mut gen = KeyGen::from_os_rng();
+        let (private_key, public_key) = gen.generate_keypair();
         let raw_txn = RawUserTransaction::mock_from(compiled_script);
-        raw_txn
-            .sign(&key_pair.private_key, key_pair.public_key)
-            .unwrap()
-            .into_inner()
+        raw_txn.sign(&private_key, public_key).unwrap().into_inner()
     }
 }
 
@@ -731,7 +724,6 @@ impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction
             self.payload().clone().into(),
             self.max_gas_amount(),
             self.gas_unit_price(),
-            starcoin_type_tag().into(),
             self.expiration_time(),
         );
         libra_types::transaction::SignedTransaction::new(
@@ -760,9 +752,8 @@ impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
 
 impl From<libra_types::transaction::TransactionOutput> for TransactionOutput {
     fn from(output: libra_types::transaction::TransactionOutput) -> Self {
-        let events = output.events().iter().map(|event| event.into()).collect();
         TransactionOutput::new(
-            events,
+            output.events().to_vec(),
             output.gas_used(),
             TransactionStatus::from(output.status().clone()),
         )

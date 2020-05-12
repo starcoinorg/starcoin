@@ -1,4 +1,4 @@
-address 0x0:
+address 0x0{
 
 module LibraBlock {
     use 0x0::Starcoin;
@@ -7,7 +7,6 @@ module LibraBlock {
     //use 0x0::LibraTimestamp;
     use 0x0::Transaction;
     //use 0x0::TransactionFee;
-    use 0x0::U64Util;
     use 0x0::Vector;
     use 0x6d696e74::SubsidyConfig;
 
@@ -62,7 +61,7 @@ module LibraBlock {
       move_to_sender<BlockMetadata>(BlockMetadata {
         height: 0,
 	// FIXME: Update this once we have byte vector literals
-        id: U64Util::u64_to_bytes(0),
+        id: Vector::empty(),
         proposer: 0xA550C18,
         //new_block_events: LibraAccount::new_event_handle<Self::NewBlockEvent>(),
       });
@@ -133,10 +132,10 @@ module LibraBlock {
 
     // Update the BlockMetadata resource with the new blockmetada coming from the consensus.
     fun process_block_prologue(
-        round: u64,
-        timestamp: u64,
+        _round: u64,
+        _timestamp: u64,
         new_block_hash: vector<u8>,
-        previous_block_votes: vector<address>,
+        _previous_block_votes: vector<address>,
         proposer: address
     ) acquires BlockMetadata {
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(0xA550C18);
@@ -173,4 +172,5 @@ module LibraBlock {
     public fun get_current_proposer(): address acquires BlockMetadata {
       borrow_global<BlockMetadata>(0xA550C18).proposer
     }
+}
 }

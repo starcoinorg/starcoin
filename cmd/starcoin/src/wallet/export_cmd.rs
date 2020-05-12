@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::{ed25519, ValidKeyStringExt};
+use starcoin_crypto::{ed25519, ValidCryptoMaterialStringExt};
 use starcoin_types::account_address::AccountAddress;
 use std::convert::TryFrom;
 use std::path::PathBuf;

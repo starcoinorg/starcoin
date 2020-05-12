@@ -4,17 +4,17 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    access_path::AccessPath,
-    account_address::AccountAddress,
-    language_storage::{StructTag, TypeTag},
-};
+use crate::{access_path::AccessPath, account_address::AccountAddress};
 use anyhow::Result;
-use move_core_types::identifier::{IdentStr, Identifier};
+use libra_types::account_config::from_currency_code_string;
 use once_cell::sync::Lazy;
 use scs::SCSCodec;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::HashValue;
+use starcoin_vm_types::{
+    identifier::{IdentStr, Identifier},
+    language_storage::{StructTag, TypeTag},
+};
 use std::convert::{TryFrom, TryInto};
 
 //TODO rename account and coin name.
@@ -214,7 +214,8 @@ impl AccountResource {
                 ),
                 0,
             ),
-            0,
+            false,
+            from_currency_code_string("Starcoin").unwrap(),
         ))
     }
 
@@ -400,7 +401,8 @@ mod tests {
             false,
             send_event_handle,
             receive_event_handle,
-            0,
+            false,
+            from_currency_code_string("Starcoin").unwrap(),
         );
         let account_res1: AccountResource = AccountResource::from(account_res);
         assert_eq!(

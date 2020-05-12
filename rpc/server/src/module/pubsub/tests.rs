@@ -10,7 +10,7 @@ use futures::compat::Stream01CompatExt;
 use futures::StreamExt;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_txpool_api::TxPoolAsyncService;
-use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_address;
 use std::sync::Arc;
 use txpool::test_helper::start_txpool;
 // use txpool::TxPoolRef;
@@ -26,6 +26,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter, Consensus};
 use starcoin_types::block::BlockDetail;
 use starcoin_types::system_events::SystemEvents;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_wallet_api::WalletAccount;
 
 #[actix_rt::test]
@@ -38,11 +39,9 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     let pri_key = Ed25519PrivateKey::genesis();
     let public_key = pri_key.public_key();
-    let account_address = AccountAddress::from_public_key(&public_key);
+    let account_address = account_address::from_public_key(&public_key);
     let txn = {
-        let auth_prefix = AccountAddress::authentication_key(&public_key)
-            .prefix()
-            .to_vec();
+        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
         let txn = txn.as_signed_user_txn()?.clone();
         txn
@@ -152,10 +151,8 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     let txn = {
         let pri_key = Ed25519PrivateKey::genesis();
         let public_key = pri_key.public_key();
-        let account_address = AccountAddress::from_public_key(&public_key);
-        let auth_prefix = AccountAddress::authentication_key(&public_key)
-            .prefix()
-            .to_vec();
+        let account_address = account_address::from_public_key(&public_key);
+        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
         let txn = txn.as_signed_user_txn()?.clone();
         txn
@@ -163,7 +160,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     txpool.clone().add_txns(vec![txn]).await?;
     let mut receiver = receiver.compat();
     let res = receiver.next().await.transpose().unwrap();
-    let response = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":["c224e1ab9542528a15cdb39d9aa09ff21999330f92d387dca92a6748cf1827cb"],"subscription":0}}"#;
+    let response = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":["ecd825d29cfa52299a10563146d2674409597b1c8ffed801a69de4bd8ad0e116"],"subscription":0}}"#;
     assert_eq!(res, Some(response.into()));
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;

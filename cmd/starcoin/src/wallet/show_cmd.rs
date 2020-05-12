@@ -9,6 +9,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_runtime::type_tag_parser::parse_type_tags;
 use structopt::StructOpt;
 
@@ -61,8 +62,7 @@ impl CommandAction for ShowCommand {
             None => None,
         };
 
-        let auth_key_prefix =
-            hex::encode(AccountAddress::authentication_key(&account.public_key).prefix());
+        let auth_key_prefix = hex::encode(AuthenticationKey::ed25519(&account.public_key).prefix());
         Ok(AccountWithStateView {
             auth_key_prefix,
             account,

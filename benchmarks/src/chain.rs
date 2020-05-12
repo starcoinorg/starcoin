@@ -3,7 +3,7 @@ use actix::Addr;
 use criterion::{BatchSize, Bencher};
 use parking_lot::RwLock;
 use rand::prelude::*;
-use rand::{RngCore, SeedableRng, StdRng};
+use rand::{RngCore, SeedableRng};
 use starcoin_bus::BusActor;
 use starcoin_chain::{
     to_block_chain_collection, BlockChain, BlockChainCollection, ChainServiceImpl,

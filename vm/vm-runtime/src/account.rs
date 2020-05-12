@@ -6,13 +6,8 @@
 use crate::genesis::GENESIS_KEYPAIR;
 use crypto::ed25519::*;
 use crypto::keygen::KeyGen;
-use move_vm_types::{
-    loaded_data::types::{StructType, Type},
-    values::{Struct, Value},
-};
-use std::time::Duration;
-use types::{
-    account_address::AccountAddress,
+use starcoin_types::{
+    account_address::{self, AccountAddress},
     account_config,
     language_storage::TypeTag,
     transaction::{
@@ -20,6 +15,7 @@ use types::{
         TransactionArgument, TransactionPayload,
     },
 };
+use std::time::Duration;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -55,7 +51,7 @@ impl Account {
     /// Like with [`Account::new`], the account returned by this constructor is a purely logical
     /// entity.
     pub fn with_keypair(privkey: Ed25519PrivateKey, pubkey: Ed25519PublicKey) -> Self {
-        let addr = AccountAddress::from_public_key(&pubkey);
+        let addr = account_address::from_public_key(&pubkey);
         Account {
             addr,
             privkey,
@@ -241,38 +237,4 @@ pub fn create_signed_txn_with_association_account(
     .sign(&GENESIS_KEYPAIR.0, GENESIS_KEYPAIR.1.clone())
     .unwrap()
     .into_inner()
-}
-/// Struct that represents an account balance resource for tests.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Balance {
-    coin: u64,
-}
-
-impl Balance {
-    /// Create a new balance with amount `balance`
-    pub fn new(coin: u64) -> Self {
-        Self { coin }
-    }
-
-    /// Retrieve the balance inside of this
-    pub fn coin(&self) -> u64 {
-        self.coin
-    }
-
-    /// Returns the Move Value for the account balance
-    pub fn to_value(&self) -> Value {
-        Value::struct_(Struct::pack(vec![Value::u64(self.coin)]))
-    }
-
-    /// Returns the value layout for the account balance
-    pub fn type_() -> StructType {
-        StructType {
-            address: account_config::core_code_address().into(),
-            module: account_config::account_module_name().to_owned(),
-            name: account_config::account_balance_struct_name().to_owned(),
-            is_resource: true,
-            ty_args: vec![],
-            layout: vec![Type::U64],
-        }
-    }
 }

@@ -1,34 +1,37 @@
-address 0x0:
+address 0x0{
 
 // The module for the account resource that governs every Libra account
 module LibraAccount {
-    use 0x0::AddressUtil;
     use 0x0::Hash;
     use 0x0::Starcoin;
     use 0x0::Libra;
 //    use 0x0::LibraTransactionTimeout;
     use 0x0::Transaction;
-    use 0x0::U64Util;
+    use 0x0::LCS;
     use 0x0::Vector;
+    use 0x0::AccountType;
+    use 0x0::Empty;
+    use 0x0::Event;
 
     // Every Libra account has a LibraAccount::T resource
     resource struct T {
-        // The current authentication key.
-        // This can be different than the key used to create the account
-        authentication_key: vector<u8>,
-        // If true, the authority to rotate the authentication key of this account resides elsewhere
-        delegated_key_rotation_capability: bool,
-        // If true, the authority to withdraw funds from this account resides elsewhere
-        delegated_withdrawal_capability: bool,
-        // Event handle for received event
-        received_events: EventHandle<ReceivedPaymentEvent>,
-        // Event handle for sent event
-        sent_events: EventHandle<SentPaymentEvent>,
-        // The current sequence number.
-        // Incremented by one each time a transaction is submitted
-        sequence_number: u64,
-        // Generator for event handles
-        event_generator: EventHandleGenerator,
+         // The current authentication key.
+                // This can be different than the key used to create the account
+                authentication_key: vector<u8>,
+                // If true, the authority to rotate the authentication key of this account resides elsewhere
+                delegated_key_rotation_capability: bool,
+                // If true, the authority to withdraw funds from this account resides elsewhere
+                delegated_withdrawal_capability: bool,
+                // Event handle for received event
+                received_events: Event::EventHandle<ReceivedPaymentEvent>,
+                // Event handle for sent event
+                sent_events: Event::EventHandle<SentPaymentEvent>,
+                // The current sequence number.
+                // Incremented by one each time a transaction is submitted
+                sequence_number: u64,
+                is_frozen: bool,
+                // The currency code string for the balance held by this account.
+                balance_currency_code: vector<u8>,
     }
 
     // A resource that holds the coins stored in this account
@@ -68,24 +71,6 @@ module LibraAccount {
         payer: address,
         // Metadata associated with the payment
         metadata: vector<u8>,
-    }
-
-    /// Events
-    // A resource representing the counter used to generate uniqueness under each account. There won't be destructor for
-    // this resource to guarantee the uniqueness of the generated handle.
-    resource struct EventHandleGenerator {
-        // A monotonically increasing counter
-        counter: u64,
-    }
-
-    // A handle for an event such that:
-    // 1. Other modules can emit events to this handle.
-    // 2. Storage can use this handle to prove the total number of events that happened in the past.
-    resource struct EventHandle<T: copyable> {
-        // Total number of events emitted to this event stream.
-        counter: u64,
-        // A globally unique ID for this event stream.
-        guid: vector<u8>,
     }
 
     // Deposits the `to_deposit` coin into the `payee`'s account balance
@@ -129,7 +114,7 @@ module LibraAccount {
         // Load the sender's account
         let sender_account_ref = borrow_global_mut<T>(sender);
         // Log a sent event
-        emit_event<SentPaymentEvent>(
+        Event::emit_event<SentPaymentEvent>(
             &mut sender_account_ref.sent_events,
             SentPaymentEvent {
                 amount: deposit_value,
@@ -144,7 +129,7 @@ module LibraAccount {
         // Deposit the `to_deposit` coin
         Libra::deposit(&mut payee_balance.coin, to_deposit);
         // Log a received event
-        emit_event<ReceivedPaymentEvent>(
+        Event::emit_event<ReceivedPaymentEvent>(
             &mut payee_account_ref.received_events,
             ReceivedPaymentEvent {
                 amount: deposit_value,
@@ -334,12 +319,15 @@ module LibraAccount {
     // Creating an account at address 0x0 will cause runtime failure as it is a
     // reserved address for the MoveVM.
     public fun create_account(fresh_address: address, auth_key_prefix: vector<u8>) {
-        let generator = EventHandleGenerator {counter: 0};
+         let generator = Event::new_event_generator(
+                    fresh_address,
+                );
         let authentication_key = auth_key_prefix;
-        Vector::append(&mut authentication_key, AddressUtil::address_to_bytes(fresh_address));
+        Vector::append(&mut authentication_key, LCS::to_bytes(&fresh_address));
         Transaction::assert(Vector::length(&authentication_key) == 32, 12);
 
         save_account(
+            AccountType::create(fresh_address, Empty::create()),
             Balance{
                 coin: Libra::zero<Starcoin::T>()
             },
@@ -347,11 +335,13 @@ module LibraAccount {
                 authentication_key,
                 delegated_key_rotation_capability: false,
                 delegated_withdrawal_capability: false,
-                received_events: new_event_handle_impl<ReceivedPaymentEvent>(&mut generator, fresh_address),
-                sent_events: new_event_handle_impl<SentPaymentEvent>(&mut generator, fresh_address),
+                received_events: Event::new_event_handle_from_generator<ReceivedPaymentEvent>(&mut generator),
+                sent_events: Event::new_event_handle_from_generator<SentPaymentEvent>(&mut generator),
                 sequence_number: 0,
-                event_generator: generator,
+                is_frozen: false,
+                balance_currency_code: Vector::empty(),
             },
+            generator,
             fresh_address,
         );
     }
@@ -374,11 +364,19 @@ module LibraAccount {
     }
 
     // Save an account to a given address if the address does not have account resources yet
-    native fun save_account<Token>(
-        balance: Balance<Token>,
-        account: Self::T,
-        addr: address,
-    );
+    //native fun save_account<Token>(
+    //    balance: Balance<Token>,
+    //    account: Self::T,
+    //    addr: address,
+    //);
+
+     native fun save_account<Token, AT: copyable>(
+            account_type: AccountType::T<AT>,
+            balance: Balance<Token>,
+            account: Self::T,
+            event_generator: Event::EventHandleGenerator,
+            addr: address,
+        );
 
     // Helper to return the u64 value of the `balance` for `account`
     fun balance_for<Token>(balance: &Balance<Token>): u64 {
@@ -440,7 +438,7 @@ module LibraAccount {
         txn_public_key: vector<u8>,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
-        txn_expiration_time: u64,
+        _txn_expiration_time: u64,
     ) acquires T, Balance {
         let transaction_sender = Transaction::sender();
 
@@ -498,53 +496,6 @@ module LibraAccount {
         Libra::deposit(&mut transaction_fee_balance.coin, transaction_fee);
     }
 
-    /// Events
-    //
-    // Derive a fresh unique id by using sender's EventHandleGenerator. The generated vector<u8> is indeed unique because it
-    // was derived from the hash(sender's EventHandleGenerator || sender_address). This module guarantees that the
-    // EventHandleGenerator is only going to be monotonically increased and there's no way to revert it or destroy it. Thus
-    // such counter is going to give distinct value for each of the new event stream under each sender. And since we
-    // hash it with the sender's address, the result is guaranteed to be globally unique.
-    fun fresh_guid(counter: &mut EventHandleGenerator, sender: address): vector<u8> {
-        let sender_bytes = AddressUtil::address_to_bytes(sender);
-
-        let count_bytes = U64Util::u64_to_bytes(counter.counter);
-        counter.counter = counter.counter + 1;
-
-        // EventHandleGenerator goes first just in case we want to extend address in the future.
-        Vector::append(&mut count_bytes, sender_bytes);
-
-        count_bytes
-    }
-
-    // Use EventHandleGenerator to generate a unique event handle that one can emit an event to.
-    fun new_event_handle_impl<T: copyable>(counter: &mut EventHandleGenerator, sender: address): EventHandle<T> {
-        EventHandle<T> {counter: 0, guid: fresh_guid(counter, sender)}
-    }
-
-    // Use sender's EventHandleGenerator to generate a unique event handle that one can emit an event to.
-    public fun new_event_handle<E: copyable>(): EventHandle<E> acquires T {
-        let sender_account_ref = borrow_global_mut<T>(Transaction::sender());
-        new_event_handle_impl<E>(&mut sender_account_ref.event_generator, Transaction::sender())
-    }
-
-    // Emit an event with payload `msg` by using handle's key and counter. Will change the payload from vector<u8> to a
-    // generic type parameter once we have generics.
-    public fun emit_event<T: copyable>(handle_ref: &mut EventHandle<T>, msg: T) {
-        let guid = *&handle_ref.guid;
-
-        write_to_event_store<T>(guid, handle_ref.counter, msg);
-        handle_ref.counter = handle_ref.counter + 1;
-    }
-
-    // Native procedure that writes to the actual event stream in Event store
-    // This will replace the "native" portion of EmitEvent bytecode
-    native fun write_to_event_store<T: copyable>(guid: vector<u8>, count: u64, msg: T);
-
-    // Destroy a unique handle.
-    public fun destroy_handle<T: copyable>(handle: EventHandle<T>) {
-        EventHandle<T> { counter: _, guid: _ } = handle;
-    }
 
     // Create 'Balance<Token>' resource under sender account and initialize with zero
     public fun create_new_balance<Token>() {
@@ -554,4 +505,5 @@ module LibraAccount {
             }
         );
     }
+}
 }

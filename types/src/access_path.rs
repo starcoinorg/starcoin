@@ -44,16 +44,16 @@ use crate::{
         account_balance_struct_name, account_module_name, core_code_address, ACCOUNT_RESOURCE_PATH,
         BALANCE_RESOURCE_PATH,
     },
-    language_storage::{ModuleId, ResourceKey, StructTag, TypeTag},
 };
-use move_core_types::identifier::{IdentStr, Identifier};
-
+use anyhow::Result;
 use mirai_annotations::*;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher, HashValue, PlainCryptoHash};
+use starcoin_vm_types::{
+    identifier::{IdentStr, Identifier},
+    language_storage::{ModuleId, ResourceKey, StructTag, TypeTag},
+};
 use std::{fmt, slice::Iter};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, Ord, PartialOrd)]
@@ -314,7 +314,7 @@ impl AccessPath {
     pub fn code_access_path(key: &ModuleId) -> AccessPath {
         let path = AccessPath::code_access_path_vec(key);
         AccessPath {
-            address: key.address(),
+            address: *key.address(),
             data_type: DataType::CODE,
             data_hash: path,
         }

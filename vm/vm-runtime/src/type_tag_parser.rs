@@ -3,11 +3,11 @@
 
 // use crate::errors::*;
 use anyhow::{bail, Result};
-use libra_types::{
+use starcoin_vm_types::{
     account_address::AccountAddress,
+    identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
-use move_core_types::identifier::Identifier;
 use std::iter::Peekable;
 
 #[derive(Eq, PartialEq, Debug)]
