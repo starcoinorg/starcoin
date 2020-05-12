@@ -9,6 +9,7 @@ mod chain_metrics;
 pub mod chain_service;
 pub mod message;
 pub mod mock;
+pub mod test_helper;
 
 pub use chain_service::to_block_chain_collection;
 pub use chain_service::BlockChainCollection;
