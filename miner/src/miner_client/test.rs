@@ -7,7 +7,7 @@ mod test {
     use bus::BusActor;
     use config::MinerConfig;
     use config::NodeConfig;
-    use consensus::argon::ArgonConsensusHeader;
+    use consensus::argon::ArgonConsensus;
     use futures_timer::Delay;
     use logger::prelude::*;
     use sc_stratum::{PushWorkHandler, Stratum};
@@ -24,7 +24,7 @@ mod test {
             let mut miner_config = MinerConfig::default();
             miner_config.consensus_strategy = config::ConsensusStrategy::Argon(4);
             let conf = Arc::new(NodeConfig::random_for_test());
-            let mut miner = Miner::<ArgonConsensusHeader>::new(BusActor::launch(), conf);
+            let mut miner = Miner::<ArgonConsensus>::new(BusActor::launch(), conf);
             let stratum = {
                 let dispatcher = Arc::new(StratumManager::new(miner.clone()));
                 Stratum::start(&miner_config.stratum_server, dispatcher, None).unwrap()

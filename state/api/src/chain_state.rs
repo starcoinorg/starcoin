@@ -4,7 +4,7 @@
 use anyhow::{ensure, Result};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::{
     access_path::AccessPath,
     account_address::AccountAddress,

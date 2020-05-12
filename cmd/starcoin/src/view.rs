@@ -3,7 +3,7 @@
 
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_state_api::StateWithProof;
 use starcoin_types::block::Block;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};

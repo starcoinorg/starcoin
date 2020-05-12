@@ -14,7 +14,12 @@ use anyhow::{format_err, Error, Result};
 use rand::rngs::{EntropyRng, StdRng};
 use rand::{Rng, SeedableRng};
 use serde::{de, ser, Deserialize, Serialize};
-use starcoin_crypto::{ed25519::*, hash::CryptoHash, traits::*, HashValue};
+use starcoin_crypto::{
+    ed25519::*,
+    hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
+    traits::*,
+    HashValue,
+};
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt, time::Duration};
 
@@ -38,7 +43,7 @@ pub type Version = u64; // Height - also used for MVCC in StateDB
 pub const MAX_TRANSACTION_SIZE_IN_BYTES: usize = 4096;
 
 /// RawUserTransaction is the portion of a transaction that a client signs
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct RawUserTransaction {
     /// Sender's address.
     sender: AccountAddress,
@@ -295,7 +300,7 @@ pub enum TransactionPayload {
 /// **IMPORTANT:** The signature of a `SignedUserTransaction` is not guaranteed to be verified. For a
 /// transaction whose signature is statically guaranteed to be verified, see
 /// [`SignatureCheckedTransaction`].
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct SignedUserTransaction {
     /// The raw transaction
     raw_txn: RawUserTransaction,
@@ -536,7 +541,7 @@ impl TransactionOutput {
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
 /// transaction as well as the execution result of this transaction.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct TransactionInfo {
     /// The hash of this transaction.
     transaction_hash: HashValue,
@@ -609,7 +614,7 @@ impl TransactionInfo {
 /// We suppress the clippy warning here as we would expect most of the transaction to be user
 /// transaction.
 #[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub enum Transaction {
     /// Transaction submitted by the user. e.g: P2P payment transaction, publishing module
     /// transaction, etc.
@@ -747,8 +752,9 @@ impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
 
 impl From<libra_types::transaction::TransactionOutput> for TransactionOutput {
     fn from(output: libra_types::transaction::TransactionOutput) -> Self {
+        let events = output.events().iter().map(|event| event.into()).collect();
         TransactionOutput::new(
-            vec![], // ToDo: support ContractEvent
+            events,
             output.gas_used(),
             TransactionStatus::from(output.status().clone()),
         )

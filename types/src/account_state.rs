@@ -5,10 +5,13 @@ use crate::access_path::DataType;
 use anyhow::Result;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{
+    hash::{CryptoHash, CryptoHasher},
+    HashValue,
+};
 use std::convert::{TryFrom, TryInto};
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct AccountState {
     storage_roots: Vec<Option<HashValue>>,
 }

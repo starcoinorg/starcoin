@@ -8,6 +8,8 @@ pub type FutureResult<T> = Box<dyn jsonrpc_core::futures::Future<Item = T, Error
 pub mod chain;
 pub mod debug;
 pub mod node;
+pub mod pubsub;
 pub mod state;
 pub mod txpool;
+pub mod types;
 pub mod wallet;

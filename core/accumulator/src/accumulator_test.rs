@@ -5,7 +5,7 @@ use crate::{
     node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, tree_store::MockAccumulatorStore,
     Accumulator, AccumulatorNode, LeafCount, MerkleAccumulator,
 };
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::HashValue;
 use std::{collections::HashMap, sync::Arc};
 
 #[test]
@@ -249,7 +249,7 @@ fn proof_verify(
 
 // Helper function to create a list of leaves.
 fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
-    nums.map(|x| x.to_be_bytes().as_ref().crypto_hash())
+    nums.map(|x| HashValue::from_sha3_256(x.to_be_bytes().as_ref()))
         .collect()
 }
 

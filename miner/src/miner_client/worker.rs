@@ -177,7 +177,7 @@ fn dummy_solver(
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
     let time: u64 = diff.as_u64();
-    debug!("DummyConsensus rand sleep time : {}", time);
+    debug!("DevConsensus rand sleep time : {}", time);
     thread::sleep(Duration::from_millis(time));
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);

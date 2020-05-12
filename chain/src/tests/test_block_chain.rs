@@ -5,8 +5,8 @@ use crate::{
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
-use consensus::dummy::DummyConsensus;
-use consensus::dummy::DummyHeader;
+use consensus::dev::DevConsensus;
+use consensus::dev::DummyHeader;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
@@ -22,7 +22,7 @@ use types::U256;
 async fn gen_master_chain(
     times: u64,
     delay: bool,
-) -> (ChainActorRef<DummyConsensus>, Arc<NodeConfig>) {
+) -> (ChainActorRef<DevConsensus>, Arc<NodeConfig>) {
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
     let storage =
@@ -40,7 +40,7 @@ async fn gen_master_chain(
         )
     };
     let sync_metadata = SyncMetadata::new(node_config.clone(), bus.clone());
-    let chain = ChainActor::<DummyConsensus>::launch(
+    let chain = ChainActor::<DevConsensus>::launch(
         node_config.clone(),
         startup_info.clone(),
         storage.clone(),
@@ -61,7 +61,7 @@ async fn gen_master_chain(
                 txpool.clone(),
             )
             .unwrap();
-            let block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
+            let block_chain = BlockChain::<DevConsensus, Storage, TxPoolRef>::new(
                 node_config.clone(),
                 collection.get_master_chain_info(),
                 storage.clone(),
@@ -80,7 +80,7 @@ async fn gen_master_chain(
                 .await
                 .unwrap();
             let block =
-                DummyConsensus::create_block(node_config.clone(), &block_chain, block_template)
+                DevConsensus::create_block(node_config.clone(), &block_chain, block_template)
                     .unwrap();
             let _ = chain.clone().try_connect(block).await.unwrap();
             if delay {
@@ -166,7 +166,7 @@ async fn test_chain_apply() -> Result<()> {
         storage.clone(),
         txpool.clone(),
     )?;
-    let mut block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
+    let mut block_chain = BlockChain::<DevConsensus, Storage, TxPoolRef>::new(
         config.clone(),
         startup_info.master.clone(),
         storage,
@@ -182,7 +182,7 @@ async fn test_chain_apply() -> Result<()> {
         None,
         vec![],
     )?;
-    let new_block = DummyConsensus::create_block(config.clone(), &block_chain, block_template)?;
+    let new_block = DevConsensus::create_block(config.clone(), &block_chain, block_template)?;
     block_chain.apply(new_block)?;
     let header1 = block_chain.current_header();
     debug!("block 1 header: {:?}", header1);

@@ -6,7 +6,7 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{InnerStore, ValueCodec};
 use crate::DEFAULT_PREFIX_NAME;
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;

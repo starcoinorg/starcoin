@@ -36,6 +36,7 @@ mod pool;
 mod pool_client;
 #[cfg(test)]
 mod test;
+pub mod test_helper;
 mod tx_pool_service_impl;
 
 #[derive(Clone, Debug)]

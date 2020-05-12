@@ -15,6 +15,7 @@ use std::sync::Arc;
 #[async_trait::async_trait]
 pub trait StateSyncReset: DynClone + Send + Sync {
     async fn reset(&self, state_root: HashValue, accumulator_root: HashValue);
+    async fn act(&self);
 }
 
 #[derive(Clone)]
@@ -27,6 +28,7 @@ pub struct SyncMetadataInner {
     state_sync_done: bool,
     block_sync_done: bool,
     bus: Addr<BusActor>,
+    state_sync_failed: Option<bool>,
 }
 
 impl SyncMetadata {
@@ -39,6 +41,7 @@ impl SyncMetadata {
             state_sync_done: false,
             block_sync_done: false,
             bus,
+            state_sync_failed: Some(false),
         };
         SyncMetadata(Arc::new(RwLock::new(inner)))
     }
@@ -55,13 +58,26 @@ impl SyncMetadata {
         Ok(())
     }
 
+    pub fn update_failed(&self, failed: bool) {
+        if !self.is_sync_done() {
+            self.0.write().state_sync_failed = Some(failed);
+        }
+    }
+
+    pub fn is_failed(&self) -> bool {
+        if let Some(failed) = self.0.read().state_sync_failed {
+            return failed;
+        }
+        false
+    }
+
     pub fn state_sync_done(&self) -> Result<()> {
         assert!(self.fast_sync_mode(), "chain is not in fast sync mode.");
         assert!(!self.0.read().state_sync_done, "state sync already done.");
         let mut lock = self.0.write();
         lock.state_sync_done = true;
         drop(lock);
-        let _ = self.sync_done();
+        self.sync_done()?;
         info!("state sync done.");
         Ok(())
     }
@@ -72,7 +88,7 @@ impl SyncMetadata {
             let mut lock = self.0.write();
             lock.block_sync_done = true;
             drop(lock);
-            let _ = self.sync_done();
+            self.sync_done()?;
             info!("block sync done.");
         }
         Ok(())
@@ -88,6 +104,7 @@ impl SyncMetadata {
             let mut lock = self.0.write();
             lock.pivot_behind = None;
             lock.state_sync_address = None;
+            lock.state_sync_failed = None;
             lock.bus.do_send(Broadcast {
                 msg: SystemEvents::SyncDone(),
             });

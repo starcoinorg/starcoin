@@ -10,8 +10,9 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
-quote = "^1"
-syn = { version = "^1", features = ["full"] }
+syn = { version = "1.0.17", features = ["derive"] }
+quote = "1.0.3"
+proc-macro2 = "1.0.10"
 
 [dev-dependencies]
 serde = { version = "1.0" }

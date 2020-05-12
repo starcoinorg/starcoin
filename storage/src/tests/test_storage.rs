@@ -3,7 +3,7 @@
 
 extern crate chrono;
 
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::{hash::PlainCryptoHash, HashValue};
 
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;

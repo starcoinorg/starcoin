@@ -39,8 +39,8 @@ starcoin-state-tree={path="../state/state-tree"}
 starcoin-executor={path="../executor"}
 starcoin-config={path="../config"}
 tx-relay = {path="./tx-relay", package="starcoin-tx-relay"}
+starcoin-genesis = {path = "../core/genesis"}
 
 [dev-dependencies]
 tempfile="3"
 starcoin-consensus = {path = "../consensus"}
-starcoin-genesis = {path = "../core/genesis"}

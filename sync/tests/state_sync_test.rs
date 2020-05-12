@@ -5,7 +5,7 @@ use actix_rt::System;
 use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
 use config::{get_available_port, NodeConfig};
-use consensus::dummy::DummyConsensus;
+use consensus::dev::DevConsensus;
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
@@ -103,21 +103,16 @@ fn test_state_sync() {
             .await;
         let miner_account = WalletAccount::random();
         // miner
-        let _miner_1 = MinerActor::<
-            DummyConsensus,
-            TxPoolRef,
-            ChainActorRef<DummyConsensus>,
-            Storage,
-            consensus::dummy::DummyHeader,
-        >::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            storage_1.clone(),
-            txpool_1.clone(),
-            first_chain.clone(),
-            None,
-            miner_account,
-        );
+        let _miner_1 =
+            MinerActor::<DevConsensus, TxPoolRef, ChainActorRef<DevConsensus>, Storage>::launch(
+                node_config_1.clone(),
+                bus_1.clone(),
+                storage_1.clone(),
+                txpool_1.clone(),
+                first_chain.clone(),
+                None,
+                miner_account,
+            );
         MinerClientActor::new(node_config_1.miner.clone()).start();
         Delay::new(Duration::from_secs(30)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
@@ -180,7 +175,7 @@ fn test_state_sync() {
         );
 
         // chain
-        let second_chain = ChainActor::<DummyConsensus>::launch(
+        let second_chain = ChainActor::<DevConsensus>::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -192,7 +187,7 @@ fn test_state_sync() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DevConsensus>::launch(
             node_config_2.clone(),
             bus_2.clone(),
             Arc::clone(&second_p),

@@ -21,6 +21,7 @@ impl WalletAccountObject {
     }
 }
 
+#[derive(Default)]
 pub struct MemWalletStore {
     store: Mutex<HashMap<AccountAddress, WalletAccountObject>>,
 }
@@ -68,7 +69,7 @@ impl WalletStore for MemWalletStore {
         let mut store = self.store.lock().unwrap();
         let account_object = store
             .get_mut(address)
-            .ok_or(format_err!("Can not find account by address:{:?}", address))?;
+            .ok_or_else(|| format_err!("Can not find account by address:{:?}", address))?;
         account_object.properties.insert(key, value);
         Ok(())
     }

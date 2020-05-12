@@ -13,7 +13,7 @@ pub enum WalletRequest {
     GetDefaultAccount(),
     GetAccounts(),
     GetAccount(AccountAddress),
-    SignTxn(RawUserTransaction),
+    SignTxn(Box<RawUserTransaction>),
     UnlockAccount(AccountAddress, String, Duration),
     ImportAccount {
         address: AccountAddress,
@@ -32,13 +32,11 @@ impl Message for WalletRequest {
 
 #[derive(Debug, Clone)]
 pub enum WalletResponse {
-    WalletAccount(WalletAccount),
-    WalletAccountOption(Option<WalletAccount>),
+    WalletAccount(Box<WalletAccount>),
+    WalletAccountOption(Box<Option<WalletAccount>>),
     AccountList(Vec<WalletAccount>),
-    SignedTxn(SignedUserTransaction),
-    Account(Option<WalletAccount>),
+    SignedTxn(Box<SignedUserTransaction>),
     UnlockAccountResponse,
-    ImportAccountResponse(WalletAccount),
     ExportAccountResponse(Vec<u8>),
     None,
 }

@@ -512,18 +512,34 @@ checksum = "7d5ca2cd0adc3f48f9e9ea5a6bbdf9ccc0bfade884847e484d452414c7ccffb3"
 name = "benchmarks"
 version = "0.1.0"
 dependencies = [
+ "actix",
  "anyhow",
  "criterion",
  "forkable-jellyfish-merkle",
+ "libp2p",
+ "network-api",
+ "parking_lot 0.9.0",
  "proptest",
  "rand 0.5.6",
  "starcoin-accumulator",
+ "starcoin-bus",
+ "starcoin-chain",
  "starcoin-config",
+ "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-genesis",
+ "starcoin-network",
  "starcoin-state-store-api",
  "starcoin-state-tree",
  "starcoin-storage",
+ "starcoin-sync",
+ "starcoin-sync-api",
+ "starcoin-traits",
+ "starcoin-txpool",
  "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-wallet-api",
+ "tokio 0.2.18",
 ]
 
 [[package]]
@@ -1647,6 +1663,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.6.5",
  "serde",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
  "thiserror",
  "tiny-keccak 1.5.0",
@@ -5709,6 +5726,7 @@ name = "starcoin-crypto"
 version = "0.1.0"
 dependencies = [
  "libra-crypto",
+ "once_cell",
  "rand 0.6.5",
  "serde",
  "starcoin-canonical-serialization",
@@ -5719,6 +5737,7 @@ dependencies = [
 name = "starcoin-crypto-macro"
 version = "0.1.0"
 dependencies = [
+ "proc-macro2 1.0.10",
  "quote 1.0.3",
  "serde",
  "starcoin-canonical-serialization",
@@ -6004,6 +6023,7 @@ dependencies = [
  "jsonrpc-pubsub",
  "jsonrpc-server-utils 14.1.0",
  "serde",
+ "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
@@ -6073,6 +6093,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "futures 0.3.4",
+ "futures-channel",
  "hex 0.3.2",
  "jsonrpc-core 14.1.0",
  "jsonrpc-core-client",
@@ -6085,12 +6106,14 @@ dependencies = [
  "jsonrpc-ws-server",
  "network-api",
  "num_cpus",
+ "parking_lot 0.10.2",
  "serde",
  "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-executor",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-network",

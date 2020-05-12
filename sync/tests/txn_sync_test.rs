@@ -4,8 +4,8 @@ use actix_rt::System;
 use bus::{Bus, BusActor};
 use chain::ChainActor;
 use config::{get_available_port, NodeConfig};
-use consensus::dummy::DummyConsensus;
-use crypto::{hash::CryptoHash, keygen::KeyGen};
+use consensus::dev::DevConsensus;
+use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use executor::{executor::Executor, TransactionExecutor};
 use futures_timer::Delay;
 use gen_network::gen_network;
@@ -71,7 +71,7 @@ fn test_txn_sync_actor() {
 
         let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone(), bus_1.clone());
         // chain
-        let first_chain = ChainActor::<DummyConsensus>::launch(
+        let first_chain = ChainActor::<DevConsensus>::launch(
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
@@ -150,7 +150,7 @@ fn test_txn_sync_actor() {
         let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone(), bus_2.clone());
 
         // chain
-        let second_chain = ChainActor::<DummyConsensus>::launch(
+        let second_chain = ChainActor::<DevConsensus>::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -162,7 +162,7 @@ fn test_txn_sync_actor() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<DummyConsensus>::launch(
+        let _second_sync_actor = SyncActor::<DevConsensus>::launch(
             node_config_2.clone(),
             bus_2.clone(),
             Arc::clone(&second_p),

@@ -5,12 +5,9 @@ use actix::prelude::*;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt};
-use starcoin_consensus::{
-    argon::{ArgonConsensus, ArgonConsensusHeader},
-    dummy::{DummyConsensus, DummyHeader},
-};
+use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
 use starcoin_logger::prelude::*;
-use starcoin_traits::{Consensus, ConsensusHeader};
+use starcoin_traits::Consensus;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tokio::runtime::Runtime;
@@ -111,18 +108,17 @@ pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<Nod
 }
 
 pub fn run_dev_node(config: Arc<NodeConfig>) -> NodeHandle {
-    run_node::<DummyConsensus, DummyHeader>(config)
+    run_node::<DevConsensus>(config)
 }
 
 pub fn run_normal_node(config: Arc<NodeConfig>) -> NodeHandle {
-    run_node::<ArgonConsensus, ArgonConsensusHeader>(config)
+    run_node::<ArgonConsensus>(config)
 }
 
 /// Run node in a new Thread, and return a NodeHandle.
-pub fn run_node<C, H>(config: Arc<NodeConfig>) -> NodeHandle
+pub fn run_node<C>(config: Arc<NodeConfig>) -> NodeHandle
 where
     C: Consensus + 'static,
-    H: ConsensusHeader + 'static,
 {
     let logger_handle = starcoin_logger::init();
     info!("Final data-dir is : {:?}", config.data_dir());
@@ -158,7 +154,7 @@ where
             //let node_actor = NodeActor::<C, H>::new(config, handle);
             //let _node_ref = node_actor.start();
             //TODO fix me, this just a work around method.
-            let _handle = match node::start::<C, H>(config, logger_handle, handle).await {
+            let _handle = match node::start::<C>(config, logger_handle, handle).await {
                 Err(e) => {
                     error!("Node start fail: {}, exist.", e);
                     System::current().stop();

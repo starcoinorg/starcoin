@@ -76,7 +76,6 @@ impl StarcoinVM {
     }
 
     fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
-        info!("load gas schedule");
         self.gas_schedule = self.fetch_gas_schedule(data_cache).ok();
     }
 

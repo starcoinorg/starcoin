@@ -7,21 +7,22 @@ use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
+use std::convert::TryFrom;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
-use traits::ConsensusHeader;
+use traits::Consensus;
 use types::{block::BlockTemplate, system_events::SystemEvents, U256};
 
 #[derive(Clone)]
-pub struct Miner<H>
+pub struct Miner<C>
 where
-    H: ConsensusHeader + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
 {
     state: Arc<Mutex<Option<MineCtx>>>,
     bus: Addr<BusActor>,
     config: Arc<NodeConfig>,
-    phantom_h: PhantomData<H>,
+    phantom: PhantomData<C>,
 }
 
 #[derive(Clone)]
@@ -42,16 +43,16 @@ impl MineCtx {
     }
 }
 
-impl<H> Miner<H>
+impl<C> Miner<C>
 where
-    H: ConsensusHeader + Sync + Send + 'static + Clone,
+    C: Consensus + Sync + Send + 'static + Clone,
 {
-    pub fn new(bus: Addr<BusActor>, config: Arc<NodeConfig>) -> Miner<H> {
+    pub fn new(bus: Addr<BusActor>, config: Arc<NodeConfig>) -> Miner<C> {
         Self {
             state: Arc::new(Mutex::new(None)),
             bus,
             config,
-            phantom_h: PhantomData,
+            phantom: PhantomData,
         }
     }
     pub fn set_mint_job(&mut self, t: MineCtx) {
@@ -69,7 +70,7 @@ where
         let state = self.state.lock().unwrap();
         let block_template = state.as_ref().unwrap().block_template.clone();
         let payload = hex::decode(payload).unwrap();
-        let consensus_header = match H::try_from(payload) {
+        let consensus_header = match C::ConsensusHeader::try_from(payload) {
             Ok(h) => h,
             Err(_) => return Err(anyhow::anyhow!("Invalid payload submit")),
         };

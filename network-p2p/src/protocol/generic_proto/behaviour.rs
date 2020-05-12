@@ -441,6 +441,7 @@ impl GenericProto {
             event: NotifsHandlerIn::SendNotification {
                 message: message.into(),
                 protocol_name,
+                encoded_fallback_message: vec![],
             },
         });
     }
@@ -768,7 +769,11 @@ impl NetworkBehaviour for GenericProto {
     type OutEvent = GenericProtoOut;
 
     fn new_handler(&mut self) -> Self::ProtocolsHandler {
-        NotifsHandlerProto::new(self.legacy_protocol.clone(), self.notif_protocols.clone())
+        NotifsHandlerProto::new(
+            self.legacy_protocol.clone(),
+            self.notif_protocols.clone(),
+            None,
+        )
     }
 
     fn addresses_of_peer(&mut self, _: &PeerId) -> Vec<Multiaddr> {
@@ -1012,7 +1017,10 @@ impl NetworkBehaviour for GenericProto {
 
     fn inject_node_event(&mut self, source: PeerId, event: NotifsHandlerOut) {
         match event {
-            NotifsHandlerOut::Closed { reason } => {
+            NotifsHandlerOut::Closed {
+                reason,
+                endpoint: _,
+            } => {
                 info!(target: "sub-libp2p", "Handler({:?}) => Closed: {}", source, reason);
 
                 let mut entry = if let Entry::Occupied(entry) = self.peers.entry(source.clone()) {
@@ -1084,7 +1092,7 @@ impl NetworkBehaviour for GenericProto {
                 }
             }
 
-            NotifsHandlerOut::Open => {
+            NotifsHandlerOut::Open { endpoint: _ } => {
                 debug!(target: "sub-libp2p", "Handler({:?}) => Open", source);
                 let endpoint = match self.peers.get_mut(&source) {
                     Some(PeerState::Enabled {

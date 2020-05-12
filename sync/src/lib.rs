@@ -10,6 +10,8 @@ mod sync;
 mod sync_metrics;
 mod txn_sync;
 
+pub use download::Downloader;
+pub use process::ProcessActor;
 use std::time::Duration;
 pub use sync::SyncActor;
 
