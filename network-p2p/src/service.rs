@@ -780,9 +780,7 @@ impl Future for NetworkWorker {
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Request(ev))) => this
                     .rpc_streams
                     .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
-                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(
-                    protocol,
-                ))) => {}
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(_))) => {}
                 Poll::Ready(SwarmEvent::ConnectionEstablished {
                     peer_id, endpoint, ..
                 }) => {

@@ -14,15 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::config::ProtocolId;
 use crate::protocol::generic_proto::handler::{
     NotifsHandlerIn, NotifsHandlerOut, NotifsHandlerProto,
 };
 use crate::protocol::generic_proto::upgrade::RegisteredProtocol;
-use crate::{config::ProtocolId, DiscoveryNetBehaviour};
 
 use bytes::BytesMut;
-
-use crate::protocol::message::generic::{ConsensusMessage, Message};
 use fnv::FnvHashMap;
 use futures::prelude::*;
 use libp2p::core::{connection::ConnectionId, ConnectedPoint, Multiaddr, PeerId};
@@ -30,23 +28,24 @@ use libp2p::swarm::{
     DialPeerCondition, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, PollParameters,
 };
 use log::{debug, error, trace, warn};
+use prometheus::HistogramVec;
 use rand::distributions::{Distribution as _, Uniform};
-use scs::SCSCodec;
 use smallvec::SmallVec;
 use std::task::{Context, Poll};
 use std::{borrow::Cow, cmp, collections::hash_map::Entry};
 use std::{error, mem, pin::Pin, str, time::Duration};
 use wasm_timer::Instant;
 
-/// Network behaviour that handles opening substreams for custom protocols with other nodes.
+/// Network behaviour that handles opening substreams for custom protocols with other peers.
 ///
 /// ## Legacy vs new protocol
 ///
 /// The `GenericProto` behaves as following:
 ///
-/// - Whenever a connection is established, we open a single substream (called "legay protocol" in
-/// the source code). This substream name depends on the `protocol_id` and `versions` passed at
-/// initialization. If the remote refuses this substream, we close the connection.
+/// - Whenever a connection is established, we open a single substream (called "legacy protocol" in
+/// the source code) on that connection. This substream name depends on the `protocol_id` and
+/// `versions` passed at initialization. If the remote refuses this substream, we close the
+/// connection.
 ///
 /// - For each registered protocol, we also open an additional substream for this protocol. If the
 /// remote refuses this substream, then it's fine.
@@ -61,33 +60,59 @@ use wasm_timer::Instant;
 ///
 /// - The libp2p swarm that opens new connections and reports disconnects.
 /// - The connection handler (see `handler.rs`) that handles individual connections.
-/// - The peerset manager (PSM) that requests links to nodes to be established or broken.
+/// - The peerset manager (PSM) that requests links to peers to be established or broken.
 /// - The external API, that requires knowledge of the links that have been established.
 ///
 /// Each connection handler can be in four different states: Enabled+Open, Enabled+Closed,
 /// Disabled+Open, or Disabled+Closed. The Enabled/Disabled component must be in sync with the
 /// peerset manager. For example, if the peerset manager requires a disconnection, we disable the
-/// existing handler. The Open/Closed component must be in sync with the external API.
+/// connection handlers of that peer. The Open/Closed component must be in sync with the external
+/// API.
 ///
-/// However a connection handler only exists if we are actually connected to a node. What this
-/// means is that there are six possible states for each node: Disconnected, Dialing (trying to
-/// reach it), Enabled+Open, Enabled+Closed, Disabled+open, Disabled+Closed. Most notably, the
-/// Dialing state must correspond to a "link established" state in the peerset manager. In other
-/// words, the peerset manager doesn't differentiate whether we are dialing a node or connected
-/// to it.
+/// However, a connection handler for a peer only exists if we are actually connected to that peer.
+/// What this means is that there are six possible states for each peer: Disconnected, Dialing
+/// (trying to connect), Enabled+Open, Enabled+Closed, Disabled+Open, Disabled+Closed.
+/// Most notably, the Dialing state must correspond to a "link established" state in the peerset
+/// manager. In other words, the peerset manager doesn't differentiate whether we are dialing a
+/// peer or connected to it.
 ///
-/// Additionally, there also exists a "banning" system. If we fail to dial a node, we "ban" it for
-/// a few seconds. If the PSM requests a node that is in the "banned" state, then we delay the
-/// actual dialing attempt until after the ban expires, but the PSM will still consider the link
-/// to be established.
-/// Note that this "banning" system is not an actual ban. If a "banned" node tries to connect to
-/// us, we accept the connection. The "banning" system is only about delaying dialing attempts.
+/// There may be multiple connections to a peer. However, the status of a peer on
+/// the API of this behaviour and towards the peerset manager is aggregated in
+/// the following way:
+///
+///   1. The enabled/disabled status is the same across all connections, as
+///      decided by the peerset manager.
+///   2. `send_packet` and `write_notification` always send all data over
+///      the same connection to preserve the ordering provided by the transport,
+///      as long as that connection is open. If it closes, a second open
+///      connection may take over, if one exists, but that case should be no
+///      different than a single connection failing and being re-established
+///      in terms of potential reordering and dropped messages. Messages can
+///      be received on any connection.
+///   3. The behaviour reports `GenericProtoOut::CustomProtocolOpen` when the
+///      first connection reports `NotifsHandlerOut::Open`.
+///   4. The behaviour reports `GenericProtoOut::CustomProtocolClosed` when the
+///      last connection reports `NotifsHandlerOut::Closed`.
+///
+/// In this way, the number of actual established connections to the peer is
+/// an implementation detail of this behaviour. Note that, in practice and at
+/// the time of this writing, there may be at most two connections to a peer
+/// and only as a result of simultaneous dialing. However, the implementation
+/// accommodates for any number of connections.
+///
+/// Additionally, there also exists a "banning" system. If we fail to dial a peer, we "ban" it for
+/// a few seconds. If the PSM requests connecting to a peer that is currently "banned", the next
+/// dialing attempt is delayed until after the ban expires. However, the PSM will still consider
+/// the peer to be connected. This "ban" is thus not a ban in a strict sense: If a "banned" peer
+/// tries to connect, the connection is accepted. A ban only delays dialing attempts.
 ///
 pub struct GenericProto {
     /// Legacy protocol to open with peers. Never modified.
     legacy_protocol: RegisteredProtocol,
 
     /// Notification protocols. Entries are only ever added and not removed.
+    /// Contains, for each protocol, the protocol name and the message to send as part of the
+    /// initial handshake.
     notif_protocols: Vec<(Cow<'static, [u8]>, Vec<u8>)>,
 
     /// Receiver for instructions about who to connect to or disconnect from.
@@ -106,6 +131,9 @@ pub struct GenericProto {
 
     /// Events to produce from `poll()`.
     events: SmallVec<[NetworkBehaviourAction<NotifsHandlerIn, GenericProtoOut>; 4]>,
+
+    /// If `Some`, report the message queue sizes on this `Histogram`.
+    queue_size_report: Option<HistogramVec>,
 }
 
 /// State of a peer we're connected to.
@@ -229,7 +257,7 @@ impl PeerState {
 /// State of an "incoming" message sent to the peer set manager.
 #[derive(Debug)]
 struct IncomingPeer {
-    /// Id of the node that is concerned.
+    /// Id of the remote peer of the incoming connection.
     peer_id: PeerId,
     /// If true, this "incoming" still corresponds to an actual connection. If false, then the
     /// connection corresponding to it has been closed or replaced already.
@@ -243,7 +271,7 @@ struct IncomingPeer {
 pub enum GenericProtoOut {
     /// Opened a custom protocol with the remote.
     CustomProtocolOpen {
-        /// Id of the node we have opened a connection with.
+        /// Id of the peer we are connected to.
         peer_id: PeerId,
     },
 
@@ -287,10 +315,14 @@ pub enum GenericProtoOut {
 
 impl GenericProto {
     /// Creates a `CustomProtos`.
+    ///
+    /// The `queue_size_report` is an optional Prometheus metric that can report the size of the
+    /// messages queue. If passed, it must have one label for the protocol name.
     pub fn new(
         protocol: impl Into<ProtocolId>,
         versions: &[u8],
         peerset: peerset::Peerset,
+        queue_size_report: Option<HistogramVec>,
     ) -> Self {
         let legacy_protocol = RegisteredProtocol::new(protocol, versions);
 
@@ -302,6 +334,7 @@ impl GenericProto {
             incoming: SmallVec::new(),
             next_incoming_index: peerset::IncomingIndex(0),
             events: SmallVec::new(),
+            queue_size_report,
         }
     }
 
@@ -318,6 +351,43 @@ impl GenericProto {
             .push((protocol_name.into(), handshake_msg.into()));
     }
 
+    /// Modifies the handshake of the given notifications protocol.
+    ///
+    /// Has no effect if the protocol is unknown.
+    pub fn set_notif_protocol_handshake(
+        &mut self,
+        protocol_name: &[u8],
+        handshake_message: impl Into<Vec<u8>>,
+    ) {
+        let handshake_message = handshake_message.into();
+        if let Some(protocol) = self
+            .notif_protocols
+            .iter_mut()
+            .find(|(name, _)| name == &protocol_name)
+        {
+            protocol.1 = handshake_message.clone();
+        } else {
+            return;
+        }
+
+        // Send an event to all the peers we're connected to, updating the handshake message.
+        for (peer_id, _) in self.peers.iter().filter(|(_, state)| state.is_connected()) {
+            self.events.push(NetworkBehaviourAction::NotifyHandler {
+                peer_id: peer_id.clone(),
+                handler: NotifyHandler::All,
+                event: NotifsHandlerIn::UpdateHandshake {
+                    protocol_name: Cow::Owned(protocol_name.to_owned()),
+                    handshake_message: handshake_message.clone(),
+                },
+            });
+        }
+    }
+
+    /// Returns the number of discovered nodes that we keep in memory.
+    pub fn num_discovered_peers(&self) -> usize {
+        self.peerset.num_discovered_peers()
+    }
+
     /// Returns the list of all the peers we have an open channel to.
     pub fn open_peers<'a>(&'a self) -> impl Iterator<Item = &'a PeerId> + 'a {
         self.peers
@@ -326,7 +396,7 @@ impl GenericProto {
             .map(|(id, _)| id)
     }
 
-    /// Returns true if we have a channel open with this node.
+    /// Returns true if we have an open connection to the given peer.
     pub fn is_open(&self, peer_id: &PeerId) -> bool {
         self.peers
             .get(peer_id)
@@ -340,8 +410,8 @@ impl GenericProto {
         self.disconnect_peer_inner(peer_id, None);
     }
 
-    /// Inner implementation of `disconnect_peer`. If `ban` is `Some`, we ban the node for the
-    /// specific duration.
+    /// Inner implementation of `disconnect_peer`. If `ban` is `Some`, we ban the peer
+    /// for the specific duration.
     fn disconnect_peer_inner(&mut self, peer_id: &PeerId, ban: Option<Duration>) {
         let mut entry = if let Entry::Occupied(entry) = self.peers.entry(peer_id.clone()) {
             entry
@@ -420,6 +490,14 @@ impl GenericProto {
         }
     }
 
+    /// Returns the list of all the peers that the peerset currently requests us to be connected to.
+    pub fn requested_peers<'a>(&'a self) -> impl Iterator<Item = &'a PeerId> + 'a {
+        self.peers
+            .iter()
+            .filter(|(_, state)| state.is_requested())
+            .map(|(id, _)| id)
+    }
+
     /// Returns true if we try to open protocols with the given peer.
     pub fn is_enabled(&self, peer_id: &PeerId) -> bool {
         match self.peers.get(peer_id) {
@@ -435,6 +513,16 @@ impl GenericProto {
         }
     }
 
+    /// Notify the behaviour that we have learned about the existence of nodes.
+    ///
+    /// Can be called multiple times with the same `PeerId`s.
+    pub fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
+        self.peerset.discovered(peer_ids.into_iter().map(|peer_id| {
+            debug!(target: "sub-libp2p", "PSM <= Discovered({:?})", peer_id);
+            peer_id
+        }));
+    }
+
     /// Sends a notification to a peer.
     ///
     /// Has no effect if the custom protocol is not open with the given peer.
@@ -442,8 +530,9 @@ impl GenericProto {
     /// Also note that even if we have a valid open substream, it may in fact be already closed
     /// without us knowing, in which case the packet will not be received.
     ///
-    /// > **Note**: Ideally the `engine_id` parameter wouldn't be necessary. See the documentation
-    /// >			of [`NotifsHandlerIn`] for more information.
+    /// The `fallback` parameter is used for backwards-compatibility reason if the remote doesn't
+    /// support our protocol. One needs to pass the equivalent of what would have been passed
+    /// with `send_packet`.
     pub fn write_notification(
         &mut self,
         target: &PeerId,
@@ -772,15 +861,6 @@ impl GenericProto {
     }
 }
 
-impl DiscoveryNetBehaviour for GenericProto {
-    fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
-        self.peerset.discovered(peer_ids.map(|peer_id| {
-            debug!(target: "sub-libp2p", "PSM <= Discovered({:?})", peer_id);
-            peer_id
-        }));
-    }
-}
-
 impl NetworkBehaviour for GenericProto {
     type ProtocolsHandler = NotifsHandlerProto;
     type OutEvent = GenericProtoOut;
@@ -789,7 +869,7 @@ impl NetworkBehaviour for GenericProto {
         NotifsHandlerProto::new(
             self.legacy_protocol.clone(),
             self.notif_protocols.clone(),
-            None,
+            self.queue_size_report.clone(),
         )
     }
 

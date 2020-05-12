@@ -221,7 +221,7 @@ impl NetworkBehaviour for Protocol {
             }
             GenericProtoOut::Notification {
                 peer_id,
-                protocol_name,
+                protocol_name: _protocol_name,
                 message,
             } => self.on_custom_message(peer_id, message),
             GenericProtoOut::Clogged {
@@ -311,7 +311,7 @@ impl Protocol {
 
         let (peerset, peerset_handle) = peerset::Peerset::from_config(peerset_config);
         let versions = &((MIN_VERSION as u8)..=(CURRENT_VERSION as u8)).collect::<Vec<u8>>();
-        let behaviour = GenericProto::new(protocol_id, versions, peerset);
+        let behaviour = GenericProto::new(protocol_id, versions, peerset, None);
 
         let protocol = Protocol {
             tick_timeout: Box::pin(interval(TICK_TIMEOUT)),
