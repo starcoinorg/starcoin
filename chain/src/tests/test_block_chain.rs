@@ -1,6 +1,6 @@
 use crate::{
-    to_block_chain_collection, BlockChain, ChainActor, ChainActorRef, ChainAsyncService,
-    SyncMetadata,
+    test_helper, to_block_chain_collection, BlockChain, ChainActor, ChainActorRef,
+    ChainAsyncService, SyncMetadata,
 };
 use anyhow::Result;
 use bus::BusActor;
@@ -141,18 +141,8 @@ async fn test_block_chain_forks() {
 #[stest::test]
 async fn test_chain_apply() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let storage =
-        Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
-    let genesis = Genesis::build(config.net()).unwrap();
-    let startup_info = genesis.execute(storage.clone())?;
-    let collection =
-        to_block_chain_collection(config.clone(), startup_info.clone(), storage.clone())?;
-    let mut block_chain = BlockChain::<DevConsensus, Storage>::new(
-        config.clone(),
-        startup_info.master.clone(),
-        storage,
-        Arc::downgrade(&collection),
-    )?;
+    let (_collection, mut block_chain) =
+        test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
     let miner_account = WalletAccount::random();
