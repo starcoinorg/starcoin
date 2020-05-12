@@ -213,14 +213,12 @@ async fn create_node(
                 node_config.clone(),
                 startup_info.clone(),
                 storage.clone(),
-                txpool.clone(),
             )?;
 
-            let block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
+            let block_chain = BlockChain::<DummyConsensus, Storage>::new(
                 node_config.clone(),
                 collection.get_master_chain_info(),
                 storage.clone(),
-                txpool.clone(),
                 Arc::downgrade(&collection),
             )
             .unwrap();

@@ -156,7 +156,7 @@ where
         let miner = self.miner.clone();
         let stratum = self.stratum.clone();
         let miner_account = self.miner_account.clone();
-        let f = async {
+        let f = async move {
             let txns = txpool
                 .clone()
                 .get_pending_txns(None)
@@ -169,17 +169,12 @@ where
                 txns.len()
             );
             let master = startup_info.master.clone();
-            let collection = to_block_chain_collection(
-                config.clone(),
-                startup_info,
-                storage.clone(),
-                txpool.clone(),
-            )?;
-            let block_chain = BlockChain::<C, S, P>::new(
+            let collection =
+                to_block_chain_collection(config.clone(), startup_info, storage.clone())?;
+            let block_chain = BlockChain::<C, S>::new(
                 config.clone(),
                 master,
                 storage,
-                txpool,
                 Arc::downgrade(&collection),
             )?;
             mint::<C>(stratum, miner, config, miner_account, txns, &block_chain)?;
