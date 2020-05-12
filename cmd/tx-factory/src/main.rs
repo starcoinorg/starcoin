@@ -4,7 +4,7 @@
 use anyhow::{bail, ensure, Result};
 use ctrlc;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::ValidKeyStringExt;
+use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_rpc_client::RpcClient;

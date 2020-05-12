@@ -26,12 +26,3 @@ fn test_crypto_hash() {
     let hash2 = o2.crypto_hash();
     assert_eq!(hash1, hash2);
 }
-
-// #[test]
-// fn test_crypto_hash_for_basic_type() {
-//     assert_eq!("test".crypto_hash(), "test".to_string().crypto_hash());
-//     assert_eq!(
-//         b"test".to_vec().as_slice().crypto_hash(),
-//         b"test".to_vec().crypto_hash()
-//     );
-// }

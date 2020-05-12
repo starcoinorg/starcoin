@@ -3,12 +3,12 @@
 
 use crate::{
     account_address::AccountAddress,
-    language_storage::TypeTag,
     transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload},
 };
 use anyhow::Result;
 use chrono::Utc;
 use starcoin_crypto::{ed25519::*, hash::PlainCryptoHash, test_utils::KeyPair, traits::SigningKey};
+use starcoin_vm_types::language_storage::TypeTag;
 
 pub fn create_unsigned_txn(
     payload: TransactionPayload,

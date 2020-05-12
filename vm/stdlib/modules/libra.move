@@ -1,4 +1,4 @@
-address 0x0:
+address 0x0{
 
 module Libra {
     use 0x0::Transaction;
@@ -258,4 +258,5 @@ module Libra {
         let T<Token> { value } = coin;
         Transaction::assert(value == 0, 11);
     }
+}
 }

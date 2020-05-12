@@ -15,7 +15,8 @@ async-trait = "0.1"
 serde = { version = "1.0", default-features = false }
 starcoin-types = { path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
-rand = "0.6.5"
+rand = "0.7.3"
+rand_core = { version = "0.5.1", default-features = false }
 
 [dev-dependencies]
 

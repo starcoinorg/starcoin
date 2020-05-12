@@ -7,12 +7,10 @@ use anyhow::{ensure, Result};
 use dirs;
 use libp2p::core::Multiaddr;
 use once_cell::sync::Lazy;
-use rand::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
-    Uniform,
 };
 use starcoin_logger::prelude::*;
 use std::convert::TryFrom;
@@ -42,6 +40,7 @@ pub use metrics_config::MetricsConfig;
 pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
+use starcoin_crypto::keygen::KeyGen;
 use std::str::FromStr;
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
@@ -407,11 +406,14 @@ pub(crate) fn load_key<P: AsRef<Path>>(
     decode_key(content.as_str())
 }
 
+//TODO remove this method and remove KeyPair dependency.
 pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
-    let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
-    let seed_buf: [u8; 32] = seed_rng.gen();
-    let mut rng0: StdRng = SeedableRng::from_seed(seed_buf);
-    KeyPair::generate(&mut rng0)
+    let mut gen = KeyGen::from_os_rng();
+    let (private_key, public_key) = gen.generate_keypair();
+    KeyPair {
+        private_key,
+        public_key,
+    }
 }
 
 pub fn get_available_port() -> u16 {

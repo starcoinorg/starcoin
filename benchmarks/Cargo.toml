@@ -28,7 +28,8 @@ actix = "0.9"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}
-rand = "0.5"
+rand = "0.7.3"
+rand_core = { version = "0.5.1", default-features = false }
 starcoin-vm-runtime = { path = "../vm/vm-runtime"}
 starcoin-sync = { path = "../sync" }
 starcoin-network = {path = "../network"}

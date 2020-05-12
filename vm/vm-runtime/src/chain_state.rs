@@ -8,10 +8,10 @@ use libra_types::{
     access_path::AccessPath as LibraAccessPath,
     write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet},
 };
-use logger::prelude::*;
 use move_vm_state::data_cache::RemoteCache;
+use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
-use types::access_path::AccessPath;
+use starcoin_types::access_path::AccessPath;
 use vm::errors::VMResult;
 //TODO this adaptor may be remove?
 /// Adaptor for chain state

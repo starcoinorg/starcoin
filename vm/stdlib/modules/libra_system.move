@@ -1,11 +1,11 @@
-address 0x0:
+address 0x0{
 
 module LibraSystem {
-    use 0x0::LibraAccount;
     use 0x0::ValidatorConfig;
     use 0x0::Vector;
     use 0x0::Transaction;
     use 0x0::LibraTimestamp;
+    use 0x0::Event;
 
     struct ValidatorInfo {
         addr: address,
@@ -28,7 +28,7 @@ module LibraSystem {
         // Last time when a reconfiguration happened.
         last_reconfiguration_time: u64,
         // Handle where validator set change events are emitted
-        change_events: LibraAccount::EventHandle<ValidatorSetChangeEvent>,
+        change_events: Event::EventHandle<ValidatorSetChangeEvent>,
     }
 
     struct DiscoveryInfo {
@@ -47,7 +47,7 @@ module LibraSystem {
         // The current discovery set. Updated only at epoch boundaries via reconfiguration.
         discovery_set: vector<DiscoveryInfo>,
         // Handle where discovery set change events are emitted
-        change_events: LibraAccount::EventHandle<DiscoverySetChangeEvent>,
+        change_events: Event::EventHandle<DiscoverySetChangeEvent>,
     }
 
     // This can only be invoked by the Association address, and only a single time.
@@ -60,7 +60,7 @@ module LibraSystem {
           scheme: 0,
           validators: Vector::empty(),
           last_reconfiguration_time: 0,
-          change_events: LibraAccount::new_event_handle<ValidatorSetChangeEvent>(),
+          change_events: Event::new_event_handle<ValidatorSetChangeEvent>(),
       });
     }
 
@@ -70,7 +70,7 @@ module LibraSystem {
 
         move_to_sender<DiscoverySet>(DiscoverySet {
             discovery_set: Vector::empty(),
-            change_events: LibraAccount::new_event_handle<DiscoverySetChangeEvent>(),
+            change_events: Event::new_event_handle<DiscoverySetChangeEvent>(),
         });
     }
 
@@ -361,7 +361,7 @@ module LibraSystem {
    fun emit_reconfiguration_event() acquires ValidatorSet {
        let validator_set_ref = borrow_global_mut<ValidatorSet>(0x1D8);
 
-       LibraAccount::emit_event<ValidatorSetChangeEvent>(
+       Event::emit_event<ValidatorSetChangeEvent>(
            &mut validator_set_ref.change_events,
            ValidatorSetChangeEvent {
                scheme: validator_set_ref.scheme,
@@ -372,7 +372,7 @@ module LibraSystem {
 
    fun emit_discovery_set_change() acquires DiscoverySet {
        let discovery_set_ref = borrow_global_mut<DiscoverySet>(0xD15C0);
-       LibraAccount::emit_event<DiscoverySetChangeEvent>(
+       Event::emit_event<DiscoverySetChangeEvent>(
            &mut discovery_set_ref.change_events,
            DiscoverySetChangeEvent {
                new_discovery_set: *&discovery_set_ref.discovery_set,
@@ -471,4 +471,5 @@ module LibraSystem {
               ValidatorConfig::fullnodes_network_address(&config),
       }
    }
+}
 }

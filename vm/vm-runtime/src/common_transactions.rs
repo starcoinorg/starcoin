@@ -5,12 +5,12 @@
 
 use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN};
 use crate::{account::create_signed_txn_with_association_account, account::Account};
-use std::time::Duration;
-use types::account_address::AccountAddress;
-use types::account_config::starcoin_type_tag;
-use types::transaction::{
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::starcoin_type_tag;
+use starcoin_types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
 };
+use std::time::Duration;
 
 //TODO
 pub const TXN_RESERVED: u64 = 50_000_000;

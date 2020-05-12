@@ -5,12 +5,11 @@ use crate::error::WalletError;
 use crate::mock::MemWalletStore;
 use crate::{Wallet, WalletAccount, WalletResult, WalletStore};
 use anyhow::{format_err, Result};
-use rand::prelude::*;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::Uniform;
+use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::transaction::helpers::TransactionSigner;
 use starcoin_types::{
-    account_address::AccountAddress,
+    account_address::{self, AccountAddress},
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
 use std::convert::TryFrom;
@@ -80,11 +79,14 @@ where
     S: WalletStore,
 {
     fn create_account(&self, _password: &str) -> WalletResult<WalletAccount> {
-        let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
-        let seed_buf: [u8; 32] = seed_rng.gen();
-        let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
-        let key_pair: KeyPair = KeyPair::generate(&mut rng);
-        let address = AccountAddress::from_public_key(&key_pair.public_key);
+        let mut key_gen = KeyGen::from_os_rng();
+        let (private_key, public_key) = key_gen.generate_keypair();
+        //TODO remove keypair dependency.
+        let key_pair = KeyPair {
+            private_key,
+            public_key,
+        };
+        let address = account_address::from_public_key(&key_pair.public_key);
         //first account is default.
         let is_default = self.get_accounts()?.is_empty();
         let account = WalletAccount::new(address, key_pair.public_key.clone(), is_default);

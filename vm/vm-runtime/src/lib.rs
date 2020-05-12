@@ -4,7 +4,6 @@
 pub mod account;
 mod chain_state;
 pub mod common_transactions;
-mod gas;
 pub mod genesis;
 pub mod starcoin_vm;
 pub mod system_module_names;

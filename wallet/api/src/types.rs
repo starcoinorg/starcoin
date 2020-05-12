@@ -1,12 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::{test_utils::KeyPair, Uniform};
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_crypto::keygen::KeyGen;
+use starcoin_types::{
+    account_address::{self, AccountAddress},
+    transaction::authenticator::AuthenticationKey,
+};
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct WalletAccount {
@@ -37,15 +38,13 @@ impl WalletAccount {
     }
 
     pub fn random() -> Self {
-        let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
-        let seed_buf: [u8; 32] = seed_rng.gen();
-        let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
-        let key_pair = KeyPair::generate(&mut rng);
-        let address = AccountAddress::from_public_key(&key_pair.public_key);
+        let mut key_gen = KeyGen::from_os_rng();
+        let (_private_key, public_key) = key_gen.generate_keypair();
+        let address = account_address::from_public_key(&public_key);
         WalletAccount {
             address,
             is_default: false,
-            public_key: key_pair.public_key,
+            public_key,
         }
     }
 }
