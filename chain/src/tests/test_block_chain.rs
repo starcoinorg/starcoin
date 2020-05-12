@@ -54,18 +54,13 @@ async fn gen_master_chain(
     if times > 0 {
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
-            let collection = to_block_chain_collection(
-                node_config.clone(),
-                startup_info,
-                storage.clone(),
-                txpool.clone(),
-            )
-            .unwrap();
-            let block_chain = BlockChain::<DevConsensus, Storage, TxPoolRef>::new(
+            let collection =
+                to_block_chain_collection(node_config.clone(), startup_info, storage.clone())
+                    .unwrap();
+            let block_chain = BlockChain::<DevConsensus, Storage>::new(
                 node_config.clone(),
                 collection.get_master_chain_info(),
                 storage.clone(),
-                txpool.clone(),
                 Arc::downgrade(&collection),
             )
             .unwrap();
@@ -150,27 +145,12 @@ async fn test_chain_apply() -> Result<()> {
         Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
     let genesis = Genesis::build(config.net()).unwrap();
     let startup_info = genesis.execute(storage.clone())?;
-    let bus = BusActor::launch();
-    let txpool = {
-        let best_block_id = startup_info.master.get_head();
-        TxPoolRef::start(
-            config.tx_pool.clone(),
-            storage.clone(),
-            best_block_id,
-            bus.clone(),
-        )
-    };
-    let collection = to_block_chain_collection(
-        config.clone(),
-        startup_info.clone(),
-        storage.clone(),
-        txpool.clone(),
-    )?;
-    let mut block_chain = BlockChain::<DevConsensus, Storage, TxPoolRef>::new(
+    let collection =
+        to_block_chain_collection(config.clone(), startup_info.clone(), storage.clone())?;
+    let mut block_chain = BlockChain::<DevConsensus, Storage>::new(
         config.clone(),
         startup_info.master.clone(),
         storage,
-        txpool,
         Arc::downgrade(&collection),
     )?;
     let header = block_chain.current_header();

@@ -33,7 +33,6 @@ pub trait ChainReader {
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
-    fn gen_tx(&self) -> Result<()>;
     fn get_chain_info(&self) -> ChainInfo;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
     fn get_total_difficulty(&self) -> Result<U512>;

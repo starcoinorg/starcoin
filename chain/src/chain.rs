@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain_service::BlockChainCollection;
-use actix::prelude::*;
 use anyhow::{format_err, Error, Result};
 use config::NodeConfig;
 use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
-use executor::executor::mock_create_account_txn;
 use logger::prelude::*;
 use network::get_unix_ts;
 use once_cell::sync::Lazy;
@@ -15,8 +13,6 @@ use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
-use starcoin_txpool_api::TxPoolAsyncService;
-use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -43,11 +39,10 @@ pub static DEFAULT_BLOCK_INFO: Lazy<BlockInfo> = Lazy::new(|| {
     )
 });
 
-pub struct BlockChain<C, S, P>
+pub struct BlockChain<C, S>
 where
     C: Consensus,
     S: Store + 'static,
-    P: TxPoolAsyncService + 'static,
 {
     pub config: Arc<NodeConfig>,
     accumulator: MerkleAccumulator,
@@ -55,23 +50,20 @@ where
     chain_state: ChainStateDB,
     phantom_c: PhantomData<C>,
     pub storage: Arc<S>,
-    pub txpool: P,
     chain_info: ChainInfo,
-    pub block_chain_collection: Weak<BlockChainCollection<C, S, P>>,
+    pub block_chain_collection: Weak<BlockChainCollection<C, S>>,
 }
 
-impl<C, S, P> BlockChain<C, S, P>
+impl<C, S> BlockChain<C, S>
 where
     C: Consensus,
     S: Store,
-    P: TxPoolAsyncService,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         chain_info: ChainInfo,
         storage: Arc<S>,
-        txpool: P,
-        block_chain_collection: Weak<BlockChainCollection<C, S, P>>,
+        block_chain_collection: Weak<BlockChainCollection<C, S>>,
     ) -> Result<Self> {
         let head_block_hash = chain_info.get_head();
         let head = storage
@@ -101,7 +93,6 @@ where
             chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
             phantom_c: PhantomData,
             storage,
-            txpool,
             chain_info,
             block_chain_collection,
         };
@@ -113,7 +104,6 @@ where
             self.config.clone(),
             chain_info,
             self.storage.clone(),
-            self.txpool.clone(),
             self.block_chain_collection.clone(),
         )
     }
@@ -142,15 +132,6 @@ where
         if let Err(e) = self.storage.save_block_info(block_info) {
             warn!("err : {:?}", e);
         }
-    }
-
-    fn gen_tx_for_test(&self) {
-        let tx = mock_create_account_txn();
-        let txpool = self.txpool.clone();
-        Arbiter::spawn(async move {
-            debug!("gen_tx_for_test call txpool.");
-            txpool.add(tx.try_into().unwrap()).await.unwrap();
-        });
     }
 
     pub fn latest_blocks(&self, size: u64) {
@@ -274,11 +255,10 @@ where
     }
 }
 
-impl<C, S, P> Drop for BlockChain<C, S, P>
+impl<C, S> Drop for BlockChain<C, S>
 where
     C: Consensus,
     S: Store,
-    P: TxPoolAsyncService,
 {
     fn drop(&mut self) {
         debug!(
@@ -289,11 +269,10 @@ where
     }
 }
 
-impl<C, S, P> ChainReader for BlockChain<C, S, P>
+impl<C, S> ChainReader for BlockChain<C, S>
 where
     C: Consensus,
     S: Store,
-    P: TxPoolAsyncService,
 {
     fn head_block(&self) -> Block {
         self.head.clone()
@@ -421,11 +400,6 @@ where
         &self.chain_state
     }
 
-    fn gen_tx(&self) -> Result<()> {
-        self.gen_tx_for_test();
-        Ok(())
-    }
-
     fn get_chain_info(&self) -> ChainInfo {
         self.chain_info.clone()
     }
@@ -454,11 +428,10 @@ where
     }
 }
 
-impl<C, S, P> ChainWriter for BlockChain<C, S, P>
+impl<C, S> ChainWriter for BlockChain<C, S>
 where
     C: Consensus,
     S: Store,
-    P: TxPoolAsyncService,
 {
     fn apply(&mut self, block: Block) -> Result<bool> {
         let header = block.header();

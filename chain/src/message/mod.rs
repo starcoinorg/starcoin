@@ -31,7 +31,6 @@ pub enum ChainRequest {
     GetTransaction(HashValue),
     GetTransactionIdByBlock(HashValue),
     GetBlocksByNumber(Option<BlockNumber>, u64),
-    GenTx(), // just for test
 }
 
 impl Message for ChainRequest {

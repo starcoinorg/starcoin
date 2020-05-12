@@ -27,21 +27,19 @@ use types::{
     transaction::{SignedUserTransaction, TransactionInfo},
 };
 
-pub struct BlockChainCollection<C, S, P>
+pub struct BlockChainCollection<C, S>
 where
     C: Consensus,
-    P: TxPoolAsyncService + 'static,
     S: Store + 'static,
 {
     startup_info: RwLock<StartupInfo>,
-    master: RwLock<Option<Arc<BlockChain<C, S, P>>>>,
+    master: RwLock<Option<Arc<BlockChain<C, S>>>>,
     storage: Arc<S>,
 }
 
-impl<C, S, P> Drop for BlockChainCollection<C, S, P>
+impl<C, S> Drop for BlockChainCollection<C, S>
 where
     C: Consensus,
-    P: TxPoolAsyncService + 'static,
     S: Store + 'static,
 {
     fn drop(&mut self) {
@@ -49,10 +47,9 @@ where
     }
 }
 
-impl<C, S, P> BlockChainCollection<C, S, P>
+impl<C, S> BlockChainCollection<C, S>
 where
     C: Consensus,
-    P: TxPoolAsyncService + 'static,
     S: Store + 'static,
 {
     pub fn new(startup_info: StartupInfo, storage: Arc<S>) -> Self {
@@ -63,19 +60,19 @@ where
         }
     }
 
-    pub fn init_master(&self, new_master: BlockChain<C, S, P>) {
+    pub fn init_master(&self, new_master: BlockChain<C, S>) {
         assert!(self.master.read().is_none());
         assert_eq!(self.startup_info.read().master, new_master.get_chain_info());
         self.update_master(new_master)
     }
 
-    pub fn update_master(&self, new_master: BlockChain<C, S, P>) {
+    pub fn update_master(&self, new_master: BlockChain<C, S>) {
         let chain_info = new_master.get_chain_info();
         *self.master.write() = Some(Arc::new(new_master));
         self.startup_info.write().update_master(chain_info);
     }
 
-    pub fn insert_branch(&self, branch: BlockChain<C, S, P>) {
+    pub fn insert_branch(&self, branch: BlockChain<C, S>) {
         self.startup_info
             .write()
             .insert_branch(branch.get_chain_info());
@@ -177,7 +174,7 @@ where
         self.startup_info.read().clone()
     }
 
-    pub fn get_master(&self) -> Arc<BlockChain<C, S, P>> {
+    pub fn get_master(&self) -> Arc<BlockChain<C, S>> {
         self.master.read().as_ref().unwrap().clone()
     }
 
@@ -193,7 +190,7 @@ where
     S: Store + 'static,
 {
     config: Arc<NodeConfig>,
-    collection: Arc<BlockChainCollection<C, S, P>>,
+    collection: Arc<BlockChainCollection<C, S>>,
     storage: Arc<S>,
     network: Option<NetworkAsyncService>,
     txpool: P,
@@ -216,12 +213,7 @@ where
         bus: Addr<BusActor>,
         sync_metadata: SyncMetadata,
     ) -> Result<Self> {
-        let collection = to_block_chain_collection(
-            config.clone(),
-            startup_info,
-            storage.clone(),
-            txpool.clone(),
-        )?;
+        let collection = to_block_chain_collection(config.clone(), startup_info, storage.clone())?;
         Ok(Self {
             config,
             collection,
@@ -236,7 +228,7 @@ where
     pub fn find_or_fork(
         &mut self,
         header: &BlockHeader,
-    ) -> Result<(bool, Option<BlockChain<C, S, P>>)> {
+    ) -> Result<(bool, Option<BlockChain<C, S>>)> {
         CHAIN_METRICS.try_connect_count.inc();
         let chain_info = self.collection.fork(header);
         debug!(
@@ -251,7 +243,6 @@ where
                 self.config.clone(),
                 info,
                 self.storage.clone(),
-                self.txpool.clone(),
                 Arc::downgrade(&self.collection),
             )?;
             Ok((block_exist, Some(branch)))
@@ -264,7 +255,7 @@ where
         unimplemented!()
     }
 
-    fn select_head(&mut self, new_branch: BlockChain<C, S, P>) -> Result<()> {
+    fn select_head(&mut self, new_branch: BlockChain<C, S>) -> Result<()> {
         let branch_id = new_branch.get_chain_info().branch_id();
         let block = new_branch.head_block();
         let block_id = block.header().id();
@@ -284,7 +275,6 @@ where
                     self.config.clone(),
                     self.collection.get_master_chain_info(),
                     self.storage.clone(),
-                    self.txpool.clone(),
                     Arc::downgrade(&self.collection),
                 )?);
 
@@ -297,7 +287,6 @@ where
                 self.config.clone(),
                 new_branch.get_chain_info(),
                 self.storage.clone(),
-                self.txpool.clone(),
                 Arc::downgrade(&self.collection),
             )?);
             if rollback {
@@ -358,7 +347,7 @@ where
 
     fn find_ancestors(
         &self,
-        new_branch: &BlockChain<C, S, P>,
+        new_branch: &BlockChain<C, S>,
     ) -> Result<(
         Vec<Block>,
         Vec<SignedUserTransaction>,
@@ -619,10 +608,6 @@ where
         }
     }
 
-    fn gen_tx(&self) -> Result<()> {
-        self.collection.get_master().gen_tx()
-    }
-
     fn master_startup_info(&self) -> StartupInfo {
         self.collection.to_startup_info()
     }
@@ -648,15 +633,13 @@ where
     }
 }
 
-pub fn to_block_chain_collection<C, S, P>(
+pub fn to_block_chain_collection<C, S>(
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
     storage: Arc<S>,
-    txpool: P,
-) -> Result<Arc<BlockChainCollection<C, S, P>>>
+) -> Result<Arc<BlockChainCollection<C, S>>>
 where
     C: Consensus,
-    P: TxPoolAsyncService + 'static,
     S: Store + 'static,
 {
     let master_chain_info = startup_info.master.clone();
@@ -665,7 +648,6 @@ where
         config,
         master_chain_info,
         storage,
-        txpool,
         Arc::downgrade(&collection),
     )?;
     collection.init_master(master);

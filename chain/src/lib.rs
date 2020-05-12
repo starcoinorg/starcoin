@@ -159,11 +159,6 @@ where
             ChainRequest::GetTransactionIdByBlock(block_id) => Ok(
                 ChainResponse::VecTransactionInfo(self.service.get_block_txn_ids(block_id)?),
             ),
-
-            ChainRequest::GenTx() => {
-                self.service.gen_tx()?;
-                Ok(ChainResponse::None)
-            }
         }
     }
 }
@@ -417,14 +412,6 @@ where
         } else {
             bail!("get block's transaction ids error.")
         }
-    }
-
-    async fn gen_tx(&self) -> Result<()> {
-        self.address
-            .send(ChainRequest::GenTx())
-            .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        Ok(())
     }
 
     async fn create_block_template(
