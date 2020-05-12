@@ -3,7 +3,7 @@
 
 use crate::executor::Executor;
 use crate::TransactionExecutor;
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::{hash::PlainCryptoHash, HashValue};
 // use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_state_api::ChainState;

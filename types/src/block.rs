@@ -4,7 +4,10 @@
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedUserTransaction;
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{
+    hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
+    HashValue,
+};
 
 use crate::{U256, U512};
 use once_cell::sync::Lazy;
@@ -19,7 +22,17 @@ pub type BlockNumber = u64;
 pub type BranchNumber = (HashValue, u64);
 
 #[derive(
-    Default, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHash,
+    Default,
+    Clone,
+    Debug,
+    Hash,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    Deserialize,
+    CryptoHasher,
+    CryptoHash,
 )]
 pub struct BlockHeader {
     /// Parent hash.
@@ -223,7 +236,7 @@ impl Into<Vec<SignedUserTransaction>> for BlockBody {
 }
 
 /// A block, encoded as it is on the block chain.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Block {
     /// The header of this block.
     header: BlockHeader,
@@ -277,7 +290,7 @@ pub static BLOCK_INFO_DEFAULT_ID: Lazy<HashValue> =
 
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockInfo {
     /// Block id
     pub block_id: HashValue,
@@ -445,7 +458,7 @@ impl BlockTemplate {
     }
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHash)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockDetail {
     block: Block,
     total_difficulty: U512,

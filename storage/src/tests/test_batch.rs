@@ -5,7 +5,7 @@ use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::{DBStorage, DEFAULT_CF_NAME};
 use crate::storage::{InnerStore, ValueCodec};
-use crypto::{hash::CryptoHash, HashValue};
+use crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;

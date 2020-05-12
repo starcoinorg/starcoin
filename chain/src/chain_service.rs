@@ -301,9 +301,21 @@ where
                 Arc::downgrade(&self.collection),
             )?);
             if rollback {
-                let (mut enacted_tmp, mut retracted_tmp) = self.find_ancestors(&new_branch)?;
+                let (enacted_blocks, mut enacted_tmp, mut retracted_tmp) =
+                    self.find_ancestors(&new_branch)?;
                 enacted.append(&mut enacted_tmp);
                 retracted.append(&mut retracted_tmp);
+                if self.sync_metadata.is_sync_done() {
+                    enacted_blocks.into_iter().for_each(|enacted_block| {
+                        if let Ok(Some(b_i)) =
+                            self.storage.get_block_info(enacted_block.header().id())
+                        {
+                            let enacted_block_detail =
+                                BlockDetail::new(enacted_block, b_i.get_total_difficulty());
+                            self.broadcast_2_bus(enacted_block_detail);
+                        }
+                    });
+                }
             }
 
             self.commit_2_txpool(enacted, retracted);
@@ -347,7 +359,11 @@ where
     fn find_ancestors(
         &self,
         new_branch: &BlockChain<C, S, P>,
-    ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction>)> {
+    ) -> Result<(
+        Vec<Block>,
+        Vec<SignedUserTransaction>,
+        Vec<SignedUserTransaction>,
+    )> {
         let mut enacted: Vec<Block> = Vec::new();
         let mut retracted: Vec<Block> = Vec::new();
 
@@ -404,7 +420,7 @@ where
             tx_enacted.len(),
             tx_retracted.len()
         );
-        Ok((tx_enacted, tx_retracted))
+        Ok((enacted, tx_enacted, tx_retracted))
     }
 
     pub fn broadcast_2_bus(&self, block: BlockDetail) {

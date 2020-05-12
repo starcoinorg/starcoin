@@ -22,9 +22,7 @@ tiny-keccak = "1.5"
 hex="0.4"
 once_cell="1.3"
 starcoin-crypto = { path = "../../commons/crypto", version = "0.1.0" }
-#libra-crypto-derive = { path = "../../crypto/crypto-derive", version = "0.1.0" }
-#starcoin-types = { path = "../../types", version = "0.1.0" }
-#scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization" }
+scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization" }
 
 [dev-dependencies]
 rand = "0.6.5"

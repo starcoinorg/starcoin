@@ -1,56 +1,24 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub use libra_crypto::hash::HashValue;
+pub use crypto_macro::{CryptoHash, CryptoHasher};
+pub use libra_crypto::hash::{CryptoHash, CryptoHasher, DefaultHasher, HashValue, TestOnlyHash};
 
-pub use crypto_macro::CryptoHash;
-
-pub use libra_crypto::hash::CryptoHash as LibraCryptoHash;
-
-/// A type that implements `CryptoHash` can be hashed by a cryptographic hash function and produce
+/// A type that implements `PlainCryptoHash` can be hashed by a cryptographic hash function and produce
 /// a `HashValue`.
-pub trait CryptoHash {
+/// libra_crypto::hash::CryptoHash need a Hasher with a salt, this trait do not need hasher.
+pub trait PlainCryptoHash {
     /// Hashes the object and produces a `HashValue`.
     fn crypto_hash(&self) -> HashValue;
 }
 
-impl CryptoHash for &str {
+///Auto implement `PlainCryptoHash` for libra_crypto::hash::CryptoHash
+impl<C> PlainCryptoHash for C
+where
+    C: CryptoHash,
+{
     fn crypto_hash(&self) -> HashValue {
-        HashValue::from_sha3_256(
-            scs::to_bytes(self)
-                .expect("Serialization should work.")
-                .as_slice(),
-        )
-    }
-}
-
-impl CryptoHash for String {
-    fn crypto_hash(&self) -> HashValue {
-        HashValue::from_sha3_256(
-            scs::to_bytes(self)
-                .expect("Serialization should work.")
-                .as_slice(),
-        )
-    }
-}
-
-impl CryptoHash for Vec<u8> {
-    fn crypto_hash(&self) -> HashValue {
-        HashValue::from_sha3_256(
-            scs::to_bytes(self)
-                .expect("Serialization should work.")
-                .as_slice(),
-        )
-    }
-}
-
-impl CryptoHash for &[u8] {
-    fn crypto_hash(&self) -> HashValue {
-        HashValue::from_sha3_256(
-            scs::to_bytes(self)
-                .expect("Serialization should work.")
-                .as_slice(),
-        )
+        self.hash()
     }
 }
 

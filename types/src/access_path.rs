@@ -53,7 +53,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::{CryptoHash, HashValue};
+use starcoin_crypto::hash::{CryptoHash, CryptoHasher, HashValue, PlainCryptoHash};
 use std::{fmt, slice::Iter};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, Ord, PartialOrd)]
@@ -235,7 +235,9 @@ impl DataType {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, CryptoHash)]
+#[derive(
+    Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, CryptoHasher, CryptoHash,
+)]
 pub struct AccessPath {
     address: AccountAddress,
     data_type: DataType,

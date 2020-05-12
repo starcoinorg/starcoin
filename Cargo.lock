@@ -1701,6 +1701,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.6.5",
  "serde",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
  "thiserror",
  "tiny-keccak 1.5.0",
@@ -5842,6 +5843,7 @@ name = "starcoin-crypto"
 version = "0.1.0"
 dependencies = [
  "libra-crypto",
+ "once_cell",
  "rand 0.6.5",
  "serde",
  "starcoin-canonical-serialization",
@@ -5852,6 +5854,7 @@ dependencies = [
 name = "starcoin-crypto-macro"
 version = "0.1.0"
 dependencies = [
+ "proc-macro2 1.0.10",
  "quote 1.0.3",
  "serde",
  "starcoin-canonical-serialization",

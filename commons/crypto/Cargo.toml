@@ -12,6 +12,7 @@ libra-crypto = { package="libra-crypto",  git = "https://github.com/starcoinorg/
 scs = { package="starcoin-canonical-serialization", path = "../scs"}
 crypto-macro = { package="starcoin-crypto-macro", path = "./crypto-macro"}
 rand = "0.6.5"
+once_cell = "1.3.1"
 
 [features]
 default = []

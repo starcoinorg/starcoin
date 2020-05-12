@@ -13,7 +13,7 @@ use crate::{
 };
 use actix::prelude::*;
 use anyhow::Result;
-use common_crypto::hash::{CryptoHash, HashValue};
+use common_crypto::hash::{HashValue, PlainCryptoHash};
 use futures_channel::mpsc;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_config::TxPoolConfig;

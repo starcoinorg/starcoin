@@ -5,7 +5,7 @@ use hex;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
 use std::fmt;
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Blob {
     blob: Vec<u8>,
 }
@@ -42,11 +42,5 @@ impl From<Blob> for Vec<u8> {
 impl From<Vec<u8>> for Blob {
     fn from(blob: Vec<u8>) -> Blob {
         Blob { blob }
-    }
-}
-
-impl CryptoHash for Blob {
-    fn crypto_hash(&self) -> HashValue {
-        HashValue::from_sha3_256(&self.blob)
     }
 }
