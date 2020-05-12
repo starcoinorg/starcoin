@@ -158,6 +158,26 @@ impl NetworkBehaviour for Protocol {
         self.behaviour.inject_disconnected(peer_id)
     }
 
+    fn inject_connection_established(
+        &mut self,
+        peer_id: &PeerId,
+        conn: &ConnectionId,
+        endpoint: &ConnectedPoint,
+    ) {
+        self.behaviour
+            .inject_connection_established(peer_id, conn, endpoint)
+    }
+
+    fn inject_connection_closed(
+        &mut self,
+        peer_id: &PeerId,
+        conn: &ConnectionId,
+        endpoint: &ConnectedPoint,
+    ) {
+        self.behaviour
+            .inject_connection_closed(peer_id, conn, endpoint)
+    }
+
     fn inject_event(
         &mut self,
         peer_id: PeerId,

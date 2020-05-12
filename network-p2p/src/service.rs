@@ -887,7 +887,10 @@ impl Future for NetworkWorker {
                     trace!(target: "sub-libp2p", "Libp2p => UnknownPeerUnreachableAddr({}): {}",
                            address, error)
                 }
-                Poll::Ready(SwarmEvent::ListenerClosed { reason, addresses }) => {
+                Poll::Ready(SwarmEvent::ListenerClosed {
+                    reason,
+                    addresses: _,
+                }) => {
                     warn!(target: "sub-libp2p", "Libp2p => ListenerClosed: {:?}", reason);
                 }
                 Poll::Ready(SwarmEvent::ListenerError { error }) => {
