@@ -17,10 +17,9 @@
 #![cfg(test)]
 
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
-use codec::Encode;
+use codec::{Decode, Encode};
 use futures::{prelude::*, ready};
 use libp2p::core::connection::{ConnectionId, ListenerId};
-
 use libp2p::core::ConnectedPoint;
 use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler, Swarm};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
@@ -163,6 +162,25 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         self.inner.inject_disconnected(peer_id)
     }
 
+    fn inject_connection_established(
+        &mut self,
+        peer_id: &PeerId,
+        conn: &ConnectionId,
+        endpoint: &ConnectedPoint,
+    ) {
+        self.inner
+            .inject_connection_established(peer_id, conn, endpoint)
+    }
+
+    fn inject_connection_closed(
+        &mut self,
+        peer_id: &PeerId,
+        conn: &ConnectionId,
+        endpoint: &ConnectedPoint,
+    ) {
+        self.inner.inject_connection_closed(peer_id, conn, endpoint)
+    }
+
     fn inject_event(
         &mut self,
         peer_id: PeerId,
@@ -175,7 +193,7 @@ impl NetworkBehaviour for CustomProtoWithAddr {
     fn poll(
         &mut self,
         cx: &mut Context,
-        params: &mut impl PollParameters,
+        params: &mut impl PollParameters
     ) -> Poll<
         NetworkBehaviourAction<
             <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
@@ -327,7 +345,6 @@ fn basic_two_nodes_requests_in_parallel() {
     });
 }
 
-#[ignore]
 #[test]
 fn reconnect_after_disconnect() {
     // We connect two nodes together, then force a disconnect (through the API of the `Service`),

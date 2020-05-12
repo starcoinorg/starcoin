@@ -32,7 +32,7 @@ rand = "0.5"
 starcoin-vm-runtime = { path = "../vm/vm-runtime"}
 starcoin-sync = { path = "../sync" }
 starcoin-network = {path = "../network"}
-libp2p = "0.16.2"
+libp2p = "0.18.1"
 starcoin-network-api = {path = "../network/api", package="network-api"}
 tokio = { version = "0.2", features = ["full"] }
 
