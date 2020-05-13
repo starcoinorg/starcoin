@@ -53,9 +53,9 @@ fn run() -> Result<()> {
                         (client, node_handle)
                     }
                 }
-                Connect::RPC(address) => {
-                    info!("Try to connect node by rpc: {:?}", address);
-                    let client = RpcClient::connect_http(address)?;
+                Connect::WebSocket(address) => {
+                    info!("Try to connect node by websocket: {:?}", address);
+                    let client = RpcClient::connect_websocket(address)?;
                     (client, None)
                 }
             };

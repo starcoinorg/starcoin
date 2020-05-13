@@ -4,6 +4,9 @@ use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::{event::Event, pubsub::EventFilter, pubsub::Kind};
 use starcoin_types::block::BlockHeader;
 
+const STARCOIN_SUBSCRIPTION: &str = "starcoin_subscription";
+const STARCOIN_SUBSCRIBE: &str = "starcoin_subscribe";
+const STARCOIN_UNSUBSCRIBE: &str = "starcoin_unsubscribe";
 #[derive(Clone)]
 pub struct PubSubClient {
     client: TypedClient,
@@ -24,10 +27,10 @@ impl PubSubClient {
     ) -> Result<TypedSubscriptionStream<Event>, RpcError> {
         self.client
             .subscribe(
-                "starcoin_subscribe",
+                STARCOIN_SUBSCRIBE,
                 (Kind::Events, filter),
-                "starcoin_subscription",
-                "starcoin_unsubscribe",
+                STARCOIN_SUBSCRIPTION,
+                STARCOIN_UNSUBSCRIBE,
                 "Event",
             )
             .compat()
@@ -38,10 +41,10 @@ impl PubSubClient {
     ) -> Result<TypedSubscriptionStream<BlockHeader>, RpcError> {
         self.client
             .subscribe(
-                "starcoin_subscribe",
+                STARCOIN_SUBSCRIBE,
                 vec![Kind::NewHeads],
-                "starcoin_subscription",
-                "starcoin_unsubscribe",
+                STARCOIN_SUBSCRIPTION,
+                STARCOIN_UNSUBSCRIBE,
                 "BlockHeader",
             )
             .compat()
@@ -52,10 +55,10 @@ impl PubSubClient {
     ) -> Result<TypedSubscriptionStream<Vec<HashValue>>, RpcError> {
         self.client
             .subscribe(
-                "starcoin_subscribe",
+                STARCOIN_SUBSCRIBE,
                 vec![Kind::NewPendingTransactions],
-                "starcoin_subscription",
-                "starcoin_unsubscribe",
+                STARCOIN_SUBSCRIPTION,
+                STARCOIN_UNSUBSCRIBE,
                 "Vec<HashValue>",
             )
             .compat()
