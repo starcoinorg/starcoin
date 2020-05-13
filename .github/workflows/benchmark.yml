@@ -25,3 +25,6 @@ jobs:
           RUST_BACKTRACE: full
         with:
           command: bench
+          args: --bench benchmarks --bench bench_state_tree --bench bench_sync
+      - name: publish result
+          run: rsync -avpz --delete benchmarks/target/criterion /mnt/volume_01/starcoin_benchmarks
