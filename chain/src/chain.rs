@@ -8,8 +8,6 @@ use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
 use logger::prelude::*;
 use network::get_unix_ts;
-use once_cell::sync::Lazy;
-use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
@@ -21,23 +19,13 @@ use traits::Consensus;
 use traits::{ChainReader, ChainWriter};
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate, BLOCK_INFO_DEFAULT_ID},
+    accumulator_info::AccumulatorInfo,
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     block_metadata::BlockMetadata,
     startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U512,
 };
-
-pub static DEFAULT_BLOCK_INFO: Lazy<BlockInfo> = Lazy::new(|| {
-    BlockInfo::new(
-        *BLOCK_INFO_DEFAULT_ID,
-        *ACCUMULATOR_PLACEHOLDER_HASH,
-        vec![],
-        0,
-        0,
-        U512::zero(),
-    )
-});
 
 pub struct BlockChain<C, S>
 where
@@ -69,14 +57,10 @@ where
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {}", head_block_hash))?;
-        let block_info = match storage.clone().get_block_info(head_block_hash) {
-            Ok(Some(block_info_1)) => block_info_1,
-            Err(e) => {
-                warn!("err : {:?}", e);
-                DEFAULT_BLOCK_INFO.clone()
-            }
-            _ => DEFAULT_BLOCK_INFO.clone(),
-        };
+        let block_info = storage
+            .clone()
+            .get_block_info(head_block_hash)?
+            .ok_or_else(|| format_err!("Can not find block info by hash {}", head_block_hash))?;
 
         let state_root = head.header().state_root();
         let chain = Self {
@@ -118,15 +102,11 @@ where
         debug!("commit block : {:?}", block.header().id());
     }
 
-    fn get_block_info(&self, block_id: HashValue) -> BlockInfo {
-        match self.storage.get_block_info(block_id) {
-            Ok(Some(block_info_1)) => block_info_1,
-            Err(e) => {
-                warn!("err : {:?}", e);
-                DEFAULT_BLOCK_INFO.clone()
-            }
-            _ => DEFAULT_BLOCK_INFO.clone(),
-        }
+    fn get_block_info(&self, block_id: HashValue) -> Result<BlockInfo> {
+        Ok(self
+            .storage
+            .get_block_info(block_id)?
+            .ok_or_else(|| format_err!("Can not find block info by hash {}", block_id))?)
     }
     pub fn save_block_info(&self, block_info: BlockInfo) {
         if let Err(e) = self.storage.save_block_info(block_info) {
@@ -181,7 +161,7 @@ where
         )));
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
-        let block_info = self.get_block_info(previous_header.id());
+        let block_info = self.get_block_info(previous_header.id())?;
         let accumulator = MerkleAccumulator::new(
             block_info.accumulator_root,
             block_info.frozen_subtree_roots,
@@ -476,7 +456,7 @@ where
 
         let total_difficulty = {
             let pre_total_difficulty = self
-                .get_block_info(block.header().parent_hash())
+                .get_block_info(block.header().parent_hash())?
                 .total_difficulty;
             pre_total_difficulty + header.difficulty().into()
         };
@@ -489,6 +469,7 @@ where
             self.accumulator.num_leaves(),
             self.accumulator.num_nodes(),
             total_difficulty,
+            AccumulatorInfo::default(), // TODO
         );
         let new_block_info_end_time = get_unix_ts();
         debug!(

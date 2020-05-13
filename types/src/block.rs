@@ -9,6 +9,7 @@ use starcoin_crypto::{
     HashValue,
 };
 
+use crate::accumulator_info::AccumulatorInfo;
 use crate::{U256, U512};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -45,7 +46,7 @@ pub struct BlockHeader {
     author: AccountAddress,
     /// auth_key_prefix for create_account
     auth_key_prefix: Option<Vec<u8>>,
-    /// The accumulator root hash after executing this block.
+    /// The transaction accumulator root hash after executing this block.
     accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     state_root: HashValue,
@@ -307,6 +308,8 @@ pub struct BlockInfo {
     pub num_nodes: u64,
     /// The total difficulty.
     pub total_difficulty: U512,
+    /// The block accumulator info.
+    pub block_accumulator_info: AccumulatorInfo,
 }
 
 impl BlockInfo {
@@ -317,6 +320,7 @@ impl BlockInfo {
         num_leaves: u64,
         num_nodes: u64,
         total_difficulty: U512,
+        block_accumulator_info: AccumulatorInfo,
     ) -> Self {
         Self {
             block_id,
@@ -325,9 +329,20 @@ impl BlockInfo {
             num_leaves,
             num_nodes,
             total_difficulty,
+            block_accumulator_info,
         }
     }
-    pub fn into_inner(self) -> (HashValue, HashValue, Vec<HashValue>, u64, u64, U512) {
+    pub fn into_inner(
+        self,
+    ) -> (
+        HashValue,
+        HashValue,
+        Vec<HashValue>,
+        u64,
+        u64,
+        U512,
+        AccumulatorInfo,
+    ) {
         self.into()
     }
 
@@ -338,10 +353,34 @@ impl BlockInfo {
     pub fn get_total_difficulty(&self) -> U512 {
         self.total_difficulty
     }
+
+    pub fn get_block_accumulator_info(&self) -> &AccumulatorInfo {
+        &self.block_accumulator_info
+    }
 }
 
-impl Into<(HashValue, HashValue, Vec<HashValue>, u64, u64, U512)> for BlockInfo {
-    fn into(self) -> (HashValue, HashValue, Vec<HashValue>, u64, u64, U512) {
+impl
+    Into<(
+        HashValue,
+        HashValue,
+        Vec<HashValue>,
+        u64,
+        u64,
+        U512,
+        AccumulatorInfo,
+    )> for BlockInfo
+{
+    fn into(
+        self,
+    ) -> (
+        HashValue,
+        HashValue,
+        Vec<HashValue>,
+        u64,
+        u64,
+        U512,
+        AccumulatorInfo,
+    ) {
         (
             self.block_id,
             self.accumulator_root,
@@ -349,6 +388,7 @@ impl Into<(HashValue, HashValue, Vec<HashValue>, u64, u64, U512)> for BlockInfo 
             self.num_leaves,
             self.num_nodes,
             self.total_difficulty,
+            self.block_accumulator_info,
         )
     }
 }

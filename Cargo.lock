@@ -6442,6 +6442,7 @@ dependencies = [
  "rand 0.6.5",
  "ref-cast",
  "serde",
+ "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "thiserror",

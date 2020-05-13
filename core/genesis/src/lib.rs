@@ -20,7 +20,11 @@ use starcoin_types::block::BlockInfo;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::{block::Block, transaction::Transaction, vm_error::StatusCode, U512};
+use starcoin_types::{
+    accumulator_info::AccumulatorInfo, block::Block, transaction::Transaction,
+    vm_error::StatusCode, U512,
+};
+use std::convert::TryInto;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
@@ -186,6 +190,7 @@ impl Genesis {
             accumulator.num_leaves(),
             accumulator.num_nodes(),
             U512::zero(),
+            Self::genesis_block_accumulator_info(block.header().id(), storage.clone()).unwrap(),
         ))?;
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)
@@ -204,6 +209,23 @@ impl Genesis {
         let contents = scs::to_bytes(self)?;
         file.write_all(&contents)?;
         Ok(())
+    }
+
+    fn genesis_block_accumulator_info(
+        genesis_block_id: HashValue,
+        storage: Arc<dyn Store>,
+    ) -> Result<AccumulatorInfo> {
+        let accumulator = MerkleAccumulator::new(
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            vec![],
+            0,
+            0,
+            storage.clone().into_super_arc(),
+        )?;
+
+        let (_, _) = accumulator.append(vec![genesis_block_id].as_slice())?;
+        accumulator.flush()?;
+        accumulator.try_into()
     }
 }
 
