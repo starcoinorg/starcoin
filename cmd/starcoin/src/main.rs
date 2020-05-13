@@ -133,7 +133,13 @@ fn run() -> Result<()> {
                 .subcommand(dev::GetCoinCommand)
                 .subcommand(dev::CompileCommand)
                 .subcommand(dev::DeployCommand)
-                .subcommand(dev::ExecuteCommand),
+                .subcommand(dev::ExecuteCommand)
+                .subcommand(
+                    Command::with_name("subscribe")
+                        .subcommand(dev::SubscribeBlockCommand)
+                        .subcommand(dev::SubscribeEventCommand)
+                        .subcommand(dev::SubscribeNewTxnCommand),
+                ),
         )
         .command(
             Command::with_name("debug")

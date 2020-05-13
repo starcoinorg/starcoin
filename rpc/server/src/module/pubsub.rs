@@ -158,6 +158,6 @@ impl PubSubService {
         let res1 = self.events_subscribers.write().remove(&id).is_some();
         let res2 = self.transactions_subscribers.write().remove(&id).is_some();
         let res3 = self.new_header_subscribers.write().remove(&id).is_some();
-        Ok(res1 || res2)
+        Ok(res1 || res2 || res3)
     }
 }

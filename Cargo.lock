@@ -5538,10 +5538,12 @@ dependencies = [
  "backtrace",
  "crossbeam-channel",
  "forkable-jellyfish-merkle",
+ "futures 0.3.4",
  "hex 0.4.2",
  "move-lang",
  "scmd",
  "serde",
+ "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-consensus",
@@ -5558,6 +5560,8 @@ dependencies = [
  "starcoin-wallet-api",
  "stdlib 0.1.0",
  "structopt",
+ "tokio 0.2.18",
+ "vm",
 ]
 
 [[package]]
@@ -5885,6 +5889,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "futures 0.3.5",
+ "hex 0.4.2",
  "jsonrpc-core 14.1.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
