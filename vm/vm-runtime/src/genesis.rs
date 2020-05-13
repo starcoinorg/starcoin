@@ -24,6 +24,7 @@ use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
 use stdlib::{stdlib_modules, StdLibOptions};
 use types::account_config;
+use types::contract_event::ContractEvent;
 use types::transaction::authenticator::AuthenticationKey;
 use vm::{
     access::ModuleAccess,
@@ -60,7 +61,7 @@ static SUBSIDY_INIT: Lazy<Identifier> =
 pub fn generate_genesis_state_set(
     chain_config: &ChainConfig,
     chain_state: &dyn ChainState,
-) -> Result<()> {
+) -> Result<Vec<ContractEvent>> {
     // Compile the needed stdlib modules.
     let modules = stdlib_modules(StdLibOptions::Staged);
 
@@ -98,7 +99,14 @@ pub fn generate_genesis_state_set(
 
     let write_set = interpreter_context.make_write_set()?;
     state_store.add_write_set(&write_set);
-    Ok(())
+    let events = interpreter_context
+        .events()
+        .to_vec()
+        .iter()
+        .map(|event| event.into())
+        .collect();
+
+    Ok(events)
 }
 
 /// Create and initialize Transaction Fee and Core Code accounts.

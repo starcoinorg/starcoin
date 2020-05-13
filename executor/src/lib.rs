@@ -7,6 +7,7 @@ use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
 use types::{
     account_address::AccountAddress,
+    contract_event::ContractEvent,
     state_set::ChainStateSet,
     transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
@@ -19,7 +20,8 @@ pub mod executor_test;
 
 pub trait TransactionExecutor: std::marker::Unpin + Clone {
     /// Create genesis state, return state root and state set.
-    fn init_genesis(config: &ChainConfig) -> Result<(HashValue, ChainStateSet)>;
+    fn init_genesis(config: &ChainConfig)
+        -> Result<(HashValue, ChainStateSet, Vec<ContractEvent>)>;
 
     /// Execute transaction, update state to state_store, and return events and TransactionStatus.
     fn execute_transaction(
