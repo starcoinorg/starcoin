@@ -11,6 +11,7 @@ use std::sync::Arc;
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use types::{
     account_address::AccountAddress,
+    contract_event::ContractEvent,
     state_set::ChainStateSet,
     transaction::{
         RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput,
@@ -40,7 +41,9 @@ impl Executor {
 }
 
 impl TransactionExecutor for Executor {
-    fn init_genesis(chain_config: &ChainConfig) -> Result<(HashValue, ChainStateSet)> {
+    fn init_genesis(
+        chain_config: &ChainConfig,
+    ) -> Result<(HashValue, ChainStateSet, Vec<ContractEvent>)> {
         let timer = TXN_EXECUTION_HISTOGRAM
             .with_label_values(&["init_genesis"])
             .start_timer();
@@ -50,13 +53,14 @@ impl TransactionExecutor for Executor {
         ))?);
         let chain_state_db = ChainStateDB::new(storage, None);
 
-        generate_genesis_state_set(&chain_config, &chain_state_db)?;
+        let events = generate_genesis_state_set(&chain_config, &chain_state_db)
+            .expect("Generate genesis state set must succeed");
         chain_state_db.commit()?;
         chain_state_db.flush()?;
 
-        let dump = chain_state_db.dump()?;
+        let state = chain_state_db.dump()?;
         timer.observe_duration();
-        Ok((chain_state_db.state_root(), dump))
+        Ok((chain_state_db.state_root(), state, events))
     }
 
     fn execute_transaction(

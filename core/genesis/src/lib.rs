@@ -61,7 +61,7 @@ impl Genesis {
         debug!("Init genesis");
         let chain_config = net.get_config();
         //TODO remove config argument, genesis not dependency NodeConfig.
-        let (_state_root, chain_state_set) = Executor::init_genesis(&chain_config)?;
+        let (_state_root, chain_state_set, _) = Executor::init_genesis(&chain_config)?;
 
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
