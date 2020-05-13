@@ -42,7 +42,7 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
 
 #[stest::test]
 fn test_validate_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -75,7 +75,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -118,7 +118,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -142,7 +142,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -177,7 +177,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_sequence_number() -> Result<()> {
-    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -250,7 +250,7 @@ pub fn compile_module_with_address(
 
 #[stest::test]
 fn test_publish_module() -> Result<()> {
-    let (_hash, state_set) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
