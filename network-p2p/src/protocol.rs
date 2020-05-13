@@ -1,7 +1,6 @@
 pub mod event;
 pub mod generic_proto;
 pub mod message;
-pub mod rpc_handle;
 pub mod util;
 
 use crate::config::ProtocolId;
@@ -13,7 +12,10 @@ use crate::network_state::Peer;
 
 use bytes::{Bytes, BytesMut};
 use futures::prelude::*;
-use libp2p::core::{nodes::listeners::ListenerId, ConnectedPoint};
+use libp2p::core::{
+    connection::{ConnectionId, ListenerId},
+    ConnectedPoint,
+};
 use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
@@ -39,6 +41,8 @@ const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
 pub(crate) const CURRENT_VERSION: u32 = 1;
 /// Lowest version we support
 pub(crate) const MIN_VERSION: u32 = 1;
+
+pub use generic_proto::LegacyConnectionKillError;
 
 mod rep {
     use peerset::ReputationChange as Rep;
@@ -146,20 +150,41 @@ impl NetworkBehaviour for Protocol {
         self.behaviour.addresses_of_peer(peer_id)
     }
 
-    fn inject_connected(&mut self, peer_id: PeerId, endpoint: ConnectedPoint) {
-        self.behaviour.inject_connected(peer_id, endpoint)
+    fn inject_connected(&mut self, peer_id: &PeerId) {
+        self.behaviour.inject_connected(peer_id)
     }
 
-    fn inject_disconnected(&mut self, peer_id: &PeerId, endpoint: ConnectedPoint) {
-        self.behaviour.inject_disconnected(peer_id, endpoint)
+    fn inject_disconnected(&mut self, peer_id: &PeerId) {
+        self.behaviour.inject_disconnected(peer_id)
     }
 
-    fn inject_node_event(
+    fn inject_connection_established(
+        &mut self,
+        peer_id: &PeerId,
+        conn: &ConnectionId,
+        endpoint: &ConnectedPoint,
+    ) {
+        self.behaviour
+            .inject_connection_established(peer_id, conn, endpoint)
+    }
+
+    fn inject_connection_closed(
+        &mut self,
+        peer_id: &PeerId,
+        conn: &ConnectionId,
+        endpoint: &ConnectedPoint,
+    ) {
+        self.behaviour
+            .inject_connection_closed(peer_id, conn, endpoint)
+    }
+
+    fn inject_event(
         &mut self,
         peer_id: PeerId,
+        connection: ConnectionId,
         event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
-        self.behaviour.inject_node_event(peer_id, event)
+        self.behaviour.inject_event(peer_id, connection, event)
     }
 
     fn poll(
@@ -182,11 +207,19 @@ impl NetworkBehaviour for Protocol {
             Poll::Ready(NetworkBehaviourAction::DialAddress { address }) => {
                 return Poll::Ready(NetworkBehaviourAction::DialAddress { address })
             }
-            Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id }) => {
-                return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id })
+            Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition }) => {
+                return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition })
             }
-            Poll::Ready(NetworkBehaviourAction::SendEvent { peer_id, event }) => {
-                return Poll::Ready(NetworkBehaviourAction::SendEvent { peer_id, event })
+            Poll::Ready(NetworkBehaviourAction::NotifyHandler {
+                peer_id,
+                handler,
+                event,
+            }) => {
+                return Poll::Ready(NetworkBehaviourAction::NotifyHandler {
+                    peer_id,
+                    handler,
+                    event,
+                })
             }
             Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address }) => {
                 return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address })
@@ -203,9 +236,14 @@ impl NetworkBehaviour for Protocol {
                 // Notify all the notification protocols as closed.
                 CustomMessageOutcome::NotificationStreamClosed { remote: peer_id }
             }
-            GenericProtoOut::CustomMessage { peer_id, message } => {
+            GenericProtoOut::LegacyMessage { peer_id, message } => {
                 self.on_custom_message(peer_id, message)
             }
+            GenericProtoOut::Notification {
+                peer_id,
+                protocol_name: _protocol_name,
+                message,
+            } => self.on_custom_message(peer_id, message),
             GenericProtoOut::Clogged {
                 peer_id: _,
                 messages,
@@ -225,16 +263,6 @@ impl NetworkBehaviour for Protocol {
         } else {
             Poll::Ready(NetworkBehaviourAction::GenerateEvent(outcome))
         }
-    }
-
-    fn inject_replaced(
-        &mut self,
-        peer_id: PeerId,
-        closed_endpoint: ConnectedPoint,
-        new_endpoint: ConnectedPoint,
-    ) {
-        self.behaviour
-            .inject_replaced(peer_id, closed_endpoint, new_endpoint)
     }
 
     fn inject_addr_reach_failure(
@@ -267,8 +295,8 @@ impl NetworkBehaviour for Protocol {
         self.behaviour.inject_listener_error(id, err);
     }
 
-    fn inject_listener_closed(&mut self, id: ListenerId) {
-        self.behaviour.inject_listener_closed(id);
+    fn inject_listener_closed(&mut self, id: ListenerId, reason: Result<(), &std::io::Error>) {
+        self.behaviour.inject_listener_closed(id, reason);
     }
 }
 
@@ -303,7 +331,7 @@ impl Protocol {
 
         let (peerset, peerset_handle) = peerset::Peerset::from_config(peerset_config);
         let versions = &((MIN_VERSION as u8)..=(CURRENT_VERSION as u8)).collect::<Vec<u8>>();
-        let behaviour = GenericProto::new(protocol_id, versions, peerset);
+        let behaviour = GenericProto::new(protocol_id, versions, peerset, None);
 
         let protocol = Protocol {
             tick_timeout: Box::pin(interval(TICK_TIMEOUT)),

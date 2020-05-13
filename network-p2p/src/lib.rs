@@ -43,6 +43,8 @@ use std::{
     time::Duration,
 };
 
+const MAX_CONNECTIONS_PER_PEER: usize = 2;
+
 trait DiscoveryNetBehaviour {
     /// Notify the protocol that we have learned about the existence of nodes.
     ///

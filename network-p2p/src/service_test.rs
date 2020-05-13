@@ -17,8 +17,6 @@ mod tests {
 
     const PROTOCOL_NAME: &[u8] = b"/starcoin/notify/1";
 
-    //FIXME #139
-    #[ignore]
     #[stest::test(timeout = 5)]
     fn test_notify() {
         let mut rt = Runtime::new().unwrap();
