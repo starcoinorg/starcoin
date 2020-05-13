@@ -6,7 +6,7 @@ use futures::{future::FutureExt, select, stream::StreamExt, TryStream};
 use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{
-    transports::http, transports::ipc, transports::local, RpcChannel, RpcError as JsonRpcError,
+    transports::ipc, transports::local, transports::ws, RpcChannel, RpcError as JsonRpcError,
 };
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -46,7 +46,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 enum ConnSource {
     Ipc(PathBuf, Arc<Reactor>),
-    Http,
+    WebSocket,
     Local,
 }
 
@@ -89,10 +89,12 @@ impl RpcClient {
             conn_source,
         }
     }
-    pub fn connect_http(url: &str) -> anyhow::Result<Self> {
+    pub fn connect_websocket(url: &str) -> anyhow::Result<Self> {
         let mut rt = Runtime::new().unwrap();
-        let client_inner = rt.block_on(http::connect(url).map_err(map_err))?;
-        Ok(Self::new(ConnSource::Http, client_inner, rt))
+
+        let conn = ws::try_connect(url).map_err(|e| anyhow::Error::new(e.compat()))?;
+        let client = rt.block_on(conn.map_err(map_err))?;
+        Ok(Self::new(ConnSource::WebSocket, client, rt))
     }
 
     pub fn connect_local<THandler, TMetadata>(handler: THandler) -> Self
