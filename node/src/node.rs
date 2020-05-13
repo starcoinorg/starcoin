@@ -79,7 +79,16 @@ where
                 error!("Genesis version mismatch, please clean you data_dir.");
                 std::process::exit(120);
             }
-            //TODO verify genesis block in db.
+            if genesis.block().clone()
+                == storage
+                    .get_block(genesis.block().header().id())?
+                    .expect("Genesis block must exist.")
+            {
+                info!("Check genesis db block ok!");
+            } else {
+                error!("Genesis db storage mismatch, please clean you data_dir.");
+                std::process::exit(120);
+            }
             (startup_info, genesis.block().header().id())
         }
         None => {
