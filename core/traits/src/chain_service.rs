@@ -46,7 +46,6 @@ pub trait ChainService {
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
-    fn gen_tx(&self) -> Result<()>;
 }
 
 /// ChainActor
@@ -80,7 +79,6 @@ pub trait ChainAsyncService:
     async fn get_transaction(self, txn_id: HashValue) -> Result<TransactionInfo>;
     async fn get_block_txn(self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     /////////////////////////////////////////////// just for test
-    async fn gen_tx(&self) -> Result<()>;
     async fn create_block_template(
         self,
         author: AccountAddress,

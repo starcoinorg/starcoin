@@ -34,7 +34,7 @@ pub trait InnerStore: Send + Sync {
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool>;
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
-    fn write_batch(&self, batch: WriteBatch) -> Result<()>;
+    fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
@@ -125,14 +125,16 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn write_batch(&self, batch: WriteBatch) -> Result<()> {
+    fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         match self {
-            StorageInstance::CACHE { cache } => cache.write_batch(batch),
-            StorageInstance::DB { db } => db.write_batch(batch),
-            StorageInstance::CacheAndDb { cache, db } => match db.write_batch(batch.clone()) {
-                Ok(_) => cache.write_batch(batch),
-                Err(err) => bail!("write batch db error: {}", err),
-            },
+            StorageInstance::CACHE { cache } => cache.write_batch(prefix_name, batch),
+            StorageInstance::DB { db } => db.write_batch(prefix_name, batch),
+            StorageInstance::CacheAndDb { cache, db } => {
+                match db.write_batch(prefix_name, batch.clone()) {
+                    Ok(_) => cache.write_batch(prefix_name, batch),
+                    Err(err) => bail!("write batch db error: {}", err),
+                }
+            }
         }
     }
     fn get_len(&self) -> Result<u64> {
@@ -185,7 +187,7 @@ impl KVStore for InnerStorage {
     }
 
     fn write_batch(&self, batch: WriteBatch) -> Result<()> {
-        self.instance.write_batch(batch)
+        self.instance.write_batch(self.prefix_name, batch)
     }
 
     fn get_len(&self) -> Result<u64> {

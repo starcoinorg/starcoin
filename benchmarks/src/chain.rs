@@ -24,10 +24,9 @@ use traits::{ChainService, Consensus};
 /// Benchmarking support for chain.
 pub struct ChainBencher {
     chain: Arc<RwLock<ChainServiceImpl<DummyConsensus, Storage, TxPoolRef>>>,
-    collection: Arc<BlockChainCollection<DummyConsensus, Storage, TxPoolRef>>,
+    collection: Arc<BlockChainCollection<DummyConsensus, Storage>>,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
-    txpool: TxPoolRef,
     block_num: u64,
     account: WalletAccount,
     count: AtomicU64,
@@ -64,13 +63,8 @@ impl ChainBencher {
         )
         .unwrap();
         let startup_info = chain.master_startup_info();
-        let collection = to_block_chain_collection(
-            node_config.clone(),
-            startup_info,
-            storage.clone(),
-            txpool.clone(),
-        )
-        .unwrap();
+        let collection =
+            to_block_chain_collection(node_config.clone(), startup_info, storage.clone()).unwrap();
         let miner_account = WalletAccount::random();
 
         ChainBencher {
@@ -81,7 +75,6 @@ impl ChainBencher {
             },
             config: node_config,
             storage,
-            txpool,
             collection,
             account: miner_account,
             count: AtomicU64::new(0),
@@ -92,11 +85,10 @@ impl ChainBencher {
         let mut latest_id = None;
         let mut rng: StdRng = StdRng::from_seed([0; 32]);
         for i in 0..self.block_num {
-            let block_chain = BlockChain::<DummyConsensus, Storage, TxPoolRef>::new(
+            let block_chain = BlockChain::<DummyConsensus, Storage>::new(
                 self.config.clone(),
                 self.collection.get_master_chain_info(),
                 self.storage.clone(),
-                self.txpool.clone(),
                 Arc::downgrade(&self.collection),
             )
             .unwrap();

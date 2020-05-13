@@ -28,5 +28,6 @@ libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoin
 starcoin-metrics = { path = "../commons/metrics"}
 
 [dependencies.rocksdb]
-git = "https://github.com/pingcap/rust-rocksdb.git"
-rev = "72e45c3f3283302c825d53c3cd7154f4cd9e8f5b"
+version = "0.14"
+default-features = false
+features = ["lz4"]

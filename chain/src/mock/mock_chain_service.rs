@@ -79,10 +79,6 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn gen_tx(&self) -> Result<(), Error> {
-        unimplemented!()
-    }
-
     async fn create_block_template(
         self,
         _author: AccountAddress,

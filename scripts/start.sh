@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 cfg_path="/.starcoin"
 net="$1"
 shift;
@@ -10,5 +10,5 @@ ret=$?
 if [ $ret -eq 120 ]; then
     echo "Start failed with gensis mismatch code 120, clean data..."
     rm -rf $cfg_path/$net/ &>/dev/null
-    exit $ret
 fi
+exit $ret

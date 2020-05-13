@@ -553,6 +553,8 @@ pub struct TransactionInfo {
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
     event_root_hash: HashValue,
 
+    events: Vec<ContractEvent>,
+
     /// The amount of gas used.
     gas_used: u64,
 
@@ -569,6 +571,7 @@ impl TransactionInfo {
         transaction_hash: HashValue,
         state_root_hash: HashValue,
         event_root_hash: HashValue,
+        events: Vec<ContractEvent>,
         gas_used: u64,
         major_status: StatusCode,
     ) -> TransactionInfo {
@@ -576,6 +579,7 @@ impl TransactionInfo {
             transaction_hash,
             state_root_hash,
             event_root_hash,
+            events,
             gas_used,
             major_status,
         }
@@ -596,6 +600,10 @@ impl TransactionInfo {
     /// transaction.
     pub fn event_root_hash(&self) -> HashValue {
         self.event_root_hash
+    }
+
+    pub fn events(&self) -> &[ContractEvent] {
+        &self.events
     }
 
     /// Returns the amount of gas used by this transaction.

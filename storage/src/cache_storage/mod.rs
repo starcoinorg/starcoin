@@ -64,17 +64,15 @@ impl InnerStore for CacheStorage {
         })
     }
 
-    fn write_batch(&self, batch: WriteBatch) -> Result<()> {
-        record_metrics("cache", "batch", "write_batch").end_with(|| {
-            for (prefix_name, rows) in &batch.rows {
-                for (key, write_op) in rows {
-                    match write_op {
-                        WriteOp::Value(value) => {
-                            self.put(prefix_name, key.to_vec(), value.to_vec()).unwrap()
-                        }
-                        WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
-                    };
-                }
+    fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
+        record_metrics("cache", "batch", prefix_name).end_with(|| {
+            for (key, write_op) in &batch.rows {
+                match write_op {
+                    WriteOp::Value(value) => {
+                        self.put(prefix_name, key.to_vec(), value.to_vec()).unwrap()
+                    }
+                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
+                };
             }
             Ok(())
         })

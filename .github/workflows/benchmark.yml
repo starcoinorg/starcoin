@@ -1,0 +1,27 @@
+name: starcoin benchmark
+on:
+  schedule:
+    - cron: '0 3 * * *'
+jobs:
+  bench:
+    name: benchmark
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt,clippy
+      - name: setup environment
+        run: bash ./scripts/dev_setup.sh
+      - name: run cargo bench
+        uses: actions-rs/cargo@v1
+        env:
+          RUST_LOG: error
+          RUST_BACKTRACE: full
+        with:
+          command: bench

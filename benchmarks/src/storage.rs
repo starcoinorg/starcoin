@@ -49,6 +49,7 @@ impl StorageBencher {
                 HashValue::random(),
                 HashValue::zero(),
                 HashValue::zero(),
+                vec![],
                 0,
                 StatusCode::ABORTED,
             );

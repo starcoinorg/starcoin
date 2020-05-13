@@ -12,6 +12,7 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
 use starcoin_network::{NetworkActor, NetworkAsyncService};
+use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
 use starcoin_storage::block_info::BlockInfoStore;
@@ -193,12 +194,20 @@ where
         })
         .await??;
 
+    let pubsub_service = {
+        let service = PubSubService::new();
+        service.start_transaction_subscription_handler(txpool.clone());
+        service.start_chain_notify_handler(bus.clone(), storage.clone());
+        service
+    };
+
     let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
         txpool.clone(),
         chain.clone(),
         account_service,
         chain_state_service,
+        Some(pubsub_service),
         Some(network.clone()),
         Some(logger_handle),
     )?;

@@ -9,6 +9,7 @@ mod chain_metrics;
 pub mod chain_service;
 pub mod message;
 pub mod mock;
+pub mod test_helper;
 
 pub use chain_service::to_block_chain_collection;
 pub use chain_service::BlockChainCollection;
@@ -159,11 +160,6 @@ where
             ChainRequest::GetTransactionIdByBlock(block_id) => Ok(
                 ChainResponse::VecTransactionInfo(self.service.get_block_txn_ids(block_id)?),
             ),
-
-            ChainRequest::GenTx() => {
-                self.service.gen_tx()?;
-                Ok(ChainResponse::None)
-            }
         }
     }
 }
@@ -417,14 +413,6 @@ where
         } else {
             bail!("get block's transaction ids error.")
         }
-    }
-
-    async fn gen_tx(&self) -> Result<()> {
-        self.address
-            .send(ChainRequest::GenTx())
-            .await
-            .map_err(|e| Into::<Error>::into(e))??;
-        Ok(())
     }
 
     async fn create_block_template(

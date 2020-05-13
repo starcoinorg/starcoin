@@ -1,14 +1,7 @@
 name: Code Coverage Report
 on:
-  push:
-    # only build master
-    branches:
-      - master
-    paths-ignore:
-      - '**.md'
-#  pull_request:
-#    paths-ignore:
-#      - '**.md'
+  schedule:
+    - cron: '0 2 * * *'
 jobs:
   code_coverage_report:
     name: Generate code coverage report

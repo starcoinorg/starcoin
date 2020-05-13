@@ -50,9 +50,13 @@ starcoin-state-service = { path = "../../state/service"}
 starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-network = {path = "../../network"}
 starcoin-metrics = {path = "../../commons/metrics"}
+starcoin-bus = {path = "../../bus"}
+starcoin-storage = {path = "../../storage"}
+
 network-api = {package="network-api", path="../../network/api"}
 
 [dev-dependencies]
 starcoin-rpc-client = { path = "../client"}
 starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
 starcoin-executor={path="../../executor"}
+starcoin-consensus= {path = "../../consensus"}
