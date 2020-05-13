@@ -13,7 +13,7 @@ use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
 use std::convert::TryInto;
 /// Subscription kind.
-#[derive(Debug, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub enum Kind {
@@ -82,7 +82,7 @@ impl<'a> Deserialize<'a> for Params {
 }
 
 /// Filter
-#[derive(Debug, PartialEq, Clone, Deserialize, Eq, Hash)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct EventFilter {

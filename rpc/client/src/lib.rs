@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2
 
 use failure::Fail;
-use futures::{future::FutureExt, select, stream::StreamExt};
+use futures::{future::FutureExt, select, stream::StreamExt, TryStream};
 use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
-use jsonrpc_core_client::{transports::http, transports::ipc, transports::local, RpcChannel};
+use jsonrpc_core_client::{
+    transports::http, transports::ipc, transports::local, RpcChannel, RpcError as JsonRpcError,
+};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::{
@@ -27,11 +29,15 @@ use tokio01::reactor::Reactor;
 use tokio_compat::prelude::*;
 use tokio_compat::runtime::Runtime;
 
+mod pubsub_client;
 mod remote_state_reader;
 
+use crate::pubsub_client::PubSubClient;
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::node::NodeInfo;
-use starcoin_types::block::{Block, BlockNumber};
+use starcoin_rpc_api::types::event::Event;
+use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_types::block::{Block, BlockHeader, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
 use std::collections::HashMap;
@@ -357,6 +363,35 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn subscribe_events(
+        &self,
+        filter: EventFilter,
+    ) -> anyhow::Result<impl TryStream<Ok = Event, Error = JsonRpcError>> {
+        self.call_rpc_blocking(|inner| async move {
+            let res = inner.pubsub_client.subscribe_events(filter).await;
+            res.map(|s| Box::new(s.compat()))
+        })
+        .map_err(map_err)
+    }
+    pub fn subscribe_new_blocks(
+        &self,
+    ) -> anyhow::Result<impl TryStream<Ok = BlockHeader, Error = JsonRpcError>> {
+        self.call_rpc_blocking(|inner| async move {
+            let res = inner.pubsub_client.subscribe_new_block().await;
+            res.map(|s| Box::new(s.compat()))
+        })
+        .map_err(map_err)
+    }
+    pub fn subscribe_new_transactions(
+        &self,
+    ) -> anyhow::Result<impl TryStream<Ok = Vec<HashValue>, Error = JsonRpcError>> {
+        self.call_rpc_blocking(|inner| async move {
+            let res = inner.pubsub_client.subscribe_new_transactions().await;
+            res.map(|s| Box::new(s.compat()))
+        })
+        .map_err(map_err)
+    }
+
     fn call_rpc_blocking<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F,
@@ -412,6 +447,7 @@ pub(crate) struct RpcClientInner {
     state_client: StateClient,
     debug_client: DebugClient,
     chain_client: ChainClient,
+    pubsub_client: PubSubClient,
 }
 
 impl RpcClientInner {
@@ -423,6 +459,7 @@ impl RpcClientInner {
             state_client: channel.clone().into(),
             debug_client: channel.clone().into(),
             chain_client: channel.clone().into(),
+            pubsub_client: channel.clone().into(),
         }
     }
 }
