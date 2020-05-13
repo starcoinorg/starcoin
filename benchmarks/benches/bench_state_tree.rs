@@ -23,28 +23,31 @@ fn bench_get_with_proof(c: &mut Criterion) {
         let tree = StateTree::new(s.clone(), None);
         let (kvs, _root) = prepare_tree(&tree, &[1, 2, 3, 4], 100000);
         let ks = kvs.keys().map(|x| *x).collect::<Vec<_>>();
-        group.bench_with_input(*id, &(tree, kvs, ks), |b, input| {
-            let (tree, kvs, ks) = input;
-            let k_len = ks.len();
-            let mut i = 0usize;
-            b.iter_with_setup(
-                || {
-                    let k = &ks[i % k_len];
-                    i = i + 1;
-                    k
-                },
-                |k| {
-                    let (value, _proof) = tree.get_with_proof(k).unwrap();
-                    assert_eq!(value.unwrap().as_slice(), kvs.get(k).unwrap().as_ref())
-                },
-            );
-        });
+        group
+            .bench_with_input(*id, &(tree, kvs, ks), |b, input| {
+                let (tree, kvs, ks) = input;
+                let k_len = ks.len();
+                let mut i = 0usize;
+                b.iter_with_setup(
+                    || {
+                        let k = &ks[i % k_len];
+                        i = i + 1;
+                        k
+                    },
+                    |k| {
+                        let (value, _proof) = tree.get_with_proof(k).unwrap();
+                        assert_eq!(value.unwrap().as_slice(), kvs.get(k).unwrap().as_ref())
+                    },
+                );
+            })
+            .sample_size(100);
     }
     group.finish();
 }
 
 fn bench_put_and_commit(c: &mut Criterion) {
     let mut group = c.benchmark_group("put_and_commit");
+    group.sample_size(80);
     for i in vec![1u64, 5, 10, 50, 100].into_iter() {
         let tmp_dir = starcoin_config::temp_path();
         let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
