@@ -1,11 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::event::EventKey;
 use starcoin_types::language_storage::TypeTag;
 
-#[derive(Debug, Serialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Event {
     pub block_hash: Option<HashValue>,
