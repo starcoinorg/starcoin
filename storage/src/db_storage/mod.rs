@@ -4,8 +4,9 @@
 use crate::batch::WriteBatch;
 use crate::metrics::record_metrics;
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
-use crate::VEC_PREFIX_NAME;
+use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
+use logger::prelude::*;
 use rocksdb::{WriteBatch as DBWriteBatch, WriteOptions, DB};
 use std::collections::HashSet;
 use std::path::Path;
@@ -21,16 +22,29 @@ impl DBStorage {
     }
     pub fn open(path: impl AsRef<Path>, readonly: bool) -> Result<Self> {
         let column_families = VEC_PREFIX_NAME.to_vec();
+        let cfs_set: HashSet<_> = column_families.iter().collect();
         {
-            let cfs_set: HashSet<_> = column_families.iter().collect();
             ensure!(
                 cfs_set.len() == column_families.len(),
                 "Duplicate column family name found.",
             );
         }
+        if Self::db_exists(path.as_ref()) {
+            let cf_vec = Self::list_cf(path.as_ref())?;
+            for cf in cf_vec {
+                if cf != DEFAULT_PREFIX_NAME && cfs_set.get(&cf.as_str()).is_none() {
+                    error!(
+                        "db path cf: {:?} is not equal,please clear dir: {:?}",
+                        path.as_ref(),
+                        cf
+                    );
+                    std::process::exit(100);
+                }
+            }
+        }
 
         let db = if readonly {
-            Self::open_readonly(path, column_families)?
+            Self::open_readonly(path.as_ref(), column_families)?
         } else {
             let mut db_opts = rocksdb::Options::default();
             db_opts.create_if_missing(true);
@@ -38,7 +52,7 @@ impl DBStorage {
             // For now we set the max total WAL size to be 1G. This config can be useful when column
             // families are updated at non-uniform frequencies.
             db_opts.set_max_total_wal_size(1 << 30);
-            Self::open_inner(&db_opts, path, column_families)?
+            Self::open_inner(&db_opts, path.as_ref(), column_families)?
         };
 
         Ok(DBStorage { db })
@@ -90,7 +104,12 @@ impl DBStorage {
         Ok(())
     }
 
-    fn _db_exists(path: &Path) -> bool {
+    /// List cf
+    pub fn list_cf(path: impl AsRef<Path>) -> Result<Vec<String>, Error> {
+        Ok(rocksdb::DB::list_cf(&rocksdb::Options::default(), path)?)
+    }
+
+    fn db_exists(path: &Path) -> bool {
         let rocksdb_current_file = path.join("CURRENT");
         rocksdb_current_file.is_file()
     }
