@@ -3,6 +3,7 @@
 
 //! Support for encoding transactions for common situations.
 
+use crate::starcoin_vm::DEFAULT_CURRENCY_TY;
 use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN};
 use crate::{account::create_signed_txn_with_association_account, account::Account};
 use starcoin_types::account_address::AccountAddress;
@@ -101,7 +102,7 @@ pub fn create_account_txn_sent_as_association(
 
     create_signed_txn_with_association_account(
         CREATE_ACCOUNT_TXN.clone(),
-        vec![],
+        vec![DEFAULT_CURRENCY_TY.clone()],
         args,
         seq_num,
         TXN_RESERVED,

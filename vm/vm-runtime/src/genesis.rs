@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::genesis_context::{GenesisContext, GenesisStateView};
+use crate::genesis_gas_schedule::INITIAL_GAS_SCHEDULE;
 use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
@@ -8,15 +10,10 @@ use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     PrivateKey, Uniform,
 };
-use libra_state_view::StateView;
-use libra_types::access_path::AccessPath;
-use move_core_types::identifier::Identifier;
-use move_vm_runtime::MoveVM;
-use move_vm_state::{
-    data_cache::BlockDataCache,
-    execution_context::{ExecutionContext, TransactionExecutionContext},
-};
-use move_vm_types::gas_schedule::zero_cost_schedule;
+use libra_types::on_chain_config::{config_address, VMPublishingOption};
+use libra_types::write_set::WriteSet;
+use move_vm_state::data_cache::BlockDataCache;
+use move_vm_types::loaded_data::types::FatStructType;
 use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
@@ -26,10 +23,8 @@ use starcoin_state_api::ChainState;
 use starcoin_types::{
     account_config, contract_event::ContractEvent, transaction::authenticator::AuthenticationKey,
 };
-use starcoin_vm_types::{
-    gas_schedule::{CostTable, GasAlgebra, GasUnits},
-    transaction_metadata::TransactionMetadata,
-};
+use starcoin_vm_types::language_storage::{StructTag, TypeTag};
+use std::collections::BTreeMap;
 use stdlib::{stdlib_modules, StdLibOptions};
 use vm::access::ModuleAccess;
 
@@ -46,321 +41,270 @@ pub static GENESIS_KEYPAIR: Lazy<(Ed25519PrivateKey, Ed25519PublicKey)> = Lazy::
     (private_key, public_key)
 });
 
-static INITIALIZE: Lazy<Identifier> = Lazy::new(|| Identifier::new("initialize").unwrap());
-static INITIALIZE_BLOCK: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("initialize_block_metadata").unwrap());
-static MINT_TO_ADDRESS: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("mint_to_address").unwrap());
-static EPILOGUE: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unwrap());
-static ROTATE_AUTHENTICATION_KEY: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("rotate_authentication_key").unwrap());
+static INITIALIZE_NAME: &str = "initialize";
+// static INITIALIZE: Lazy<Identifier> = Lazy::new(|| Identifier::new("INITIALIZE_NAME").unwrap());
+// static INITIALIZE_BLOCK: Lazy<Identifier> =
+//     Lazy::new(|| Identifier::new("initialize_block_metadata").unwrap());
+static MINT_TO_ADDRESS: &str = "mint_to_address";
+// static EPILOGUE: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unwrap());
+// static ROTATE_AUTHENTICATION_KEY: Lazy<Identifier> =
+//     Lazy::new(|| Identifier::new("rotate_authentication_key").unwrap());
 
-static SUBSIDY_CONF: Lazy<Identifier> = Lazy::new(|| Identifier::new("subsidy").unwrap());
-static SUBSIDY_INIT: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("initialize_subsidy_info").unwrap());
+static SUBSIDY_CONF: &str = "subsidy";
+static SUBSIDY_INIT: &str = "initialize_subsidy_info";
+
+const GENESIS_MODULE_NAME: &str = "Genesis";
 
 pub fn generate_genesis_state_set(
     chain_config: &ChainConfig,
     chain_state: &dyn ChainState,
 ) -> Result<Vec<ContractEvent>> {
-    // Compile the needed stdlib modules.
-    let modules = stdlib_modules(StdLibOptions::Staged);
-
-    // create a MoveVM
-    let move_vm = MoveVM::new();
-
-    // create a data view for move_vm
-    let state_view = GenesisStateView;
-    let gas_schedule = zero_cost_schedule();
-    let data_cache = BlockDataCache::new(&state_view);
-
-    // create an execution context for the move_vm.
-    // It will contain the genesis WriteSet after execution
-    let mut interpreter_context =
-        TransactionExecutionContext::new(GasUnits::new(100_000_000), &data_cache);
-
-    // initialize the VM with stdlib modules.
-    // This step is needed because we are creating the main accounts and we are calling
-    // code to create those. However, code lives under an account but we have none.
-    // So we are pushing code into the VM blindly in order to create the main accounts.
-    for module in modules {
-        debug!("Cache module: {:?}", module.as_inner().self_id());
-        move_vm.cache_module(module.clone(), &mut interpreter_context)?;
-    }
-
     let mut state_store = StateStore::new(chain_state);
-
-    create_and_initialize_main_accounts(
-        chain_config,
-        &move_vm,
-        &gas_schedule,
-        &mut interpreter_context,
-    );
-    publish_stdlib(&mut interpreter_context, modules);
-
-    let write_set = interpreter_context.make_write_set()?;
+    let modules = stdlib_modules(StdLibOptions::Staged);
+    let (write_set, events, _) = encode_genesis_write_set(chain_config, modules);
     state_store.add_write_set(&write_set);
-
-    Ok(interpreter_context.events().to_vec())
+    Ok(events)
 }
 
-/// Create and initialize Transaction Fee and Core Code accounts.
-fn create_and_initialize_main_accounts(
+pub fn encode_genesis_write_set(
     chain_config: &ChainConfig,
-    move_vm: &MoveVM,
-    gas_schedule: &CostTable,
-    interpreter_context: &mut TransactionExecutionContext,
+    stdlib_modules: &[VerifiedModule],
+) -> (
+    WriteSet,
+    Vec<ContractEvent>,
+    BTreeMap<Vec<u8>, FatStructType>,
+) {
+    // create a data view for move_vm
+    let mut state_view = GenesisStateView::new();
+    for module in stdlib_modules {
+        let module_id = module.self_id();
+        debug!("Add module: {:?}", module_id);
+        state_view.add_module(&module_id, &module);
+    }
+    let data_cache = BlockDataCache::new(&state_view);
+
+    let mut genesis_context = GenesisContext::new(&data_cache, stdlib_modules);
+
+    let stc_ty = TypeTag::Struct(StructTag {
+        address: *account_config::STC_MODULE.address(),
+        module: account_config::STC_MODULE.name().to_owned(),
+        name: account_config::STC_STRUCT_NAME.to_owned(),
+        type_params: vec![],
+    });
+
+    // generate the genesis WriteSet
+    create_and_initialize_main_accounts(&mut genesis_context, chain_config, &stc_ty);
+    //create_and_initialize_validator_set(&mut genesis_context, &stc_ty);
+    //initialize_validators(&mut genesis_context, &validators, &stc_ty);
+    setup_libra_version(&mut genesis_context);
+    setup_vm_config(&mut genesis_context);
+    reconfigure(&mut genesis_context);
+
+    let mut interpreter_context = genesis_context.into_interpreter_context();
+    publish_stdlib(&mut interpreter_context, stdlib_modules);
+
+    //verify_genesis_write_set(interpreter_context.events());
+    (
+        interpreter_context
+            .make_write_set()
+            .expect("Genesis WriteSet failure"),
+        interpreter_context.events().to_vec(),
+        interpreter_context.get_type_map(),
+    )
+}
+
+/// Create an initialize Association, Transaction Fee and Core Code accounts.
+fn create_and_initialize_main_accounts(
+    context: &mut GenesisContext,
+    chain_config: &ChainConfig,
+    stc_ty: &TypeTag,
 ) {
     let mut miner_reward_balance = chain_config.total_supply;
 
-    let association_addr: libra_types::account_address::AccountAddress =
-        account_config::association_address().into();
-    let mut txn_data = TransactionMetadata::default();
-    txn_data.sender = association_addr;
-    // create the LBR module
-    move_vm
-        .execute_function(
-            &LBR_MODULE,
-            &INITIALIZE,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![],
-        )
-        .expect("Failure initializing LBR");
+    let genesis_auth_key = chain_config
+        .pre_mine_config
+        .as_ref()
+        .map(|pre_mine_config| AuthenticationKey::ed25519(&pre_mine_config.public_key).to_vec())
+        .unwrap_or_else(|| vec![0u8; AuthenticationKey::LENGTH]);
 
-    // create the Starcoin module
-    move_vm
-        .execute_function(
-            &STARCOIN_MODULE,
-            &INITIALIZE,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![],
-        )
-        .expect("Failure initializing Starcoin");
-
-    // create the association account
-    move_vm
-        .execute_function(
-            &ACCOUNT_MODULE,
-            &CREATE_ACCOUNT_NAME,
-            gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![
-                Value::address(association_addr),
-                Value::vector_u8(association_addr.to_vec()),
-            ],
-        )
-        .unwrap_or_else(|e| {
-            panic!(
-                "Failure creating association account {:?}: {}",
-                association_addr, e
-            )
-        });
-
-    // create the transaction fee account
-    let transaction_fee_address: libra_types::account_address::AccountAddress =
-        account_config::transaction_fee_address().into();
-    move_vm
-        .execute_function(
-            &ACCOUNT_MODULE,
-            &CREATE_ACCOUNT_NAME,
-            gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![
-                Value::address(transaction_fee_address),
-                Value::vector_u8(transaction_fee_address.to_vec()),
-            ],
-        )
-        .unwrap_or_else(|e| {
-            panic!(
-                "Failure creating transaction fee account {:?}: {}",
-                transaction_fee_address, e
-            )
-        });
-
+    let root_association_address = account_config::association_address();
+    let burn_account_address = account_config::burn_account_address();
+    let fee_account_address = account_config::transaction_fee_address();
     // create the mint account
-    let mint_address: libra_types::account_address::AccountAddress =
-        account_config::mint_address().into();
-    move_vm
-        .execute_function(
-            &ACCOUNT_MODULE,
-            &CREATE_ACCOUNT_NAME,
-            gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![
-                Value::address(mint_address),
-                Value::vector_u8(mint_address.to_vec()),
-            ],
-        )
-        .unwrap_or_else(|e| panic!("Failure creating mint account {:?}: {}", mint_address, e));
+    let mint_address: libra_types::account_address::AccountAddress = account_config::mint_address();
+
+    context.set_sender(root_association_address);
+
+    context.exec(
+        GENESIS_MODULE_NAME,
+        "initialize_association",
+        vec![],
+        vec![Value::address(root_association_address)],
+    );
+
+    context.set_sender(config_address());
+    context.exec(GENESIS_MODULE_NAME, "initialize_config", vec![], vec![]);
+
+    context.set_sender(root_association_address);
+    context.exec(
+        "LibraConfig",
+        "grant_creator_privilege",
+        vec![],
+        vec![Value::address(config_address())],
+    );
+    context.set_sender(config_address());
+    context.exec("Libra", "initialize", vec![], vec![]);
+
+    context.set_sender(root_association_address);
+    context.exec(
+        GENESIS_MODULE_NAME,
+        "initialize_accounts",
+        vec![],
+        vec![
+            Value::address(root_association_address),
+            Value::address(burn_account_address),
+            Value::address(mint_address),
+            Value::vector_u8(genesis_auth_key.clone()),
+        ],
+    );
+
+    context.set_sender(burn_account_address);
+    context.exec(
+        GENESIS_MODULE_NAME,
+        "initalize_burn_account",
+        vec![],
+        vec![],
+    );
+
+    context.set_sender(root_association_address);
+    context.exec(
+        GENESIS_MODULE_NAME,
+        "grant_burn_account",
+        vec![],
+        vec![Value::address(burn_account_address)],
+    );
+
+    context.set_sender(burn_account_address);
+    context.exec(
+        GENESIS_MODULE_NAME,
+        "grant_burn_capabilities_for_sender",
+        vec![],
+        vec![Value::vector_u8(genesis_auth_key.clone())],
+    );
+
+    context.set_sender(fee_account_address);
+    context.exec(
+        GENESIS_MODULE_NAME,
+        "initialize_txn_fee_account",
+        vec![],
+        vec![Value::vector_u8(genesis_auth_key.clone())],
+    );
+
+    context.set_sender(config_address());
+    context.exec(
+        "LibraAccount",
+        "rotate_authentication_key",
+        vec![],
+        vec![Value::vector_u8(genesis_auth_key)],
+    );
 
     // init subsidy config
-    txn_data.sender = mint_address;
-    move_vm
-        .execute_function(
-            &SUBSIDY_CONF_MODULE,
-            &INITIALIZE,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![],
-        )
-        .expect("Failure initializing SubsidyConfig");
+    context.set_sender(mint_address);
+    context.exec(SUBSIDY_CONF_MODULE_NAME, INITIALIZE_NAME, vec![], vec![]);
 
-    move_vm
-        .execute_function(
-            &SUBSIDY_CONF_MODULE,
-            &SUBSIDY_CONF,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![
-                Value::u64(chain_config.reward_halving_interval),
-                Value::u64(chain_config.base_block_reward),
-                Value::u64(chain_config.reward_delay),
-            ],
-        )
-        .expect("Failure set SubsidyConfig");
+    context.exec(
+        SUBSIDY_CONF_MODULE_NAME,
+        SUBSIDY_CONF,
+        vec![],
+        vec![
+            Value::u64(chain_config.reward_halving_interval),
+            Value::u64(chain_config.base_block_reward),
+            Value::u64(chain_config.reward_delay),
+        ],
+    );
 
-    move_vm
-        .execute_function(
-            &LIBRA_BLOCK_MODULE,
-            &SUBSIDY_INIT,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![],
-        )
-        .expect("Failure init block reward for block module.");
-
-    txn_data.sender = association_addr;
-
-    move_vm
-        .execute_function(
-            &LIBRA_TRANSACTION_TIMEOUT,
-            &INITIALIZE,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![],
-        )
-        .expect("Failure initializing LibraTransactionTimeout");
-
-    move_vm
-        .execute_function(
-            &LIBRA_BLOCK_MODULE,
-            &INITIALIZE_BLOCK,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![],
-        )
-        .expect("Failure initializing block metadata");
-
-    // move_vm
-    //     .execute_function(
-    //         &GAS_SCHEDULE_MODULE,
-    //         &INITIALIZE,
-    //         &gas_schedule,
-    //         interpreter_context,
-    //         &txn_data,
-    //         vec![],
-    //         vec![initial_gas_schedule],
-    //     )
-    //     .expect("Failure initializing gas module");
+    context.exec(LIBRA_BLOCK_MODULE_NAME, SUBSIDY_INIT, vec![], vec![]);
 
     if let Some(pre_mine_config) = &chain_config.pre_mine_config {
+        context.set_sender(root_association_address);
+
         let association_balance =
             chain_config.total_supply * pre_mine_config.pre_mine_percent / 100;
         miner_reward_balance -= association_balance;
-        move_vm
-            .execute_function(
-                &ACCOUNT_MODULE,
-                &MINT_TO_ADDRESS,
-                &gas_schedule,
-                interpreter_context,
-                &txn_data,
-                vec![],
-                vec![
-                    Value::address(association_addr),
-                    Value::vector_u8(association_addr.to_vec()),
-                    Value::u64(association_balance),
-                ],
-            )
-            .expect("Failure minting to association");
-
-        let association_auth_key = AuthenticationKey::ed25519(&pre_mine_config.public_key).to_vec();
-        move_vm
-            .execute_function(
-                &ACCOUNT_MODULE,
-                &ROTATE_AUTHENTICATION_KEY,
-                &gas_schedule,
-                interpreter_context,
-                &txn_data,
-                vec![],
-                vec![Value::vector_u8(association_auth_key)],
-            )
-            .expect("Failure rotating association key");
+        context.exec(
+            ACCOUNT_MODULE_NAME,
+            MINT_TO_ADDRESS,
+            vec![stc_ty.clone()],
+            vec![
+                Value::address(root_association_address),
+                Value::u64(association_balance),
+            ],
+        );
     }
 
     // mint coins to mint address
-    move_vm
-        .execute_function(
-            &ACCOUNT_MODULE,
-            &MINT_TO_ADDRESS,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![
-                Value::address(mint_address),
-                Value::vector_u8(mint_address.to_vec()),
-                Value::u64(miner_reward_balance),
-            ],
-        )
-        .expect("Failure minting to mint_address");
+    context.set_sender(root_association_address);
+    context.exec(
+        ACCOUNT_MODULE_NAME,
+        MINT_TO_ADDRESS,
+        vec![stc_ty.clone()],
+        vec![
+            Value::address(mint_address),
+            Value::u64(miner_reward_balance),
+        ],
+    );
 
+    context.set_sender(root_association_address);
     // Bump the sequence number for the Association account. If we don't do this and a
     // subsequent transaction (e.g., minting) is sent from the Assocation account, a problem
     // arises: both the genesis transaction and the subsequent transaction have sequence
     // number 0
-    move_vm
-        .execute_function(
-            &ACCOUNT_MODULE,
-            &EPILOGUE,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![
-                Value::u64(/* txn_sequence_number */ 0),
-                Value::u64(/* txn_gas_price */ 0),
-                Value::u64(/* txn_max_gas_units */ 0),
-                Value::u64(/* gas_units_remaining */ 0),
-            ],
-        )
-        .expect("Failure running epilogue for association account");
+    context.exec(
+        "LibraAccount",
+        "epilogue",
+        vec![stc_ty.clone()],
+        vec![
+            Value::u64(/* txn_sequence_number */ 0),
+            Value::u64(/* txn_gas_price */ 0),
+            Value::u64(/* txn_max_gas_units */ 0),
+            Value::u64(/* gas_units_remaining */ 0),
+        ],
+    );
+}
+
+fn setup_vm_config(context: &mut GenesisContext) {
+    let publishing_option = VMPublishingOption::Open;
+    context.set_sender(config_address());
+
+    let option_bytes =
+        scs::to_bytes(&publishing_option).expect("Cannot serialize publishing option");
+    context.exec(
+        "LibraVMConfig",
+        "initialize",
+        vec![],
+        vec![
+            Value::vector_u8(option_bytes),
+            Value::vector_u8(INITIAL_GAS_SCHEDULE.0.clone()),
+            Value::vector_u8(INITIAL_GAS_SCHEDULE.1.clone()),
+        ],
+    );
+}
+
+fn setup_libra_version(context: &mut GenesisContext) {
+    context.set_sender(config_address());
+    context.exec("LibraVersion", "initialize", vec![], vec![]);
+}
+
+fn remove_genesis(stdlib_modules: &[VerifiedModule]) -> impl Iterator<Item = &VerifiedModule> {
+    stdlib_modules
+        .iter()
+        .filter(|module| module.self_id().name().as_str() != GENESIS_MODULE_NAME)
 }
 
 /// Publish the standard library.
 fn publish_stdlib(interpreter_context: &mut dyn LibraChainState, stdlib: &[VerifiedModule]) {
-    for module in stdlib {
+    for module in remove_genesis(stdlib) {
+        assert!(module.self_id().name().as_str() != GENESIS_MODULE_NAME);
         let mut module_vec = vec![];
         module.serialize(&mut module_vec).unwrap();
         interpreter_context
@@ -369,19 +313,9 @@ fn publish_stdlib(interpreter_context: &mut dyn LibraChainState, stdlib: &[Verif
     }
 }
 
-// `StateView` has no data given we are creating the genesis
-struct GenesisStateView;
-
-impl StateView for GenesisStateView {
-    fn get(&self, _access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        Ok(None)
-    }
-
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        unimplemented!()
-    }
-
-    fn is_genesis(&self) -> bool {
-        true
-    }
+/// Trigger a reconfiguration. This emits an event that will be passed along to the storage layer.
+fn reconfigure(context: &mut GenesisContext) {
+    context.set_sender(account_config::association_address());
+    context.exec("LibraTimestamp", "initialize", vec![], vec![]);
+    context.exec("LibraConfig", "emit_reconfiguration_event", vec![], vec![]);
 }

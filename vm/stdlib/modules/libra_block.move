@@ -61,7 +61,9 @@ module LibraBlock {
         proposer: address
     ) acquires BlockMetadata {
         // Can only be invoked by LibraVM privilege.
-        Transaction::assert(Transaction::sender() == 0x0, 33);
+        //Transaction::assert(Transaction::sender() == 0x0, 33);
+        //TODO conform this address.
+        Transaction::assert(Transaction::sender() == 0x6d696e74, 33);
 
         process_block_prologue(round, timestamp, id, previous_block_votes, proposer);
 

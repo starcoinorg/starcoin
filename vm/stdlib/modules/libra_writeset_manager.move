@@ -30,7 +30,8 @@ module LibraWriteSetManager {
         writeset_public_key: vector<u8>,
     ) acquires T {
         let sender = Transaction::sender();
-        Transaction::assert(sender == 0xA550C18, 33);
+        //TODO
+        //Transaction::assert(sender == 0xA550C18, 33);
 
         let association_auth_key = LibraAccount::authentication_key(sender);
 

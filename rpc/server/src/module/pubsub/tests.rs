@@ -19,6 +19,7 @@ use starcoin_chain::test_helper as chain_test_helper;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::dev::DevConsensus;
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{Genesis, PrivateKey};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
@@ -157,10 +158,13 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         let txn = txn.as_signed_user_txn()?.clone();
         txn
     };
+    let txn_id = txn.crypto_hash();
     txpool.clone().add_txns(vec![txn]).await?;
     let mut receiver = receiver.compat();
     let res = receiver.next().await.transpose().unwrap();
-    let response = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":["ecd825d29cfa52299a10563146d2674409597b1c8ffed801a69de4bd8ad0e116"],"subscription":0}}"#;
+    let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;
+    let suffix = r#""],"subscription":0}}"#;
+    let response = format!("{}{}{}", prefix, txn_id.to_hex(), suffix);
     assert_eq!(res, Some(response.into()));
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;

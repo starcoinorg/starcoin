@@ -7,12 +7,11 @@
 //! `Stdlib` script enum will be modified to reflect changes in the on-chain whitelist as time goes
 //! on.
 
-use crate::{compile_script, use_staged, MOVE_EXTENSION, STAGED_EXTENSION, TRANSACTION_SCRIPTS};
 use anyhow::{anyhow, Error, Result};
 use include_dir::{include_dir, Dir};
 use libra_crypto::HashValue;
 use libra_types::transaction::SCRIPT_HASH_LENGTH;
-use std::{convert::TryFrom, env, fmt, path::PathBuf};
+use std::{convert::TryFrom, fmt, path::PathBuf};
 
 // This includes the compiled transaction scripts as binaries. We must use this hack to work around
 // a problem with Docker, which does not copy over the Move source files that would be be used to
@@ -24,22 +23,48 @@ const STAGED_TXN_SCRIPTS_DIR: Dir = include_dir!("staged/transaction_scripts");
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum StdlibScript {
     AddValidator,
+    AddCurrency,
+    AddCurrencyToAccount,
+    AllowChildAccounts,
+    ApplyForAssociationAddress,
+    ApplyForAssociationPrivilege,
+    ApplyForChildVaspCredential,
+    ApplyForParentCapability,
+    ApplyForRootVasp,
     ApprovedPayment,
     Burn,
     CancelBurn,
     CreateAccount,
+    CreateEmptyAccount,
     EmptyScript,
+    GrantAssociationAddress,
+    GrantAssociationPrivilege,
+    GrantChildAccount,
+    GrantParentAccount,
+    GrantVaspAccount,
     Mint,
+    MintLbr,
     ModifyPublishingOption,
     PeerToPeer,
     PeerToPeerWithMetadata,
     Preburn,
+    PublishSharedEd2551PublicKey,
+    RecertifyChildAccount,
     RegisterApprovedPayment,
     RegisterPreburner,
     RegisterValidator,
+    RemoveAssociationAddress,
+    RemoveAssociationPrivilege,
+    RemoveChildAccount,
+    RemoveParentAccount,
     RemoveValidator,
     RotateAuthenticationKey,
     RotateConsensusPubkey,
+    RotateSharedEd2551PublicKey,
+    UnmintLbr,
+    UpdateLibraVersion,
+    UpdateExchangeRate,
+    UpdateMintingAbility,
     // ...add new scripts here
 }
 
@@ -50,22 +75,48 @@ impl StdlibScript {
         use StdlibScript::*;
         vec![
             AddValidator,
+            AddCurrency,
+            AddCurrencyToAccount,
+            AllowChildAccounts,
+            ApplyForAssociationAddress,
+            ApplyForAssociationPrivilege,
+            ApplyForChildVaspCredential,
+            ApplyForParentCapability,
+            ApplyForRootVasp,
             ApprovedPayment,
             Burn,
             CancelBurn,
             CreateAccount,
+            CreateEmptyAccount,
             EmptyScript,
+            GrantAssociationAddress,
+            GrantAssociationPrivilege,
+            GrantChildAccount,
+            GrantParentAccount,
+            GrantVaspAccount,
             Mint,
+            MintLbr,
             ModifyPublishingOption,
             PeerToPeer,
             PeerToPeerWithMetadata,
             Preburn,
+            PublishSharedEd2551PublicKey,
+            RecertifyChildAccount,
             RegisterApprovedPayment,
             RegisterPreburner,
             RegisterValidator,
+            RemoveAssociationAddress,
+            RemoveAssociationPrivilege,
+            RemoveChildAccount,
+            RemoveParentAccount,
             RemoveValidator,
             RotateAuthenticationKey,
             RotateConsensusPubkey,
+            RotateSharedEd2551PublicKey,
+            UnmintLbr,
+            UpdateLibraVersion,
+            UpdateExchangeRate,
+            UpdateMintingAbility,
             // ...add new scripts here
         ]
     }
@@ -92,26 +143,16 @@ impl StdlibScript {
     /// Return the Move bytecode produced by compiling this script. This will almost always read
     /// from disk rather invoking the compiler; genesis is the only exception.
     pub fn compiled_bytes(self) -> CompiledBytes {
-        if use_staged() {
-            // read from disk
-            let mut path = PathBuf::from(self.name());
-            path.set_extension(STAGED_EXTENSION);
-            CompiledBytes(
-                STAGED_TXN_SCRIPTS_DIR
-                    .get_file(path)
-                    .unwrap()
-                    .contents()
-                    .to_vec(),
-            )
-        } else {
-            // compile from .move source file
-            let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            path.push(PathBuf::from(TRANSACTION_SCRIPTS));
-            path.push(PathBuf::from(self.name()));
-            path.set_extension(MOVE_EXTENSION);
-            let final_path = path.into_os_string().into_string().unwrap();
-            CompiledBytes(compile_script(final_path))
-        }
+        // read from disk
+        let mut path = PathBuf::from(self.name());
+        path.set_extension("mv");
+        CompiledBytes(
+            STAGED_TXN_SCRIPTS_DIR
+                .get_file(path)
+                .unwrap()
+                .contents()
+                .to_vec(),
+        )
     }
 
     /// Return the sha3-256 hash of the compiled script bytes
@@ -164,22 +205,48 @@ impl fmt::Display for StdlibScript {
             "{}",
             match self {
                 AddValidator => "add_validator",
+                AddCurrency => "add_currency",
+                AddCurrencyToAccount => "add_currency_to_account",
+                AllowChildAccounts => "allow_child_accounts",
+                ApplyForAssociationAddress => "apply_for_association_address",
+                ApplyForAssociationPrivilege => "apply_for_association_privilege",
+                ApplyForChildVaspCredential => "apply_for_child_vasp_credential",
+                ApplyForParentCapability => "apply_for_parent_capability",
+                ApplyForRootVasp => "apply_for_root_vasp",
                 ApprovedPayment => "approved_payment",
                 Burn => "burn",
                 CancelBurn => "cancel_burn",
                 CreateAccount => "create_account",
+                CreateEmptyAccount => "create_empty_account",
                 EmptyScript => "empty_script",
+                GrantAssociationAddress => "grant_association_address",
+                GrantAssociationPrivilege => "grant_association_privilege",
+                GrantChildAccount => "grant_child_account",
+                GrantParentAccount => "grant_parent_account",
+                GrantVaspAccount => "grant_vasp_account",
                 Mint => "mint",
+                MintLbr => "mint_lbr",
                 ModifyPublishingOption => "modify_publishing_option",
                 PeerToPeer => "peer_to_peer",
                 PeerToPeerWithMetadata => "peer_to_peer_with_metadata",
                 Preburn => "preburn",
+                PublishSharedEd2551PublicKey => "publish_shared_ed25519_public_key",
+                RecertifyChildAccount => "recertify_child_account",
                 RegisterApprovedPayment => "register_approved_payment",
                 RegisterPreburner => "register_preburner",
                 RegisterValidator => "register_validator",
+                RemoveAssociationAddress => "remove_association_address",
+                RemoveAssociationPrivilege => "remove_association_privilege",
+                RemoveChildAccount => "remove_child_account",
+                RemoveParentAccount => "remove_parent_account",
                 RemoveValidator => "remove_validator",
                 RotateAuthenticationKey => "rotate_authentication_key",
                 RotateConsensusPubkey => "rotate_consensus_pubkey",
+                RotateSharedEd2551PublicKey => "rotate_shared_ed25519_public_key",
+                UnmintLbr => "unmint_lbr",
+                UpdateLibraVersion => "update_libra_version",
+                UpdateExchangeRate => "update_exchange_rate",
+                UpdateMintingAbility => "update_minting_ability",
             }
         )
     }
@@ -195,6 +262,13 @@ mod test {
         // StdlibScript::all() (and vice versa)
         let files = STAGED_TXN_SCRIPTS_DIR.files();
         let scripts = StdlibScript::all();
+        for file in files {
+            assert!(
+                StdlibScript::is(file.contents()),
+                "File {} missing from StdlibScript enum",
+                file.path().display()
+            )
+        }
         assert_eq!(
             files.len(),
             scripts.len(),
@@ -205,12 +279,5 @@ mod test {
                 "Did you forget to rebuild the standard library?"
             }
         );
-        for file in files {
-            assert!(
-                StdlibScript::is(file.contents()),
-                "File {} missing from StdlibScript enum",
-                file.path().display()
-            )
-        }
     }
 }
