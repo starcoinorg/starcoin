@@ -5538,7 +5538,7 @@ dependencies = [
  "backtrace",
  "crossbeam-channel",
  "forkable-jellyfish-merkle",
- "futures 0.3.4",
+ "futures 0.3.5",
  "hex 0.4.2",
  "move-lang",
  "scmd",
@@ -5560,8 +5560,7 @@ dependencies = [
  "starcoin-wallet-api",
  "stdlib 0.1.0",
  "structopt",
- "tokio 0.2.18",
- "vm",
+ "tokio 0.2.20",
 ]
 
 [[package]]
