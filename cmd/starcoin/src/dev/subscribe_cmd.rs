@@ -1,12 +1,13 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStream, TryStreamExt};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_types::event::EventKey;
 use std::convert::TryFrom;
 use structopt::StructOpt;
+use tokio::io::AsyncBufReadExt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "event")]
@@ -59,24 +60,13 @@ impl CommandAction for SubscribeEventCommand {
             event_keys: ctx.opt().event_key.clone(),
             limit: ctx.opt().limit,
         };
-        let mut rt = tokio::runtime::Builder::new().basic_scheduler().build()?;
-        let mut event_stream = ctx.state().client().subscribe_events(filter)?;
-        rt.block_on(async move {
-            loop {
-                match event_stream.try_next().await {
-                    Ok(None) => break,
-                    Ok(Some(evt)) => {
-                        println!(
-                            "{}",
-                            serde_json::to_string(&evt).expect("should never fail")
-                        );
-                    }
-                    Err(e) => {
-                        eprintln!("subscription return err: {}", &e);
-                    }
-                }
-            }
+
+        let event_stream = ctx.state().client().subscribe_events(filter)?;
+        println!("Subscribe successful, Press `q` and Enter to quit");
+        blocking_display_notification(event_stream, |evt| {
+            serde_json::to_string(&evt).expect("should never fail")
         });
+
         Ok(())
     }
 }
@@ -94,23 +84,10 @@ impl CommandAction for SubscribeBlockCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let mut rt = tokio::runtime::Builder::new().basic_scheduler().build()?;
-        let mut event_stream = ctx.state().client().subscribe_new_blocks()?;
-        rt.block_on(async move {
-            loop {
-                match event_stream.try_next().await {
-                    Ok(None) => break,
-                    Ok(Some(evt)) => {
-                        println!(
-                            "{}",
-                            serde_json::to_string(&evt).expect("should never fail")
-                        );
-                    }
-                    Err(e) => {
-                        eprintln!("subscription return err: {}", &e);
-                    }
-                }
-            }
+        let event_stream = ctx.state().client().subscribe_new_blocks()?;
+        println!("Subscribe successful, Press `q` and Enter to quit");
+        blocking_display_notification(event_stream, |evt| {
+            serde_json::to_string(&evt).expect("should never fail")
         });
         Ok(())
     }
@@ -128,24 +105,49 @@ impl CommandAction for SubscribeNewTxnCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let mut rt = tokio::runtime::Builder::new().basic_scheduler().build()?;
-        let mut event_stream = ctx.state().client().subscribe_new_transactions()?;
-        rt.block_on(async move {
-            loop {
-                match event_stream.try_next().await {
-                    Ok(None) => break,
-                    Ok(Some(evt)) => {
-                        println!(
-                            "{}",
-                            serde_json::to_string(&evt).expect("should never fail")
-                        );
-                    }
-                    Err(e) => {
-                        eprintln!("subscription return err: {}", &e);
-                    }
-                }
-            }
+        let event_stream = ctx.state().client().subscribe_new_transactions()?;
+        println!("Subscribe successful, Press `q` and Enter to quit");
+        blocking_display_notification(event_stream, |evt| {
+            serde_json::to_string(&evt).expect("should never fail")
         });
         Ok(())
     }
+}
+
+fn blocking_display_notification<T, F>(
+    mut event_stream: impl TryStream<Ok = T, Error = anyhow::Error> + Unpin,
+    display: F,
+) where
+    F: Fn(&T) -> String,
+{
+    let mut rt = tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .build()
+        .expect("should able to create tokio runtime");
+    let stdin = tokio::io::stdin();
+    let mut lines = tokio::io::BufReader::new(stdin).lines();
+    rt.block_on(async move {
+        loop {
+            tokio::select! {
+               maybe_quit = lines.next()  => {
+                   if let Some(Ok(q)) = maybe_quit {
+                       if q.as_str() == "q" {
+                           break;
+                       }
+                   }
+               }
+               try_event = event_stream.try_next() => {
+                   match try_event {
+                        Ok(None) => break,
+                        Ok(Some(evt)) => {
+                            println!("{}", display(&evt));
+                        }
+                        Err(e) => {
+                            eprintln!("subscription return err: {}", &e);
+                        }
+                   }
+               }
+            }
+        }
+    });
 }

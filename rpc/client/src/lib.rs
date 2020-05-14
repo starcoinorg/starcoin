@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: Apache-2
 
 use failure::Fail;
-use futures::{future::FutureExt, select, stream::StreamExt, TryStream};
+use futures::{future::FutureExt, select, stream::StreamExt, TryStream, TryStreamExt};
 use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
-use jsonrpc_core_client::{
-    transports::ipc, transports::local, transports::ws, RpcChannel, RpcError as JsonRpcError,
-};
+use jsonrpc_core_client::{transports::ipc, transports::local, transports::ws, RpcChannel};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::{
@@ -368,28 +366,28 @@ impl RpcClient {
     pub fn subscribe_events(
         &self,
         filter: EventFilter,
-    ) -> anyhow::Result<impl TryStream<Ok = Event, Error = JsonRpcError>> {
+    ) -> anyhow::Result<impl TryStream<Ok = Event, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_events(filter).await;
-            res.map(|s| Box::new(s.compat()))
+            res.map(|s| s.compat().map_err(map_err))
         })
         .map_err(map_err)
     }
     pub fn subscribe_new_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = BlockHeader, Error = JsonRpcError>> {
+    ) -> anyhow::Result<impl TryStream<Ok = BlockHeader, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_block().await;
-            res.map(|s| Box::new(s.compat()))
+            res.map(|s| s.compat().map_err(map_err))
         })
         .map_err(map_err)
     }
     pub fn subscribe_new_transactions(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = Vec<HashValue>, Error = JsonRpcError>> {
+    ) -> anyhow::Result<impl TryStream<Ok = Vec<HashValue>, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_transactions().await;
-            res.map(|s| Box::new(s.compat()))
+            res.map(|s| s.compat().map_err(map_err))
         })
         .map_err(map_err)
     }
