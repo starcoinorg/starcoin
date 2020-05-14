@@ -29,7 +29,7 @@ libra-config = { package="libra-config", git = "https://github.com/libra/libra",
 libra-logger = { package="libra-logger", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
 stdlib = { package="stdlib", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
 once_cell = "1.3.1"
-rand = "0.6.5"
+rand = "0.7.3"
 proptest = "0.9.3"
 proptest-derive = "0.1.1"
 parity-multiaddr = "0.7.2"
