@@ -1,28 +1,19 @@
-address 0x0{
+address 0x0 {
 
 module LibraBlock {
-    use 0x0::Starcoin;
-    use 0x0::LibraAccount;
-    //use 0x0::LibraSystem;
-    //use 0x0::LibraTimestamp;
+    use 0x0::LBR;
+    use 0x0::Event;
+    use 0x0::LibraSystem;
+    use 0x0::LibraTimestamp;
     use 0x0::Transaction;
-    //use 0x0::TransactionFee;
-    use 0x0::Vector;
-    use 0x6d696e74::SubsidyConfig;
+    use 0x0::TransactionFee;
 
     resource struct BlockMetadata {
       // Height of the current block
       // TODO: should we keep the height?
       height: u64,
-
-      // Hash of the current block of transactions.
-      id: vector<u8>,
-
-      // Proposer of the current block.
-      proposer: address,
-
       // Handle where events with the time of new blocks are emitted
-      //new_block_events: LibraAccount::EventHandle<Self::NewBlockEvent>,
+      new_block_events: Event::EventHandle<Self::NewBlockEvent>,
     }
 
     struct NewBlockEvent {
@@ -34,24 +25,6 @@ module LibraBlock {
       time_microseconds: u64,
     }
 
-    resource struct SubsidyInfo {
-        withdrawal_capability: LibraAccount::WithdrawalCapability,
-        subsidy_height: u64,
-        heights: vector<u64>,
-        miners: vector<address>,
-    }
-
-    public fun initialize_subsidy_info() {
-        Transaction::assert(Transaction::sender() == 0x6d696e74, 1);
-
-        move_to_sender<SubsidyInfo>(SubsidyInfo {
-            withdrawal_capability: LibraAccount::extract_sender_withdrawal_capability(),
-            subsidy_height: 0,
-            heights: Vector::empty(),
-            miners: Vector::empty(),
-        });
-    }
-
     // This can only be invoked by the Association address, and only a single time.
     // Currently, it is invoked in the genesis transaction
     public fun initialize_block_metadata() {
@@ -60,50 +33,8 @@ module LibraBlock {
 
       move_to_sender<BlockMetadata>(BlockMetadata {
         height: 0,
-	// FIXME: Update this once we have byte vector literals
-        id: Vector::empty(),
-        proposer: 0xA550C18,
-        //new_block_events: LibraAccount::new_event_handle<Self::NewBlockEvent>(),
+        new_block_events: Event::new_event_handle<Self::NewBlockEvent>(),
       });
-    }
-
-    fun do_subsidy(auth_key_prefix: vector<u8>) acquires BlockMetadata, SubsidyInfo {
-        let current_height = get_current_block_height();
-
-        if (current_height > 0) {
-            Transaction::assert(SubsidyConfig::right_conf(), 6001);
-            let subsidy_info = borrow_global_mut<SubsidyInfo>(0x6d696e74);
-            let len = Vector::length(&subsidy_info.heights);
-            let miner_len = Vector::length(&subsidy_info.miners);
-            Transaction::assert((current_height == (subsidy_info.subsidy_height + len + 1)), 6002);
-            Transaction::assert((len <= SubsidyConfig::subsidy_delay()), 6003);
-            Transaction::assert((len == miner_len), 6004);
-
-            if (len == SubsidyConfig::subsidy_delay()) {//pay and remove
-                let subsidy_height = *&subsidy_info.subsidy_height + 1;
-                let first_height = *Vector::borrow(&subsidy_info.heights, 0);
-                Transaction::assert((subsidy_height == first_height), 6005);
-
-                let subsidy_coin = SubsidyConfig::subsidy_coin(subsidy_height);
-                let subsidy_miner = *Vector::borrow(&subsidy_info.miners, 0);
-                subsidy_info.subsidy_height = subsidy_height;
-                if (subsidy_coin > 0) {
-                    Transaction::assert(LibraAccount::exists(subsidy_miner), 6006);
-                    let libra_coin = LibraAccount::withdraw_with_capability<Starcoin::T>(&subsidy_info.withdrawal_capability, subsidy_coin);
-                    LibraAccount::deposit<Starcoin::T>(subsidy_miner, libra_coin);
-                };
-                Vector::remove(&mut subsidy_info.heights, 0);
-                Vector::remove(&mut subsidy_info.miners, 0);
-            };
-
-            Vector::push_back(&mut subsidy_info.heights, current_height);
-            let current_miner = get_current_proposer();
-            if (!LibraAccount::exists(current_miner)) {
-                Transaction::assert(!Vector::is_empty(&auth_key_prefix), 6007);
-                LibraAccount::create_account(current_miner, auth_key_prefix);
-            };
-            Vector::push_back(&mut subsidy_info.miners, current_miner);
-        };
     }
 
     // Set the metadata for the current block.
@@ -114,63 +45,51 @@ module LibraBlock {
     public fun block_prologue(
         round: u64,
         timestamp: u64,
-        new_block_hash: vector<u8>,
         previous_block_votes: vector<address>,
-        proposer: address,
-        auth_key_prefix: vector<u8>
-    ) acquires BlockMetadata, SubsidyInfo {
-      // Can only be invoked by LibraVM privilege.
-      Transaction::assert(Transaction::sender() == 0x6d696e74, 33);
+        proposer: address
+    ) acquires BlockMetadata {
+        // Can only be invoked by LibraVM privilege.
+        Transaction::assert(Transaction::sender() == 0x0, 33);
 
-      process_block_prologue(round, timestamp, new_block_hash, previous_block_votes, proposer);
+        process_block_prologue(round, timestamp, previous_block_votes, proposer);
 
-      // Currently distribute once per-block.
-      // TODO: Once we have a better on-chain representation of epochs we will make this per-epoch.
-      //TransactionFee::distribute_transaction_fees<Starcoin::T>();
-      do_subsidy(auth_key_prefix);
+        // Currently distribute once per-block.
+        // TODO: Once we have a better on-chain representation of epochs we will make this per-epoch.
+        // TODO: Need to update this to allow per-currency transaction fee
+        // distribution
+        TransactionFee::distribute_transaction_fees<LBR::T>();
+
+        // TODO(valerini): call regular reconfiguration here LibraSystem2::update_all_validator_info()
     }
 
     // Update the BlockMetadata resource with the new blockmetada coming from the consensus.
     fun process_block_prologue(
-        _round: u64,
-        _timestamp: u64,
-        new_block_hash: vector<u8>,
-        _previous_block_votes: vector<address>,
+        round: u64,
+        timestamp: u64,
+        previous_block_votes: vector<address>,
         proposer: address
     ) acquires BlockMetadata {
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(0xA550C18);
 
         // TODO: Figure out a story for errors in the system transactions.
-        //if(proposer != 0x0) Transaction::assert(LibraSystem::is_validator(proposer), 5002);
-        //LibraTimestamp::update_global_time(proposer, timestamp);
-
-        block_metadata_ref.id = new_block_hash;
-        block_metadata_ref.proposer = proposer;
+        if(proposer != 0x0) Transaction::assert(LibraSystem::is_validator(proposer), 5002);
+        LibraTimestamp::update_global_time(proposer, timestamp);
         block_metadata_ref.height = block_metadata_ref.height + 1;
-        //LibraAccount::emit_event<NewBlockEvent>(
-        //  &mut block_metadata_ref.new_block_events,
-        //  NewBlockEvent {
-        //    round: round,
-        //    proposer: proposer,
-        //    previous_block_votes: previous_block_votes,
-        //    time_microseconds: timestamp,
-        //  }
-        //);
+        Event::emit_event<NewBlockEvent>(
+          &mut block_metadata_ref.new_block_events,
+          NewBlockEvent {
+            round: round,
+            proposer: proposer,
+            previous_block_votes: previous_block_votes,
+            time_microseconds: timestamp,
+          }
+        );
     }
 
     // Get the current block height
     public fun get_current_block_height(): u64 acquires BlockMetadata {
       borrow_global<BlockMetadata>(0xA550C18).height
     }
-
-    // Get the current block id
-    public fun get_current_block_id(): vector<u8> acquires BlockMetadata {
-      *&borrow_global<BlockMetadata>(0xA550C18).id
-    }
-
-    // Gets the address of the proposer of the current block
-    public fun get_current_proposer(): address acquires BlockMetadata {
-      borrow_global<BlockMetadata>(0xA550C18).proposer
-    }
 }
+
 }

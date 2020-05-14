@@ -1,4 +1,4 @@
-address 0x0{
+address 0x0 {
 
 module LibraTimestamp {
     use 0x0::Transaction;
@@ -44,4 +44,5 @@ module LibraTimestamp {
         !::exists<Self::CurrentTimeMicroseconds>(0xA550C18)
     }
 }
+
 }

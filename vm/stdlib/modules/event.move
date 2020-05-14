@@ -40,6 +40,7 @@ module Event {
 
     public fun new_event_generator(
         addr: address,
+        _cap: &EventHandleGeneratorCreationCapability
     ): EventHandleGenerator acquires EventHandleGenerator {
         if (::exists<EventHandleGenerator>(addr) && LibraTimestamp::is_genesis()) {
             // if the account already has an event handle generator, return it instead of creating

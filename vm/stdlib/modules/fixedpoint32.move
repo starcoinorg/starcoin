@@ -1,4 +1,4 @@
-address 0x0{
+address 0x0 {
 
 module FixedPoint32 {
     use 0x0::Transaction;
@@ -75,4 +75,5 @@ module FixedPoint32 {
         num.value
     }
 }
+
 }
