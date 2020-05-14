@@ -27,5 +27,6 @@ jobs:
           command: bench
           args: --bench benchmarks --bench bench_state_tree --bench bench_sync
       - name: publish result
-          run: rsync
-          args: -avpz --delete benchmarks/target/criterion /mnt/volume_01/starcoin_benchmarks
+        run: bash cp
+        args: -rf benchmarks/target/criterion /mnt/volume_01/starcoin_benchmarks
+
