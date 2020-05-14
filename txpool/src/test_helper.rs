@@ -16,7 +16,7 @@ pub fn start_txpool() -> TxPoolRef {
     let pool = TxPoolRef::start(
         TxPoolConfig::default(),
         storage.clone(),
-        startup_info.master.get_head(),
+        startup_info.get_master().clone(),
         bus,
     );
 

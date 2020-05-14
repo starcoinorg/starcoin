@@ -17,7 +17,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
 use starcoin_types::block::BlockInfo;
-use starcoin_types::startup_info::{ChainInfo, StartupInfo};
+use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{
@@ -155,7 +155,7 @@ impl Genesis {
             "Genesis block state root mismatch."
         );
 
-        let accumulator = MerkleAccumulator::new(
+        let txn_accumulator = MerkleAccumulator::new(
             *ACCUMULATOR_PLACEHOLDER_HASH,
             vec![],
             0,
@@ -164,8 +164,9 @@ impl Genesis {
         )?;
         let txn_info_hash = transaction_info.crypto_hash();
 
-        let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
-        accumulator.flush()?;
+        let (_, _) = txn_accumulator.append(vec![txn_info_hash].as_slice())?;
+        txn_accumulator.flush()?;
+        let txn_accumulator_info: AccumulatorInfo = (&txn_accumulator).try_into()?;
         ensure!(
             block.header().number() == 0,
             "Genesis block number must is 0."
@@ -173,24 +174,21 @@ impl Genesis {
         debug!("Genesis block id : {:?}", block.header().id());
 
         ensure!(
-            block.header().accumulator_root() == accumulator_root,
+            block.header().accumulator_root()
+                == txn_accumulator_info.get_accumulator_root().clone(),
             "Genesis block accumulator root mismatch."
         );
         //TODO verify consensus header
-        let chain_info = ChainInfo::new(None, block.header().id(), block.header());
-        storage.commit_branch_block(block.header().id(), block.clone())?;
+        storage.commit_block(block.clone())?;
 
-        let startup_info = StartupInfo::new(chain_info, vec![]);
+        let startup_info = StartupInfo::new(block.header().id(), vec![]);
 
         //save block info for accumulator init
-        storage.save_block_info(BlockInfo::new(
+        storage.save_block_info(BlockInfo::new_with_accumulator_info(
             block.header().id(),
-            accumulator_root,
-            accumulator.get_frozen_subtree_roots().unwrap(),
-            accumulator.num_leaves(),
-            accumulator.num_nodes(),
+            txn_accumulator_info,
+            Self::genesis_block_accumulator_info(block.header().id(), storage.clone())?,
             U512::zero(),
-            Self::genesis_block_accumulator_info(block.header().id(), storage.clone()).unwrap(),
         ))?;
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)
@@ -225,7 +223,7 @@ impl Genesis {
 
         let (_, _) = accumulator.append(vec![genesis_block_id].as_slice())?;
         accumulator.flush()?;
-        accumulator.try_into()
+        (&accumulator).try_into()
     }
 }
 

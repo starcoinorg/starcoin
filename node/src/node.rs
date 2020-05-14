@@ -119,7 +119,7 @@ where
     };
 
     let txpool = {
-        let best_block_id = startup_info.master.get_head();
+        let best_block_id = startup_info.get_master().clone();
         TxPoolRef::start(
             config.tx_pool.clone(),
             storage.clone(),
@@ -127,7 +127,7 @@ where
             bus.clone(),
         )
     };
-    let head_block_hash = startup_info.master.get_head();
+    let head_block_hash = startup_info.get_master().clone();
     let head_block = match storage.get_block(head_block_hash)? {
         Some(block) => block,
         None => panic!("can't get block by hash {}", head_block_hash),
@@ -145,7 +145,7 @@ where
         peer_id.clone(),
         head_block.header().number(),
         head_block_info.get_total_difficulty(),
-        startup_info.master.get_head(),
+        startup_info.get_master().clone(),
     );
     let network_config = config.clone();
     let network_bus = bus.clone();
@@ -163,7 +163,7 @@ where
         .await?;
 
     let head_block = storage
-        .get_block(startup_info.master.get_head())?
+        .get_block(startup_info.get_master().clone())?
         .expect("Head block must exist.");
 
     let chain_state_service = ChainStateActor::launch(

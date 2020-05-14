@@ -64,10 +64,10 @@ impl Default for AccumulatorInfo {
     }
 }
 
-impl TryFrom<MerkleAccumulator> for AccumulatorInfo {
+impl TryFrom<&MerkleAccumulator> for AccumulatorInfo {
     type Error = Error;
 
-    fn try_from(block_accumulator: MerkleAccumulator) -> Result<AccumulatorInfo> {
+    fn try_from(block_accumulator: &MerkleAccumulator) -> Result<AccumulatorInfo> {
         Ok(AccumulatorInfo::new(
             block_accumulator.root_hash(),
             block_accumulator.get_frozen_subtree_roots()?,

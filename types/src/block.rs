@@ -332,6 +332,24 @@ impl BlockInfo {
             block_accumulator_info,
         }
     }
+
+    pub fn new_with_accumulator_info(
+        block_id: HashValue,
+        txn_accumulator_info: AccumulatorInfo,
+        block_accumulator_info: AccumulatorInfo,
+        total_difficulty: U512,
+    ) -> Self {
+        Self {
+            block_id,
+            accumulator_root: txn_accumulator_info.get_accumulator_root().clone(),
+            frozen_subtree_roots: txn_accumulator_info.get_frozen_subtree_roots().clone(),
+            num_leaves: txn_accumulator_info.get_num_leaves(),
+            num_nodes: txn_accumulator_info.get_num_nodes(),
+            total_difficulty,
+            block_accumulator_info,
+        }
+    }
+
     pub fn into_inner(
         self,
     ) -> (
@@ -356,6 +374,15 @@ impl BlockInfo {
 
     pub fn get_block_accumulator_info(&self) -> &AccumulatorInfo {
         &self.block_accumulator_info
+    }
+
+    pub fn get_txn_accumulator_info(&self) -> AccumulatorInfo {
+        AccumulatorInfo::new(
+            self.accumulator_root.clone(),
+            self.frozen_subtree_roots.clone(),
+            self.num_leaves,
+            self.num_nodes,
+        )
     }
 }
 

@@ -7,7 +7,6 @@ use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
-    startup_info::ChainInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U512,
 };
@@ -33,7 +32,6 @@ pub trait ChainReader {
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
-    fn get_chain_info(&self) -> ChainInfo;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
     fn get_total_difficulty(&self) -> Result<U512>;
     fn exist_block(&self, block_id: HashValue) -> bool;

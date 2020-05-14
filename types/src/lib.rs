@@ -1,6 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
+// #![feature(vec_remove_item)]
 pub mod access_path;
 pub mod account_address;
 pub mod account_config;
