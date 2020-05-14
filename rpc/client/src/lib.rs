@@ -27,6 +27,7 @@ use tokio01::reactor::Reactor;
 use tokio_compat::prelude::*;
 use tokio_compat::runtime::Runtime;
 
+pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
 
@@ -35,7 +36,8 @@ pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::types::event::Event;
 use starcoin_rpc_api::types::pubsub::EventFilter;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber};
+use starcoin_rpc_api::types::pubsub::ThinBlock;
+use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
 use std::collections::HashMap;
@@ -375,7 +377,7 @@ impl RpcClient {
     }
     pub fn subscribe_new_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = BlockHeader, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = ThinBlock, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_block().await;
             res.map(|s| s.compat().map_err(map_err))

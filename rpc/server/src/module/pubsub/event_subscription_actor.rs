@@ -7,10 +7,11 @@ use actix;
 use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
 use anyhow::Result;
 use starcoin_bus::{Bus, BusActor};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::event::Event;
 use starcoin_storage::Store;
-use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::block::Block;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::system_events::SystemEvents;
 use std::sync::Arc;
@@ -64,7 +65,7 @@ impl actix::StreamHandler<SystemEvents> for ChainNotifyHandlerActor {
         if let SystemEvents::NewHeadBlock(block_detail) = item {
             let block = block_detail.get_block();
             // notify header.
-            self.notify_new_header(block.header());
+            self.notify_new_block(block);
             // notify events
             if let Err(e) = self.notify_events(block, self.store.clone()) {
                 error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
@@ -74,9 +75,20 @@ impl actix::StreamHandler<SystemEvents> for ChainNotifyHandlerActor {
 }
 
 impl ChainNotifyHandlerActor {
-    pub fn notify_new_header(&self, header: &BlockHeader) {
+    pub fn notify_new_block(&self, block: &Block) {
         for subscriber in self.new_header_subscribers.read().values() {
-            notify::notify(subscriber, pubsub::Result::Header(Box::new(header.clone())));
+            let thin_block = pubsub::ThinBlock::new(
+                block.header().clone(),
+                block
+                    .transactions()
+                    .iter()
+                    .map(|t| t.crypto_hash())
+                    .collect(),
+            );
+            notify::notify(
+                subscriber,
+                pubsub::Result::Block(Box::new(thin_block.clone())),
+            );
         }
     }
 
