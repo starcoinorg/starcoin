@@ -22,7 +22,10 @@ use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::{sync::Arc, time::Duration};
 use txpool::TxPoolRef;
-use types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+use types::{
+    account_address,
+    transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
+};
 
 #[test]
 fn test_txn_sync_actor() {
@@ -194,10 +197,8 @@ fn test_txn_sync_actor() {
 
 fn gen_user_txn() -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-    let account_address = AccountAddress::from_public_key(&public_key);
-    let auth_prefix = AccountAddress::authentication_key(&public_key)
-        .prefix()
-        .to_vec();
+    let account_address = account_address::from_public_key(&public_key);
+    let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
     let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
     let txn = txn.as_signed_user_txn().unwrap().clone();
     txn

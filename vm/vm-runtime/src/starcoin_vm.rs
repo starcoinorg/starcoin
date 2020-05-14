@@ -5,6 +5,7 @@ use crate::{chain_state::StateStore, system_module_names::*};
 use crypto::ed25519::Ed25519Signature;
 use libra_state_view::StateView;
 use libra_types::{
+    access_path::AccessPath as LibraAccessPath,
     account_address::AccountAddress as LibraAccountAddress,
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
@@ -12,38 +13,36 @@ use libra_types::{
     vm_error::{sub_status, StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
     write_set::WriteSet as LibraWriteSet,
 };
-use logger::prelude::*;
+use move_core_types::gas_schedule::GasConstants;
 use move_vm_runtime::MoveVM;
 use move_vm_state::{
     data_cache::{BlockDataCache, RemoteCache},
     execution_context::{ExecutionContext, SystemExecutionContext, TransactionExecutionContext},
 };
-use move_vm_types::chain_state::ChainState as LibraChainState;
-use move_vm_types::identifier::create_access_path;
-use move_vm_types::loaded_data::types::Type;
-use move_vm_types::values::Value;
 use once_cell::sync::Lazy;
+use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use types::{
+use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
-    language_storage::{ModuleId, TypeTag},
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
         TransactionOutput, TransactionPayload, TransactionStatus, MAX_TRANSACTION_SIZE_IN_BYTES,
     },
     vm_error::{StatusCode, VMStatus},
 };
-use vm::errors::convert_prologue_runtime_error;
-use vm::{
-    errors::VMResult,
+use starcoin_vm_types::{
+    chain_state::ChainState as LibraChainState,
+    errors::{convert_prologue_runtime_error, VMResult},
     gas_schedule::{
-        self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits, GAS_SCHEDULE_NAME,
+        self, zero_cost_schedule, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits,
     },
+    language_storage::{ResourceKey, StructTag, TypeTag},
     transaction_metadata::TransactionMetadata,
+    values::Value,
 };
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
     Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
@@ -66,6 +65,8 @@ pub struct StarcoinVM {
     gas_schedule: Option<CostTable>,
 }
 
+pub static ZERO_TABLE: Lazy<CostTable> = Lazy::new(|| zero_cost_schedule());
+
 impl StarcoinVM {
     pub fn new() -> Self {
         let inner = MoveVM::new();
@@ -81,16 +82,20 @@ impl StarcoinVM {
 
     fn fetch_gas_schedule(&mut self, data_cache: &dyn RemoteCache) -> VMResult<CostTable> {
         let address = account_config::association_address();
-        let mut ctx = SystemExecutionContext::new(data_cache, GasUnits::new(0));
-        let gas_struct_ty = self
-            .move_vm
-            .resolve_struct_def_by_name(&GAS_SCHEDULE_MODULE, &GAS_SCHEDULE_NAME, &mut ctx, &[])
-            .map_err(|_| {
-                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
-                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_MODULE)
-            })?;
+        let gas_struct_ty = StructTag {
+            address: *GAS_SCHEDULE_MODULE.address(),
+            module: GAS_SCHEDULE_MODULE.name().to_owned(),
+            name: GAS_SCHEDULE_NAME.to_owned(),
+            type_params: vec![],
+        };
+        // .move_vm
+        // .resolve_struct_def_by_name(&GAS_SCHEDULE_MODULE, &GAS_SCHEDULE_NAME, &mut ctx, &[])
+        // .map_err(|_| {
+        //     LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
+        //         .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_MODULE)
+        // })?;
 
-        let access_path = create_access_path(address.into(), gas_struct_ty.into_struct_tag()?);
+        let access_path = create_access_path(address.into(), gas_struct_ty);
 
         let data_blob = data_cache
             .get(&access_path)
@@ -110,9 +115,10 @@ impl StarcoinVM {
     }
 
     fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
-        self.gas_schedule
-            .as_ref()
-            .ok_or_else(|| VMStatus::new(StatusCode::VM_STARTUP_FAILURE))
+        Ok(&ZERO_TABLE)
+        // self.gas_schedule
+        //     .as_ref()
+        //     .ok_or_else(|| VMStatus::new(StatusCode::VM_STARTUP_FAILURE))
     }
 
     fn check_gas(&self, txn: &SignedUserTransaction) -> Result<(), VMStatus> {
@@ -157,11 +163,11 @@ impl StarcoinVM {
                     .with_message(error_str),
             );
         }
-
+        let gas_constants = GasConstants::default();
         // The submitted transactions max gas units needs to be at least enough to cover the
         // intrinsic cost of the transaction as calculated against the size of the
         // underlying `RawTransaction`
-        let min_txn_fee = gas_schedule::calculate_intrinsic_gas(raw_bytes_len);
+        let min_txn_fee = gas_schedule::calculate_intrinsic_gas(raw_bytes_len, &gas_constants);
         if txn.max_gas_amount() < min_txn_fee.get() {
             let error_str = format!(
                 "min gas required for txn: {}, gas submitted: {}",
@@ -183,16 +189,16 @@ impl StarcoinVM {
         // NB: MIN_PRICE_PER_GAS_UNIT may equal zero, but need not in the future. Hence why
         // we turn off the clippy warning.
         #[allow(clippy::absurd_extreme_comparisons)]
-        let below_min_bound = txn.gas_unit_price() < gas_schedule::MIN_PRICE_PER_GAS_UNIT.get();
+        let below_min_bound = txn.gas_unit_price() < gas_constants.min_price_per_gas_unit.get();
         if below_min_bound {
             let error_str = format!(
                 "gas unit min price: {}, submitted price: {}",
-                gas_schedule::MIN_PRICE_PER_GAS_UNIT.get(),
+                gas_constants.min_price_per_gas_unit.get(),
                 txn.gas_unit_price()
             );
             warn!(
                 "[VM] Gas unit error; min {}, submitted {}",
-                gas_schedule::MIN_PRICE_PER_GAS_UNIT.get(),
+                gas_constants.min_price_per_gas_unit.get(),
                 txn.gas_unit_price()
             );
             return Err(
@@ -201,15 +207,15 @@ impl StarcoinVM {
         }
 
         // The submitted gas price is greater than the maximum gas unit price set by the VM.
-        if txn.gas_unit_price() > gas_schedule::MAX_PRICE_PER_GAS_UNIT.get() {
+        if txn.gas_unit_price() > gas_constants.max_price_per_gas_unit.get() {
             let error_str = format!(
                 "gas unit max price: {}, submitted price: {}",
-                gas_schedule::MAX_PRICE_PER_GAS_UNIT.get(),
+                gas_constants.max_price_per_gas_unit.get(),
                 txn.gas_unit_price()
             );
             warn!(
                 "[VM] Gas unit error; min {}, submitted {}",
-                gas_schedule::MAX_PRICE_PER_GAS_UNIT.get(),
+                gas_constants.max_price_per_gas_unit.get(),
                 txn.gas_unit_price()
             );
             return Err(
@@ -217,35 +223,6 @@ impl StarcoinVM {
             );
         }
         Ok(())
-    }
-
-    fn resolve_type_argument(
-        &self,
-        ctx: &mut SystemExecutionContext,
-        tag: &TypeTag,
-    ) -> VMResult<Type> {
-        Ok(match tag {
-            TypeTag::U8 => Type::U8,
-            TypeTag::U64 => Type::U64,
-            TypeTag::U128 => Type::U128,
-            TypeTag::Bool => Type::Bool,
-            TypeTag::Address => Type::Address,
-            TypeTag::Vector(tag) => Type::Vector(Box::new(self.resolve_type_argument(ctx, tag)?)),
-            TypeTag::Struct(struct_tag) => {
-                let module_id = ModuleId::new(struct_tag.address, struct_tag.module.clone());
-                let ty_args = struct_tag
-                    .type_params
-                    .iter()
-                    .map(|tag| self.resolve_type_argument(ctx, tag))
-                    .collect::<VMResult<Vec<_>>>()?;
-                Type::Struct(Box::new(self.move_vm.resolve_struct_def_by_name(
-                    &module_id.into(),
-                    &struct_tag.name,
-                    ctx,
-                    &ty_args,
-                )?))
-            }
-        })
     }
 
     fn verify_transaction_impl(
@@ -262,16 +239,10 @@ impl StarcoinVM {
         match transaction.payload() {
             TransactionPayload::Script(script) => {
                 let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
-                let ty_args = script
-                    .ty_args()
-                    .iter()
-                    .map(|tag| self.resolve_type_argument(&mut ctx, tag))
-                    .collect::<VMResult<Vec<_>>>()?;
-                // ToDo: fix me
                 match result {
                     Ok(_) => Ok(VerifiedTranscationPayload::Script(
                         script.code().to_vec(),
-                        ty_args,
+                        script.ty_args().to_vec(),
                         script.args().to_vec(),
                     )),
                     Err(e) => Err(e.into()),
@@ -438,7 +409,7 @@ impl StarcoinVM {
 
         let mut interpreter_context =
             TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
-        let gas_schedule = CostTable::zero();
+        let gas_schedule = zero_cost_schedule();
 
         if let Ok((id, timestamp, author, auth)) = block_metadata.into_inner() {
             let previous_vote: BTreeMap<LibraAccountAddress, Ed25519Signature> = BTreeMap::new();
@@ -605,6 +576,12 @@ pub fn failed_transaction_output(
 }
 
 pub enum VerifiedTranscationPayload {
-    Script(Vec<u8>, Vec<Type>, Vec<TransactionArgument>),
+    Script(Vec<u8>, Vec<TypeTag>, Vec<TransactionArgument>),
     Module(Vec<u8>),
+}
+
+/// Get the AccessPath to a resource stored under `address` with type name `tag`
+fn create_access_path(address: LibraAccountAddress, tag: StructTag) -> LibraAccessPath {
+    let resource_tag = ResourceKey::new(address, tag);
+    LibraAccessPath::resource_access_path(&resource_tag)
 }

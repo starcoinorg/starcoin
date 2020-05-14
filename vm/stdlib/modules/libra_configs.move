@@ -1,4 +1,4 @@
-address 0x0:
+address 0x0{
 module LibraConfig {
     use 0x0::Transaction;
     use 0x0::LibraSystem;
@@ -29,4 +29,5 @@ module LibraConfig {
         move_to_sender(T{ payload });
         LibraSystem::reconfigure();
     }
+}
 }

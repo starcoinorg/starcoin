@@ -9,8 +9,9 @@ use starcoin_executor::TransactionExecutor;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::collections::HashMap;
 use std::sync::Arc;
-use types::account_address::AccountAddress;
-use types::account_config;
+use types::account_address::{self, AccountAddress};
+use types::{account_config, transaction::authenticator::AuthenticationKey};
+
 #[derive(Clone, Debug)]
 struct MockNonceClient {
     cache: Arc<RwLock<HashMap<AccountAddress, u64>>>,
@@ -41,10 +42,8 @@ impl AccountSeqNumberClient for MockNonceClient {
 async fn test_tx_pool() -> Result<()> {
     let pool = test_helper::start_txpool();
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-    let account_address = AccountAddress::from_public_key(&public_key);
-    let auth_prefix = AccountAddress::authentication_key(&public_key)
-        .prefix()
-        .to_vec();
+    let account_address = account_address::from_public_key(&public_key);
+    let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
     let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.crypto_hash();
@@ -72,10 +71,8 @@ async fn test_rollback() -> Result<()> {
     let pool = test_helper::start_txpool();
     let txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-        let account_address = AccountAddress::from_public_key(&public_key);
-        let auth_prefix = AccountAddress::authentication_key(&public_key)
-            .prefix()
-            .to_vec();
+        let account_address = account_address::from_public_key(&public_key);
+        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
         let txn = txn.as_signed_user_txn()?.clone();
         txn
@@ -83,10 +80,8 @@ async fn test_rollback() -> Result<()> {
     let _ = pool.clone().add_txns(vec![txn.clone()]).await?;
     let new_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-        let account_address = AccountAddress::from_public_key(&public_key);
-        let auth_prefix = AccountAddress::authentication_key(&public_key)
-            .prefix()
-            .to_vec();
+        let account_address = account_address::from_public_key(&public_key);
+        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 20000);
         let txn = txn.as_signed_user_txn()?.clone();
         txn

@@ -8,13 +8,13 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/libra", version = "0.1.0",rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
-move-lang = { package="move-lang", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
-libra-crypto = { package="libra-crypto", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
-libra-types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
-datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
-vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/libra/libra", version = "0.1.0",rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+move-lang = { package="move-lang", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+libra-crypto = { package="libra-crypto", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+libra-types = { package="libra-types", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+datatest-stable = { package="datatest-stable", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+vm = { package="vm", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
 #scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 once_cell = "1.3.1"
 include_dir = "0.5.0"
-lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+lcs = { package="libra-canonical-serialization", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }

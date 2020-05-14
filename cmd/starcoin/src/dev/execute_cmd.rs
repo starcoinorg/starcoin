@@ -16,7 +16,6 @@ use std::fs::OpenOptions;
 use std::io::Read;
 use std::time::Duration;
 use structopt::StructOpt;
-use vm as move_vm;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "execute")]
@@ -67,13 +66,14 @@ impl CommandAction for ExecuteCommand {
             .open(bytecode_path)?;
         let mut bytecode = vec![];
         file.read_to_end(&mut bytecode)?;
-        let _compiled_script =
-            match move_vm::file_format::CompiledScript::deserialize(bytecode.as_slice()) {
-                Err(e) => {
-                    bail!("invalid bytecode file, cannot deserialize as script, {}", e);
-                }
-                Ok(s) => s,
-            };
+        let _compiled_script = match starcoin_vm_types::file_format::CompiledScript::deserialize(
+            bytecode.as_slice(),
+        ) {
+            Err(e) => {
+                bail!("invalid bytecode file, cannot deserialize as script, {}", e);
+            }
+            Ok(s) => s,
+        };
 
         let mut type_tags = vec![];
         for type_tag in &opt.type_tags {

@@ -21,7 +21,7 @@ use tokio::time::{delay_for, Duration};
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
 use types::{
-    account_address::AccountAddress,
+    account_address,
     peer_info::{PeerId, PeerInfo},
 };
 
@@ -43,7 +43,7 @@ fn test_miner_with_schedule_pacemaker() {
             Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
         let key_pair = config.network.network_keypair();
-        let _address = AccountAddress::from_public_key(&key_pair.public_key);
+        let _address = account_address::from_public_key(&key_pair.public_key);
         let genesis = Genesis::build(config.net()).unwrap();
         let genesis_hash = genesis.block().header().id();
         let startup_info = genesis.execute(storage.clone()).unwrap();
@@ -127,7 +127,7 @@ fn test_miner_with_ondemand_pacemaker() {
         );
 
         let key_pair = config.network.network_keypair();
-        let _address = AccountAddress::from_public_key(&key_pair.public_key);
+        let _address = account_address::from_public_key(&key_pair.public_key);
 
         let genesis = Genesis::build(config.net()).unwrap();
         let genesis_hash = genesis.block().header().id();

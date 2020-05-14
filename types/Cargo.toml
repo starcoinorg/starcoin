@@ -22,7 +22,8 @@ proptest = { version = "0.9.4", default-features = false, optional = true }
 proptest-derive = { version = "0.1.2", default-features = false, optional = true }
 prost = "0.6"
 radix_trie = { version = "0.1.4", default-features = false }
-rand = "0.6.5"
+rand = "0.7.3"
+rand_core = { version = "0.5.1", default-features = false }
 ref-cast = "1.0"
 serde = { version = "1.0.99", default-features = false }
 thiserror = "1.0.14"
@@ -31,9 +32,9 @@ num_enum = "0.4.1"
 actix = "0.9"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
-libra-types = { git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
-libp2p = "0.16.2"
-move-core-types = {git = "https://github.com/starcoinorg/libra", rev="a65fce0cd5bd321c2a6ecf8e2a29ff78afca67a9" }
+libra-types = { git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+libp2p = "0.18.1"
+starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3"
 starcoin-accumulator = {path = "../core/accumulator"}
 

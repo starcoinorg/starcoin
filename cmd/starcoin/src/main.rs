@@ -53,9 +53,9 @@ fn run() -> Result<()> {
                         (client, node_handle)
                     }
                 }
-                Connect::RPC(address) => {
-                    info!("Try to connect node by rpc: {:?}", address);
-                    let client = RpcClient::connect_http(address)?;
+                Connect::WebSocket(address) => {
+                    info!("Try to connect node by websocket: {:?}", address);
+                    let client = RpcClient::connect_websocket(address)?;
                     (client, None)
                 }
             };
@@ -133,7 +133,13 @@ fn run() -> Result<()> {
                 .subcommand(dev::GetCoinCommand)
                 .subcommand(dev::CompileCommand)
                 .subcommand(dev::DeployCommand)
-                .subcommand(dev::ExecuteCommand),
+                .subcommand(dev::ExecuteCommand)
+                .subcommand(
+                    Command::with_name("subscribe")
+                        .subcommand(dev::SubscribeBlockCommand)
+                        .subcommand(dev::SubscribeEventCommand)
+                        .subcommand(dev::SubscribeNewTxnCommand),
+                ),
         )
         .command(
             Command::with_name("debug")

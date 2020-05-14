@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::initial_gas_schedule;
 use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
@@ -17,20 +16,22 @@ use move_vm_state::{
     data_cache::BlockDataCache,
     execution_context::{ExecutionContext, TransactionExecutionContext},
 };
+use move_vm_types::gas_schedule::zero_cost_schedule;
 use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainConfig;
+use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
-use stdlib::{stdlib_modules, StdLibOptions};
-use types::account_config;
-use types::contract_event::ContractEvent;
-use types::transaction::authenticator::AuthenticationKey;
-use vm::{
-    access::ModuleAccess,
+use starcoin_types::{
+    account_config, contract_event::ContractEvent, transaction::authenticator::AuthenticationKey,
+};
+use starcoin_vm_types::{
     gas_schedule::{CostTable, GasAlgebra, GasUnits},
     transaction_metadata::TransactionMetadata,
 };
+use stdlib::{stdlib_modules, StdLibOptions};
+use vm::access::ModuleAccess;
 
 const GENESIS_SEED: [u8; 32] = [42; 32];
 
@@ -70,7 +71,7 @@ pub fn generate_genesis_state_set(
 
     // create a data view for move_vm
     let state_view = GenesisStateView;
-    let gas_schedule = CostTable::zero();
+    let gas_schedule = zero_cost_schedule();
     let data_cache = BlockDataCache::new(&state_view);
 
     // create an execution context for the move_vm.
@@ -83,7 +84,8 @@ pub fn generate_genesis_state_set(
     // code to create those. However, code lives under an account but we have none.
     // So we are pushing code into the VM blindly in order to create the main accounts.
     for module in modules {
-        move_vm.cache_module(module.clone());
+        debug!("Cache module: {:?}", module.as_inner().self_id());
+        move_vm.cache_module(module.clone(), &mut interpreter_context)?;
     }
 
     let mut state_store = StateStore::new(chain_state);
@@ -93,20 +95,13 @@ pub fn generate_genesis_state_set(
         &move_vm,
         &gas_schedule,
         &mut interpreter_context,
-        initial_gas_schedule(&move_vm, &data_cache),
     );
     publish_stdlib(&mut interpreter_context, modules);
 
     let write_set = interpreter_context.make_write_set()?;
     state_store.add_write_set(&write_set);
-    let events = interpreter_context
-        .events()
-        .to_vec()
-        .iter()
-        .map(|event| event.into())
-        .collect();
 
-    Ok(events)
+    Ok(interpreter_context.events().to_vec())
 }
 
 /// Create and initialize Transaction Fee and Core Code accounts.
@@ -115,7 +110,6 @@ fn create_and_initialize_main_accounts(
     move_vm: &MoveVM,
     gas_schedule: &CostTable,
     interpreter_context: &mut TransactionExecutionContext,
-    initial_gas_schedule: Value,
 ) {
     let mut miner_reward_balance = chain_config.total_supply;
 
@@ -279,17 +273,17 @@ fn create_and_initialize_main_accounts(
         )
         .expect("Failure initializing block metadata");
 
-    move_vm
-        .execute_function(
-            &GAS_SCHEDULE_MODULE,
-            &INITIALIZE,
-            &gas_schedule,
-            interpreter_context,
-            &txn_data,
-            vec![],
-            vec![initial_gas_schedule],
-        )
-        .expect("Failure initializing gas module");
+    // move_vm
+    //     .execute_function(
+    //         &GAS_SCHEDULE_MODULE,
+    //         &INITIALIZE,
+    //         &gas_schedule,
+    //         interpreter_context,
+    //         &txn_data,
+    //         vec![],
+    //         vec![initial_gas_schedule],
+    //     )
+    //     .expect("Failure initializing gas module");
 
     if let Some(pre_mine_config) = &chain_config.pre_mine_config {
         let association_balance =

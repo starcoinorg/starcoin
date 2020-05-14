@@ -49,7 +49,7 @@ impl StarcoinPubSub for PubSubImpl {
     ) {
         let error = match (kind, params) {
             (pubsub::Kind::NewHeads, None) => {
-                // TODO: implement me.
+                self.service.add_new_header_subscription(subscriber);
                 return;
             }
             (pubsub::Kind::NewHeads, _) => {
@@ -157,7 +157,7 @@ impl PubSubService {
     pub fn unsubscribe(&self, id: SubscriptionId) -> Result<bool> {
         let res1 = self.events_subscribers.write().remove(&id).is_some();
         let res2 = self.transactions_subscribers.write().remove(&id).is_some();
-
-        Ok(res1 || res2)
+        let res3 = self.new_header_subscribers.write().remove(&id).is_some();
+        Ok(res1 || res2 || res3)
     }
 }

@@ -672,7 +672,6 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use tokio::runtime::{Handle, Runtime};
     use tokio::task;
-    use types::account_address::AccountAddress;
     use types::transaction::SignedUserTransaction;
 
     #[rtype(result = "Result<()>")]
@@ -708,7 +707,7 @@ mod tests {
                 .unwrap();
         let node_config1 = Arc::new(node_config1);
 
-        let (network1, _addr1, _bus1) = build_network(node_config1.clone(), handle.clone());
+        let (network1, _bus1) = build_network(node_config1.clone(), handle.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
@@ -722,7 +721,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, _addr2, bus2) = build_network(node_config2.clone(), handle.clone());
+        let (network2, bus2) = build_network(node_config2.clone(), handle.clone());
 
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();
@@ -794,10 +793,8 @@ mod tests {
     fn build_network(
         node_config: Arc<NodeConfig>,
         handle: Handle,
-    ) -> (NetworkAsyncService, AccountAddress, Addr<BusActor>) {
+    ) -> (NetworkAsyncService, Addr<BusActor>) {
         let bus = BusActor::launch();
-        let addr =
-            AccountAddress::from_public_key(&node_config.network.network_keypair().public_key);
         let network = NetworkActor::launch(
             node_config.clone(),
             bus.clone(),
@@ -805,7 +802,7 @@ mod tests {
             HashValue::default(),
             PeerInfo::default(),
         );
-        (network, addr, bus)
+        (network, bus)
     }
 
     struct TestResponseActor {

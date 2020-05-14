@@ -17,9 +17,9 @@
 #![cfg(test)]
 
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
-use codec::Encode;
+use codec::{Decode, Encode};
 use futures::{prelude::*, ready};
-use libp2p::core::nodes::listeners::ListenerId;
+use libp2p::core::connection::{ConnectionId, ListenerId};
 use libp2p::core::ConnectedPoint;
 use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler, Swarm};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
@@ -86,7 +86,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
         });
 
         let behaviour = CustomProtoWithAddr {
-            inner: GenericProto::new(&b"test"[..], &[1], peerset),
+            inner: GenericProto::new(&b"test"[..], &[1], peerset, None),
             addrs: addrs
                 .iter()
                 .enumerate()
@@ -154,26 +154,46 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         list
     }
 
-    fn inject_connected(&mut self, peer_id: PeerId, endpoint: ConnectedPoint) {
-        self.inner.inject_connected(peer_id, endpoint)
+    fn inject_connected(&mut self, peer_id: &PeerId) {
+        self.inner.inject_connected(peer_id)
     }
 
-    fn inject_disconnected(&mut self, peer_id: &PeerId, endpoint: ConnectedPoint) {
-        self.inner.inject_disconnected(peer_id, endpoint)
+    fn inject_disconnected(&mut self, peer_id: &PeerId) {
+        self.inner.inject_disconnected(peer_id)
     }
 
-    fn inject_node_event(
+    fn inject_connection_established(
+        &mut self,
+        peer_id: &PeerId,
+        conn: &ConnectionId,
+        endpoint: &ConnectedPoint,
+    ) {
+        self.inner
+            .inject_connection_established(peer_id, conn, endpoint)
+    }
+
+    fn inject_connection_closed(
+        &mut self,
+        peer_id: &PeerId,
+        conn: &ConnectionId,
+        endpoint: &ConnectedPoint,
+    ) {
+        self.inner.inject_connection_closed(peer_id, conn, endpoint)
+    }
+
+    fn inject_event(
         &mut self,
         peer_id: PeerId,
+        connection: ConnectionId,
         event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
-        self.inner.inject_node_event(peer_id, event)
+        self.inner.inject_event(peer_id, connection, event)
     }
 
     fn poll(
         &mut self,
         cx: &mut Context,
-        params: &mut impl PollParameters,
+        params: &mut impl PollParameters
     ) -> Poll<
         NetworkBehaviourAction<
             <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
@@ -181,16 +201,6 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         >
 >{
         self.inner.poll(cx, params)
-    }
-
-    fn inject_replaced(
-        &mut self,
-        peer_id: PeerId,
-        closed_endpoint: ConnectedPoint,
-        new_endpoint: ConnectedPoint,
-    ) {
-        self.inner
-            .inject_replaced(peer_id, closed_endpoint, new_endpoint)
     }
 
     fn inject_addr_reach_failure(
@@ -222,8 +232,8 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         self.inner.inject_listener_error(id, err);
     }
 
-    fn inject_listener_closed(&mut self, id: ListenerId) {
-        self.inner.inject_listener_closed(id);
+    fn inject_listener_closed(&mut self, id: ListenerId, reason: Result<(), &io::Error>) {
+        self.inner.inject_listener_closed(id, reason);
     }
 }
 
@@ -255,7 +265,7 @@ fn two_nodes_transfer_lots_of_packets() {
     let fut2 = future::poll_fn(move |cx| loop {
         match ready!(service2.poll_next_unpin(cx)) {
             Some(GenericProtoOut::CustomProtocolOpen { .. }) => {}
-            Some(GenericProtoOut::CustomMessage { message: _, .. }) => {
+            Some(GenericProtoOut::LegacyMessage { message: _, .. }) => {
                 packet_counter += 1;
                 if packet_counter == NUM_PACKETS {
                     return Poll::Ready(());
@@ -316,7 +326,7 @@ fn basic_two_nodes_requests_in_parallel() {
     let fut2 = future::poll_fn(move |cx| loop {
         match ready!(service2.poll_next_unpin(cx)) {
             Some(GenericProtoOut::CustomProtocolOpen { .. }) => {}
-            Some(GenericProtoOut::CustomMessage { message, .. }) => {
+            Some(GenericProtoOut::LegacyMessage { message, .. }) => {
                 let pos = to_receive
                     .iter()
                     .position(|m| m.encode() == message)
@@ -335,7 +345,6 @@ fn basic_two_nodes_requests_in_parallel() {
     });
 }
 
-#[ignore]
 #[test]
 fn reconnect_after_disconnect() {
     // We connect two nodes together, then force a disconnect (through the API of the `Service`),

@@ -8,7 +8,7 @@ use starcoin_crypto::Uniform;
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_types::transaction::helpers::TransactionSigner;
 use starcoin_types::{
-    account_address::AccountAddress,
+    account_address::{self, AccountAddress},
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
 use std::collections::HashMap;
@@ -69,7 +69,7 @@ where
 {
     fn create_account(&self, password: &str) -> Result<WalletAccount> {
         let keypair = gen_keypair();
-        let address = AccountAddress::from_public_key(&keypair.public_key);
+        let address = account_address::from_public_key(&keypair.public_key);
         let existed_accounts = self.store.get_accounts()?;
         //first account is default.
         let is_default = existed_accounts.is_empty();
@@ -114,7 +114,7 @@ where
         duration: Duration,
     ) -> Result<()> {
         let keypair = self.unlock_prikey(&address, password)?;
-        let address = AccountAddress::from_public_key(&keypair.public_key);
+        let address = account_address::from_public_key(&keypair.public_key);
         let ttl = std::time::Instant::now().add(duration);
         self.key_cache
             .write()
@@ -194,7 +194,7 @@ where
 }
 
 fn gen_keypair() -> KeyPair {
-    let mut seed_rng = rand::rngs::OsRng::new().expect("can't access OsRng");
+    let mut seed_rng = rand::rngs::OsRng;
     let seed_buf: [u8; 32] = seed_rng.gen();
     let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
     let key_pair: KeyPair = KeyPair::generate(&mut rng);
@@ -279,7 +279,7 @@ mod tests {
     use crate::file_wallet_store::FileWalletStore;
     use crate::keystore_wallet::gen_keypair;
     use anyhow::Result;
-    use starcoin_types::account_address::AccountAddress;
+    use starcoin_types::account_address;
     use std::time::Duration;
 
     #[test]
@@ -311,7 +311,7 @@ mod tests {
         let wallet_store = FileWalletStore::new(tmp_path.path());
         let wallet = KeyStoreWallet::new(wallet_store)?;
         let keypair = gen_keypair();
-        let address = AccountAddress::from_public_key(&keypair.public_key);
+        let address = account_address::from_public_key(&keypair.public_key);
         let account =
             wallet.import_account(address, keypair.private_key.to_bytes().to_vec(), "pass")?;
         wallet.unlock_account(account.address, "pass", Duration::from_secs(10))?;
@@ -334,7 +334,7 @@ mod tests {
         let wallet_account = wallet.get_account(&account.address)?;
         assert!(wallet_account.is_some());
         let account_detail = wallet_account.unwrap();
-        let address = AccountAddress::from_public_key(&account_detail.public_key);
+        let address = account_address::from_public_key(&account_detail.public_key);
         assert_eq!(&address, account_detail.address());
         Ok(())
     }
