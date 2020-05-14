@@ -34,7 +34,7 @@ impl Metrics {
                 "Counters of how many connections closed",
             )
             .namespace("starcoin"),
-            &["network_connection_closed"]
+            &["direction", "reason"]
         )?;
 
         let peers_count =
