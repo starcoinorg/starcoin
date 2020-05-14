@@ -14,7 +14,7 @@ module STC {
             true,    // is_synthetic
             1000000, // scaling_factor = 10^6
             1000,    // fractional_part = 10^3
-            x"737463" // UTF8-encoded "STC" as a hex string
+            x"535443" // UTF8-encoded "STC" as a hex string
         );
     }
 }

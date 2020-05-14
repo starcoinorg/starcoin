@@ -18,7 +18,6 @@ use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainConfig;
-use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_types::{
     account_config, contract_event::ContractEvent, transaction::authenticator::AuthenticationKey,
@@ -78,7 +77,6 @@ pub fn encode_genesis_write_set(
     let mut state_view = GenesisStateView::new();
     for module in stdlib_modules {
         let module_id = module.self_id();
-        debug!("Add module: {:?}", module_id);
         state_view.add_module(&module_id, &module);
     }
     let data_cache = BlockDataCache::new(&state_view);

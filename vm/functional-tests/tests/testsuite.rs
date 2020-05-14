@@ -1,19 +1,16 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
 use anyhow::{bail, Result};
-use bytecode_verifier::{batch_verify_modules, VerifiedModule};
+use functional_tests::compiler::{Compiler, ScriptOrModule};
 use libra_types::account_address::AccountAddress as LibraAddress;
 use move_lang::{
-    compiled_unit::CompiledUnit, move_compile, move_compile_no_report, shared::Address,
-    test_utils::read_bool_var,
+    compiled_unit::CompiledUnit,
+    move_compile_no_report,
+    shared::Address,
+    test_utils::{read_bool_var, stdlib_files},
 };
-use starcoin_functional_tests::{
-    compiler::{Compiler, ScriptOrModule},
-    testsuite,
-};
+use starcoin_functional_tests::testsuite;
 use std::{convert::TryFrom, fmt, io::Write, path::Path};
-use stdlib::stdlib_files;
 use tempfile::NamedTempFile;
 
 struct MoveSourceCompiler {
@@ -80,7 +77,7 @@ impl Compiler for MoveSourceCompiler {
         Ok(match unit {
             CompiledUnit::Script { script, .. } => ScriptOrModule::Script(script),
             CompiledUnit::Module { module, .. } => {
-                let input = format!("address {}:\n{}", sender_addr, input);
+                let input = format!("address {} {{\n{}\n}}", sender_addr, input);
                 cur_file.reopen()?.write_all(input.as_bytes())?;
                 self.temp_files.push(cur_file);
                 self.deps.push(cur_path);
@@ -89,24 +86,14 @@ impl Compiler for MoveSourceCompiler {
         })
     }
 
-    fn stdlib() -> Option<Vec<VerifiedModule>> {
-        let (_, compiled_units) =
-            move_compile(&stdlib_files(), &[], Some(Address::LIBRA_CORE)).unwrap();
-        Some(batch_verify_modules(
-            compiled_units
-                .into_iter()
-                .map(|compiled_unit| match compiled_unit {
-                    CompiledUnit::Module { module, .. } => module,
-                    CompiledUnit::Script { .. } => panic!("Unexpected Script in stdlib"),
-                })
-                .collect(),
-        ))
+    fn use_staged_genesis(&self) -> bool {
+        true
     }
 }
 
 fn functional_testsuite(path: &Path) -> datatest_stable::Result<()> {
-    let compiler = MoveSourceCompiler::new(stdlib_files());
-    testsuite::functional_tests(compiler, path)
+    let _log = starcoin_logger::init_for_test();
+    testsuite::functional_tests(MoveSourceCompiler::new(stdlib_files()), path)
 }
 
 datatest_stable::harness!(functional_testsuite, "tests/testsuite", r".*\.move");
