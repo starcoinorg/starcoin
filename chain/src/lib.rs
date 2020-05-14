@@ -148,9 +148,9 @@ where
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
                 self.service.master_startup_info(),
             )),
-            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
-                self.service.master_startup_info().master,
-            )),
+            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(ChainInfo::new(
+                self.service.master_startup_info().get_master().clone(),
+            ))),
             ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(
                 self.service.get_transaction(hash)?.unwrap(),
             )),

@@ -43,7 +43,7 @@ impl ChainBencher {
         let startup_info = genesis.execute(storage.clone()).unwrap();
 
         let txpool = {
-            let best_block_id = startup_info.master.get_head();
+            let best_block_id = startup_info.get_master().clone();
             TxPoolRef::start(
                 node_config.tx_pool.clone(),
                 storage.clone(),
@@ -87,7 +87,7 @@ impl ChainBencher {
         for i in 0..self.block_num {
             let block_chain = BlockChain::<DummyConsensus, Storage>::new(
                 self.config.clone(),
-                self.collection.get_master_chain_info(),
+                self.collection.get_head(),
                 self.storage.clone(),
                 Arc::downgrade(&self.collection),
             )

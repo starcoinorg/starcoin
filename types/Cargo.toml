@@ -36,6 +36,6 @@ libra-types = { git = "https://github.com/libra/libra", rev="191b40dc7108b121315
 libp2p = "0.18.1"
 starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3"
-
+starcoin-accumulator = {path = "../core/accumulator"}
 
 ethereum-types = "0.2.3"
