@@ -12,6 +12,7 @@ module Genesis {
     use 0x0::Empty;
     use 0x0::Event;
     use 0x0::LBR;
+    use 0x0::STC;
     use 0x0::Libra;
     use 0x0::LibraAccount;
     use 0x0::LibraBlock;
@@ -33,6 +34,7 @@ module Genesis {
     fun initialize_accounts(
         association_root_addr: address,
         burn_addr: address,
+        mint_addr: address,
         genesis_auth_key: vector<u8>,
     ) {
         let dummy_auth_key = x"00000000000000000000000000000000";
@@ -45,6 +47,7 @@ module Genesis {
         Coin1::initialize();
         Coin2::initialize();
         LBR::initialize();
+        STC::initialize();
         LibraConfig::apply_for_creator_privilege();
         LibraConfig::grant_creator_privilege(0xA550C18);
 
@@ -56,20 +59,23 @@ module Genesis {
         AccountTrack::initialize();
         LibraAccount::initialize();
         Unhosted::publish_global_limits_definition();
-        LibraAccount::create_account<LBR::T>(
+        LibraAccount::create_account<STC::T>(
             association_root_addr,
             copy dummy_auth_key,
         );
 
         // Create the burn account
-        LibraAccount::create_account<LBR::T>(burn_addr, copy dummy_auth_key);
+        LibraAccount::create_account<STC::T>(burn_addr, copy dummy_auth_key);
 
         // Register transaction fee accounts
         // TODO: Need to convert this to a different account type than unhosted.
-        LibraAccount::create_testnet_account<LBR::T>(0xFEE, copy dummy_auth_key);
+        LibraAccount::create_testnet_account<STC::T>(0xFEE, copy dummy_auth_key);
 
         // Create the config account
-        LibraAccount::create_account<LBR::T>(LibraConfig::default_config_address(), dummy_auth_key);
+        LibraAccount::create_account<STC::T>(LibraConfig::default_config_address(), copy dummy_auth_key);
+
+        // Create the mint account
+        LibraAccount::create_account<STC::T>(mint_addr, copy dummy_auth_key);
 
         LibraTransactionTimeout::initialize();
         LibraBlock::initialize_block_metadata();
@@ -88,7 +94,7 @@ module Genesis {
     fun grant_burn_capabilities_for_sender(auth_key: vector<u8>) {
         Libra::grant_burn_capability_for_sender<Coin1::T>();
         Libra::grant_burn_capability_for_sender<Coin2::T>();
-        Libra::grant_burn_capability_for_sender<LBR::T>();
+        Libra::grant_burn_capability_for_sender<STC::T>();
         LibraAccount::rotate_authentication_key(auth_key);
     }
 

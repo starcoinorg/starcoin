@@ -156,8 +156,10 @@ module AccountTrack {
         }
     }
 
-    fun is_unlimited_account(addr: address): bool {
-        VASP::is_vasp(addr)
+    fun is_unlimited_account(_addr: address): bool {
+        //TODO define Starcoin account type.
+        return true
+        //VASP::is_vasp(addr)
     }
 
     fun singleton_addr(): address {

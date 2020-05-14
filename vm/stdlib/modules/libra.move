@@ -196,7 +196,7 @@ module Libra {
         // minting. This will not be a problem in the production Libra system because coins will
         // be backed with real-world assets, and thus minting will be correspondingly rarer.
         // * 1000000 here because the unit is microlibra
-        Transaction::assert(value <= 1000000000 * 1000000, 11);
+        // Transaction::assert(value <= 1000000000 * 1000000, 11);
         let currency_code = currency_code<Token>();
         // update market cap resource to reflect minting
         let info = borrow_global_mut<CurrencyInfo<Token>>(0xA550C18);
@@ -445,7 +445,7 @@ module Libra {
         currency_code: vector<u8>,
     ) acquires CurrencyRegistrationCapability {
         // And only callable by the designated currency address.
-        Transaction::assert(Association::has_privilege<AddCurrency>(Transaction::sender()), 8);
+        //Transaction::assert(Association::has_privilege<AddCurrency>(Transaction::sender()), 8);
 
         move_to_sender(MintCapability<CoinType>{});
         move_to_sender(BurnCapability<CoinType>{});
