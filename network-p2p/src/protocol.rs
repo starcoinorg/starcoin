@@ -551,17 +551,26 @@ impl Protocol {
     pub fn write_notification(
         &mut self,
         target: PeerId,
-        _protocol_name: Cow<'static, [u8]>,
+        protocol_name: Cow<'static, [u8]>,
         message: impl Into<Vec<u8>>,
     ) {
-        self.send_message(
+        // self.send_message(
+        //     &target,
+        //     Message::Consensus(ConsensusMessage {
+        //         data: message.into(),
+        //     }),
+        // );
+        let fallback = Message::Consensus(ConsensusMessage {
+            data: message.into(),
+        })
+        .encode();
+
+        self.behaviour.write_notification(
             &target,
-            Message::Consensus(ConsensusMessage {
-                data: message.into(),
-            }),
+            protocol_name,
+            fallback.expect("should succ"),
+            vec![],
         );
-        // self.behaviour
-        //     .write_notification(&target, protocol_name, message);
     }
 
     pub fn register_notifications_protocol(

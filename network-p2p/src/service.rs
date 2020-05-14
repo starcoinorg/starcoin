@@ -812,11 +812,10 @@ impl Future for NetworkWorker {
                         };
 
                         match cause {
-                            ConnectionError::IO(_) => {}
-                            // metrics
-                            //     .connections_closed_total
-                            //     .with_label_values(&[dir, "transport-error"])
-                            //     .inc(),
+                            ConnectionError::IO(_) => metrics
+                                .connections_closed_total
+                                .with_label_values(&[dir, "transport-error"])
+                                .inc(),
                             // ConnectionError::Handler(NodeHandlerWrapperError::Handler(
                             //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
                             //         EitherError::B(EitherError::A(PingFailure::Timeout)),
