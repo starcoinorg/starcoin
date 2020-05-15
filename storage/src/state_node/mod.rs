@@ -7,7 +7,7 @@ use crate::storage::{CodecStorage, ValueCodec};
 use crate::STATE_NODE_PREFIX_NAME;
 use anyhow::{Error, Result};
 use crypto::HashValue;
-use scs::SCSCodec;
+use forkable_jellyfish_merkle::node_type::Node;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -18,9 +18,9 @@ impl ValueCodec for StateNode {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.0.encode()
     }
-
+    #[allow(clippy::all)]
     fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
+        Node::decode(data).map(|n| StateNode(n))
     }
 }
 

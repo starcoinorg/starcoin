@@ -120,7 +120,7 @@ impl<M: Metadata> Middleware<M> for MetricMiddleware {
         let record: RpcCallRecord = (&call).into();
         let fut = next(call, meta).map(move |output| {
             record.end(output_to_code(output.as_ref()));
-            output
+            return output;
         });
         // must declare type to convert type then wrap with Either.
         let box_fut: Self::CallFuture = Box::new(fut);
