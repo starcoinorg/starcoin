@@ -118,7 +118,8 @@ impl SyncBencher {
                                     headers.headers,
                                     bodies.bodies,
                                     infos.infos,
-                                );
+                                )
+                                .await;
                             }
 
                             if end {

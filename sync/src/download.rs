@@ -213,7 +213,9 @@ where
                     peer_id
                 );
                 // connect block
-                Downloader::do_block_and_child(downloader, *block, None);
+                Arbiter::spawn(async move {
+                    Downloader::do_block_and_child(downloader.clone(), *block, None).await;
+                });
             }
             SyncNotify::ClosePeerMsg(peer_id) => {
                 info!("close peer: {:?}", peer_id,);
@@ -515,7 +517,8 @@ where
                                     headers.headers,
                                     bodies.bodies,
                                     infos.infos,
-                                );
+                                )
+                                .await;
                                 let do_block_end_time = get_unix_ts();
                                 debug!(
                                     "do block used time {:?}",
@@ -874,7 +877,7 @@ where
         }
     }
 
-    pub fn do_blocks(
+    pub async fn do_blocks(
         downloader: Arc<Downloader<C>>,
         headers: Vec<BlockHeader>,
         bodies: Vec<BlockBody>,
@@ -887,25 +890,23 @@ where
                 bodies.get(i).unwrap().clone().transactions,
             );
             let block_info = infos.get(i).unwrap().clone();
-            Self::do_block_and_child(downloader.clone(), block, Some(block_info));
+            Self::do_block_and_child(downloader.clone(), block, Some(block_info)).await;
         }
     }
 
-    fn do_block_and_child(
+    async fn do_block_and_child(
         downloader: Arc<Downloader<C>>,
         block: Block,
         block_info: Option<BlockInfo>,
     ) {
-        Arbiter::spawn(async move {
-            let block_id = block.header().id();
-            if Self::do_block(downloader.clone(), block, block_info).await {
-                if let Some(child) = downloader.future_blocks.take_child(&block_id) {
-                    for (son_block, son_block_info) in child {
-                        let _ = Self::do_block(downloader.clone(), son_block, son_block_info).await;
-                    }
+        let block_id = block.header().id();
+        if Self::do_block(downloader.clone(), block, block_info).await {
+            if let Some(child) = downloader.future_blocks.take_child(&block_id) {
+                for (son_block, son_block_info) in child {
+                    let _ = Self::do_block(downloader.clone(), son_block, son_block_info).await;
                 }
             }
-        });
+        }
     }
 
     async fn do_block(
