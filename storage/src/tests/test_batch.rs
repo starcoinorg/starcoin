@@ -51,7 +51,7 @@ fn test_db_batch() {
                 .unwrap()
         )
         .unwrap(),
-        transaction_info1.clone()
+        transaction_info1
     );
     assert_eq!(
         TransactionInfo::decode_value(
@@ -61,7 +61,7 @@ fn test_db_batch() {
                 .unwrap()
         )
         .unwrap(),
-        transaction_info2.clone()
+        transaction_info2
     );
 }
 
@@ -104,7 +104,7 @@ fn test_cache_batch() {
                 .unwrap()
         )
         .unwrap(),
-        transaction_info1.clone()
+        transaction_info1
     );
     assert_eq!(
         TransactionInfo::decode_value(
@@ -114,7 +114,7 @@ fn test_cache_batch() {
                 .unwrap()
         )
         .unwrap(),
-        transaction_info2.clone()
+        transaction_info2
     );
 }
 
@@ -141,7 +141,7 @@ fn test_batch_comm() {
     }
     let result = db.write_batch(DEFAULT_PREFIX_NAME, new_batch);
     assert!(result.is_ok());
-    let mut new_batch2 = write_batch.clone();
+    let mut new_batch2 = write_batch;
     for key in key_vec {
         new_batch2.delete::<HashValue>(key).unwrap();
     }

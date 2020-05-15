@@ -25,6 +25,7 @@ pub fn plus_one(key: HashValue) -> HashValue {
 }
 
 /// Initializes a DB with a set of key-value pairs by inserting one key at each version.
+#[allow(clippy::all)]
 pub fn init_mock_db(kvs: &HashMap<HashValue, Blob>) -> (MockTreeStore, Option<HashValue>) {
     assert!(!kvs.is_empty());
 
