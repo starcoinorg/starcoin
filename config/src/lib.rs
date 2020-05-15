@@ -4,7 +4,6 @@
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, Result};
-use dirs;
 use libp2p::core::Multiaddr;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
