@@ -1,7 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+use actix::{Addr, System};
 use failure::Fail;
+use futures::channel::oneshot;
 use futures::{future::FutureExt, select, stream::StreamExt, TryStream, TryStreamExt};
 use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
@@ -31,6 +33,7 @@ pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
 
+use crate::chain_watcher::{ChainWatcher, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::node::NodeInfo;
@@ -42,11 +45,12 @@ use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::task::LocalSet;
 
 #[derive(Debug, Clone)]
 enum ConnSource {
     Ipc(PathBuf, Arc<Reactor>),
-    WebSocket,
+    WebSocket(String),
     Local,
 }
 
@@ -54,6 +58,7 @@ pub struct RpcClient {
     inner: RefCell<Option<RpcClientInner>>,
     rt: RefCell<Runtime>,
     conn_source: ConnSource,
+    chain_watcher: Addr<ChainWatcher>,
 }
 
 struct ConnectionProvider {
@@ -82,11 +87,23 @@ impl ConnectionProvider {
 }
 
 impl RpcClient {
-    pub(crate) fn new(conn_source: ConnSource, inner: RpcClientInner, rt: Runtime) -> Self {
+    pub(crate) fn new(conn_source: ConnSource, inner: RpcClientInner, mut rt: Runtime) -> Self {
+        let (tx, rx) = oneshot::channel();
+        let pubsub_client = inner.pubsub_client.clone();
+        std::thread::spawn(move || {
+            let sys = System::new("client-actix-system");
+            let watcher = ChainWatcher::launch(pubsub_client);
+
+            tx.send(watcher);
+            sys.run();
+        });
+        let watcher = rt.block_on_std(rx).unwrap();
+
         Self {
             inner: RefCell::new(Some(inner)),
             rt: RefCell::new(rt),
             conn_source,
+            chain_watcher: watcher,
         }
     }
     pub fn connect_websocket(url: &str) -> anyhow::Result<Self> {
@@ -94,7 +111,11 @@ impl RpcClient {
 
         let conn = ws::try_connect(url).map_err(|e| anyhow::Error::new(e.compat()))?;
         let client = rt.block_on(conn.map_err(map_err))?;
-        Ok(Self::new(ConnSource::WebSocket, client, rt))
+        Ok(Self::new(
+            ConnSource::WebSocket(url.to_string()),
+            client,
+            rt,
+        ))
     }
 
     pub fn connect_local<THandler, TMetadata>(handler: THandler) -> Self
@@ -137,6 +158,23 @@ impl RpcClient {
             client_inner,
             rt,
         ))
+    }
+
+    pub fn watch_txn(&self, txn_hash: HashValue) -> anyhow::Result<ThinBlock> {
+        let f = async move {
+            let r = self.chain_watcher.send(WatchTxn { txn_hash }).await?;
+
+            let r = r.await?;
+            r
+        };
+        self.rt.borrow_mut().block_on_std(f)
+    }
+    pub fn watch_block(&self, block_number: BlockNumber) -> anyhow::Result<ThinBlock> {
+        let f = async move {
+            let r = self.chain_watcher.send(WatchBlock(block_number)).await?;
+            r.await?
+        };
+        self.rt.borrow_mut().block_on_std(f)
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {

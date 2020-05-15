@@ -54,7 +54,7 @@ pub type WatchResult = Result<pubsub::ThinBlock, anyhow::Error>;
 type Responder = oneshot::Sender<WatchResult>;
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct WatchBlock(BlockNumber);
+pub struct WatchBlock(pub BlockNumber);
 
 impl Message for WatchBlock {
     type Result = oneshot::Receiver<WatchResult>;
@@ -62,7 +62,7 @@ impl Message for WatchBlock {
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct WatchTxn {
-    txn_hash: HashValue,
+    pub txn_hash: HashValue,
 }
 
 impl Message for WatchTxn {

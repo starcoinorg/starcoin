@@ -44,6 +44,14 @@ pub struct ExecuteOpt {
         help = "max gas used to deploy the module"
     )]
     max_gas_amount: u64,
+
+    #[structopt(
+        short = "b",
+        name = "blocking-mode",
+        long = "blocking",
+        help = "blocking wait txn mined"
+    )]
+    blocking: bool,
 }
 
 pub struct ExecuteCommand;
@@ -109,10 +117,17 @@ impl CommandAction for ExecuteCommand {
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
-        if succ {
-            Ok(txn_hash)
-        } else {
+        if !succ {
             bail!("execute-txn is reject by node")
         }
+        if opt.blocking {
+            let block = client.watch_txn(txn_hash)?;
+            println!(
+                "txn mined in block hight: {}, hash: {}",
+                block.header().number(),
+                block.header().id()
+            );
+        }
+        Ok(txn_hash)
     }
 }
