@@ -88,7 +88,7 @@ impl Into<Vec<ChainInfo>> for StartupInfo {
         let mut chain_info_vec = self
             .branches
             .iter()
-            .map(|branch| ChainInfo::new(branch.clone()))
+            .map(|branch| ChainInfo::new(*branch))
             .collect();
         branches.append(&mut chain_info_vec);
         branches

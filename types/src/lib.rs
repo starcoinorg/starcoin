@@ -8,7 +8,6 @@ pub mod account_state;
 pub mod accumulator_info;
 pub mod block;
 pub mod block_metadata;
-pub mod change_set;
 pub mod contract_event;
 pub mod error;
 pub mod event;

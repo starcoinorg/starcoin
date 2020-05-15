@@ -501,6 +501,7 @@ impl StarcoinVM {
                 TransactionOutput::from(result)
             }
             Transaction::StateSet(state_set) => {
+                //TODO add check for state_set.
                 let result_status = match chain_state.apply(state_set) {
                     Ok(_) => KEEP_STATUS.clone(),
                     Err(_) => DISCARD_STATUS.clone(),
