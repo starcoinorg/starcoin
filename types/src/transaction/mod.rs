@@ -34,9 +34,9 @@ mod pending_transaction;
 
 pub use error::CallError;
 pub use error::Error as TransactionError;
-pub use libra_types::transaction::Module;
-pub use libra_types::transaction::{parse_as_transaction_argument, TransactionArgument};
-pub use libra_types::transaction::{Script, SCRIPT_HASH_LENGTH};
+pub use libra_types::transaction::{
+    parse_as_transaction_argument, Module, Script, TransactionArgument, SCRIPT_HASH_LENGTH,
+};
 pub use pending_transaction::{Condition, PendingTransaction};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
@@ -706,10 +706,10 @@ impl Into<libra_types::transaction::TransactionPayload> for TransactionPayload {
     fn into(self) -> libra_types::transaction::TransactionPayload {
         match self {
             TransactionPayload::Script(s) => {
-                libra_types::transaction::TransactionPayload::Script(s.into())
+                libra_types::transaction::TransactionPayload::Script(s)
             }
             TransactionPayload::Module(m) => {
-                libra_types::transaction::TransactionPayload::Module(m.into())
+                libra_types::transaction::TransactionPayload::Module(m)
             }
             TransactionPayload::StateSet(_) => unimplemented!(),
         }
@@ -719,7 +719,7 @@ impl Into<libra_types::transaction::TransactionPayload> for TransactionPayload {
 impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction {
     fn into(self) -> libra_types::transaction::SignedTransaction {
         let raw_txn = libra_types::transaction::RawTransaction::new(
-            self.sender().into(),
+            self.sender(),
             self.sequence_number(),
             self.payload().clone().into(),
             self.max_gas_amount(),
@@ -738,10 +738,10 @@ impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
     fn from(status: libra_types::transaction::TransactionStatus) -> Self {
         match status {
             libra_types::transaction::TransactionStatus::Discard(vm_status) => {
-                TransactionStatus::Discard(vm_status.into())
+                TransactionStatus::Discard(vm_status)
             }
             libra_types::transaction::TransactionStatus::Keep(vm_status) => {
-                TransactionStatus::Keep(vm_status.into())
+                TransactionStatus::Keep(vm_status)
             }
             libra_types::transaction::TransactionStatus::Retry => {
                 TransactionStatus::Discard(VMStatus::new(StatusCode::UNKNOWN_VALIDATION_STATUS))

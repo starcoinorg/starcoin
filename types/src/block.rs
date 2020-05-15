@@ -341,7 +341,7 @@ impl BlockInfo {
     ) -> Self {
         Self {
             block_id,
-            accumulator_root: txn_accumulator_info.get_accumulator_root().clone(),
+            accumulator_root: *txn_accumulator_info.get_accumulator_root(),
             frozen_subtree_roots: txn_accumulator_info.get_frozen_subtree_roots().clone(),
             num_leaves: txn_accumulator_info.get_num_leaves(),
             num_nodes: txn_accumulator_info.get_num_nodes(),
@@ -378,7 +378,7 @@ impl BlockInfo {
 
     pub fn get_txn_accumulator_info(&self) -> AccumulatorInfo {
         AccumulatorInfo::new(
-            self.accumulator_root.clone(),
+            self.accumulator_root,
             self.frozen_subtree_roots.clone(),
             self.num_leaves,
             self.num_nodes,

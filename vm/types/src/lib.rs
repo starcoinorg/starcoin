@@ -24,6 +24,14 @@ pub mod move_resource {
     pub use move_core_types::move_resource::MoveResource;
 }
 
+pub mod transaction_argument {
+    pub use move_core_types::transaction_argument::*;
+}
+
+pub mod parser {
+    pub use move_core_types::parser::parse_type_tags;
+}
+
 pub mod transaction_metadata {
     pub use move_vm_types::transaction_metadata::TransactionMetadata;
 }
