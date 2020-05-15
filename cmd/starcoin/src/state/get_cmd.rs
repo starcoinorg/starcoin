@@ -32,10 +32,12 @@ impl CommandAction for GetCommand {
         let opt = ctx.opt();
         let state = client
             .state_get(AccessPath::new_for_account(opt.account_address))?
-            .ok_or(format_err!(
-                "Account with address {} state not exist.",
-                opt.account_address
-            ))?;
+            .ok_or_else(|| {
+                format_err!(
+                    "Account with address {} state not exist.",
+                    opt.account_address
+                )
+            })?;
         Ok(hex::encode(state))
     }
 }

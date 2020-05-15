@@ -66,14 +66,10 @@ fn run() -> Result<()> {
         },
         |_, _, state| {
             let (_, _, handle) = state.into_inner();
-            match handle {
-                Some(handle) => match handle.join() {
-                    Err(e) => {
-                        error!("{:?}", e);
-                    }
-                    _ => {}
-                },
-                None => {}
+            if let Some(handle) = handle {
+                if let Err(e) = handle.join() {
+                    error!("{:?}", e);
+                }
             }
         },
         move |_, _, _| {
@@ -82,14 +78,10 @@ fn run() -> Result<()> {
         },
         |_, _, state| {
             let (_, _, handle) = state.into_inner();
-            match handle {
-                Some(handle) => match handle.stop() {
-                    Err(e) => {
-                        error!("{:?}", e);
-                    }
-                    _ => {}
-                },
-                None => {}
+            if let Some(handle) = handle {
+                if let Err(e) = handle.stop() {
+                    error!("{:?}", e);
+                }
             }
         },
     );

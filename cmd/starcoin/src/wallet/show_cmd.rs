@@ -41,10 +41,9 @@ impl CommandAction for ShowCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let account = client.wallet_get(opt.account_address)?.ok_or(format_err!(
-            "Account with address {} not exist.",
-            opt.account_address
-        ))?;
+        let account = client.wallet_get(opt.account_address)?.ok_or_else(|| {
+            format_err!("Account with address {} not exist.", opt.account_address)
+        })?;
 
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
@@ -56,7 +55,7 @@ impl CommandAction for ShowCommand {
 
         let token_balance = match opt.type_tag.clone() {
             Some(token) => {
-                let tag = parser::parse_type_tags(token.as_ref())?[0].clone().into();
+                let tag = parser::parse_type_tags(token.as_ref())?[0].clone();
                 account_state_reader.get_token_balance(account.address(), &tag)?
             }
             None => None,

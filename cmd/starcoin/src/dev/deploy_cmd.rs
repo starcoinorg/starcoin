@@ -71,7 +71,7 @@ impl CommandAction for DeployCommand {
             }
             Ok(compiled_module) => compiled_module,
         };
-        let module_address = compiled_module.address().clone();
+        let module_address = *compiled_module.address();
         // from libra address to our address
         let module_address = AccountAddress::new(module_address.into());
         let client = ctx.state().client();

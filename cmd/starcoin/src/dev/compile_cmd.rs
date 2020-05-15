@@ -1,14 +1,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
-use move_lang;
 use move_lang::command_line::parse_address;
 use move_lang::shared::Address;
 use scmd::{CommandAction, ExecContext};
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use stdlib;
 use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "compile")]
@@ -43,7 +41,7 @@ impl CommandAction for CompileCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let address = ctx.opt().account_address.clone();
+        let address = ctx.opt().account_address;
         let source_file = ctx.opt().source_file.clone();
 
         let mut deps = stdlib::stdlib_files();
