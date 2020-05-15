@@ -16,19 +16,20 @@ libra_types = { package="libra-types", git = "https://github.com/libra/libra", r
 move-lang = { package="move-lang", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
 functional-tests = { package="functional-tests", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
 stdlib = { package="stdlib", path = "../stdlib"}
-#starcoin_language_e2e_tests = { package="language-e2e-tests", path = "../e2e-tests"}
+language-e2e-tests = { git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe"}
 once_cell = "1.3.1"
 regex = { version = "1.3.6", default-features = false, features = ["std", "perf"] }
 thiserror = "1.0"
 aho-corasick = "0.7.10"
 termcolor = "1.0.5"
 mirai-annotations = "1.6.0"
-libra-crypto = { package="libra-crypto", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-libra-config = { package="libra-config", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
 move-core-types = { package="move-core-types", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
 libra-state-view = { package="libra-state-view", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-types = { package="starcoin-types", path = "../../types"}
-
+starcoin-types = { path = "../../types"}
+starcoin-vm-runtime = { path = "../vm-runtime"}
+starcoin-config = { path = "../../config"}
+starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-logger = { path = "../../commons/logger"}
 [[test]]
 name = "testsuite"
 harness = false

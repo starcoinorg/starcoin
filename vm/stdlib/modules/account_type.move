@@ -88,7 +88,7 @@ module AccountType {
         fresh_address: address,
         account_metadata: AccountType
     ): T<AccountType> {
-        //assert_is_registered<AccountType>();
+        assert_is_registered<AccountType>();
         T {
             account_metadata,
             is_certified: true,

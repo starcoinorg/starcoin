@@ -20,8 +20,10 @@ scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0" }
 lru = "0.4.3"
 parking_lot = "0.10.2"
+
 [dev-dependencies]
-rand = "0.6.5"
+rand = "0.7.3"
+rand_core = { version = "0.5.1", default-features = false }
 proptest = "0.9.5"
 proptest-derive = "0.1.2"
 

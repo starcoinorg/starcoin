@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{chain_state::StateStore, system_module_names::*};
-use crypto::ed25519::Ed25519Signature;
 use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath as LibraAccessPath,
     account_address::AccountAddress as LibraAccountAddress,
+    account_config as libra_account_config,
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
     },
@@ -41,7 +41,6 @@ use starcoin_vm_types::{
     transaction_metadata::TransactionMetadata,
     values::Value,
 };
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
@@ -66,6 +65,10 @@ pub struct StarcoinVM {
 }
 
 pub static ZERO_TABLE: Lazy<CostTable> = Lazy::new(|| zero_cost_schedule());
+
+//TODO define as argument.
+pub static DEFAULT_CURRENCY_TY: Lazy<TypeTag> =
+    Lazy::new(|| libra_account_config::type_tag_for_currency_code(account_config::STC.to_owned()));
 
 impl StarcoinVM {
     pub fn new() -> Self {
@@ -357,7 +360,7 @@ impl StarcoinVM {
                 gas_schedule,
                 chain_state,
                 &txn_data,
-                vec![],
+                vec![DEFAULT_CURRENCY_TY.clone()],
                 vec![
                     Value::u64(txn_sequence_number),
                     Value::vector_u8(txn_public_key),
@@ -388,7 +391,7 @@ impl StarcoinVM {
             gas_schedule,
             chain_state,
             &txn_data,
-            vec![],
+            vec![DEFAULT_CURRENCY_TY.clone()],
             vec![
                 Value::u64(txn_sequence_number),
                 Value::u64(txn_gas_price),
@@ -411,20 +414,15 @@ impl StarcoinVM {
             TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
         let gas_schedule = zero_cost_schedule();
 
-        if let Ok((id, timestamp, author, auth)) = block_metadata.into_inner() {
-            let previous_vote: BTreeMap<LibraAccountAddress, Ed25519Signature> = BTreeMap::new();
-            let vote_maps = scs::to_bytes(&previous_vote).unwrap();
+        if let Ok((id, timestamp, author, _auth)) = block_metadata.into_inner() {
+            let vote_maps = vec![];
             let round = 0u64;
             let args = vec![
                 Value::u64(round),
                 Value::u64(timestamp),
                 Value::vector_u8(id),
-                Value::vector_u8(vote_maps),
-                Value::address(author.into()),
-                match auth {
-                    Some(prefix) => Value::vector_u8(prefix),
-                    None => Value::vector_u8(Vec::new()),
-                },
+                Value::vector_address(vote_maps),
+                Value::address(author),
             ];
 
             self.move_vm.execute_function(

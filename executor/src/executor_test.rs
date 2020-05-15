@@ -263,7 +263,7 @@ fn test_publish_module() -> Result<()> {
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
+    let output1 = Executor::execute_transaction(&chain_state, txn1)?;
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let program = String::from(
@@ -306,7 +306,7 @@ fn test_publish_module() -> Result<()> {
         let balance = get_balance(account1.address().clone(), &chain_state);
         debug!("balance= {:?}", balance);
 
-        let token = String::from("0x0::Starcoin::T");
+        let token = String::from("0x0::STC::T");
         let token_balance =
             get_token_balance(account1.address().clone(), &chain_state, token)?.unwrap();
         assert_eq!(balance, token_balance);
