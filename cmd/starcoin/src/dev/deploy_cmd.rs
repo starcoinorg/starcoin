@@ -29,6 +29,20 @@ pub struct DeployOpt {
         help = "max gas used to deploy the module"
     )]
     max_gas_amount: u64,
+    #[structopt(
+        name = "expiration_time",
+        long = "timeout",
+        default_value = "3000",
+        help = "how long(in seconds) the txn stay alive"
+    )]
+    expiration_time: u64,
+    #[structopt(
+        short = "b",
+        name = "blocking-mode",
+        long = "blocking",
+        help = "blocking wait txn mined"
+    )]
+    blocking: bool,
 }
 
 pub struct DeployCommand;
@@ -71,7 +85,10 @@ impl CommandAction for DeployCommand {
                 &module_address
             );
         }
+
         let account_resource = account_resource.unwrap();
+
+        let expiration_time = Duration::from_secs(opt.expiration_time);
         let deploy_txn = RawUserTransaction::new_module(
             module_address,
             account_resource.sequence_number(),
@@ -79,16 +96,26 @@ impl CommandAction for DeployCommand {
             opt.max_gas_amount,
             1,
             account_config::starcoin_type_tag(),
-            Duration::from_secs(60 * 5),
+            expiration_time,
         );
 
         let signed_txn = client.wallet_sign_txn(deploy_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
-        if succ {
-            Ok(txn_hash)
-        } else {
-            bail!("deploy-txn is reject by node")
+        if !succ {
+            bail!("execute-txn is reject by node")
         }
+        println!("txn {:#x} submitted.", txn_hash);
+
+        if opt.blocking {
+            let block = client.watch_txn(txn_hash, Some(expiration_time * 2))?;
+            println!(
+                "txn mined in block hight: {}, hash: {:#x}",
+                block.header().number(),
+                block.header().id()
+            );
+        }
+
+        Ok(txn_hash)
     }
 }

@@ -38,12 +38,29 @@ pub struct ExecuteOpt {
     type_tags: Vec<String>,
     #[structopt(long="arg", name="transaction-arg", help ="can specify multi arg", parse(try_from_str = parse_as_transaction_argument))]
     args: Vec<TransactionArgument>,
+
+    #[structopt(
+        name = "expiration_time",
+        long = "timeout",
+        default_value = "3000",
+        help = "how long(in seconds) the txn stay alive"
+    )]
+    expiration_time: u64,
+
     #[structopt(
         short = "g",
         name = "max-gas-amount",
         help = "max gas used to deploy the module"
     )]
     max_gas_amount: u64,
+
+    #[structopt(
+        short = "b",
+        name = "blocking-mode",
+        long = "blocking",
+        help = "blocking wait txn mined"
+    )]
+    blocking: bool,
 }
 
 pub struct ExecuteCommand;
@@ -96,6 +113,7 @@ impl CommandAction for ExecuteCommand {
             bail!("address {} not exists on chain", &txn_address);
         }
         let account_resource = account_resource.unwrap();
+        let expiration_time = Duration::from_secs(opt.expiration_time);
         let script_txn = RawUserTransaction::new_script(
             txn_address,
             account_resource.sequence_number(),
@@ -103,16 +121,25 @@ impl CommandAction for ExecuteCommand {
             opt.max_gas_amount,
             1,
             account_config::starcoin_type_tag(),
-            Duration::from_secs(60 * 5),
+            expiration_time,
         );
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
-        if succ {
-            Ok(txn_hash)
-        } else {
+        if !succ {
             bail!("execute-txn is reject by node")
         }
+        println!("txn {:#x} submitted.", txn_hash);
+
+        if opt.blocking {
+            let block = client.watch_txn(txn_hash, Some(expiration_time * 2))?;
+            println!(
+                "txn mined in block hight: {}, hash: {:#x}",
+                block.header().number(),
+                block.header().id()
+            );
+        }
+        Ok(txn_hash)
     }
 }
