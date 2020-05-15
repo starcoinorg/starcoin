@@ -118,7 +118,7 @@ impl ValueCodec for Vec<HashValue> {
                 break;
             }
             begin = ends;
-            ends = ends + hash_size;
+            ends += hash_size;
         }
         Ok(decoded)
     }
@@ -139,7 +139,7 @@ impl KeyCodec for BranchNumber {
         let (branch_id, number) = *self;
 
         let mut encoded_key = Vec::with_capacity(size_of::<BranchNumber>());
-        encoded_key.write(&branch_id.to_vec()).unwrap();
+        encoded_key.write_all(&branch_id.to_vec()).unwrap();
         encoded_key.write_u64::<BigEndian>(number)?;
         Ok(encoded_key)
     }
@@ -160,7 +160,7 @@ impl BlockStorage {
             body_store: BlockBodyStorage::new(instance.clone()),
             number_store: BlockNumberStorage::new(instance.clone()),
             branch_number_store: BranchNumberStorage::new(instance.clone()),
-            block_txns_store: BlockTransactionsStorage::new(instance.clone()),
+            block_txns_store: BlockTransactionsStorage::new(instance),
         }
     }
     pub fn save(&self, block: Block) -> Result<()> {
@@ -291,13 +291,11 @@ impl BlockStorage {
         let mut parent_id2 = block_id2;
         let mut found;
         debug!("common ancestor: {:?}, {:?}", block_id1, block_id2);
-        match self.get_relationship(block_id1, block_id2) {
-            Ok(Some(hash)) => return Ok(Some(hash)),
-            _ => {}
+        if let Ok(Some(hash)) = self.get_relationship(block_id1, block_id2) {
+            return Ok(Some(hash));
         }
-        match self.get_relationship(block_id2, block_id1) {
-            Ok(Some(hash)) => return Ok(Some(hash)),
-            _ => {}
+        if let Ok(Some(hash)) = self.get_relationship(block_id2, block_id1) {
+            return Ok(Some(hash));
         }
 
         loop {
@@ -435,14 +433,12 @@ impl BlockStorage {
         block_id1: HashValue,
         block_id2: HashValue,
     ) -> Result<Option<HashValue>> {
-        match self.get_sons(block_id1) {
-            Ok(sons) => {
-                if sons.contains(&block_id2) {
-                    return Ok(Some(block_id1));
-                }
+        if let Ok(sons) = self.get_sons(block_id1) {
+            if sons.contains(&block_id2) {
+                return Ok(Some(block_id1));
             }
-            _ => {}
         }
+
         Ok(None)
     }
 

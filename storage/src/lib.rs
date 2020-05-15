@@ -180,7 +180,7 @@ impl Storage {
                 instance.clone(),
                 STARTUP_INFO_PREFIX_NAME,
             )),
-            branch_storage: BranchStorage::new(instance.clone()),
+            branch_storage: BranchStorage::new(instance),
         })
     }
 }

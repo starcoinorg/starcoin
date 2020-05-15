@@ -50,7 +50,7 @@ fn test_delete_from_tree() {
     let key = HashValue::new([0x00u8; HashValue::LENGTH]);
     let value = Blob::from(vec![1u8, 2u8, 3u8, 4u8]);
 
-    let (_new_root_hash, batch) = tree.put_blob_set(None, vec![(key, value.clone())]).unwrap();
+    let (_new_root_hash, batch) = tree.put_blob_set(None, vec![(key, value)]).unwrap();
     db.write_tree_update_batch(batch).unwrap();
 
     let (new_root, batch) = tree.delete(Some(_new_root_hash), key).unwrap();
@@ -64,7 +64,7 @@ fn test_delete_from_tree() {
     let value2 = Blob::from(vec![3u8, 4u8]);
 
     let (_root1_hash, batch) = tree
-        .put_blob_set(Some(_new_root_hash), vec![(key2, value2.clone())])
+        .put_blob_set(Some(_new_root_hash), vec![(key2, value2)])
         .unwrap();
     assert_eq!(batch.stale_node_index_batch.len(), 0);
     db.write_tree_update_batch(batch).unwrap();
@@ -158,7 +158,7 @@ fn test_insert_at_leaf_with_multiple_internals_created() {
 
     assert_eq!(db.num_nodes(), 4);
 
-    let leaf1 = Node::new_leaf(key1, value1.clone());
+    let leaf1 = Node::new_leaf(key1, value1);
     let leaf2 = Node::new_leaf(key2, value2.clone());
     let internal = {
         let mut children = HashMap::new();

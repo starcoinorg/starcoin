@@ -168,7 +168,7 @@ impl AccumulatorTree {
         not_frozen_nodes.extend_from_slice(&to_freeze);
         self.update_temp_nodes(not_frozen_nodes.clone())?;
         // udpate to cache
-        self.update_cache(not_frozen_nodes.clone())?;
+        self.update_cache(not_frozen_nodes)?;
         // update self properties
         self.root_hash = hash;
         self.num_leaves = last_new_leaf_count;
@@ -204,7 +204,6 @@ impl AccumulatorTree {
                 AccumulatorNode::new_empty()
             }
         };
-        // println!("id:{:?} get node store: {:?}", self.id.short_str(), node);
         Ok(node)
     }
 
@@ -279,7 +278,11 @@ impl AccumulatorTree {
     }
 
     fn get_node_index(&self, key: NodeCacheKey) -> Option<HashValue> {
-        self.index_cache.lock().get(&key).map(|value| *value)
+        self.index_cache
+            .lock()
+            .get(&key)
+            .copied()
+            .map(|value| value)
     }
 
     /// Get node hash always.

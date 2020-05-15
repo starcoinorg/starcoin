@@ -18,7 +18,7 @@ pub struct DBStorage {
 impl DBStorage {
     pub fn new<P: AsRef<Path> + Clone>(db_root_path: P) -> Self {
         let path = db_root_path.as_ref().join("starcoindb");
-        Self::open(path.clone(), false).expect("Unable to open StarcoinDB")
+        Self::open(path, false).expect("Unable to open StarcoinDB")
     }
     pub fn open(path: impl AsRef<Path>, readonly: bool) -> Result<Self> {
         let column_families = VEC_PREFIX_NAME.to_vec();
@@ -142,10 +142,9 @@ impl InnerStore for DBStorage {
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         record_metrics("db", prefix_name, "put").end_with(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
-            let result =
-                self.db
-                    .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
-            Ok(result)
+            self.db
+                .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
+            Ok(())
         })
     }
 

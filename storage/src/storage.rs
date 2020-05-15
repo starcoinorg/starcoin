@@ -105,7 +105,7 @@ impl InnerStore for StorageInstance {
             StorageInstance::DB { db } => db.contains_key(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 match cache.contains_key(prefix_name, key.clone()) {
-                    Err(_) => db.contains_key(prefix_name, key.clone()),
+                    Err(_) => db.contains_key(prefix_name, key),
                     Ok(is_contains) => Ok(is_contains),
                 }
             }

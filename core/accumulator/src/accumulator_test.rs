@@ -174,8 +174,7 @@ fn test_multiple_tree() {
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
     let frozen_hash = accumulator.get_frozen_subtree_roots().unwrap();
-    let accumulator2 =
-        MerkleAccumulator::new(root_hash1, frozen_hash.clone(), 8, 15, arc_store.clone()).unwrap();
+    let accumulator2 = MerkleAccumulator::new(root_hash1, frozen_hash, 8, 15, arc_store).unwrap();
     let root_hash2 = accumulator2.root_hash();
     assert_eq!(root_hash1, root_hash2);
     proof_verify(&accumulator2, root_hash2, &batch1, 0);

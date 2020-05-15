@@ -119,7 +119,7 @@ fn test_block_number() {
         .block_storage
         .save_body(block_id, block_body1.clone())
         .unwrap();
-    let block1 = Block::new(block_header1.clone(), block_body1.clone());
+    let block1 = Block::new(block_header1.clone(), block_body1);
 
     // save block1
     storage.block_storage.save(block1.clone()).unwrap();
@@ -183,7 +183,7 @@ fn test_branch_number() {
         .block_storage
         .save_body(block_id, block_body1.clone())
         .unwrap();
-    let block1 = Block::new(block_header1.clone(), block_body1.clone());
+    let block1 = Block::new(block_header1.clone(), block_body1);
 
     // save block1
     storage.block_storage.save(block1.clone()).unwrap();
@@ -247,7 +247,7 @@ fn test_block_branch_hashes() {
         .save_header(block_header0.clone())
         .unwrap();
 
-    let parent_hash = block_header0.clone().id();
+    let parent_hash = block_header0.id();
     let block_header1 = BlockHeader::new(
         parent_hash,
         dt.timestamp_nanos() as u64,
@@ -323,7 +323,7 @@ fn test_block_branch_hashes() {
         .block_storage
         .get_branch_hashes(block_header4.id())
         .unwrap();
-    let desert_vec = vec![block_header3.clone().id(), block_id];
+    let desert_vec = vec![block_header3.id(), block_id];
     assert_eq!(hashes, desert_vec);
     let comm_hash = storage
         .block_storage
