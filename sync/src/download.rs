@@ -13,6 +13,7 @@ use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_HASH, LABEL_STATE, SYNC_METRICS};
 use config::NodeConfig;
 use crypto::HashValue;
+use futures::executor::block_on;
 use logger::prelude::*;
 use network::{get_unix_ts, NetworkAsyncService};
 use network_api::NetworkService;
@@ -914,18 +915,25 @@ where
         block_info: Option<BlockInfo>,
     ) -> bool {
         info!("do block info {:?}", block.header().id());
+        let block_clone = block.clone();
+        let downloader_clone = downloader.clone();
         let connect_result = if block_info.is_some() {
-            downloader
-                .chain_reader
-                .clone()
-                .try_connect_with_block_info(block.clone(), block_info.clone().unwrap())
-                .await
+            let block_info_clone = block_info.clone().unwrap();
+            block_on(async move {
+                downloader_clone
+                    .chain_reader
+                    .clone()
+                    .try_connect_with_block_info(block_clone, block_info_clone)
+                    .await
+            })
         } else {
-            downloader
-                .chain_reader
-                .clone()
-                .try_connect(block.clone())
-                .await
+            block_on(async move {
+                downloader_clone
+                    .chain_reader
+                    .clone()
+                    .try_connect(block_clone)
+                    .await
+            })
         };
 
         match connect_result {
