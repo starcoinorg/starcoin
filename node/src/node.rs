@@ -149,16 +149,17 @@ where
         }
     };
 
+    let head_block_hash = *startup_info.get_master();
+
     let txpool = {
-        let best_block_id = startup_info.get_master().clone();
         TxPoolRef::start(
             config.tx_pool.clone(),
             storage.clone(),
-            best_block_id,
+            head_block_hash,
             bus.clone(),
         )
     };
-    let head_block_hash = startup_info.get_master().clone();
+
     let head_block = match storage.get_block(head_block_hash)? {
         Some(block) => block,
         None => panic!("can't get block by hash {}", head_block_hash),
@@ -176,7 +177,7 @@ where
         peer_id.clone(),
         head_block.header().number(),
         head_block_info.get_total_difficulty(),
-        startup_info.get_master().clone(),
+        head_block_hash,
     );
     let network_config = config.clone();
     let network_bus = bus.clone();

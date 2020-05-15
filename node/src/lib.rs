@@ -172,7 +172,8 @@ where
             System::current().stop();
         });
     });
-    if block_on(async { start_receiver.await }).is_err() {
+    let result = block_on(async { start_receiver.await });
+    if result.is_err() {
         std::process::exit(1);
     }
     NodeHandle::new(thread_handle, stop_sender)
