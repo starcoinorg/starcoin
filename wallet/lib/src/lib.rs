@@ -16,19 +16,19 @@ mod test {
         let tmpdir = tempfile::tempdir().unwrap();
         let wallet = FileWalletStore::new(tmpdir.path());
         let wallet_account = WalletAccount::random();
-        let account = wallet_account.address().clone();
+        let account = wallet_account.address();
         wallet.save_account(wallet_account.clone()).unwrap();
         assert_eq!(
-            wallet_account.clone().address,
-            wallet.get_account(&account).unwrap().unwrap().address
+            wallet_account.address,
+            wallet.get_account(account).unwrap().unwrap().address
         );
         let key = String::from("mytest");
         let value = "my first test";
         wallet
-            .save_to_account(&account, key.clone(), value.as_bytes().to_vec())
+            .save_to_account(account, key.clone(), value.as_bytes().to_vec())
             .unwrap();
         let value2 = wallet
-            .get_from_account(&account, key.clone().as_str())
+            .get_from_account(account, key.as_str())
             .unwrap()
             .unwrap();
         assert_eq!(value2, value.as_bytes().to_vec());
@@ -41,7 +41,7 @@ mod test {
         let mut account_map = HashMap::new();
         for _i in 0..10 {
             let wallet_account = WalletAccount::random();
-            let account = wallet_account.address().clone();
+            let account = *wallet_account.address();
             wallet.save_account(wallet_account.clone()).unwrap();
             account_map.insert(account, wallet_account);
         }
@@ -59,13 +59,13 @@ mod test {
         let tmpdir = tempfile::tempdir().unwrap();
         let wallet = FileWalletStore::new(tmpdir.path());
         let wallet_account = WalletAccount::random();
-        let account = wallet_account.address().clone();
+        let account = wallet_account.address();
         wallet.save_account(wallet_account.clone()).unwrap();
         wallet
-            .save_to_account(&account, String::from("key1"), "value1".as_bytes().to_vec())
+            .save_to_account(account, String::from("key1"), b"value1".to_vec())
             .unwrap();
-        wallet.remove_account(&account).unwrap();
-        let test_account = wallet.get_account(&account);
+        wallet.remove_account(account).unwrap();
+        let test_account = wallet.get_account(account);
         assert!(test_account.is_ok());
         let test_account = test_account.unwrap();
         assert!(test_account.is_none());
