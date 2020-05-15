@@ -11,6 +11,12 @@ pub struct PubSubClient {
     client: TypedClient,
 }
 
+impl std::fmt::Debug for PubSubClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PubSubClient")
+    }
+}
+
 impl From<RpcChannel> for PubSubClient {
     fn from(channel: RpcChannel) -> Self {
         PubSubClient {

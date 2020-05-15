@@ -11,6 +11,7 @@ use starcoin_rpc_api::types::pubsub;
 use starcoin_types::block::BlockNumber;
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub struct ChainWatcher {
     inner: PubSubClient,
     watched_blocks: HashMap<BlockNumber, Vec<Responder>>,

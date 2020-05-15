@@ -12,10 +12,12 @@ Then, let contracting!
 
 
 ```move
+script {
 use 0x0::LibraAccount;
 
 fun main<Token>(payee: address, auth_key_prefix: vector<u8>, amount: u64) {
     LibraAccount::pay_from_sender<Token>(payee, auth_key_prefix, amount)
+}
 }
 ```
 
@@ -26,7 +28,7 @@ and save it in the starcoin project dir.
 In starcoin console, run:
 
 ```bash
-starcoin% wallet compile -o build/ -f peer_to_peer.move -s 759e96a81c7f0c828cd3bf1cc84239cb
+starcoin% dev compile -o build/ -f peer_to_peer.move -s 759e96a81c7f0c828cd3bf1cc84239cb
 build/peer_to_peer.mv
 ```
 
@@ -69,7 +71,7 @@ starcoin% wallet show 1d8133a0c1a07366de459fb08d28d2a6
 5. execute the script.(will build a transaction and submit to chain).
 
 ```bash
-starcoin% wallet execute -a 759e96a81c7f0c828cd3bf1cc84239cb -f build/peer_to_peer.mv -g 1000000 -t 0x0::Starcoin::T --arg 0x1d8133a0c1a07366de459fb08d28d2a6 --arg b"7bc6066656bb248755686d2ab78aef14" --arg 100000
+starcoin% dev execute -a 759e96a81c7f0c828cd3bf1cc84239cb -f build/peer_to_peer.mv -g 1000000 -t 0x0::Starcoin::T --arg 0x1d8133a0c1a07366de459fb08d28d2a6 --arg b"7bc6066656bb248755686d2ab78aef14" --arg 100000
 621f7f59fec2a3dc5bd9ee34897278b03cc4f804e0fe531e745276e579779c0d
 ```
 

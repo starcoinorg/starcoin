@@ -45,7 +45,6 @@ use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::task::LocalSet;
 
 #[derive(Debug, Clone)]
 enum ConnSource {
@@ -94,8 +93,8 @@ impl RpcClient {
             let sys = System::new("client-actix-system");
             let watcher = ChainWatcher::launch(pubsub_client);
 
-            tx.send(watcher);
-            sys.run();
+            tx.send(watcher).unwrap();
+            let _ = sys.run();
         });
         let watcher = rt.block_on_std(rx).unwrap();
 
@@ -160,12 +159,17 @@ impl RpcClient {
         ))
     }
 
-    pub fn watch_txn(&self, txn_hash: HashValue) -> anyhow::Result<ThinBlock> {
+    pub fn watch_txn(
+        &self,
+        txn_hash: HashValue,
+        timeout: Option<Duration>,
+    ) -> anyhow::Result<ThinBlock> {
         let f = async move {
             let r = self.chain_watcher.send(WatchTxn { txn_hash }).await?;
-
-            let r = r.await?;
-            r
+            match timeout {
+                Some(t) => tokio::time::timeout(t, r).await??,
+                None => r.await?,
+            }
         };
         self.rt.borrow_mut().block_on_std(f)
     }
