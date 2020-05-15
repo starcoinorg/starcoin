@@ -11,7 +11,7 @@ use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::{
     parse_as_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_runtime::type_tag_parser::parse_type_tags;
+use starcoin_vm_types::parser;
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::time::Duration;
@@ -95,7 +95,7 @@ impl CommandAction for ExecuteCommand {
         let mut type_tags = vec![];
         for type_tag in &opt.type_tags {
             type_tags.extend(
-                parse_type_tags(type_tag.as_ref())?
+                parser::parse_type_tags(type_tag.as_ref())?
                     .into_iter()
                     .map(|t| TypeTag::from(t)),
             );
