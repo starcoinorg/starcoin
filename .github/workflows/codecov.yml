@@ -1,7 +1,7 @@
 name: Code Coverage Report
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 14 * * *'
 jobs:
   code_coverage_report:
     name: Generate code coverage report
