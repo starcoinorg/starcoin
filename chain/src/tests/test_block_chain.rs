@@ -31,7 +31,7 @@ async fn gen_master_chain(
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
     let txpool = {
-        let best_block_id = startup_info.get_master().clone();
+        let best_block_id = *startup_info.get_master();
         TxPoolRef::start(
             node_config.tx_pool.clone(),
             storage.clone(),
@@ -146,7 +146,7 @@ async fn test_chain_apply() -> Result<()> {
         None,
         vec![],
     )?;
-    let new_block = DevConsensus::create_block(config.clone(), &block_chain, block_template)?;
+    let new_block = DevConsensus::create_block(config, &block_chain, block_template)?;
     block_chain.apply(new_block)?;
     let header1 = block_chain.current_header();
     debug!("block 1 header: {:?}", header1);

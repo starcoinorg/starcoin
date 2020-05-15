@@ -168,7 +168,7 @@ where
                 startup_info.master,
                 txns.len()
             );
-            let master = startup_info.master.clone();
+            let master = *startup_info.get_master();
             let collection =
                 to_block_chain_collection(config.clone(), startup_info, storage.clone())?;
             let block_chain = BlockChain::<C, S>::new(

@@ -129,9 +129,9 @@ where
                     None
                 },
             )),
-            ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(
+            ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(Box::new(
                 self.service.get_block_info_by_hash(hash)?,
-            )),
+            ))),
             ChainRequest::ConnectBlock(block, mut block_info) => {
                 let begin_time = get_unix_ts();
                 let conn_state = if block_info.is_none() {
@@ -149,7 +149,7 @@ where
                 self.service.master_startup_info(),
             )),
             ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(ChainInfo::new(
-                self.service.master_startup_info().get_master().clone(),
+                *self.service.master_startup_info().get_master(),
             ))),
             ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(
                 self.service.get_transaction(hash)?.unwrap(),
@@ -219,7 +219,7 @@ where
             .address
             .send(ChainRequest::ConnectBlock(Box::new(block), None))
             .await
-            .map_err(|e| Into::<Error>::into(e))??
+            .map_err(Into::<Error>::into)??
         {
             Ok(conn_result)
         } else {
@@ -272,7 +272,7 @@ where
                 Some(Box::new(block_info)),
             ))
             .await
-            .map_err(|e| Into::<Error>::into(e))??
+            .map_err(Into::<Error>::into)??
         {
             Ok(conn_result)
         } else {
@@ -289,13 +289,9 @@ where
             .unwrap()
             .unwrap()
         {
-            match block_info {
-                Some(info) => Some(info),
-                _ => None,
-            }
-        } else {
-            None
+            return *block_info;
         }
+        None
     }
 
     async fn master_head_header(self) -> Option<BlockHeader> {
@@ -306,9 +302,7 @@ where
             .unwrap()
             .unwrap()
         {
-            if let Some(h) = *header {
-                return Some(h);
-            }
+            return *header;
         }
         None
     }
@@ -332,7 +326,7 @@ where
             .address
             .send(ChainRequest::GetBlockByNumber(number))
             .await
-            .map_err(|e| Into::<Error>::into(e))??
+            .map_err(Into::<Error>::into)??
         {
             Ok(*block)
         } else {
@@ -349,7 +343,7 @@ where
             .address
             .send(ChainRequest::GetBlocksByNumber(number, count))
             .await
-            .map_err(|e| Into::<Error>::into(e))??
+            .map_err(Into::<Error>::into)??
         {
             Ok(blocks)
         } else {
@@ -362,7 +356,7 @@ where
             .address
             .send(ChainRequest::GetStartupInfo())
             .await
-            .map_err(|e| Into::<Error>::into(e))??;
+            .map_err(Into::<Error>::into)??;
         if let ChainResponse::StartupInfo(startup_info) = response {
             Ok(startup_info)
         } else {
@@ -375,9 +369,7 @@ where
             .address
             .send(ChainRequest::GetHeadChainInfo())
             .await
-            .map_err(|e| Into::<Error>::into(e))
-            .unwrap()
-            .unwrap();
+            .map_err(Into::<Error>::into)??;
         if let ChainResponse::ChainInfo(chain_info) = response {
             Ok(chain_info)
         } else {
@@ -390,9 +382,7 @@ where
             .address
             .send(ChainRequest::GetTransaction(txn_id))
             .await
-            .map_err(|e| Into::<Error>::into(e))
-            .unwrap()
-            .unwrap();
+            .map_err(Into::<Error>::into)??;
         if let ChainResponse::Transaction(transaction_info) = response {
             Ok(transaction_info)
         } else {
@@ -405,9 +395,7 @@ where
             .address
             .send(ChainRequest::GetTransactionIdByBlock(block_id))
             .await
-            .map_err(|e| Into::<Error>::into(e))
-            .unwrap()
-            .unwrap();
+            .map_err(Into::<Error>::into)??;
         if let ChainResponse::VecTransactionInfo(vec_txn_id) = response {
             Ok(vec_txn_id)
         } else {

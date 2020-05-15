@@ -99,7 +99,7 @@ where
     }
 
     pub fn get_head(&self) -> HashValue {
-        self.startup_info.read().get_master().clone()
+        *self.startup_info.read().get_master()
     }
 }
 
@@ -184,7 +184,7 @@ where
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
             let mut retracted = Vec::new();
             if block.header().parent_hash() == self.collection.get_head() {
-                enacted.append(&mut block.transactions().clone().to_vec());
+                enacted.append(&mut block.transactions().to_vec());
             } else {
                 CHAIN_METRICS.rollback_count.inc();
                 debug!("rollback branch.");
@@ -272,10 +272,10 @@ where
         let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
         let mut tx_retracted: Vec<SignedUserTransaction> = Vec::new();
         enacted.iter().for_each(|b| {
-            tx_enacted.append(&mut b.transactions().clone().to_vec());
+            tx_enacted.append(&mut b.transactions().to_vec());
         });
         retracted.iter().for_each(|b| {
-            tx_retracted.append(&mut b.transactions().clone().to_vec());
+            tx_retracted.append(&mut b.transactions().to_vec());
         });
         debug!(
             "commit size:{}, rollback size:{}",
@@ -534,7 +534,7 @@ where
     C: Consensus,
     S: Store + 'static,
 {
-    let master_chain_info = startup_info.master.clone();
+    let master_chain_info = *startup_info.get_master();
     let collection = Arc::new(BlockChainCollection::new(startup_info, storage.clone()));
     let master = BlockChain::new(
         config,

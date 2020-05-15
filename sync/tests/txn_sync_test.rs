@@ -54,7 +54,7 @@ fn test_txn_sync_actor() {
         let genesis_hash = genesis_1.block().header().id();
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
         let txpool_1 = {
-            let best_block_id = startup_info_1.get_master().clone();
+            let best_block_id = *startup_info_1.get_master();
             TxPoolRef::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
@@ -133,7 +133,7 @@ fn test_txn_sync_actor() {
         let startup_info_2 = genesis_2.execute(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
-            let best_block_id = startup_info_2.get_master().clone();
+            let best_block_id = *startup_info_2.get_master();
             TxPoolRef::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
@@ -200,6 +200,5 @@ fn gen_user_txn() -> SignedUserTransaction {
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
     let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
-    let txn = txn.as_signed_user_txn().unwrap().clone();
-    txn
+    txn.as_signed_user_txn().unwrap().clone()
 }
