@@ -44,8 +44,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let txn = {
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
-        let txn = txn.as_signed_user_txn()?.clone();
-        txn
+        txn.as_signed_user_txn()?.clone()
     };
     let block_template = block_chain.create_block_template(
         *miner_account.address(),
@@ -155,8 +154,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
-        let txn = txn.as_signed_user_txn()?.clone();
-        txn
+        txn.as_signed_user_txn()?.clone()
     };
     let txn_id = txn.crypto_hash();
     txpool.clone().add_txns(vec![txn]).await?;
@@ -165,7 +163,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;
     let suffix = r#""],"subscription":0}}"#;
     let response = format!("{}{}{}", prefix, txn_id.to_hex(), suffix);
-    assert_eq!(res, Some(response.into()));
+    assert_eq!(res, Some(response));
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;

@@ -33,7 +33,7 @@ where
 {
     fn head(&self) -> FutureResult<ChainInfo> {
         let fut = self.service.clone().master_head();
-        Box::new(fut.map_err(|e: anyhow::Error| map_err(e.into())).compat())
+        Box::new(fut.map_err(map_err).compat())
     }
 
     fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<Block> {

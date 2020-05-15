@@ -7,7 +7,6 @@ use futures::FutureExt;
 use jsonrpc_core::Result;
 use network_api::NetworkService;
 use starcoin_config::NodeConfig;
-use starcoin_metrics;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::node::{NodeApi, NodeInfo};
 use starcoin_rpc_api::FutureResult;
@@ -47,21 +46,13 @@ impl NodeApi for NodeRpcImpl {
             let node_info = NodeInfo::new(peer_info, self_address, net);
             Ok(node_info)
         };
-        Box::new(
-            fut.map_err(|e: anyhow::Error| map_err(e.into()))
-                .boxed()
-                .compat(),
-        )
+        Box::new(fut.map_err(map_err).boxed().compat())
     }
 
     fn peers(&self) -> FutureResult<Vec<PeerInfo>> {
         let service = self.service.clone().unwrap();
         let fut = async move { service.peer_set().await };
-        Box::new(
-            fut.map_err(|e: anyhow::Error| map_err(e.into()))
-                .boxed()
-                .compat(),
-        )
+        Box::new(fut.map_err(map_err).boxed().compat())
     }
 
     fn metrics(&self) -> Result<HashMap<String, String>> {

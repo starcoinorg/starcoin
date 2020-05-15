@@ -1,9 +1,7 @@
 use super::notify;
 use super::pubsub;
-
 use super::EventSubscribers;
 use super::NewHeaderSubscribers;
-use actix;
 use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
 use anyhow::Result;
 use starcoin_bus::{Bus, BusActor};

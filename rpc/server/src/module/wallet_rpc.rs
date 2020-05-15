@@ -127,11 +127,8 @@ mod tests {
         let client = RpcClient::connect_local(io);
         let account = client.wallet_create("passwd".to_string()).unwrap();
         let accounts = client.wallet_list().unwrap();
-        assert!(accounts.len() >= 1);
-        assert!(accounts
-            .iter()
-            .find(|a| a.address() == account.address())
-            .is_some());
+        assert!(!accounts.is_empty());
+        assert!(accounts.iter().any(|a| a.address() == account.address()));
         // assert!(accounts.contains(&account));
         let raw_txn = RawUserTransaction::mock_by_sender(account.address);
         let signed_txn = client.wallet_sign_txn(raw_txn).unwrap();
