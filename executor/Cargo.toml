@@ -19,6 +19,7 @@ statedb = {path = "../state/statedb", package="starcoin-statedb"}
 starcoin-state-api = {path="../state/api"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
 vm-runtime = { package="starcoin-vm-runtime", path = "../vm/vm-runtime"}
+starcoin-vm-types = { path = "../vm/types"}
 logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
 storage = { package="starcoin-storage", path = "../storage"}

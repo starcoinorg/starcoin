@@ -10,7 +10,7 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_runtime::type_tag_parser::parse_type_tags;
+use starcoin_vm_types::parser;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -56,7 +56,7 @@ impl CommandAction for ShowCommand {
 
         let token_balance = match opt.type_tag.clone() {
             Some(token) => {
-                let tag = parse_type_tags(token.as_ref())?[0].clone().into();
+                let tag = parser::parse_type_tags(token.as_ref())?[0].clone().into();
                 account_state_reader.get_token_balance(account.address(), &tag)?
             }
             None => None,

@@ -5879,6 +5879,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-types",
  "starcoin-vm-runtime",
+ "starcoin-vm-types",
  "stdlib 0.1.0",
  "stest",
 ]

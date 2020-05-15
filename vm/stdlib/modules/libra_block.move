@@ -58,14 +58,15 @@ module LibraBlock {
         timestamp: u64,
         id: vector<u8>,
         previous_block_votes: vector<address>,
-        proposer: address
-    ) acquires BlockMetadata {
+        proposer: address,
+        auth_key_prefix: vector<u8>
+    ) acquires BlockMetadata,SubsidyInfo {
         // Can only be invoked by LibraVM privilege.
         //Transaction::assert(Transaction::sender() == 0x0, 33);
         //TODO conform this address.
         Transaction::assert(Transaction::sender() == 0x6d696e74, 33);
 
-        process_block_prologue(round, timestamp, id, previous_block_votes, proposer);
+        process_block_prologue(round, timestamp, id, previous_block_votes, proposer, auth_key_prefix);
 
         // Currently distribute once per-block.
         // TODO: Once we have a better on-chain representation of epochs we will make this per-epoch.
@@ -82,16 +83,21 @@ module LibraBlock {
         timestamp: u64,
         id: vector<u8>,
         previous_block_votes: vector<address>,
-        proposer: address
-    ) acquires BlockMetadata {
+        proposer: address,
+        auth_key_prefix: vector<u8>
+    ) acquires BlockMetadata, SubsidyInfo {
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(0xA550C18);
 
         // TODO: Figure out a story for errors in the system transactions.
         //if(proposer != 0x0) Transaction::assert(LibraSystem::is_validator(proposer), 5002);
         LibraTimestamp::update_global_time(proposer, timestamp);
-        block_metadata_ref.height = block_metadata_ref.height + 1;
+
+        let new_height = block_metadata_ref.height + 1;
+        block_metadata_ref.height = new_height;
         block_metadata_ref.proposer = proposer;
         block_metadata_ref.id = id;
+
+        do_subsidy(new_height, proposer, auth_key_prefix);
         Event::emit_event<NewBlockEvent>(
           &mut block_metadata_ref.new_block_events,
           NewBlockEvent {
@@ -136,8 +142,7 @@ module LibraBlock {
         });
     }
 
-    fun do_subsidy(auth_key_prefix: vector<u8>) acquires BlockMetadata, SubsidyInfo {
-        let current_height = get_current_block_height();
+    fun do_subsidy(current_height: u64, current_miner: address, auth_key_prefix: vector<u8>) acquires SubsidyInfo {
 
         if (current_height > 0) {
             Transaction::assert(SubsidyConfig::right_conf(), 6001);
@@ -166,7 +171,6 @@ module LibraBlock {
             };
 
             Vector::push_back(&mut subsidy_info.heights, current_height);
-            let current_miner = get_current_proposer();
             if (!LibraAccount::exists(current_miner)) {
                 Transaction::assert(!Vector::is_empty(&auth_key_prefix), 6007);
                 LibraAccount::create_account<STC::T>(current_miner, auth_key_prefix);

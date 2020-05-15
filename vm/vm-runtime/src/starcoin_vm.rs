@@ -408,7 +408,7 @@ impl StarcoinVM {
             TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
         let gas_schedule = zero_cost_schedule();
 
-        if let Ok((id, timestamp, author, _auth)) = block_metadata.into_inner() {
+        if let Ok((id, timestamp, author, auth)) = block_metadata.into_inner() {
             let vote_maps = vec![];
             let round = 0u64;
             let args = vec![
@@ -417,6 +417,10 @@ impl StarcoinVM {
                 Value::vector_u8(id),
                 Value::vector_address(vote_maps),
                 Value::address(author),
+                match auth {
+                    Some(prefix) => Value::vector_u8(prefix),
+                    None => Value::vector_u8(Vec::new()),
+                },
             ];
 
             self.move_vm.execute_function(
