@@ -18,13 +18,13 @@ chrono = "0.4"
 byteorder = "1.3.2"
 lru = "0.4.3"
 parking_lot = "0.10.2"
-once_cell = "1.3.1"
+once_cell = "1.4.0"
 #state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
 logger = {path = "../commons/logger", package="starcoin-logger"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+libra-temppath = { package="libra-temppath",  git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
 starcoin-metrics = { path = "../commons/metrics"}
 
 [dependencies.rocksdb]

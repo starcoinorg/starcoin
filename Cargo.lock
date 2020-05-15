@@ -19,7 +19,7 @@ dependencies = [
  "parking_lot 0.10.2",
  "pin-project",
  "smallvec 1.4.0",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tokio-util 0.2.0",
  "trust-dns-proto",
  "trust-dns-resolver",
@@ -36,7 +36,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "log 0.4.8",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tokio-util 0.2.0",
 ]
 
@@ -125,7 +125,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "smallvec 1.4.0",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -180,15 +180,6 @@ dependencies = [
  "proc-macro2 1.0.12",
  "quote 1.0.5",
  "syn 1.0.21",
-]
-
-[[package]]
-name = "addr2line"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "456d75cbb82da1ad150c8a9d97285ffcd21c9931dcb11e995903e7d75141b38b"
-dependencies = [
- "gimli",
 ]
 
 [[package]]
@@ -294,9 +285,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.31"
+version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85bb70cc08ec97ca5450e6eba421deeea5f172c0fc61f78b5357b2a8e8be195f"
+checksum = "d9a60d744a80c30fcb657dfe2c1b22bcb3e814c1a1e3674f32bf5820b570fbff"
 
 [[package]]
 name = "arc-swap"
@@ -433,9 +424,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.31"
+version = "0.1.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26c4f3195085c36ea8d24d32b2f828d23296a9370a28aa39d111f6f16bef9f3b"
+checksum = "da71fef07bc806586090247e971229289f64c210a278ee5ae419314eb386b31d"
 dependencies = [
  "proc-macro2 1.0.12",
  "quote 1.0.5",
@@ -467,15 +458,24 @@ checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
 name = "backtrace"
-version = "0.3.48"
+version = "0.3.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0df2f85c8a2abbe3b7d7e748052fdd9b76a0458fdeb16ad4223f5eca78c7c130"
+checksum = "b1e692897359247cc6bb902933361652380af0f1b7651ae5c5013407f30e109e"
 dependencies = [
- "addr2line",
+ "backtrace-sys",
  "cfg-if",
  "libc",
- "object",
  "rustc-demangle",
+]
+
+[[package]]
+name = "backtrace-sys"
+version = "0.1.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18fbebbe1c9d1f383a9cc7e8ccdb471b91c8d024ee9c2ca5b5346121fe8b4399"
+dependencies = [
+ "cc",
+ "libc",
 ]
 
 [[package]]
@@ -541,7 +541,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-wallet-api",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -686,7 +686,7 @@ dependencies = [
 [[package]]
 name = "borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-workspace-hack",
  "mirai-annotations",
@@ -726,9 +726,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.3.0"
+version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5356f1d23ee24a1f785a56d1d1a5f0fd5b0f6a0c0fb2412ce11da71649ab78f6"
+checksum = "12ae9db68ad7fac5fe51304d20f016c911539251075a214f8e663babefa35187"
 
 [[package]]
 name = "byte-slice-cast"
@@ -745,7 +745,7 @@ checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 [[package]]
 name = "bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "codespan",
@@ -762,7 +762,7 @@ dependencies = [
 [[package]]
 name = "bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "borrow-graph",
@@ -950,7 +950,7 @@ dependencies = [
 [[package]]
 name = "compiler"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "bytecode-source-map",
@@ -961,7 +961,7 @@ dependencies = [
  "libra-workspace-hack",
  "move-ir-types",
  "serde_json",
- "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe)",
+ "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d)",
  "structopt",
  "vm",
 ]
@@ -1293,7 +1293,7 @@ checksum = "11c0346158a19b3627234e15596f5e465c360fcdb97d817bcb255e0510f5a788"
 [[package]]
 name = "datatest-stable"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-workspace-hack",
  "regex",
@@ -1305,7 +1305,7 @@ dependencies = [
 [[package]]
 name = "debug-interface"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "libra-logger",
@@ -1314,7 +1314,7 @@ dependencies = [
  "once_cell",
  "prost",
  "serde_json",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tonic",
  "tonic-build",
 ]
@@ -1332,9 +1332,9 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "0.99.6"
+version = "0.99.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46b046a346c374c6c3c84d2070bfe33904504686bdf949c2d8eb22edad3f270c"
+checksum = "e2323f3f47db9a0e77ce7a300605d8d2098597fc451ed1a97bb1f6411bb550a7"
 dependencies = [
  "proc-macro2 1.0.12",
  "quote 1.0.5",
@@ -1449,9 +1449,9 @@ checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 
 [[package]]
 name = "encoding_rs"
-version = "0.8.23"
+version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8ac63f94732332f44fe654443c46f6375d1939684c17b0afb6cb56b0456e171"
+checksum = "cd8d03faa7fe0c1431609dfad7bbe827af30f82e1e2ae6f7ee4fca6bd764bc28"
 dependencies = [
  "cfg-if",
 ]
@@ -1600,9 +1600,9 @@ checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 
 [[package]]
 name = "fiat-crypto"
-version = "0.1.4"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bd286b600a59c4663a8b21c4d4144c82ab0405940f6cba327643d366ff19249"
+checksum = "7fd79fb8b183799c50796200b151c983e4445efaf61c706e4275e1a04cab7540"
 
 [[package]]
 name = "fixed-hash"
@@ -1650,9 +1650,9 @@ dependencies = [
 
 [[package]]
 name = "fnv"
-version = "1.0.7"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+checksum = "2fad85553e09a6f881f739c29f0b00b0f01357c743266d478b68951ce23285f3"
 
 [[package]]
 name = "foreign-types"
@@ -1718,7 +1718,7 @@ checksum = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
 [[package]]
 name = "functional-tests"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1735,7 +1735,7 @@ dependencies = [
  "move-core-types",
  "once_cell",
  "regex",
- "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe)",
+ "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d)",
  "termcolor",
  "thiserror",
  "vm",
@@ -1981,12 +1981,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gimli"
-version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcc8e0c9bce37868955864dbecd2b1ab2bdf967e6f28066d65aaac620444b65c"
-
-[[package]]
 name = "git-version"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2060,7 +2054,7 @@ dependencies = [
  "indexmap",
  "log 0.4.8",
  "slab",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tokio-util 0.3.1",
 ]
 
@@ -2272,7 +2266,7 @@ dependencies = [
  "net2",
  "pin-project",
  "time",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-service",
  "want 0.3.0",
 ]
@@ -2438,7 +2432,7 @@ checksum = "47be2f14c678be2fdcab04ab1171db51b2762ce6f0a8ee87c8dd4a04ed216135"
 [[package]]
 name = "ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "bytecode-source-map",
@@ -2458,7 +2452,7 @@ dependencies = [
 [[package]]
 name = "ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "codespan",
@@ -2732,7 +2726,7 @@ dependencies = [
 [[package]]
 name = "language-e2e-tests"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
@@ -2754,7 +2748,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
- "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe)",
+ "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d)",
  "transaction-builder",
  "vm",
  "vm-genesis",
@@ -2780,9 +2774,9 @@ checksum = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
 
 [[package]]
 name = "libc"
-version = "0.2.70"
+version = "0.2.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3baa92041a6fec78c687fa0cc2b3fae8884f743d672cf551bed1d6dac6988d0f"
+checksum = "99e85c08494b21a9054e7fe1374a732aeadaff3980b6990b94bfd3a70f690005"
 
 [[package]]
 name = "libloading"
@@ -3212,7 +3206,7 @@ dependencies = [
 [[package]]
 name = "libra-canonical-serialization"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-workspace-hack",
  "serde",
@@ -3222,7 +3216,7 @@ dependencies = [
 [[package]]
 name = "libra-config"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "get_if_addrs",
@@ -3245,7 +3239,7 @@ dependencies = [
 [[package]]
 name = "libra-crypto"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -3277,7 +3271,7 @@ dependencies = [
 [[package]]
 name = "libra-crypto-derive"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-workspace-hack",
  "proc-macro2 1.0.12",
@@ -3288,7 +3282,7 @@ dependencies = [
 [[package]]
 name = "libra-logger"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "chrono",
  "env_logger",
@@ -3302,7 +3296,7 @@ dependencies = [
 [[package]]
 name = "libra-metrics"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "futures 0.3.5",
@@ -3312,13 +3306,13 @@ dependencies = [
  "once_cell",
  "prometheus",
  "serde_json",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
 name = "libra-network-address"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-canonical-serialization",
  "libra-crypto",
@@ -3333,7 +3327,7 @@ dependencies = [
 [[package]]
 name = "libra-nibble"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-workspace-hack",
  "serde",
@@ -3342,7 +3336,7 @@ dependencies = [
 [[package]]
 name = "libra-proptest-helpers"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "crossbeam",
  "libra-workspace-hack",
@@ -3353,7 +3347,7 @@ dependencies = [
 [[package]]
 name = "libra-state-view"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "libra-types",
@@ -3363,7 +3357,7 @@ dependencies = [
 [[package]]
 name = "libra-temppath"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "hex 0.4.2",
  "libra-workspace-hack",
@@ -3373,7 +3367,7 @@ dependencies = [
 [[package]]
 name = "libra-types"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "bytes 0.5.4",
@@ -3391,8 +3385,6 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
- "prost",
- "prost-build",
  "radix_trie",
  "rand 0.7.3",
  "serde",
@@ -3404,12 +3396,10 @@ dependencies = [
 [[package]]
 name = "libra-vm"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
- "bytecode-verifier",
  "debug-interface",
  "libra-canonical-serialization",
- "libra-config",
  "libra-crypto",
  "libra-logger",
  "libra-metrics",
@@ -3431,7 +3421,7 @@ dependencies = [
 [[package]]
 name = "libra-workspace-hack"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "bytes 0.5.4",
  "cc",
@@ -3737,7 +3727,7 @@ checksum = "258c143ddb5105becc4834f66d0b0ad3d3205d07cb3efc3236f33f623dd07b16"
 [[package]]
 name = "move-core-types"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "bytes 0.5.4",
@@ -3752,12 +3742,13 @@ dependencies = [
  "rand 0.7.3",
  "ref-cast",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "codespan",
@@ -3772,7 +3763,7 @@ dependencies = [
 [[package]]
 name = "move-lang"
 version = "0.0.1"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "borrow-graph",
  "bytecode-source-map",
@@ -3797,7 +3788,7 @@ dependencies = [
 [[package]]
 name = "move-vm-natives"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "bit-vec",
  "libra-crypto",
@@ -3815,7 +3806,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "bytecode-verifier",
  "libra-crypto",
@@ -3833,7 +3824,7 @@ dependencies = [
 [[package]]
 name = "move-vm-state"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-logger",
  "libra-state-view",
@@ -3847,7 +3838,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "bit-vec",
  "libra-canonical-serialization",
@@ -3989,7 +3980,7 @@ dependencies = [
  "stest",
  "tempfile",
  "thiserror",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "unsigned-varint 0.3.3",
  "void",
  "wasm-timer",
@@ -4083,7 +4074,7 @@ dependencies = [
 [[package]]
 name = "num-variants"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-workspace-hack",
  "proc-macro2 1.0.12",
@@ -4122,12 +4113,6 @@ dependencies = [
  "quote 1.0.5",
  "syn 1.0.21",
 ]
-
-[[package]]
-name = "object"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cbca9424c482ee628fa549d9c812e2cd22f1180b9222c9200fdfa6eb31aecb2"
 
 [[package]]
 name = "once_cell"
@@ -5696,7 +5681,7 @@ dependencies = [
  "futures 0.3.5",
  "starcoin-logger",
  "stest",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -5776,7 +5761,7 @@ dependencies = [
  "starcoin-wallet-api",
  "stdlib 0.1.0",
  "structopt",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -5917,7 +5902,7 @@ dependencies = [
  "starcoin-wallet-api",
  "structopt",
  "tiny_http",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tokio-executor 0.2.0-alpha.6",
 ]
 
@@ -5996,7 +5981,7 @@ dependencies = [
  "rusty-fork",
  "serde_json",
  "starcoin-logger",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6044,7 +6029,7 @@ dependencies = [
  "starcoin-wallet-api",
  "structopt",
  "thiserror",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6086,7 +6071,7 @@ dependencies = [
  "starcoin-types",
  "stest",
  "tempfile",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "yamux",
  "zeroize",
 ]
@@ -6124,7 +6109,7 @@ dependencies = [
  "starcoin-wallet-api",
  "starcoin-wallet-service",
  "stest",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6183,7 +6168,7 @@ dependencies = [
  "stest",
  "thiserror",
  "tokio 0.1.22",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tokio-compat",
 ]
 
@@ -6409,7 +6394,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6461,7 +6446,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "structopt",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6678,7 +6663,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "stdlib"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
@@ -6879,18 +6864,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.17"
+version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "467e5ff447618a916519a4e0d62772ab14f434897f3d63f05d8700ef1e9b22c1"
+checksum = "d12a1dae4add0f0d568eebc7bf142f145ba1aa2544cafb195c76f0f409091b60"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.17"
+version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e63c1091225b9834089b429bc4a2e01223470e3183e891582909e9d1c4cb55d9"
+checksum = "3f34e0c1caaa462fd840ec6b768946ea1e7842620d94fe29d5b847138f521269"
 dependencies = [
  "proc-macro2 1.0.12",
  "quote 1.0.5",
@@ -7003,9 +6988,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "0.2.21"
+version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d099fa27b9702bed751524694adbe393e18b36b204da91eb1cbbbbb4a5ee2d58"
+checksum = "05c1d570eb1a36f0345a5ce9c6c6e665b70b73d11236912c0b477616aeec47b1"
 dependencies = [
  "bytes 0.5.4",
  "fnv",
@@ -7057,7 +7042,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "pin-project-lite",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tokio-current-thread",
  "tokio-executor 0.1.10",
  "tokio-reactor",
@@ -7288,7 +7273,7 @@ dependencies = [
  "futures-sink",
  "log 0.4.8",
  "pin-project-lite",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -7302,7 +7287,7 @@ dependencies = [
  "futures-sink",
  "log 0.4.8",
  "pin-project-lite",
- "tokio 0.2.21",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -7333,7 +7318,7 @@ dependencies = [
  "pin-project",
  "prost",
  "prost-derive",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tokio-util 0.3.1",
  "tower",
  "tower-balance",
@@ -7386,7 +7371,7 @@ dependencies = [
  "pin-project",
  "rand 0.7.3",
  "slab",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-discover",
  "tower-layer",
  "tower-load",
@@ -7404,7 +7389,7 @@ checksum = "c4887dc2a65d464c8b9b66e0e4d51c2fd6cf5b3373afc72805b0a60bce00446a"
 dependencies = [
  "futures-core",
  "pin-project",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -7435,7 +7420,7 @@ checksum = "92c3040c5dbed68abffaa0d4517ac1a454cd741044f33ab0eefab6b8d1361404"
 dependencies = [
  "futures-core",
  "pin-project",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-layer",
  "tower-load",
  "tower-service",
@@ -7450,7 +7435,7 @@ dependencies = [
  "futures-core",
  "log 0.4.8",
  "pin-project",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-discover",
  "tower-service",
 ]
@@ -7473,7 +7458,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce50370d644a0364bf4877ffd4f76404156a248d104e2cc234cd391ea5cdc965"
 dependencies = [
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-service",
 ]
 
@@ -7487,7 +7472,7 @@ dependencies = [
  "futures-util",
  "indexmap",
  "log 0.4.8",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-service",
 ]
 
@@ -7499,7 +7484,7 @@ checksum = "e6727956aaa2f8957d4d9232b308fe8e4e65d99db30f42b225646e86c9b6a952"
 dependencies = [
  "futures-core",
  "pin-project",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-layer",
  "tower-service",
 ]
@@ -7517,7 +7502,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "127b8924b357be938823eaaec0608c482d40add25609481027b96198b2e4b31e"
 dependencies = [
  "pin-project",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "tower-layer",
  "tower-service",
 ]
@@ -7545,9 +7530,9 @@ dependencies = [
 
 [[package]]
 name = "tracing"
-version = "0.1.14"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7c6b59d116d218cb2d990eb06b77b64043e0268ef7323aae63d8b30ae462923"
+checksum = "1721cc8cf7d770cc4257872507180f35a4797272f5962f24c806af9e7faf52ab"
 dependencies = [
  "cfg-if",
  "log 0.4.8",
@@ -7557,11 +7542,10 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.8"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99bbad0de3fd923c9c3232ead88510b783e5a4d16a6154adffa3d53308de984c"
+checksum = "7fbad39da2f9af1cae3016339ad7f2c7a9e870f12e8fd04c4fd7ef35b30c0d2b"
 dependencies = [
- "proc-macro2 1.0.12",
  "quote 1.0.5",
  "syn 1.0.21",
 ]
@@ -7594,7 +7578,7 @@ checksum = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
 [[package]]
 name = "transaction-builder"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "libra-canonical-serialization",
  "libra-config",
@@ -7602,7 +7586,7 @@ dependencies = [
  "libra-workspace-hack",
  "mirai-annotations",
  "move-core-types",
- "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe)",
+ "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d)",
  "vm",
 ]
 
@@ -7633,7 +7617,7 @@ dependencies = [
  "rand 0.7.3",
  "smallvec 1.4.0",
  "socket2",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "url 2.1.1",
 ]
 
@@ -7652,7 +7636,7 @@ dependencies = [
  "lru-cache",
  "resolv-conf",
  "smallvec 1.4.0",
- "tokio 0.2.21",
+ "tokio 0.2.20",
  "trust-dns-proto",
 ]
 
@@ -7888,7 +7872,7 @@ checksum = "078775d0255232fb988e6fccf26ddc9d1ac274299aaedcedce21c6f72cc533ce"
 [[package]]
 name = "vm"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "byteorder 1.3.4",
@@ -7905,7 +7889,7 @@ dependencies = [
 [[package]]
 name = "vm-genesis"
 version = "0.1.0"
-source = "git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe#191b40dc7108b1213150fa3d999aedc2f70394fe"
+source = "git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d#bf5c2c9b81444d6b3079c0cb7c175028beab008d"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
@@ -7923,7 +7907,7 @@ dependencies = [
  "move-vm-types",
  "once_cell",
  "rand 0.7.3",
- "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=191b40dc7108b1213150fa3d999aedc2f70394fe)",
+ "stdlib 0.1.0 (git+https://github.com/libra/libra?rev=bf5c2c9b81444d6b3079c0cb7c175028beab008d)",
  "transaction-builder",
  "vm",
 ]

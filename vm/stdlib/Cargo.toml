@@ -8,13 +8,13 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/libra/libra", version = "0.1.0",rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-move-lang = { package="move-lang", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-libra-crypto = { package="libra-crypto", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-libra-types = { package="libra-types", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-datatest-stable = { package="datatest-stable", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-vm = { package="vm", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/libra/libra", version = "0.1.0",rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+move-lang = { package="move-lang", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+libra-crypto = { package="libra-crypto", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+libra-types = { package="libra-types", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+datatest-stable = { package="datatest-stable", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+vm = { package="vm", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
 #scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
-once_cell = "1.3.1"
+once_cell = "1.4.0"
 include_dir = "0.5.0"
-lcs = { package="libra-canonical-serialization", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+lcs = { package="libra-canonical-serialization", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }

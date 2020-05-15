@@ -75,7 +75,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config())?;
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -90,7 +90,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
+    let output1 = Executor::execute_transaction(&chain_state, txn1)?;
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let sequence_number2 = get_sequence_number(account_config::association_address(), &chain_state);
@@ -100,7 +100,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number2, // fix me
         1_000,
     ));
-    let output2 = Executor::execute_transaction(&chain_state, txn2).unwrap();
+    let output2 = Executor::execute_transaction(&chain_state, txn2)?;
     assert_eq!(KEEP_STATUS.clone(), *output2.status());
 
     let sequence_number3 = get_sequence_number(account1.address().clone(), &chain_state);
@@ -110,7 +110,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number3, // fix me
         100,
     ));
-    let output3 = Executor::execute_transaction(&chain_state, txn3).unwrap();
+    let output3 = Executor::execute_transaction(&chain_state, txn3)?;
     assert_eq!(KEEP_STATUS.clone(), *output3.status());
 
     Ok(())
