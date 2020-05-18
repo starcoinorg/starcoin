@@ -163,6 +163,10 @@ where
 
         Ok(BlockTemplate::new(
             previous_header.id(),
+            block_info
+                .get_block_accumulator_info()
+                .get_accumulator_root()
+                .clone(),
             timestamp,
             previous_header.number() + 1,
             author,
