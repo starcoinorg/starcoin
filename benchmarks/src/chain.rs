@@ -12,7 +12,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
 use starcoin_sync_api::SyncMetadata;
-use starcoin_txpool::TxPoolRef;
+use starcoin_txpool::{TxPool, TxPoolRef};
 use starcoin_wallet_api::WalletAccount;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -44,12 +44,13 @@ impl ChainBencher {
 
         let txpool = {
             let best_block_id = startup_info.get_master().clone();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config.tx_pool.clone(),
                 storage.clone(),
                 best_block_id,
                 bus.clone(),
             )
+            .get_async_service()
         };
         let sync_metadata = SyncMetadata::new(node_config.clone(), bus.clone());
         let chain = ChainServiceImpl::<DummyConsensus, Storage, TxPoolRef>::new(

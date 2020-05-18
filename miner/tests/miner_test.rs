@@ -10,7 +10,6 @@ use starcoin_genesis::Genesis;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
 use starcoin_sync_api::SyncMetadata;
-use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -19,7 +18,7 @@ use storage::Storage;
 use sync::SyncActor;
 use tokio::time::{delay_for, Duration};
 use traits::ChainAsyncService;
-use txpool::TxPoolRef;
+use txpool::{TxPool, TxPoolService};
 use types::{
     account_address,
     peer_info::{PeerId, PeerInfo},
@@ -49,13 +48,15 @@ fn test_miner_with_schedule_pacemaker() {
         let startup_info = genesis.execute(storage.clone()).unwrap();
         let txpool = {
             let best_block_id = startup_info.get_master().clone();
-            TxPoolRef::start(
+            TxPool::start(
                 config.tx_pool.clone(),
                 storage.clone(),
                 best_block_id,
                 bus.clone(),
             )
         };
+        let txpool_ref = txpool.get_async_service();
+
         let network = NetworkActor::launch(
             config.clone(),
             bus.clone(),
@@ -70,19 +71,18 @@ fn test_miner_with_schedule_pacemaker() {
             storage.clone(),
             Some(network.clone()),
             bus.clone(),
-            txpool.clone(),
+            txpool_ref.clone(),
             sync_metadata.clone(),
         )
         .unwrap();
         let miner_account = WalletAccount::random();
         let _miner =
-            MinerActor::<DevConsensus, TxPoolRef, ChainActorRef<DevConsensus>, Storage>::launch(
+            MinerActor::<DevConsensus, TxPoolService, ChainActorRef<DevConsensus>, Storage>::launch(
                 config.clone(),
                 bus.clone(),
                 storage.clone(),
-                txpool.clone(),
+                txpool.get_service(),
                 chain.clone(),
-                None,
                 miner_account,
             );
         MinerClientActor::new(config.miner.clone()).start();
@@ -91,7 +91,7 @@ fn test_miner_with_schedule_pacemaker() {
             bus,
             peer_id,
             chain.clone(),
-            txpool.clone(),
+            txpool_ref.clone(),
             network.clone(),
             storage.clone(),
             sync_metadata.clone(),
@@ -132,15 +132,19 @@ fn test_miner_with_ondemand_pacemaker() {
         let genesis = Genesis::build(config.net()).unwrap();
         let genesis_hash = genesis.block().header().id();
         let startup_info = genesis.execute(storage.clone()).unwrap();
+
         let txpool = {
             let best_block_id = startup_info.get_master().clone();
-            TxPoolRef::start(
+            TxPool::start(
                 config.tx_pool.clone(),
                 storage.clone(),
                 best_block_id,
                 bus.clone(),
             )
         };
+        let txpool_ref = txpool.get_async_service();
+        let txpool_service = txpool.get_service();
+
         let network = NetworkActor::launch(
             config.clone(),
             bus.clone(),
@@ -155,20 +159,18 @@ fn test_miner_with_ondemand_pacemaker() {
             storage.clone(),
             Some(network.clone()),
             bus.clone(),
-            txpool.clone(),
+            txpool_ref.clone(),
             sync_metadata.clone(),
         )
         .unwrap();
-        let receiver = txpool.clone().subscribe_txns().await.unwrap();
         let miner_account = WalletAccount::random();
         let _miner =
-            MinerActor::<DevConsensus, TxPoolRef, ChainActorRef<DevConsensus>, Storage>::launch(
+            MinerActor::<DevConsensus, TxPoolService, ChainActorRef<DevConsensus>, Storage>::launch(
                 config.clone(),
                 bus.clone(),
                 storage.clone(),
-                txpool.clone(),
+                txpool_service.clone(),
                 chain.clone(),
-                Some(receiver),
                 miner_account,
             );
         MinerClientActor::new(config.miner.clone()).start();
@@ -177,7 +179,7 @@ fn test_miner_with_ondemand_pacemaker() {
             bus,
             peer_id,
             chain.clone(),
-            txpool.clone(),
+            txpool_ref.clone(),
             network.clone(),
             storage.clone(),
             sync_metadata.clone(),

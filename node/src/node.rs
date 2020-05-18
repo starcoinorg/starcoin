@@ -6,7 +6,7 @@ use anyhow::Result;
 use futures::StreamExt;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
-use starcoin_config::{NodeConfig, PacemakerStrategy};
+use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
@@ -23,8 +23,7 @@ use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_traits::Consensus;
-use starcoin_txpool::TxPoolRef;
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::system_events::{SyncBegin, SyncDone};
 use starcoin_wallet_api::WalletAsyncService;
@@ -41,7 +40,7 @@ pub struct NodeStartHandle<C>
 where
     C: Consensus + 'static,
 {
-    _miner_actor: Addr<MinerActor<C, TxPoolRef, ChainActorRef<C>, Storage>>,
+    _miner_actor: Addr<MinerActor<C, TxPoolService, ChainActorRef<C>, Storage>>,
     _sync_actor: Addr<SyncActor<C>>,
     _rpc_actor: Addr<RpcActor>,
     _miner_client: Option<Addr<MinerClientActor>>,
@@ -151,14 +150,13 @@ where
 
     let head_block_hash = *startup_info.get_master();
 
-    let txpool = {
-        TxPoolRef::start(
-            config.tx_pool.clone(),
-            storage.clone(),
-            head_block_hash,
-            bus.clone(),
-        )
-    };
+    let txpool = TxPool::start(
+        config.tx_pool.clone(),
+        storage.clone(),
+        head_block_hash,
+        bus.clone(),
+    );
+    let txpool_ref = txpool.get_async_service();
 
     let head_block = match storage.get_block(head_block_hash)? {
         Some(block) => block,
@@ -211,7 +209,7 @@ where
     let chain_storage = storage.clone();
     let chain_network = network.clone();
     let chain_bus = bus.clone();
-    let chain_txpool = txpool.clone();
+    let chain_txpool = txpool_ref.clone();
     let chain_sync_metadata = sync_metadata.clone();
 
     let chain = Arbiter::new()
@@ -230,14 +228,14 @@ where
 
     let pubsub_service = {
         let service = PubSubService::new();
-        service.start_transaction_subscription_handler(txpool.clone());
+        service.start_transaction_subscription_handler(txpool_ref.clone());
         service.start_chain_notify_handler(bus.clone(), storage.clone());
         service
     };
 
     let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
-        txpool.clone(),
+        txpool_ref.clone(),
         chain.clone(),
         account_service,
         chain_state_service,
@@ -245,11 +243,6 @@ where
         Some(network.clone()),
         Some(logger_handle),
     )?;
-    let receiver = if config.miner.pacemaker_strategy == PacemakerStrategy::Ondemand {
-        Some(txpool.clone().subscribe_txns().await?)
-    } else {
-        None
-    };
 
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
@@ -264,7 +257,7 @@ where
     let sync_config = config.clone();
     let sync_bus = bus.clone();
     let sync_chain = chain.clone();
-    let sync_txpool = txpool.clone();
+    let sync_txpool = txpool_ref.clone();
     let sync_network = network.clone();
     let sync_storage = storage.clone();
     let sync_sync_metadata = sync_metadata.clone();
@@ -292,13 +285,12 @@ where
         .expect("Subscribe system event error.");
     let _ = sync_event_receiver.next().await;
     info!("Waiting sync finished.");
-    let miner = MinerActor::<C, TxPoolRef, ChainActorRef<C>, Storage>::launch(
+    let miner = MinerActor::<C, TxPoolService, ChainActorRef<C>, Storage>::launch(
         config.clone(),
         bus,
         storage.clone(),
-        txpool.clone(),
+        txpool.get_service(),
         chain.clone(),
-        receiver,
         default_account,
     )?;
     let miner_client = if config.miner.enable {
