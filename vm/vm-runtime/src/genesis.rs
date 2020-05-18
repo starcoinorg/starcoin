@@ -145,13 +145,13 @@ fn create_and_initialize_main_accounts(
 
     context.set_sender(root_association_address);
     context.exec(
-        "LibraConfig",
+        "Config",
         "grant_creator_privilege",
         vec![],
         vec![Value::address(config_address())],
     );
     context.set_sender(config_address());
-    context.exec("Libra", "initialize", vec![], vec![]);
+    context.exec("Coin", "initialize", vec![], vec![]);
 
     context.set_sender(root_association_address);
     context.exec(
@@ -200,7 +200,7 @@ fn create_and_initialize_main_accounts(
 
     context.set_sender(config_address());
     context.exec(
-        "LibraAccount",
+        "Account",
         "rotate_authentication_key",
         vec![],
         vec![Value::vector_u8(genesis_auth_key)],
@@ -221,7 +221,7 @@ fn create_and_initialize_main_accounts(
         ],
     );
 
-    context.exec(LIBRA_BLOCK_MODULE_NAME, SUBSIDY_INIT, vec![], vec![]);
+    context.exec(BLOCK_MODULE_NAME, SUBSIDY_INIT, vec![], vec![]);
 
     if let Some(pre_mine_config) = &chain_config.pre_mine_config {
         context.set_sender(root_association_address);
@@ -258,7 +258,7 @@ fn create_and_initialize_main_accounts(
     // arises: both the genesis transaction and the subsequent transaction have sequence
     // number 0
     context.exec(
-        "LibraAccount",
+        "Account",
         "epilogue",
         vec![stc_ty.clone()],
         vec![
@@ -277,7 +277,7 @@ fn setup_vm_config(context: &mut GenesisContext) {
     let option_bytes =
         scs::to_bytes(&publishing_option).expect("Cannot serialize publishing option");
     context.exec(
-        "LibraVMConfig",
+        "VMConfig",
         "initialize",
         vec![],
         vec![
@@ -290,7 +290,7 @@ fn setup_vm_config(context: &mut GenesisContext) {
 
 fn setup_libra_version(context: &mut GenesisContext) {
     context.set_sender(config_address());
-    context.exec("LibraVersion", "initialize", vec![], vec![]);
+    context.exec("Version", "initialize", vec![], vec![]);
 }
 
 fn remove_genesis(stdlib_modules: &[VerifiedModule]) -> impl Iterator<Item = &VerifiedModule> {
@@ -314,6 +314,6 @@ fn publish_stdlib(interpreter_context: &mut dyn LibraChainState, stdlib: &[Verif
 /// Trigger a reconfiguration. This emits an event that will be passed along to the storage layer.
 fn reconfigure(context: &mut GenesisContext) {
     context.set_sender(account_config::association_address());
-    context.exec("LibraTimestamp", "initialize", vec![], vec![]);
-    context.exec("LibraConfig", "emit_reconfiguration_event", vec![], vec![]);
+    context.exec("Timestamp", "initialize", vec![], vec![]);
+    context.exec("Config", "emit_reconfiguration_event", vec![], vec![]);
 }

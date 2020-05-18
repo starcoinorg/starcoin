@@ -1,8 +1,8 @@
 address 0x0 {
-module LibraConfig {
+module Config {
     use 0x0::Transaction;
     use 0x0::Event;
-    use 0x0::LibraTimestamp;
+    use 0x0::Timestamp;
     use 0x0::Association;
     use 0x0::Offer;
 
@@ -150,7 +150,7 @@ module LibraConfig {
 
     fun reconfigure_() acquires Configuration {
        // Do not do anything if time is not set up yet, this is to avoid genesis emit too many epochs.
-       if(LibraTimestamp::is_genesis()) {
+       if(Timestamp::is_genesis()) {
            return ()
        };
 
@@ -159,7 +159,7 @@ module LibraConfig {
        // Ensure that there is at most one reconfiguration per transaction. This ensures that there is a 1-1
        // correspondence between system reconfigurations and emitted ReconfigurationEvents.
 
-       let current_block_time = LibraTimestamp::now_microseconds();
+       let current_block_time = Timestamp::now_microseconds();
        //TODO fix me
        //Transaction::assert(current_block_time > config_ref.last_reconfiguration_time, 23);
        config_ref.last_reconfiguration_time = current_block_time;

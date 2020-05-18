@@ -1,8 +1,8 @@
 address 0x0 {
 
 module TransactionFee {
-    use 0x0::LibraAccount;
-    use 0x0::LibraSystem;
+    use 0x0::Account;
+    use 0x0::System;
     use 0x0::Transaction;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -21,7 +21,7 @@ module TransactionFee {
     //    benefit of being the first validator in the validator set.
 
     resource struct TransactionFees {
-        fee_withdrawal_capability: LibraAccount::WithdrawalCapability,
+        fee_withdrawal_capability: Account::WithdrawalCapability,
     }
 
     // Initialize the transaction fee distribution module. We keep track of the last paid block
@@ -31,7 +31,7 @@ module TransactionFee {
     public fun initialize_transaction_fees() {
         Transaction::assert(Transaction::sender() == 0xFEE, 0);
         move_to_sender<TransactionFees>(TransactionFees {
-            fee_withdrawal_capability: LibraAccount::extract_sender_withdrawal_capability(),
+            fee_withdrawal_capability: Account::extract_sender_withdrawal_capability(),
         });
     }
 
@@ -40,8 +40,8 @@ module TransactionFee {
       //TODO
       //Transaction::assert(Transaction::sender() == 0x0, 33);
 
-      let num_validators = LibraSystem::validator_set_size();
-      let amount_collected = LibraAccount::balance<Token>(0xFEE);
+      let num_validators = System::validator_set_size();
+      let amount_collected = Account::balance<Token>(0xFEE);
 
       // If amount_collected == 0, this will also return early
       if (amount_collected < num_validators) return ();
@@ -73,11 +73,11 @@ module TransactionFee {
 
         while (index < num_validators) {
 
-            let addr = LibraSystem::get_ith_validator_address(index);
+            let addr = System::get_ith_validator_address(index);
             // Increment the index into the validator set.
             index = index + 1;
 
-            LibraAccount::pay_from_capability<Token>(
+            Account::pay_from_capability<Token>(
                 addr,
                 &distribution_resource.fee_withdrawal_capability,
                 amount_to_distribute_per_validator,

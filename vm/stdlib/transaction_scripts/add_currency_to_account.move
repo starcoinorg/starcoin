@@ -1,6 +1,6 @@
 script {
-use 0x0::LibraAccount;
+use 0x0::Account;
 fun main<Currency>() {
-    LibraAccount::add_currency<Currency>();
+    Account::add_currency<Currency>();
 }
 }

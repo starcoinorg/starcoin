@@ -2,7 +2,7 @@ address 0xeae6b71b9583150c1c32bc9500ee5d15:
 
 module MyToken {
      use 0x0::Libra;
-     use 0x0::LibraAccount;
+     use 0x0::Account;
      use 0x0::Transaction;
 
      struct T { }
@@ -18,9 +18,9 @@ module MyToken {
          let coin = Libra::mint<T>(amount);
 
          // create 'Balance<Token>' resource under sender account
-         LibraAccount::create_new_balance<T>();
+         Account::create_new_balance<T>();
 
          // deposit tokens into sender's Balance resource
-         LibraAccount::deposit_to_sender<T>(coin)
+         Account::deposit_to_sender<T>(coin)
      }
  }

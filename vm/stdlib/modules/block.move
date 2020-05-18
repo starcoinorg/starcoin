@@ -1,14 +1,14 @@
 address 0x0 {
 
-module LibraBlock {
+module Block {
     use 0x0::Event;
-    //use 0x0::LibraSystem;
-    use 0x0::LibraTimestamp;
+    //use 0x0::System;
+    use 0x0::Timestamp;
     use 0x0::Transaction;
     //use 0x0::TransactionFee;
     use 0x0::STC;
     use 0x0::Vector;
-    use 0x0::LibraAccount;
+    use 0x0::Account;
     use 0x0::SubsidyConfig;
 
     resource struct BlockMetadata {
@@ -74,7 +74,7 @@ module LibraBlock {
         // distribution
         //TransactionFee::distribute_transaction_fees<LBR::T>();
 
-        // TODO(valerini): call regular reconfiguration here LibraSystem2::update_all_validator_info()
+        // TODO(valerini): call regular reconfiguration here System2::update_all_validator_info()
     }
 
     // Update the BlockMetadata resource with the new blockmetada coming from the consensus.
@@ -89,8 +89,8 @@ module LibraBlock {
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(0xA550C18);
 
         // TODO: Figure out a story for errors in the system transactions.
-        //if(proposer != 0x0) Transaction::assert(LibraSystem::is_validator(proposer), 5002);
-        LibraTimestamp::update_global_time(proposer, timestamp);
+        //if(proposer != 0x0) Transaction::assert(System::is_validator(proposer), 5002);
+        Timestamp::update_global_time(proposer, timestamp);
 
         let new_height = block_metadata_ref.height + 1;
         block_metadata_ref.height = new_height;
@@ -125,7 +125,7 @@ module LibraBlock {
     }
 
     resource struct SubsidyInfo {
-            withdrawal_capability: LibraAccount::WithdrawalCapability,
+            withdrawal_capability: Account::WithdrawalCapability,
             subsidy_height: u64,
             heights: vector<u64>,
             miners: vector<address>,
@@ -135,7 +135,7 @@ module LibraBlock {
         Transaction::assert(Transaction::sender() == 0x6d696e74, 1);
 
         move_to_sender<SubsidyInfo>(SubsidyInfo {
-            withdrawal_capability: LibraAccount::extract_sender_withdrawal_capability(),
+            withdrawal_capability: Account::extract_sender_withdrawal_capability(),
             subsidy_height: 0,
             heights: Vector::empty(),
             miners: Vector::empty(),
@@ -162,18 +162,18 @@ module LibraBlock {
                 let subsidy_miner = *Vector::borrow(&subsidy_info.miners, 0);
                 subsidy_info.subsidy_height = subsidy_height;
                 if (subsidy_coin > 0) {
-                    Transaction::assert(LibraAccount::exists(subsidy_miner), 6006);
-                    let libra_coin = LibraAccount::withdraw_with_capability<STC::T>(&subsidy_info.withdrawal_capability, subsidy_coin);
-                    LibraAccount::deposit<STC::T>(subsidy_miner, libra_coin);
+                    Transaction::assert(Account::exists(subsidy_miner), 6006);
+                    let libra_coin = Account::withdraw_with_capability<STC::T>(&subsidy_info.withdrawal_capability, subsidy_coin);
+                    Account::deposit<STC::T>(subsidy_miner, libra_coin);
                 };
                 Vector::remove(&mut subsidy_info.heights, 0);
                 Vector::remove(&mut subsidy_info.miners, 0);
             };
 
             Vector::push_back(&mut subsidy_info.heights, current_height);
-            if (!LibraAccount::exists(current_miner)) {
+            if (!Account::exists(current_miner)) {
                 Transaction::assert(!Vector::is_empty(&auth_key_prefix), 6007);
-                LibraAccount::create_account<STC::T>(current_miner, auth_key_prefix);
+                Account::create_account<STC::T>(current_miner, auth_key_prefix);
             };
             Vector::push_back(&mut subsidy_info.miners, current_miner);
         };

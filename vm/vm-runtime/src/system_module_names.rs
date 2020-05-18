@@ -22,7 +22,7 @@ pub static STARCOIN_MODULE: Lazy<ModuleId> = Lazy::new(|| {
     )
 });
 
-pub static ACCOUNT_MODULE_NAME: &str = "LibraAccount";
+pub static ACCOUNT_MODULE_NAME: &str = "Account";
 
 /// The ModuleId for the Account module
 pub static ACCOUNT_MODULE: Lazy<ModuleId> = Lazy::new(|| {
@@ -31,11 +31,11 @@ pub static ACCOUNT_MODULE: Lazy<ModuleId> = Lazy::new(|| {
         Identifier::new(ACCOUNT_MODULE_NAME).unwrap(),
     )
 });
-/// The ModuleId for the LibraTransactionTimeout module
+/// The ModuleId for the TransactionTimeout module
 pub static LIBRA_TRANSACTION_TIMEOUT: Lazy<ModuleId> = Lazy::new(|| {
     ModuleId::new(
         account_config::core_code_address(),
-        Identifier::new("LibraTransactionTimeout").unwrap(),
+        Identifier::new("TransactionTimeout").unwrap(),
     )
 });
 
@@ -49,13 +49,13 @@ pub static SUBSIDY_CONF_MODULE: Lazy<ModuleId> = Lazy::new(|| {
     )
 });
 
-pub static LIBRA_BLOCK_MODULE_NAME: &str = "LibraBlock";
+pub static BLOCK_MODULE_NAME: &str = "Block";
 
 /// The ModuleId for the libra block module
 pub static LIBRA_BLOCK_MODULE: Lazy<ModuleId> = Lazy::new(|| {
     ModuleId::new(
         account_config::core_code_address(),
-        Identifier::new(LIBRA_BLOCK_MODULE_NAME).unwrap(),
+        Identifier::new(BLOCK_MODULE_NAME).unwrap(),
     )
 });
 /// The ModuleId for the gas schedule module

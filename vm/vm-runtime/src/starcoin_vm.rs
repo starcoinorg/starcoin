@@ -6,7 +6,7 @@ use anyhow::Result;
 use crypto::HashValue;
 use libra_types::{
     access_path::AccessPath as LibraAccessPath,
-    account_address::AccountAddress as LibraAccountAddress,
+    account_address::AccountAddress,
     account_config as libra_account_config,
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
@@ -678,7 +678,7 @@ pub enum VerifiedTranscationPayload {
 }
 
 /// Get the AccessPath to a resource stored under `address` with type name `tag`
-fn create_access_path(address: LibraAccountAddress, tag: StructTag) -> LibraAccessPath {
+fn create_access_path(address: AccountAddress, tag: StructTag) -> LibraAccessPath {
     let resource_tag = ResourceKey::new(address, tag);
     LibraAccessPath::resource_access_path(&resource_tag)
 }

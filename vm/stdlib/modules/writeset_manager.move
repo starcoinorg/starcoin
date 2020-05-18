@@ -1,11 +1,11 @@
 address 0x0 {
 
-module LibraWriteSetManager {
-    use 0x0::LibraAccount;
+module WriteSetManager {
+    use 0x0::Account;
     use 0x0::Event;
     use 0x0::Hash;
     use 0x0::Transaction;
-    use 0x0::LibraConfig;
+    use 0x0::Config;
 
     resource struct T {
         sequence_number: u64,
@@ -33,7 +33,7 @@ module LibraWriteSetManager {
         //TODO
         //Transaction::assert(sender == 0xA550C18, 33);
 
-        let association_auth_key = LibraAccount::authentication_key(sender);
+        let association_auth_key = Account::authentication_key(sender);
 
         let t_ref = borrow_global<T>(0xA550C18);
         Transaction::assert(writeset_sequence_number >= t_ref.sequence_number, 3);
@@ -53,7 +53,7 @@ module LibraWriteSetManager {
             &mut t_ref.upgrade_events,
             UpgradeEvent { writeset_payload },
         );
-        LibraConfig::reconfigure();
+        Config::reconfigure();
     }
 }
 

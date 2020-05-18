@@ -9,7 +9,7 @@ address 0x0 {
 module VASP {
     use 0x0::AccountType;
     use 0x0::Association;
-    use 0x0::LibraTimestamp;
+    use 0x0::Timestamp;
     use 0x0::Testnet;
     use 0x0::Transaction;
     use 0x0::Vector;
@@ -30,7 +30,7 @@ module VASP {
         ca_cert: vector<u8>,
         // 32 byte single Ed25519 public key whose counterpart must be used to sign the payment
         // metadata for travel rule transactions. Note that this is different (and simpler) than the
-        // `authentication_key` used in LibraAccount::T, which is a hash of a public key + signature
+        // `authentication_key` used in Account::T, which is a hash of a public key + signature
         // scheme identifier. Mutable
         travel_rule_public_key: vector<u8>,
     }
@@ -376,7 +376,7 @@ module VASP {
     }
 
     fun current_time(): u64 {
-        if (LibraTimestamp::is_genesis()) 0 else LibraTimestamp::now_microseconds()
+        if (Timestamp::is_genesis()) 0 else Timestamp::now_microseconds()
     }
 }
 

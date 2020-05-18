@@ -62,7 +62,7 @@ pub enum StdlibScript {
     RotateConsensusPubkey,
     RotateSharedEd2551PublicKey,
     UnmintLbr,
-    UpdateLibraVersion,
+    UpdateVersion,
     UpdateExchangeRate,
     UpdateMintingAbility,
     // ...add new scripts here
@@ -114,7 +114,7 @@ impl StdlibScript {
             RotateConsensusPubkey,
             RotateSharedEd2551PublicKey,
             UnmintLbr,
-            UpdateLibraVersion,
+            UpdateVersion,
             UpdateExchangeRate,
             UpdateMintingAbility,
             // ...add new scripts here
@@ -244,7 +244,7 @@ impl fmt::Display for StdlibScript {
                 RotateConsensusPubkey => "rotate_consensus_pubkey",
                 RotateSharedEd2551PublicKey => "rotate_shared_ed25519_public_key",
                 UnmintLbr => "unmint_lbr",
-                UpdateLibraVersion => "update_libra_version",
+                UpdateVersion => "update_libra_version",
                 UpdateExchangeRate => "update_exchange_rate",
                 UpdateMintingAbility => "update_minting_ability",
             }

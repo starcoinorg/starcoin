@@ -5,7 +5,7 @@
 address 0x0 {
 module SharedEd25519PublicKey {
     use 0x0::Authenticator;
-    use 0x0::LibraAccount;
+    use 0x0::Account;
     use 0x0::Transaction;
     use 0x0::Vector;
 
@@ -15,7 +15,7 @@ module SharedEd25519PublicKey {
         // 32 byte ed25519 public key
         key: vector<u8>,
         // rotation capability for an account whose authentication key is always derived from `key`
-        rotation_cap: LibraAccount::KeyRotationCapability,
+        rotation_cap: Account::KeyRotationCapability,
     }
 
     // (1) Rotate the authentication key of the sender to `key`
@@ -26,7 +26,7 @@ module SharedEd25519PublicKey {
     public fun publish(key: vector<u8>) {
         let t = T {
             key: x"",
-            rotation_cap: LibraAccount::extract_sender_key_rotation_capability()
+            rotation_cap: Account::extract_sender_key_rotation_capability()
         };
         rotate_key(&mut t, key);
         move_to_sender(t);
@@ -34,7 +34,7 @@ module SharedEd25519PublicKey {
 
     fun rotate_key(shared_key: &mut T, new_public_key: vector<u8>) {
         Transaction::assert(Vector::length(&new_public_key) == 32, 7000);
-        LibraAccount::rotate_authentication_key_with_capability(
+        Account::rotate_authentication_key_with_capability(
             &shared_key.rotation_cap,
             Authenticator::ed25519_authentication_key(copy new_public_key)
         );

@@ -18,16 +18,13 @@ use starcoin_vm_types::{
 };
 use std::convert::{TryFrom, TryInto};
 
-//TODO rename account and coin name.
-// Starcoin
 static STARCOIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("STC").unwrap());
 static STARCOIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 // LBR
 static LBR_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LBR").unwrap());
 static LBR_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 // Account
-static ACCOUNT_MODULE_NAME: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("LibraAccount").unwrap());
+static ACCOUNT_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Account").unwrap());
 static ACCOUNT_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 static ACCOUNT_BALANCE_STRUCT_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("Balance").unwrap());

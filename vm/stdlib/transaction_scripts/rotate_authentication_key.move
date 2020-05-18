@@ -1,6 +1,6 @@
 script {
-use 0x0::LibraAccount;
+use 0x0::Account;
 fun main(new_key: vector<u8>) {
-  LibraAccount::rotate_authentication_key(new_key)
+  Account::rotate_authentication_key(new_key)
 }
 }

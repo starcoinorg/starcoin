@@ -5,9 +5,9 @@
 // 3 -> ADDRESS_IS_NOT_ROUTED
 address 0x0 {
 module PaymentRouter {
-    use 0x0::LibraAccount;
+    use 0x0::Account;
     use 0x0::Transaction;
-    use 0x0::Libra;
+    use 0x0::Coin;
     use 0x0::Vector;
 
     // A resource that specifies the addresses that are allowed to be added
@@ -31,7 +31,7 @@ module PaymentRouter {
     // the sender, depending on flags set in `PaymentRouterInfo`).
     resource struct RoutedAccount<Token> {
         router_account_addr: address,
-        withdrawal_cap: LibraAccount::WithdrawalCapability,
+        withdrawal_cap: Account::WithdrawalCapability,
     }
 
     // Initialize the sending account with `exclusive_withdrawals_only`
@@ -88,18 +88,18 @@ module PaymentRouter {
         );
         move_to_sender(RoutedAccount<Token> {
             router_account_addr,
-            withdrawal_cap: LibraAccount::extract_sender_withdrawal_capability()
+            withdrawal_cap: Account::extract_sender_withdrawal_capability()
         })
     }
 
     // Routes deposits to a sub-account that holds currencies of type `Token`.
-    public fun deposit<Token>(router_account_addr: address, coin: Libra::T<Token>)
+    public fun deposit<Token>(router_account_addr: address, coin: Coin::T<Token>)
     acquires AccountInfo {
         let addrs = &borrow_global<AccountInfo<Token>>(router_account_addr).child_accounts;
         Transaction::assert(!Vector::is_empty(addrs), 1);
         // TODO: policy around how to rotate through different accounts
         let index = 0;
-        LibraAccount::deposit(
+        Account::deposit(
             *Vector::borrow(addrs, index),
             coin
         );
@@ -108,12 +108,12 @@ module PaymentRouter {
     // Withdraws `amount` of `Token` currency from the sending account
     // using the delegated withdrawal capability in the PaymentRouterInfo
     // at `router_account_addr`.
-    public fun withdraw_through<Token>(amount: u64): Libra::T<Token>
+    public fun withdraw_through<Token>(amount: u64): Coin::T<Token>
     acquires PaymentRouterInfo, RoutedAccount {
         let routed_info = borrow_global<RoutedAccount<Token>>(Transaction::sender());
         let router_info = borrow_global<PaymentRouterInfo>(*&routed_info.router_account_addr);
         Transaction::assert(!router_info.exclusive_withdrawals_only, 2);
-        LibraAccount::withdraw_with_capability(
+        Account::withdraw_with_capability(
             &routed_info.withdrawal_cap,
             amount
         )
@@ -121,14 +121,14 @@ module PaymentRouter {
 
     // Routes withdrawal requests from the sending account to a sub-account
     // that holds currencies of type `Token`.
-    public fun withdraw<Token>(amount: u64): Libra::T<Token>
+    public fun withdraw<Token>(amount: u64): Coin::T<Token>
     acquires AccountInfo, RoutedAccount {
         let addrs = &borrow_global<AccountInfo<Token>>(Transaction::sender()).child_accounts;
         Transaction::assert(!Vector::is_empty(addrs), 1);
         // TODO: policy around how to rotate through different accounts
         let index = 0;
         let addr = Vector::borrow(addrs, index);
-        LibraAccount::withdraw_with_capability(
+        Account::withdraw_with_capability(
             &borrow_global<RoutedAccount<Token>>(*addr).withdrawal_cap,
             amount
         )

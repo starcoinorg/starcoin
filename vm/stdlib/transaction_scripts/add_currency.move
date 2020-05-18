@@ -1,6 +1,6 @@
 script {
 use 0x0::FixedPoint32;
-use 0x0::Libra;
+use 0x0::Coin;
 
 fun main<NewCurrency>(
     exchange_rate_denom: u64,
@@ -14,7 +14,7 @@ fun main<NewCurrency>(
         exchange_rate_denom,
         exchange_rate_num,
     );
-    Libra::register_currency<NewCurrency>(
+    Coin::register_currency<NewCurrency>(
         rate,
         is_synthetic,
         scaling_factor,
