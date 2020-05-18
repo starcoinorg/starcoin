@@ -418,7 +418,13 @@ where
                             // 2. commit block
                             branch.commit(block, block_info)?;
                             self.select_head(branch)?;
-                            self.collection.get_master().latest_blocks(5);
+                            let master_header = self.collection.get_master().current_header();
+                            info!(
+                                "block chain info :: number : {} , block_id : {:?}, parent_id : {:?}",
+                                master_header.number(),
+                                master_header.id(),
+                                master_header.parent_hash()
+                            );
                             Ok(ConnectResult::Ok(()))
                         } else {
                             debug!("verify failed {:?}", block.header().id());

@@ -23,20 +23,29 @@ use types::{account_state::AccountState, peer_info::PeerId};
 
 struct Roots {
     state: HashValue,
-    accumulator: HashValue,
+    txn_accumulator: HashValue,
+    block_accumulator: HashValue,
 }
 
 impl Roots {
-    pub fn new(state: HashValue, accumulator: HashValue) -> Self {
-        Roots { state, accumulator }
+    pub fn new(state: HashValue, txn_accumulator: HashValue, block_accumulator: HashValue) -> Self {
+        Roots {
+            state,
+            txn_accumulator,
+            block_accumulator,
+        }
     }
 
     fn state_root(&self) -> &HashValue {
         &self.state
     }
 
-    fn accumulator_root(&self) -> &HashValue {
-        &self.accumulator
+    fn txn_accumulator_root(&self) -> &HashValue {
+        &self.txn_accumulator
+    }
+
+    fn block_accumulator_root(&self) -> &HashValue {
+        &self.block_accumulator
     }
 }
 
@@ -160,12 +169,18 @@ pub struct StateSyncTaskRef {
 
 #[async_trait::async_trait]
 impl StateSyncReset for StateSyncTaskRef {
-    async fn reset(&self, state_root: HashValue, accumulator_root: HashValue) {
+    async fn reset(
+        &self,
+        state_root: HashValue,
+        txn_accumulator_root: HashValue,
+        block_accumulator_root: HashValue,
+    ) {
         if let Err(e) = self
             .address
             .send(StateSyncEvent::RESET(RestRoots {
                 state_root,
-                accumulator_root,
+                txn_accumulator_root,
+                block_accumulator_root,
             }))
             .await
         {
@@ -282,16 +297,17 @@ impl<T> SyncTask<T> {
 impl StateSyncTaskActor {
     pub fn launch(
         self_peer_id: PeerId,
-        root: (HashValue, HashValue),
+        root: (HashValue, HashValue, HashValue),
         storage: Arc<dyn Store>,
         network_service: NetworkAsyncService,
         sync_metadata: SyncMetadata,
     ) -> StateSyncTaskRef {
-        let roots = Roots::new(root.0, root.1);
+        let roots = Roots::new(root.0, root.1, root.2);
         let mut state_sync_task = SyncTask::new();
         state_sync_task.push_back((*roots.state_root(), true));
         let mut accumulator_sync_task = SyncTask::new();
-        accumulator_sync_task.push_back(roots.accumulator_root().clone());
+        accumulator_sync_task.push_back(*roots.txn_accumulator_root());
+        accumulator_sync_task.push_back(*roots.block_accumulator_root());
         let address = StateSyncTaskActor::create(move |_ctx| Self {
             self_peer_id,
             roots,
@@ -508,13 +524,14 @@ impl StateSyncTaskActor {
     pub fn reset(
         &mut self,
         state_root: &HashValue,
-        accumulator_root: &HashValue,
+        txn_accumulator_root: &HashValue,
+        block_accumulator_root: &HashValue,
         address: Addr<StateSyncTaskActor>,
     ) {
         info!("reset state sync task.");
         let mut lock = self.state_sync_task.lock();
         lock.clear();
-        self.roots = Roots::new(*state_root, *accumulator_root);
+        self.roots = Roots::new(*state_root, *txn_accumulator_root, *block_accumulator_root);
         lock.push_back((*self.roots.state_root(), true));
         drop(lock);
         self.activation_task(address);
@@ -582,7 +599,8 @@ enum StateSyncEvent {
 #[derive(Debug, Clone)]
 struct RestRoots {
     state_root: HashValue,
-    accumulator_root: HashValue,
+    txn_accumulator_root: HashValue,
+    block_accumulator_root: HashValue,
 }
 
 impl Handler<StateSyncEvent> for StateSyncTaskActor {
@@ -593,7 +611,12 @@ impl Handler<StateSyncEvent> for StateSyncTaskActor {
         match msg {
             StateSyncEvent::ACT => self.activation_task(ctx.address()),
             StateSyncEvent::RESET(roots) => {
-                self.reset(&roots.state_root, &roots.accumulator_root, ctx.address());
+                self.reset(
+                    &roots.state_root,
+                    &roots.txn_accumulator_root,
+                    &roots.block_accumulator_root,
+                    ctx.address(),
+                );
             }
         }
         Ok(())

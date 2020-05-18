@@ -11,9 +11,8 @@ use starcoin_crypto::{
 
 use crate::accumulator_info::AccumulatorInfo;
 use crate::{U256, U512};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::create_literal_hash;
+use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
 
@@ -193,7 +192,7 @@ impl BlockHeader {
         Self {
             //TODO should use a placeholder hash?
             parent_hash: HashValue::zero(),
-            parent_block_accumulator_root: HashValue::zero(),
+            parent_block_accumulator_root: *ACCUMULATOR_PLACEHOLDER_HASH,
             //TODO hard code a genesis block time.
             timestamp: 0,
             number: 0,
@@ -298,10 +297,6 @@ impl Block {
         }
     }
 }
-
-/// Default ID of `BlockInfo`.
-pub static BLOCK_INFO_DEFAULT_ID: Lazy<HashValue> =
-    Lazy::new(|| create_literal_hash("BLOCK_INFO_DEFAULT_ID"));
 
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
