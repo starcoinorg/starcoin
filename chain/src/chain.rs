@@ -150,11 +150,12 @@ where
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
         let block_info = self.get_block_info(previous_header.id())?;
+        let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let txn_accumulator = MerkleAccumulator::new(
-            block_info.accumulator_root,
-            block_info.frozen_subtree_roots,
-            block_info.num_leaves,
-            block_info.num_nodes,
+            *txn_accumulator_info.get_accumulator_root(),
+            txn_accumulator_info.get_frozen_subtree_roots().clone(),
+            txn_accumulator_info.get_num_leaves(),
+            txn_accumulator_info.get_num_nodes(),
             self.storage.clone(),
         )?;
 
@@ -163,10 +164,9 @@ where
 
         Ok(BlockTemplate::new(
             previous_header.id(),
-            block_info
+            *block_info
                 .get_block_accumulator_info()
-                .get_accumulator_root()
-                .clone(),
+                .get_accumulator_root(),
             timestamp,
             previous_header.number() + 1,
             author,
