@@ -36,6 +36,7 @@ starcoin-network = {path = "../network"}
 libp2p = "0.18.1"
 starcoin-network-api = {path = "../network/api", package="network-api"}
 tokio = { version = "0.2", features = ["full"] }
+executor-benchmark = {path = "../executor/benchmark", package="starcoin-executor-benchmark" }
 
 [dev-dependencies]
 
@@ -53,4 +54,8 @@ harness = false
 
 [[bench]]
 name = "bench_sync"
+harness = false
+
+[[bench]]
+name = "bench_vm"
 harness = false
