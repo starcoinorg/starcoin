@@ -1,9 +1,10 @@
-use crate::TxPoolRef;
+use crate::{TxPool, TxPoolRef};
 use starcoin_bus::BusActor;
 use starcoin_config::{NodeConfig, TxPoolConfig};
 use starcoin_genesis::Genesis;
 use std::sync::Arc;
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
+
 pub fn start_txpool() -> TxPoolRef {
     let cache_storage = CacheStorage::new();
     let storage =
@@ -13,10 +14,12 @@ pub fn start_txpool() -> TxPoolRef {
     let genesis = Genesis::build(node_config.net()).unwrap();
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
-    TxPoolRef::start(
+
+    let pool = TxPool::start(
         TxPoolConfig::default(),
         storage,
         *startup_info.get_master(),
         bus,
-    )
+    );
+    pool.get_async_service()
 }
