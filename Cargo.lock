@@ -529,6 +529,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-executor-benchmark",
  "starcoin-genesis",
  "starcoin-network",
  "starcoin-state-store-api",
@@ -5881,6 +5882,28 @@ dependencies = [
  "starcoin-vm-runtime",
  "stdlib 0.1.0",
  "stest",
+]
+
+[[package]]
+name = "starcoin-executor-benchmark"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "itertools 0.9.0",
+ "rand 0.7.3",
+ "rayon",
+ "starcoin-accumulator",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-executor",
+ "starcoin-logger",
+ "starcoin-state-api",
+ "starcoin-statedb",
+ "starcoin-storage",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "structopt",
+ "tokio 0.2.20",
 ]
 
 [[package]]
