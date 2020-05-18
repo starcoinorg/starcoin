@@ -8,8 +8,8 @@
 // not have replay protection.
 address 0x0 {
 module ApprovedPayment {
-    use 0x0::Libra;
-    use 0x0::LibraAccount;
+    use 0x0::Coin;
+    use 0x0::Account;
     use 0x0::Signature;
     use 0x0::Transaction;
     use 0x0::Vector;
@@ -18,7 +18,7 @@ module ApprovedPayment {
     resource struct T {
         // 32 byte single Ed25519 public key whose counterpart must be used to sign the payment
         // metadata. Note that this is different (and simpler) than the `authentication_key` used in
-        // LibraAccount::T, which is a hash of a public key + signature scheme identifier.
+        // Account::T, which is a hash of a public key + signature scheme identifier.
         public_key: vector<u8>,
         // TODO: events?
     }
@@ -28,7 +28,7 @@ module ApprovedPayment {
     public fun deposit<Token>(
         approved_payment: &T,
         payee: address,
-        coin: Libra::T<Token>,
+        coin: Coin::T<Token>,
         metadata: vector<u8>,
         signature: vector<u8>
     ) {
@@ -43,7 +43,7 @@ module ApprovedPayment {
             ),
             9002, // TODO: proper error code
         );
-        LibraAccount::deposit_with_metadata<Token>(payee, coin, metadata, x"")
+        Account::deposit_with_metadata<Token>(payee, coin, metadata, x"")
     }
 
     // Wrapper of `deposit` that withdraw's from the sender's balance and uses the top-level
@@ -57,7 +57,7 @@ module ApprovedPayment {
         deposit<Token>(
             borrow_global<T>(payee),
             payee,
-            LibraAccount::withdraw_from_sender<Token>(amount),
+            Account::withdraw_from_sender<Token>(amount),
             metadata,
             signature
         )

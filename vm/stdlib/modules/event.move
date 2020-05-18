@@ -2,7 +2,7 @@ address 0x0 {
 
 module Event {
     use 0x0::LCS;
-    use 0x0::LibraTimestamp;
+    use 0x0::Timestamp;
     use 0x0::Vector;
     use 0x0::Transaction;
 
@@ -34,7 +34,7 @@ module Event {
     }
 
     public fun grant_event_generator() {
-        Transaction::assert(LibraTimestamp::is_genesis(), 0);
+        Transaction::assert(Timestamp::is_genesis(), 0);
         move_to_sender(EventHandleGenerator { counter: 0, addr: Transaction::sender() })
     }
 
@@ -42,7 +42,7 @@ module Event {
         addr: address,
         _cap: &EventHandleGeneratorCreationCapability
     ): EventHandleGenerator acquires EventHandleGenerator {
-        if (::exists<EventHandleGenerator>(addr) && LibraTimestamp::is_genesis()) {
+        if (::exists<EventHandleGenerator>(addr) && Timestamp::is_genesis()) {
             // if the account already has an event handle generator, return it instead of creating
             // a new one. the reason: it may have already been used to generate event handles and
             // thus may have a nonzero `counter`.

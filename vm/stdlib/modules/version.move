@@ -1,7 +1,7 @@
 address 0x0 {
 
-module LibraVersion {
-    use 0x0::LibraConfig;
+module Version {
+    use 0x0::Config;
     use 0x0::Transaction;
 
     struct T {
@@ -9,22 +9,22 @@ module LibraVersion {
     }
 
     public fun initialize() {
-        Transaction::assert(Transaction::sender() == LibraConfig::default_config_address(), 1);
+        Transaction::assert(Transaction::sender() == Config::default_config_address(), 1);
 
-        LibraConfig::publish_new_config<Self::T>(
+        Config::publish_new_config<Self::T>(
             T { major: 1 },
         );
     }
 
     public fun set(major: u64) {
-        let old_config = LibraConfig::get<Self::T>();
+        let old_config = Config::get<Self::T>();
 
         Transaction::assert(
             old_config.major < major,
             25
         );
 
-        LibraConfig::set<Self::T>(
+        Config::set<Self::T>(
             T { major }
         );
     }

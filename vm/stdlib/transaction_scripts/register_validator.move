@@ -1,6 +1,6 @@
 script {
 use 0x0::ValidatorConfig;
-use 0x0::LibraAccount;
+use 0x0::Account;
 use 0x0::Coin1;
 use 0x0::Coin2;
 use 0x0::LBR;
@@ -28,8 +28,8 @@ fun main(
 
   let sender = Transaction::sender();
   // Validating nodes need to accept all currencies in order to receive txn fees
-  if (!LibraAccount::accepts_currency<Coin1::T>(sender)) LibraAccount::add_currency<Coin1::T>();
-  if (!LibraAccount::accepts_currency<Coin2::T>(sender)) LibraAccount::add_currency<Coin2::T>();
-  if (!LibraAccount::accepts_currency<LBR::T>(sender)) LibraAccount::add_currency<LBR::T>();
+  if (!Account::accepts_currency<Coin1::T>(sender)) Account::add_currency<Coin1::T>();
+  if (!Account::accepts_currency<Coin2::T>(sender)) Account::add_currency<Coin2::T>();
+  if (!Account::accepts_currency<LBR::T>(sender)) Account::add_currency<LBR::T>();
 }
 }

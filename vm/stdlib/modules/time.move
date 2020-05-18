@@ -1,6 +1,6 @@
 address 0x0 {
 
-module LibraTimestamp {
+module Timestamp {
     use 0x0::Transaction;
 
     // A singleton resource holding the current Unix time in microseconds

@@ -1,5 +1,5 @@
 script {
-use 0x0::LibraAccount;
+use 0x0::Account;
 
 fun main<Token>(
     payee: address,
@@ -8,9 +8,9 @@ fun main<Token>(
     metadata: vector<u8>,
     metadata_signature: vector<u8>
 ) {
-  if (!LibraAccount::exists(payee)) {
-      LibraAccount::create_testnet_account<Token>(payee, auth_key_prefix);
+  if (!Account::exists(payee)) {
+      Account::create_testnet_account<Token>(payee, auth_key_prefix);
   };
-  LibraAccount::pay_from_sender_with_metadata<Token>(payee, amount, metadata, metadata_signature)
+  Account::pay_from_sender_with_metadata<Token>(payee, amount, metadata, metadata_signature)
 }
 }

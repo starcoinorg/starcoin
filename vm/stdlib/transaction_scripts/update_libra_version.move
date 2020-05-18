@@ -1,7 +1,7 @@
 script {
-use 0x0::LibraVersion;
+use 0x0::Version;
 
 fun main(major: u64) {
-    LibraVersion::set(major)
+    Version::set(major)
 }
 }

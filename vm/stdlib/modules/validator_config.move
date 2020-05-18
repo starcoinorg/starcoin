@@ -1,7 +1,7 @@
 address 0x0 {
 
 module ValidatorConfig {
-    use 0x0::LibraAccount;
+    use 0x0::Account;
     use 0x0::Option;
     use 0x0::Transaction;
 
@@ -78,7 +78,7 @@ module ValidatorConfig {
     // this function will delegate management of the ValidatorConfig::T resource
     // to a delegated_account.
     public fun set_delegated_account(delegated_account: address) acquires T {
-        Transaction::assert(LibraAccount::exists(delegated_account), 5);
+        Transaction::assert(Account::exists(delegated_account), 5);
         // check delegated address is different from transaction's sender
         Transaction::assert(delegated_account != Transaction::sender(), 6);
         let t_ref = borrow_global_mut<T>(Transaction::sender());

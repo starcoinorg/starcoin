@@ -7,7 +7,7 @@ address 0x0 {
 
 module AccountLimits {
     use 0x0::Transaction;
-    use 0x0::LibraTimestamp;
+    use 0x0::Timestamp;
     use 0x0::Association;
 
     // A capability to allow calling mutator functions such as
@@ -238,7 +238,7 @@ module AccountLimits {
     }
 
     fun current_time(): u64 {
-        if (LibraTimestamp::is_genesis()) 0 else LibraTimestamp::now_microseconds()
+        if (Timestamp::is_genesis()) 0 else Timestamp::now_microseconds()
     }
 }
 

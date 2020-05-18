@@ -1,7 +1,7 @@
 script {
-use 0x0::LibraVMConfig;
+use 0x0::VMConfig;
 
 fun main(args: vector<u8>) {
-    LibraVMConfig::set_publishing_option(args)
+    VMConfig::set_publishing_option(args)
 }
 }

@@ -24,7 +24,7 @@ starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
 logger = {path = "../commons/logger", package="starcoin-logger"}
-libra-temppath = { package="libra-temppath",  git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+libra-temppath = { package="libra-temppath",  git = "https://github.com/starcoinorg/libra", rev="ed50e7ec5ac5581803b45b48d0427ba833c211df" }
 starcoin-metrics = { path = "../commons/metrics"}
 
 [dependencies.rocksdb]

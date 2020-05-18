@@ -1,7 +1,7 @@
 address 0x0 {
 
-module LibraVMConfig {
-    use 0x0::LibraConfig;
+module VMConfig {
+    use 0x0::Config;
 
     // The struct to hold all config data needed to operate the LibraVM.
     // * publishing_option: Defines Scripts/Modules that are allowed to execute in the current configruation.
@@ -78,7 +78,7 @@ module LibraVMConfig {
         };
 
 
-        LibraConfig::publish_new_config<Self::T>(
+        Config::publish_new_config<Self::T>(
             T {
                 publishing_option,
                 gas_schedule: GasSchedule {
@@ -91,9 +91,9 @@ module LibraVMConfig {
     }
 
     public fun set_publishing_option(publishing_option: vector<u8>) {
-        let current_config = LibraConfig::get<Self::T>();
+        let current_config = Config::get<Self::T>();
         current_config.publishing_option = publishing_option;
-        LibraConfig::set<Self::T>(current_config);
+        Config::set<Self::T>(current_config);
     }
 }
 

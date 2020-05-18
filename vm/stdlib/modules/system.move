@@ -1,7 +1,7 @@
 address 0x0 {
 
-module LibraSystem {
-    use 0x0::LibraConfig;
+module System {
+    use 0x0::Config;
     use 0x0::Transaction;
     use 0x0::ValidatorConfig;
     use 0x0::Vector;
@@ -13,7 +13,7 @@ module LibraSystem {
     }
 
     resource struct CapabilityHolder {
-        cap: LibraConfig::ModifyConfigCapability<Self::T>,
+        cap: Config::ModifyConfigCapability<Self::T>,
     }
 
     struct T {
@@ -35,9 +35,9 @@ module LibraSystem {
     // the resource under that address.
     // It can only be called a single time. Currently, it is invoked in the genesis transaction.
     public fun initialize_validator_set() {
-        Transaction::assert(Transaction::sender() == LibraConfig::default_config_address(), 1);
+        Transaction::assert(Transaction::sender() == Config::default_config_address(), 1);
 
-        let cap = LibraConfig::publish_new_config_with_capability<T>(T {
+        let cap = Config::publish_new_config_with_capability<T>(T {
             scheme: 0,
             validators: Vector::empty(),
         });
@@ -46,13 +46,13 @@ module LibraSystem {
 
     // This returns a copy of the current validator set.
     public fun get_validator_set(): T {
-        LibraConfig::get<T>()
+        Config::get<T>()
     }
 
-    // This copies the vector of validators into the LibraConfig's resource
+    // This copies the vector of validators into the Config's resource
     // under ValidatorSet address
     fun set_validator_set(value: T) acquires CapabilityHolder {
-        LibraConfig::set_with_capability<T>(&borrow_global<CapabilityHolder>(LibraConfig::default_config_address()).cap, value)
+        Config::set_with_capability<T>(&borrow_global<CapabilityHolder>(Config::default_config_address()).cap, value)
     }
 
     public fun add_validator(account_address: address) acquires CapabilityHolder {

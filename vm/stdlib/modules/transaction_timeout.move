@@ -1,8 +1,8 @@
 address 0x0 {
 
-module LibraTransactionTimeout {
+module TransactionTimeout {
   use 0x0::Transaction;
-  use 0x0::LibraTimestamp;
+  use 0x0::Timestamp;
 
   resource struct TTL {
     // Only transactions with timestamp in between block time and block time + duration would be accepted.
@@ -31,12 +31,12 @@ module LibraTransactionTimeout {
       return false
     };
 
-    let current_block_time = LibraTimestamp::now_microseconds();
+    let current_block_time = Timestamp::now_microseconds();
     let timeout = borrow_global<TTL>(0xA550C18).duration_microseconds;
     let _max_txn_time = current_block_time + timeout;
 
     let txn_time_microseconds = timestamp * 1000000;
-    // TODO: Add LibraTimestamp::is_before_exclusive(&txn_time_microseconds, &max_txn_time)
+    // TODO: Add Timestamp::is_before_exclusive(&txn_time_microseconds, &max_txn_time)
     //       This is causing flaky test right now. The reason is that we will use this logic for AC, where its wall
     //       clock time might be out of sync with the real block time stored in StateStore.
     //       See details in issue #2346.

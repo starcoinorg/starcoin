@@ -1,10 +1,10 @@
 address 0x0 {
 
-module Libra {
+module Coin {
     use 0x0::Association;
     use 0x0::Event;
     use 0x0::FixedPoint32;
-    use 0x0::LibraConfig;
+    use 0x0::Config;
     use 0x0::RegisteredCurrencies;
     use 0x0::Transaction;
     use 0x0::Vector;
@@ -126,7 +126,7 @@ module Libra {
     // Currently, it is invoked in the genesis transaction
     public fun initialize() {
         Association::assert_sender_is_association();
-        Transaction::assert(Transaction::sender() == LibraConfig::default_config_address(), 0);
+        Transaction::assert(Transaction::sender() == Config::default_config_address(), 0);
         let cap = RegisteredCurrencies::initialize();
         move_to_sender(CurrencyRegistrationCapability{ cap })
     }
@@ -183,7 +183,7 @@ module Libra {
         Preburn<Token> { requests: Vector::empty(), is_approved: false, }
     }
 
-    // Mint a new Libra::T worth `value`. The caller must have a reference to a MintCapability.
+    // Mint a new Coin::T worth `value`. The caller must have a reference to a MintCapability.
     // Only the Association account can acquire such a reference, and it can do so only via
     // `borrow_sender_mint_capability`
     public fun mint_with_capability<Token>(
@@ -378,7 +378,7 @@ module Libra {
         borrow_global<CurrencyInfo<Token>>(0xA550C18).preburn_value
     }
 
-    // Create a new Libra::T<CoinType> with a value of 0
+    // Create a new Coin::T<CoinType> with a value of 0
     public fun zero<CoinType>(): T<CoinType> {
         assert_is_coin<CoinType>();
         T<CoinType> { value: 0 }
@@ -465,7 +465,7 @@ module Libra {
         });
         RegisteredCurrencies::add_currency_code(
             currency_code,
-            &borrow_global<CurrencyRegistrationCapability>(LibraConfig::default_config_address()).cap
+            &borrow_global<CurrencyRegistrationCapability>(Config::default_config_address()).cap
         )
     }
 
