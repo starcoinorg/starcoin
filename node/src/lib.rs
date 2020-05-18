@@ -156,7 +156,7 @@ where
             //TODO fix me, this just a work around method.
             let _handle = match node::start::<C>(config, logger_handle, handle).await {
                 Err(e) => {
-                    error!("Node start fail: {}, exist.", e);
+                    error!("Node start fail: {:?}, exist.", e);
                     System::current().stop();
                     return;
                 }
@@ -172,7 +172,8 @@ where
             System::current().stop();
         });
     });
-    if block_on(async { start_receiver.await }).is_err() {
+    let result = block_on(async { start_receiver.await });
+    if result.is_err() {
         std::process::exit(1);
     }
     NodeHandle::new(thread_handle, stop_sender)

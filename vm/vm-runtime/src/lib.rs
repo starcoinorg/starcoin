@@ -8,7 +8,10 @@ pub mod genesis;
 pub mod starcoin_vm;
 pub mod system_module_names;
 pub mod transaction_scripts;
-pub mod type_tag_parser;
+
 #[macro_use]
 extern crate prometheus;
+
 pub mod counters;
+pub mod genesis_context;
+pub mod genesis_gas_schedule;

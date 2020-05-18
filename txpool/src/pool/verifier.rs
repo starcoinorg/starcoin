@@ -13,7 +13,6 @@ use crate::pool::{
     VerifiedTransaction,
 };
 use std::sync::{atomic::AtomicUsize, Arc};
-use tx_pool;
 use types::transaction;
 
 /// Verification options.

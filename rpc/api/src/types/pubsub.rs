@@ -12,12 +12,13 @@ use starcoin_types::block::BlockHeader;
 use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
 use std::convert::TryInto;
+
 /// Subscription kind.
-#[derive(Debug, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub enum Kind {
-    /// New block headers subscription.
+    /// New block subscription.
     NewHeads,
     /// Events subscription.
     Events,
@@ -28,8 +29,8 @@ pub enum Kind {
 /// Subscription result.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Result {
-    /// New block header.
-    Header(Box<BlockHeader>),
+    /// New block.
+    Block(Box<ThinBlock>),
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
     Event(Box<Event>),
@@ -41,11 +42,36 @@ impl Serialize for Result {
         S: Serializer,
     {
         match *self {
-            Result::Header(ref header) => header.serialize(serializer),
+            Result::Block(ref header) => header.serialize(serializer),
             Result::Event(ref evt) => evt.serialize(serializer),
             Result::TransactionHash(ref hash) => hash.serialize(serializer),
             // Result::SyncState(ref sync) => sync.serialize(serializer),
         }
+    }
+}
+
+/// Block with only txn hashes.
+#[derive(Default, Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ThinBlock {
+    #[serde(flatten)]
+    header: BlockHeader,
+    #[serde(rename = "txn_hashes")]
+    body: Vec<HashValue>,
+}
+impl ThinBlock {
+    pub fn new(header: BlockHeader, txn_hashes: Vec<HashValue>) -> Self {
+        Self {
+            header,
+            body: txn_hashes,
+        }
+    }
+    pub fn header(&self) -> &BlockHeader {
+        &self.header
+    }
+    pub fn body(&self) -> &[HashValue] {
+        &self.body
     }
 }
 
@@ -82,7 +108,7 @@ impl<'a> Deserialize<'a> for Params {
 }
 
 /// Filter
-#[derive(Debug, PartialEq, Clone, Deserialize, Eq, Hash)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct EventFilter {

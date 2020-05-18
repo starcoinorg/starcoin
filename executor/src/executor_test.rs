@@ -8,6 +8,7 @@ use logger::prelude::*;
 use once_cell::sync::Lazy;
 use starcoin_config::ChainNetwork;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_vm_types::parser;
 use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 use std::sync::Arc;
@@ -24,7 +25,6 @@ use types::{
     transaction::{Module, TransactionPayload},
     vm_error::{StatusCode, VMStatus},
 };
-use vm_runtime::type_tag_parser::parse_type_tags;
 use vm_runtime::{
     account::Account,
     common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn},
@@ -61,8 +61,8 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
     let account2 = Account::new();
 
     let raw_txn = Executor::build_transfer_txn(
-        account1.address().clone(),
-        account2.address().clone(),
+        *account1.address(),
+        *account2.address(),
         account2.auth_key_prefix(),
         0,
         1000,
@@ -75,7 +75,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config())?;
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
@@ -90,7 +90,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
+    let output1 = Executor::execute_transaction(&chain_state, txn1)?;
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let sequence_number2 = get_sequence_number(account_config::association_address(), &chain_state);
@@ -100,17 +100,17 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number2, // fix me
         1_000,
     ));
-    let output2 = Executor::execute_transaction(&chain_state, txn2).unwrap();
+    let output2 = Executor::execute_transaction(&chain_state, txn2)?;
     assert_eq!(KEEP_STATUS.clone(), *output2.status());
 
-    let sequence_number3 = get_sequence_number(account1.address().clone(), &chain_state);
+    let sequence_number3 = get_sequence_number(*account1.address(), &chain_state);
     let txn3 = Transaction::UserTransaction(peer_to_peer_txn(
         &account1,
         &account2,
         sequence_number3, // fix me
         100,
     ));
-    let output3 = Executor::execute_transaction(&chain_state, txn3).unwrap();
+    let output3 = Executor::execute_transaction(&chain_state, txn3)?;
     assert_eq!(KEEP_STATUS.clone(), *output3.status());
 
     Ok(())
@@ -128,12 +128,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
 
     let account = Account::new();
 
-    let txn = Executor::build_mint_txn(
-        account.address().clone(),
-        account.auth_key_prefix(),
-        1,
-        1000,
-    );
+    let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
     let output = Executor::execute_transaction(&chain_state, txn).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
@@ -161,8 +156,8 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
     let account2 = Account::new();
 
     let raw_txn = Executor::build_transfer_txn(
-        account1.address().clone(),
-        account2.address().clone(),
+        *account1.address(),
+        *account2.address(),
         account2.auth_key_prefix(),
         0,
         1000,
@@ -192,12 +187,7 @@ fn test_sequence_number() -> Result<()> {
         get_sequence_number(account_config::association_address(), &chain_state);
 
     let account = Account::new();
-    let txn = Executor::build_mint_txn(
-        account.address().clone(),
-        account.auth_key_prefix(),
-        1,
-        1000,
-    );
+    let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
     let output = Executor::execute_transaction(&chain_state, txn).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
@@ -238,9 +228,8 @@ pub fn compile_module_with_address(
     file_name: &str,
     code: &str,
 ) -> TransactionPayload {
-    let addr = address.clone().into();
     let compiler = Compiler {
-        address: addr,
+        address: *address,
         ..Compiler::default()
     };
     TransactionPayload::Module(Module::new(
@@ -263,7 +252,7 @@ fn test_publish_module() -> Result<()> {
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
+    let output1 = Executor::execute_transaction(&chain_state, txn1)?;
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let program = String::from(
@@ -278,39 +267,55 @@ fn test_publish_module() -> Result<()> {
 
     let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
         *account1.address(),
-        compiled_module.into(),
+        compiled_module,
         0,
         100_000,
         1,
-        account_config::starcoin_type_tag().into(),
+        account_config::starcoin_type_tag(),
     ));
 
     let output = Executor::execute_transaction(&chain_state, txn).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
-    for _i in 0..10 {
+    Ok(())
+}
+
+#[stest::test]
+fn test_block_metadata() -> Result<()> {
+    let chain_config = ChainNetwork::Dev.get_config();
+    let (_hash, state_set, _) = Executor::init_genesis(chain_config)?;
+    let storage = MockStateNodeStore::new();
+    let chain_state = ChainStateDB::new(Arc::new(storage), None);
+
+    chain_state
+        .apply(state_set)
+        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+
+    let account1 = Account::new();
+
+    for i in 0..chain_config.reward_delay + 1 {
+        debug!("execute block metadata: {}", i);
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        let txn2 = Transaction::BlockMetadata(BlockMetadata::new(
-            crypto::HashValue::zero(),
+        let txn = Transaction::BlockMetadata(BlockMetadata::new(
+            crypto::HashValue::random(),
             timestamp,
-            account1.address().clone(),
+            *account1.address(),
             Some(account1.auth_key_prefix()),
         ));
-
-        let output2 = Executor::execute_transaction(&chain_state, txn2).unwrap();
-        assert_eq!(KEEP_STATUS.clone(), *output2.status());
-
-        let balance = get_balance(account1.address().clone(), &chain_state);
-        debug!("balance= {:?}", balance);
-
-        let token = String::from("0x0::Starcoin::T");
-        let token_balance =
-            get_token_balance(account1.address().clone(), &chain_state, token)?.unwrap();
-        assert_eq!(balance, token_balance);
+        let output = Executor::execute_transaction(&chain_state, txn)?;
+        assert_eq!(KEEP_STATUS.clone(), *output.status());
     }
+
+    let balance = get_balance(*account1.address(), &chain_state);
+
+    assert!(balance > 0);
+
+    let token = String::from("0x0::STC::T");
+    let token_balance = get_token_balance(*account1.address(), &chain_state, token)?.unwrap();
+    assert_eq!(balance, token_balance);
 
     Ok(())
 }
@@ -321,7 +326,7 @@ fn get_token_balance(
     token: String,
 ) -> Result<Option<u64>> {
     let account_state_reader = AccountStateReader::new(state_db);
-    let type_tag = parse_type_tags(token.as_ref())?[0].clone().into();
+    let type_tag = parser::parse_type_tags(token.as_ref())?[0].clone();
     debug!("type_tag= {:?}", type_tag);
     account_state_reader.get_token_balance(&address, &type_tag)
 }

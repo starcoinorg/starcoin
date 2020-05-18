@@ -10,9 +10,8 @@ use starcoin_vm_types::{identifier::Identifier, language_storage::ModuleId};
 
 /// LBR
 static LBR_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LBR").unwrap());
-pub static LBR_MODULE: Lazy<ModuleId> = Lazy::new(|| {
-    ModuleId::new(account_config::core_code_address(), LBR_MODULE_NAME.clone()).into()
-});
+pub static LBR_MODULE: Lazy<ModuleId> =
+    Lazy::new(|| ModuleId::new(account_config::core_code_address(), LBR_MODULE_NAME.clone()));
 
 /// Starcoin
 static STARCOIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Starcoin").unwrap());
@@ -21,50 +20,50 @@ pub static STARCOIN_MODULE: Lazy<ModuleId> = Lazy::new(|| {
         account_config::core_code_address(),
         STARCOIN_MODULE_NAME.clone(),
     )
-    .into()
 });
+
+pub static ACCOUNT_MODULE_NAME: &str = "LibraAccount";
 
 /// The ModuleId for the Account module
 pub static ACCOUNT_MODULE: Lazy<ModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
+    ModuleId::new(
         account_config::core_code_address(),
-        Identifier::new("LibraAccount").unwrap(),
-    );
-    module_id.into()
+        Identifier::new(ACCOUNT_MODULE_NAME).unwrap(),
+    )
 });
 /// The ModuleId for the LibraTransactionTimeout module
 pub static LIBRA_TRANSACTION_TIMEOUT: Lazy<ModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
+    ModuleId::new(
         account_config::core_code_address(),
         Identifier::new("LibraTransactionTimeout").unwrap(),
-    );
-    module_id.into()
+    )
 });
+
+pub static SUBSIDY_CONF_MODULE_NAME: &str = "SubsidyConfig";
 
 /// The ModuleId for the subsidy config module
 pub static SUBSIDY_CONF_MODULE: Lazy<ModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
-        account_config::mint_address(),
-        Identifier::new("SubsidyConfig").unwrap(),
-    );
-    module_id.into()
+    ModuleId::new(
+        account_config::core_code_address(),
+        Identifier::new(SUBSIDY_CONF_MODULE_NAME).unwrap(),
+    )
 });
+
+pub static LIBRA_BLOCK_MODULE_NAME: &str = "LibraBlock";
 
 /// The ModuleId for the libra block module
 pub static LIBRA_BLOCK_MODULE: Lazy<ModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
+    ModuleId::new(
         account_config::core_code_address(),
-        Identifier::new("LibraBlock").unwrap(),
-    );
-    module_id.into()
+        Identifier::new(LIBRA_BLOCK_MODULE_NAME).unwrap(),
+    )
 });
 /// The ModuleId for the gas schedule module
 pub static GAS_SCHEDULE_MODULE: Lazy<ModuleId> = Lazy::new(|| {
-    let module_id = ModuleId::new(
+    ModuleId::new(
         account_config::core_code_address(),
         Identifier::new("GasSchedule").unwrap(),
-    );
-    module_id.into()
+    )
 });
 
 pub static GAS_SCHEDULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());

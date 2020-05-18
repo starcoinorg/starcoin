@@ -32,7 +32,7 @@ impl TreeReader for MockTreeStore {
                 if node_key_and_node.is_none()
                     || leaf_node.account_key() > node_key_and_node.as_ref().unwrap().1.account_key()
                 {
-                    node_key_and_node.replace((key.clone(), leaf_node.clone()));
+                    node_key_and_node.replace((*key, leaf_node.clone()));
                 }
             }
         }

@@ -18,7 +18,7 @@ impl ValueCodec for StateNode {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.0.encode()
     }
-
+    #[allow(clippy::all)]
     fn decode_value(data: &[u8]) -> Result<Self> {
         Node::decode(data).map(|n| StateNode(n))
     }

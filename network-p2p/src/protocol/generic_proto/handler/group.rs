@@ -531,7 +531,8 @@ impl ProtocolsHandler for NotifsHandler {
 
         ret
     }
-
+    //FIXME
+    #[allow(clippy::never_loop)]
     fn poll(
         &mut self,
         cx: &mut Context,

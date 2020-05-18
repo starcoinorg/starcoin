@@ -87,13 +87,13 @@ fn test_multiple_chain() {
     let (_root_hash3, _) = accumulator2.append(&leaves3).unwrap();
     accumulator2.flush().unwrap();
     assert_eq!(
-        accumulator.get_leaf(1).unwrap().unwrap(),
-        accumulator2.get_leaf(1).unwrap().unwrap()
+        accumulator.get_node_by_position(1).unwrap().unwrap(),
+        accumulator2.get_node_by_position(1).unwrap().unwrap()
     );
     for i in 3..accumulator2.num_nodes() {
         assert_ne!(
-            accumulator.get_leaf(i).unwrap().unwrap(),
-            accumulator2.get_leaf(i).unwrap().unwrap()
+            accumulator.get_node_by_position(i).unwrap().unwrap(),
+            accumulator2.get_node_by_position(i).unwrap().unwrap()
         );
     }
 }
@@ -174,8 +174,7 @@ fn test_multiple_tree() {
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
     let frozen_hash = accumulator.get_frozen_subtree_roots().unwrap();
-    let accumulator2 =
-        MerkleAccumulator::new(root_hash1, frozen_hash.clone(), 8, 15, arc_store.clone()).unwrap();
+    let accumulator2 = MerkleAccumulator::new(root_hash1, frozen_hash, 8, 15, arc_store).unwrap();
     let root_hash2 = accumulator2.root_hash();
     assert_eq!(root_hash1, root_hash2);
     proof_verify(&accumulator2, root_hash2, &batch1, 0);

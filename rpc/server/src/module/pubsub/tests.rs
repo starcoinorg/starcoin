@@ -19,6 +19,7 @@ use starcoin_chain::test_helper as chain_test_helper;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::dev::DevConsensus;
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{Genesis, PrivateKey};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
@@ -43,8 +44,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let txn = {
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
-        let txn = txn.as_signed_user_txn()?.clone();
-        txn
+        txn.as_signed_user_txn()?.clone()
     };
     let block_template = block_chain.create_block_template(
         *miner_account.address(),
@@ -154,14 +154,16 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
-        let txn = txn.as_signed_user_txn()?.clone();
-        txn
+        txn.as_signed_user_txn()?.clone()
     };
+    let txn_id = txn.crypto_hash();
     txpool.clone().add_txns(vec![txn]).await?;
     let mut receiver = receiver.compat();
     let res = receiver.next().await.transpose().unwrap();
-    let response = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":["ecd825d29cfa52299a10563146d2674409597b1c8ffed801a69de4bd8ad0e116"],"subscription":0}}"#;
-    assert_eq!(res, Some(response.into()));
+    let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;
+    let suffix = r#""],"subscription":0}}"#;
+    let response = format!("{}{}{}", prefix, txn_id.to_hex(), suffix);
+    assert_eq!(res, Some(response));
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;

@@ -34,7 +34,7 @@ impl BlockExecutor {
             match output.status() {
                 TransactionStatus::Discard(status) => {
                     return Err(BlockExecutorError::BlockTransactionDiscard(
-                        status.clone().into(),
+                        status.clone(),
                         txn_hash,
                     ))
                 }
@@ -44,7 +44,7 @@ impl BlockExecutor {
                     //TODO event root hash
                     vec_transaction_info.push(TransactionInfo::new(
                         txn.clone().id(),
-                        state_root.clone(),
+                        state_root,
                         HashValue::zero(),
                         output.events().to_vec(),
                         output.gas_used(),

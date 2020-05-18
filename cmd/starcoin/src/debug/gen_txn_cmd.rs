@@ -72,10 +72,7 @@ impl CommandAction for GenTxnCommand {
         let account_provider: Box<dyn Fn() -> (AccountAddress, Vec<u8>)> = if opt.random {
             Box::new(|| -> (AccountAddress, Vec<u8>) {
                 let auth_key = AuthenticationKey::random();
-                (
-                    auth_key.derived_address().into(),
-                    auth_key.prefix().to_vec(),
-                )
+                (auth_key.derived_address(), auth_key.prefix().to_vec())
             })
         } else {
             let to_account = match opt.to {
@@ -104,10 +101,12 @@ impl CommandAction for GenTxnCommand {
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(sender.address())?
-            .ok_or(format_err!(
-                "Can not find account on chain by address:{}",
-                sender.address()
-            ))?;
+            .ok_or_else(|| {
+                format_err!(
+                    "Can not find account on chain by address:{}",
+                    sender.address()
+                )
+            })?;
         let sequence_number = account_resource.sequence_number();
         let mut gen_result = GenerateResult::default();
         gen_result.count = opt.count;

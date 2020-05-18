@@ -41,7 +41,7 @@ pub enum ChainResponse {
     BlockTemplate(BlockTemplate),
     Block(Box<Block>),
     OptionBlock(Option<Box<Block>>),
-    OptionBlockInfo(Option<BlockInfo>),
+    OptionBlockInfo(Box<Option<BlockInfo>>),
     BlockHeader(Box<Option<BlockHeader>>),
     HashValue(HashValue),
     StartupInfo(StartupInfo),

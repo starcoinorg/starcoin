@@ -10,7 +10,10 @@ edition = "2018"
 anyhow = "1.0"
 backtrace = "0.3.46"
 serde = { version = "1.0" }
+serde_json = "1.0"
 crossbeam-channel = "0.4.0"
+tokio = { version = "0.2", features = ["full"] }
+futures = "0.3"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 structopt = "0.3.2"
 starcoin-logger = { path = "../../commons/logger" }
@@ -29,7 +32,7 @@ stdlib = {path = "../../vm/stdlib"}
 starcoin-vm-types = {path = "../../vm/types"}
 starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
-move-lang = { package="move-lang", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+move-lang = { package="move-lang", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
 hex = { version = "0.4.2", default-features = false }
 
 [[bin]]

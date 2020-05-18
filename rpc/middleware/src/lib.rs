@@ -38,7 +38,7 @@ struct RpcCallRecord {
 
 impl RpcCallRecord {
     pub fn new(id: String, method: Option<String>, call_type: CallType) -> Self {
-        let method = method.unwrap_or("".to_owned());
+        let method = method.unwrap_or_else(|| "".to_owned());
         let timer = RPC_HISTOGRAMS
             .with_label_values(&[method.as_str()])
             .start_timer();
@@ -120,7 +120,7 @@ impl<M: Metadata> Middleware<M> for MetricMiddleware {
         let record: RpcCallRecord = (&call).into();
         let fut = next(call, meta).map(move |output| {
             record.end(output_to_code(output.as_ref()));
-            return output;
+            output
         });
         // must declare type to convert type then wrap with Either.
         let box_fut: Self::CallFuture = Box::new(fut);

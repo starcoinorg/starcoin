@@ -9,14 +9,12 @@ use crate::{
 use bytecode_verifier::verifier::{
     verify_module_dependencies, verify_script_dependencies, VerifiedModule, VerifiedScript,
 };
-use libra_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use language_e2e_tests::executor::FakeExecutor;
 use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     block_metadata::BlockMetadata,
-    language_storage::ModuleId,
-    on_chain_config::VMPublishingOption,
     transaction::{
         Module as TransactionModule, RawTransaction, Script as TransactionScript,
         SignedTransaction, Transaction as LibraTransaction, TransactionOutput, TransactionStatus,
@@ -24,182 +22,36 @@ use libra_types::{
     vm_error::{StatusCode, VMStatus},
 };
 use mirai_annotations::checked_verify;
-use starcoin_language_e2e_tests::executor::FakeExecutor;
-use std::{
-    fmt::{self, Debug},
-    str::FromStr,
-    time::Duration,
+use move_core_types::{
+    gas_schedule::{GasAlgebra, GasConstants},
+    language_storage::ModuleId,
 };
-use types::account_config::starcoin_type_tag;
+use starcoin_config::ChainNetwork;
+use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use starcoin_logger::prelude::*;
+use std::time::Duration;
+use stdlib::{stdlib_modules, StdLibOptions};
 use vm::{
     file_format::{CompiledModule, CompiledScript},
-    gas_schedule::{GasAlgebra, MAXIMUM_NUMBER_OF_GAS_UNITS},
     views::ModuleView,
 };
 
-/// A transaction to be evaluated by the testing infra.
-/// Contains code and a transaction config.
-#[derive(Debug)]
-pub struct Transaction<'a> {
-    pub config: TransactionConfig<'a>,
-    pub input: String,
-}
-
-/// Commands that drives the operation of LibraVM. Such as:
-/// 1. Execute user transaction
-/// 2. Publish a new block metadata
-///
-/// In the future we will add more commands to mimic the full public API of LibraVM,
-/// including reloading the on-chain configuration that will affect the code path for LibraVM,
-/// cleaning the cache in the LibraVM, etc.
-#[derive(Debug)]
-pub enum Command<'a> {
-    Transaction(Transaction<'a>),
-    BlockMetadata(BlockMetadata),
-}
-
-/// Indicates one step in the pipeline the given move module/program goes through.
-//  Ord is derived as we need to be able to determine if one stage is before another.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub enum Stage {
-    Compiler,
-    Verifier,
-    Serializer,
-    Runtime,
-}
-
-impl FromStr for Stage {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "compiler" => Ok(Stage::Compiler),
-            "verifier" => Ok(Stage::Verifier),
-            "serializer" => Ok(Stage::Serializer),
-            "runtime" => Ok(Stage::Runtime),
-            _ => Err(ErrorKind::Other(format!("unrecognized stage '{:?}'", s)).into()),
-        }
-    }
-}
-
-/// Evaluation status: success or failure.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Status {
-    Success,
-    Failure,
-}
-
-#[derive(Debug, Clone)]
-pub enum OutputType {
-    CompiledModule(Box<CompiledModule>),
-    CompiledScript(Box<CompiledScript>),
-    CompilerLog(String),
-    TransactionOutput(Box<TransactionOutput>),
-}
-
-impl OutputType {
-    pub fn to_check_string(&self) -> String {
-        format!("{:?}", self)
-    }
-}
-
-pub type TransactionId = usize;
-
-/// An entry in the `EvaluationLog`.
-#[derive(Debug)]
-pub enum EvaluationOutput {
-    Transaction(TransactionId),
-    Stage(Stage),
-    Output(OutputType),
-    Error(Box<Error>),
-    Status(Status),
-}
-
-impl EvaluationOutput {
-    pub fn is_error(&self) -> bool {
-        matches!(self, Self::Error(_))
-    }
-}
-
-/// A log consisting of outputs from all stages and the final status.
-/// This is checked against the directives.
-#[derive(Debug, Default)]
-pub struct EvaluationLog {
-    pub outputs: Vec<EvaluationOutput>,
-}
-
-impl EvaluationLog {
-    pub fn new() -> Self {
-        Self { outputs: vec![] }
-    }
-
-    pub fn get_failed_transactions(&self) -> Vec<(usize, Stage)> {
-        let mut res = vec![];
-        let mut last_txn = None;
-        let mut last_stage = None;
-
-        for output in &self.outputs {
-            match output {
-                EvaluationOutput::Transaction(idx) => last_txn = Some(idx),
-                EvaluationOutput::Stage(stage) => last_stage = Some(stage),
-                EvaluationOutput::Status(Status::Failure) => match (last_txn, last_stage) {
-                    (Some(idx), Some(stage)) => res.push((*idx, *stage)),
-                    _ => unreachable!(),
-                },
-                _ => (),
-            }
-        }
-
-        res
-    }
-
-    pub fn append(&mut self, output: EvaluationOutput) {
-        self.outputs.push(output);
-    }
-}
-
-impl fmt::Display for OutputType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use OutputType::*;
-        match self {
-            CompiledModule(cm) => write!(f, "{:#?}", cm),
-            CompiledScript(cs) => write!(f, "{:#?}", cs),
-            CompilerLog(s) => write!(f, "{}", s),
-            TransactionOutput(output) => write!(f, "{:#?}", output),
-        }
-    }
-}
-
-impl fmt::Display for EvaluationOutput {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use EvaluationOutput::*;
-        match self {
-            Transaction(idx) => write!(f, "Transaction {}", idx),
-            Stage(stage) => write!(f, "Stage: {:?}", stage),
-            Output(output) => write!(f, "{}", output),
-            Error(error) => write!(f, "Error: {:#?}", error),
-            Status(status) => write!(f, "Status: {:?}", status),
-        }
-    }
-}
-
-impl fmt::Display for EvaluationLog {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, output) in self.outputs.iter().enumerate() {
-            writeln!(f, "[{}] {}", i, output)?;
-        }
-        Ok(())
-    }
-}
+pub use functional_tests::evaluator::{
+    Command, EvaluationLog, EvaluationOutput, OutputType, Stage, Status, Transaction, TransactionId,
+};
+use starcoin_types::account_config::STC;
 
 fn fetch_script_dependencies(
     exec: &mut FakeExecutor,
     script: &CompiledScript,
 ) -> Vec<VerifiedModule> {
-    let module = script.clone().into_module();
-    let idents = ModuleView::new(&module)
-        .module_handles()
-        .map(|handle_view| handle_view.module_id());
+    let inner = script.as_inner();
+    let idents = inner.module_handles.iter().map(|handle| {
+        ModuleId::new(
+            inner.address_identifiers[handle.address.0 as usize],
+            inner.identifiers[handle.name.0 as usize].clone(),
+        )
+    });
     fetch_dependencies(exec, idents)
 }
 
@@ -234,12 +86,9 @@ fn fetch_dependency(exec: &mut FakeExecutor, ident: ModuleId) -> Option<Verified
 pub fn verify_script(
     script: CompiledScript,
     deps: &[VerifiedModule],
-) -> std::result::Result<VerifiedScript, Vec<VMStatus>> {
-    let verified_script = VerifiedScript::new(script).map_err(|(_, errs)| errs)?;
-    let errs = verify_script_dependencies(&verified_script, deps);
-    if !errs.is_empty() {
-        return Err(errs);
-    }
+) -> std::result::Result<VerifiedScript, VMStatus> {
+    let verified_script = VerifiedScript::new(script).map_err(|(_, e)| e)?;
+    verify_script_dependencies(&verified_script, deps)?;
     Ok(verified_script)
 }
 
@@ -247,12 +96,9 @@ pub fn verify_script(
 pub fn verify_module(
     module: CompiledModule,
     deps: &[VerifiedModule],
-) -> std::result::Result<VerifiedModule, Vec<VMStatus>> {
-    let verified_module = VerifiedModule::new(module).map_err(|(_, errs)| errs)?;
-    let errs = verify_module_dependencies(&verified_module, deps);
-    if !errs.is_empty() {
-        return Err(errs);
-    }
+) -> std::result::Result<VerifiedModule, VMStatus> {
+    let verified_module = VerifiedModule::new(module).map_err(|(_, e)| e)?;
+    verify_module_dependencies(&verified_module, deps)?;
     Ok(verified_module)
 }
 
@@ -272,8 +118,24 @@ fn get_transaction_parameters<'a>(
     exec: &'a FakeExecutor,
     config: &'a TransactionConfig,
 ) -> TransactionParameters<'a> {
-    let account_resource = exec.read_account_resource(config.sender).unwrap();
-    let account_balance = exec.read_balance_resource(config.sender).unwrap();
+    let account_resource = exec
+        .read_account_resource(config.sender)
+        .expect("read_account_resource fail");
+    let account_balance = exec
+        .read_balance_resource(config.sender)
+        .expect("read_balance_resource fail");
+    let gas_unit_price = config.gas_price.unwrap_or(0);
+    let max_number_of_gas_units = GasConstants::default().maximum_number_of_gas_units;
+    let max_gas_amount = config.max_gas.unwrap_or_else(|| {
+        if gas_unit_price == 0 {
+            max_number_of_gas_units.get()
+        } else {
+            std::cmp::min(
+                max_number_of_gas_units.get(),
+                account_balance.coin() / gas_unit_price,
+            )
+        }
+    });
 
     TransactionParameters {
         sender_addr: *config.sender.address(),
@@ -282,10 +144,8 @@ fn get_transaction_parameters<'a>(
         sequence_number: config
             .sequence_number
             .unwrap_or_else(|| account_resource.sequence_number()),
-        max_gas_amount: config.max_gas.unwrap_or_else(|| {
-            std::cmp::min(MAXIMUM_NUMBER_OF_GAS_UNITS.get(), account_balance.coin())
-        }),
-        gas_unit_price: config.gas_price.unwrap_or(1),
+        max_gas_amount,
+        gas_unit_price,
         // TTL is 86400s. Initial time was set to 0.
         expiration_time: config
             .expiration_time
@@ -310,7 +170,6 @@ fn make_script_transaction(
         script,
         params.max_gas_amount,
         params.gas_unit_price,
-        starcoin_type_tag().into(),
         params.expiration_time,
     )
     .sign(params.privkey, params.pubkey.clone())?
@@ -334,7 +193,6 @@ fn make_module_transaction(
         module,
         params.max_gas_amount,
         params.gas_unit_price,
-        starcoin_type_tag().into(),
         params.expiration_time,
     )
     .sign(params.privkey, params.pubkey.clone())?
@@ -355,10 +213,16 @@ fn run_transaction(
                 if status.major_status == StatusCode::EXECUTED {
                     Ok(output)
                 } else {
+                    debug!("VM status:: {:?}", output.status().vm_status());
                     Err(ErrorKind::VMExecutionFailure(output).into())
                 }
             }
-            TransactionStatus::Discard(_) | TransactionStatus::Retry => {
+            TransactionStatus::Discard(status) => {
+                error!("VM status:: {:?}", status);
+                checked_verify!(output.write_set().is_empty());
+                Err(ErrorKind::DiscardedTransaction(output).into())
+            }
+            TransactionStatus::Retry => {
                 checked_verify!(output.write_set().is_empty());
                 Err(ErrorKind::DiscardedTransaction(output).into())
             }
@@ -449,11 +313,9 @@ fn eval_transaction<TComp: Compiler>(
             let deps = fetch_script_dependencies(exec, &compiled_script);
             let compiled_script = match verify_script(compiled_script, &deps) {
                 Ok(script) => script.into_inner(),
-                Err(errs) => {
-                    for err in errs.into_iter() {
-                        let err: Error = ErrorKind::VerificationError(err).into();
-                        log.append(EvaluationOutput::Error(Box::new(err)));
-                    }
+                Err(err) => {
+                    let err: Error = ErrorKind::VerificationError(err).into();
+                    log.append(EvaluationOutput::Error(Box::new(err)));
                     return Ok(Status::Failure);
                 }
             };
@@ -489,11 +351,9 @@ fn eval_transaction<TComp: Compiler>(
             let deps = fetch_module_dependencies(exec, &compiled_module);
             let compiled_module = match verify_module(compiled_module, &deps) {
                 Ok(module) => module.into_inner(),
-                Err(errs) => {
-                    for err in errs.into_iter() {
-                        let err: Error = ErrorKind::VerificationError(err).into();
-                        log.append(EvaluationOutput::Error(Box::new(err)));
-                    }
+                Err(err) => {
+                    let err: Error = ErrorKind::VerificationError(err).into();
+                    log.append(EvaluationOutput::Error(Box::new(err)));
                     return Ok(Status::Failure);
                 }
             };
@@ -555,20 +415,17 @@ pub fn eval<TComp: Compiler>(
 ) -> Result<EvaluationLog> {
     let mut log = EvaluationLog { outputs: vec![] };
 
+    let (genesis_write_set, _, _) = starcoin_vm_runtime::genesis::encode_genesis_write_set(
+        ChainNetwork::Dev.get_config(),
+        stdlib_modules(StdLibOptions::Staged),
+    );
     // Set up a fake executor with the genesis block and create the accounts.
-    let mut exec = if config.validator_set.payload().is_empty() {
-        // use the default validator set. this uses a precomputed validator set and is cheap
-        FakeExecutor::custom_genesis(TComp::stdlib(), None, VMPublishingOption::Open)
-    } else {
-        // use custom validator set. this requires dynamically generating a new genesis tx and
-        // is thus more expensive.
-        FakeExecutor::custom_genesis(
-            TComp::stdlib(),
-            Some(config.validator_set.clone()),
-            VMPublishingOption::Open,
-        )
-    };
+    let mut exec = FakeExecutor::from_genesis(&genesis_write_set);
     for data in config.accounts.values() {
+        let mut data = data.clone();
+        //just a hack, set default currency.
+        // TODO use a more graceful method.
+        data.set_balance_currency(STC.clone());
         exec.add_account_data(&data);
     }
 

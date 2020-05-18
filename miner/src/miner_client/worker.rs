@@ -167,7 +167,7 @@ fn argon_solver(
             return true;
         }
     }
-    return false;
+    false
 }
 
 fn dummy_solver(
@@ -183,5 +183,5 @@ fn dummy_solver(
         error!("Failed to send nonce: {:?}", e);
         return false;
     };
-    return true;
+    true
 }

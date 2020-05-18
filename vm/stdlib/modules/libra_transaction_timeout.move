@@ -1,4 +1,4 @@
-address 0x0{
+address 0x0 {
 
 module LibraTransactionTimeout {
   use 0x0::Transaction;
@@ -43,4 +43,5 @@ module LibraTransactionTimeout {
     current_block_time < txn_time_microseconds
   }
 }
+
 }

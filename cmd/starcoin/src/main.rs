@@ -53,9 +53,9 @@ fn run() -> Result<()> {
                         (client, node_handle)
                     }
                 }
-                Connect::RPC(address) => {
-                    info!("Try to connect node by rpc: {:?}", address);
-                    let client = RpcClient::connect_http(address)?;
+                Connect::WebSocket(address) => {
+                    info!("Try to connect node by websocket: {:?}", address);
+                    let client = RpcClient::connect_websocket(address)?;
                     (client, None)
                 }
             };
@@ -66,14 +66,10 @@ fn run() -> Result<()> {
         },
         |_, _, state| {
             let (_, _, handle) = state.into_inner();
-            match handle {
-                Some(handle) => match handle.join() {
-                    Err(e) => {
-                        error!("{:?}", e);
-                    }
-                    _ => {}
-                },
-                None => {}
+            if let Some(handle) = handle {
+                if let Err(e) = handle.join() {
+                    error!("{:?}", e);
+                }
             }
         },
         move |_, _, _| {
@@ -82,14 +78,10 @@ fn run() -> Result<()> {
         },
         |_, _, state| {
             let (_, _, handle) = state.into_inner();
-            match handle {
-                Some(handle) => match handle.stop() {
-                    Err(e) => {
-                        error!("{:?}", e);
-                    }
-                    _ => {}
-                },
-                None => {}
+            if let Some(handle) = handle {
+                if let Err(e) = handle.stop() {
+                    error!("{:?}", e);
+                }
             }
         },
     );
@@ -133,7 +125,13 @@ fn run() -> Result<()> {
                 .subcommand(dev::GetCoinCommand)
                 .subcommand(dev::CompileCommand)
                 .subcommand(dev::DeployCommand)
-                .subcommand(dev::ExecuteCommand),
+                .subcommand(dev::ExecuteCommand)
+                .subcommand(
+                    Command::with_name("subscribe")
+                        .subcommand(dev::SubscribeBlockCommand)
+                        .subcommand(dev::SubscribeEventCommand)
+                        .subcommand(dev::SubscribeNewTxnCommand),
+                ),
         )
         .command(
             Command::with_name("debug")

@@ -30,7 +30,7 @@ pub struct AccumulatorStorage {
 
 impl AccumulatorStorage {
     pub fn new(instance: StorageInstance) -> Self {
-        let node_store = AccumulatorNodeStore::new(instance.clone());
+        let node_store = AccumulatorNodeStore::new(instance);
         Self { node_store }
     }
 }

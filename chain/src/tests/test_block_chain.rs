@@ -31,7 +31,7 @@ async fn gen_master_chain(
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
     let txpool = {
-        let best_block_id = startup_info.master.get_head();
+        let best_block_id = *startup_info.get_master();
         TxPoolRef::start(
             node_config.tx_pool.clone(),
             storage.clone(),
@@ -59,7 +59,7 @@ async fn gen_master_chain(
                     .unwrap();
             let block_chain = BlockChain::<DevConsensus, Storage>::new(
                 node_config.clone(),
-                collection.get_master_chain_info(),
+                collection.get_head(),
                 storage.clone(),
                 Arc::downgrade(&collection),
             )
@@ -100,13 +100,7 @@ async fn test_block_chain_forks() {
     ::logger::init_for_test();
     let times = 5;
     let (chain, _conf) = gen_master_chain(times, true).await;
-    let mut parent_hash = chain
-        .clone()
-        .master_startup_info()
-        .await
-        .unwrap()
-        .master
-        .branch_id();
+    let mut parent_hash = chain.clone().master_block_by_number(0).await.unwrap().id();
     let miner_account = WalletAccount::random();
     if times > 0 {
         for i in 0..(times + 1) {
@@ -152,7 +146,7 @@ async fn test_chain_apply() -> Result<()> {
         None,
         vec![],
     )?;
-    let new_block = DevConsensus::create_block(config.clone(), &block_chain, block_template)?;
+    let new_block = DevConsensus::create_block(config, &block_chain, block_template)?;
     block_chain.apply(new_block)?;
     let header1 = block_chain.current_header();
     debug!("block 1 header: {:?}", header1);

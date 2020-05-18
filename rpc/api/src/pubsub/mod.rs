@@ -15,6 +15,7 @@ use crate::types::pubsub;
 /// $ netcat localhost 3030
 /// {"id":1,"jsonrpc":"2.0","method":"starcoin_subscribe","params":["newPendingTransactions"]}
 /// {"id":1,"jsonrpc":"2.0","method":"starcoin_subscribe","params":["events", {}]}
+#[allow(clippy::needless_return)]
 #[rpc(server)]
 pub trait StarcoinPubSub {
     /// RPC Metadata

@@ -1,4 +1,4 @@
-address 0x0{
+address 0x0 {
 
 module Transaction {
     native public fun gas_unit_price(): u64;

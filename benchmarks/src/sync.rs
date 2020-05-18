@@ -118,7 +118,8 @@ impl SyncBencher {
                                     headers.headers,
                                     bodies.bodies,
                                     infos.infos,
-                                );
+                                )
+                                .await;
                             }
 
                             if end {
@@ -171,7 +172,7 @@ async fn create_node(
     let genesis_hash = genesis.block().header().id();
     let genesis_startup_info = genesis.execute(storage.clone()).unwrap();
     let txpool = {
-        let best_block_id = genesis_startup_info.master.get_head();
+        let best_block_id = genesis_startup_info.get_master().clone();
         TxPoolRef::start(
             node_config.tx_pool.clone(),
             storage.clone(),
@@ -217,7 +218,7 @@ async fn create_node(
 
             let block_chain = BlockChain::<DummyConsensus, Storage>::new(
                 node_config.clone(),
-                collection.get_master_chain_info(),
+                collection.get_head(),
                 storage.clone(),
                 Arc::downgrade(&collection),
             )

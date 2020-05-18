@@ -33,6 +33,10 @@ use std::time::Duration;
 use tokio::runtime::Handle;
 use tokio::stream::StreamExt;
 
+/// This exit code means is that the node failed to start and required human intervention.
+/// Node start script can do auto task when meet this exist code.
+static EXIT_CODE_NEED_HELP: i32 = 120;
+
 pub struct NodeStartHandle<C>
 where
     C: Consensus + 'static,
@@ -41,6 +45,36 @@ where
     _sync_actor: Addr<SyncActor<C>>,
     _rpc_actor: Addr<RpcActor>,
     _miner_client: Option<Addr<MinerClientActor>>,
+}
+
+//TODO this method should in Genesis.
+fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
+    let genesis = match Genesis::load(config.data_dir()) {
+        Ok(Some(genesis)) => {
+            let expect_genesis = Genesis::build(config.net())?;
+            if genesis.block().header().id() != expect_genesis.block().header().id() {
+                error!("Genesis version mismatch, please clean you data_dir.");
+                std::process::exit(EXIT_CODE_NEED_HELP);
+            }
+            genesis
+        }
+        Err(e) => {
+            error!("Genesis file load error: {:?}", e);
+            std::process::exit(EXIT_CODE_NEED_HELP);
+        }
+        Ok(None) => {
+            if init {
+                let genesis = Genesis::build(config.net())?;
+                genesis.save(config.data_dir())?;
+                info!("Build and save new genesis: {}", genesis);
+                genesis
+            } else {
+                error!("Genesis file not exist, please clean you data_dir.");
+                std::process::exit(EXIT_CODE_NEED_HELP);
+            }
+        }
+    };
+    Ok(genesis)
 }
 
 pub async fn start<C>(
@@ -54,63 +88,47 @@ where
     let bus = BusActor::launch();
 
     let sync_event_receiver_future = bus.clone().channel::<SystemEvents>();
-
+    debug!("init storage.");
     let cache_storage = Arc::new(CacheStorage::new());
     let db_storage = Arc::new(DBStorage::new(config.storage.clone().dir()));
-    let storage = Arc::new(
-        Storage::new(StorageInstance::new_cache_and_db_instance(
-            cache_storage.clone(),
-            db_storage.clone(),
-        ))
-        .unwrap(),
-    );
-
-    let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
-
-    let (startup_info, genesis_hash) = match storage.get_startup_info()? {
-        Some(startup_info) => {
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        cache_storage.clone(),
+        db_storage.clone(),
+    ))?);
+    debug!("load startup_info.");
+    let (startup_info, genesis_hash) = match storage.get_startup_info() {
+        Ok(Some(startup_info)) => {
             info!("Get startup info from db");
             info!("Check genesis file.");
-            // Genesis may be change in dev and halley network.
-            let genesis = Genesis::load(config.data_dir())?
-                .expect("Load genesis file must exist in data_dir.");
-            let expect_genesis = Genesis::build(config.net())?;
-            if genesis.block().header().id() != expect_genesis.block().header().id() {
-                error!("Genesis version mismatch, please clean you data_dir.");
-                std::process::exit(120);
-            }
+            let genesis = load_and_check_genesis(&config, false)?;
             match storage.get_block(genesis.block().header().id())? {
                 Some(block) => {
                     if *genesis.block() == block {
                         info!("Check genesis db block ok!");
                     } else {
                         error!("Genesis db storage mismatch, please clean you data_dir.");
-                        std::process::exit(120);
+                        std::process::exit(EXIT_CODE_NEED_HELP);
                     }
                 }
                 _ => {
                     error!("Genesis block is not exist in db storage.");
-                    std::process::exit(120);
+                    std::process::exit(EXIT_CODE_NEED_HELP);
                 }
             }
             (startup_info, genesis.block().header().id())
         }
-        None => {
-            let genesis = match Genesis::load(config.data_dir())? {
-                Some(genesis) => {
-                    info!("Load genesis from data_dir: {}", genesis);
-                    genesis
-                }
-                None => {
-                    let genesis = Genesis::build(config.net())?;
-                    info!("Build genesis: {}", genesis);
-                    genesis.save(config.data_dir())?;
-                    genesis
-                }
-            };
+        Ok(None) => {
+            let genesis = load_and_check_genesis(&config, true)?;
             let genesis_hash = genesis.block().header().id();
             let startup_info = genesis.execute(storage.clone())?;
             (startup_info, genesis_hash)
+        }
+        Err(e) => {
+            error!(
+                "Load startup info fail: {:?}, please check or clean data_dir.",
+                e
+            );
+            std::process::exit(EXIT_CODE_NEED_HELP);
         }
     };
     info!("Start chain with startup info: {}", startup_info);
@@ -131,16 +149,17 @@ where
         }
     };
 
+    let head_block_hash = *startup_info.get_master();
+
     let txpool = {
-        let best_block_id = startup_info.master.get_head();
         TxPoolRef::start(
             config.tx_pool.clone(),
             storage.clone(),
-            best_block_id,
+            head_block_hash,
             bus.clone(),
         )
     };
-    let head_block_hash = startup_info.master.get_head();
+
     let head_block = match storage.get_block(head_block_hash)? {
         Some(block) => block,
         None => panic!("can't get block by hash {}", head_block_hash),
@@ -158,7 +177,7 @@ where
         peer_id.clone(),
         head_block.header().number(),
         head_block_info.get_total_difficulty(),
-        startup_info.master.get_head(),
+        head_block_hash,
     );
     let network_config = config.clone();
     let network_bus = bus.clone();
@@ -176,7 +195,7 @@ where
         .await?;
 
     let head_block = storage
-        .get_block(startup_info.master.get_head())?
+        .get_block(startup_info.get_master().clone())?
         .expect("Head block must exist.");
 
     let chain_state_service = ChainStateActor::launch(
@@ -185,6 +204,8 @@ where
         storage.clone(),
         Some(head_block.header().state_root()),
     )?;
+
+    let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
 
     let chain_config = config.clone();
     let chain_storage = storage.clone();

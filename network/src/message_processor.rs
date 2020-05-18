@@ -30,6 +30,8 @@ impl<T> MessageFuture<T> {
 impl<T> Future for MessageFuture<T> {
     type Output = Result<T>;
 
+    //FIXME
+    #[allow(clippy::never_loop)]
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         while let Poll::Ready(v) = Pin::new(&mut self.rx).poll_next(cx) {
             match v {

@@ -105,7 +105,7 @@ pub fn test_state_proof() -> Result<()> {
     let expected_value = Some(vec![0u8, 0, 0].into());
     proof.verify(new_root_hash, account1, expected_value.as_ref())?;
 
-    let _ = state.remove(&account1);
+    state.remove(&account1);
     let new_root_hash = state.commit()?;
     let (value, proof) = state.get_with_proof(&account1)?;
     assert!(value.is_none());

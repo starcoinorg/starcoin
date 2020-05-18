@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{chain_state::StateStore, system_module_names::*};
-use crypto::ed25519::Ed25519Signature;
 use libra_state_view::StateView;
 use libra_types::{
     access_path::AccessPath as LibraAccessPath,
     account_address::AccountAddress as LibraAccountAddress,
+    account_config as libra_account_config,
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
     },
@@ -41,7 +41,6 @@ use starcoin_vm_types::{
     transaction_metadata::TransactionMetadata,
     values::Value,
 };
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
@@ -65,7 +64,11 @@ pub struct StarcoinVM {
     gas_schedule: Option<CostTable>,
 }
 
-pub static ZERO_TABLE: Lazy<CostTable> = Lazy::new(|| zero_cost_schedule());
+pub static ZERO_TABLE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
+
+//TODO define as argument.
+pub static DEFAULT_CURRENCY_TY: Lazy<TypeTag> =
+    Lazy::new(|| libra_account_config::type_tag_for_currency_code(account_config::STC.to_owned()));
 
 impl StarcoinVM {
     pub fn new() -> Self {
@@ -88,14 +91,8 @@ impl StarcoinVM {
             name: GAS_SCHEDULE_NAME.to_owned(),
             type_params: vec![],
         };
-        // .move_vm
-        // .resolve_struct_def_by_name(&GAS_SCHEDULE_MODULE, &GAS_SCHEDULE_NAME, &mut ctx, &[])
-        // .map_err(|_| {
-        //     LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
-        //         .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_MODULE)
-        // })?;
 
-        let access_path = create_access_path(address.into(), gas_struct_ty);
+        let access_path = create_access_path(address, gas_struct_ty);
 
         let data_blob = data_cache
             .get(&access_path)
@@ -245,14 +242,14 @@ impl StarcoinVM {
                         script.ty_args().to_vec(),
                         script.args().to_vec(),
                     )),
-                    Err(e) => Err(e.into()),
+                    Err(e) => Err(e),
                 }
             }
             TransactionPayload::Module(module) => {
                 let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
                 match result {
                     Ok(_) => Ok(VerifiedTranscationPayload::Module(module.code().to_vec())),
-                    Err(e) => Err(e.into()),
+                    Err(e) => Err(e),
                 }
             }
             _ => Err(VMStatus::new(StatusCode::UNREACHABLE)),
@@ -304,7 +301,7 @@ impl StarcoinVM {
                 ////////
                 let gas_schedule = match self.get_gas_schedule() {
                     Ok(s) => s,
-                    Err(e) => return discard_libra_error_output(e.into()),
+                    Err(e) => return discard_libra_error_output(e),
                 };
                 self.move_vm.execute_script(
                     s,
@@ -357,7 +354,7 @@ impl StarcoinVM {
                 gas_schedule,
                 chain_state,
                 &txn_data,
-                vec![],
+                vec![DEFAULT_CURRENCY_TY.clone()],
                 vec![
                     Value::u64(txn_sequence_number),
                     Value::vector_u8(txn_public_key),
@@ -380,7 +377,7 @@ impl StarcoinVM {
         let gas_remaining = chain_state.remaining_gas().get();
         let gas_schedule = match self.get_gas_schedule() {
             Ok(s) => s,
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         };
         self.move_vm.execute_function(
             &ACCOUNT_MODULE,
@@ -388,7 +385,7 @@ impl StarcoinVM {
             gas_schedule,
             chain_state,
             &txn_data,
-            vec![],
+            vec![DEFAULT_CURRENCY_TY.clone()],
             vec![
                 Value::u64(txn_sequence_number),
                 Value::u64(txn_gas_price),
@@ -404,7 +401,7 @@ impl StarcoinVM {
         block_metadata: BlockMetadata,
     ) -> VMResult<LibraTransactionOutput> {
         let mut txn_data = TransactionMetadata::default();
-        txn_data.sender = account_config::mint_address().into();
+        txn_data.sender = account_config::mint_address();
         txn_data.max_gas_amount = GasUnits::new(std::u64::MAX);
 
         let mut interpreter_context =
@@ -412,15 +409,14 @@ impl StarcoinVM {
         let gas_schedule = zero_cost_schedule();
 
         if let Ok((id, timestamp, author, auth)) = block_metadata.into_inner() {
-            let previous_vote: BTreeMap<LibraAccountAddress, Ed25519Signature> = BTreeMap::new();
-            let vote_maps = scs::to_bytes(&previous_vote).unwrap();
+            let vote_maps = vec![];
             let round = 0u64;
             let args = vec![
                 Value::u64(round),
                 Value::u64(timestamp),
                 Value::vector_u8(id),
-                Value::vector_u8(vote_maps),
-                Value::address(author.into()),
+                Value::vector_address(vote_maps),
+                Value::address(author),
                 match auth {
                     Some(prefix) => Value::vector_u8(prefix),
                     None => Value::vector_u8(Vec::new()),
@@ -481,7 +477,7 @@ impl StarcoinVM {
                             Ok(payload) => {
                                 self.execute_verified_payload(&mut data_cache, &txn_data, payload)
                             }
-                            Err(e) => discard_libra_error_output(e.into()),
+                            Err(e) => discard_libra_error_output(e),
                         };
 
                         if let LibraTransactionStatus::Keep(_) = result.status() {
@@ -503,6 +499,7 @@ impl StarcoinVM {
                 TransactionOutput::from(result)
             }
             Transaction::StateSet(state_set) => {
+                //TODO add check for state_set.
                 let result_status = match chain_state.apply(state_set) {
                     Ok(_) => KEEP_STATUS.clone(),
                     Err(_) => DISCARD_STATUS.clone(),
@@ -535,7 +532,7 @@ fn convert_txn_args(args: Vec<TransactionArgument>) -> Vec<Value> {
     args.into_iter()
         .map(|arg| match arg {
             TransactionArgument::U64(i) => Value::u64(i),
-            TransactionArgument::Address(a) => Value::address(a.into()),
+            TransactionArgument::Address(a) => Value::address(a),
             TransactionArgument::Bool(b) => Value::bool(b),
             TransactionArgument::U8Vector(v) => Value::vector_u8(v),
         })

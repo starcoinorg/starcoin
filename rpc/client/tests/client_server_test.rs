@@ -20,9 +20,9 @@ fn test_multi_client() -> Result<()> {
     let mut system = System::new("test");
 
     let config = Arc::new(NodeConfig::random_for_test());
-    let http_address = config.rpc.http_address.as_ref().unwrap();
+    let ws_address = config.rpc.ws_address.as_ref().unwrap();
     let ipc_file = config.rpc.get_ipc_file().to_path_buf();
-    let url = format!("http://{}", http_address.to_string());
+    let url = format!("ws://{}", ws_address.to_string());
     debug!("url:{}", url);
     debug!("data_dir:{:?}", config.data_dir());
 
@@ -39,8 +39,8 @@ fn test_multi_client() -> Result<()> {
             info!("client thread start.");
             std::thread::sleep(Duration::from_millis(300));
 
-            let http_client = RpcClient::connect_http(url.as_str()).unwrap();
-            let status = http_client.node_status().unwrap();
+            let ws_client = RpcClient::connect_websocket(url.as_str()).unwrap();
+            let status = ws_client.node_status().unwrap();
             info!("http_client status: {}", status);
             assert!(status);
 

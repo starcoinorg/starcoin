@@ -4,7 +4,6 @@
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, Result};
-use dirs;
 use libp2p::core::Multiaddr;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -69,7 +68,7 @@ pub enum Connect {
     /// Connect by ipc file path, if Path is absent, use default ipc file.
     IPC(Option<PathBuf>),
     /// Connect by json rpc address.
-    RPC(String),
+    WebSocket(String),
 }
 
 impl Default for Connect {
@@ -85,8 +84,8 @@ impl FromStr for Connect {
         if s.is_empty() {
             return Ok(Self::default());
         }
-        if s.starts_with("http://") {
-            Ok(Connect::RPC(s.to_string()))
+        if s.starts_with("ws://") || s.starts_with("wss://") {
+            Ok(Connect::WebSocket(s.to_string()))
         } else {
             Ok(Connect::IPC(Some(PathBuf::from_str(s)?)))
         }

@@ -15,7 +15,7 @@ bytes = "0.5"
 chrono = { version = "0.4.7", default-features = false, features = ["clock"] }
 hex = { version = "0.4.2", default-features = false }
 itertools = { version = "0.8.0", default-features = false }
-once_cell = "1.2.0"
+once_cell = "1.4.0"
 mirai-annotations = "1.5.0"
 parity-multiaddr = "0.6.0"
 proptest = { version = "0.9.4", default-features = false, optional = true }
@@ -32,10 +32,10 @@ num_enum = "0.4.1"
 actix = "0.9"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
-libra-types = { git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+libra-types = { git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
 libp2p = "0.18.1"
 starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3"
-
+starcoin-accumulator = {path = "../core/accumulator"}
 
 ethereum-types = "0.2.3"

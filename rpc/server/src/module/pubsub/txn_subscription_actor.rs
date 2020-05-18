@@ -4,8 +4,6 @@
 use super::notify;
 use super::pubsub;
 use super::TxnSubscribers;
-
-use actix;
 use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
 use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolAsyncService;

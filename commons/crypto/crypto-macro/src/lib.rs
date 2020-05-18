@@ -26,7 +26,7 @@ pub fn crypto_hash(input: TokenStream) -> TokenStream {
             type Hasher = #hasher_name;
             fn hash(&self) -> starcoin_crypto::HashValue {
                 let mut state = Self::Hasher::default();
-                state.write(scs::to_bytes(self)
+                state.update(scs::to_bytes(self)
                     .expect("Serialization should work.")
                     .as_slice());
                 state.finish()
@@ -82,9 +82,21 @@ pub fn hasher_dispatch(input: TokenStream) -> TokenStream {
                 self.0.finish()
             }
 
-            fn write(&mut self, bytes: &[u8]) -> &mut Self {
-                self.0.write(bytes);
+            fn update(&mut self, bytes: &[u8]) -> &mut Self {
+                self.0.update(bytes);
                 self
+            }
+        }
+
+        impl std::io::Write for #hasher_name {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                use starcoin_crypto::hash::CryptoHasher;
+
+                self.0.update(bytes);
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
             }
         }
 

@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metadata::Metadata;
-use crate::module::pubsub::notify::SubscriberNotifyActor;
-use subscribers::Subscribers;
-use txn_subscription_actor::TransactionSubscriptionActor;
-
 use crate::module::pubsub::event_subscription_actor::ChainNotifyHandlerActor;
+use crate::module::pubsub::notify::SubscriberNotifyActor;
 use actix::Addr;
 use jsonrpc_core::Result;
 use jsonrpc_pubsub::typed::Subscriber;
@@ -20,6 +17,8 @@ use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::filter::Filter;
 use std::convert::TryInto;
 use std::sync::{atomic, Arc};
+use subscribers::Subscribers;
+use txn_subscription_actor::TransactionSubscriptionActor;
 
 mod event_subscription_actor;
 mod notify;
@@ -49,7 +48,7 @@ impl StarcoinPubSub for PubSubImpl {
     ) {
         let error = match (kind, params) {
             (pubsub::Kind::NewHeads, None) => {
-                // TODO: implement me.
+                self.service.add_new_header_subscription(subscriber);
                 return;
             }
             (pubsub::Kind::NewHeads, _) => {
@@ -92,6 +91,12 @@ pub struct PubSubService {
     new_header_subscribers: NewHeaderSubscribers,
 }
 
+impl Default for PubSubService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PubSubService {
     pub fn new() -> Self {
         let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
@@ -101,7 +106,7 @@ impl PubSubService {
         let new_header_subscribers = Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
         Self {
             spawner: actix_rt::Arbiter::new(),
-            subscriber_id: subscriber_id.clone(),
+            subscriber_id,
             transactions_subscribers,
             events_subscribers,
             new_header_subscribers,
@@ -157,7 +162,7 @@ impl PubSubService {
     pub fn unsubscribe(&self, id: SubscriptionId) -> Result<bool> {
         let res1 = self.events_subscribers.write().remove(&id).is_some();
         let res2 = self.transactions_subscribers.write().remove(&id).is_some();
-
-        Ok(res1 || res2)
+        let res3 = self.new_header_subscribers.write().remove(&id).is_some();
+        Ok(res1 || res2 || res3)
     }
 }

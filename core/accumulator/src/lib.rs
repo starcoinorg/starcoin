@@ -31,6 +31,8 @@ pub trait Accumulator {
     fn append(&self, leaves: &[HashValue]) -> Result<(HashValue, u64), Error>;
     /// Get leaf node by index.
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error>;
+    /// Get node by position.
+    fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>>;
     /// Get proof by leaf index.
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
     /// Get accumulator node by hash.
@@ -114,7 +116,15 @@ impl Accumulator for MerkleAccumulator {
 
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error> {
         Ok(Some(
-            self.tree.lock().get_node_hash(NodeIndex::new(leaf_index))?,
+            self.tree
+                .lock()
+                .get_node_hash(NodeIndex::from_leaf_index(leaf_index))?,
+        ))
+    }
+
+    fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>, Error> {
+        Ok(Some(
+            self.tree.lock().get_node_hash(NodeIndex::new(position))?,
         ))
     }
 

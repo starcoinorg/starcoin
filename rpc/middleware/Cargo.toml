@@ -13,7 +13,7 @@ thiserror = "1.0"
 # for RpcError convert.
 failure = "0.1"
 # for ipc connect
-once_cell = "1.3"
+once_cell = "1.4.0"
 jsonrpc-core = "14.0"
 futures = { version = "0.3", features = ["compat"] }
 futures01 = "0.1.29"

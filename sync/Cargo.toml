@@ -10,7 +10,7 @@ edition = "2018"
 chain = {path = "../chain", package="starcoin-chain" }
 anyhow = "1.0"
 actix = "0.9"
-rand = "0.7"
+rand = "0.7.3"
 config = {path = "../config", package="starcoin-config"}
 network = {path = "../network", package="starcoin-network"}
 types = {path = "../types", package = "starcoin-types" }
@@ -36,7 +36,7 @@ async-trait = "0.1"
 starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-accumulator = {package="starcoin-accumulator", path = "../core/accumulator"}
 starcoin-metrics = {path = "../commons/metrics"}
-once_cell = "1.2.0"
+once_cell = "1.4.0"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

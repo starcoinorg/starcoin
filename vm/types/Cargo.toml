@@ -8,11 +8,11 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-once_cell = "1.2.0"
-move-core-types = {git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-move-vm-types = {git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-libra_types = { package="libra-types", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
-vm = { package="vm", git = "https://github.com/libra/libra", rev="191b40dc7108b1213150fa3d999aedc2f70394fe" }
+once_cell = "1.4.0"
+move-core-types = {git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+move-vm-types = {git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+libra_types = { package="libra-types", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
+vm = { package="vm", git = "https://github.com/libra/libra", rev="bf5c2c9b81444d6b3079c0cb7c175028beab008d" }
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 
 

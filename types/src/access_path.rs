@@ -368,7 +368,7 @@ impl Into<libra_types::access_path::AccessPath> for AccessPath {
             DataType::CODE => path.push(CODE_TAG),
         }
         path.extend(self.data_hash.to_vec());
-        libra_types::access_path::AccessPath::new(self.address.into(), path)
+        libra_types::access_path::AccessPath::new(self.address, path)
     }
 }
 
@@ -382,7 +382,7 @@ impl From<libra_types::access_path::AccessPath> for AccessPath {
         };
         let hash = HashValue::from_slice(path[1..=HashValue::LENGTH].as_ref())
             .expect("access_path must contains HashValue");
-        Self::new(libra_access_path.address.into(), data_type, hash)
+        Self::new(libra_access_path.address, data_type, hash)
     }
 }
 
@@ -411,7 +411,7 @@ mod tests {
         assert_eq!(access_path0, access_path2);
 
         let access_path3 = libra_types::access_path::AccessPath::new_for_account(
-            account_config::association_address().into(),
+            account_config::association_address(),
         );
         let access_path4: AccessPath = access_path3.clone().into();
         let access_path5: libra_types::access_path::AccessPath = access_path4.clone().into();

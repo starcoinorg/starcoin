@@ -60,11 +60,7 @@ impl Actor for OndemandPacemaker {
 impl Handler<SystemEvents> for OndemandPacemaker {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            _ => {}
-        }
-    }
+    fn handle(&mut self, _msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {}
 }
 
 impl StreamHandler<TransactionStatusEvent> for OndemandPacemaker {

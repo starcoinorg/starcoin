@@ -13,12 +13,10 @@ pub fn start_txpool() -> TxPoolRef {
     let genesis = Genesis::build(node_config.net()).unwrap();
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
-    let pool = TxPoolRef::start(
+    TxPoolRef::start(
         TxPoolConfig::default(),
-        storage.clone(),
-        startup_info.master.get_head(),
+        storage,
+        *startup_info.get_master(),
         bus,
-    );
-
-    pool
+    )
 }

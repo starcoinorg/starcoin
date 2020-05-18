@@ -2,12 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metadata::Metadata;
-
 use jsonrpc_http_server::hyper;
-use jsonrpc_ipc_server;
 use jsonrpc_pubsub::Session;
-use jsonrpc_tcp_server;
-use jsonrpc_ws_server;
 use std::sync::Arc;
 
 /// Common HTTP & IPC & TCP metadata extractor.

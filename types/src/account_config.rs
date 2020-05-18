@@ -6,11 +6,12 @@
 
 use crate::{access_path::AccessPath, account_address::AccountAddress};
 use anyhow::Result;
-use libra_types::account_config::from_currency_code_string;
+use libra_types::account_config::{coin_struct_name, from_currency_code_string};
 use once_cell::sync::Lazy;
 use scs::SCSCodec;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::HashValue;
+use starcoin_vm_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use starcoin_vm_types::{
     identifier::{IdentStr, Identifier},
     language_storage::{StructTag, TypeTag},
@@ -19,7 +20,7 @@ use std::convert::{TryFrom, TryInto};
 
 //TODO rename account and coin name.
 // Starcoin
-static STARCOIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Starcoin").unwrap());
+static STARCOIN_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("STC").unwrap());
 static STARCOIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 // LBR
 static LBR_MODULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("LBR").unwrap());
@@ -44,6 +45,21 @@ pub static ACCOUNT_RESOURCE_PATH: Lazy<HashValue> =
 /// Path to the Balance resource
 pub static BALANCE_RESOURCE_PATH: Lazy<HashValue> =
     Lazy::new(|| AccessPath::resource_access_vec(&account_balance_struct_tag()));
+
+pub const STC_NAME: &str = "STC";
+pub static STC: Lazy<Identifier> = Lazy::new(|| Identifier::new(STC_NAME).unwrap());
+pub static STC_MODULE: Lazy<ModuleId> =
+    Lazy::new(|| ModuleId::new(CORE_CODE_ADDRESS, STC.to_owned()));
+pub static STC_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
+
+pub fn stc_type_tag() -> TypeTag {
+    TypeTag::Struct(StructTag {
+        address: CORE_CODE_ADDRESS,
+        module: from_currency_code_string(STC_NAME).unwrap(),
+        name: coin_struct_name().to_owned(),
+        type_params: vec![],
+    })
+}
 
 pub fn starcoin_module_name() -> &'static IdentStr {
     &*STARCOIN_MODULE_NAME
@@ -83,6 +99,11 @@ pub fn received_event_name() -> &'static IdentStr {
 
 pub fn core_code_address() -> AccountAddress {
     AccountAddress::default()
+}
+
+pub fn burn_account_address() -> AccountAddress {
+    AccountAddress::from_hex_literal("0xD1E")
+        .expect("Parsing valid hex literal should always succeed")
 }
 
 pub fn association_address() -> AccountAddress {

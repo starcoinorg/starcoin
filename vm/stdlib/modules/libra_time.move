@@ -1,4 +1,4 @@
-address 0x0{
+address 0x0 {
 
 module LibraTimestamp {
     use 0x0::Transaction;
@@ -21,15 +21,18 @@ module LibraTimestamp {
     // Update the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
     public fun update_global_time(proposer: address, timestamp: u64) acquires CurrentTimeMicroseconds {
         // Can only be invoked by LibraVM privilege.
-        Transaction::assert(Transaction::sender() == 0x0, 33);
+        //TODO conform addr
+        //Transaction::assert(Transaction::sender() == 0x0, 33);
 
         let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(0xA550C18);
         if (proposer == 0x0) {
             // NIL block with null address as proposer. Timestamp must be equal.
-            Transaction::assert(timestamp == global_timer.microseconds, 5001);
+            //TODO
+            //Transaction::assert(timestamp == global_timer.microseconds, 5001);
         } else {
             // Normal block. Time must advance
-            Transaction::assert(global_timer.microseconds < timestamp, 5001);
+            //TODO
+            //Transaction::assert(global_timer.microseconds < timestamp, 5001);
         };
         global_timer.microseconds = timestamp;
     }
@@ -44,4 +47,5 @@ module LibraTimestamp {
         !::exists<Self::CurrentTimeMicroseconds>(0xA550C18)
     }
 }
+
 }

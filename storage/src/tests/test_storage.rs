@@ -46,7 +46,7 @@ fn test_open_read_only() {
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
     assert!(result.is_ok());
     let path = tmpdir.as_ref().join("starcoindb");
-    let db = DBStorage::open(path.clone(), true).unwrap();
+    let db = DBStorage::open(path, true).unwrap();
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
     assert!(result.is_err());
     let result = db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
@@ -59,8 +59,8 @@ fn test_storage() {
     let tmpdir = libra_temppath::TempPath::new();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        cache_storage.clone(),
-        db_storage.clone(),
+        cache_storage,
+        db_storage,
     ))
     .unwrap();
     let transaction_info1 = TransactionInfo::new(
@@ -159,7 +159,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
     let cache_storage = Arc::new(CacheStorage::new());
     let storage2 = Storage::new(StorageInstance::new_cache_and_db_instance(
         cache_storage.clone(),
-        db_storage.clone(),
+        db_storage,
     ))
     .unwrap();
 

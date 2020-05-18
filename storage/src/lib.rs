@@ -98,7 +98,7 @@ pub trait BlockStore {
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>>;
 
-    fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()>;
+    fn commit_block(&self, block: Block) -> Result<()>;
 
     fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
 
@@ -180,7 +180,7 @@ impl Storage {
                 instance.clone(),
                 STARTUP_INFO_PREFIX_NAME,
             )),
-            branch_storage: BranchStorage::new(instance.clone()),
+            branch_storage: BranchStorage::new(instance),
         })
     }
 }
@@ -250,8 +250,8 @@ impl BlockStore for Storage {
         self.block_storage.get_number(number)
     }
 
-    fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()> {
-        self.block_storage.commit_branch_block(branch_id, block)
+    fn commit_block(&self, block: Block) -> Result<()> {
+        self.block_storage.commit_block(block)
     }
 
     fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
