@@ -11,9 +11,8 @@ use starcoin_crypto::{
 
 use crate::accumulator_info::AccumulatorInfo;
 use crate::{U256, U512};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::create_literal_hash;
+use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
 
@@ -48,6 +47,8 @@ pub struct BlockHeader {
     auth_key_prefix: Option<Vec<u8>>,
     /// The transaction accumulator root hash after executing this block.
     accumulator_root: HashValue,
+    /// The parent block accumulator root hash.
+    parent_block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     state_root: HashValue,
     /// Gas used for contracts execution.
@@ -63,6 +64,7 @@ pub struct BlockHeader {
 impl BlockHeader {
     pub fn new<H>(
         parent_hash: HashValue,
+        parent_block_accumulator_root: HashValue,
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
@@ -78,6 +80,7 @@ impl BlockHeader {
     {
         Self::new_with_auth(
             parent_hash,
+            parent_block_accumulator_root,
             timestamp,
             number,
             author,
@@ -93,6 +96,7 @@ impl BlockHeader {
 
     pub fn new_with_auth<H>(
         parent_hash: HashValue,
+        parent_block_accumulator_root: HashValue,
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
@@ -109,6 +113,7 @@ impl BlockHeader {
     {
         BlockHeader {
             parent_hash,
+            parent_block_accumulator_root,
             number,
             timestamp,
             author,
@@ -174,6 +179,10 @@ impl BlockHeader {
         self.difficulty
     }
 
+    pub fn parent_block_accumulator_root(&self) -> HashValue {
+        self.parent_block_accumulator_root
+    }
+
     pub fn genesis_block_header(
         accumulator_root: HashValue,
         state_root: HashValue,
@@ -183,6 +192,7 @@ impl BlockHeader {
         Self {
             //TODO should use a placeholder hash?
             parent_hash: HashValue::zero(),
+            parent_block_accumulator_root: *ACCUMULATOR_PLACEHOLDER_HASH,
             //TODO hard code a genesis block time.
             timestamp: 0,
             number: 0,
@@ -287,10 +297,6 @@ impl Block {
         }
     }
 }
-
-/// Default ID of `BlockInfo`.
-pub static BLOCK_INFO_DEFAULT_ID: Lazy<HashValue> =
-    Lazy::new(|| create_literal_hash("BLOCK_INFO_DEFAULT_ID"));
 
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
@@ -434,6 +440,8 @@ pub struct BlockTemplate {
     pub auth_key_prefix: Option<Vec<u8>>,
     /// The accumulator root hash after executing this block.
     pub accumulator_root: HashValue,
+    /// The parent block accumulator root hash.
+    pub parent_block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     pub state_root: HashValue,
     /// Gas used for contracts execution.
@@ -447,6 +455,7 @@ pub struct BlockTemplate {
 impl BlockTemplate {
     pub fn new(
         parent_hash: HashValue,
+        parent_block_accumulator_root: HashValue,
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
@@ -459,6 +468,7 @@ impl BlockTemplate {
     ) -> Self {
         Self {
             parent_hash,
+            parent_block_accumulator_root,
             timestamp,
             number,
             author,
@@ -477,6 +487,7 @@ impl BlockTemplate {
     {
         let header = BlockHeader::new_with_auth(
             self.parent_hash,
+            self.parent_block_accumulator_root,
             self.timestamp,
             self.number,
             self.author,
@@ -499,6 +510,7 @@ impl BlockTemplate {
     {
         BlockHeader::new_with_auth(
             self.parent_hash,
+            self.parent_block_accumulator_root,
             self.timestamp,
             self.number,
             self.author,
@@ -515,6 +527,7 @@ impl BlockTemplate {
     pub fn from_block(block: Block) -> Self {
         BlockTemplate {
             parent_hash: block.header().parent_hash,
+            parent_block_accumulator_root: block.header().parent_block_accumulator_root(),
             timestamp: block.header().timestamp,
             number: block.header().number,
             author: block.header().author,

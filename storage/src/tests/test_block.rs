@@ -32,6 +32,7 @@ fn test_block() {
 
     let block_header1 = BlockHeader::new(
         HashValue::random(),
+        HashValue::random(),
         dt.timestamp_nanos() as u64,
         1,
         AccountAddress::random(),
@@ -90,6 +91,7 @@ fn test_block_number() {
     let dt = Local::now();
 
     let block_header1 = BlockHeader::new(
+        HashValue::random(),
         HashValue::random(),
         dt.timestamp_nanos() as u64,
         0,
@@ -163,6 +165,7 @@ fn test_branch_number() {
 
     let block_header1 = BlockHeader::new(
         HashValue::random(),
+        HashValue::random(),
         dt.timestamp_nanos() as u64,
         1,
         AccountAddress::random(),
@@ -232,6 +235,7 @@ fn test_block_branch_hashes() {
 
     let block_header0 = BlockHeader::new(
         HashValue::random(),
+        HashValue::random(),
         dt.timestamp_nanos() as u64,
         0,
         AccountAddress::random(),
@@ -250,6 +254,7 @@ fn test_block_branch_hashes() {
     let parent_hash = block_header0.id();
     let block_header1 = BlockHeader::new(
         parent_hash,
+        HashValue::random(),
         dt.timestamp_nanos() as u64,
         1,
         AccountAddress::random(),
@@ -268,6 +273,7 @@ fn test_block_branch_hashes() {
     debug!("header1: {}", block_id.to_hex());
     let block_header2 = BlockHeader::new(
         parent_hash,
+        HashValue::random(),
         dt.timestamp_nanos() as u64,
         2,
         AccountAddress::random(),
@@ -286,6 +292,7 @@ fn test_block_branch_hashes() {
 
     let block_header3 = BlockHeader::new(
         block_id,
+        HashValue::random(),
         dt.timestamp_nanos() as u64,
         3,
         AccountAddress::random(),
@@ -304,6 +311,7 @@ fn test_block_branch_hashes() {
 
     let block_header4 = BlockHeader::new(
         block_header3.id(),
+        HashValue::random(),
         dt.timestamp_nanos() as u64,
         4,
         AccountAddress::random(),
