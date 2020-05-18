@@ -23,11 +23,11 @@ pub trait TransactionExecutor: std::marker::Unpin + Clone {
     fn init_genesis(config: &ChainConfig)
         -> Result<(HashValue, ChainStateSet, Vec<ContractEvent>)>;
 
-    /// Execute transaction, update state to state_store, and return events and TransactionStatus.
-    fn execute_transaction(
+    /// Execute transactions, update state to state_store, and return State roots and TransactionOutputs.
+    fn execute_transactions(
         chain_state: &dyn ChainState,
-        txn: Transaction,
-    ) -> Result<TransactionOutput>;
+        txns: Vec<Transaction>,
+    ) -> Result<Vec<(HashValue, TransactionOutput)>>;
 
     /// Executes the prologue and verifies that the transaction is valid.
     fn validate_transaction(

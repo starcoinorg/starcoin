@@ -24,8 +24,8 @@ pub enum BlockExecutorError {
     BlockAccumulatorFlushErr,
     #[error("block chain state flush error")]
     BlockChainStateFlushErr,
-    #[error("block transaction {0} execute error")]
-    BlockTransactionExecuteErr(HashValue),
+    #[error("block transaction execute error, {0:?}")]
+    BlockTransactionExecuteErr(anyhow::Error),
     // service error
     #[error("account error, {0:?}")]
     AccountError(anyhow::Error),
