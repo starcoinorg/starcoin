@@ -4,16 +4,14 @@
 #[cfg(test)]
 mod tests {
     use crate::service::NetworkStateInfo;
-    use crate::{Event, Multiaddr, NodeKeyConfig, PeerId, ProtocolId, Secret};
+    use crate::{Event, Multiaddr, NodeKeyConfig, ProtocolId, Secret};
     use crate::{NetworkConfiguration, NetworkWorker, Params};
     use crypto::HashValue;
     use futures::stream::StreamExt;
     use libp2p::identity;
-    use std::str::FromStr;
     use std::thread;
     use std::time::Duration;
-    use tokio::runtime::{Handle, Runtime};
-    use tokio::task;
+    use tokio::runtime::Runtime;
 
     const PROTOCOL_NAME: &[u8] = b"/starcoin/notify/1";
 

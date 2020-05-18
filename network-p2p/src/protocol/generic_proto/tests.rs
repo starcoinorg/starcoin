@@ -17,7 +17,7 @@
 #![cfg(test)]
 
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
-use codec::{Decode, Encode};
+use codec::Encode;
 use futures::{prelude::*, ready};
 use libp2p::core::connection::{ConnectionId, ListenerId};
 use libp2p::core::ConnectedPoint;

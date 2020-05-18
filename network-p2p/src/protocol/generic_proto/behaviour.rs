@@ -200,7 +200,7 @@ enum PeerState {
 
 impl PeerState {
     /// True if there exists any established connection to the peer.
-    fn is_connected(&self) -> bool {
+    fn _is_connected(&self) -> bool {
         match self {
             PeerState::Disabled { .. }
             | PeerState::DisabledPendingEnable { .. }
@@ -240,7 +240,7 @@ impl PeerState {
     }
 
     /// True if that node has been requested by the PSM.
-    fn is_requested(&self) -> bool {
+    fn _is_requested(&self) -> bool {
         match self {
             PeerState::Poisoned => false,
             PeerState::Banned { .. } => false,
@@ -354,7 +354,7 @@ impl GenericProto {
     /// Modifies the handshake of the given notifications protocol.
     ///
     /// Has no effect if the protocol is unknown.
-    pub fn set_notif_protocol_handshake(
+    pub fn _set_notif_protocol_handshake(
         &mut self,
         protocol_name: &[u8],
         handshake_message: impl Into<Vec<u8>>,
@@ -371,7 +371,7 @@ impl GenericProto {
         }
 
         // Send an event to all the peers we're connected to, updating the handshake message.
-        for (peer_id, _) in self.peers.iter().filter(|(_, state)| state.is_connected()) {
+        for (peer_id, _) in self.peers.iter().filter(|(_, state)| state._is_connected()) {
             self.events.push(NetworkBehaviourAction::NotifyHandler {
                 peer_id: peer_id.clone(),
                 handler: NotifyHandler::All,
@@ -381,11 +381,6 @@ impl GenericProto {
                 },
             });
         }
-    }
-
-    /// Returns the number of discovered nodes that we keep in memory.
-    pub fn num_discovered_peers(&self) -> usize {
-        self.peerset.num_discovered_peers()
     }
 
     /// Returns the list of all the peers we have an open channel to.
@@ -488,14 +483,6 @@ impl GenericProto {
                 error!(target: "sub-libp2p", "State of {:?} is poisoned", peer_id)
             }
         }
-    }
-
-    /// Returns the list of all the peers that the peerset currently requests us to be connected to.
-    pub fn requested_peers<'a>(&'a self) -> impl Iterator<Item = &'a PeerId> + 'a {
-        self.peers
-            .iter()
-            .filter(|(_, state)| state.is_requested())
-            .map(|(id, _)| id)
     }
 
     /// Returns true if we try to open protocols with the given peer.

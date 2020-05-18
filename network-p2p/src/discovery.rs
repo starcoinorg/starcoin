@@ -54,10 +54,7 @@ use libp2p::core::{
     ConnectedPoint, Multiaddr, PeerId, PublicKey,
 };
 use libp2p::kad::handler::KademliaHandler;
-use libp2p::kad::record::{
-    self,
-    store::{MemoryStore, RecordStore},
-};
+use libp2p::kad::record::{self, store::MemoryStore};
 use libp2p::kad::GetClosestPeersError;
 use libp2p::kad::QueryId;
 use libp2p::kad::{Kademlia, KademliaConfig, KademliaEvent, Quorum, Record};
@@ -308,37 +305,6 @@ impl DiscoveryBehaviour {
         for k in self.kademlias.values_mut() {
             k.put_record(Record::new(key.clone(), value.clone()), Quorum::All)
         }
-    }
-
-    /// Returns the number of nodes that are in the Kademlia k-buckets.
-    pub fn num_kbuckets_entries(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
-        self.kademlias
-            .iter_mut()
-            .map(|(id, kad)| (id, kad.kbuckets_entries().count()))
-    }
-
-    /// Returns the number of records in the Kademlia record stores.
-    pub fn num_kademlia_records(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
-        // Note that this code is ok only because we use a `MemoryStore`.
-        self.kademlias.iter_mut().map(|(id, kad)| {
-            let num = kad.store_mut().records().count();
-            (id, num)
-        })
-    }
-
-    /// Returns the total size in bytes of all the records in the Kademlia record stores.
-    pub fn kademlia_records_total_size(
-        &mut self,
-    ) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
-        // Note that this code is ok only because we use a `MemoryStore`. If the records were
-        // for example stored on disk, this would load every single one of them every single time.
-        self.kademlias.iter_mut().map(|(id, kad)| {
-            let size = kad
-                .store_mut()
-                .records()
-                .fold(0, |tot, rec| tot + rec.value.len());
-            (id, size)
-        })
     }
 
     /// Can the given `Multiaddr` be put into the DHT?

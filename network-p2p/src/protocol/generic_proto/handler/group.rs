@@ -169,6 +169,7 @@ impl IntoProtocolsHandler for NotifsHandlerProto {
 
 /// Event that can be received by a `NotifsHandler`.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum NotifsHandlerIn {
     /// The node should start using custom protocols.
     Enable,

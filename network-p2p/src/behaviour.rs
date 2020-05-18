@@ -20,7 +20,6 @@ use crate::{
     debug_info, discovery::DiscoveryBehaviour, discovery::DiscoveryOut, protocol::event::DhtEvent,
     protocol::event::Event, DiscoveryNetBehaviour, ProtocolId,
 };
-use futures::channel::oneshot;
 use libp2p::core::{Multiaddr, PeerId, PublicKey};
 use libp2p::kad::record;
 use libp2p::swarm::{
@@ -51,7 +50,6 @@ pub struct Behaviour {
 #[derive(Debug, Clone)]
 pub enum BehaviourOut {
     Event(Event),
-    Request(RpcRequest),
     RandomKademliaStarted(ProtocolId),
 }
 

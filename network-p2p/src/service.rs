@@ -31,23 +31,13 @@ use std::sync::{
     Arc,
 };
 use std::task::Poll;
-use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
-    fs, io,
-    marker::PhantomData,
-    path::Path,
-};
+use std::{borrow::Cow, collections::HashSet, fs, io, path::Path};
 
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
 };
-use libp2p::core::{
-    connection::{ConnectionError, PendingConnectionError},
-    either::EitherError,
-};
-use libp2p::ping::handler::PingFailure;
+use libp2p::core::connection::ConnectionError;
 use libp2p::swarm::{
     protocols_handler::NodeHandlerWrapperError, NetworkBehaviour, SwarmBuilder, SwarmEvent,
 };
@@ -57,7 +47,6 @@ use parking_lot::Mutex;
 use peerset::{PeersetHandle, ReputationChange};
 use types::peer_info::PeerInfo;
 
-use crate::behaviour::RpcRequest;
 use crate::config::{Params, TransportConfig};
 use crate::discovery::DiscoveryConfig;
 use crate::metrics::Metrics;
@@ -66,14 +55,13 @@ use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
 use crate::protocol::event::Event;
-use crate::protocol::{ChainInfo, LegacyConnectionKillError, Protocol};
+use crate::protocol::{ChainInfo, Protocol};
+use crate::Multiaddr;
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
     parse_addr, parse_str_addr, ConnectedPoint,
 };
 use crate::{config::NonReservedPeerMode, transport};
-use crate::{protocol, Multiaddr};
-use bytes::Buf;
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -92,14 +80,6 @@ impl From<PeersetHandle> for ReportHandle {
         ReportHandle {
             inner: peerset_handle,
         }
-    }
-}
-
-impl ReportHandle {
-    /// Report a given peer as either beneficial (+) or costly (-) according to the
-    /// given scalar.
-    pub fn report_peer(&self, who: PeerId, cost_benefit: ReputationChange) {
-        self.inner.report_peer(who, cost_benefit);
     }
 }
 
@@ -285,14 +265,10 @@ impl NetworkWorker {
         });
 
         Ok(NetworkWorker {
-            external_addresses,
-            num_connected,
-            is_major_syncing,
             network_service: swarm,
             service,
             from_worker,
             event_streams: Vec::new(),
-            rpc_streams: Vec::new(),
             metrics: Metrics::register().ok(),
         })
     }
@@ -679,12 +655,6 @@ enum ServiceToWorkerMsg {
 /// You are encouraged to poll this in a separate background thread or task.
 #[must_use = "The NetworkWorker must be polled in order for the network to work"]
 pub struct NetworkWorker {
-    /// Updated by the `NetworkWorker` and loaded by the `NetworkService`.
-    external_addresses: Arc<Mutex<Vec<Multiaddr>>>,
-    /// Updated by the `NetworkWorker` and loaded by the `NetworkService`.
-    num_connected: Arc<AtomicUsize>,
-    /// Updated by the `NetworkWorker` and loaded by the `NetworkService`.
-    is_major_syncing: Arc<AtomicBool>,
     /// The network service that can be extracted and shared through the codebase.
     service: Arc<NetworkService>,
     /// The *actual* network.
@@ -693,7 +663,6 @@ pub struct NetworkWorker {
     from_worker: mpsc::UnboundedReceiver<ServiceToWorkerMsg>,
     /// Senders for events that happen on the network.
     event_streams: Vec<mpsc::UnboundedSender<Event>>,
-    rpc_streams: Vec<mpsc::UnboundedSender<RpcRequest>>,
     /// Prometheus network metrics.
     metrics: Option<Metrics>,
 }
@@ -745,7 +714,7 @@ impl Future for NetworkWorker {
                     .user_protocol_mut()
                     .disconnect_peer(&who),
                 ServiceToWorkerMsg::IsConnected(who, tx) => {
-                    tx.send(this.is_open(&who));
+                    let _ = tx.send(this.is_open(&who));
                 }
                 ServiceToWorkerMsg::ConnectedPeers(tx) => {
                     let peers = this.connected_peers();
@@ -753,15 +722,16 @@ impl Future for NetworkWorker {
                     for peer in peers {
                         result.insert(peer.clone());
                     }
-                    tx.send(result);
+                    let _ = tx.send(result);
                 }
                 ServiceToWorkerMsg::SelfInfo(info) => {
-                    this.network_service
+                    let _ = this
+                        .network_service
                         .user_protocol_mut()
                         .update_self_info(info);
                 }
                 ServiceToWorkerMsg::AddressByPeerID(peer_id, tx) => {
-                    tx.send(this.network_service.get_address(&peer_id));
+                    let _ = tx.send(this.network_service.get_address(&peer_id));
                 }
             }
         }
@@ -776,9 +746,6 @@ impl Future for NetworkWorker {
                 Poll::Pending => break,
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Event(ev))) => this
                     .event_streams
-                    .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
-                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Request(ev))) => this
-                    .rpc_streams
                     .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(_))) => {}
                 Poll::Ready(SwarmEvent::ConnectionEstablished {
@@ -816,22 +783,6 @@ impl Future for NetworkWorker {
                                 .connections_closed_total
                                 .with_label_values(&[dir, "transport-error"])
                                 .inc(),
-                            // ConnectionError::Handler(NodeHandlerWrapperError::Handler(
-                            //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
-                            //         EitherError::B(EitherError::A(PingFailure::Timeout)),
-                            //     )))),
-                            // )) => metrics
-                            //     .connections_closed_total
-                            //     .with_label_values(&[dir, "ping-timeout"])
-                            //     .inc(),
-                            // ConnectionError::Handler(NodeHandlerWrapperError::Handler(
-                            //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
-                            //         EitherError::A(EitherError::B(LegacyConnectionKillError)),
-                            //     )))),
-                            // )) => metrics
-                            //     .connections_closed_total
-                            //     .with_label_values(&[dir, "force-closed"])
-                            //     .inc(),
                             ConnectionError::Handler(NodeHandlerWrapperError::Handler(_)) => {
                                 metrics
                                     .connections_closed_total
