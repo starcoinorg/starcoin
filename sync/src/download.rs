@@ -31,7 +31,7 @@ use traits::{is_ok, ConnectBlockError, Consensus};
 use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
-    system_events::SystemEvents,
+    system_events::SyncBegin,
 };
 
 #[derive(Default, Debug, Message)]
@@ -112,7 +112,7 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let sys_event_recipient = ctx.address().recipient::<SystemEvents>();
+        let sys_event_recipient = ctx.address().recipient::<SyncBegin>();
         self.bus
             .send(Subscription {
                 recipient: sys_event_recipient,
@@ -132,35 +132,33 @@ where
     }
 }
 
-impl<C> Handler<SystemEvents> for DownloadActor<C>
+impl<C> Handler<SyncBegin> for DownloadActor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        if let SystemEvents::SyncBegin() = msg {
-            info!("received SyncBegin event.");
-            self.ready.store(true, Ordering::Relaxed);
+    fn handle(&mut self, _msg: SyncBegin, _ctx: &mut Self::Context) -> Self::Result {
+        info!("received SyncBegin event.");
+        self.ready.store(true, Ordering::Relaxed);
 
-            let downloader = self.downloader.clone();
-            let network = self.network.clone();
-            let storage = self.storage.clone();
-            let sync_metadata = self.sync_metadata.clone();
-            let is_main = self.main_network;
-            let self_peer_id = self.self_peer_id.as_ref().clone();
-            Arbiter::spawn(async move {
-                Self::sync_state(
-                    self_peer_id,
-                    is_main,
-                    downloader.clone(),
-                    network,
-                    storage,
-                    sync_metadata,
-                )
-                .await;
-            });
-        }
+        let downloader = self.downloader.clone();
+        let network = self.network.clone();
+        let storage = self.storage.clone();
+        let sync_metadata = self.sync_metadata.clone();
+        let is_main = self.main_network;
+        let self_peer_id = self.self_peer_id.as_ref().clone();
+        Arbiter::spawn(async move {
+            Self::sync_state(
+                self_peer_id,
+                is_main,
+                downloader,
+                network,
+                storage,
+                sync_metadata,
+            )
+            .await;
+        });
     }
 }
 

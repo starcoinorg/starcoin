@@ -33,7 +33,7 @@ use std::time::Duration;
 use tokio::runtime::Handle;
 use tx_relay::*;
 use types::peer_info::PeerInfo;
-use types::system_events::SystemEvents;
+use types::system_events::NewHeadBlock;
 use types::transaction::SignedUserTransaction;
 
 const LRU_CACHE_SIZE: usize = 1024;
@@ -89,8 +89,7 @@ impl NetworkService for NetworkAsyncService {
 
         Ok(())
     }
-
-    async fn broadcast_system_event(&self, event: SystemEvents) -> Result<()> {
+    async fn broadcast_new_head_block(&self, event: NewHeadBlock) -> Result<()> {
         self.addr.send(event).await?;
         Ok(())
     }
@@ -558,65 +557,60 @@ impl Actor for NetworkActor {
 }
 
 /// handler system events.
-impl Handler<SystemEvents> for NetworkActor {
+impl Handler<NewHeadBlock> for NetworkActor {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            SystemEvents::NewHeadBlock(block) => {
-                info!("broadcast a new block {:?}", block.header().id());
+    fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
+        let NewHeadBlock(block) = msg;
+        info!("broadcast a new block {:?}", block.header().id());
 
-                let id = block.header().id();
-                let peers = self.peers.clone();
+        let id = block.header().id();
+        let peers = self.peers.clone();
 
-                let network_service = self.network_service.clone();
+        let network_service = self.network_service.clone();
 
-                let block_hash = block.header().id();
-                let block_number = block.header().number();
+        let block_hash = block.header().id();
+        let block_number = block.header().number();
 
-                let total_difficulty = block.get_total_difficulty();
-                let msg = PeerMessage::Block(block);
-                let bytes = msg.encode().expect("should encode succ");
+        let total_difficulty = block.get_total_difficulty();
+        let msg = PeerMessage::Block(block);
+        let bytes = msg.encode().expect("should encode succ");
 
-                let self_info = PeerInfo::new(
-                    self.peer_id.clone().into(),
-                    block_number,
-                    total_difficulty,
-                    block_hash,
+        let self_info = PeerInfo::new(
+            self.peer_id.clone().into(),
+            block_number,
+            total_difficulty,
+            block_hash,
+        );
+        let self_id = self.peer_id.clone();
+        Arbiter::spawn(async move {
+            if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
+                debug!(
+                    "total_difficulty is {},peer_info is {:?}",
+                    total_difficulty, peer_info
                 );
-                let self_id = self.peer_id.clone();
-                Arbiter::spawn(async move {
-                    if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
-                        debug!(
-                            "total_difficulty is {},peer_info is {:?}",
-                            total_difficulty, peer_info
-                        );
-                        if total_difficulty > peer_info.peer_info.total_difficulty {
-                            peer_info.peer_info.block_number = block_number;
-                            peer_info.peer_info.block_id = block_hash;
-                            peer_info.peer_info.total_difficulty = total_difficulty;
-                        }
-                    }
-
-                    for (peer_id, peer_info) in peers.lock().await.iter_mut() {
-                        if !peer_info.known_blocks.contains(&id) {
-                            peer_info.known_blocks.put(id.clone(), ());
-                        } else {
-                            continue;
-                        }
-
-                        network_service
-                            .send_message(peer_id.clone(), bytes.clone())
-                            .await
-                            .expect("send message failed ,check network service please");
-                    }
-                });
-
-                self.network_service.update_self_info(self_info);
+                if total_difficulty > peer_info.peer_info.total_difficulty {
+                    peer_info.peer_info.block_number = block_number;
+                    peer_info.peer_info.block_id = block_hash;
+                    peer_info.peer_info.total_difficulty = total_difficulty;
+                }
             }
-            SystemEvents::MinedBlock(_b) => {}
-            _ => {}
-        };
+
+            for (peer_id, peer_info) in peers.lock().await.iter_mut() {
+                if !peer_info.known_blocks.contains(&id) {
+                    peer_info.known_blocks.put(id.clone(), ());
+                } else {
+                    continue;
+                }
+
+                network_service
+                    .send_message(peer_id.clone(), bytes.clone())
+                    .await
+                    .expect("send message failed ,check network service please");
+            }
+        });
+
+        self.network_service.update_self_info(self_info);
     }
 }
 

@@ -34,7 +34,7 @@ use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
-    system_events::SystemEvents,
+    system_events::MinedBlock,
     transaction::{SignedUserTransaction, TransactionInfo},
 };
 
@@ -84,7 +84,7 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let recipient = ctx.address().recipient::<SystemEvents>();
+        let recipient = ctx.address().recipient::<MinedBlock>();
         self.bus
             .send(Subscription { recipient })
             .into_actor(self)
@@ -164,20 +164,19 @@ where
     }
 }
 
-impl<C> Handler<SystemEvents> for ChainActor<C>
+impl<C> Handler<MinedBlock> for ChainActor<C>
 where
     C: Consensus + Sync + Send + 'static,
 {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: MinedBlock, _ctx: &mut Self::Context) -> Self::Result {
         debug!("try connect mined block.");
-        if let SystemEvents::MinedBlock(new_block) = msg {
-            match self.service.try_connect(new_block.as_ref().clone(), false) {
-                Ok(_) => debug!("Process mined block success."),
-                Err(e) => {
-                    warn!("Process mined block fail, error: {:?}", e);
-                }
+        let MinedBlock(new_block) = msg;
+        match self.service.try_connect(new_block.as_ref().clone(), false) {
+            Ok(_) => debug!("Process mined block success."),
+            Err(e) => {
+                warn!("Process mined block fail, error: {:?}", e);
             }
         }
     }

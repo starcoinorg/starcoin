@@ -3,6 +3,7 @@
 
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
+use futures::StreamExt;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::{NodeConfig, PacemakerStrategy};
@@ -25,13 +26,12 @@ use starcoin_traits::Consensus;
 use starcoin_txpool::TxPoolRef;
 use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_types::peer_info::PeerInfo;
-use starcoin_types::system_events::SystemEvents;
+use starcoin_types::system_events::{SyncBegin, SyncDone};
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::Handle;
-use tokio::stream::StreamExt;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
@@ -87,7 +87,7 @@ where
 {
     let bus = BusActor::launch();
 
-    let sync_event_receiver_future = bus.clone().channel::<SystemEvents>();
+    let sync_event_receiver_future = bus.clone().channel::<SyncDone>();
     debug!("init storage.");
     let cache_storage = Arc::new(CacheStorage::new());
     let db_storage = Arc::new(DBStorage::new(config.storage.clone().dir()));
@@ -284,13 +284,13 @@ where
         .await??;
 
     delay_for(Duration::from_secs(1)).await;
-    bus.clone().broadcast(SystemEvents::SyncBegin()).await?;
+    bus.clone().broadcast(SyncBegin).await?;
 
     info!("Waiting sync ......");
     let mut sync_event_receiver = sync_event_receiver_future
         .await
         .expect("Subscribe system event error.");
-    sync_event_receiver.any(|event| event.is_sync_done()).await;
+    let _ = sync_event_receiver.next().await;
     info!("Waiting sync finished.");
     let miner = MinerActor::<C, TxPoolRef, ChainActorRef<C>, Storage>::launch(
         config.clone(),

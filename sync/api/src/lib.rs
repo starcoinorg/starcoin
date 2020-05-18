@@ -9,7 +9,7 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::system_events::SystemEvents;
+use starcoin_types::system_events::SyncDone;
 use std::sync::Arc;
 
 #[async_trait::async_trait]
@@ -105,9 +105,7 @@ impl SyncMetadata {
             lock.pivot_behind = None;
             lock.state_sync_address = None;
             lock.state_sync_failed = None;
-            lock.bus.do_send(Broadcast {
-                msg: SystemEvents::SyncDone(),
-            });
+            lock.bus.do_send(Broadcast { msg: SyncDone });
             info!("state sync and block sync done.");
         }
         Ok(())

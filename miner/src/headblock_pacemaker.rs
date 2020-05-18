@@ -8,7 +8,7 @@ use futures::channel::mpsc;
 
 use bus::{BusActor, Subscription};
 use logger::prelude::*;
-use types::system_events::SystemEvents;
+use types::system_events::NewHeadBlock;
 
 /// HeadBlockPacemaker, only generate block when new HeadBlock publish.
 pub(crate) struct HeadBlockPacemaker {
@@ -32,7 +32,7 @@ impl Actor for HeadBlockPacemaker {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let recipient = ctx.address().recipient::<SystemEvents>();
+        let recipient = ctx.address().recipient::<NewHeadBlock>();
         self.bus
             .send(Subscription { recipient })
             .into_actor(self)
@@ -45,12 +45,11 @@ impl Actor for HeadBlockPacemaker {
     }
 }
 
-impl Handler<SystemEvents> for HeadBlockPacemaker {
+impl Handler<NewHeadBlock> for HeadBlockPacemaker {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        if let SystemEvents::NewHeadBlock(_block) = msg {
-            self.send_event();
-        }
+    fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
+        let NewHeadBlock(_block) = msg;
+        self.send_event();
     }
 }

@@ -12,7 +12,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
 use traits::Consensus;
-use types::{block::BlockTemplate, system_events::SystemEvents, U256};
+use types::{block::BlockTemplate, system_events::MinedBlock, U256};
 
 #[derive(Clone)]
 pub struct Miner<C>
@@ -78,7 +78,7 @@ where
         let block = block_template.into_block(consensus_header, difficulty);
         info!("Miner new block: {:?}", block);
         self.bus.do_send(Broadcast {
-            msg: SystemEvents::MinedBlock(Arc::new(block)),
+            msg: MinedBlock(Arc::new(block)),
         });
         Ok(())
     }

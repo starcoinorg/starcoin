@@ -24,7 +24,7 @@ use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
-use types::system_events::SystemEvents;
+use types::system_events::SyncBegin;
 
 #[test]
 fn test_network_actor_rpc() {
@@ -97,12 +97,7 @@ fn test_network_actor_rpc() {
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
-        if let Err(e) = bus_1
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await
-        {
+        if let Err(e) = bus_1.send(Broadcast { msg: SyncBegin }).await {
             error!("error: {:?}", e);
         }
 
@@ -195,13 +190,7 @@ fn test_network_actor_rpc() {
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
-        if let Err(e) = bus_2
-            .clone()
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await
-        {
+        if let Err(e) = bus_2.clone().send(Broadcast { msg: SyncBegin }).await {
             error!("error: {:?}", e);
         }
 
@@ -295,12 +284,7 @@ fn test_network_actor_rpc_2() {
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
-        if let Err(e) = bus_1
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await
-        {
+        if let Err(e) = bus_1.send(Broadcast { msg: SyncBegin }).await {
             error!("error: {:?}", e);
         }
 
@@ -372,13 +356,7 @@ fn test_network_actor_rpc_2() {
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
-        if let Err(e) = bus_2
-            .clone()
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await
-        {
+        if let Err(e) = bus_2.clone().send(Broadcast { msg: SyncBegin }).await {
             error!("error: {:?}", e);
         }
 
