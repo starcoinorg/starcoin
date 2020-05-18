@@ -23,7 +23,7 @@ use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use traits::ChainAsyncService;
-use txpool::TxPoolRef;
+use txpool::{TxPool, TxPoolService};
 use types::system_events::SyncBegin;
 
 #[test]
@@ -52,15 +52,17 @@ fn test_network_actor_rpc() {
         let genesis_1 = Genesis::build(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
-        let txpool_1 = {
+        let tx_pool1 = {
             let best_block_id = *startup_info_1.get_master();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
                 best_block_id,
                 bus_1.clone(),
             )
         };
+        let txpool_1 = tx_pool1.get_async_service();
+        let tx_pool_service = tx_pool1.get_service();
 
         // network
         let (network_1, addr_1) = gen_network(
@@ -103,16 +105,19 @@ fn test_network_actor_rpc() {
 
         let miner_account = WalletAccount::random();
         // miner
-        let _miner_1 =
-            MinerActor::<DevConsensus, TxPoolRef, ChainActorRef<DevConsensus>, Storage>::launch(
-                node_config_1.clone(),
-                bus_1.clone(),
-                storage_1.clone(),
-                txpool_1.clone(),
-                first_chain.clone(),
-                None,
-                miner_account,
-            );
+        let _miner_1 = MinerActor::<
+            DevConsensus,
+            TxPoolService,
+            ChainActorRef<DevConsensus>,
+            Storage,
+        >::launch(
+            node_config_1.clone(),
+            bus_1.clone(),
+            storage_1.clone(),
+            tx_pool_service.clone(),
+            first_chain.clone(),
+            miner_account,
+        );
         MinerClientActor::new(node_config_1.miner.clone()).start();
         Delay::new(Duration::from_secs(20)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
@@ -147,12 +152,13 @@ fn test_network_actor_rpc() {
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
                 best_block_id,
                 bus_2.clone(),
             )
+            .get_async_service()
         };
         // network
         let (network_2, addr_2) = gen_network(
@@ -241,12 +247,13 @@ fn test_network_actor_rpc_2() {
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
                 best_block_id,
                 bus_1.clone(),
             )
+            .get_async_service()
         };
 
         // network
@@ -318,12 +325,13 @@ fn test_network_actor_rpc_2() {
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
                 best_block_id,
                 bus_2.clone(),
             )
+            .get_async_service()
         };
         // network
         let (network_2, addr_2) =

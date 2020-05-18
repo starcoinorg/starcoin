@@ -21,7 +21,7 @@ use starcoin_sync_api::sync_messages::StartSyncTxnEvent;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolAsyncService;
 use std::{sync::Arc, time::Duration};
-use txpool::TxPoolRef;
+use txpool::TxPool;
 use types::{
     account_address,
     transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
@@ -55,12 +55,13 @@ fn test_txn_sync_actor() {
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
                 best_block_id,
                 bus_1.clone(),
             )
+            .get_async_service()
         };
 
         // network
@@ -134,12 +135,13 @@ fn test_txn_sync_actor() {
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
                 best_block_id,
                 bus_2.clone(),
             )
+            .get_async_service()
         };
         // network
         let (network_2, addr_2) = gen_network(

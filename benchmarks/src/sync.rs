@@ -16,7 +16,7 @@ use starcoin_sync::{
     ProcessActor,
 };
 use starcoin_sync_api::SyncMetadata;
-use starcoin_txpool::TxPoolRef;
+use starcoin_txpool::{TxPool, TxPoolRef};
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -173,12 +173,13 @@ async fn create_node(
     let genesis_startup_info = genesis.execute(storage.clone()).unwrap();
     let txpool = {
         let best_block_id = genesis_startup_info.get_master().clone();
-        TxPoolRef::start(
+        TxPool::start(
             node_config.tx_pool.clone(),
             storage.clone(),
             best_block_id,
             bus.clone(),
         )
+        .get_async_service()
     };
 
     // network

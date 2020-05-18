@@ -17,7 +17,7 @@ use futures::prelude::*;
 use logger::prelude::*;
 pub use miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use sc_stratum::Stratum;
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -43,7 +43,7 @@ pub struct GenerateBlockEvent {}
 pub struct MinerActor<C, P, CS, S>
 where
     C: Consensus + Sync + Send + 'static,
-    P: TxPoolAsyncService + Sync + Send + 'static,
+    P: TxPoolSyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
 {
@@ -61,7 +61,7 @@ where
 impl<C, P, CS, S> MinerActor<C, P, CS, S>
 where
     C: Consensus + Sync + Send + 'static,
-    P: TxPoolAsyncService + Sync + Send + 'static,
+    P: TxPoolSyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
 {
@@ -71,7 +71,6 @@ where
         storage: Arc<S>,
         txpool: P,
         chain: CS,
-        mut transaction_receiver: Option<mpsc::UnboundedReceiver<TransactionStatusEvent>>,
         miner_account: WalletAccount,
     ) -> Result<Addr<Self>> {
         let actor = MinerActor::create(move |ctx| {
@@ -83,12 +82,9 @@ where
                     pacemaker.start();
                 }
                 PacemakerStrategy::Ondemand => {
-                    OndemandPacemaker::new(
-                        bus.clone(),
-                        sender,
-                        transaction_receiver.take().unwrap(),
-                    )
-                    .start();
+                    let transaction_receiver = txpool.subscribe_txns();
+
+                    OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
                 }
                 PacemakerStrategy::Schedule => match config.miner.consensus_strategy {
                     ConsensusStrategy::Dummy(dev_period) => {
@@ -128,7 +124,7 @@ where
 impl<C, P, CS, S> Actor for MinerActor<C, P, CS, S>
 where
     C: Consensus + Sync + Send + 'static,
-    P: TxPoolAsyncService + Sync + Send + 'static,
+    P: TxPoolSyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
 {
@@ -142,7 +138,7 @@ where
 impl<C, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, P, CS, S>
 where
     C: Consensus + Sync + Send + 'static,
-    P: TxPoolAsyncService + Sync + Send + 'static,
+    P: TxPoolSyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
 {
@@ -157,11 +153,7 @@ where
         let stratum = self.stratum.clone();
         let miner_account = self.miner_account.clone();
         let f = async move {
-            let txns = txpool
-                .clone()
-                .get_pending_txns(None)
-                .await
-                .unwrap_or_else(|_| vec![]);
+            let txns = txpool.get_pending_txns(None);
             let startup_info = chain.master_startup_info().await?;
             debug!(
                 "On GenerateBlockEvent, master: {:?}, txn len: {}",

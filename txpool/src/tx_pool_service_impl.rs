@@ -68,40 +68,40 @@ impl TxPoolService {
 
 impl TxPoolSyncService for TxPoolService {
     fn add_txns(
-        self,
+        &self,
         txns: Vec<SignedUserTransaction>,
     ) -> Vec<Result<(), transaction::TransactionError>> {
         self.inner.import_txns(txns)
     }
 
-    fn remove_txn(self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction> {
+    fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction> {
         self.inner
             .remove_txn(txn_hash, is_invalid)
             .map(|t| t.signed().clone())
     }
 
     /// Get all pending txns which is ok to be packaged to mining.
-    fn get_pending_txns(self, max_len: Option<u64>) -> Vec<SignedUserTransaction> {
+    fn get_pending_txns(&self, max_len: Option<u64>) -> Vec<SignedUserTransaction> {
         let r = self.inner.get_pending(max_len.unwrap_or(u64::MAX));
         r.into_iter().map(|t| t.signed().clone()).collect()
     }
 
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
-    fn next_sequence_number(self, address: AccountAddress) -> Option<u64> {
+    fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
         self.inner.next_sequence_number(address)
     }
 
     /// subscribe
     fn subscribe_txns(
-        self,
+        &self,
     ) -> mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>> {
         self.inner.subscribe_txns()
     }
 
     /// rollback
     fn rollback(
-        self,
+        &self,
         enacted: Vec<SignedUserTransaction>,
         retracted: Vec<SignedUserTransaction>,
     ) -> Result<()> {
