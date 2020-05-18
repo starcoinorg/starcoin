@@ -83,7 +83,7 @@ impl DebugInfoBehaviour {
     pub fn new(user_agent: String, local_public_key: PublicKey) -> Self {
         let identify = {
             let proto_version = "/substrate/1.0".to_string();
-            Identify::new(proto_version, user_agent, local_public_key.clone())
+            Identify::new(proto_version, user_agent, local_public_key)
         };
 
         DebugInfoBehaviour {
@@ -365,12 +365,12 @@ impl NetworkBehaviour for DebugInfoBehaviour {
                 Poll::Ready(NetworkBehaviourAction::NotifyHandler {
                     peer_id,
                     handler,
-                    event,
+                    event: _,
                 }) => {
                     return Poll::Ready(NetworkBehaviourAction::NotifyHandler {
                         peer_id,
                         handler,
-                        event: EitherOutput::Second(event),
+                        event: EitherOutput::Second(()),
                     })
                 }
                 Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address }) => {

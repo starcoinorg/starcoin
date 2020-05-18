@@ -169,6 +169,7 @@ impl IntoProtocolsHandler for NotifsHandlerProto {
 
 /// Event that can be received by a `NotifsHandler`.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum NotifsHandlerIn {
     /// The node should start using custom protocols.
     Enable,
@@ -179,7 +180,7 @@ pub enum NotifsHandlerIn {
     /// Sends a message through the custom protocol substream.
     ///
     /// > **Note**: This must **not** be a `ConsensusMessage`, `Transactions`, or
-    /// > 			`BlockAnnounce` message.
+    /// >     `BlockAnnounce` message.
     SendLegacy {
         /// The message to send.
         message: Vec<u8>,

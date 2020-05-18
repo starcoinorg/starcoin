@@ -186,8 +186,7 @@ impl NetworkService for NetworkAsyncService {
         let best_peer_set = self.best_peer_set().await?;
         let best_peer = best_peer_set
             .iter()
-            .filter(|peer| self_peer_id != peer.get_peer_id())
-            .next();
+            .find(|peer| self_peer_id != peer.get_peer_id());
         match best_peer {
             Some(peer) => Ok(Some(peer.clone())),
             None => Ok(None),

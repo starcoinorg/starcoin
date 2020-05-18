@@ -152,6 +152,7 @@ pub struct LegacyProtoHandler {
 }
 
 /// State of the handler.
+#[allow(clippy::large_enum_variant)]
 enum ProtocolState {
     /// Waiting for the behaviour to tell the handler whether it is enabled or disabled.
     Init {

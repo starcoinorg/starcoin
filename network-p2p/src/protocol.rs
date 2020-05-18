@@ -1,7 +1,6 @@
 pub mod event;
 pub mod generic_proto;
 pub mod message;
-pub mod util;
 
 use crate::config::ProtocolId;
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
@@ -53,37 +52,19 @@ mod rep {
     pub const TIMEOUT: Rep = Rep::new(-(1 << 10), "Request timeout");
     /// Reputation change when a peer sends us a status message while we already received one.
     pub const UNEXPECTED_STATUS: Rep = Rep::new(-(1 << 20), "Unexpected status message");
-    /// Reputation change when we are a light client and a peer is behind us.
-    pub const PEER_BEHIND_US_LIGHT: Rep = Rep::new(-(1 << 8), "Useless for a light peer");
-    /// Reputation change when a peer sends us an extrinsic that we didn't know about.
-    pub const GOOD_EXTRINSIC: Rep = Rep::new(1 << 7, "Good extrinsic");
-    /// Reputation change when a peer sends us a bad extrinsic.
-    pub const BAD_EXTRINSIC: Rep = Rep::new(-(1 << 12), "Bad extrinsic");
-    /// We sent an RPC query to the given node, but it failed.
-    pub const RPC_FAILED: Rep = Rep::new(-(1 << 12), "Remote call failed");
     /// We received a message that failed to decode.
     pub const BAD_MESSAGE: Rep = Rep::new(-(1 << 12), "Bad message");
-    /// We received an unexpected response.
-    pub const UNEXPECTED_RESPONSE: Rep = Rep::new_fatal("Unexpected response packet");
-    /// We received an unexpected extrinsic packet.
-    pub const UNEXPECTED_EXTRINSICS: Rep = Rep::new_fatal("Unexpected extrinsics packet");
-    /// We received an unexpected light node request.
-    pub const UNEXPECTED_REQUEST: Rep = Rep::new_fatal("Unexpected block request packet");
     /// Peer has different genesis.
     pub const GENESIS_MISMATCH: Rep = Rep::new_fatal("Genesis mismatch");
     /// Peer is on unsupported protocol version.
     pub const BAD_PROTOCOL: Rep = Rep::new_fatal("Unsupported protocol");
-    /// Peer role does not match (e.g. light peer connecting to another light peer).
-    pub const BAD_ROLE: Rep = Rep::new_fatal("Unsupported role");
-    /// Peer response data does not have requested bits.
-    pub const BAD_RESPONSE: Rep = Rep::new(-(1 << 12), "Incomplete response");
 }
 
 #[derive(Debug)]
 pub enum CustomMessageOutcome {
     NotificationStreamOpened {
         remote: PeerId,
-        info: PeerInfo,
+        info: Box<PeerInfo>,
     },
     /// Notification protocols have been closed with a remote.
     NotificationStreamClosed {
@@ -101,14 +82,6 @@ pub enum CustomMessageOutcome {
 /// and from whom we have not yet received a Status message.
 struct HandshakingPeer {
     timestamp: Instant,
-}
-
-#[derive(Default)]
-struct PacketStats {
-    bytes_in: u64,
-    bytes_out: u64,
-    count_in: u64,
-    count_out: u64,
 }
 
 struct ContextData {
@@ -245,15 +218,10 @@ impl NetworkBehaviour for Protocol {
                 message,
             } => self.on_custom_message(peer_id, message),
             GenericProtoOut::Clogged {
-                peer_id: _,
-                messages,
+                peer_id,
+                messages: _,
             } => {
-                debug!(target: "sync", "{} clogging messages:", messages.len());
-                for _msg in messages.into_iter().take(5) {
-                    //let message: Option<Message<B>> = Decode::decode(&mut &msg[..]).ok();
-                    //debug!(target: "sync", "{:?}", message);
-                    //self.on_clogged_peer(peer_id.clone(), message);
-                }
+                self.on_clogged_peer(peer_id);
                 CustomMessageOutcome::None
             }
         };
@@ -454,12 +422,13 @@ impl Protocol {
         // Notify all the notification protocols as open.
         CustomMessageOutcome::NotificationStreamOpened {
             remote: who,
-            info: status.info,
+            info: Box::new(status.info),
         }
     }
 
-    fn send_message(&mut self, who: &PeerId, message: Message) {
-        send_message(&mut self.behaviour, who, message);
+    fn send_message(&mut self, who: &PeerId, message: Message) -> anyhow::Result<()> {
+        send_message(&mut self.behaviour, who, message)?;
+        Ok(())
     }
 
     /// Called when a new peer is connected
@@ -484,6 +453,7 @@ impl Protocol {
         };
 
         self.send_message(&who, Message::Status(status))
+            .expect("should succ")
     }
 
     /// Called by peer when it is disconnecting
@@ -504,11 +474,6 @@ impl Protocol {
     /// our messaging rate fast enough.
     pub fn on_clogged_peer(&self, who: PeerId) {
         self.peerset_handle.report_peer(who, rep::CLOGGED_PEER);
-    }
-
-    /// Adjusts the reputation of a node.
-    pub fn report_peer(&self, who: PeerId, reputation: peerset::ReputationChange) {
-        self.peerset_handle.report_peer(who, reputation)
     }
 
     /// Perform time based maintenance.
@@ -587,7 +552,7 @@ impl Protocol {
             .iter()
             .map(|(peer_id, _peer)| event::Event::NotificationStreamOpened {
                 remote: peer_id.clone(),
-                info: self.chain_info.self_info.clone(),
+                info: Box::new(self.chain_info.self_info.clone()),
             })
             .collect()
     }
