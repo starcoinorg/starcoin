@@ -21,7 +21,7 @@ use std::sync::Arc;
 use storage::Store;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
 use types::{
-    account_address::AccountAddress, block::BlockHeader, system_events::SystemEvents, transaction,
+    account_address::AccountAddress, block::BlockHeader, system_events::NewHeadBlock, transaction,
     transaction::SignedUserTransaction,
 };
 
@@ -99,7 +99,7 @@ impl actix::Actor for TxPoolActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         // subscribe system block event
-        let myself = ctx.address().recipient::<SystemEvents>();
+        let myself = ctx.address().recipient::<NewHeadBlock>();
         self.bus
             .clone()
             .subscribe(myself)
@@ -195,25 +195,24 @@ impl StreamHandler<TxnStatusEvent> for TxPoolActor {
     }
 }
 
-impl actix::Handler<SystemEvents> for TxPoolActor {
+impl actix::Handler<NewHeadBlock> for TxPoolActor {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        if let SystemEvents::NewHeadBlock(block) = msg {
-            self.chain_header = block.get_block().header().clone();
-            self.sequence_number_cache.clear();
+    fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
+        let NewHeadBlock(block) = msg;
+        self.chain_header = block.get_block().header().clone();
+        self.sequence_number_cache.clear();
 
-            // NOTICE: as the new head block event is sepeated with chain_new_block event,
-            // we need to remove invalid txn here.
-            // In fact, it would be better if caller can make it into one.
-            // In this situation, we don't need to reimport invalid txn on chain_new_block.
-            let client = PoolClient::new(
-                self.chain_header.clone(),
-                self.storage.clone(),
-                self.sequence_number_cache.clone(),
-            );
-            self.queue.cull(client)
-        }
+        // NOTICE: as the new head block event is sepeated with chain_new_block event,
+        // we need to remove invalid txn here.
+        // In fact, it would be better if caller can make it into one.
+        // In this situation, we don't need to reimport invalid txn on chain_new_block.
+        let client = PoolClient::new(
+            self.chain_header.clone(),
+            self.storage.clone(),
+            self.sequence_number_cache.clone(),
+        );
+        self.queue.cull(client)
     }
 }
 

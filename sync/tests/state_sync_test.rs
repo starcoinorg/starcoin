@@ -22,7 +22,7 @@ use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use traits::ChainAsyncService;
 use txpool::TxPoolRef;
-use types::system_events::SystemEvents;
+use types::system_events::SyncBegin;
 
 #[test]
 fn test_state_sync() {
@@ -95,12 +95,7 @@ fn test_state_sync() {
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
-        let _ = bus_1
-            .clone()
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await;
+        let _ = bus_1.clone().send(Broadcast { msg: SyncBegin }).await;
         let miner_account = WalletAccount::random();
         // miner
         let _miner_1 =
@@ -199,12 +194,7 @@ fn test_state_sync() {
         )
         .unwrap();
         Delay::new(Duration::from_secs(5)).await;
-        let _ = bus_2
-            .clone()
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await;
+        let _ = bus_2.clone().send(Broadcast { msg: SyncBegin }).await;
 
         Delay::new(Duration::from_secs(30)).await;
 
