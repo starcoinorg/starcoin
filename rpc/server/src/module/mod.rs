@@ -54,7 +54,7 @@ impl From<AccountServiceError> for RpcError {
         match err {
             AccountServiceError::AccountError(_) => RpcError::InternalError,
             AccountServiceError::OtherError(_) => RpcError::InternalError,
-            e @ _ => RpcError::InvalidRequest(format!("{}", e)),
+            e => RpcError::InvalidRequest(format!("{}", e)),
         }
     }
 }

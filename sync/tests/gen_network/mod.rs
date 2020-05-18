@@ -16,7 +16,7 @@ pub fn gen_network(
     let key_pair = node_config.network.network_keypair();
     let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
     let network = NetworkActor::launch(
-        node_config.clone(),
+        node_config,
         bus,
         handle,
         genesis_hash,

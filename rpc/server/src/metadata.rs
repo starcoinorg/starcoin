@@ -1,12 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
-
-use jsonrpc_core;
 use jsonrpc_pubsub::{PubSubMetadata, Session};
-
-// use v1::types::Origin;
+use std::sync::Arc;
 
 /// RPC methods metadata.
 #[derive(Clone, Default, Debug)]

@@ -77,7 +77,7 @@ impl ConnectionProvider {
         match &self.conn_source {
             ConnSource::Ipc(sock_path, reactor) => {
                 let conn_fut = ipc::connect(sock_path, &reactor.handle())?;
-                conn_fut.compat().await.map_err(|e| ConnError::RpcError(e))
+                conn_fut.compat().await.map_err(ConnError::RpcError)
             }
             // only have ipc impl for now
             _ => unreachable!(),
@@ -503,7 +503,7 @@ impl RpcClientInner {
             state_client: channel.clone().into(),
             debug_client: channel.clone().into(),
             chain_client: channel.clone().into(),
-            pubsub_client: channel.clone().into(),
+            pubsub_client: channel.into(),
         }
     }
 }

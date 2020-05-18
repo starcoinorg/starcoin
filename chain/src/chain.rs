@@ -137,7 +137,7 @@ where
         let mut txns = user_txns
             .iter()
             .cloned()
-            .map(|user_txn| Transaction::UserTransaction(user_txn))
+            .map(Transaction::UserTransaction)
             .collect::<Vec<Transaction>>();
 
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
@@ -230,7 +230,6 @@ where
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
-        assert!(self.exist_block(hash));
         let header = if let Some(block) = self.get_block(hash)? {
             Some(block.header().clone())
         } else {
@@ -335,7 +334,6 @@ where
             Some(hash) => hash,
             None => self.current_header().id(),
         };
-        assert!(self.exist_block(id));
         self.storage.get_block_info(id)
     }
 
@@ -382,7 +380,7 @@ where
             .transactions()
             .iter()
             .cloned()
-            .map(|user_txn| Transaction::UserTransaction(user_txn))
+            .map(Transaction::UserTransaction)
             .collect::<Vec<Transaction>>();
         let block_metadata = header.clone().into_metadata();
 
@@ -480,7 +478,7 @@ pub(crate) fn info_2_accumulator(
     node_store: Arc<dyn AccumulatorTreeStore>,
 ) -> Result<MerkleAccumulator> {
     MerkleAccumulator::new(
-        accumulator_info.get_accumulator_root().clone(),
+        *accumulator_info.get_accumulator_root(),
         accumulator_info.get_frozen_subtree_roots().clone(),
         accumulator_info.get_num_leaves(),
         accumulator_info.get_num_nodes(),

@@ -40,7 +40,7 @@ impl Event {
             transaction_index,
             data: contract_event.event_data().to_vec(),
             type_tags: contract_event.type_tag().clone(),
-            event_key: contract_event.key().clone(),
+            event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number(),
         }
     }

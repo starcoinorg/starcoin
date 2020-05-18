@@ -7,7 +7,6 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
-use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::{
     parse_as_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
@@ -94,11 +93,7 @@ impl CommandAction for ExecuteCommand {
 
         let mut type_tags = vec![];
         for type_tag in &opt.type_tags {
-            type_tags.extend(
-                parser::parse_type_tags(type_tag.as_ref())?
-                    .into_iter()
-                    .map(|t| TypeTag::from(t)),
-            );
+            type_tags.extend(parser::parse_type_tags(type_tag.as_ref())?.into_iter());
         }
 
         let args = opt.args.clone();

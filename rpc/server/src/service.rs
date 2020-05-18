@@ -4,11 +4,8 @@
 use crate::extractors::{RpcExtractor, WsExtractor};
 use crate::metadata::Metadata;
 use jsonrpc_core::MetaIoHandler;
-use jsonrpc_http_server;
 use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
-use jsonrpc_tcp_server;
-use jsonrpc_ws_server;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_middleware::MetricMiddleware;
@@ -30,7 +27,7 @@ impl RpcService {
         let ipc = jsonrpc_ipc_server::ServerBuilder::new(io_handler.clone())
             .session_meta_extractor(RpcExtractor)
             .start(ipc_file.to_str().expect("Path to string should success."))
-            .expect(format!("Unable to start IPC server with ipc file: {:?}", ipc_file).as_str());
+            .unwrap_or_else(|_| panic!("Unable to start IPC server with ipc file: {:?}", ipc_file));
         info!("Ipc rpc server start at :{:?}", ipc_file);
         let http = match &config.rpc.http_address {
             Some(address) => {
@@ -65,7 +62,7 @@ impl RpcService {
         let ws_server = match &config.rpc.ws_address {
             None => None,
             Some(address) => {
-                let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler.clone())
+                let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
                     .session_meta_extractor(WsExtractor)
                     .max_payload(config.rpc.max_request_body_size)
                     .start(address)

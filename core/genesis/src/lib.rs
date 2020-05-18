@@ -75,7 +75,7 @@ impl Genesis {
         let transaction_info = Self::execute_genesis_txn(chain_state_set.clone(), &chain_state_db)?;
 
         let accumulator =
-            MerkleAccumulator::new(*ACCUMULATOR_PLACEHOLDER_HASH, vec![], 0, 0, storage.clone())?;
+            MerkleAccumulator::new(*ACCUMULATOR_PLACEHOLDER_HASH, vec![], 0, 0, storage)?;
         let txn_info_hash = transaction_info.crypto_hash();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
@@ -141,7 +141,7 @@ impl Genesis {
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
         let genesis = scs::from_bytes(&content)?;
-        return Ok(Some(genesis));
+        Ok(Some(genesis))
     }
 
     pub fn execute(self, storage: Arc<dyn Store>) -> Result<StartupInfo> {
@@ -174,8 +174,7 @@ impl Genesis {
         debug!("Genesis block id : {:?}", block.header().id());
 
         ensure!(
-            block.header().accumulator_root()
-                == txn_accumulator_info.get_accumulator_root().clone(),
+            block.header().accumulator_root() == *txn_accumulator_info.get_accumulator_root(),
             "Genesis block accumulator root mismatch."
         );
         //TODO verify consensus header

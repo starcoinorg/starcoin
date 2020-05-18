@@ -53,14 +53,14 @@ impl RpcActor {
         let io_handler = Self::extend_apis(
             NodeRpcImpl::new(config.clone(), network_service),
             Some(ChainRpcImpl::new(chain_service)),
-            Some(TxPoolRpcImpl::new(txpool_service.clone())),
+            Some(TxPoolRpcImpl::new(txpool_service)),
             Some(WalletRpcImpl::new(account_service)),
             Some(StateRpcImpl::new(state_service)),
-            pubsub_service.map(|s| PubSubImpl::new(s)),
+            pubsub_service.map(PubSubImpl::new),
             logger_handle.map(|logger_handle| DebugRpcImpl::new(config_clone, logger_handle)),
         )?;
 
-        Self::launch_with_handler(config.clone(), io_handler)
+        Self::launch_with_handler(config, io_handler)
     }
 
     pub fn extend_apis<C, N, T, A, S, D, P>(
@@ -138,9 +138,8 @@ impl RpcActor {
 
     fn do_stop(&mut self) {
         let server = std::mem::replace(&mut self.server, None);
-        match server {
-            Some(server) => server.close(),
-            None => {}
+        if let Some(server) = server {
+            server.close()
         }
     }
 }

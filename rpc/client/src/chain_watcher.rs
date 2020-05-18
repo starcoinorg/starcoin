@@ -76,7 +76,10 @@ impl Handler<WatchBlock> for ChainWatcher {
     /// This method is called for every message received by this actor.
     fn handle(&mut self, msg: WatchBlock, _ctx: &mut Self::Context) -> Self::Result {
         let (tx, rx) = oneshot::channel();
-        self.watched_blocks.entry(msg.0).or_insert(vec![]).push(tx);
+        self.watched_blocks
+            .entry(msg.0)
+            .or_insert_with(|| vec![])
+            .push(tx);
         MessageResult(rx)
     }
 }

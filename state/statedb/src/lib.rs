@@ -530,7 +530,7 @@ mod tests {
         state_with_proof.proof.verify(
             state_root,
             access_path,
-            state_with_proof.state.as_ref().map(|s| s.as_slice()),
+            state_with_proof.state.as_deref(),
         )?;
         Ok(())
     }
@@ -639,7 +639,7 @@ mod tests {
         let new_state = vec![1u8];
         chain_state_db.set(&access_path, new_state)?;
 
-        let chain_state_db_ori = ChainStateDB::new(storage.clone(), Some(old_root));
+        let chain_state_db_ori = ChainStateDB::new(storage, Some(old_root));
         let old_state2 = chain_state_db_ori.get(&access_path)?.unwrap();
         assert_eq!(old_state, old_state2);
 

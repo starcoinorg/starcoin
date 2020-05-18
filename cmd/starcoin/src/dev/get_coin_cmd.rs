@@ -46,9 +46,9 @@ impl CommandAction for GetCoinCommand {
             );
         }
         let client = ctx.state().client();
-        let to = client.wallet_default()?.ok_or(format_err!(
-            "Can not find default account, Please create account first."
-        ))?;
+        let to = client.wallet_default()?.ok_or_else(|| {
+            format_err!("Can not find default account, Please create account first.")
+        })?;
 
         let pre_mine_address = account_config::association_address();
         let chain_config = net.get_config();
@@ -63,10 +63,10 @@ impl CommandAction for GetCoinCommand {
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(&pre_mine_address)?
-            .expect(format!("pre mine address {} must exist", pre_mine_address).as_str());
+            .unwrap_or_else(|| panic!("pre mine address {} must exist", pre_mine_address));
         let balance = account_state_reader
             .get_balance(&pre_mine_address)?
-            .expect(format!("pre mine address {} balance must exist", pre_mine_address).as_str());
+            .unwrap_or_else(|| panic!("pre mine address {} balance must exist", pre_mine_address));
         let amount = opt.amount.unwrap_or(balance * 20 / 100);
         let raw_txn = Executor::build_transfer_txn(
             pre_mine_address,

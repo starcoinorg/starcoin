@@ -45,13 +45,12 @@ impl CommandAction for TransferCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let sender = match opt.from {
-            Some(from) => client.wallet_get(from)?.ok_or(format_err!(
-                "Can not find WalletAccount by address: {}",
-                from
-            ))?,
-            None => client.wallet_default()?.ok_or(format_err!(
-                "Can not find default account, Please input from account."
-            ))?,
+            Some(from) => client
+                .wallet_get(from)?
+                .ok_or_else(|| format_err!("Can not find WalletAccount by address: {}", from))?,
+            None => client.wallet_default()?.ok_or_else(|| {
+                format_err!("Can not find default account, Please input from account.")
+            })?,
         };
         let to = opt.to;
 
@@ -63,10 +62,12 @@ impl CommandAction for TransferCommand {
         } else {
             opt.public_key
                 .as_ref()
-                .ok_or(format_err!(
-                    "To account {} not exist on chain, please provide public_key",
-                    to
-                ))
+                .ok_or_else(|| {
+                    format_err!(
+                        "To account {} not exist on chain, please provide public_key",
+                        to
+                    )
+                })
                 .and_then(|pubkey_str| {
                     Ok(
                         AuthenticationKey::ed25519(&Ed25519PublicKey::from_encoded_string(
@@ -79,10 +80,12 @@ impl CommandAction for TransferCommand {
         };
         let account_resource = account_state_reader
             .get_account_resource(sender.address())?
-            .ok_or(format_err!(
-                "Can not find account on chain by address:{}",
-                sender.address()
-            ))?;
+            .ok_or_else(|| {
+                format_err!(
+                    "Can not find account on chain by address:{}",
+                    sender.address()
+                )
+            })?;
         let raw_txn = Executor::build_transfer_txn(
             sender.address,
             to,
