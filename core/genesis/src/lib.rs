@@ -103,9 +103,9 @@ impl Genesis {
         let txn = Transaction::StateSet(chain_state_set);
         let txn_hash = txn.crypto_hash();
 
-        let output = Executor::execute_transaction(chain_state, txn)?;
+        let output = Executor::execute_transactions(chain_state, vec![txn])?;
         ensure!(
-            output.status().vm_status().major_status == StatusCode::EXECUTED,
+            output[0].1.status().vm_status().major_status == StatusCode::EXECUTED,
             "Genesis txn execute fail."
         );
         let state_root = chain_state.commit()?;
@@ -115,9 +115,9 @@ impl Genesis {
             state_root,
             //TODO genesis event.
             HashValue::zero(),
-            output.events().to_vec(),
+            output[0].1.events().to_vec(),
             0,
-            output.status().vm_status().major_status,
+            output[0].1.status().vm_status().major_status,
         ))
     }
 

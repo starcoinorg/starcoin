@@ -55,8 +55,8 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    let output1 = Executor::execute_transactions(&chain_state, vec![txn1]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output1[0].1.status());
 
     let account2 = Account::new();
 
@@ -90,8 +90,8 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&chain_state, txn1)?;
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    let output1 = Executor::execute_transactions(&chain_state, vec![txn1])?;
+    assert_eq!(KEEP_STATUS.clone(), *output1[0].1.status());
 
     let sequence_number2 = get_sequence_number(account_config::association_address(), &chain_state);
     let account2 = Account::new();
@@ -100,8 +100,8 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number2, // fix me
         1_000,
     ));
-    let output2 = Executor::execute_transaction(&chain_state, txn2)?;
-    assert_eq!(KEEP_STATUS.clone(), *output2.status());
+    let output2 = Executor::execute_transactions(&chain_state, vec![txn2])?;
+    assert_eq!(KEEP_STATUS.clone(), *output2[0].1.status());
 
     let sequence_number3 = get_sequence_number(*account1.address(), &chain_state);
     let txn3 = Transaction::UserTransaction(peer_to_peer_txn(
@@ -110,8 +110,8 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number3, // fix me
         100,
     ));
-    let output3 = Executor::execute_transaction(&chain_state, txn3)?;
-    assert_eq!(KEEP_STATUS.clone(), *output3.status());
+    let output3 = Executor::execute_transactions(&chain_state, vec![txn3])?;
+    assert_eq!(KEEP_STATUS.clone(), *output3[0].1.status());
 
     Ok(())
 }
@@ -127,10 +127,9 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
     let account = Account::new();
-
     let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
-    let output = Executor::execute_transaction(&chain_state, txn).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
+    let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
 
     Ok(())
 }
@@ -150,8 +149,8 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&chain_state, txn1).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    let output1 = Executor::execute_transactions(&chain_state, vec![txn1]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output1[0].1.status());
 
     let account2 = Account::new();
 
@@ -164,8 +163,8 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
     );
 
     let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
-    let output = Executor::execute_transaction(&chain_state, txn2).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
+    let output = Executor::execute_transactions(&chain_state, vec![txn2]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
 
     Ok(())
 }
@@ -188,8 +187,8 @@ fn test_sequence_number() -> Result<()> {
 
     let account = Account::new();
     let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
-    let output = Executor::execute_transaction(&chain_state, txn).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
+    let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
 
     let new_sequence_number =
         get_sequence_number(account_config::association_address(), &chain_state);
@@ -252,8 +251,8 @@ fn test_publish_module() -> Result<()> {
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transaction(&chain_state, txn1)?;
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    let output1 = Executor::execute_transactions(&chain_state, vec![txn1])?;
+    assert_eq!(KEEP_STATUS.clone(), *output1[0].1.status());
 
     let program = String::from(
         "
@@ -274,8 +273,8 @@ fn test_publish_module() -> Result<()> {
         account_config::starcoin_type_tag(),
     ));
 
-    let output = Executor::execute_transaction(&chain_state, txn).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
+    let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
 
     Ok(())
 }
@@ -305,8 +304,8 @@ fn test_block_metadata() -> Result<()> {
             *account1.address(),
             Some(account1.auth_key_prefix()),
         ));
-        let output = Executor::execute_transaction(&chain_state, txn)?;
-        assert_eq!(KEEP_STATUS.clone(), *output.status());
+        let output = Executor::execute_transactions(&chain_state, vec![txn])?;
+        assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
     }
 
     let balance = get_balance(*account1.address(), &chain_state);

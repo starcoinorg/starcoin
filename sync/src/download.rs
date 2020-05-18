@@ -337,7 +337,11 @@ where
                 if sync_pivot.is_none() {
                     let state_sync_task_address = StateSyncTaskActor::launch(
                         self_peer_id,
-                        (root.state_root(), root.accumulator_root()),
+                        (
+                            root.state_root(),
+                            root.accumulator_root(),
+                            root.parent_block_accumulator_root(),
+                        ),
                         storage,
                         network.clone(),
                         sync_metadata.clone(),
@@ -347,7 +351,11 @@ where
                     if tmp < pivot {
                         if let Some(address) = sync_metadata.get_address() {
                             address
-                                .reset(root.state_root(), root.accumulator_root())
+                                .reset(
+                                    root.state_root(),
+                                    root.accumulator_root(),
+                                    root.parent_block_accumulator_root(),
+                                )
                                 .await;
                         } else {
                             info!("state sync reset address is none.");

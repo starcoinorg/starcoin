@@ -13,10 +13,7 @@ use types::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
     state_set::ChainStateSet,
-    transaction::{
-        RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput,
-        TransactionStatus,
-    },
+    transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
 use vm_runtime::genesis::generate_genesis_state_set;
@@ -26,7 +23,7 @@ use vm_runtime::{
         create_account_txn_sent_as_association, peer_to_peer_txn_sent_as_association,
         raw_peer_to_peer_txn,
     },
-    counters::{TXN_EXECUTION_HISTOGRAM, TXN_STATUS_COUNTERS},
+    counters::TXN_EXECUTION_HISTOGRAM,
     starcoin_vm::StarcoinVM,
 };
 
@@ -63,27 +60,17 @@ impl TransactionExecutor for Executor {
         Ok((chain_state_db.state_root(), state, events))
     }
 
-    fn execute_transaction(
+    fn execute_transactions(
         chain_state: &dyn ChainState,
-        txn: Transaction,
-    ) -> Result<TransactionOutput> {
+        txns: Vec<Transaction>,
+    ) -> Result<Vec<(HashValue, TransactionOutput)>> {
         let timer = TXN_EXECUTION_HISTOGRAM
-            .with_label_values(&["execute_transaction"])
+            .with_label_values(&["execute_transactions"])
             .start_timer();
         let mut vm = StarcoinVM::new();
-        let output = vm.execute_transaction(chain_state, txn);
+        let result = vm.execute_transactions(chain_state, txns)?;
         timer.observe_duration();
-
-        match output.status().clone() {
-            TransactionStatus::Keep(_status) => {
-                TXN_STATUS_COUNTERS.with_label_values(&["KEEP"]).inc();
-            }
-            TransactionStatus::Discard(_status) => {
-                TXN_STATUS_COUNTERS.with_label_values(&["DISCARD"]).inc();
-            }
-        }
-
-        Ok(output)
+        Ok(result)
     }
 
     fn validate_transaction(

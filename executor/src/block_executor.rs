@@ -11,6 +11,7 @@ use types::error::BlockExecutorError;
 use types::error::ExecutorResult;
 use types::transaction::TransactionStatus;
 use types::transaction::{Transaction, TransactionInfo};
+use vm_runtime::counters::TXN_STATUS_COUNTERS;
 
 #[derive(Clone)]
 pub struct BlockExecutor {}
@@ -26,25 +27,27 @@ impl BlockExecutor {
         let mut state_root = HashValue::zero();
         let mut transaction_hash = vec![];
         let mut vec_transaction_info = vec![];
-        for txn in txns {
-            let txn_hash = txn.crypto_hash();
-            let output = Executor::execute_transaction(chain_state, txn.clone())
-                .map_err(|_err| BlockExecutorError::BlockTransactionExecuteErr(txn_hash))?;
-
+        let results = Executor::execute_transactions(chain_state, txns.clone())
+            .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        for i in 0..txns.len() {
+            let (txn_state_root, output) = &results[i];
+            let txn_hash = txns[i].crypto_hash();
             match output.status() {
                 TransactionStatus::Discard(status) => {
+                    TXN_STATUS_COUNTERS.with_label_values(&["KEEP"]).inc();
                     return Err(BlockExecutorError::BlockTransactionDiscard(
                         status.clone(),
                         txn_hash,
-                    ))
+                    ));
                 }
                 TransactionStatus::Keep(status) => {
+                    TXN_STATUS_COUNTERS.with_label_values(&["DISCARD"]).inc();
                     //continue.
                     transaction_hash.push(txn_hash);
                     //TODO event root hash
                     vec_transaction_info.push(TransactionInfo::new(
-                        txn.clone().id(),
-                        state_root,
+                        txns[i].clone().id(),
+                        *txn_state_root,
                         HashValue::zero(),
                         output.events().to_vec(),
                         output.gas_used(),
@@ -52,9 +55,7 @@ impl BlockExecutor {
                     ));
                 }
             }
-            state_root = chain_state
-                .commit()
-                .map_err(|_err| BlockExecutorError::BlockChainStateCommitErr)?;
+            state_root = *txn_state_root;
         }
 
         let (accumulator_root, first_leaf_idx) = accumulator
