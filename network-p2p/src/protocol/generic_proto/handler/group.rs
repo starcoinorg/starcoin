@@ -180,7 +180,7 @@ pub enum NotifsHandlerIn {
     /// Sends a message through the custom protocol substream.
     ///
     /// > **Note**: This must **not** be a `ConsensusMessage`, `Transactions`, or
-    /// > 			`BlockAnnounce` message.
+    /// >     `BlockAnnounce` message.
     SendLegacy {
         /// The message to send.
         message: Vec<u8>,

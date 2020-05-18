@@ -256,9 +256,9 @@ impl NetworkWorker {
 
         let service = Arc::new(NetworkService {
             bandwidth,
-            external_addresses: external_addresses.clone(),
-            num_connected: num_connected.clone(),
-            is_major_syncing: is_major_syncing.clone(),
+            external_addresses,
+            num_connected,
+            is_major_syncing,
             peerset: peerset_handle,
             local_peer_id,
             to_worker,
@@ -304,27 +304,27 @@ impl NetworkWorker {
         let connected_peers = {
             let swarm = &mut *swarm;
             open.iter().filter_map(move |peer_id| {
-				let known_addresses = NetworkBehaviour::addresses_of_peer(&mut **swarm, peer_id)
-					.into_iter().collect();
+        	let known_addresses = NetworkBehaviour::addresses_of_peer(&mut **swarm, peer_id)
+        		.into_iter().collect();
 
-				let endpoint = if let Some(e) = swarm.node(peer_id).map(|i| i.endpoint()) {
-					e.clone().into()
-				} else {
-					error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
-						and debug information about {:?}", peer_id);
-					return None
-				};
+        	let endpoint = if let Some(e) = swarm.node(peer_id).map(|i| i.endpoint()) {
+        		e.clone().into()
+        	} else {
+        		error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
+                and debug information about {:?}", peer_id);
+        		return None
+        	};
 
-				Some((peer_id.to_base58(), NetworkStatePeer {
-					endpoint,
-					version_string: swarm.node(peer_id)
-						.and_then(|i| i.client_version().map(|s| s.to_owned())),
-					latest_ping_time: swarm.node(peer_id).and_then(|i| i.latest_ping()),
-					enabled: swarm.user_protocol().is_enabled(&peer_id),
-					open: swarm.user_protocol().is_open(&peer_id),
-					known_addresses,
-				}))
-			}).collect()
+        	Some((peer_id.to_base58(), NetworkStatePeer {
+        		endpoint,
+        		version_string: swarm.node(peer_id)
+                .and_then(|i| i.client_version().map(|s| s.to_owned())),
+        		latest_ping_time: swarm.node(peer_id).and_then(|i| i.latest_ping()),
+        		enabled: swarm.user_protocol().is_enabled(&peer_id),
+        		open: swarm.user_protocol().is_open(&peer_id),
+        		known_addresses,
+        	}))
+        }).collect()
         };
 
         let not_connected_peers = {
@@ -393,10 +393,10 @@ impl NetworkService {
     /// channel with this protocol name is closed.
     ///
     /// > **Note**: The reason why this is a no-op in the situation where we have no channel is
-    /// >			that we don't guarantee message delivery anyway. Networking issues can cause
-    /// >			connections to drop at any time, and higher-level logic shouldn't differentiate
-    /// >			between the remote voluntarily closing a substream or a network error
-    /// >			preventing the message from being delivered.
+    /// >        that we don't guarantee message delivery anyway. Networking issues can cause
+    /// >        connections to drop at any time, and higher-level logic shouldn't differentiate
+    /// >        between the remote voluntarily closing a substream or a network error
+    /// >        preventing the message from being delivered.
     ///
     /// The protocol must have been registered with `register_notifications_protocol`.
     ///
@@ -725,8 +725,7 @@ impl Future for NetworkWorker {
                     let _ = tx.send(result);
                 }
                 ServiceToWorkerMsg::SelfInfo(info) => {
-                    let _ = this
-                        .network_service
+                    this.network_service
                         .user_protocol_mut()
                         .update_self_info(info);
                 }

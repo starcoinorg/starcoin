@@ -29,7 +29,6 @@ use libp2p::NetworkBehaviour;
 use log::debug;
 use std::collections::VecDeque;
 use std::{iter, task::Context, task::Poll};
-use void;
 
 /// General behaviour of the network. Combines all protocols together.
 #[derive(NetworkBehaviour)]
@@ -69,7 +68,7 @@ impl Behaviour {
     ) -> Self {
         Behaviour {
             protocol,
-            debug_info: debug_info::DebugInfoBehaviour::new(user_agent, local_public_key.clone()),
+            debug_info: debug_info::DebugInfoBehaviour::new(user_agent, local_public_key),
             discovery: disco_config.finish(),
             events: VecDeque::new(),
         }

@@ -36,7 +36,7 @@ const BANNED_THRESHOLD: i32 = 82 * (i32::min_value() / 100);
 /// Reputation change for a node when we get disconnected from it.
 const DISCONNECT_REPUTATION_CHANGE: i32 = -256;
 /// Reserved peers group ID
-const RESERVED_NODES: &'static str = "reserved";
+const RESERVED_NODES: &str = "reserved";
 
 #[derive(Debug)]
 enum Action {
@@ -86,7 +86,7 @@ impl PeersetHandle {
     /// Has no effect if the node was already a reserved peer.
     ///
     /// > **Note**: Keep in mind that the networking has to know an address for this node,
-    /// >			otherwise it will not be able to connect to it.
+    /// >    otherwise it will not be able to connect to it.
     pub fn add_reserved_peer(&self, peer_id: PeerId) {
         let _ = self.tx.unbounded_send(Action::AddReservedPeer(peer_id));
     }
@@ -171,7 +171,7 @@ pub struct PeersetConfig {
     /// List of bootstrap nodes to initialize the peer with.
     ///
     /// > **Note**: Keep in mind that the networking has to know an address for these nodes,
-    /// >			otherwise it will not be able to connect to them.
+    /// >    otherwise it will not be able to connect to them.
     pub bootnodes: Vec<PeerId>,
 
     /// If true, we only accept reserved nodes.
@@ -180,7 +180,7 @@ pub struct PeersetConfig {
     /// List of nodes that we should always be connected to.
     ///
     /// > **Note**: Keep in mind that the networking has to know an address for these nodes,
-    /// >			otherwise it will not be able to connect to them.
+    /// >    otherwise it will not be able to connect to them.
     pub reserved_nodes: Vec<PeerId>,
 }
 
@@ -497,7 +497,7 @@ impl Peerset {
     /// Adds discovered peer ids to the PSM.
     ///
     /// > **Note**: There is no equivalent "expired" message, meaning that it is the responsibility
-    /// >			of the PSM to remove `PeerId`s that fail to dial too often.
+    /// >    of the PSM to remove `PeerId`s that fail to dial too often.
     pub fn discovered<I: IntoIterator<Item = PeerId>>(&mut self, peer_ids: I) {
         let mut discovered_any = false;
 

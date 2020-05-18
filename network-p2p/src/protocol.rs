@@ -64,7 +64,7 @@ mod rep {
 pub enum CustomMessageOutcome {
     NotificationStreamOpened {
         remote: PeerId,
-        info: PeerInfo,
+        info: Box<PeerInfo>,
     },
     /// Notification protocols have been closed with a remote.
     NotificationStreamClosed {
@@ -221,7 +221,7 @@ impl NetworkBehaviour for Protocol {
                 peer_id,
                 messages: _,
             } => {
-                self.on_clogged_peer(peer_id.clone());
+                self.on_clogged_peer(peer_id);
                 CustomMessageOutcome::None
             }
         };
@@ -422,7 +422,7 @@ impl Protocol {
         // Notify all the notification protocols as open.
         CustomMessageOutcome::NotificationStreamOpened {
             remote: who,
-            info: status.info,
+            info: Box::new(status.info),
         }
     }
 
@@ -552,7 +552,7 @@ impl Protocol {
             .iter()
             .map(|(peer_id, _peer)| event::Event::NotificationStreamOpened {
                 remote: peer_id.clone(),
-                info: self.chain_info.self_info.clone(),
+                info: Box::new(self.chain_info.self_info.clone()),
             })
             .collect()
     }
