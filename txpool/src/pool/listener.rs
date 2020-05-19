@@ -184,7 +184,7 @@ mod tests {
             AccountAddress::random(),
             4,
             TransactionPayload::Script(Script::new(vec![1, 2, 3], vec![], vec![])),
-            100000,
+            100_000,
             10,
             types::account_config::starcoin_type_tag(),
             Duration::from_secs(60),

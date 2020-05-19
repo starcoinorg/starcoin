@@ -1,4 +1,3 @@
-
 use crate::miner::{MineCtx, Miner};
 use crate::miner_client::miner::MinerClientActor;
 use crate::stratum::StratumManager;

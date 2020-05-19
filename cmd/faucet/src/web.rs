@@ -65,7 +65,7 @@ pub async fn run(server: Server, faucet: Faucet) {
             "/api/fund" => {
                 let resp = handle_fund(&faucet, query).await;
                 //todo:: handle io error
-                let _ = request.respond(resp).unwrap();
+                request.respond(resp).unwrap();
             }
             _ => {
                 let _ = request.respond(response_custom(404, "Not found"));
