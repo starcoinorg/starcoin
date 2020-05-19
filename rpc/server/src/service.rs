@@ -12,7 +12,7 @@ use starcoin_rpc_middleware::MetricMiddleware;
 use std::sync::Arc;
 
 pub struct RpcService {
-    ipc: jsonrpc_ipc_server::Server,
+    ipc: Option<jsonrpc_ipc_server::Server>,
     http: Option<jsonrpc_http_server::Server>,
     tcp: Option<jsonrpc_tcp_server::Server>,
     ws: Option<jsonrpc_ws_server::Server>,
@@ -23,12 +23,7 @@ impl RpcService {
         config: Arc<NodeConfig>,
         io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
     ) -> RpcService {
-        let ipc_file = config.rpc.get_ipc_file();
-        let ipc = jsonrpc_ipc_server::ServerBuilder::new(io_handler.clone())
-            .session_meta_extractor(RpcExtractor)
-            .start(ipc_file.to_str().expect("Path to string should success."))
-            .unwrap_or_else(|_| panic!("Unable to start IPC server with ipc file: {:?}", ipc_file));
-        info!("Ipc rpc server start at :{:?}", ipc_file);
+        let ipc = Self::start_ipc(&config, io_handler.clone());
         let http = match &config.rpc.http_address {
             Some(address) => {
                 let http = jsonrpc_http_server::ServerBuilder::new(io_handler.clone())
@@ -80,8 +75,39 @@ impl RpcService {
         }
     }
 
+    #[cfg(not(windows))]
+    fn start_ipc(
+        config: &NodeConfig,
+        io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
+    ) -> Option<jsonrpc_ipc_server::Server> {
+        let ipc_file = config.rpc.get_ipc_file();
+        info!("Ipc rpc server start at :{:?}", ipc_file);
+        Some(
+            jsonrpc_ipc_server::ServerBuilder::new(io_handler)
+                .session_meta_extractor(RpcExtractor)
+                .start(ipc_file.to_str().expect("Path to string should success."))
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "Unable to start IPC server with ipc file: {:?}, error: {:?}",
+                        ipc_file, e
+                    )
+                }),
+        )
+    }
+
+    //IPC raise a error on windows: The filename, directory name, or volume label syntax is incorrect.
+    #[cfg(windows)]
+    fn start_ipc(
+        _config: &NodeConfig,
+        io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
+    ) -> Option<jsonrpc_ipc_server::Server> {
+        None
+    }
+
     pub fn close(self) {
-        self.ipc.close();
+        if let Some(ipc) = self.ipc {
+            ipc.close();
+        }
         if let Some(http) = self.http {
             http.close();
         }
