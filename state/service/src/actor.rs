@@ -15,7 +15,7 @@ use starcoin_state_api::{
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::system_events::SystemEvents;
+use starcoin_types::system_events::NewHeadBlock;
 use std::sync::Arc;
 
 pub struct ChainStateActor {
@@ -42,7 +42,7 @@ impl Actor for ChainStateActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let recipient = ctx.address().recipient::<SystemEvents>();
+        let recipient = ctx.address().recipient::<NewHeadBlock>();
         self.bus
             .clone()
             .subscribe(recipient)
@@ -76,15 +76,15 @@ impl Handler<StateRequest> for ChainStateActor {
     }
 }
 
-impl actix::Handler<SystemEvents> for ChainStateActor {
+impl actix::Handler<NewHeadBlock> for ChainStateActor {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemEvents, _ctx: &mut Self::Context) -> Self::Result {
-        if let SystemEvents::NewHeadBlock(block) = msg {
-            let state_root = block.header().state_root();
-            info!("ChainStateActor change StateRoot to : {:?}", state_root);
-            self.service.change_root(state_root);
-        }
+    fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
+        let NewHeadBlock(block) = msg;
+
+        let state_root = block.header().state_root();
+        info!("ChainStateActor change StateRoot to : {:?}", state_root);
+        self.service.change_root(state_root);
     }
 }
 

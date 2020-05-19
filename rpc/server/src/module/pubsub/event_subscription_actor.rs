@@ -11,7 +11,7 @@ use starcoin_rpc_api::types::event::Event;
 use starcoin_storage::Store;
 use starcoin_types::block::Block;
 use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::system_events::SystemEvents;
+use starcoin_types::system_events::NewHeadBlock;
 use std::sync::Arc;
 
 pub struct ChainNotifyHandlerActor {
@@ -41,7 +41,7 @@ impl actix::Actor for ChainNotifyHandlerActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         self.bus
             .clone()
-            .channel::<SystemEvents>()
+            .channel::<NewHeadBlock>()
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
@@ -58,16 +58,15 @@ impl actix::Actor for ChainNotifyHandlerActor {
             .wait(ctx);
     }
 }
-impl actix::StreamHandler<SystemEvents> for ChainNotifyHandlerActor {
-    fn handle(&mut self, item: SystemEvents, _ctx: &mut Self::Context) {
-        if let SystemEvents::NewHeadBlock(block_detail) = item {
-            let block = block_detail.get_block();
-            // notify header.
-            self.notify_new_block(block);
-            // notify events
-            if let Err(e) = self.notify_events(block, self.store.clone()) {
-                error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
-            }
+impl actix::StreamHandler<NewHeadBlock> for ChainNotifyHandlerActor {
+    fn handle(&mut self, item: NewHeadBlock, _ctx: &mut Self::Context) {
+        let NewHeadBlock(block_detail) = item;
+        let block = block_detail.get_block();
+        // notify header.
+        self.notify_new_block(block);
+        // notify events
+        if let Err(e) = self.notify_events(block, self.store.clone()) {
+            error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
         }
     }
 }

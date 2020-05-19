@@ -17,7 +17,7 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::Consensus;
 use traits::{ChainReader, ChainWriter};
-use txpool::TxPoolRef;
+use txpool::TxPool;
 use types::U256;
 async fn gen_master_chain(
     times: u64,
@@ -32,12 +32,13 @@ async fn gen_master_chain(
     let bus = BusActor::launch();
     let txpool = {
         let best_block_id = *startup_info.get_master();
-        TxPoolRef::start(
+        TxPool::start(
             node_config.tx_pool.clone(),
             storage.clone(),
             best_block_id,
             bus.clone(),
         )
+        .get_async_service()
     };
     let sync_metadata = SyncMetadata::new(node_config.clone(), bus.clone());
     let chain = ChainActor::<DevConsensus>::launch(

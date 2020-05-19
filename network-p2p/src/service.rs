@@ -31,23 +31,13 @@ use std::sync::{
     Arc,
 };
 use std::task::Poll;
-use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
-    fs, io,
-    marker::PhantomData,
-    path::Path,
-};
+use std::{borrow::Cow, collections::HashSet, fs, io, path::Path};
 
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
 };
-use libp2p::core::{
-    connection::{ConnectionError, PendingConnectionError},
-    either::EitherError,
-};
-use libp2p::ping::handler::PingFailure;
+use libp2p::core::connection::ConnectionError;
 use libp2p::swarm::{
     protocols_handler::NodeHandlerWrapperError, NetworkBehaviour, SwarmBuilder, SwarmEvent,
 };
@@ -57,7 +47,6 @@ use parking_lot::Mutex;
 use peerset::{PeersetHandle, ReputationChange};
 use types::peer_info::PeerInfo;
 
-use crate::behaviour::RpcRequest;
 use crate::config::{Params, TransportConfig};
 use crate::discovery::DiscoveryConfig;
 use crate::metrics::Metrics;
@@ -66,14 +55,13 @@ use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
 use crate::protocol::event::Event;
-use crate::protocol::{ChainInfo, LegacyConnectionKillError, Protocol};
+use crate::protocol::{ChainInfo, Protocol};
+use crate::Multiaddr;
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
     parse_addr, parse_str_addr, ConnectedPoint,
 };
 use crate::{config::NonReservedPeerMode, transport};
-use crate::{protocol, Multiaddr};
-use bytes::Buf;
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -92,14 +80,6 @@ impl From<PeersetHandle> for ReportHandle {
         ReportHandle {
             inner: peerset_handle,
         }
-    }
-}
-
-impl ReportHandle {
-    /// Report a given peer as either beneficial (+) or costly (-) according to the
-    /// given scalar.
-    pub fn report_peer(&self, who: PeerId, cost_benefit: ReputationChange) {
-        self.inner.report_peer(who, cost_benefit);
     }
 }
 
@@ -276,23 +256,19 @@ impl NetworkWorker {
 
         let service = Arc::new(NetworkService {
             bandwidth,
-            external_addresses: external_addresses.clone(),
-            num_connected: num_connected.clone(),
-            is_major_syncing: is_major_syncing.clone(),
+            external_addresses,
+            num_connected,
+            is_major_syncing,
             peerset: peerset_handle,
             local_peer_id,
             to_worker,
         });
 
         Ok(NetworkWorker {
-            external_addresses,
-            num_connected,
-            is_major_syncing,
             network_service: swarm,
             service,
             from_worker,
             event_streams: Vec::new(),
-            rpc_streams: Vec::new(),
             metrics: Metrics::register().ok(),
         })
     }
@@ -328,27 +304,27 @@ impl NetworkWorker {
         let connected_peers = {
             let swarm = &mut *swarm;
             open.iter().filter_map(move |peer_id| {
-				let known_addresses = NetworkBehaviour::addresses_of_peer(&mut **swarm, peer_id)
-					.into_iter().collect();
+        	let known_addresses = NetworkBehaviour::addresses_of_peer(&mut **swarm, peer_id)
+        		.into_iter().collect();
 
-				let endpoint = if let Some(e) = swarm.node(peer_id).map(|i| i.endpoint()) {
-					e.clone().into()
-				} else {
-					error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
-						and debug information about {:?}", peer_id);
-					return None
-				};
+        	let endpoint = if let Some(e) = swarm.node(peer_id).map(|i| i.endpoint()) {
+        		e.clone().into()
+        	} else {
+        		error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
+                and debug information about {:?}", peer_id);
+        		return None
+        	};
 
-				Some((peer_id.to_base58(), NetworkStatePeer {
-					endpoint,
-					version_string: swarm.node(peer_id)
-						.and_then(|i| i.client_version().map(|s| s.to_owned())),
-					latest_ping_time: swarm.node(peer_id).and_then(|i| i.latest_ping()),
-					enabled: swarm.user_protocol().is_enabled(&peer_id),
-					open: swarm.user_protocol().is_open(&peer_id),
-					known_addresses,
-				}))
-			}).collect()
+        	Some((peer_id.to_base58(), NetworkStatePeer {
+        		endpoint,
+        		version_string: swarm.node(peer_id)
+                .and_then(|i| i.client_version().map(|s| s.to_owned())),
+        		latest_ping_time: swarm.node(peer_id).and_then(|i| i.latest_ping()),
+        		enabled: swarm.user_protocol().is_enabled(&peer_id),
+        		open: swarm.user_protocol().is_open(&peer_id),
+        		known_addresses,
+        	}))
+        }).collect()
         };
 
         let not_connected_peers = {
@@ -417,10 +393,10 @@ impl NetworkService {
     /// channel with this protocol name is closed.
     ///
     /// > **Note**: The reason why this is a no-op in the situation where we have no channel is
-    /// >			that we don't guarantee message delivery anyway. Networking issues can cause
-    /// >			connections to drop at any time, and higher-level logic shouldn't differentiate
-    /// >			between the remote voluntarily closing a substream or a network error
-    /// >			preventing the message from being delivered.
+    /// >        that we don't guarantee message delivery anyway. Networking issues can cause
+    /// >        connections to drop at any time, and higher-level logic shouldn't differentiate
+    /// >        between the remote voluntarily closing a substream or a network error
+    /// >        preventing the message from being delivered.
     ///
     /// The protocol must have been registered with `register_notifications_protocol`.
     ///
@@ -679,12 +655,6 @@ enum ServiceToWorkerMsg {
 /// You are encouraged to poll this in a separate background thread or task.
 #[must_use = "The NetworkWorker must be polled in order for the network to work"]
 pub struct NetworkWorker {
-    /// Updated by the `NetworkWorker` and loaded by the `NetworkService`.
-    external_addresses: Arc<Mutex<Vec<Multiaddr>>>,
-    /// Updated by the `NetworkWorker` and loaded by the `NetworkService`.
-    num_connected: Arc<AtomicUsize>,
-    /// Updated by the `NetworkWorker` and loaded by the `NetworkService`.
-    is_major_syncing: Arc<AtomicBool>,
     /// The network service that can be extracted and shared through the codebase.
     service: Arc<NetworkService>,
     /// The *actual* network.
@@ -693,7 +663,6 @@ pub struct NetworkWorker {
     from_worker: mpsc::UnboundedReceiver<ServiceToWorkerMsg>,
     /// Senders for events that happen on the network.
     event_streams: Vec<mpsc::UnboundedSender<Event>>,
-    rpc_streams: Vec<mpsc::UnboundedSender<RpcRequest>>,
     /// Prometheus network metrics.
     metrics: Option<Metrics>,
 }
@@ -745,7 +714,7 @@ impl Future for NetworkWorker {
                     .user_protocol_mut()
                     .disconnect_peer(&who),
                 ServiceToWorkerMsg::IsConnected(who, tx) => {
-                    tx.send(this.is_open(&who));
+                    let _ = tx.send(this.is_open(&who));
                 }
                 ServiceToWorkerMsg::ConnectedPeers(tx) => {
                     let peers = this.connected_peers();
@@ -753,7 +722,7 @@ impl Future for NetworkWorker {
                     for peer in peers {
                         result.insert(peer.clone());
                     }
-                    tx.send(result);
+                    let _ = tx.send(result);
                 }
                 ServiceToWorkerMsg::SelfInfo(info) => {
                     this.network_service
@@ -761,7 +730,7 @@ impl Future for NetworkWorker {
                         .update_self_info(info);
                 }
                 ServiceToWorkerMsg::AddressByPeerID(peer_id, tx) => {
-                    tx.send(this.network_service.get_address(&peer_id));
+                    let _ = tx.send(this.network_service.get_address(&peer_id));
                 }
             }
         }
@@ -776,9 +745,6 @@ impl Future for NetworkWorker {
                 Poll::Pending => break,
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Event(ev))) => this
                     .event_streams
-                    .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
-                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Request(ev))) => this
-                    .rpc_streams
                     .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(_))) => {}
                 Poll::Ready(SwarmEvent::ConnectionEstablished {
@@ -816,22 +782,6 @@ impl Future for NetworkWorker {
                                 .connections_closed_total
                                 .with_label_values(&[dir, "transport-error"])
                                 .inc(),
-                            // ConnectionError::Handler(NodeHandlerWrapperError::Handler(
-                            //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
-                            //         EitherError::B(EitherError::A(PingFailure::Timeout)),
-                            //     )))),
-                            // )) => metrics
-                            //     .connections_closed_total
-                            //     .with_label_values(&[dir, "ping-timeout"])
-                            //     .inc(),
-                            // ConnectionError::Handler(NodeHandlerWrapperError::Handler(
-                            //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
-                            //         EitherError::A(EitherError::B(LegacyConnectionKillError)),
-                            //     )))),
-                            // )) => metrics
-                            //     .connections_closed_total
-                            //     .with_label_values(&[dir, "force-closed"])
-                            //     .inc(),
                             ConnectionError::Handler(NodeHandlerWrapperError::Handler(_)) => {
                                 metrics
                                     .connections_closed_total

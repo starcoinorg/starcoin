@@ -18,7 +18,7 @@
 //! substreams for a single gossiping protocol.
 //!
 //! > **Note**: Each instance corresponds to a single protocol. In order to support multiple
-//! >			protocols, you need to create multiple instances and group them.
+//! >    protocols, you need to create multiple instances and group them.
 //!
 
 use crate::protocol::generic_proto::upgrade::{NotificationsIn, NotificationsInSubstream};

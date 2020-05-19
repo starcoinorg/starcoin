@@ -23,7 +23,7 @@ use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::StartupInfo,
-    system_events::SystemEvents,
+    system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, TransactionInfo},
 };
 
@@ -311,7 +311,7 @@ where
     pub fn broadcast_2_bus(&self, block: BlockDetail) {
         let bus = self.bus.clone();
         bus.do_send(Broadcast {
-            msg: SystemEvents::NewHeadBlock(Arc::new(block)),
+            msg: NewHeadBlock(Arc::new(block)),
         });
     }
 
@@ -320,7 +320,7 @@ where
             Arbiter::spawn(async move {
                 let id = block.header().id();
                 let is_ok = network
-                    .broadcast_system_event(SystemEvents::NewHeadBlock(Arc::new(block)))
+                    .broadcast_new_head_block(NewHeadBlock(Arc::new(block)))
                     .await
                     .is_ok();
                 debug!("broadcast system event : {:?}, is_ok:{}", id, is_ok);

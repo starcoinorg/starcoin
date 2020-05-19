@@ -52,7 +52,7 @@ pub enum Event {
     NotificationStreamOpened {
         /// Node we opened the substream with.
         remote: PeerId,
-        info: PeerInfo,
+        info: Box<PeerInfo>,
     },
 
     /// Closed a substream with the given node. Always matches a corresponding previous

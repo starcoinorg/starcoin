@@ -21,8 +21,8 @@ use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use traits::ChainAsyncService;
-use txpool::TxPoolRef;
-use types::system_events::SystemEvents;
+use txpool::{TxPool, TxPoolService};
+use types::system_events::SyncBegin;
 
 #[test]
 fn test_state_sync() {
@@ -51,15 +51,17 @@ fn test_state_sync() {
         let genesis_1 = Genesis::build(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
+
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config_1.tx_pool.clone(),
                 storage_1.clone(),
                 best_block_id,
                 bus_1.clone(),
             )
         };
+        let txpool_ref_1 = txpool_1.get_async_service();
 
         // network
         let (network_1, addr_1) = gen_network(
@@ -78,7 +80,7 @@ fn test_state_sync() {
             storage_1.clone(),
             Some(network_1.clone()),
             bus_1.clone(),
-            txpool_1.clone(),
+            txpool_ref_1.clone(),
             sync_metadata_actor_1.clone(),
         )
         .unwrap();
@@ -89,31 +91,29 @@ fn test_state_sync() {
             bus_1.clone(),
             first_p,
             first_chain.clone(),
-            txpool_1.clone(),
+            txpool_ref_1.clone(),
             network_1.clone(),
             storage_1.clone(),
             sync_metadata_actor_1.clone(),
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
-        let _ = bus_1
-            .clone()
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await;
+        let _ = bus_1.clone().send(Broadcast { msg: SyncBegin }).await;
         let miner_account = WalletAccount::random();
         // miner
-        let _miner_1 =
-            MinerActor::<DevConsensus, TxPoolRef, ChainActorRef<DevConsensus>, Storage>::launch(
-                node_config_1.clone(),
-                bus_1.clone(),
-                storage_1.clone(),
-                txpool_1.clone(),
-                first_chain.clone(),
-                None,
-                miner_account,
-            );
+        let _miner_1 = MinerActor::<
+            DevConsensus,
+            TxPoolService,
+            ChainActorRef<DevConsensus>,
+            Storage,
+        >::launch(
+            node_config_1.clone(),
+            bus_1.clone(),
+            storage_1.clone(),
+            txpool_1.get_service(),
+            first_chain.clone(),
+            miner_account,
+        );
         MinerClientActor::new(node_config_1.miner.clone()).start();
         Delay::new(Duration::from_secs(30)).await;
         let block_1 = first_chain.clone().master_head_block().await.unwrap();
@@ -154,12 +154,13 @@ fn test_state_sync() {
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
-            TxPoolRef::start(
+            TxPool::start(
                 node_config_2.tx_pool.clone(),
                 storage_2.clone(),
                 best_block_id,
                 bus_2.clone(),
             )
+            .get_async_service()
         };
         // network
         let (network_2, addr_2) = gen_network(
@@ -201,12 +202,7 @@ fn test_state_sync() {
         )
         .unwrap();
         Delay::new(Duration::from_secs(5)).await;
-        let _ = bus_2
-            .clone()
-            .send(Broadcast {
-                msg: SystemEvents::SyncBegin(),
-            })
-            .await;
+        let _ = bus_2.clone().send(Broadcast { msg: SyncBegin }).await;
 
         Delay::new(Duration::from_secs(30)).await;
 

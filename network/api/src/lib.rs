@@ -1,7 +1,7 @@
 use crate::messages::PeerMessage;
 use anyhow::*;
 use libp2p::PeerId;
-use starcoin_types::system_events::SystemEvents;
+use starcoin_types::system_events::NewHeadBlock;
 use std::time::Duration;
 
 pub mod messages;
@@ -12,7 +12,7 @@ use starcoin_types::peer_info::PeerInfo;
 #[async_trait]
 pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin {
     async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()>;
-    async fn broadcast_system_event(&self, event: SystemEvents) -> Result<()>;
+    async fn broadcast_new_head_block(&self, event: NewHeadBlock) -> Result<()>;
 
     fn identify(&self) -> &PeerId;
 
@@ -54,7 +54,7 @@ impl NetworkService for DummyNetworkService {
         Ok(())
     }
 
-    async fn broadcast_system_event(&self, _event: SystemEvents) -> Result<()> {
+    async fn broadcast_new_head_block(&self, _event: NewHeadBlock) -> Result<()> {
         Ok(())
     }
 

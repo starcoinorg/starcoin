@@ -30,6 +30,7 @@ members = [
     "txpool/mock-service",
     "txpool/tx-relay",
     "executor",
+    "executor/benchmark",
     "chain",
     "node",
     "sync",

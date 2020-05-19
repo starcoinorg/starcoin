@@ -26,7 +26,7 @@ use starcoin_executor::TransactionExecutor;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter, Consensus};
 use starcoin_types::block::BlockDetail;
-use starcoin_types::system_events::SystemEvents;
+use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_wallet_api::WalletAccount;
 
@@ -94,8 +94,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // send block
     let block_detail = Arc::new(BlockDetail::new(new_block, 0.into()));
-    bus.broadcast(SystemEvents::NewHeadBlock(block_detail))
-        .await?;
+    bus.broadcast(NewHeadBlock(block_detail)).await?;
 
     let mut receiver = receiver.compat();
     let res = receiver.next().await.transpose().unwrap();

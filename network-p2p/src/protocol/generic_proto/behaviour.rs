@@ -200,7 +200,7 @@ enum PeerState {
 
 impl PeerState {
     /// True if there exists any established connection to the peer.
-    fn is_connected(&self) -> bool {
+    fn _is_connected(&self) -> bool {
         match self {
             PeerState::Disabled { .. }
             | PeerState::DisabledPendingEnable { .. }
@@ -240,7 +240,7 @@ impl PeerState {
     }
 
     /// True if that node has been requested by the PSM.
-    fn is_requested(&self) -> bool {
+    fn _is_requested(&self) -> bool {
         match self {
             PeerState::Poisoned => false,
             PeerState::Banned { .. } => false,
@@ -354,7 +354,7 @@ impl GenericProto {
     /// Modifies the handshake of the given notifications protocol.
     ///
     /// Has no effect if the protocol is unknown.
-    pub fn set_notif_protocol_handshake(
+    pub fn _set_notif_protocol_handshake(
         &mut self,
         protocol_name: &[u8],
         handshake_message: impl Into<Vec<u8>>,
@@ -371,7 +371,7 @@ impl GenericProto {
         }
 
         // Send an event to all the peers we're connected to, updating the handshake message.
-        for (peer_id, _) in self.peers.iter().filter(|(_, state)| state.is_connected()) {
+        for (peer_id, _) in self.peers.iter().filter(|(_, state)| state._is_connected()) {
             self.events.push(NetworkBehaviourAction::NotifyHandler {
                 peer_id: peer_id.clone(),
                 handler: NotifyHandler::All,
@@ -381,11 +381,6 @@ impl GenericProto {
                 },
             });
         }
-    }
-
-    /// Returns the number of discovered nodes that we keep in memory.
-    pub fn num_discovered_peers(&self) -> usize {
-        self.peerset.num_discovered_peers()
     }
 
     /// Returns the list of all the peers we have an open channel to.
@@ -490,14 +485,6 @@ impl GenericProto {
         }
     }
 
-    /// Returns the list of all the peers that the peerset currently requests us to be connected to.
-    pub fn requested_peers<'a>(&'a self) -> impl Iterator<Item = &'a PeerId> + 'a {
-        self.peers
-            .iter()
-            .filter(|(_, state)| state.is_requested())
-            .map(|(id, _)| id)
-    }
-
     /// Returns true if we try to open protocols with the given peer.
     pub fn is_enabled(&self, peer_id: &PeerId) -> bool {
         match self.peers.get(peer_id) {
@@ -517,7 +504,7 @@ impl GenericProto {
     ///
     /// Can be called multiple times with the same `PeerId`s.
     pub fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
-        self.peerset.discovered(peer_ids.into_iter().map(|peer_id| {
+        self.peerset.discovered(peer_ids.map(|peer_id| {
             debug!(target: "sub-libp2p", "PSM <= Discovered({:?})", peer_id);
             peer_id
         }));
@@ -624,8 +611,8 @@ impl GenericProto {
                 debug!(target: "sub-libp2p", "PSM => Connect({:?}): Will start to connect at \
 					until {:?}", occ_entry.key(), until);
                 *occ_entry.into_mut() = PeerState::PendingRequest {
-                    timer: futures_timer::Delay::new(until.clone() - now),
-                    timer_deadline: until.clone(),
+                    timer: futures_timer::Delay::new(*until - now),
+                    timer_deadline: *until,
                 };
             }
 
@@ -647,8 +634,8 @@ impl GenericProto {
 					occ_entry.key(), banned);
                 *occ_entry.into_mut() = PeerState::DisabledPendingEnable {
                     open,
-                    timer: futures_timer::Delay::new(banned.clone() - now),
-                    timer_deadline: banned.clone(),
+                    timer: futures_timer::Delay::new(*banned - now),
+                    timer_deadline: *banned,
                 };
             }
 
@@ -914,7 +901,7 @@ impl NetworkBehaviour for GenericProto {
             // this peer", and not "banned" in the sense that we would refuse the peer altogether.
             (st @ &mut PeerState::Poisoned, endpoint @ ConnectedPoint::Listener { .. })
             | (st @ &mut PeerState::Banned { .. }, endpoint @ ConnectedPoint::Listener { .. }) => {
-                let incoming_id = self.next_incoming_index.clone();
+                let incoming_id = self.next_incoming_index;
                 self.next_incoming_index.0 = match self.next_incoming_index.0.checked_add(1) {
                     Some(v) => v,
                     None => {
@@ -1210,7 +1197,7 @@ impl NetworkBehaviour for GenericProto {
                     debug!(target: "sub-libp2p", "External API <= Closed({:?})", source);
                     let event = GenericProtoOut::CustomProtocolClosed {
                         reason,
-                        peer_id: source.clone(),
+                        peer_id: source,
                     };
                     self.events
                         .push(NetworkBehaviourAction::GenerateEvent(event));
@@ -1399,7 +1386,7 @@ impl NetworkBehaviour for GenericProto {
                     *peer_state = PeerState::Enabled { open };
                 }
 
-                st @ _ => *peer_state = st,
+                st => *peer_state = st,
             }
         }
 

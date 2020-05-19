@@ -2,12 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //TODO fixme
-#![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_must_use)]
 #[macro_use]
 extern crate log;
-#[macro_use]
 extern crate prometheus;
 #[macro_use]
 extern crate starcoin_metrics;

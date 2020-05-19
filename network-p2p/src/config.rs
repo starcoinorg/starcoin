@@ -194,9 +194,6 @@ pub enum NodeKeyConfig {
     Ed25519(Secret<ed25519::SecretKey>),
 }
 
-/// The options for obtaining a Ed25519 secret key.
-pub type Ed25519Secret = Secret<ed25519::SecretKey>;
-
 /// The configuration options for obtaining a secret key `K`.
 #[derive(Clone)]
 pub enum Secret<K> {

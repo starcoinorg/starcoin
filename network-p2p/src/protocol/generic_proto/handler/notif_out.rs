@@ -18,7 +18,7 @@
 //! substreams of a single gossiping protocol.
 //!
 //! > **Note**: Each instance corresponds to a single protocol. In order to support multiple
-//! >			protocols, you need to create multiple instances and group them.
+//! >    protocols, you need to create multiple instances and group them.
 //!
 
 use crate::protocol::generic_proto::upgrade::{
@@ -132,6 +132,7 @@ pub struct NotifsOutHandler {
 }
 
 /// Our relationship with the node we're connected to.
+#[allow(clippy::large_enum_variant)]
 enum State {
     /// The handler is disabled and idle. No substream is open.
     Disabled,
@@ -139,9 +140,9 @@ enum State {
     /// The handler is disabled. A substream is still open and needs to be closed.
     ///
     /// > **Important**: Having this state means that `poll_close` has been called at least once,
-    /// >				 but the `Sink` API is unclear about whether or not the stream can then
-    /// >				 be recovered. Because of that, we must never switch from the
-    /// >				 `DisabledOpen` state to the `Open` state while keeping the same substream.
+    /// >        but the `Sink` API is unclear about whether or not the stream can then
+    /// >        be recovered. Because of that, we must never switch from the
+    /// >        `DisabledOpen` state to the `Open` state while keeping the same substream.
     DisabledOpen(NotificationsOutSubstream<NegotiatedSubstream>),
 
     /// The handler is disabled but we are still trying to open a substream with the remote.
@@ -320,7 +321,7 @@ impl ProtocolsHandler for NotifsOutHandler {
                     }
                     st @ State::Opening { .. } | st @ State::Refused | st @ State::Open { .. } => {
                         debug!(target: "sub-libp2p",
-							"Tried to enable notifications handler that was already enabled");
+        	"Tried to enable notifications handler that was already enabled");
                         self.state = st;
                     }
                     State::Poisoned => error!("Notifications handler in a poisoned state"),
@@ -332,7 +333,7 @@ impl ProtocolsHandler for NotifsOutHandler {
                 | st @ State::DisabledOpen(_)
                 | st @ State::DisabledOpening => {
                     debug!(target: "sub-libp2p",
-							"Tried to disable notifications handler that was already disabled");
+        	"Tried to disable notifications handler that was already disabled");
                     self.state = st;
                 }
                 State::Opening { .. } => self.state = State::DisabledOpening,
