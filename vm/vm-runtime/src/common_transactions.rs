@@ -139,6 +139,8 @@ pub fn raw_peer_to_peer_txn(
     receiver_auth_key_prefix: Vec<u8>,
     transfer_amount: u64,
     seq_num: u64,
+    gas_price: u64,
+    max_gas: u64,
 ) -> RawUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(receiver));
@@ -153,8 +155,8 @@ pub fn raw_peer_to_peer_txn(
             vec![stc_type_tag()],
             args,
         )),
-        TXN_RESERVED,
-        1,
+        max_gas,
+        gas_price,
         stc_type_tag(),
         Duration::from_secs(DEFAULT_EXPIRATION_TIME),
     )

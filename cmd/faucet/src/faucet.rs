@@ -63,5 +63,7 @@ fn transfer_tx(
         receiver_auth_key_prefix,
         seq_num,
         amount,
+        1,
+        50_000_000,
     )
 }

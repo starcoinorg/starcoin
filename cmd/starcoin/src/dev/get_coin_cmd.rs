@@ -13,6 +13,7 @@ use starcoin_types::{
     account_config,
     transaction::{authenticator::AuthenticationKey, helpers::TransactionSigner},
 };
+use starcoin_vm_runtime::common_transactions::TXN_RESERVED;
 use structopt::StructOpt;
 
 /// Get coin to default account.
@@ -74,6 +75,8 @@ impl CommandAction for GetCoinCommand {
             to_auth_key_prefix.to_vec(),
             account_resource.sequence_number(),
             amount,
+            1,
+            TXN_RESERVED,
         );
         let txn = pre_mine_config.sign_txn(raw_txn)?;
         client.submit_transaction(txn.clone())?;

@@ -24,7 +24,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use vm_runtime::{
     account::Account,
-    common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn},
+    common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn, TXN_RESERVED},
 };
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
@@ -63,6 +63,8 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
         account2.auth_key_prefix(),
         0,
         1000,
+        1,
+        TXN_RESERVED,
     );
     let txn2 = account1.create_user_txn_from_raw_txn(raw_txn);
     let output = Executor::validate_transaction(&chain_state, txn2);
@@ -157,6 +159,8 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         account2.auth_key_prefix(),
         0,
         1000,
+        1,
+        TXN_RESERVED,
     );
 
     let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));

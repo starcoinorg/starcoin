@@ -48,5 +48,7 @@ pub trait TransactionExecutor: std::marker::Unpin + Clone {
         receiver_auth_key_prefix: Vec<u8>,
         seq_num: u64,
         amount: u64,
+        gas_price: u64,
+        max_gas: u64,
     ) -> RawUserTransaction;
 }

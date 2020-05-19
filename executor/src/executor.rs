@@ -106,8 +106,18 @@ impl TransactionExecutor for Executor {
         receiver_auth_key_prefix: Vec<u8>,
         seq_num: u64,
         amount: u64,
+        gas_price: u64,
+        max_gas: u64,
     ) -> RawUserTransaction {
-        raw_peer_to_peer_txn(sender, receiver, receiver_auth_key_prefix, amount, seq_num)
+        raw_peer_to_peer_txn(
+            sender,
+            receiver,
+            receiver_auth_key_prefix,
+            amount,
+            seq_num,
+            gas_price,
+            max_gas,
+        )
     }
 }
 
