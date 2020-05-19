@@ -44,7 +44,7 @@ impl Faucet {
         );
         let signed_tx = self.client.wallet_sign_txn(raw_tx)?;
         let ret = self.client.submit_transaction(signed_tx)?;
-        return Ok(ret);
+        Ok(ret)
     }
 }
 

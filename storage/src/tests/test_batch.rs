@@ -24,7 +24,7 @@ fn test_db_batch() {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.clone().crypto_hash();
+    let id = transaction_info1.crypto_hash();
     write_batch
         .put::<HashValue, TransactionInfo>(id, transaction_info1.clone())
         .unwrap();
@@ -36,7 +36,7 @@ fn test_db_batch() {
         1,
         StatusCode::ABORTED,
     );
-    let id2 = transaction_info2.clone().crypto_hash();
+    let id2 = transaction_info2.crypto_hash();
     write_batch
         .put::<HashValue, TransactionInfo>(id2, transaction_info2.clone())
         .unwrap();
@@ -77,7 +77,7 @@ fn test_cache_batch() {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.clone().crypto_hash();
+    let id = transaction_info1.crypto_hash();
     write_batch
         .put::<HashValue, TransactionInfo>(id, transaction_info1.clone())
         .unwrap();
@@ -89,7 +89,7 @@ fn test_cache_batch() {
         1,
         StatusCode::ABORTED,
     );
-    let id2 = transaction_info2.clone().crypto_hash();
+    let id2 = transaction_info2.crypto_hash();
     write_batch
         .put::<HashValue, TransactionInfo>(id2, transaction_info2.clone())
         .unwrap();

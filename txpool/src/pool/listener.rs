@@ -174,9 +174,9 @@ mod tests {
         let pending_res = pending_receiver.try_next().unwrap();
         assert_eq!(
             full_res,
-            Some(Arc::new(vec![(tx.hash().clone(), TxStatus::Added)]))
+            Some(Arc::new(vec![(*tx.hash(), TxStatus::Added)]))
         );
-        assert_eq!(pending_res, Some(Arc::new(vec![tx.hash().clone()])));
+        assert_eq!(pending_res, Some(Arc::new(vec![*tx.hash()])));
     }
 
     fn new_tx() -> Arc<Transaction> {

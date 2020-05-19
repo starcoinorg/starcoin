@@ -118,7 +118,7 @@ mod tests {
                     continue_loop = false;
                 }
                 info!("count is {}", count);
-                count = count + 1;
+                count += 1;
                 Delay::new(Duration::from_millis(1)).await;
                 let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
 
@@ -247,7 +247,7 @@ mod tests {
         ::logger::init_for_test();
 
         let mut rt = Runtime::new().unwrap();
-        let mut node_config1 = NodeConfig::random_for_test().network.clone();
+        let mut node_config1 = NodeConfig::random_for_test().network;
         node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
             .parse()
             .unwrap();
@@ -261,7 +261,7 @@ mod tests {
 
         thread::sleep(Duration::from_secs(1));
 
-        let mut node_config2 = NodeConfig::random_for_test().network.clone();
+        let mut node_config2 = NodeConfig::random_for_test().network;
         let addr1_hex = service1.identify().to_base58();
         let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.listen, addr1_hex)
             .parse()
@@ -279,7 +279,7 @@ mod tests {
 
         thread::sleep(Duration::from_secs(1));
 
-        let mut node_config3 = NodeConfig::random_for_test().network.clone();
+        let mut node_config3 = NodeConfig::random_for_test().network;
         node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
             .parse()
             .unwrap();
@@ -337,7 +337,7 @@ mod tests {
 
         thread::sleep(Duration::from_secs(1));
 
-        let service1_clone = service1.clone();
+        let service1_clone = service1;
         let fut = async move {
             assert_eq!(
                 service1_clone

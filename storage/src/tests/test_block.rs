@@ -288,7 +288,7 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header2.clone())
         .unwrap();
-    debug!("header2: {}", block_header2.clone().id().to_hex());
+    debug!("header2: {}", block_header2.id().to_hex());
 
     let block_header3 = BlockHeader::new(
         block_id,
@@ -307,7 +307,7 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header3.clone())
         .unwrap();
-    debug!("header3: {}", block_header3.clone().id().to_hex());
+    debug!("header3: {}", block_header3.id().to_hex());
 
     let block_header4 = BlockHeader::new(
         block_header3.id(),
@@ -326,7 +326,7 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header4.clone())
         .unwrap();
-    debug!("header4: {}", block_header4.clone().id().to_hex());
+    debug!("header4: {}", block_header4.id().to_hex());
     let hashes = storage
         .block_storage
         .get_branch_hashes(block_header4.id())

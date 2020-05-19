@@ -57,7 +57,7 @@ where
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
         let block_info = storage
-            .clone()
+            
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block_hash))?;
 
