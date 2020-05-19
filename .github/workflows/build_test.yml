@@ -37,6 +37,13 @@ jobs:
         with:
           command: check
           args: --all-targets
+      - name: run clippy check
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: -D warnings
+        with:
+          command: clippy
+          args: --all-targets
       - name: build
         uses: actions-rs/cargo@v1
         env:
