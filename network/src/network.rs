@@ -597,7 +597,7 @@ impl Handler<NewHeadBlock> for NetworkActor {
 
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                 if !peer_info.known_blocks.contains(&id) {
-                    peer_info.known_blocks.put(id.clone(), ());
+                    peer_info.known_blocks.put(id, ());
                 } else {
                     continue;
                 }
@@ -638,7 +638,7 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
                 let mut txns_unhandled = Vec::new();
                 for (id, txn) in &txn_map {
                     if !peer_info.known_transactions.contains(id) && !peer_id.eq(&self_peer_id) {
-                        peer_info.known_transactions.put(id.clone(), ());
+                        peer_info.known_transactions.put(*id, ());
                         txns_unhandled.push(txn.clone());
                     }
                 }

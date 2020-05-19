@@ -21,7 +21,7 @@ mod tests {
         let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
 
-        let protocol = ProtocolId::from("stargate".as_bytes());
+        let protocol = ProtocolId::from(b"stargate".as_ref());
         let config1 = generate_config(vec![]);
 
         let worker1 = NetworkWorker::new(Params::new(config1.clone(), protocol.clone())).unwrap();
@@ -98,7 +98,7 @@ mod tests {
         let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
 
-        let protocol = ProtocolId::from("stargate".as_bytes());
+        let protocol = ProtocolId::from(b"stargate".as_ref());
         let config1 = generate_config(vec![]);
 
         let worker1 = NetworkWorker::new(Params::new(config1.clone(), protocol.clone())).unwrap();

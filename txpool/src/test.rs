@@ -31,7 +31,7 @@ impl AccountSeqNumberClient for MockNonceClient {
         match cached {
             Some(v) => v,
             None => {
-                self.cache.write().insert(address.clone(), 0);
+                self.cache.write().insert(*address, 0);
                 0
             }
         }
@@ -74,8 +74,7 @@ async fn test_rollback() -> Result<()> {
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
-        let txn = txn.as_signed_user_txn()?.clone();
-        txn
+        txn.as_signed_user_txn()?.clone()
     };
     let _ = pool.clone().add_txns(vec![txn.clone()]).await?;
     let new_txn = {
@@ -83,8 +82,7 @@ async fn test_rollback() -> Result<()> {
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 20000);
-        let txn = txn.as_signed_user_txn()?.clone();
-        txn
+        txn.as_signed_user_txn()?.clone()
     };
     pool.clone()
         .rollback(vec![txn], vec![new_txn.clone()])

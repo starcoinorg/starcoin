@@ -787,31 +787,28 @@ mod tests {
         let fut = futures::future::poll_fn(move |cx| {
             'polling: loop {
                 for swarm_n in 0..swarms.len() {
-                    match swarms[swarm_n].0.poll_next_unpin(cx) {
-                        Poll::Ready(Some(e)) => {
-                            match e {
-                                DiscoveryOut::UnroutablePeer(other) => {
-                                    // Call `add_self_reported_address` to simulate identify happening.
-                                    let addr = swarms
-                                        .iter()
-                                        .find_map(|(s, a)| {
-                                            if s.local_peer_id == other {
-                                                Some(a.clone())
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                        .unwrap();
-                                    swarms[swarm_n].0.add_self_reported_address(&other, addr);
-                                }
-                                DiscoveryOut::Discovered(other) => {
-                                    to_discover[swarm_n].remove(&other);
-                                }
-                                _ => {}
+                    if let Poll::Ready(Some(e)) = swarms[swarm_n].0.poll_next_unpin(cx) {
+                        match e {
+                            DiscoveryOut::UnroutablePeer(other) => {
+                                // Call `add_self_reported_address` to simulate identify happening.
+                                let addr = swarms
+                                    .iter()
+                                    .find_map(|(s, a)| {
+                                        if s.local_peer_id == other {
+                                            Some(a.clone())
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .unwrap();
+                                swarms[swarm_n].0.add_self_reported_address(&other, addr);
                             }
-                            continue 'polling;
+                            DiscoveryOut::Discovered(other) => {
+                                to_discover[swarm_n].remove(&other);
+                            }
+                            _ => {}
                         }
-                        _ => {}
+                        continue 'polling;
                     }
                 }
                 break;

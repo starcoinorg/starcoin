@@ -218,7 +218,7 @@ pub fn run_benchmark(
 
     let chain_state = ChainStateDB::new(acc_storage.clone(), None);
     chain_state
-        .apply(state_set.clone())
+        .apply(state_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
     let accumulator = MerkleAccumulator::new(
@@ -226,7 +226,7 @@ pub fn run_benchmark(
         vec![],
         0,
         0,
-        acc_storage.clone().into_super_arc(),
+        acc_storage.into_super_arc(),
     )
     .unwrap();
 

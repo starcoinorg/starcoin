@@ -520,7 +520,7 @@ impl StarcoinVM {
                 let verified_payload = self.verify_transaction_impl(&txn, data_cache, &txn_data);
                 match verified_payload {
                     Ok(payload) => self.execute_verified_payload(data_cache, &txn_data, payload),
-                    Err(e) => discard_libra_error_output(e.into()),
+                    Err(e) => discard_libra_error_output(e),
                 }
             }
             Err(e) => discard_libra_error_output(e),

@@ -52,20 +52,20 @@ fn test_block() {
         block_header1,
         storage
             .block_storage
-            .get_block_header_by_hash(block_id.clone())
+            .get_block_header_by_hash(block_id)
             .unwrap()
             .unwrap()
     );
     let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()]);
     storage
         .block_storage
-        .save_body(block_id.clone(), block_body1.clone())
+        .save_body(block_id, block_body1.clone())
         .unwrap();
     let block1 = Block::new(block_header1.clone(), block_body1);
     // save block1
     storage.block_storage.save(block1.clone()).unwrap();
     //read to block2
-    let block2 = storage.block_storage.get(block_id.clone()).unwrap();
+    let block2 = storage.block_storage.get(block_id).unwrap();
     assert!(block2.is_some());
     assert_eq!(block1, block2.unwrap());
     //get header to block3
@@ -288,7 +288,7 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header2.clone())
         .unwrap();
-    debug!("header2: {}", block_header2.clone().id().to_hex());
+    debug!("header2: {}", block_header2.id().to_hex());
 
     let block_header3 = BlockHeader::new(
         block_id,
@@ -307,7 +307,7 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header3.clone())
         .unwrap();
-    debug!("header3: {}", block_header3.clone().id().to_hex());
+    debug!("header3: {}", block_header3.id().to_hex());
 
     let block_header4 = BlockHeader::new(
         block_header3.id(),
@@ -326,7 +326,7 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header4.clone())
         .unwrap();
-    debug!("header4: {}", block_header4.clone().id().to_hex());
+    debug!("header4: {}", block_header4.id().to_hex());
     let hashes = storage
         .block_storage
         .get_branch_hashes(block_header4.id())

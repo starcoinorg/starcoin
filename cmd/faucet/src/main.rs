@@ -24,7 +24,7 @@ fn main() {
     let account_address =
         AccountAddress::from_str(&opts.faucet_address).expect("Invalid faucet address");
     let server =
-        Server::http(&opts.server_addr).expect(&format!("Faild to serve on {}", opts.server_addr));
+        Server::http(&opts.server_addr).unwrap_or_else(|_| panic!("Faild to serve on {}", opts.server_addr));
     let client = RpcClient::connect_ipc(opts.ipc_path).expect("Failed to connect ipc");
     let account = client
         .wallet_get(account_address)

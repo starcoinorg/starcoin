@@ -43,7 +43,7 @@ impl ChainBencher {
         let startup_info = genesis.execute(storage.clone()).unwrap();
 
         let txpool = {
-            let best_block_id = startup_info.get_master().clone();
+            let best_block_id = *startup_info.get_master();
             TxPool::start(
                 node_config.tx_pool.clone(),
                 storage.clone(),
@@ -58,7 +58,7 @@ impl ChainBencher {
             startup_info,
             storage.clone(),
             None,
-            txpool.clone(),
+            txpool,
             bus,
             sync_metadata,
         )

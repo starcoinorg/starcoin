@@ -47,7 +47,7 @@ fn test_miner_with_schedule_pacemaker() {
         let genesis_hash = genesis.block().header().id();
         let startup_info = genesis.execute(storage.clone()).unwrap();
         let txpool = {
-            let best_block_id = startup_info.get_master().clone();
+            let best_block_id = *startup_info.get_master();
             TxPool::start(
                 config.tx_pool.clone(),
                 storage.clone(),
@@ -134,7 +134,7 @@ fn test_miner_with_ondemand_pacemaker() {
         let startup_info = genesis.execute(storage.clone()).unwrap();
 
         let txpool = {
-            let best_block_id = startup_info.get_master().clone();
+            let best_block_id = *startup_info.get_master();
             TxPool::start(
                 config.tx_pool.clone(),
                 storage.clone(),

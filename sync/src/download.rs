@@ -594,7 +594,7 @@ impl FutureBlockPool {
                 .expect("parent not exist.")
                 .iter()
                 .for_each(|id| {
-                    child.push(id.clone());
+                    child.push(*id);
                 });
 
             if !child.is_empty() {
@@ -822,9 +822,7 @@ where
 
         if exist_ancestor {
             for hash in not_exist_hash {
-                downloader
-                    .hash_pool
-                    .insert(peer.clone(), hash.number.clone(), hash);
+                downloader.hash_pool.insert(peer.clone(), hash.number, hash);
             }
         }
         ancestor
@@ -836,9 +834,7 @@ where
         batch_hash_by_number_msg: BatchHashByNumberMsg,
     ) {
         for hash in batch_hash_by_number_msg.hashs {
-            downloader
-                .hash_pool
-                .insert(peer.clone(), hash.number.clone(), hash);
+            downloader.hash_pool.insert(peer.clone(), hash.number, hash);
             SYNC_METRICS
                 .sync_succ_count
                 .with_label_values(&[LABEL_HASH])

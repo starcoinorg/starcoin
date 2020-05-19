@@ -42,14 +42,17 @@ async fn handle_fund(faucet: &Faucet, query: &str) -> Response<Cursor<String>> {
     if !ret {
         return response_custom(400, "Fund too frequently");
     }
-    return response_custom(200, "Success");
+    response_custom(200, "Success")
 }
 
 pub async fn run(server: Server, faucet: Faucet) {
     for request in server.incoming_requests() {
-        let pos = request.url().find("?").unwrap_or(request.url().len());
+        let pos = request
+            .url()
+            .find('?')
+            .unwrap_or_else(|| request.url().len());
         let url = &request.url()[..pos];
-        let query = request.url()[pos..].trim_start_matches("?");
+        let query = request.url()[pos..].trim_start_matches('?');
         match url {
             "/" => {
                 let response = Response::from_string(index_html()).with_header(Header {
@@ -90,13 +93,13 @@ impl Debug for QueryParam {
 }
 
 fn parse_query(query: &str) -> Result<QueryParam> {
-    let mut pairs: Vec<&str> = query.split("&").collect();
+    let mut pairs: Vec<&str> = query.split('&').collect();
     pairs.sort();
     let mut address = "";
     let mut amount = "";
     let mut auth_key = "";
     for pair in pairs {
-        let kv: Vec<&str> = pair.split("=").collect();
+        let kv: Vec<&str> = pair.split('=').collect();
         if kv.len() == 2 {
             match kv[0] {
                 "address" => address = kv[1],
@@ -108,11 +111,11 @@ fn parse_query(query: &str) -> Result<QueryParam> {
     }
     let address = AccountAddress::from_str(address)?;
     let amount = u64::from_str(amount)?;
-    let auth_key = hex::decode(auth_key).unwrap_or(vec![]);
+    let auth_key = hex::decode(auth_key).unwrap_or_default();
     let query_param = QueryParam {
         address,
         amount,
         auth_key,
     };
-    return Ok(query_param);
+    Ok(query_param)
 }
