@@ -15,7 +15,7 @@ pub mod transactions;
 pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
     let account = Account::new();
     peer_to_peer_txn_sent_as_association(
-        account.address().clone(),
+        *account.address(),
         account.auth_key_prefix(),
         seq_num,
         1000,

@@ -21,8 +21,8 @@ fn bench_get_with_proof(c: &mut Criterion) {
     let mut group = c.benchmark_group("get_with_proof");
     for (id, s) in [("mem_store", mem_store), ("db_store", db_store)].iter() {
         let tree = StateTree::new(s.clone(), None);
-        let (kvs, _root) = prepare_tree(&tree, &[1, 2, 3, 4], 100000);
-        let ks = kvs.keys().map(|x| *x).collect::<Vec<_>>();
+        let (kvs, _root) = prepare_tree(&tree, &[1, 2, 3, 4], 100_000);
+        let ks = kvs.keys().copied().map(|x| x).collect::<Vec<_>>();
         group
             .bench_with_input(*id, &(tree, kvs, ks), |b, input| {
                 let (tree, kvs, ks) = input;
@@ -31,7 +31,7 @@ fn bench_get_with_proof(c: &mut Criterion) {
                 b.iter_with_setup(
                     || {
                         let k = &ks[i % k_len];
-                        i = i + 1;
+                        i += 1;
                         k
                     },
                     |k| {
@@ -61,7 +61,7 @@ fn bench_put_and_commit(c: &mut Criterion) {
         for (id, store) in vec![("mem_store", mem_store), ("db_store", db_store)].into_iter() {
             let tree = StateTree::new(store, None);
             // init tree with 10w keys.
-            let _ = prepare_tree(&tree, &[2u8, 3, 4, 5], 100000);
+            let _ = prepare_tree(&tree, &[2u8, 3, 4, 5], 100_000);
             group.bench_with_input(BenchmarkId::new(id, i), &(tree, i), |b, input| {
                 let (tree, n) = input;
                 b.iter_with_setup(
@@ -111,8 +111,7 @@ fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValue, Blob> {
 fn new_empty_store<P: AsRef<Path> + Clone>(p: P) -> Arc<Storage> {
     let db_storage = DBStorage::new(p);
     let store = Storage::new(StorageInstance::new_db_instance(Arc::new(db_storage))).unwrap();
-    let store = Arc::new(store);
-    store
+    Arc::new(store)
 }
 
 fn prepare_tree(
