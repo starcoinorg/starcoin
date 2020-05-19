@@ -47,7 +47,10 @@ async fn handle_fund(faucet: &Faucet, query: &str) -> Response<Cursor<String>> {
 
 pub async fn run(server: Server, faucet: Faucet) {
     for request in server.incoming_requests() {
-        let pos = request.url().find('?').unwrap_or(request.url().len());
+        let pos = request
+            .url()
+            .find('?')
+            .unwrap_or_else(|| request.url().len());
         let url = &request.url()[..pos];
         let query = request.url()[pos..].trim_start_matches('?');
         match url {

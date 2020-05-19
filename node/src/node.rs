@@ -193,7 +193,7 @@ where
         .await?;
 
     let head_block = storage
-        .get_block(startup_info.get_master().clone())?
+        .get_block(*startup_info.get_master())?
         .expect("Head block must exist.");
 
     let chain_state_service = ChainStateActor::launch(
