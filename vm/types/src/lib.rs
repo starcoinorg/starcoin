@@ -55,3 +55,11 @@ pub mod access {
 pub mod errors {
     pub use vm::errors::*;
 }
+
+pub mod write_set {
+    pub use libra_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+}
+
+pub mod access_path;
+pub mod account_config;
+pub mod event;

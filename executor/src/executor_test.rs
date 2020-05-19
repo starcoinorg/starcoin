@@ -8,23 +8,20 @@ use logger::prelude::*;
 use once_cell::sync::Lazy;
 use starcoin_config::ChainNetwork;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
-use starcoin_vm_types::parser;
-use state_tree::mock::MockStateNodeStore;
-use statedb::ChainStateDB;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
-use types::{
-    access_path::AccessPath,
+use starcoin_types::{
     account_address::AccountAddress,
     account_config,
-    account_config::AccountResource,
-    account_config::BalanceResource,
     block_metadata::BlockMetadata,
     transaction::Transaction,
     transaction::TransactionStatus,
     transaction::{Module, TransactionPayload},
     vm_error::{StatusCode, VMStatus},
 };
+use starcoin_vm_types::parser;
+use state_tree::mock::MockStateNodeStore;
+use statedb::ChainStateDB;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use vm_runtime::{
     account::Account,
     common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn},
@@ -199,27 +196,20 @@ fn test_sequence_number() -> Result<()> {
 }
 
 fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
-    let access_path = AccessPath::new_for_account(addr);
-    let state = chain_state
-        .get(&access_path)
-        .expect("read account state should ok");
-    match state {
-        None => 0u64,
-        Some(s) => AccountResource::make_from(&s)
-            .expect("account resource decode ok")
-            .sequence_number(),
-    }
+    let account_reader = AccountStateReader::new(chain_state.as_super());
+    account_reader
+        .get_account_resource(&addr)
+        .expect("read account state should ok")
+        .map(|res| res.sequence_number())
+        .unwrap_or_default()
 }
 
-fn get_balance(address: AccountAddress, state_db: &dyn ChainState) -> u64 {
-    let ap = AccessPath::new_for_balance(address);
-    let balance_resource = state_db.get(&ap).expect("read balance resource should ok");
-    match balance_resource {
-        None => 0u64,
-        Some(b) => BalanceResource::make_from(b.as_slice())
-            .expect("decode balance resource should ok")
-            .coin(),
-    }
+fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u64 {
+    let account_reader = AccountStateReader::new(chain_state.as_super());
+    account_reader
+        .get_balance(&address)
+        .expect("read balance resource should ok")
+        .unwrap_or_default()
 }
 
 pub fn compile_module_with_address(
@@ -270,7 +260,7 @@ fn test_publish_module() -> Result<()> {
         0,
         100_000,
         1,
-        account_config::starcoin_type_tag(),
+        account_config::stc_type_tag(),
     ));
 
     let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();

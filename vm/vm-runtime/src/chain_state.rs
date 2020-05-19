@@ -4,14 +4,13 @@
 use anyhow::Result;
 use crypto::HashValue;
 use libra_state_view::StateView;
-use libra_types::{
-    access_path::AccessPath as LibraAccessPath,
-    write_set::{WriteOp as LibraWriteOp, WriteSet as LibraWriteSet},
-};
 use move_vm_state::data_cache::RemoteCache;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
-use starcoin_types::access_path::AccessPath;
+use starcoin_vm_types::{
+    access_path::AccessPath,
+    write_set::{WriteOp, WriteSet},
+};
 use vm::errors::VMResult;
 //TODO this adaptor may be remove?
 /// Adaptor for chain state
@@ -25,15 +24,15 @@ impl<'txn> StateStore<'txn> {
     }
 
     /// Adds a [`WriteSet`] to state store.
-    pub fn add_write_set(&mut self, write_set: &LibraWriteSet) {
+    pub fn add_write_set(&mut self, write_set: &WriteSet) {
         for (access_path, write_op) in write_set {
             match write_op {
-                LibraWriteOp::Value(blob) => {
-                    self.set(AccessPath::from(access_path.clone()), blob.clone())
+                WriteOp::Value(blob) => {
+                    self.set(access_path.clone(), blob.clone())
                         .unwrap_or_else(|e| panic!("Failure to set access path: {}", e));
                 }
-                LibraWriteOp::Deletion => {
-                    self.remove(&AccessPath::from(access_path.clone()))
+                WriteOp::Deletion => {
+                    self.remove(access_path)
                         .unwrap_or_else(|e| panic!("Failure to remove access path: {}", e));
                 }
             }
@@ -68,8 +67,8 @@ impl<'txn> StateStore<'txn> {
 
 /// read-only snapshot of the global state, to construct remote cache
 impl<'txn> StateView for StateStore<'txn> {
-    fn get(&self, access_path: &LibraAccessPath) -> Result<Option<Vec<u8>>> {
-        let result = ChainState::get(self.chain_state, &AccessPath::from(access_path.clone()));
+    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+        let result = self.chain_state.get(access_path);
         match result {
             Ok(remote_data) => Ok(remote_data),
             Err(e) => {
@@ -79,7 +78,7 @@ impl<'txn> StateView for StateStore<'txn> {
         }
     }
 
-    fn multi_get(&self, _access_paths: &[LibraAccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
+    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
         unimplemented!();
     }
 
@@ -90,7 +89,7 @@ impl<'txn> StateView for StateStore<'txn> {
 
 /// data cache, to construct transaction execution context
 impl<'txn> RemoteCache for StateStore<'txn> {
-    fn get(&self, access_path: &LibraAccessPath) -> VMResult<Option<Vec<u8>>> {
+    fn get(&self, access_path: &AccessPath) -> VMResult<Option<Vec<u8>>> {
         Ok(StateView::get(self, access_path).expect("it should not error"))
     }
 }
