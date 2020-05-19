@@ -665,14 +665,14 @@ mod tests {
 
         let (mut peerset, _handle) = Peerset::from_config(config);
         peerset.incoming(incoming.clone(), ii);
-        peerset.incoming(incoming.clone(), ii4);
-        peerset.incoming(incoming2.clone(), ii2);
-        peerset.incoming(incoming3.clone(), ii3);
+        peerset.incoming(incoming, ii4);
+        peerset.incoming(incoming2, ii2);
+        peerset.incoming(incoming3, ii3);
 
         assert_messages(
             peerset,
             vec![
-                Message::Connect(bootnode.clone()),
+                Message::Connect(bootnode),
                 Message::Accept(ii),
                 Message::Accept(ii2),
                 Message::Reject(ii3),

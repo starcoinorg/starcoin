@@ -115,12 +115,12 @@ where
                 self.service.master_block_by_number(number)?.unwrap(),
             ))),
             ChainRequest::CreateBlockTemplate(author, auth_key_prefix, parent_hash, txs) => Ok(
-                ChainResponse::BlockTemplate(self.service.create_block_template(
+                ChainResponse::BlockTemplate(Box::new(self.service.create_block_template(
                     author,
                     auth_key_prefix,
                     parent_hash,
                     txs,
-                )?),
+                )?)),
             ),
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
                 if let Some(block) = self.service.get_block_by_hash(hash)? {
@@ -421,7 +421,7 @@ where
             .unwrap()
             .unwrap()
         {
-            Some(block_template)
+            Some(*block_template)
         } else {
             None
         }

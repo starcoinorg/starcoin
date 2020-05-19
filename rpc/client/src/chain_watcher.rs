@@ -78,7 +78,7 @@ impl Handler<WatchBlock> for ChainWatcher {
         let (tx, rx) = oneshot::channel();
         self.watched_blocks
             .entry(msg.0)
-            .or_insert_with(|| vec![])
+            .or_insert_with(Vec::new)
             .push(tx);
         MessageResult(rx)
     }

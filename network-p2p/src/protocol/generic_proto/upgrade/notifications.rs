@@ -423,7 +423,7 @@ mod tests {
 
     #[test]
     fn basic_works() {
-        const PROTO_NAME: &'static [u8] = b"/test/proto/1";
+        const PROTO_NAME: &[u8] = b"/test/proto/1";
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
         let client = async_std::task::spawn(async move {
@@ -468,7 +468,7 @@ mod tests {
     fn empty_handshake() {
         // Check that everything still works when the handshake messages are empty.
 
-        const PROTO_NAME: &'static [u8] = b"/test/proto/1";
+        const PROTO_NAME: &[u8] = b"/test/proto/1";
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
         let client = async_std::task::spawn(async move {
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn refused() {
-        const PROTO_NAME: &'static [u8] = b"/test/proto/1";
+        const PROTO_NAME: &[u8] = b"/test/proto/1";
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
         let client = async_std::task::spawn(async move {
@@ -554,7 +554,7 @@ mod tests {
 
     #[test]
     fn large_initial_message_refused() {
-        const PROTO_NAME: &'static [u8] = b"/test/proto/1";
+        const PROTO_NAME: &[u8] = b"/test/proto/1";
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
         let client = async_std::task::spawn(async move {
@@ -587,7 +587,7 @@ mod tests {
 
     #[test]
     fn large_handshake_refused() {
-        const PROTO_NAME: &'static [u8] = b"/test/proto/1";
+        const PROTO_NAME: &[u8] = b"/test/proto/1";
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
         let client = async_std::task::spawn(async move {
@@ -626,7 +626,7 @@ mod tests {
 
     #[test]
     fn buffer_is_full_closes_connection() {
-        const PROTO_NAME: &'static [u8] = b"/test/proto/1";
+        const PROTO_NAME: &[u8] = b"/test/proto/1";
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
         let client = async_std::task::spawn(async move {

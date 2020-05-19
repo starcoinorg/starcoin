@@ -26,7 +26,7 @@ impl CommandAction for LogLevelCommand {
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<String> {
         let opt = ctx.opt();
         let client = ctx.state().client();
-        client.debug_set_log_level(opt.level.clone())?;
+        client.debug_set_log_level(opt.level)?;
         Ok(format!("set log level to {:?}", opt.level))
     }
 }

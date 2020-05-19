@@ -102,7 +102,7 @@ impl SysBus {
         M::Result: Send,
     {
         let type_id = TypeId::of::<M>();
-        let topic_subscribes = self.subscriptions.entry(type_id).or_insert_with(|| vec![]);
+        let topic_subscribes = self.subscriptions.entry(type_id).or_insert_with(Vec::new);
         debug!("{:?}", subscription);
         topic_subscribes.push(Box::new(subscription));
     }

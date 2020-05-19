@@ -35,7 +35,7 @@ jobs:
         env:
           RUSTFLAGS: -D warnings
         with:
-          command: check
+          command: clippy
           args: --all-targets
       - name: build
         uses: actions-rs/cargo@v1

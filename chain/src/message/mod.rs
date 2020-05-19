@@ -38,7 +38,7 @@ impl Message for ChainRequest {
 }
 
 pub enum ChainResponse {
-    BlockTemplate(BlockTemplate),
+    BlockTemplate(Box<BlockTemplate>),
     Block(Box<Block>),
     OptionBlock(Option<Box<Block>>),
     OptionBlockInfo(Box<Option<BlockInfo>>),

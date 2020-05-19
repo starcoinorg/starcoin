@@ -9,7 +9,7 @@ pub fn transaction_execution(c: &mut Criterion) {
     let bench_id = "transaction_execution";
     for i in vec![1u64, 5, 10, 20, 50].into_iter() {
         group.bench_function(BenchmarkId::new(bench_id, i), |b| {
-            b.iter(|| run_benchmark(20, 1000000, i as usize, 1))
+            b.iter(|| run_benchmark(20, 1_000_000, i as usize, 1))
         });
     }
 }

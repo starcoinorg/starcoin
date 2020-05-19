@@ -9,7 +9,6 @@ members = [
     "commons/logger",
     "commons/scmd",
     "commons/metrics",
-    "commons/context",
     "types",
     "core/traits",
     "core/accumulator",

@@ -597,7 +597,7 @@ impl Handler<NewHeadBlock> for NetworkActor {
 
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                 if !peer_info.known_blocks.contains(&id) {
-                    peer_info.known_blocks.put(id.clone(), ());
+                    peer_info.known_blocks.put(id, ());
                 } else {
                     continue;
                 }
@@ -638,7 +638,7 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
                 let mut txns_unhandled = Vec::new();
                 for (id, txn) in &txn_map {
                     if !peer_info.known_transactions.contains(id) && !peer_id.eq(&self_peer_id) {
-                        peer_info.known_transactions.put(id.clone(), ());
+                        peer_info.known_transactions.put(*id, ());
                         txns_unhandled.push(txn.clone());
                     }
                 }
@@ -714,7 +714,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, bus2) = build_network(node_config2.clone(), handle.clone());
+        let (network2, bus2) = build_network(node_config2, handle);
 
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();
@@ -772,8 +772,6 @@ mod tests {
             _delay(Duration::from_millis(100)).await;
 
             System::current().stop();
-
-            ()
         });
 
         local.block_on(&mut rt, future).unwrap();
@@ -789,7 +787,7 @@ mod tests {
     ) -> (NetworkAsyncService, Addr<BusActor>) {
         let bus = BusActor::launch();
         let network = NetworkActor::launch(
-            node_config.clone(),
+            node_config,
             bus.clone(),
             handle,
             HashValue::default(),
@@ -809,12 +807,11 @@ mod tests {
             network_service: NetworkAsyncService,
             event_tx: mpsc::UnboundedSender<()>,
         ) -> TestResponseActor {
-            let instance = Self {
+            Self {
                 _network_service: network_service,
                 peer_txns: vec![],
                 event_tx,
-            };
-            instance
+            }
         }
     }
 

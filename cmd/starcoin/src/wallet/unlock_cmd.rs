@@ -39,7 +39,7 @@ impl CommandAction for UnlockCommand {
         let client = ctx.state().client();
         let opt: &UnlockOpt = ctx.opt();
         let duration = Duration::from_secs(opt.duration as u64);
-        client.wallet_unlock(opt.account_address.clone(), opt.password.clone(), duration)?;
+        client.wallet_unlock(opt.account_address, opt.password.clone(), duration)?;
         Ok(format!(
             "account {} unlocked for {:?}",
             &opt.account_address, duration

@@ -14,7 +14,7 @@ fn bench_get_with_proof(c: &mut Criterion) {
         b.iter_with_setup(
             || {
                 let k = ks[i % k_len];
-                i = i + 1;
+                i += 1;
                 k
             },
             |k| {

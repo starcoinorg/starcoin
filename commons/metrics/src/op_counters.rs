@@ -56,7 +56,7 @@ impl OpMetrics {
             .unwrap(),
             gauges: IntGaugeVec::new(
                 Opts::new(
-                    format!("{}_gauge", name_str.clone()),
+                    format!("{}_gauge", name_str),
                     format!("Gauges for {}", name_str),
                 ),
                 &["op"],
@@ -64,7 +64,7 @@ impl OpMetrics {
             .unwrap(),
             duration_histograms: HistogramVec::new(
                 HistogramOpts::new(
-                    format!("{}_duration", name_str.clone()),
+                    format!("{}_duration", name_str),
                     format!("Histogram values for {}", name_str),
                 ),
                 &["op"],
