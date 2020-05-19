@@ -152,12 +152,16 @@ where
         CHAIN_METRICS.try_connect_count.inc();
         let block_exist = self.block_exist(header.id());
         let block_chain = if !block_exist {
-            Some(BlockChain::new(
-                self.config.clone(),
-                header.parent_hash(),
-                self.storage.clone(),
-                Arc::downgrade(&self.collection),
-            )?)
+            if self.block_exist(header.parent_hash()) {
+                Some(BlockChain::new(
+                    self.config.clone(),
+                    header.parent_hash(),
+                    self.storage.clone(),
+                    Arc::downgrade(&self.collection),
+                )?)
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -381,12 +385,13 @@ where
                     Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                 }
             } else {
-                debug!("future block 1 {:?}", block.header().id());
+                debug!("future block 2 {:?}", block.header().id());
                 Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
             }
         } else {
             Ok(ConnectResult::Err(ConnectBlockError::Other(
-                "error connect type.".to_string(),
+                format!("error connect type. pivot_sync: {}, state_syncing: {:?}, block_id: {:?}, number : {}", pivot_sync,
+                        self.sync_metadata.state_syncing(), block.header().id(), block.header().number()),
             )))
         }
     }
@@ -401,7 +406,7 @@ where
             let latest_sync_number = self.sync_metadata.get_latest();
             if let (Some(pivot_number), Some(latest_number)) = (pivot, latest_sync_number) {
                 let current_block_number = block.header().number();
-                if pivot_number >= current_block_number {
+                if pivot_number > current_block_number {
                     //todo:1. verify block header / verify accumulator / total difficulty
                     let (block_exist, fork) = self.find_or_fork(block.header())?;
                     debug!(
@@ -435,22 +440,24 @@ where
                         Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                     }
                 } else if latest_number >= current_block_number {
-                    let connect_result = self.try_connect(block, true)?;
-                    // 3. update sync metadata
-                    info!(
-                        "connect block : {}, {}, {:?}",
-                        latest_number, current_block_number, connect_result
-                    );
-                    if latest_number == current_block_number && is_ok(&connect_result) {
-                        if let Err(err) = self.sync_metadata.block_sync_done() {
-                            warn!("err:{:?}", err);
+                    if self.sync_metadata.state_done() {
+                        let connect_result = self.try_connect(block, true)?;
+                        // 3. update sync metadata
+                        info!(
+                            "connect block : {}, {}, {:?}",
+                            latest_number, current_block_number, connect_result
+                        );
+                        if latest_number == current_block_number && is_ok(&connect_result) {
+                            if let Err(err) = self.sync_metadata.block_sync_done() {
+                                warn!("err:{:?}", err);
+                            }
                         }
+                        Ok(connect_result)
+                    } else {
+                        Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                     }
-                    Ok(connect_result)
                 } else {
-                    Ok(ConnectResult::Err(ConnectBlockError::Other(
-                        "block number > pivot.".to_string(),
-                    )))
+                    Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                 }
             } else {
                 Ok(ConnectResult::Err(ConnectBlockError::Other(

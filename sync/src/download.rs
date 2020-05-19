@@ -421,6 +421,7 @@ where
                 Self::sync_block_from_best_peer_inner(self_peer_id.clone(), downloader, network)
                     .await
             {
+                error!("panic peer : {:?}", self_peer_id.clone());
                 error!("error: {:?}", e);
             } else {
                 let _ = sync_metadata.block_sync_done();
