@@ -110,7 +110,7 @@ impl Accumulator for MerkleAccumulator {
     fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
         let mut tree_guard = self.tree.lock();
         let first_index_leaf = tree_guard.num_leaves;
-        let root_hash = tree_guard.append_leaves(new_leaves).unwrap();
+        let root_hash = tree_guard.append_leaves(new_leaves)?;
         Ok((root_hash, first_index_leaf))
     }
 

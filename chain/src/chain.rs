@@ -55,11 +55,11 @@ where
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
-            .ok_or_else(|| format_err!("Can not find block by hash {}", head_block_hash))?;
+            .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
         let block_info = storage
             .clone()
             .get_block_info(head_block_hash)?
-            .ok_or_else(|| format_err!("Can not find block info by hash {}", head_block_hash))?;
+            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block_hash))?;
 
         let state_root = head.header().state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
@@ -411,7 +411,7 @@ where
 
         let new_block_info_begin_time = get_unix_ts();
 
-        let _ = self.block_accumulator.append(&[block.id()])?;
+        self.block_accumulator.append(&[block.id()])?;
         self.block_accumulator.flush()?;
         let txn_accumulator_info: AccumulatorInfo = (&self.txn_accumulator).try_into()?;
         let block_accumulator_info: AccumulatorInfo = (&self.block_accumulator).try_into()?;

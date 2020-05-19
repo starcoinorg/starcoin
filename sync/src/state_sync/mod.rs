@@ -321,8 +321,7 @@ impl StateSyncTaskActor {
     }
 
     fn sync_end(&self) -> bool {
-        //self.state_sync_task.lock().is_empty() && self.accumulator_sync_task.lock().is_empty()
-        self.state_sync_task.lock().is_empty()
+        self.state_sync_task.lock().is_empty() && self.accumulator_sync_task.lock().is_empty()
     }
 
     fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {

@@ -72,7 +72,7 @@ impl TryFrom<&MerkleAccumulator> for AccumulatorInfo {
             block_accumulator.root_hash(),
             block_accumulator.get_frozen_subtree_roots()?,
             block_accumulator.num_leaves(),
-            block_accumulator.num_leaves(),
+            block_accumulator.num_nodes(),
         ))
     }
 }
