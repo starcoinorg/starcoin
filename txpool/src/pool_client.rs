@@ -2,14 +2,12 @@ use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
 use anyhow::Result;
 use parking_lot::RwLock;
 use starcoin_executor::{executor::Executor, TransactionExecutor};
-use starcoin_state_api::ChainStateReader;
+use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 use storage::Store;
 use types::{
-    access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::AccountResource,
     block::BlockHeader,
     transaction,
     transaction::{CallError, SignedUserTransaction, TransactionError},
@@ -75,17 +73,12 @@ impl CachedSeqNumberClient {
     }
 
     fn latest_sequence_number(&self, address: &AccountAddress) -> u64 {
-        let access_path = AccessPath::new_for_account(*address);
-        let state = self
-            .statedb
-            .get(&access_path)
-            .expect("read account state should ok");
-        match state {
-            None => 0u64,
-            Some(s) => AccountResource::make_from(&s)
-                .expect("account resource decode ok")
-                .sequence_number(),
-        }
+        let account_state_reader = AccountStateReader::new(self.statedb.as_ref());
+        account_state_reader
+            .get_account_resource(address)
+            .expect("read account state should ok")
+            .map(|res| res.sequence_number())
+            .unwrap_or_default()
     }
 }
 

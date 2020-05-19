@@ -14,11 +14,8 @@ use starcoin_state_api::{
 };
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::{
-    access_path::{AccessPath, DataType},
+    access_path::{self, AccessPath, DataType},
     account_address::AccountAddress,
-    account_config::{
-        account_balance_struct_tag, account_struct_tag, AccountResource, BalanceResource,
-    },
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
@@ -312,7 +309,7 @@ impl ChainState for ChainStateDB {}
 
 impl ChainStateReader for ChainStateDB {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        let (account_address, data_type, hash) = access_path.clone().into();
+        let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
         self.get_account_state_object_option(&account_address)
             .and_then(|account_state| match account_state {
                 Some(account_state) => account_state.get(data_type, &hash),
@@ -321,7 +318,7 @@ impl ChainStateReader for ChainStateDB {
     }
 
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        let (account_address, data_type, hash) = access_path.clone().into();
+        let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
         let address_hash = account_address.crypto_hash();
         let (account_state, account_proof) = self.state_tree.get_with_proof(&address_hash)?;
         let account_state = account_state
@@ -400,49 +397,16 @@ impl ChainStateReader for ChainStateDB {
 
 impl ChainStateWriter for ChainStateDB {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
-        let (account_address, data_type, key_hash) = access_path.clone().into();
+        let (account_address, data_type, key_hash) = access_path::into_inner(access_path.clone())?;
         let account_state_object = self.get_account_state_object(&account_address, true)?;
         account_state_object.set(data_type, key_hash, value);
         Ok(())
     }
 
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
-        let (account_address, data_type, hash) = access_path.clone().into();
+        let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
         let account_state_object = self.get_account_state_object(&account_address, false)?;
         account_state_object.remove(data_type, &hash)?;
-        Ok(())
-    }
-
-    //TODO pass authentication_key
-    fn create_account(&self, account_address: AccountAddress) -> Result<()> {
-        let account_state_object =
-            AccountStateObject::new_account(account_address, self.store.clone());
-
-        let account_resource = AccountResource::new(0, account_address.to_vec());
-        debug!(
-            "create account: {:?} with address: {:?}",
-            account_resource, account_address
-        );
-        let struct_tag = account_struct_tag();
-        account_state_object.set(
-            DataType::RESOURCE,
-            struct_tag.crypto_hash(),
-            account_resource.try_into()?,
-        );
-
-        let balance_resource = BalanceResource::new(0);
-        debug!("balance resource = {:?}", balance_resource);
-        let balance_struct_tag = account_balance_struct_tag();
-        account_state_object.set(
-            DataType::RESOURCE,
-            balance_struct_tag.crypto_hash(),
-            balance_resource.try_into()?,
-        );
-
-        self.cache.lock().put(
-            account_address.crypto_hash(),
-            CacheItem::new(Arc::new(account_state_object)),
-        );
         Ok(())
     }
 
@@ -510,22 +474,24 @@ impl ChainStateWriter for ChainStateDB {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starcoin_state_api::AccountStateReader;
     use starcoin_state_tree::mock::MockStateNodeStore;
+
+    fn random_bytes() -> Vec<u8> {
+        HashValue::random().to_vec()
+    }
 
     #[test]
     fn test_state_proof() -> Result<()> {
         let storage = MockStateNodeStore::new();
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-        let account_address = AccountAddress::random();
-        chain_state_db.create_account(account_address)?;
+        let access_path = access_path::random_resource();
+        let state0 = random_bytes();
+        chain_state_db.set(&access_path, state0.clone())?;
+
         let state_root = chain_state_db.commit()?;
-        let account_state = chain_state_db
-            .get_account_state(&account_address)?
-            .map(|s| s.encode())
-            .transpose()?;
-        assert!(account_state.is_some());
-        let access_path = AccessPath::new_for_account(account_address);
+        let state1 = chain_state_db.get(&access_path)?;
+        assert!(state1.is_some());
+        assert_eq!(state0, state1.unwrap());
         let state_with_proof = chain_state_db.get_with_proof(&access_path)?;
         state_with_proof.proof.verify(
             state_root,
@@ -539,41 +505,14 @@ mod tests {
     fn test_state_db() -> Result<()> {
         let storage = MockStateNodeStore::new();
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-        let account_address = AccountAddress::random();
-        chain_state_db.create_account(account_address)?;
+        let access_path = access_path::random_resource();
+
+        let state0 = random_bytes();
+        chain_state_db.set(&access_path, state0)?;
         let state_root = chain_state_db.commit()?;
-        let access_path = AccessPath::new_for_account(account_address);
-        let access_path_balance = AccessPath::new_for_balance(account_address);
 
-        let account_state_reader = AccountStateReader::new(&chain_state_db);
-        let account_resource: AccountResource = account_state_reader
-            .get_account_resource(&account_address)
-            .unwrap()
-            .unwrap();
-        assert_eq!(
-            0,
-            account_resource.sequence_number(),
-            "new account balance error"
-        );
-
-        let balance = account_state_reader
-            .get_balance(&account_address)
-            .unwrap()
-            .unwrap();
-        assert_eq!(0, balance, "new account balance error");
-
-        let new_account_resource =
-            AccountResource::new(1, account_resource.authentication_key().to_vec());
-        chain_state_db.set(&access_path, new_account_resource.try_into()?)?;
-
-        let new_balance_resource = BalanceResource::new(10);
-        chain_state_db.set(&access_path_balance, new_balance_resource.try_into()?)?;
-
-        let balance2 = account_state_reader
-            .get_balance(&account_address)
-            .unwrap()
-            .unwrap();
-        assert_eq!(10, balance2);
+        let state1 = random_bytes();
+        chain_state_db.set(&access_path, state1)?;
 
         let new_state_root = chain_state_db.commit()?;
         assert_ne!(state_root, new_state_root);
@@ -581,28 +520,12 @@ mod tests {
     }
 
     #[test]
-    fn test_write_no_exist_account() -> Result<()> {
-        let storage = MockStateNodeStore::new();
-        let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-        let access_path = AccessPath::new(
-            AccountAddress::random(),
-            DataType::RESOURCE,
-            HashValue::random(),
-        );
-        let data = vec![1u8, 2u8];
-        chain_state_db.set(&access_path, data.clone())?;
-        let data1 = chain_state_db.get(&access_path)?;
-        assert_eq!(data1, Some(data));
-        Ok(())
-    }
-
-    #[test]
     fn test_state_db_dump_and_apply() -> Result<()> {
         let storage = MockStateNodeStore::new();
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-        let account_address = AccountAddress::random();
-        chain_state_db.create_account(account_address)?;
-
+        let access_path = access_path::random_resource();
+        let state0 = random_bytes();
+        chain_state_db.set(&access_path, state0)?;
         chain_state_db.commit()?;
         chain_state_db.flush()?;
 
@@ -629,14 +552,14 @@ mod tests {
         let chain_state_db = ChainStateDB::new(storage.clone(), None);
         let account_address = AccountAddress::random();
         let access_path = AccessPath::new_for_account(account_address);
-        let old_state = vec![0u8];
+        let old_state = random_bytes();
         chain_state_db.set(&access_path, old_state.clone())?;
 
         chain_state_db.commit()?;
         chain_state_db.flush()?;
         let old_root = chain_state_db.state_root();
 
-        let new_state = vec![1u8];
+        let new_state = random_bytes();
         chain_state_db.set(&access_path, new_state)?;
 
         let chain_state_db_ori = ChainStateDB::new(storage, Some(old_root));

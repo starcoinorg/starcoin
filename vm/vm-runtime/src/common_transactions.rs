@@ -7,7 +7,7 @@ use crate::starcoin_vm::DEFAULT_CURRENCY_TY;
 use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN};
 use crate::{account::create_signed_txn_with_association_account, account::Account};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::starcoin_type_tag;
+use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
 };
@@ -36,7 +36,7 @@ pub fn create_account_txn(
         seq_num,
         TXN_RESERVED,
         1,
-        starcoin_type_tag(),
+        stc_type_tag(),
     )
 }
 
@@ -56,12 +56,12 @@ pub fn peer_to_peer_txn(
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
         PEER_TO_PEER_TXN.clone(),
-        vec![starcoin_type_tag()],
+        vec![stc_type_tag()],
         args,
         seq_num,
         TXN_RESERVED, // this is a default for gas
         1,            // this is a default for gas
-        starcoin_type_tag(),
+        stc_type_tag(),
     )
 }
 
@@ -85,7 +85,7 @@ pub fn mint_txn(
         seq_num,
         TXN_RESERVED, // this is a default for gas
         1,            // this is a default for gas
-        starcoin_type_tag(),
+        stc_type_tag(),
     )
 }
 
@@ -107,7 +107,7 @@ pub fn create_account_txn_sent_as_association(
         seq_num,
         TXN_RESERVED,
         1,
-        starcoin_type_tag(),
+        stc_type_tag(),
     )
 }
 
@@ -124,12 +124,12 @@ pub fn peer_to_peer_txn_sent_as_association(
 
     create_signed_txn_with_association_account(
         PEER_TO_PEER_TXN.clone(),
-        vec![starcoin_type_tag()],
+        vec![stc_type_tag()],
         args,
         seq_num,
         TXN_RESERVED,
         1,
-        starcoin_type_tag(),
+        stc_type_tag(),
     )
 }
 
@@ -150,12 +150,12 @@ pub fn raw_peer_to_peer_txn(
         seq_num,
         TransactionPayload::Script(Script::new(
             PEER_TO_PEER_TXN.clone(),
-            vec![starcoin_type_tag()],
+            vec![stc_type_tag()],
             args,
         )),
         TXN_RESERVED,
         1,
-        starcoin_type_tag(),
+        stc_type_tag(),
         Duration::from_secs(DEFAULT_EXPIRATION_TIME),
     )
 }
@@ -183,7 +183,7 @@ pub fn encode_transfer_script(
 ) -> Script {
     Script::new(
         PEER_TO_PEER_TXN.clone(),
-        vec![starcoin_type_tag()],
+        vec![stc_type_tag()],
         vec![
             TransactionArgument::Address(*recipient),
             TransactionArgument::U8Vector(auth_key_prefix),

@@ -6,16 +6,16 @@ use anyhow::Result;
 use crypto::HashValue;
 use starcoin_config::ChainConfig;
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
-use statedb::ChainStateDB;
-use std::sync::Arc;
-use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
     state_set::ChainStateSet,
     transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
+use statedb::ChainStateDB;
+use std::sync::Arc;
+use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use vm_runtime::genesis::generate_genesis_state_set;
 use vm_runtime::{
     account::Account,

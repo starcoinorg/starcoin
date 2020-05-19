@@ -115,7 +115,7 @@ impl CommandAction for ExecuteCommand {
             Script::new(bytecode, type_tags, args),
             opt.max_gas_amount,
             1,
-            account_config::starcoin_type_tag(),
+            account_config::stc_type_tag(),
             expiration_time,
         );
 

@@ -7,10 +7,10 @@ use crypto::{hash::PlainCryptoHash, HashValue};
 // use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_state_api::ChainState;
-use types::error::BlockExecutorError;
-use types::error::ExecutorResult;
-use types::transaction::TransactionStatus;
-use types::transaction::{Transaction, TransactionInfo};
+use starcoin_types::error::BlockExecutorError;
+use starcoin_types::error::ExecutorResult;
+use starcoin_types::transaction::TransactionStatus;
+use starcoin_types::transaction::{Transaction, TransactionInfo};
 use vm_runtime::counters::TXN_STATUS_COUNTERS;
 
 #[derive(Clone)]

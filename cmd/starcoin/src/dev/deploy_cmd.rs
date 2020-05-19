@@ -95,7 +95,7 @@ impl CommandAction for DeployCommand {
             Module::new(bytecode),
             opt.max_gas_amount,
             1,
-            account_config::starcoin_type_tag(),
+            account_config::stc_type_tag(),
             expiration_time,
         );
 

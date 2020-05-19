@@ -6,14 +6,16 @@ use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::{
-    access_path::AccessPath,
+    access_path::{self, AccessPath},
     account_address::AccountAddress,
     account_config::{AccountResource, BalanceResource},
     account_state::AccountState,
     language_storage::TypeTag,
     state_set::ChainStateSet,
 };
+use starcoin_vm_types::account_config::stc_type_tag;
 use std::convert::TryFrom;
+use std::sync::Arc;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateProof {
@@ -42,7 +44,7 @@ impl StateProof {
         access_path: AccessPath,
         access_resource_blob: Option<&[u8]>,
     ) -> Result<()> {
-        let (account_address, data_type, ap_hash) = access_path.into();
+        let (account_address, data_type, ap_hash) = access_path::into_inner(access_path)?;
         match self.account_state.as_ref() {
             None => {
                 ensure!(
@@ -121,8 +123,6 @@ pub trait ChainStateWriter {
     /// Remove state at access_path
     fn remove(&self, access_path: &AccessPath) -> Result<()>;
 
-    fn create_account(&self, account_address: AccountAddress) -> Result<()>;
-
     /// Apply dump result to ChainState
     fn apply(&self, state_set: ChainStateSet) -> Result<()>;
 
@@ -131,8 +131,54 @@ pub trait ChainStateWriter {
     fn flush(&self) -> Result<()>;
 }
 
+//This code is repeat with storage IntoSuper
+//But can not share IntoSuper between different crate.
+//only traits defined in the current crate can be implemented for a type parameter
+pub trait IntoSuper<Super: ?Sized> {
+    fn as_super(&self) -> &Super;
+    fn as_super_mut(&mut self) -> &mut Super;
+    fn into_super(self: Box<Self>) -> Box<Super>;
+    fn into_super_arc(self: Arc<Self>) -> Arc<Super>;
+}
+
 /// `ChainState` is a trait that defines chain's global state.
-pub trait ChainState: ChainStateReader + ChainStateWriter {}
+pub trait ChainState:
+    ChainStateReader
+    + ChainStateWriter
+    + IntoSuper<dyn ChainStateReader>
+    + IntoSuper<dyn ChainStateWriter>
+{
+}
+
+impl<'a, T: 'a + ChainStateReader> IntoSuper<dyn ChainStateReader + 'a> for T {
+    fn as_super(&self) -> &(dyn ChainStateReader + 'a) {
+        self
+    }
+    fn as_super_mut(&mut self) -> &mut (dyn ChainStateReader + 'a) {
+        self
+    }
+    fn into_super(self: Box<Self>) -> Box<dyn ChainStateReader + 'a> {
+        self
+    }
+    fn into_super_arc(self: Arc<Self>) -> Arc<dyn ChainStateReader + 'a> {
+        self
+    }
+}
+
+impl<'a, T: 'a + ChainStateWriter> IntoSuper<dyn ChainStateWriter + 'a> for T {
+    fn as_super(&self) -> &(dyn ChainStateWriter + 'a) {
+        self
+    }
+    fn as_super_mut(&mut self) -> &mut (dyn ChainStateWriter + 'a) {
+        self
+    }
+    fn into_super(self: Box<Self>) -> Box<dyn ChainStateWriter + 'a> {
+        self
+    }
+    fn into_super_arc(self: Arc<Self>) -> Arc<dyn ChainStateWriter + 'a> {
+        self
+    }
+}
 
 /// `AccountStateReader` is a helper struct for read account state.
 pub struct AccountStateReader<'a> {
@@ -153,21 +199,14 @@ impl<'a> AccountStateReader<'a> {
         self.reader
             .get(&AccessPath::new_for_account(*address))
             .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(AccountResource::make_from(bytes.as_slice())?)),
+                Some(bytes) => Ok(Some(scs::from_bytes::<AccountResource>(bytes.as_slice())?)),
                 None => Ok(None),
             })
     }
 
     /// Get starcoin account balance by address
     pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
-        Ok(self
-            .reader
-            .get(&AccessPath::new_for_balance(*address))
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(BalanceResource::make_from(bytes.as_slice())?)),
-                None => Ok(None),
-            })?
-            .map(|resource| resource.coin()))
+        self.get_token_balance(address, &stc_type_tag())
     }
 
     /// Get token balance by address
@@ -178,9 +217,12 @@ impl<'a> AccountStateReader<'a> {
     ) -> Result<Option<u64>> {
         Ok(self
             .reader
-            .get(&AccessPath::new_for_token_balance(*address, type_tag)?)
+            .get(&AccessPath::new(
+                *address,
+                BalanceResource::access_path_for(type_tag.clone()),
+            ))
             .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(BalanceResource::make_from(bytes.as_slice())?)),
+                Some(bytes) => Ok(Some(scs::from_bytes::<BalanceResource>(bytes.as_slice())?)),
                 None => Ok(None),
             })?
             .map(|resource| resource.coin()))

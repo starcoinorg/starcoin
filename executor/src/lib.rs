@@ -5,7 +5,7 @@ use anyhow::Result;
 use crypto::HashValue;
 use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
     state_set::ChainStateSet,
