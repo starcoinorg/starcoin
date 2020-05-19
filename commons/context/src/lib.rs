@@ -125,6 +125,7 @@ where
         self.parts.curr_handle()
     }
 
+    #[allow(clippy::needless_doctest_main)]
     /// Sets the mailbox capacity.
     ///
     /// The default mailbox capacity is 16 messages.
@@ -152,6 +153,15 @@ where
     /// Returns whether any addresses are still connected.
     pub fn connected(&self) -> bool {
         self.parts.connected()
+    }
+}
+
+impl<A> Default for Context<A>
+where
+    A: Actor<Context = Self>,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
