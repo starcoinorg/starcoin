@@ -294,11 +294,10 @@ where
     }
 
     async fn master_head_header(self) -> Option<BlockHeader> {
-        if let ChainResponse::BlockHeader(header) = self
+        if let Ok(ChainResponse::BlockHeader(header)) = self
             .address
             .send(ChainRequest::CurrentHeader())
             .await
-            .unwrap()
             .unwrap()
         {
             return *header;

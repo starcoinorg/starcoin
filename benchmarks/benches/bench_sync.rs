@@ -4,7 +4,7 @@ use benchmarks::sync::SyncBencher;
 use criterion::{criterion_group, criterion_main, Benchmark, Criterion};
 
 fn full_sync(c: &mut Criterion) {
-    for i in vec![50u64, 100, 250].into_iter() {
+    for i in vec![10u64, 20, 50].into_iter() {
         c.bench(
             "full_sync",
             Benchmark::new(format!("full_sync_{:?}", i), move |b| {

@@ -44,6 +44,7 @@ fn test_state_sync() {
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port())
             .parse()
             .unwrap();
+        debug!("first peer : {:?}", config_1.network.self_peer_id);
         let node_config_1 = Arc::new(config_1);
 
         // genesis
@@ -144,6 +145,7 @@ fn test_state_sync() {
             .parse()
             .unwrap();
         config_2.network.seeds = vec![seed];
+        debug!("second peer : {:?}", config_2.network.self_peer_id);
         let node_config_2 = Arc::new(config_2);
 
         let genesis_2 = Genesis::build(node_config_2.net()).unwrap();
