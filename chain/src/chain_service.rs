@@ -262,7 +262,7 @@ where
 
         let ancestor = self
             .storage
-            .get_common_ancestor(block_enacted.clone(), block_retracted.clone())?
+            .get_common_ancestor(*block_enacted, *block_retracted)?
             .ok_or_else(|| {
                 format_err!(
                     "Can not find ancestor with {} and {}.",
@@ -271,8 +271,8 @@ where
                 )
             })?;
 
-        let enacted = self.find_blocks_until(block_enacted.clone(), ancestor.clone())?;
-        let retracted = self.find_blocks_until(block_retracted.clone(), ancestor.clone())?;
+        let enacted = self.find_blocks_until(*block_enacted, ancestor)?;
+        let retracted = self.find_blocks_until(*block_retracted, ancestor)?;
         let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
         let mut tx_retracted: Vec<SignedUserTransaction> = Vec::new();
         enacted.iter().for_each(|b| {

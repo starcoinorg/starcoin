@@ -57,7 +57,6 @@ where
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
         let block_info = storage
-            
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block_hash))?;
 
@@ -347,7 +346,7 @@ where
     }
 
     fn exist_block(&self, block_id: HashValue) -> bool {
-        if let Ok(Some(header)) = self.storage.get_block_header_by_hash(block_id.clone()) {
+        if let Ok(Some(header)) = self.storage.get_block_header_by_hash(block_id) {
             if let Ok(exist) = self.block_exist_by_number(block_id, header.number()) {
                 return exist;
             }

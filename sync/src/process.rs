@@ -320,12 +320,12 @@ where
         nodes_hash: Vec<HashValue>,
     ) -> Vec<(HashValue, Option<AccumulatorNode>)> {
         let mut accumulator_nodes = Vec::new();
-        nodes_hash.iter().for_each(
-            |node_key| match processor.storage.get_node(node_key.clone()) {
+        nodes_hash
+            .iter()
+            .for_each(|node_key| match processor.storage.get_node(*node_key) {
                 Ok(node) => accumulator_nodes.push((*node_key, node)),
                 Err(e) => error!("error: {:?}", e),
-            },
-        );
+            });
 
         accumulator_nodes
     }
