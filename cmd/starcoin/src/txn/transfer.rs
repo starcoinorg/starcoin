@@ -28,6 +28,22 @@ pub struct TransferOpt {
     public_key: Option<String>,
     #[structopt(short = "v")]
     amount: u64,
+    #[structopt(
+        short = "g",
+        long = "max-gas",
+        name = "max-gas-amount",
+        default_value = "1000000",
+        help = "max gas to use"
+    )]
+    max_gas_amount: u64,
+    #[structopt(
+        short = "p",
+        long = "gas-price",
+        name = "price of gas",
+        default_value = "1",
+        help = "gas price used"
+    )]
+    gas_price: u64,
 }
 
 pub struct TransferCommand;
@@ -92,6 +108,8 @@ impl CommandAction for TransferCommand {
             to_auth_key_prefix,
             account_resource.sequence_number(),
             opt.amount,
+            opt.gas_price,
+            opt.max_gas_amount,
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
         client.submit_transaction(txn.clone())?;

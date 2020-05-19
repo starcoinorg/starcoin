@@ -9,10 +9,12 @@ use tx_pool::{self, scoring};
 /// `new_gas_price >= old_gas_price + old_gas_price >> SHIFT`
 const GAS_PRICE_BUMP_SHIFT: usize = 3; // 2 = 25%, 3 = 12.5%, 4 = 6.25%
 
+/// TODO: re-consider this, after we settle down the unit of gas price.
 /// Calculate minimal gas price requirement.
 #[inline]
 fn bump_gas_price(old_gp: GasPrice) -> GasPrice {
-    old_gp.saturating_add(old_gp >> GAS_PRICE_BUMP_SHIFT as u64)
+    old_gp
+    // old_gp.saturating_add(old_gp >> GAS_PRICE_BUMP_SHIFT as u64)
 }
 
 /// Simple, gas-price based scoring for transactions.
