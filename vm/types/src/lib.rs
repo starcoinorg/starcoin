@@ -60,6 +60,11 @@ pub mod write_set {
     pub use libra_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 }
 
+pub mod state_view {
+    pub use libra_state_view::StateView;
+}
+
 pub mod access_path;
 pub mod account_config;
 pub mod event;
+pub mod on_chain_config;

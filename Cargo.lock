@@ -6378,6 +6378,7 @@ name = "starcoin-vm-types"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "libra-state-view",
  "libra-types",
  "move-core-types",
  "move-vm-types",
