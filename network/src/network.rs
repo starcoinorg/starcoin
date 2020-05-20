@@ -22,6 +22,9 @@ use network_p2p::Multiaddr;
 
 use crate::network_metrics::NetworkMetrics;
 use async_trait::async_trait;
+use config::{
+    ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
+};
 use scs::SCSCodec;
 use starcoin_sync_api::sync_messages::PeerNewBlock;
 use std::collections::{HashMap, HashSet};
@@ -222,12 +225,20 @@ impl NetworkActor {
     ) -> NetworkAsyncService {
         let has_seed = !node_config.network.seeds.is_empty();
 
-        let (service, tx, rx, event_rx, tx_command) = build_network_service(
-            &node_config.network,
-            handle.clone(),
-            genesis_hash,
-            self_info.clone(),
-        );
+        // merge seeds from chain config
+        let mut config = node_config.network.clone();
+        if !node_config.network.disable_seed {
+            let seeds = match node_config.base.net() {
+                ChainNetwork::Dev => DEV_CHAIN_CONFIG.boot_nodes.clone(),
+                ChainNetwork::Halley => HALLEY_CHAIN_CONFIG.boot_nodes.clone(),
+                ChainNetwork::Main => MAIN_CHAIN_CONFIG.boot_nodes.clone(),
+                ChainNetwork::Proxima => PROXIMA_CHAIN_CONFIG.boot_nodes.clone(),
+            };
+            config.seeds.extend(seeds);
+        }
+
+        let (service, tx, rx, event_rx, tx_command) =
+            build_network_service(&config, handle.clone(), genesis_hash, self_info.clone());
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -263,7 +274,7 @@ impl NetworkActor {
         let (connected_tx, mut connected_rx) = futures::channel::mpsc::channel(1);
         let need_send_event = AtomicBool::new(false);
 
-        if has_seed {
+        if has_seed && !node_config.network.disable_seed {
             need_send_event.swap(true, Ordering::Acquire);
         }
 
