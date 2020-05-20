@@ -18,6 +18,7 @@ use starcoin_storage::Store;
 use starcoin_sync_api::{StateSyncReset, SyncMetadata};
 use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use types::{account_state::AccountState, peer_info::PeerId};
 
@@ -249,6 +250,8 @@ pub struct StateSyncTaskActor {
     sync_metadata: SyncMetadata,
     state_sync_task: Arc<Mutex<SyncTask<(HashValue, bool)>>>,
     accumulator_sync_task: Arc<Mutex<SyncTask<HashValue>>>,
+    state_sync_count: AtomicU64,
+    accumulator_sync_count: AtomicU64,
 }
 
 pub struct SyncTask<T> {
@@ -266,6 +269,10 @@ impl<T> SyncTask<T> {
 
     fn is_empty(&mut self) -> bool {
         self.wait_2_sync.is_empty() && self.syncing_nodes.is_empty()
+    }
+
+    fn task_len(&self) -> (usize, usize) {
+        (self.wait_2_sync.len(), self.syncing_nodes.len())
     }
 
     pub fn push_back(&mut self, value: T) {
@@ -316,11 +323,21 @@ impl StateSyncTaskActor {
             sync_metadata,
             state_sync_task: Arc::new(Mutex::new(state_sync_task)),
             accumulator_sync_task: Arc::new(Mutex::new(accumulator_sync_task)),
+            state_sync_count: AtomicU64::new(0),
+            accumulator_sync_count: AtomicU64::new(0),
         });
         StateSyncTaskRef { address }
     }
 
     fn sync_end(&self) -> bool {
+        info!(
+            "state_sync_task len : {:?}, accumulator_sync_task len : {:?},\
+         save state nodes : {} , save accumulator nodes : {}",
+            self.state_sync_task.lock().task_len(),
+            self.accumulator_sync_task.lock().task_len(),
+            self.state_sync_count.load(Ordering::Relaxed),
+            self.accumulator_sync_count.load(Ordering::Relaxed),
+        );
         self.state_sync_task.lock().is_empty() && self.accumulator_sync_task.lock().is_empty()
     }
 
@@ -392,6 +409,7 @@ impl StateSyncTaskActor {
                     lock.push_back((current_node_key, is_global));
                 } else {
                     debug!("receive state_node: {:?}", state_node.0.hash());
+                    self.state_sync_count.fetch_add(1, Ordering::Relaxed);
                     match state_node.inner() {
                         Node::Leaf(leaf) => {
                             if !is_global {
@@ -497,6 +515,7 @@ impl StateSyncTaskActor {
                     lock.push_back(current_node_key);
                 } else {
                     debug!("receive accumulator_node: {:?}", accumulator_node);
+                    self.accumulator_sync_count.fetch_add(1, Ordering::Relaxed);
                     match accumulator_node {
                         AccumulatorNode::Leaf(_leaf) => {}
                         AccumulatorNode::Internal(n) => {
@@ -528,15 +547,31 @@ impl StateSyncTaskActor {
         address: Addr<StateSyncTaskActor>,
     ) {
         info!("reset state sync task.");
-        let mut lock = self.state_sync_task.lock();
-        lock.clear();
         self.roots = Roots::new(*state_root, *txn_accumulator_root, *block_accumulator_root);
-        lock.push_back((*self.roots.state_root(), true));
-        drop(lock);
-        self.activation_task(address);
+        let mut state_lock = self.state_sync_task.lock();
+        let old_state_is_empty = state_lock.is_empty();
+        state_lock.clear();
+        state_lock.push_back((*self.roots.state_root(), true));
+        drop(state_lock);
+        let mut accumulator_lock = self.accumulator_sync_task.lock();
+        let old_accumulator_is_empty = accumulator_lock.is_empty();
+        accumulator_lock.clear();
+        accumulator_lock.push_back(*self.roots.txn_accumulator_root());
+        accumulator_lock.push_back(*self.roots.block_accumulator_root());
+        drop(accumulator_lock);
+        self.state_sync_count = AtomicU64::new(0);
+        self.accumulator_sync_count = AtomicU64::new(0);
+        if self.sync_metadata.is_failed() {
+            self.activation_task(address);
+        } else if old_state_is_empty {
+            self.exe_state_sync_task(address.clone());
+        } else if old_accumulator_is_empty {
+            self.exe_accumulator_sync_task(address.clone());
+        }
     }
 
     fn activation_task(&mut self, address: Addr<StateSyncTaskActor>) {
+        info!("activation state sync task.");
         if self.sync_metadata.is_failed() {
             self.sync_metadata.update_failed(false);
             self.exe_state_sync_task(address.clone());

@@ -61,6 +61,7 @@ impl SyncMetadata {
         assert!(self.state_syncing(), "cat not update pivot.");
         assert!(pivot > 0, "pivot must be positive integer.");
         assert!(behind > 0, "behind must be positive integer.");
+        info!("update pivot : {}, {}", pivot, behind);
         self.0.write().pivot_behind = Some((pivot, behind));
         self.0.write().pivot_connected = false;
         Ok(())
