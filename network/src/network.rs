@@ -63,6 +63,7 @@ struct Inner {
     need_send_event: AtomicBool,
     node_config: Arc<NodeConfig>,
     peer_id: PeerId,
+    rpc_tx: mpsc::UnboundedSender<RawRpcRequestMessage>,
 }
 
 #[derive(Debug)]
@@ -222,7 +223,10 @@ impl NetworkActor {
         handle: Handle,
         genesis_hash: HashValue,
         self_info: PeerInfo,
-    ) -> NetworkAsyncService {
+    ) -> (
+        NetworkAsyncService,
+        mpsc::UnboundedReceiver<RawRpcRequestMessage>,
+    ) {
         let has_seed = !node_config.network.seeds.is_empty();
 
         // merge seeds from chain config
@@ -279,6 +283,8 @@ impl NetworkActor {
         }
 
         let metrics = NetworkMetrics::register().ok();
+        let (rpc_tx, rpc_rx) = mpsc::unbounded();
+
         let inner = Inner {
             network_service: service,
             bus,
@@ -289,6 +295,7 @@ impl NetworkActor {
             need_send_event,
             node_config,
             peer_id: peer_id.clone(),
+            rpc_tx,
         };
         let inner = Arc::new(inner);
         handle.spawn(Self::start(
@@ -306,15 +313,18 @@ impl NetworkActor {
             });
         }
 
-        NetworkAsyncService {
-            addr,
-            raw_message_processor,
-            tx,
-            peer_id,
-            inner,
-            handle,
-            metrics,
-        }
+        (
+            NetworkAsyncService {
+                addr,
+                raw_message_processor,
+                tx,
+                peer_id,
+                inner,
+                handle,
+                metrics,
+            },
+            rpc_rx,
+        )
     }
 
     async fn start(
@@ -414,14 +424,18 @@ impl Inner {
             PeerMessage::RawRPCRequest(id, request) => {
                 info!("do request.");
                 let (tx, rx) = mpsc::channel(1);
-                self.bus
-                    .send(Broadcast {
-                        msg: RawRpcRequestMessage {
-                            responder: tx,
-                            request,
-                        },
-                    })
-                    .await?;
+                // self.bus
+                //     .send(Broadcast {
+                //         msg: RawRpcRequestMessage {
+                //             responder: tx,
+                //             request,
+                //         },
+                //     })
+                //     .await?;
+                self.rpc_tx.unbounded_send(RawRpcRequestMessage {
+                    responder: tx,
+                    request,
+                })?;
                 let network_service = self.network_service.clone();
                 self.handle
                     .spawn(Self::handle_response(id, peer_id, rx, network_service));

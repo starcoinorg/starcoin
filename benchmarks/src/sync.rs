@@ -8,7 +8,7 @@ use starcoin_chain::{to_block_chain_collection, BlockChain, ChainActor, ChainAct
 use starcoin_config::{get_available_port, NodeConfig};
 use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
-use starcoin_network::{NetworkActor, NetworkAsyncService};
+use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
 use starcoin_network_api::NetworkService;
 use starcoin_sync::Downloader;
 use starcoin_sync::{
@@ -35,11 +35,11 @@ impl SyncBencher {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let handle = rt.handle().clone();
         system.block_on(async move {
-            let (bus_1, addr_1, network_1, chain_1, tx_1, storage_1) =
+            let (bus_1, addr_1, network_1, chain_1, tx_1, storage_1, rpc_rx) =
                 create_node(Some(num), None, handle.clone()).await.unwrap();
-            let _processor = ProcessActor::launch(chain_1.clone(), tx_1, bus_1, storage_1);
+            let _processor = ProcessActor::launch(chain_1.clone(), tx_1, bus_1, storage_1, rpc_rx);
 
-            let (_, _, network_2, chain_2, _, _) =
+            let (_, _, network_2, chain_2, _, _, _) =
                 create_node(None, Some((addr_1, network_1)), handle.clone())
                     .await
                     .unwrap();
@@ -143,6 +143,7 @@ async fn create_node(
     ChainActorRef<DummyConsensus>,
     TxPoolRef,
     Arc<Storage>,
+    futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
 )> {
     let bus = BusActor::launch();
     // storage
@@ -180,7 +181,7 @@ async fn create_node(
     // network
     let key_pair = node_config.clone().network.network_keypair();
     let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
-    let network = NetworkActor::launch(
+    let (network, rpc_rx) = NetworkActor::launch(
         node_config.clone(),
         bus.clone(),
         handle.clone(),
@@ -238,5 +239,5 @@ async fn create_node(
             chain.clone().try_connect(block).await.unwrap().unwrap();
         }
     }
-    Ok((bus, my_addr, network, chain, txpool, storage))
+    Ok((bus, my_addr, network, chain, txpool, storage, rpc_rx))
 }

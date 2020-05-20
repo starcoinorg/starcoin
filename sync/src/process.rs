@@ -42,6 +42,7 @@ where
         txpool: TxPoolRef,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
+        rpc_rx: futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) -> Result<Addr<ProcessActor<C>>> {
         let process_actor = ProcessActor {
             processor: Arc::new(Processor::new(chain_reader, txpool, storage)),
