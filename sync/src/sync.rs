@@ -9,6 +9,7 @@ use config::NodeConfig;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
+use network_api::messages::RawRpcRequestMessage;
 use starcoin_storage::Store;
 use starcoin_sync_api::sync_messages::{PeerNewBlock, SyncNotify};
 use starcoin_sync_api::SyncMetadata;
@@ -41,10 +42,10 @@ where
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
+        rpc_rx: futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) -> Result<Addr<SyncActor<C>>> {
         let txn_sync_addr = TxnSyncActor::launch(txpool.clone(), network.clone(), bus.clone());
-        let process_address =
-            ProcessActor::launch(chain.clone(), txpool, bus.clone(), storage.clone())?;
+        let process_address = ProcessActor::launch(chain.clone(), txpool, storage.clone(), rpc_rx)?;
         let download_address = DownloadActor::launch(
             node_config,
             peer_id,

@@ -65,7 +65,7 @@ fn test_network_actor_rpc() {
         let tx_pool_service = tx_pool1.get_service();
 
         // network
-        let (network_1, addr_1) = gen_network(
+        let (network_1, addr_1, rx_1) = gen_network(
             node_config_1.clone(),
             bus_1.clone(),
             handle.clone(),
@@ -96,6 +96,7 @@ fn test_network_actor_rpc() {
             network_1.clone(),
             storage_1.clone(),
             sync_metadata_actor_1.clone(),
+            rx_1,
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
@@ -161,7 +162,7 @@ fn test_network_actor_rpc() {
             .get_async_service()
         };
         // network
-        let (network_2, addr_2) = gen_network(
+        let (network_2, addr_2, rx_2) = gen_network(
             node_config_2.clone(),
             bus_2.clone(),
             handle.clone(),
@@ -193,6 +194,7 @@ fn test_network_actor_rpc() {
             network_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
+            rx_2,
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
@@ -257,7 +259,7 @@ fn test_network_actor_rpc_2() {
         };
 
         // network
-        let (network_1, addr_1) = gen_network(
+        let (network_1, addr_1, rx_1) = gen_network(
             node_config_1.clone(),
             bus_1.clone(),
             handle.clone(),
@@ -288,6 +290,7 @@ fn test_network_actor_rpc_2() {
             network_1.clone(),
             storage_1.clone(),
             sync_metadata_actor_1.clone(),
+            rx_1,
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
@@ -334,7 +337,7 @@ fn test_network_actor_rpc_2() {
             .get_async_service()
         };
         // network
-        let (network_2, addr_2) =
+        let (network_2, addr_2, rx_2) =
             gen_network(node_config_2.clone(), bus_2.clone(), handle, genesis_hash);
         debug!("addr_2 : {:?}", addr_2);
 
@@ -361,6 +364,7 @@ fn test_network_actor_rpc_2() {
             network_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
+            rx_2,
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;

@@ -3,9 +3,8 @@ use crate::helper::{
     do_accumulator_node, do_get_block_by_hash, do_get_hash_by_number, do_state_node,
 };
 use actix::prelude::*;
-use actix::{Actor, Addr, AsyncContext, Context, Handler};
+use actix::{Actor, Addr, AsyncContext, Context, StreamHandler};
 use anyhow::Result;
-use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
 use crypto::hash::HashValue;
 use logger::prelude::*;
@@ -30,7 +29,6 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     processor: Arc<Processor<C>>,
-    bus: Addr<BusActor>,
 }
 
 impl<C> ProcessActor<C>
@@ -40,14 +38,17 @@ where
     pub fn launch(
         chain_reader: ChainActorRef<C>,
         txpool: TxPoolRef,
-        bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
+        rpc_rx: futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) -> Result<Addr<ProcessActor<C>>> {
-        let process_actor = ProcessActor {
-            processor: Arc::new(Processor::new(chain_reader, txpool, storage)),
-            bus,
-        };
-        Ok(process_actor.start())
+        Ok(ProcessActor::create(
+            move |ctx: &mut Context<ProcessActor<C>>| {
+                ctx.add_stream(rpc_rx);
+                ProcessActor {
+                    processor: Arc::new(Processor::new(chain_reader, txpool, storage)),
+                }
+            },
+        ))
     }
 }
 
@@ -57,29 +58,23 @@ where
 {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let rpc_recipient = ctx.address().recipient::<RawRpcRequestMessage>();
-        self.bus
-            .send(Subscription {
-                recipient: rpc_recipient,
-            })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-        info!("Process actor started");
+    fn started(&mut self, _ctx: &mut Context<Self>) {
+        info!("ProcessActor started");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Context<Self>) {
+        info!("ProcessActor stopped");
     }
 }
 
-impl<C> Handler<RawRpcRequestMessage> for ProcessActor<C>
+impl<C> StreamHandler<RawRpcRequestMessage> for ProcessActor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    type Result = Result<()>;
-
-    fn handle(&mut self, msg: RawRpcRequestMessage, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: RawRpcRequestMessage, _ctx: &mut Self::Context) {
         let responder = msg.responder.clone();
         let processor = self.processor.clone();
-        let req = SyncRpcRequest::decode(msg.request.as_slice())?;
+        let req = SyncRpcRequest::decode(msg.request.as_slice()).expect("decode error");
         Arbiter::spawn(async move {
             info!("process req :{:?}", req);
             match req {
@@ -173,8 +168,6 @@ where
                 }
             }
         });
-
-        Ok(())
     }
 }
 
