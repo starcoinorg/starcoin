@@ -32,7 +32,10 @@ mod storage_config;
 mod sync_config;
 mod txpool_config;
 
-pub use chain_config::{ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG};
+pub use chain_config::{
+    ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG,
+    MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
+};
 pub use libra_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
@@ -142,6 +145,10 @@ pub struct StarcoinOpt {
     #[structopt(long = "miner_thread")]
     /// Miner thread number, not work for dev network, default is 1
     pub miner_thread: Option<u16>,
+
+    #[structopt(long = "disable-seed")]
+    /// Disable seed for seed node.
+    pub disable_seed: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]

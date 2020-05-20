@@ -32,6 +32,7 @@ pub struct NetworkConfig {
     pub self_peer_id: Option<PeerId>,
     #[serde(skip)]
     pub self_address: Option<Multiaddr>,
+    pub disable_seed: bool,
 }
 
 impl Default for NetworkConfig {
@@ -85,6 +86,7 @@ impl ConfigModule for NetworkConfig {
             network_keypair: None,
             self_peer_id: None,
             self_address: None,
+            disable_seed: false,
         }
     }
 
@@ -135,6 +137,8 @@ impl ConfigModule for NetworkConfig {
 
         self.network_keypair = Some(Arc::new(keypair));
         self.set_peer_id();
+
+        self.disable_seed = opt.disable_seed;
 
         Ok(())
     }
