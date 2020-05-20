@@ -12,7 +12,7 @@ use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
-use starcoin_network::{NetworkActor, NetworkAsyncService};
+use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
 use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -180,8 +180,8 @@ where
     let network_config = config.clone();
     let network_bus = bus.clone();
     let network_handle = handle.clone();
-    let network = Arbiter::new()
-        .exec(move || -> NetworkAsyncService {
+    let (network,rpc_rx) = Arbiter::new()
+        .exec(move || -> (NetworkAsyncService,futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>){
             NetworkActor::launch(
                 network_config,
                 network_bus,
@@ -272,6 +272,7 @@ where
                 sync_network,
                 sync_storage,
                 sync_sync_metadata,
+                rpc_rx,
             )
         })
         .await??;

@@ -89,6 +89,8 @@ pub struct NetworkConfiguration {
     pub genesis_hash: HashValue,
 
     pub self_info: PeerInfo,
+
+    pub disable_seed: bool,
 }
 
 /// Configuration for the transport layer.
@@ -144,6 +146,7 @@ impl Default for NetworkConfiguration {
             },
             genesis_hash: HashValue::default(),
             self_info: PeerInfo::default(),
+            disable_seed: false,
         }
     }
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use libp2p::Multiaddr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
@@ -166,6 +167,8 @@ pub struct ChainConfig {
     pub consensus_header: Vec<u8>,
     /// Pre mine to Association account config, if not preset, Not do pre mine, and association account only can be used in genesis.
     pub pre_mine_config: Option<PreMineConfig>,
+    /// List of initial node addresses
+    pub boot_nodes: Vec<Multiaddr>,
 }
 
 pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
@@ -188,10 +191,11 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
             private_key: Some(private_key),
             pre_mine_percent: 20,
         }),
+        boot_nodes: vec![],
     }
 });
 
-static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
+pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 1000,
@@ -206,9 +210,10 @@ static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
         private_key: None,
         pre_mine_percent: 20,
     }),
+    boot_nodes: vec![],
 });
 
-static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
+pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 10000,
@@ -216,9 +221,10 @@ static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     difficulty: U256::max_value(),
     consensus_header: vec![],
     pre_mine_config: None,
+    boot_nodes: vec![],
 });
 
-static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
+pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 52500,
@@ -226,4 +232,5 @@ static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     difficulty: U256::max_value(),
     consensus_header: vec![],
     pre_mine_config: None,
+    boot_nodes: vec![],
 });

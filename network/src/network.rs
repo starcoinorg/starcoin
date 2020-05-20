@@ -22,6 +22,9 @@ use network_p2p::Multiaddr;
 
 use crate::network_metrics::NetworkMetrics;
 use async_trait::async_trait;
+use config::{
+    ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
+};
 use scs::SCSCodec;
 use starcoin_sync_api::sync_messages::PeerNewBlock;
 use std::collections::{HashMap, HashSet};
@@ -60,6 +63,7 @@ struct Inner {
     need_send_event: AtomicBool,
     node_config: Arc<NodeConfig>,
     peer_id: PeerId,
+    rpc_tx: mpsc::UnboundedSender<RawRpcRequestMessage>,
 }
 
 #[derive(Debug)]
@@ -219,15 +223,26 @@ impl NetworkActor {
         handle: Handle,
         genesis_hash: HashValue,
         self_info: PeerInfo,
-    ) -> NetworkAsyncService {
+    ) -> (
+        NetworkAsyncService,
+        mpsc::UnboundedReceiver<RawRpcRequestMessage>,
+    ) {
         let has_seed = !node_config.network.seeds.is_empty();
 
-        let (service, tx, rx, event_rx, tx_command) = build_network_service(
-            &node_config.network,
-            handle.clone(),
-            genesis_hash,
-            self_info.clone(),
-        );
+        // merge seeds from chain config
+        let mut config = node_config.network.clone();
+        if !node_config.network.disable_seed {
+            let seeds = match node_config.base.net() {
+                ChainNetwork::Dev => DEV_CHAIN_CONFIG.boot_nodes.clone(),
+                ChainNetwork::Halley => HALLEY_CHAIN_CONFIG.boot_nodes.clone(),
+                ChainNetwork::Main => MAIN_CHAIN_CONFIG.boot_nodes.clone(),
+                ChainNetwork::Proxima => PROXIMA_CHAIN_CONFIG.boot_nodes.clone(),
+            };
+            config.seeds.extend(seeds);
+        }
+
+        let (service, tx, rx, event_rx, tx_command) =
+            build_network_service(&config, handle.clone(), genesis_hash, self_info.clone());
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -263,11 +278,13 @@ impl NetworkActor {
         let (connected_tx, mut connected_rx) = futures::channel::mpsc::channel(1);
         let need_send_event = AtomicBool::new(false);
 
-        if has_seed {
+        if has_seed && !node_config.network.disable_seed {
             need_send_event.swap(true, Ordering::Acquire);
         }
 
         let metrics = NetworkMetrics::register().ok();
+        let (rpc_tx, rpc_rx) = mpsc::unbounded();
+
         let inner = Inner {
             network_service: service,
             bus,
@@ -278,6 +295,7 @@ impl NetworkActor {
             need_send_event,
             node_config,
             peer_id: peer_id.clone(),
+            rpc_tx,
         };
         let inner = Arc::new(inner);
         handle.spawn(Self::start(
@@ -295,15 +313,18 @@ impl NetworkActor {
             });
         }
 
-        NetworkAsyncService {
-            addr,
-            raw_message_processor,
-            tx,
-            peer_id,
-            inner,
-            handle,
-            metrics,
-        }
+        (
+            NetworkAsyncService {
+                addr,
+                raw_message_processor,
+                tx,
+                peer_id,
+                inner,
+                handle,
+                metrics,
+            },
+            rpc_rx,
+        )
     }
 
     async fn start(
@@ -403,14 +424,18 @@ impl Inner {
             PeerMessage::RawRPCRequest(id, request) => {
                 info!("do request.");
                 let (tx, rx) = mpsc::channel(1);
-                self.bus
-                    .send(Broadcast {
-                        msg: RawRpcRequestMessage {
-                            responder: tx,
-                            request,
-                        },
-                    })
-                    .await?;
+                // self.bus
+                //     .send(Broadcast {
+                //         msg: RawRpcRequestMessage {
+                //             responder: tx,
+                //             request,
+                //         },
+                //     })
+                //     .await?;
+                self.rpc_tx.unbounded_send(RawRpcRequestMessage {
+                    responder: tx,
+                    request,
+                })?;
                 let network_service = self.network_service.clone();
                 self.handle
                     .spawn(Self::handle_response(id, peer_id, rx, network_service));
@@ -786,7 +811,7 @@ mod tests {
         handle: Handle,
     ) -> (NetworkAsyncService, Addr<BusActor>) {
         let bus = BusActor::launch();
-        let network = NetworkActor::launch(
+        let (network, _) = NetworkActor::launch(
             node_config,
             bus.clone(),
             handle,
