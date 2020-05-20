@@ -34,7 +34,7 @@ where
 {
     pub config: Arc<NodeConfig>,
     txn_accumulator: MerkleAccumulator,
-    block_accumulator: MerkleAccumulator,
+    pub block_accumulator: MerkleAccumulator,
     head: Block,
     chain_state: ChainStateDB,
     phantom_c: PhantomData<C>,
@@ -439,7 +439,7 @@ where
             "new transaction info used time: {}",
             (commit_begin_time - save_block_end_time)
         );
-        self.commit(block.clone(), block_info)?;
+        self.commit(block.clone(), block_info, false)?;
         let commit_end_time = get_unix_ts();
         debug!(
             "commit used time: {}",
@@ -448,8 +448,21 @@ where
         Ok(true)
     }
 
-    fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()> {
-        let block_id = block.header().id();
+    fn commit(&mut self, block: Block, block_info: BlockInfo, pivot_flag: bool) -> Result<()> {
+        if pivot_flag {
+            self.block_accumulator.append(&[block.id()])?;
+            self.block_accumulator.flush()?;
+
+            let pivot_block_accumulator_info: AccumulatorInfo =
+                (&self.block_accumulator).try_into()?;
+            assert_eq!(
+                *block_info.get_block_accumulator_info(),
+                pivot_block_accumulator_info
+            );
+            debug!("save pivot {:?} succ.", block.id());
+        }
+
+        let block_id = block.id();
         self.save_block(&block);
         self.head = block;
         self.save_block_info(block_info);

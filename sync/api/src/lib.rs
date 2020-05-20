@@ -29,6 +29,7 @@ pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
 pub struct SyncMetadataInner {
     is_state_sync: bool,
     pivot_behind: Option<(BlockNumber, u64)>,
+    pivot_connected: bool,
     state_sync_address: Option<Box<dyn StateSyncReset>>,
     state_sync_done: bool,
     block_sync_done: bool,
@@ -42,6 +43,7 @@ impl SyncMetadata {
         let inner = SyncMetadataInner {
             is_state_sync: config.sync.is_state_sync(),
             pivot_behind: None,
+            pivot_connected: false,
             state_sync_address: None,
             state_sync_done: false,
             block_sync_done: false,
@@ -60,6 +62,7 @@ impl SyncMetadata {
         assert!(pivot > 0, "pivot must be positive integer.");
         assert!(behind > 0, "behind must be positive integer.");
         self.0.write().pivot_behind = Some((pivot, behind));
+        self.0.write().pivot_connected = false;
         Ok(())
     }
 
@@ -87,9 +90,22 @@ impl SyncMetadata {
         Ok(())
     }
 
+    pub fn pivot_connected_succ(&self) -> Result<()> {
+        let mut lock = self.0.write();
+        lock.pivot_connected = true;
+        info!("pivot block connected done.");
+        Ok(())
+    }
+
+    pub fn pivot_connected(&self) -> bool {
+        self.0.read().pivot_connected
+    }
+
     pub fn block_sync_done(&self) -> Result<()> {
         info!("do block_sync_done");
-        if !self.0.read().block_sync_done {
+        let read_lock = self.0.read();
+        if !read_lock.block_sync_done && (read_lock.pivot_connected || !self.fast_sync_mode()) {
+            drop(read_lock);
             let mut lock = self.0.write();
             lock.block_sync_done = true;
             drop(lock);
