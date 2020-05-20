@@ -174,9 +174,9 @@ mod tests {
         let pending_res = pending_receiver.try_next().unwrap();
         assert_eq!(
             full_res,
-            Some(Arc::new(vec![(tx.hash().clone(), TxStatus::Added)]))
+            Some(Arc::new(vec![(*tx.hash(), TxStatus::Added)]))
         );
-        assert_eq!(pending_res, Some(Arc::new(vec![tx.hash().clone()])));
+        assert_eq!(pending_res, Some(Arc::new(vec![*tx.hash()])));
     }
 
     fn new_tx() -> Arc<Transaction> {
@@ -184,9 +184,9 @@ mod tests {
             AccountAddress::random(),
             4,
             TransactionPayload::Script(Script::new(vec![1, 2, 3], vec![], vec![])),
-            100000,
+            100_000,
             10,
-            types::account_config::starcoin_type_tag(),
+            types::account_config::stc_type_tag(),
             Duration::from_secs(60),
         );
         let mut rng = rand::rngs::StdRng::from_seed([0; 32]);

@@ -30,10 +30,12 @@ impl Faucet {
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(self.faucet_account.address())?
-            .ok_or(format_err!(
-                "Can not find account on chain by address:{}",
-                self.faucet_account.address()
-            ))?;
+            .ok_or_else(|| {
+                format_err!(
+                    "Can not find account on chain by address:{}",
+                    self.faucet_account.address()
+                )
+            })?;
 
         let raw_tx = transfer_tx(
             &self.faucet_account,
@@ -44,7 +46,7 @@ impl Faucet {
         );
         let signed_tx = self.client.wallet_sign_txn(raw_tx)?;
         let ret = self.client.submit_transaction(signed_tx)?;
-        return Ok(ret);
+        Ok(ret)
     }
 }
 
@@ -55,12 +57,13 @@ fn transfer_tx(
     seq_num: u64,
     receiver_auth_key_prefix: Vec<u8>,
 ) -> RawUserTransaction {
-    let raw_txn = Executor::build_transfer_txn(
+    Executor::build_transfer_txn(
         sender.address,
         receiver,
         receiver_auth_key_prefix,
         seq_num,
         amount,
-    );
-    raw_txn
+        1,
+        50_000_000,
+    )
 }

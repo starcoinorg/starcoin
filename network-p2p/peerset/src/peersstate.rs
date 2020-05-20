@@ -668,10 +668,9 @@ mod tests {
         peers_state.peer(&id2).into_unknown().unwrap().discover();
 
         assert!(peers_state.priority_not_connected_peer().is_none());
-        peers_state.set_priority_group("test", vec![id1.clone()].into_iter().collect());
+        peers_state.set_priority_group("test", vec![id1].into_iter().collect());
         assert!(peers_state.priority_not_connected_peer().is_some());
-        peers_state
-            .set_priority_group("test", vec![id2.clone(), id2.clone()].into_iter().collect());
+        peers_state.set_priority_group("test", vec![id2.clone(), id2].into_iter().collect());
         assert!(peers_state.priority_not_connected_peer().is_some());
         peers_state.set_priority_group("test", vec![].into_iter().collect());
         assert!(peers_state.priority_not_connected_peer().is_none());
@@ -750,7 +749,7 @@ mod tests {
             peers_state
                 .highest_not_connected_peer()
                 .map(|p| p.into_peer_id()),
-            Some(id2.clone())
+            Some(id2)
         );
     }
 
@@ -782,7 +781,7 @@ mod tests {
         assert_eq!(peers_state.num_in, 1);
         peers_state.set_priority_group("test1", vec![id.clone()].into_iter().collect());
         assert_eq!(peers_state.num_in, 0);
-        peers_state.set_priority_group("test2", vec![id.clone()].into_iter().collect());
+        peers_state.set_priority_group("test2", vec![id].into_iter().collect());
         assert_eq!(peers_state.num_in, 0);
         peers_state.set_priority_group("test1", vec![].into_iter().collect());
         assert_eq!(peers_state.num_in, 0);

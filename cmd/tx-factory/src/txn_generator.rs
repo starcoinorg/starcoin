@@ -36,6 +36,8 @@ impl MockTxnGenerator {
             self.receiver_auth_key_prefix.clone(),
             sequence_number,
             amount_to_transfer,
+            1,
+            50_000_000,
         );
         Ok(transfer_txn)
     }

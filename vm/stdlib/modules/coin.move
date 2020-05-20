@@ -126,7 +126,7 @@ module Coin {
     // Currently, it is invoked in the genesis transaction
     public fun initialize() {
         Association::assert_sender_is_association();
-        Transaction::assert(Transaction::sender() == Config::default_config_address(), 0);
+        Transaction::assert(Transaction::sender() == Config::default_account_config::config_address(), 0);
         let cap = RegisteredCurrencies::initialize();
         move_to_sender(CurrencyRegistrationCapability{ cap })
     }
@@ -465,7 +465,7 @@ module Coin {
         });
         RegisteredCurrencies::add_currency_code(
             currency_code,
-            &borrow_global<CurrencyRegistrationCapability>(Config::default_config_address()).cap
+            &borrow_global<CurrencyRegistrationCapability>(Config::default_account_config::config_address()).cap
         )
     }
 

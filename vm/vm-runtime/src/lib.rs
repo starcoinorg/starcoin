@@ -6,7 +6,6 @@ mod chain_state;
 pub mod common_transactions;
 pub mod genesis;
 pub mod starcoin_vm;
-pub mod system_module_names;
 pub mod transaction_scripts;
 
 #[macro_use]

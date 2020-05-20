@@ -1,13 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{chain_state::StateStore, system_module_names::*};
+use crate::chain_state::StateStore;
 use anyhow::Result;
 use crypto::HashValue;
 use libra_types::{
     access_path::AccessPath as LibraAccessPath,
     account_address::AccountAddress,
-    account_config as libra_account_config,
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
     },
@@ -69,8 +68,9 @@ pub struct StarcoinVM {
 pub static ZERO_TABLE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
 //TODO define as argument.
-pub static DEFAULT_CURRENCY_TY: Lazy<TypeTag> =
-    Lazy::new(|| libra_account_config::type_tag_for_currency_code(account_config::STC.to_owned()));
+pub static DEFAULT_CURRENCY_TY: Lazy<TypeTag> = Lazy::new(|| {
+    account_config::type_tag_for_currency_code(account_config::STC_IDENTIFIER.to_owned())
+});
 
 impl StarcoinVM {
     pub fn new() -> Self {
@@ -88,9 +88,9 @@ impl StarcoinVM {
     fn fetch_gas_schedule(&mut self, data_cache: &dyn RemoteCache) -> VMResult<CostTable> {
         let address = account_config::association_address();
         let gas_struct_ty = StructTag {
-            address: *GAS_SCHEDULE_MODULE.address(),
-            module: GAS_SCHEDULE_MODULE.name().to_owned(),
-            name: GAS_SCHEDULE_NAME.to_owned(),
+            address: *account_config::GAS_SCHEDULE_MODULE.address(),
+            module: account_config::GAS_SCHEDULE_MODULE.name().to_owned(),
+            name: account_config::GAS_SCHEDULE_NAME.to_owned(),
             type_params: vec![],
         };
 
@@ -345,8 +345,8 @@ impl StarcoinVM {
         let txn_expiration_time = txn_data.expiration_time();
         self.move_vm
             .execute_function(
-                &ACCOUNT_MODULE,
-                &PROLOGUE_NAME,
+                &account_config::ACCOUNT_MODULE,
+                &account_config::PROLOGUE_NAME,
                 gas_schedule,
                 chain_state,
                 &txn_data,
@@ -376,8 +376,8 @@ impl StarcoinVM {
             Err(e) => return Err(e),
         };
         self.move_vm.execute_function(
-            &ACCOUNT_MODULE,
-            &EPILOGUE_NAME,
+            &account_config::ACCOUNT_MODULE,
+            &account_config::EPILOGUE_NAME,
             gas_schedule,
             chain_state,
             &txn_data,
@@ -420,8 +420,8 @@ impl StarcoinVM {
             ];
 
             self.move_vm.execute_function(
-                &LIBRA_BLOCK_MODULE,
-                &BLOCK_PROLOGUE,
+                &account_config::BLOCK_MODULE,
+                &account_config::BLOCK_PROLOGUE,
                 &gas_schedule,
                 &mut interpreter_context,
                 &txn_data,
@@ -520,7 +520,7 @@ impl StarcoinVM {
                 let verified_payload = self.verify_transaction_impl(&txn, data_cache, &txn_data);
                 match verified_payload {
                     Ok(payload) => self.execute_verified_payload(data_cache, &txn_data, payload),
-                    Err(e) => discard_libra_error_output(e.into()),
+                    Err(e) => discard_libra_error_output(e),
                 }
             }
             Err(e) => discard_libra_error_output(e),

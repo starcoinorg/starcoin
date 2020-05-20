@@ -187,7 +187,7 @@ impl Storage {
 
 impl StateNodeStore for Storage {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        self.state_node_storage.get(hash.clone())
+        self.state_node_storage.get(*hash)
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {

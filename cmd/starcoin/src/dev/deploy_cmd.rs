@@ -26,9 +26,19 @@ pub struct DeployOpt {
     #[structopt(
         short = "g",
         name = "max-gas-amount",
+        default_value = "1000000",
         help = "max gas used to deploy the module"
     )]
     max_gas_amount: u64,
+    #[structopt(
+        short = "p",
+        long = "gas-price",
+        name = "price of gas",
+        default_value = "1",
+        help = "gas price used to deploy the module"
+    )]
+    gas_price: u64,
+
     #[structopt(
         name = "expiration_time",
         long = "timeout",
@@ -94,8 +104,8 @@ impl CommandAction for DeployCommand {
             account_resource.sequence_number(),
             Module::new(bytecode),
             opt.max_gas_amount,
-            1,
-            account_config::starcoin_type_tag(),
+            opt.gas_price,
+            account_config::stc_type_tag(),
             expiration_time,
         );
 

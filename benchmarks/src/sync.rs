@@ -85,47 +85,42 @@ impl SyncBencher {
                 .await?
                 {
                     begin_number = hash_number.number + 1;
-                    loop {
-                        if let Some((get_hash_by_number_msg, end, next_number)) =
-                            Downloader::<DummyConsensus>::get_hash_by_number_msg_forward(
-                                network.clone(),
-                                best_peer.get_peer_id(),
-                                begin_number,
-                            )
-                            .await?
-                        {
-                            begin_number = next_number;
-                            let batch_hash_by_number_msg = get_hash_by_number(
-                                &network,
-                                best_peer.get_peer_id(),
-                                get_hash_by_number_msg,
-                            )
-                            .await?;
+                    while let Some((get_hash_by_number_msg, end, next_number)) =
+                        Downloader::<DummyConsensus>::get_hash_by_number_msg_forward(
+                            network.clone(),
+                            best_peer.get_peer_id(),
+                            begin_number,
+                        )
+                        .await?
+                    {
+                        begin_number = next_number;
+                        let batch_hash_by_number_msg = get_hash_by_number(
+                            &network,
+                            best_peer.get_peer_id(),
+                            get_hash_by_number_msg,
+                        )
+                        .await?;
 
-                            Downloader::put_hash_2_hash_pool(
+                        Downloader::put_hash_2_hash_pool(
+                            downloader.clone(),
+                            best_peer.get_peer_id(),
+                            batch_hash_by_number_msg,
+                        );
+
+                        let hashs = Downloader::take_task_from_hash_pool(downloader.clone());
+                        if !hashs.is_empty() {
+                            let (headers, bodies, infos) =
+                                get_block_by_hash(&network, best_peer.get_peer_id(), hashs).await?;
+                            Downloader::do_blocks(
                                 downloader.clone(),
-                                best_peer.get_peer_id(),
-                                batch_hash_by_number_msg,
-                            );
+                                headers.headers,
+                                bodies.bodies,
+                                infos.infos,
+                            )
+                            .await;
+                        }
 
-                            let hashs = Downloader::take_task_from_hash_pool(downloader.clone());
-                            if !hashs.is_empty() {
-                                let (headers, bodies, infos) =
-                                    get_block_by_hash(&network, best_peer.get_peer_id(), hashs)
-                                        .await?;
-                                Downloader::do_blocks(
-                                    downloader.clone(),
-                                    headers.headers,
-                                    bodies.bodies,
-                                    infos.infos,
-                                )
-                                .await;
-                            }
-
-                            if end {
-                                break;
-                            }
-                        } else {
+                        if end {
                             break;
                         }
                     }
@@ -172,7 +167,7 @@ async fn create_node(
     let genesis_hash = genesis.block().header().id();
     let genesis_startup_info = genesis.execute(storage.clone()).unwrap();
     let txpool = {
-        let best_block_id = genesis_startup_info.get_master().clone();
+        let best_block_id = *genesis_startup_info.get_master();
         TxPool::start(
             node_config.tx_pool.clone(),
             storage.clone(),

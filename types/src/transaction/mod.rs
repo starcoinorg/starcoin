@@ -3,7 +3,7 @@
 
 use crate::{
     account_address::AccountAddress,
-    account_config::starcoin_type_tag,
+    account_config::stc_type_tag,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
     state_set::ChainStateSet,
@@ -185,7 +185,7 @@ impl RawUserTransaction {
             // Since write-set transactions bypass the VM, these fields aren't relevant.
             max_gas_amount: 0,
             gas_unit_price: 0,
-            gas_specifier: starcoin_type_tag(),
+            gas_specifier: stc_type_tag(),
             // Write-set transactions are special and important and shouldn't expire.
             expiration_time: Duration::new(u64::max_value(), 0),
         }
@@ -261,7 +261,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(vec![], vec![], vec![])),
             0,
             0,
-            starcoin_type_tag(),
+            stc_type_tag(),
             Duration::new(0, 0),
         )
     }
@@ -270,14 +270,10 @@ impl RawUserTransaction {
         Self::new(
             AccountAddress::default(),
             0,
-            TransactionPayload::Script(Script::new(
-                compiled_script,
-                vec![starcoin_type_tag()],
-                vec![],
-            )),
+            TransactionPayload::Script(Script::new(compiled_script, vec![stc_type_tag()], vec![])),
             600,
             0,
-            starcoin_type_tag(),
+            stc_type_tag(),
             Duration::new(0, 0),
         )
     }

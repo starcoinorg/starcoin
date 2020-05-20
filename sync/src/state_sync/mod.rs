@@ -438,9 +438,9 @@ impl StateSyncTaskActor {
                 .sync_total_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
-            if let Some(accumulator_node) = self.storage.get_node(node_key.clone()).unwrap() {
+            if let Some(accumulator_node) = self.storage.get_node(node_key).unwrap() {
                 debug!("find accumulator_node {:?} in db.", node_key);
-                lock.insert(self.self_peer_id.clone(), node_key.clone());
+                lock.insert(self.self_peer_id.clone(), node_key);
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
                     self.self_peer_id.clone(),
                     node_key,
@@ -459,7 +459,7 @@ impl StateSyncTaskActor {
                 if let Some(best_peer) = best_peer_info {
                     if self.self_peer_id != best_peer.get_peer_id() {
                         let network_service = self.network_service.clone();
-                        lock.insert(best_peer.get_peer_id(), node_key.clone());
+                        lock.insert(best_peer.get_peer_id(), node_key);
                         Arbiter::spawn(async move {
                             sync_accumulator_node(
                                 node_key,

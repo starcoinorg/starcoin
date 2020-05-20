@@ -24,7 +24,7 @@ use storage::Storage;
 use types::{
     account_address,
     account_address::AccountAddress,
-    account_config::{association_address, starcoin_type_tag},
+    account_config::{association_address, stc_type_tag},
     transaction::{authenticator::AuthenticationKey, RawUserTransaction, Script, Transaction},
 };
 use vm_runtime::common_transactions::{encode_create_account_script, encode_transfer_script};
@@ -218,7 +218,7 @@ pub fn run_benchmark(
 
     let chain_state = ChainStateDB::new(acc_storage.clone(), None);
     chain_state
-        .apply(state_set.clone())
+        .apply(state_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
 
     let accumulator = MerkleAccumulator::new(
@@ -226,7 +226,7 @@ pub fn run_benchmark(
         vec![],
         0,
         0,
-        acc_storage.clone().into_super_arc(),
+        acc_storage.into_super_arc(),
     )
     .unwrap();
 
@@ -273,7 +273,7 @@ fn create_transaction(
         program,
         400_000, /* max_gas_amount */
         1,       /* gas_unit_price */
-        starcoin_type_tag(),
+        stc_type_tag(),
         expiration_time,
     );
 

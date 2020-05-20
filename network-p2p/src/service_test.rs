@@ -16,11 +16,12 @@ mod tests {
     const PROTOCOL_NAME: &[u8] = b"/starcoin/notify/1";
 
     #[stest::test(timeout = 5)]
+    #[allow(clippy::string_lit_as_bytes)]
     fn test_notify() {
         let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
 
-        let protocol = ProtocolId::from("stargate".as_bytes());
+        let protocol = ProtocolId::from(b"stargate".as_ref());
         let config1 = generate_config(vec![]);
 
         let worker1 = NetworkWorker::new(Params::new(config1.clone(), protocol.clone())).unwrap();
@@ -40,7 +41,7 @@ mod tests {
         .unwrap();
         let config2 = generate_config(vec![seed]);
 
-        let worker2 = NetworkWorker::new(Params::new(config2.clone(), protocol.clone())).unwrap();
+        let worker2 = NetworkWorker::new(Params::new(config2.clone(), protocol)).unwrap();
         let service2 = worker2.service().clone();
         service2.register_notifications_protocol(PROTOCOL_NAME);
 
@@ -90,13 +91,14 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::string_lit_as_bytes)]
     fn test_handshake_fail() {
         ::logger::init_for_test();
 
         let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
 
-        let protocol = ProtocolId::from("stargate".as_bytes());
+        let protocol = ProtocolId::from(b"stargate".as_ref());
         let config1 = generate_config(vec![]);
 
         let worker1 = NetworkWorker::new(Params::new(config1.clone(), protocol.clone())).unwrap();
@@ -117,7 +119,7 @@ mod tests {
         let mut config2 = generate_config(vec![seed]);
         config2.genesis_hash = HashValue::random();
 
-        let worker2 = NetworkWorker::new(Params::new(config2.clone(), protocol.clone())).unwrap();
+        let worker2 = NetworkWorker::new(Params::new(config2, protocol)).unwrap();
         let service2 = worker2.service().clone();
         service2.register_notifications_protocol(PROTOCOL_NAME);
 
@@ -150,10 +152,7 @@ mod tests {
     fn generate_config(boot_nodes: Vec<Multiaddr>) -> NetworkConfiguration {
         let mut config = NetworkConfiguration::default();
         let listen = format!("/ip4/127.0.0.1/tcp/{}", sg_config::get_available_port());
-        config.listen_addresses = vec![listen
-            .clone()
-            .parse()
-            .expect("Failed to parse network config")];
+        config.listen_addresses = vec![listen.parse().expect("Failed to parse network config")];
         let keypair = sg_config::gen_keypair();
         config.node_key = {
             let secret =

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, ensure, Result};
-use ctrlc;
+
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_logger::prelude::*;
@@ -93,8 +93,8 @@ fn main() {
     let client = RpcClient::connect_ipc(opts.ipc_path).expect("ipc connect success");
     let account = get_wallet_account(&client, account_address).unwrap();
 
-    let receiver_address = opts.receiver_address.unwrap_or(association_address());
-    let receiver_public_key = opts.receiver_public_key.clone();
+    let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
+    let receiver_public_key = opts.receiver_public_key;
     let receiver_auth_key_prefix = receiver_public_key
         .map(|k| {
             let k = Ed25519PublicKey::from_encoded_string(&k)
@@ -232,7 +232,7 @@ impl TxnMocker {
             .generate_mock_txn(self.next_sequence_number)?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
-        let unlock_time = self.account_unlock_time.clone();
+        let unlock_time = self.account_unlock_time;
         match unlock_time {
             Some(t) if t + self.unlock_duration > Instant::now() => {}
             _ => {

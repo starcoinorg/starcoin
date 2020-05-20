@@ -1,17 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain_state::StateStore;
 use crate::genesis_context::{GenesisContext, GenesisStateView};
 use crate::genesis_gas_schedule::INITIAL_GAS_SCHEDULE;
-use crate::{chain_state::StateStore, system_module_names::*};
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     PrivateKey, Uniform,
 };
-use libra_types::on_chain_config::{config_address, VMPublishingOption};
-use libra_types::write_set::WriteSet;
+use libra_types::on_chain_config::VMPublishingOption;
 use move_vm_state::data_cache::BlockDataCache;
 use move_vm_types::loaded_data::types::FatStructType;
 use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
@@ -20,9 +19,13 @@ use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
 use starcoin_types::{
-    account_config, contract_event::ContractEvent, transaction::authenticator::AuthenticationKey,
+    contract_event::ContractEvent, transaction::authenticator::AuthenticationKey,
 };
-use starcoin_vm_types::language_storage::{StructTag, TypeTag};
+use starcoin_vm_types::{
+    account_config,
+    language_storage::{StructTag, TypeTag},
+    write_set::WriteSet,
+};
 use std::collections::BTreeMap;
 use stdlib::{stdlib_modules, StdLibOptions};
 use vm::access::ModuleAccess;
@@ -140,7 +143,7 @@ fn create_and_initialize_main_accounts(
         vec![Value::address(root_association_address)],
     );
 
-    context.set_sender(config_address());
+    context.set_sender(account_config::config_address());
     context.exec(GENESIS_MODULE_NAME, "initialize_config", vec![], vec![]);
 
     context.set_sender(root_association_address);
@@ -148,9 +151,9 @@ fn create_and_initialize_main_accounts(
         "Config",
         "grant_creator_privilege",
         vec![],
-        vec![Value::address(config_address())],
+        vec![Value::address(account_config::config_address())],
     );
-    context.set_sender(config_address());
+    context.set_sender(account_config::config_address());
     context.exec("Coin", "initialize", vec![], vec![]);
 
     context.set_sender(root_association_address);
@@ -198,7 +201,7 @@ fn create_and_initialize_main_accounts(
         vec![Value::vector_u8(genesis_auth_key.clone())],
     );
 
-    context.set_sender(config_address());
+    context.set_sender(account_config::config_address());
     context.exec(
         "Account",
         "rotate_authentication_key",
@@ -208,10 +211,15 @@ fn create_and_initialize_main_accounts(
 
     // init subsidy config
     context.set_sender(mint_address);
-    context.exec(SUBSIDY_CONF_MODULE_NAME, INITIALIZE_NAME, vec![], vec![]);
+    context.exec(
+        account_config::SUBSIDY_CONF_MODULE_NAME,
+        INITIALIZE_NAME,
+        vec![],
+        vec![],
+    );
 
     context.exec(
-        SUBSIDY_CONF_MODULE_NAME,
+        account_config::SUBSIDY_CONF_MODULE_NAME,
         SUBSIDY_CONF,
         vec![],
         vec![
@@ -221,7 +229,12 @@ fn create_and_initialize_main_accounts(
         ],
     );
 
-    context.exec(BLOCK_MODULE_NAME, SUBSIDY_INIT, vec![], vec![]);
+    context.exec(
+        account_config::BLOCK_MODULE_NAME,
+        SUBSIDY_INIT,
+        vec![],
+        vec![],
+    );
 
     if let Some(pre_mine_config) = &chain_config.pre_mine_config {
         context.set_sender(root_association_address);
@@ -230,7 +243,7 @@ fn create_and_initialize_main_accounts(
             chain_config.total_supply * pre_mine_config.pre_mine_percent / 100;
         miner_reward_balance -= association_balance;
         context.exec(
-            ACCOUNT_MODULE_NAME,
+            account_config::ACCOUNT_MODULE_NAME,
             MINT_TO_ADDRESS,
             vec![stc_ty.clone()],
             vec![
@@ -243,7 +256,7 @@ fn create_and_initialize_main_accounts(
     // mint coins to mint address
     context.set_sender(root_association_address);
     context.exec(
-        ACCOUNT_MODULE_NAME,
+        account_config::ACCOUNT_MODULE_NAME,
         MINT_TO_ADDRESS,
         vec![stc_ty.clone()],
         vec![
@@ -272,7 +285,7 @@ fn create_and_initialize_main_accounts(
 
 fn setup_vm_config(context: &mut GenesisContext) {
     let publishing_option = VMPublishingOption::Open;
-    context.set_sender(config_address());
+    context.set_sender(account_config::config_address());
 
     let option_bytes =
         scs::to_bytes(&publishing_option).expect("Cannot serialize publishing option");
@@ -289,7 +302,7 @@ fn setup_vm_config(context: &mut GenesisContext) {
 }
 
 fn setup_libra_version(context: &mut GenesisContext) {
-    context.set_sender(config_address());
+    context.set_sender(account_config::config_address());
     context.exec("Version", "initialize", vec![], vec![]);
 }
 

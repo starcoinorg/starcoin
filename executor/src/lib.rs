@@ -5,7 +5,7 @@ use anyhow::Result;
 use crypto::HashValue;
 use starcoin_config::ChainConfig;
 use starcoin_state_api::ChainState;
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
     state_set::ChainStateSet,
@@ -48,5 +48,7 @@ pub trait TransactionExecutor: std::marker::Unpin + Clone {
         receiver_auth_key_prefix: Vec<u8>,
         seq_num: u64,
         amount: u64,
+        gas_price: u64,
+        max_gas: u64,
     ) -> RawUserTransaction;
 }

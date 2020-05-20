@@ -5615,15 +5615,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-context"
-version = "0.1.0"
-dependencies = [
- "actix",
- "actix-rt",
- "futures 0.3.5",
-]
-
-[[package]]
 name = "starcoin-crypto"
 version = "0.1.0"
 dependencies = [
@@ -6045,6 +6036,7 @@ dependencies = [
  "async-trait",
  "forkable-jellyfish-merkle",
  "serde",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-state-tree",
  "starcoin-types",
@@ -6188,6 +6180,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-wallet-api",
+ "stest",
  "tokio 0.2.20",
 ]
 
@@ -6386,8 +6379,11 @@ dependencies = [
  "libra-types",
  "move-core-types",
  "move-vm-types",
+ "num_enum",
  "once_cell",
+ "serde",
  "starcoin-canonical-serialization",
+ "starcoin-crypto",
  "vm",
 ]
 

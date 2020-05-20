@@ -12,6 +12,7 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_runtime::common_transactions::TXN_RESERVED;
 use std::time::Duration;
 use structopt::StructOpt;
 
@@ -119,6 +120,8 @@ impl CommandAction for GenTxnCommand {
                 to_auth_key_prefix,
                 sequence_number + i as u64,
                 opt.amount,
+                1,
+                TXN_RESERVED,
             );
             gen_result.total_amount += opt.amount;
             let txn = client.wallet_sign_txn(raw_txn)?;

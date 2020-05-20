@@ -48,11 +48,20 @@ pub struct ExecuteOpt {
 
     #[structopt(
         short = "g",
+        long = "max-gas",
         name = "max-gas-amount",
-        help = "max gas used to deploy the module"
+        default_value = "1000000",
+        help = "max gas used to execute the script"
     )]
     max_gas_amount: u64,
-
+    #[structopt(
+        short = "p",
+        long = "gas-price",
+        name = "price of gas",
+        default_value = "1",
+        help = "gas price used to execute the script"
+    )]
+    gas_price: u64,
     #[structopt(
         short = "b",
         name = "blocking-mode",
@@ -114,8 +123,8 @@ impl CommandAction for ExecuteCommand {
             account_resource.sequence_number(),
             Script::new(bytecode, type_tags, args),
             opt.max_gas_amount,
-            1,
-            account_config::starcoin_type_tag(),
+            opt.gas_price,
+            account_config::stc_type_tag(),
             expiration_time,
         );
 

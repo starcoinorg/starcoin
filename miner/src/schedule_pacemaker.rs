@@ -71,7 +71,7 @@ mod tests {
                 }
                 Ok(_event) => {
                     debug!("receive event");
-                    count = count + 1;
+                    count += 1;
                     if count > 3 {
                         stop_sender.send(()).unwrap();
                         break;
