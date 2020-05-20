@@ -184,8 +184,14 @@ impl<'test> TxnExecutor<'test> {
 
             let execute_start = std::time::Instant::now();
 
-            BlockExecutor::block_execute(self.chain_state, self.accumulator, transactions, true)
-                .unwrap();
+            BlockExecutor::block_execute(
+                self.chain_state,
+                self.accumulator,
+                transactions,
+                u64::MAX,
+                true,
+            )
+            .unwrap();
 
             let execute_time = std::time::Instant::now().duration_since(execute_start);
             let commit_start = std::time::Instant::now();

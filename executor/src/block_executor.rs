@@ -22,11 +22,15 @@ impl BlockExecutor {
         chain_state: &dyn ChainState,
         accumulator: &MerkleAccumulator,
         txns: Vec<Transaction>,
+        block_gas_limit: u64,
         is_preview: bool,
     ) -> ExecutorResult<(HashValue, HashValue, Vec<TransactionInfo>)> {
         let mut state_root = HashValue::zero();
         let mut transaction_hash = vec![];
         let mut vec_transaction_info = vec![];
+
+        // ignore for now. wait transaction output refactor.
+        let _gas_left = block_gas_limit;
         let results = Executor::execute_transactions(chain_state, txns.clone())
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
         for i in 0..txns.len() {
@@ -42,6 +46,14 @@ impl BlockExecutor {
                 }
                 TransactionStatus::Keep(status) => {
                     TXN_STATUS_COUNTERS.with_label_values(&["DISCARD"]).inc();
+
+                    // match gas_left.checked_sub(output.gas_used()) {
+                    //     None => {
+                    //         // now gas left is not enough to include this txn, just stop here.
+                    //         break;
+                    //     }
+                    //     Some(left) => gas_left = left,
+                    // }
                     //continue.
                     transaction_hash.push(txn_hash);
                     //TODO event root hash
