@@ -25,6 +25,7 @@ members = [
     "bus",
     "storage",
     "consensus",
+    "testsuite",
     "txpool",
     "txpool/api",
     "txpool/mock-service",
@@ -57,4 +58,3 @@ members = [
     "vm/vm-runtime",
     "vm/stdlib",
 ]
-
