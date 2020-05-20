@@ -35,9 +35,9 @@ impl SyncBencher {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let handle = rt.handle().clone();
         system.block_on(async move {
-            let (bus_1, addr_1, network_1, chain_1, tx_1, storage_1, rpc_rx) =
+            let (_bus_1, addr_1, network_1, chain_1, tx_1, storage_1, rpc_rx) =
                 create_node(Some(num), None, handle.clone()).await.unwrap();
-            let _processor = ProcessActor::launch(chain_1.clone(), tx_1, bus_1, storage_1, rpc_rx);
+            let _processor = ProcessActor::launch(chain_1.clone(), tx_1, storage_1, rpc_rx);
 
             let (_, _, network_2, chain_2, _, _, _) =
                 create_node(None, Some((addr_1, network_1)), handle.clone())

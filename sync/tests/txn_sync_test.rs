@@ -65,7 +65,7 @@ fn test_txn_sync_actor() {
         };
 
         // network
-        let (network_1, addr_1) = gen_network(
+        let (network_1, addr_1, rpc_rx) = gen_network(
             node_config_1.clone(),
             bus_1.clone(),
             handle.clone(),
@@ -96,6 +96,7 @@ fn test_txn_sync_actor() {
             network_1.clone(),
             storage_1.clone(),
             sync_metadata_actor_1.clone(),
+            rpc_rx,
         )
         .unwrap();
 
@@ -144,7 +145,7 @@ fn test_txn_sync_actor() {
             .get_async_service()
         };
         // network
-        let (network_2, addr_2) = gen_network(
+        let (network_2, addr_2, rpc_rx_2) = gen_network(
             node_config_2.clone(),
             bus_2.clone(),
             handle.clone(),
@@ -176,6 +177,7 @@ fn test_txn_sync_actor() {
             network_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
+            rpc_rx_2,
         )
         .unwrap();
 

@@ -811,7 +811,7 @@ mod tests {
         handle: Handle,
     ) -> (NetworkAsyncService, Addr<BusActor>) {
         let bus = BusActor::launch();
-        let network = NetworkActor::launch(
+        let (network, _) = NetworkActor::launch(
             node_config,
             bus.clone(),
             handle,

@@ -45,8 +45,7 @@ where
         rpc_rx: futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) -> Result<Addr<SyncActor<C>>> {
         let txn_sync_addr = TxnSyncActor::launch(txpool.clone(), network.clone(), bus.clone());
-        let process_address =
-            ProcessActor::launch(chain.clone(), txpool, bus.clone(), storage.clone(), rpc_rx)?;
+        let process_address = ProcessActor::launch(chain.clone(), txpool, storage.clone(), rpc_rx)?;
         let download_address = DownloadActor::launch(
             node_config,
             peer_id,
