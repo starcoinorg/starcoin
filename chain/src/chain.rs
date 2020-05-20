@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::chain_service::BlockChainCollection;
-use anyhow::{format_err, Error, Result};
+use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
 use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
@@ -157,10 +157,19 @@ where
             txn_accumulator_info.get_num_nodes(),
             self.storage.clone(),
         )?;
-
-        let (accumulator_root, state_root, _) =
-            BlockExecutor::block_execute(&chain_state, &txn_accumulator, txns, true)?;
-
+        let block_gas_limit = self.config.miner.block_gas_limit;
+        let (accumulator_root, state_root, txn_infos) = BlockExecutor::block_execute(
+            &chain_state,
+            &txn_accumulator,
+            txns,
+            block_gas_limit,
+            true,
+        )?;
+        let block_gas_used = txn_infos.iter().fold(0u64, |acc, i| acc + i.gas_used());
+        let included_user_txns = user_txns
+            .into_iter()
+            .take(txn_infos.len() - 1)
+            .collect::<Vec<_>>();
         Ok(BlockTemplate::new(
             previous_header.id(),
             *block_info
@@ -172,9 +181,9 @@ where
             auth_key_prefix,
             accumulator_root,
             state_root,
-            0,
-            0,
-            user_txns.into(),
+            block_gas_used,
+            block_gas_limit,
+            included_user_txns.into(),
         ))
     }
 
@@ -384,7 +393,10 @@ where
         );
         //TODO custom verify macro
         assert_eq!(self.head.header().id(), block.header().parent_hash());
-
+        // ensure!(
+        //     block.header().gas_used() <= block.header().gas_limit(),
+        //     "invalid block: gas_used should not greater than gas_limit"
+        // );
         let apply_begin_time = get_unix_ts();
         if let Err(e) = C::verify_header(self.config.clone(), self, header) {
             error!("err: {:?}", e);
@@ -405,8 +417,14 @@ where
         txns.push(Transaction::BlockMetadata(block_metadata));
 
         let exe_begin_time = get_unix_ts();
-        let (_, state_root, vec_transaction_info) =
-            BlockExecutor::block_execute(chain_state, &self.txn_accumulator, txns.clone(), false)?;
+
+        let (_, state_root, vec_transaction_info) = BlockExecutor::block_execute(
+            chain_state,
+            &self.txn_accumulator,
+            txns.clone(),
+            block.header().gas_limit(),
+            false,
+        )?;
         let exe_end_time = get_unix_ts();
         debug!("exe used time: {}", (exe_end_time - exe_begin_time));
         assert_eq!(
@@ -414,6 +432,18 @@ where
             state_root,
             "verify block:{:?} state_root fail.",
             block.header().id()
+        );
+        // +1 because block_meta_data is not included in block.
+        ensure!(
+            vec_transaction_info.len() == block.transactions().len() + 1,
+            "invalid txn num in the block"
+        );
+        let block_gas_used = vec_transaction_info
+            .iter()
+            .fold(0u64, |acc, i| acc + i.gas_used());
+        ensure!(
+            block_gas_used == block.header().gas_used(),
+            "invalid block: gas_used is not match"
         );
 
         let total_difficulty = {
