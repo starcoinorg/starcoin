@@ -1,9 +1,12 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
 use actix::Actor;
 use actix_rt::System;
-use bus::BusActor;
+use bus::{Bus, BusActor};
 use chain::{ChainActor, ChainActorRef};
 use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
 use consensus::dev::DevConsensus;
+use futures::StreamExt;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -22,11 +25,11 @@ use txpool::{TxPool, TxPoolService};
 use types::{
     account_address,
     peer_info::{PeerId, PeerInfo},
+    system_events::MinedBlock,
 };
 
-#[test]
+#[stest::test]
 fn test_miner_with_schedule_pacemaker() {
-    ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let handle = rt.handle().clone();
     let mut system = System::new("test");
@@ -38,6 +41,7 @@ fn test_miner_with_schedule_pacemaker() {
         config.miner.consensus_strategy = ConsensusStrategy::Dummy(1);
         let config = Arc::new(config);
         let bus = BusActor::launch();
+
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
@@ -88,7 +92,7 @@ fn test_miner_with_schedule_pacemaker() {
         MinerClientActor::new(config.miner.clone()).start();
         let _sync = SyncActor::launch(
             config.clone(),
-            bus,
+            bus.clone(),
             peer_id,
             chain.clone(),
             txpool_ref.clone(),
@@ -97,11 +101,13 @@ fn test_miner_with_schedule_pacemaker() {
             sync_metadata.clone(),
         )
         .unwrap();
-
-        delay_for(Duration::from_millis(6 * 1000)).await;
+        let channel = bus.channel::<MinedBlock>().await.unwrap();
+        let new_blocks = channel.take(3).collect::<Vec<MinedBlock>>().await;
+        let head = new_blocks.get(0).unwrap();
         let number = chain.clone().master_head_header().await.unwrap().number();
         info!("current block number: {}", number);
         assert!(number > 1);
+        assert!(number >= head.0.header().number())
     };
     system.block_on(fut);
     drop(rt);
