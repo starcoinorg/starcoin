@@ -199,6 +199,25 @@ fn test_sequence_number() -> Result<()> {
     Ok(())
 }
 
+#[stest::test]
+fn test_gas_used() -> Result<()> {
+    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let storage = MockStateNodeStore::new();
+    let chain_state = ChainStateDB::new(Arc::new(storage), None);
+
+    chain_state
+        .apply(state_set)
+        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+
+    let account = Account::new();
+    let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
+    let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
+    assert!(output[0].1.gas_used() > 0);
+
+    Ok(())
+}
+
 fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
     let account_reader = AccountStateReader::new(chain_state.as_super());
     account_reader

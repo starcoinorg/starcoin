@@ -5,16 +5,14 @@ use crate::chain_state::StateStore;
 use anyhow::Result;
 use crypto::HashValue;
 use libra_types::{
-    access_path::AccessPath as LibraAccessPath,
-    account_address::AccountAddress,
     transaction::{
         TransactionOutput as LibraTransactionOutput, TransactionStatus as LibraTransactionStatus,
     },
     vm_error::{sub_status, StatusCode as LibraStatusCode, VMStatus as LibraVMStatus},
     write_set::WriteSet as LibraWriteSet,
 };
-use move_core_types::gas_schedule::GasConstants;
 use move_vm_runtime::MoveVM;
+use move_vm_state::data_cache::RemoteStorage;
 use move_vm_state::{
     data_cache::{BlockDataCache, RemoteCache},
     execution_context::{ExecutionContext, SystemExecutionContext, TransactionExecutionContext},
@@ -28,17 +26,18 @@ use starcoin_types::{
     state_set::ChainStateSet,
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus, MAX_TRANSACTION_SIZE_IN_BYTES,
+        TransactionOutput, TransactionPayload, TransactionStatus,
     },
     vm_error::{StatusCode, VMStatus},
 };
+use starcoin_vm_types::gas_schedule::calculate_intrinsic_gas;
+use starcoin_vm_types::on_chain_config::{OnChainConfig, VMConfig, Version};
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     chain_state::ChainState as LibraChainState,
     errors::{convert_prologue_runtime_error, VMResult},
-    gas_schedule::{
-        self, zero_cost_schedule, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits,
-    },
-    language_storage::{ResourceKey, StructTag, TypeTag},
+    gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits},
+    language_storage::TypeTag,
     transaction_metadata::TransactionMetadata,
     values::Value,
 };
@@ -62,10 +61,11 @@ pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
     move_vm: Arc<MoveVM>,
-    gas_schedule: Option<CostTable>,
+    vm_config: Option<VMConfig>,
+    version: Option<Version>,
 }
 
-pub static ZERO_TABLE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
+static ZERO_TABLE: Lazy<CostTable> = Lazy::new(gas_schedule::zero_cost_schedule);
 
 //TODO define as argument.
 pub static DEFAULT_CURRENCY_TY: Lazy<TypeTag> = Lazy::new(|| {
@@ -77,84 +77,79 @@ impl StarcoinVM {
         let inner = MoveVM::new();
         Self {
             move_vm: Arc::new(inner),
-            gas_schedule: None,
+            vm_config: None,
+            version: None,
         }
     }
 
-    fn load_gas_schedule(&mut self, data_cache: &dyn RemoteCache) {
-        self.gas_schedule = self.fetch_gas_schedule(data_cache).ok();
+    pub fn load_configs(&mut self, state: &dyn StateView) {
+        self.load_configs_impl(&RemoteStorage::new(state))
     }
 
-    fn fetch_gas_schedule(&mut self, data_cache: &dyn RemoteCache) -> VMResult<CostTable> {
-        let address = account_config::association_address();
-        let gas_struct_ty = StructTag {
-            address: *account_config::GAS_SCHEDULE_MODULE.address(),
-            module: account_config::GAS_SCHEDULE_MODULE.name().to_owned(),
-            name: account_config::GAS_SCHEDULE_NAME.to_owned(),
-            type_params: vec![],
-        };
+    fn vm_config(&self) -> VMResult<&VMConfig> {
+        self.vm_config
+            .as_ref()
+            .ok_or_else(|| VMStatus::new(StatusCode::VM_STARTUP_FAILURE))
+    }
 
-        let access_path = create_access_path(address, gas_struct_ty);
+    fn load_configs_impl(&mut self, data_cache: &dyn RemoteCache) {
+        self.vm_config = VMConfig::fetch_config(data_cache);
+        self.version = Version::fetch_config(data_cache);
+    }
 
-        let data_blob = data_cache
-            .get(&access_path)
-            .map_err(|_| {
-                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
-                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_RESOURCE)
-            })?
+    pub fn get_gas_schedule(&self) -> VMResult<&CostTable> {
+        self.vm_config
+            .as_ref()
+            .map(|config| &config.gas_schedule)
             .ok_or_else(|| {
-                LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
-                    .with_sub_status(sub_status::GSE_UNABLE_TO_LOAD_RESOURCE)
-            })?;
-        let table: CostTable = scs::from_bytes(&data_blob).map_err(|_| {
-            LibraVMStatus::new(LibraStatusCode::GAS_SCHEDULE_ERROR)
-                .with_sub_status(sub_status::GSE_UNABLE_TO_DESERIALIZE)
-        })?;
-        Ok(table)
+                VMStatus::new(StatusCode::VM_STARTUP_FAILURE)
+                    .with_sub_status(sub_status::VSF_GAS_SCHEDULE_NOT_FOUND)
+            })
     }
 
-    fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
-        Ok(&ZERO_TABLE)
-        // self.gas_schedule
-        //     .as_ref()
-        //     .ok_or_else(|| VMStatus::new(StatusCode::VM_STARTUP_FAILURE))
+    pub fn get_version(&self) -> VMResult<Version> {
+        self.version.clone().ok_or_else(|| {
+            VMStatus::new(StatusCode::VM_STARTUP_FAILURE)
+                .with_sub_status(sub_status::VSF_LIBRA_VERSION_NOT_FOUND)
+        })
     }
 
     fn check_gas(&self, txn: &SignedUserTransaction) -> Result<(), VMStatus> {
-        // Do not check gas limit for StateSet transaction.
-        if let TransactionPayload::StateSet(_) = txn.payload() {
-            return Ok(());
-        }
-
+        let gas_constants = &self.get_gas_schedule()?.gas_constants;
         let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as GasCarrier);
         // The transaction is too large.
-        if txn.raw_txn_bytes_len() > MAX_TRANSACTION_SIZE_IN_BYTES {
+        if txn.raw_txn_bytes_len() > gas_constants.max_transaction_size_in_bytes as usize {
             let error_str = format!(
                 "max size: {}, txn size: {}",
-                MAX_TRANSACTION_SIZE_IN_BYTES,
+                gas_constants.max_transaction_size_in_bytes,
                 raw_bytes_len.get()
             );
             warn!(
                 "[VM] Transaction size too big {} (max {})",
                 raw_bytes_len.get(),
-                MAX_TRANSACTION_SIZE_IN_BYTES
+                gas_constants.max_transaction_size_in_bytes
             );
             return Err(
                 VMStatus::new(StatusCode::EXCEEDED_MAX_TRANSACTION_SIZE).with_message(error_str)
             );
         }
 
+        // Check is performed on `txn.raw_txn_bytes_len()` which is the same as
+        // `raw_bytes_len`
+        assert!(raw_bytes_len.get() <= gas_constants.max_transaction_size_in_bytes);
+
         // The submitted max gas units that the transaction can consume is greater than the
-        // maximum number of gas units bound
-        if txn.max_gas_amount() > MAXIMUM_NUMBER_OF_GAS_UNITS.get() {
+        // maximum number of gas units bound that we have set for any
+        // transaction.
+        if txn.max_gas_amount() > gas_constants.maximum_number_of_gas_units.get() {
             let error_str = format!(
                 "max gas units: {}, gas units submitted: {}",
-                MAXIMUM_NUMBER_OF_GAS_UNITS.get(),
+                gas_constants.maximum_number_of_gas_units.get(),
                 txn.max_gas_amount()
             );
             warn!(
                 "[VM] Gas unit error; max {}, submitted {}",
-                MAXIMUM_NUMBER_OF_GAS_UNITS.get(),
+                gas_constants.maximum_number_of_gas_units.get(),
                 txn.max_gas_amount()
             );
             return Err(
@@ -162,11 +157,11 @@ impl StarcoinVM {
                     .with_message(error_str),
             );
         }
-        let gas_constants = GasConstants::default();
+
         // The submitted transactions max gas units needs to be at least enough to cover the
         // intrinsic cost of the transaction as calculated against the size of the
         // underlying `RawTransaction`
-        let min_txn_fee = gas_schedule::calculate_intrinsic_gas(raw_bytes_len, &gas_constants);
+        let min_txn_fee = calculate_intrinsic_gas(raw_bytes_len, gas_constants);
         if txn.max_gas_amount() < min_txn_fee.get() {
             let error_str = format!(
                 "min gas required for txn: {}, gas submitted: {}",
@@ -232,11 +227,17 @@ impl StarcoinVM {
     ) -> Result<VerifiedTranscationPayload, VMStatus> {
         let mut ctx = SystemExecutionContext::new(remote_cache, GasUnits::new(0));
         self.check_gas(transaction)?;
-        self.load_gas_schedule(remote_cache);
-        let gas_schedule = self.get_gas_schedule()?;
         match transaction.payload() {
             TransactionPayload::Script(script) => {
-                let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
+                if !self
+                    .vm_config()?
+                    .publishing_option
+                    .is_allowed_script(&script.code())
+                {
+                    warn!("[VM] Custom scripts not allowed: {:?}", &script.code());
+                    return Err(VMStatus::new(StatusCode::UNKNOWN_SCRIPT));
+                };
+                let result = self.run_prologue(&mut ctx, &txn_data);
                 match result {
                     Ok(_) => Ok(VerifiedTranscationPayload::Script(
                         script.code().to_vec(),
@@ -247,7 +248,11 @@ impl StarcoinVM {
                 }
             }
             TransactionPayload::Module(module) => {
-                let result = self.run_prologue(gas_schedule, &mut ctx, &txn_data);
+                if !&self.vm_config()?.publishing_option.is_open() {
+                    warn!("[VM] Custom modules not allowed");
+                    return Err(VMStatus::new(StatusCode::UNKNOWN_MODULE));
+                };
+                let result = self.run_prologue(&mut ctx, &txn_data);
                 match result {
                     Ok(_) => Ok(VerifiedTranscationPayload::Module(module.code().to_vec())),
                     Err(e) => Err(e),
@@ -270,6 +275,7 @@ impl StarcoinVM {
             Ok(t) => t,
             Err(_) => return Some(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
         };
+        self.load_configs_impl(&data_cache);
         match self.verify_transaction_impl(&signature_verified_txn, &data_cache, &txn_data) {
             Ok(_) => None,
             Err(err) => {
@@ -334,7 +340,6 @@ impl StarcoinVM {
 
     fn run_prologue<T: LibraChainState>(
         &self,
-        gas_schedule: &CostTable,
         chain_state: &mut T,
         txn_data: &TransactionMetadata,
     ) -> VMResult<()> {
@@ -347,7 +352,7 @@ impl StarcoinVM {
             .execute_function(
                 &account_config::ACCOUNT_MODULE,
                 &account_config::PROLOGUE_NAME,
-                gas_schedule,
+                self.get_gas_schedule()?,
                 chain_state,
                 &txn_data,
                 vec![DEFAULT_CURRENCY_TY.clone()],
@@ -371,14 +376,10 @@ impl StarcoinVM {
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_units = txn_data.max_gas_amount().get();
         let gas_remaining = chain_state.remaining_gas().get();
-        let gas_schedule = match self.get_gas_schedule() {
-            Ok(s) => s,
-            Err(e) => return Err(e),
-        };
         self.move_vm.execute_function(
             &account_config::ACCOUNT_MODULE,
             &account_config::EPILOGUE_NAME,
-            gas_schedule,
+            self.get_gas_schedule()?,
             chain_state,
             &txn_data,
             vec![DEFAULT_CURRENCY_TY.clone()],
@@ -402,7 +403,6 @@ impl StarcoinVM {
 
         let mut interpreter_context =
             TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
-        let gas_schedule = zero_cost_schedule();
 
         if let Ok((id, timestamp, author, auth)) = block_metadata.into_inner() {
             let vote_maps = vec![];
@@ -422,7 +422,7 @@ impl StarcoinVM {
             self.move_vm.execute_function(
                 &account_config::BLOCK_MODULE,
                 &account_config::BLOCK_PROLOGUE,
-                &gas_schedule,
+                &ZERO_TABLE,
                 &mut interpreter_context,
                 &txn_data,
                 vec![],
@@ -442,71 +442,11 @@ impl StarcoinVM {
         })
     }
 
-    pub fn execute_transaction(
-        &mut self,
-        chain_state: &dyn ChainState,
-        txn: Transaction,
-    ) -> TransactionOutput {
-        let mut state_store = StateStore::new(chain_state);
-        let mut data_cache = BlockDataCache::new(&state_store);
-        match txn {
-            Transaction::UserTransaction(txn) => {
-                self.load_gas_schedule(&data_cache);
-                let libra_txn = txn.clone().into();
-                let txn_data = TransactionMetadata::new(&libra_txn);
-
-                // check signature
-                let signature_checked_txn = match txn.check_signature() {
-                    Ok(t) => Ok(t),
-                    Err(_) => Err(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
-                };
-
-                match signature_checked_txn {
-                    Ok(txn) => {
-                        let verified_payload =
-                            self.verify_transaction_impl(&txn, &data_cache, &txn_data);
-                        let result = match verified_payload {
-                            Ok(payload) => {
-                                self.execute_verified_payload(&mut data_cache, &txn_data, payload)
-                            }
-                            Err(e) => discard_libra_error_output(e),
-                        };
-
-                        if let LibraTransactionStatus::Keep(_) = result.status() {
-                            state_store.add_write_set(result.write_set())
-                        };
-                        TransactionOutput::from(result)
-                    }
-                    Err(e) => discard_error_output(e),
-                }
-            }
-            Transaction::BlockMetadata(block_metadata) => {
-                self.load_gas_schedule(&data_cache);
-                let result = self
-                    .process_block_metadata(&mut data_cache, block_metadata)
-                    .unwrap_or_else(discard_libra_error_output);
-                if let LibraTransactionStatus::Keep(_) = result.status() {
-                    state_store.add_write_set(result.write_set())
-                };
-                TransactionOutput::from(result)
-            }
-            Transaction::StateSet(state_set) => {
-                //TODO add check for state_set.
-                let result_status = match chain_state.apply(state_set) {
-                    Ok(_) => KEEP_STATUS.clone(),
-                    Err(_) => DISCARD_STATUS.clone(),
-                };
-                TransactionOutput::new(vec![], 0, result_status)
-            }
-        }
-    }
-
     fn execute_user_transaction(
         &mut self,
         txn: SignedUserTransaction,
         data_cache: &mut BlockDataCache<'_>,
     ) -> LibraTransactionOutput {
-        self.load_gas_schedule(data_cache);
         let txn_data = TransactionMetadata::new(&txn.clone().into());
 
         // check signature
@@ -535,11 +475,13 @@ impl StarcoinVM {
         let mut state_store = StateStore::new(chain_state);
         let state_view = StateStore::new(chain_state);
         let mut data_cache = BlockDataCache::new(&state_view);
+
         let mut result = vec![];
         let blocks = chunk_block_transactions(transactions);
         for block in blocks {
             match block {
                 TransactionBlock::UserTransaction(txns) => {
+                    self.load_configs_impl(&data_cache);
                     for transaction in txns {
                         let output = self.execute_user_transaction(transaction, &mut data_cache);
                         if let LibraTransactionStatus::Keep(_) = output.status() {
@@ -549,7 +491,7 @@ impl StarcoinVM {
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
-                    self.load_gas_schedule(&data_cache);
+                    self.load_configs_impl(&data_cache);
                     let out = self
                         .process_block_metadata(&mut data_cache, block_metadata)
                         .unwrap_or_else(discard_libra_error_output);
@@ -608,12 +550,6 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
         blocks.push(TransactionBlock::UserTransaction(buf));
     }
     blocks
-}
-
-pub(crate) fn discard_error_output(err: VMStatus) -> TransactionOutput {
-    info!("discard error output: {:?}", err);
-    // Since this transaction will be discarded, no writeset will be included.
-    TransactionOutput::new(vec![], 0, TransactionStatus::Discard(err))
 }
 
 pub(crate) fn discard_libra_error_output(err: LibraVMStatus) -> LibraTransactionOutput {
@@ -675,10 +611,4 @@ pub fn failed_transaction_output(
 pub enum VerifiedTranscationPayload {
     Script(Vec<u8>, Vec<TypeTag>, Vec<TransactionArgument>),
     Module(Vec<u8>),
-}
-
-/// Get the AccessPath to a resource stored under `address` with type name `tag`
-fn create_access_path(address: AccountAddress, tag: StructTag) -> LibraAccessPath {
-    let resource_tag = ResourceKey::new(address, tag);
-    LibraAccessPath::resource_access_path(&resource_tag)
 }
