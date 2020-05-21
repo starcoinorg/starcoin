@@ -41,13 +41,9 @@ impl ConfigModule for SyncConfig {
         }
     }
 
-    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
+    fn load(&mut self, _base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
         info!("sync_mode : {:?}", opt.sync_mode);
-        self.sync_mode = if base.net.is_dev() {
-            SyncMode::FULL
-        } else {
-            opt.sync_mode.clone()
-        };
+        self.sync_mode = opt.sync_mode.clone();
         Ok(())
     }
 }
