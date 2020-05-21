@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::chain_service::BlockChainCollection;
 use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
 use crypto::HashValue;
@@ -13,7 +12,7 @@ use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::marker::PhantomData;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage::Store;
 use traits::Consensus;
@@ -32,14 +31,13 @@ where
     C: Consensus,
     S: Store + 'static,
 {
-    pub config: Arc<NodeConfig>,
+    config: Arc<NodeConfig>,
     txn_accumulator: MerkleAccumulator,
-    pub block_accumulator: MerkleAccumulator,
+    block_accumulator: MerkleAccumulator,
     head: Block,
     chain_state: ChainStateDB,
-    phantom_c: PhantomData<C>,
-    pub storage: Arc<S>,
-    pub block_chain_collection: Weak<BlockChainCollection<C, S>>,
+    storage: Arc<S>,
+    phantom: PhantomData<C>,
 }
 
 impl<C, S> BlockChain<C, S>
@@ -51,7 +49,6 @@ where
         config: Arc<NodeConfig>,
         head_block_hash: HashValue,
         storage: Arc<S>,
-        block_chain_collection: Weak<BlockChainCollection<C, S>>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
@@ -59,7 +56,7 @@ where
         let block_info = storage
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block_hash))?;
-
+        debug!("Init chain with block_info: {:?}", block_info);
         let state_root = head.header().state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
@@ -69,20 +66,19 @@ where
             block_accumulator: info_2_accumulator(block_accumulator_info.clone(), storage.clone())?,
             head,
             chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
-            phantom_c: PhantomData,
             storage,
-            block_chain_collection,
+            phantom: PhantomData,
         };
+        // chain
+        //     .block_accumulator
+        //     .append(vec![HashValue::random()].as_slice())
+        //     .unwrap();
+        // chain.block_accumulator.flush().unwrap();
         Ok(chain)
     }
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
-        Self::new(
-            self.config.clone(),
-            head_block_hash,
-            self.storage.clone(),
-            self.block_chain_collection.clone(),
-        )
+        Self::new(self.config.clone(), head_block_hash, self.storage.clone())
     }
 
     pub fn save_block(&self, block: &Block) {
@@ -227,19 +223,9 @@ where
 
         Ok(())
     }
-}
 
-impl<C, S> Drop for BlockChain<C, S>
-where
-    C: Consensus,
-    S: Store,
-{
-    fn drop(&mut self) {
-        debug!(
-            "drop BlockChain: {}, {}",
-            self.block_chain_collection.strong_count(),
-            self.block_chain_collection.weak_count()
-        );
+    pub fn get_storage(&self) -> Arc<S> {
+        self.storage.clone()
     }
 }
 
@@ -386,13 +372,10 @@ where
 {
     fn apply(&mut self, block: Block) -> Result<bool> {
         let header = block.header();
-        debug!(
-            "Apply block {:?} to {:?}",
-            block.header(),
-            self.head.header()
-        );
+        debug!("Apply block {:?} to {:?}", header, self.head.header());
         //TODO custom verify macro
-        assert_eq!(self.head.header().id(), block.header().parent_hash());
+        assert_eq!(self.head.header().id(), header.parent_hash());
+
         // ensure!(
         //     block.header().gas_used() <= block.header().gas_limit(),
         //     "invalid block: gas_used should not greater than gas_limit"
