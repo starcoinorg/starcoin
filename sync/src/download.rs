@@ -92,7 +92,12 @@ where
     }
 
     fn sync_task(&mut self) {
-        if !self.syncing.load(Ordering::Relaxed) && self.ready.load(Ordering::Relaxed) {
+        if (!self.sync_metadata.fast_sync_mode()
+            || self.sync_metadata.is_sync_done()
+            || (self.sync_metadata.state_syncing() && self.sync_metadata.get_address().is_some()))
+            && !self.syncing.load(Ordering::Relaxed)
+            && self.ready.load(Ordering::Relaxed)
+        {
             self.syncing.store(true, Ordering::Relaxed);
             Self::sync_block_from_best_peer(
                 self.sync_metadata.clone(),
@@ -148,17 +153,14 @@ where
         let sync_metadata = self.sync_metadata.clone();
         let is_main = self.main_network;
         let self_peer_id = self.self_peer_id.as_ref().clone();
-        Arbiter::spawn(async move {
-            Self::sync_state(
-                self_peer_id,
-                is_main,
-                downloader,
-                network,
-                storage,
-                sync_metadata,
-            )
-            .await;
-        });
+        Self::sync_state(
+            self_peer_id,
+            is_main,
+            downloader,
+            network,
+            storage,
+            sync_metadata,
+        );
     }
 }
 
@@ -191,17 +193,14 @@ where
             SyncNotify::NewPeerMsg(peer_id) => {
                 info!("new peer msg: {:?}, ready: {}", peer_id, ready);
                 if ready {
-                    Arbiter::spawn(async move {
-                        Self::sync_state(
-                            self_peer_id,
-                            is_main,
-                            downloader.clone(),
-                            network,
-                            storage,
-                            sync_metadata,
-                        )
-                        .await;
-                    });
+                    Self::sync_state(
+                        self_peer_id,
+                        is_main,
+                        downloader,
+                        network,
+                        storage,
+                        sync_metadata,
+                    );
                 }
             }
             SyncNotify::NewHeadBlock(peer_id, block) => {
@@ -226,7 +225,7 @@ impl<C> DownloadActor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    async fn sync_state(
+    fn sync_state(
         self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<C>>,
@@ -234,27 +233,37 @@ where
         storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
     ) {
-        SYNC_METRICS
-            .sync_count
-            .with_label_values(&[LABEL_STATE])
-            .inc();
-        if let Err(e) = Self::sync_state_inner(
-            self_peer_id,
-            main_network,
-            downloader,
-            network,
-            storage,
-            sync_metadata,
-        )
-        .await
-        {
-            error!("error : {:?}", e);
-        } else {
+        Arbiter::spawn(async move {
             SYNC_METRICS
-                .sync_done_count
+                .sync_count
                 .with_label_values(&[LABEL_STATE])
                 .inc();
-        }
+            if let Err(e) = Self::sync_state_inner(
+                self_peer_id.clone(),
+                main_network,
+                downloader.clone(),
+                network.clone(),
+                storage.clone(),
+                sync_metadata.clone(),
+            )
+            .await
+            {
+                error!("error : {:?}", e);
+                Self::sync_state(
+                    self_peer_id,
+                    main_network,
+                    downloader,
+                    network,
+                    storage,
+                    sync_metadata,
+                );
+            } else {
+                SYNC_METRICS
+                    .sync_done_count
+                    .with_label_values(&[LABEL_STATE])
+                    .inc();
+            }
+        });
     }
 
     async fn sync_state_inner(
@@ -345,20 +354,20 @@ where
                         sync_metadata.clone(),
                     );
                     sync_metadata.update_address(&state_sync_task_address)?
-                } else if let Some(tmp) = sync_pivot {
-                    if tmp < pivot {
-                        if let Some(address) = sync_metadata.get_address() {
-                            address
-                                .reset(
-                                    root.state_root(),
-                                    root.accumulator_root(),
-                                    root.parent_block_accumulator_root(),
-                                )
-                                .await;
-                        } else {
-                            info!("state sync reset address is none.");
-                        }
-                    }
+                } else if let Some(_tmp) = sync_pivot {
+                    // if tmp < pivot {
+                    //     if let Some(address) = sync_metadata.get_address() {
+                    //         address
+                    //             .reset(
+                    //                 root.state_root(),
+                    //                 root.accumulator_root(),
+                    //                 root.parent_block_accumulator_root(),
+                    //             )
+                    //             .await;
+                    //     } else {
+                    //         info!("state sync reset address is none.");
+                    //     }
+                    // }
                 }
             } else {
                 warn!("find_ancestor return none.");
@@ -421,7 +430,6 @@ where
                 Self::sync_block_from_best_peer_inner(self_peer_id.clone(), downloader, network)
                     .await
             {
-                error!("panic peer : {:?}", self_peer_id.clone());
                 error!("error: {:?}", e);
             } else {
                 let _ = sync_metadata.block_sync_done();

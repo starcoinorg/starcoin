@@ -34,7 +34,7 @@ where
 {
     pub config: Arc<NodeConfig>,
     txn_accumulator: MerkleAccumulator,
-    block_accumulator: MerkleAccumulator,
+    pub block_accumulator: MerkleAccumulator,
     head: Block,
     chain_state: ChainStateDB,
     phantom_c: PhantomData<C>,
@@ -202,6 +202,21 @@ where
         }
 
         Ok(false)
+    }
+
+    pub fn append_pivot(
+        &mut self,
+        block_id: HashValue,
+        block_accumulator_info: AccumulatorInfo,
+    ) -> Result<()> {
+        self.block_accumulator.append(&[block_id])?;
+        self.block_accumulator.flush()?;
+
+        let pivot_block_accumulator_info: AccumulatorInfo = (&self.block_accumulator).try_into()?;
+        assert_eq!(block_accumulator_info, pivot_block_accumulator_info);
+        debug!("save pivot {:?} succ.", block_id);
+
+        Ok(())
     }
 }
 
@@ -448,7 +463,7 @@ where
     }
 
     fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()> {
-        let block_id = block.header().id();
+        let block_id = block.id();
         self.save_block(&block);
         self.head = block;
         self.save_block_info(block_info);
