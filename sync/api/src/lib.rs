@@ -8,7 +8,7 @@ use starcoin_bus::{Broadcast, BusActor};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockNumber};
+use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::system_events::SyncDone;
 use std::sync::Arc;
 
@@ -29,7 +29,7 @@ pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
 pub struct SyncMetadataInner {
     is_state_sync: bool,
     pivot_behind: Option<(BlockNumber, u64)>,
-    pivot_connected: (bool, Option<Block>),
+    pivot_connected: (bool, Option<(Block, BlockInfo)>),
     state_sync_address: Option<Box<dyn StateSyncReset>>,
     state_sync_done: bool,
     block_sync_done: bool,
@@ -92,7 +92,8 @@ impl SyncMetadata {
         Ok(())
     }
 
-    pub fn pivot_block(&self, pivot_block: Block) -> Result<()> {
+    pub fn set_pivot_block(&self, pivot_block: Block, block_info: BlockInfo) -> Result<()> {
+        assert_eq!(pivot_block.id(), *block_info.block_id());
         assert!(!self.pivot_connected(), "pivot block connected");
         assert!(self.state_syncing(), "not in syncing state.");
         let pivot_number = self.get_pivot()?.ok_or_else(|| {
@@ -104,8 +105,12 @@ impl SyncMetadata {
         })?;
         assert_eq!(pivot_number, pivot_block.header().number());
         let mut lock = self.0.write();
-        lock.pivot_connected = (false, Some(pivot_block));
+        lock.pivot_connected = (false, Some((pivot_block, block_info)));
         Ok(())
+    }
+
+    pub fn get_pivot_block(&self) -> Option<(Block, BlockInfo)> {
+        self.0.read().pivot_connected.1.clone()
     }
 
     pub fn pivot_connected_succ(&self) -> Result<()> {

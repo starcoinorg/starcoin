@@ -1,3 +1,4 @@
+use crate::download::{DownloadActor, SyncEvent};
 use crate::helper::{get_accumulator_node_by_node_hash, get_state_node_by_node_hash};
 use crate::sync_metrics::{LABEL_ACCUMULATOR, LABEL_STATE, SYNC_METRICS};
 use actix::prelude::*;
@@ -20,6 +21,7 @@ use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use traits::Consensus;
 use types::{account_state::AccountState, peer_info::PeerId};
 
 struct Roots {
@@ -50,12 +52,14 @@ impl Roots {
     }
 }
 
-async fn sync_accumulator_node(
+async fn sync_accumulator_node<C>(
     node_key: HashValue,
     peer_id: PeerId,
     network_service: NetworkAsyncService,
-    address: Addr<StateSyncTaskActor>,
-) {
+    address: Addr<StateSyncTaskActor<C>>,
+) where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     let accumulator_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_ACCUMULATOR])
@@ -111,12 +115,14 @@ async fn sync_accumulator_node(
     };
 }
 
-async fn sync_state_node(
+async fn sync_state_node<C>(
     node_key: HashValue,
     peer_id: PeerId,
     network_service: NetworkAsyncService,
-    address: Addr<StateSyncTaskActor>,
-) {
+    address: Addr<StateSyncTaskActor<C>>,
+) where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     debug!("sync_state_node : {:?}", node_key);
 
     let state_timer = SYNC_METRICS
@@ -164,12 +170,18 @@ async fn sync_state_node(
 }
 
 #[derive(Clone)]
-pub struct StateSyncTaskRef {
-    address: Addr<StateSyncTaskActor>,
+pub struct StateSyncTaskRef<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    address: Addr<StateSyncTaskActor<C>>,
 }
 
 #[async_trait::async_trait]
-impl StateSyncReset for StateSyncTaskRef {
+impl<C> StateSyncReset for StateSyncTaskRef<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     async fn reset(
         &self,
         state_root: HashValue,
@@ -242,7 +254,10 @@ impl StateSyncTaskEvent {
     }
 }
 
-pub struct StateSyncTaskActor {
+pub struct StateSyncTaskActor<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     self_peer_id: PeerId,
     roots: Roots,
     storage: Arc<dyn Store>,
@@ -252,6 +267,7 @@ pub struct StateSyncTaskActor {
     accumulator_sync_task: Arc<Mutex<SyncTask<HashValue>>>,
     state_sync_count: AtomicU64,
     accumulator_sync_count: AtomicU64,
+    connect_address: Addr<DownloadActor<C>>,
 }
 
 pub struct SyncTask<T> {
@@ -301,14 +317,18 @@ impl<T> SyncTask<T> {
     }
 }
 
-impl StateSyncTaskActor {
+impl<C> StateSyncTaskActor<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     pub fn launch(
         self_peer_id: PeerId,
         root: (HashValue, HashValue, HashValue),
         storage: Arc<dyn Store>,
         network_service: NetworkAsyncService,
         sync_metadata: SyncMetadata,
-    ) -> StateSyncTaskRef {
+        address: Addr<DownloadActor<C>>,
+    ) -> StateSyncTaskRef<C> {
         let roots = Roots::new(root.0, root.1, root.2);
         let mut state_sync_task = SyncTask::new();
         state_sync_task.push_back((*roots.state_root(), true));
@@ -325,6 +345,7 @@ impl StateSyncTaskActor {
             accumulator_sync_task: Arc::new(Mutex::new(accumulator_sync_task)),
             state_sync_count: AtomicU64::new(0),
             accumulator_sync_count: AtomicU64::new(0),
+            connect_address: address,
         });
         StateSyncTaskRef { address }
     }
@@ -341,7 +362,7 @@ impl StateSyncTaskActor {
         self.state_sync_task.lock().is_empty() && self.accumulator_sync_task.lock().is_empty()
     }
 
-    fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
         let mut lock = self.state_sync_task.lock();
         let value = lock.pop_front();
         if let Some((node_key, is_global)) = value {
@@ -448,7 +469,7 @@ impl StateSyncTaskActor {
         }
     }
 
-    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
         let mut lock = self.accumulator_sync_task.lock();
         let value = lock.pop_front();
         if let Some(node_key) = value {
@@ -544,7 +565,7 @@ impl StateSyncTaskActor {
         state_root: &HashValue,
         txn_accumulator_root: &HashValue,
         block_accumulator_root: &HashValue,
-        address: Addr<StateSyncTaskActor>,
+        address: Addr<StateSyncTaskActor<C>>,
     ) {
         info!("reset state sync task.");
         self.roots = Roots::new(*state_root, *txn_accumulator_root, *block_accumulator_root);
@@ -570,7 +591,7 @@ impl StateSyncTaskActor {
         }
     }
 
-    fn activation_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn activation_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
         info!("activation state sync task.");
         if self.sync_metadata.is_failed() {
             self.sync_metadata.update_failed(false);
@@ -580,7 +601,10 @@ impl StateSyncTaskActor {
     }
 }
 
-impl Actor for StateSyncTaskActor {
+impl<C> Actor for StateSyncTaskActor<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -594,7 +618,10 @@ impl Actor for StateSyncTaskActor {
     }
 }
 
-impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
+impl<C> Handler<StateSyncTaskEvent> for StateSyncTaskActor<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -607,6 +634,11 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
 
         if self.sync_end() {
             info!("state sync end");
+            if let Some((block, block_info)) = self.sync_metadata.get_pivot_block() {
+                self.connect_address
+                    .do_send(SyncEvent::DoPivot(Box::new(block), Box::new(block_info)));
+            }
+
             if let Err(e) = self.sync_metadata.state_sync_done() {
                 warn!("err:{:?}", e);
             } else {
@@ -637,7 +669,10 @@ struct RestRoots {
     block_accumulator_root: HashValue,
 }
 
-impl Handler<StateSyncEvent> for StateSyncTaskActor {
+impl<C> Handler<StateSyncEvent> for StateSyncTaskActor<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
     type Result = Result<()>;
 
     /// This method is called for every message received by this actor.
