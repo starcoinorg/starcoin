@@ -24,6 +24,7 @@ use starcoin_sync::SyncActor;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_traits::Consensus;
 use starcoin_txpool::{TxPool, TxPoolService};
+use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::system_events::{SyncBegin, SyncDone};
 use starcoin_wallet_api::WalletAsyncService;
@@ -156,6 +157,7 @@ where
         head_block_hash,
         bus.clone(),
     );
+    let txpool_service = txpool.get_service();
     let txpool_ref = txpool.get_async_service();
 
     let head_block = match storage.get_block(head_block_hash)? {
@@ -227,15 +229,16 @@ where
         .await??;
 
     let pubsub_service = {
+        let txn_receiver = txpool_service.subscribe_txns();
         let service = PubSubService::new();
-        service.start_transaction_subscription_handler(txpool_ref.clone());
+        service.start_transaction_subscription_handler(txn_receiver);
         service.start_chain_notify_handler(bus.clone(), storage.clone());
         service
     };
 
     let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
-        txpool_ref.clone(),
+        txpool_service,
         chain.clone(),
         account_service,
         chain_state_service,

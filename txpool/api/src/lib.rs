@@ -8,6 +8,8 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::{transaction, transaction::SignedUserTransaction};
 use std::sync::Arc;
 
+pub type TxnStatusFullEvent = Arc<Vec<(HashValue, transaction::TxStatus)>>;
+
 pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn add_txns(
         &self,
@@ -28,9 +30,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64>;
 
     /// subscribe
-    fn subscribe_txns(
-        &self,
-    ) -> mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>;
+    fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent>;
 
     /// rollback
     fn rollback(

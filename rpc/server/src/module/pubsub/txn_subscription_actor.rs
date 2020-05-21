@@ -5,55 +5,36 @@ use super::notify;
 use super::pubsub;
 use super::TxnSubscribers;
 use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
+use futures::channel::mpsc;
 use starcoin_crypto::HashValue;
-use starcoin_txpool_api::TxPoolAsyncService;
-use starcoin_types::transaction::TxStatus;
+use starcoin_txpool_api::TxnStatusFullEvent;
 use std::sync::Arc;
 
-pub struct TransactionSubscriptionActor<P> {
-    txpool: P,
+pub struct TransactionSubscriptionActor {
+    txn_receiver: Option<mpsc::UnboundedReceiver<TxnStatusFullEvent>>,
     subscribers: TxnSubscribers,
 }
 
-impl<P> TransactionSubscriptionActor<P> {
-    pub fn new(subscribers: TxnSubscribers, txpool: P) -> Self {
+impl TransactionSubscriptionActor {
+    pub fn new(
+        subscribers: TxnSubscribers,
+        txn_receiver: mpsc::UnboundedReceiver<TxnStatusFullEvent>,
+    ) -> Self {
         Self {
             subscribers,
-            txpool,
+            txn_receiver: Some(txn_receiver),
         }
     }
 }
 
-impl<P> actix::Actor for TransactionSubscriptionActor<P>
-where
-    P: TxPoolAsyncService + 'static,
-{
+impl actix::Actor for TransactionSubscriptionActor {
     type Context = actix::Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
-        self.txpool
-            .clone()
-            .subscribe_txns()
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                match res {
-                    Ok(r) => {
-                        ctx.add_stream(r);
-                    }
-                    Err(_e) => {
-                        ctx.terminate();
-                    }
-                };
-                async {}.into_actor(act)
-            })
-            .wait(ctx);
+        ctx.add_stream(self.txn_receiver.take().unwrap());
     }
 }
-type TxnEvent = Arc<Vec<(HashValue, TxStatus)>>;
-impl<P> actix::StreamHandler<TxnEvent> for TransactionSubscriptionActor<P>
-where
-    P: TxPoolAsyncService + 'static,
-{
-    fn handle(&mut self, item: TxnEvent, _ctx: &mut Self::Context) {
+impl actix::StreamHandler<TxnStatusFullEvent> for TransactionSubscriptionActor {
+    fn handle(&mut self, item: TxnStatusFullEvent, _ctx: &mut Self::Context) {
         let hs = item.as_ref().iter().map(|(h, _)| *h).collect::<Vec<_>>();
         for subscriber in self.subscribers.read().values() {
             notify::notify(subscriber, pubsub::Result::TransactionHash(hs.clone()));

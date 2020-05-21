@@ -3,7 +3,7 @@
 
 use futures::future::TryFutureExt;
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::transaction::SignedUserTransaction;
 
 use crate::module::map_err;
@@ -13,14 +13,14 @@ use starcoin_types::account_address::AccountAddress;
 
 pub struct TxPoolRpcImpl<S>
 where
-    S: TxPoolAsyncService + 'static,
+    S: TxPoolSyncService + 'static,
 {
     service: S,
 }
 
 impl<S> TxPoolRpcImpl<S>
 where
-    S: TxPoolAsyncService,
+    S: TxPoolSyncService,
 {
     pub fn new(service: S) -> Self {
         Self { service }
@@ -29,19 +29,20 @@ where
 
 impl<S> TxPoolApi for TxPoolRpcImpl<S>
 where
-    S: TxPoolAsyncService,
+    S: TxPoolSyncService,
 {
     fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<bool> {
-        let fut = self.service.clone().add(txn).map_err(map_err);
-        Box::new(fut.compat())
+        let result = self
+            .service
+            .add_txns(vec![txn])
+            .pop()
+            .expect("txpool should return result");
+        let success = result.is_ok();
+        Box::new(jsonrpc_core::futures::done(Ok(success)))
     }
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {
-        let fut = self
-            .service
-            .clone()
-            .next_sequence_number(address)
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let result = self.service.next_sequence_number(address);
+        Box::new(futures::future::ok(result).compat())
     }
 }
 

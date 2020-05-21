@@ -5,16 +5,19 @@ use crate::metadata::Metadata;
 use crate::module::pubsub::event_subscription_actor::ChainNotifyHandlerActor;
 use crate::module::pubsub::notify::SubscriberNotifyActor;
 use actix::Addr;
+use futures::channel::mpsc;
 use jsonrpc_core::Result;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
 use starcoin_bus::BusActor;
+use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_storage::Store;
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool_api::{TxPoolAsyncService, TxnStatusFullEvent};
 use starcoin_types::filter::Filter;
+use starcoin_types::transaction;
 use std::convert::TryInto;
 use std::sync::{atomic, Arc};
 use subscribers::Subscribers;
@@ -123,12 +126,12 @@ impl PubSubService {
         actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
     }
 
-    pub fn start_transaction_subscription_handler<P>(&self, txpool: P)
-    where
-        P: TxPoolAsyncService + 'static,
-    {
+    pub fn start_transaction_subscription_handler(
+        &self,
+        txn_receiver: mpsc::UnboundedReceiver<TxnStatusFullEvent>,
+    ) {
         let actor =
-            TransactionSubscriptionActor::new(self.transactions_subscribers.clone(), txpool);
+            TransactionSubscriptionActor::new(self.transactions_subscribers.clone(), txn_receiver);
 
         actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
     }

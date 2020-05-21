@@ -21,7 +21,7 @@ use starcoin_rpc_api::{node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, t
 use starcoin_rpc_middleware::MetricMiddleware;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_traits::ChainAsyncService;
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_wallet_api::WalletAsyncService;
 use std::sync::Arc;
 
@@ -45,7 +45,7 @@ impl RpcActor {
     ) -> Result<(Addr<RpcActor>, MetaIoHandler<Metadata, MetricMiddleware>)>
     where
         CS: ChainAsyncService + 'static,
-        TS: TxPoolAsyncService + 'static,
+        TS: TxPoolSyncService + 'static,
         AS: WalletAsyncService + 'static,
         SS: ChainStateAsyncService + 'static,
     {
