@@ -3,24 +3,22 @@
 
 use cucumber::{after, before, cucumber, Steps, StepsBuilder};
 use starcoin_config::{ChainConfig, ChainNetwork, Connect, NodeConfig, StarcoinOpt};
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_client::RpcClient;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::Storage;
 use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
 
 #[derive(Default)]
 pub struct MyWorld {
-    node_config: Option<NodeConfig>,
+    ipc_path: Option<String>,
     storage: Option<Storage>,
-    node_handle: Option<NodeHandle>,
     rpc_client: Option<RpcClient>,
+    default_account: Option<WalletAccount>,
+    txn_account: Option<WalletAccount>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {
@@ -36,15 +34,14 @@ impl cucumber::World for MyWorld {}
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
-        .given("a node config", |world: &mut MyWorld, _step| {
-            let mut opt = StarcoinOpt::default();
-            opt.net = Some(ChainNetwork::Dev);
-            opt.data_dir = Some("./conf".parse().unwrap());
-            let connect = Connect::IPC(Some("./conf/my.ipc".parse().unwrap()));
-            opt.connect = Some(connect);
-            let config = NodeConfig::load_with_opt(&opt).unwrap();
-            world.node_config = Some(config)
-        })
+        .given_regex(
+            r#"ipc file config "([^"]*)""#,
+            |world: &mut MyWorld, args, _step| {
+                let path = args[1].parse().unwrap();
+                info!("ipc config:{:?}", path);
+                world.ipc_path = Some(path)
+            },
+        )
         .given("a storage", |world: &mut MyWorld, _step| {
             let cache_storage = Arc::new(CacheStorage::new());
             let db_storage = Arc::new(DBStorage::new(starcoin_config::temp_path().as_ref()));
@@ -53,37 +50,24 @@ pub fn steps() -> Steps<MyWorld> {
                 db_storage,
             ))
             .unwrap();
+            info!("storage created!");
             world.storage = Some(storage)
         })
         .given("a rpc client", |world: &mut MyWorld, _step| {
-            let node_config = world.node_config.as_ref().take().unwrap();
-            let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
+            let path = world.ipc_path.as_ref().take().unwrap();
+            let client = RpcClient::connect_ipc(path).unwrap();
+            info!("rpc client created!");
             world.rpc_client = Some(client)
         })
-        .given("a node handle", |world: &mut MyWorld, _step| {
-            let node_config = world.node_config.as_ref().take().unwrap();
-            let handle = starcoin_node::run_dev_node(Arc::new(node_config.clone()));
-            world.node_handle = Some(handle)
-        })
-        .then("get node info", |world: &mut MyWorld, _step| {
+        .given("default account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
-            let node_info = client.clone().node_info();
-            assert!(node_info.is_ok());
+            let default_account = client.clone().wallet_default();
+            world.default_account = default_account.unwrap()
         })
-        .then("get node status", |world: &mut MyWorld, _step| {
+        .given("an account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
-            let status = client.clone().node_status();
-            assert!(status.is_ok());
-            assert_eq!(status.unwrap(), true);
-        })
-        .then("get node peers", |world: &mut MyWorld, _step| {
-            let client = world.rpc_client.as_ref().take().unwrap();
-            let peers = client.clone().node_peers();
-            assert!(peers.is_ok());
-        })
-        .then("node handle stop", |world: &mut MyWorld, _step| {
-            thread::sleep(Duration::from_secs(2));
-            world.node_handle.as_ref().take().unwrap().stop().unwrap();
+            let account = client.clone().wallet_create("integration".parse().unwrap());
+            world.txn_account = Some(account.unwrap())
         });
     builder.build()
 }
@@ -100,6 +84,7 @@ after!(an_after_fn => |_scenario| {
 fn setup() {}
 
 mod steps;
+use starcoin_wallet_api::WalletAccount;
 use steps::*;
 
 cucumber! {
@@ -108,6 +93,7 @@ cucumber! {
     steps: &[
         crate::steps, // the `steps!` macro creates a `steps` function in a module
         transaction::steps,
+        node::steps
     ],
     setup: setup, // Optional; called once before everything
     before: &[
