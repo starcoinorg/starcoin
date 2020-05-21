@@ -8,7 +8,6 @@ use crate::stratum::mint;
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
-use chain::to_block_chain_collection;
 use chain::BlockChain;
 use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
 use crypto::hash::HashValue;
@@ -163,17 +162,8 @@ where
                 txns.len()
             );
             let master = *startup_info.get_master();
-            let collection =
-                to_block_chain_collection(config.clone(), startup_info, storage.clone())?;
-            let block_chain = BlockChain::<C, S>::new(
-                config.clone(),
-                master,
-                storage,
-                Arc::downgrade(&collection),
-            )?;
+            let block_chain = BlockChain::<C, S>::new(config.clone(), master, storage)?;
             mint::<C>(stratum, miner, config, miner_account, txns, &block_chain)?;
-            drop(block_chain);
-            drop(collection);
             Ok(())
         }
         .map(|result: Result<()>| {

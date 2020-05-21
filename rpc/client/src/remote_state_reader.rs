@@ -4,7 +4,7 @@
 use crate::RpcClient;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{ChainStateReader, StateWithProof};
+use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
@@ -22,20 +22,12 @@ impl<'a> RemoteStateReader<'a> {
 }
 
 impl<'a> ChainStateReader for RemoteStateReader<'a> {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        self.client.state_get(access_path.clone())
-    }
-
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
         self.client.state_get_with_proof(access_path.clone())
     }
 
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
         self.client.state_get_account_state(*address)
-    }
-
-    fn is_genesis(&self) -> bool {
-        unimplemented!()
     }
 
     fn state_root(&self) -> HashValue {
@@ -46,6 +38,20 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     }
 
     fn dump(&self) -> Result<ChainStateSet> {
+        unimplemented!()
+    }
+}
+
+impl<'a> StateView for RemoteStateReader<'a> {
+    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+        self.client.state_get(access_path.clone())
+    }
+
+    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
+        unimplemented!()
+    }
+
+    fn is_genesis(&self) -> bool {
         unimplemented!()
     }
 }

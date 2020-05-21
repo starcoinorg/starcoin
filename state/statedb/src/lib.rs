@@ -19,6 +19,7 @@ use starcoin_types::{
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
+use starcoin_vm_types::state_view::StateView;
 use std::convert::TryInto;
 use std::sync::Arc;
 use thiserror::Error;
@@ -307,7 +308,7 @@ impl ChainStateDB {
 
 impl ChainState for ChainStateDB {}
 
-impl ChainStateReader for ChainStateDB {
+impl StateView for ChainStateDB {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
         self.get_account_state_object_option(&account_address)
@@ -317,6 +318,21 @@ impl ChainStateReader for ChainStateDB {
             })
     }
 
+    /// Gets state data for a list of access paths.
+    fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
+        access_paths
+            .iter()
+            .map(|access_path| self.get(access_path))
+            .collect()
+    }
+
+    fn is_genesis(&self) -> bool {
+        //TODO
+        false
+    }
+}
+
+impl ChainStateReader for ChainStateDB {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
         let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
         let address_hash = account_address.crypto_hash();
@@ -359,11 +375,6 @@ impl ChainStateReader for ChainStateDB {
         Ok(self
             .get_account_state_object_option(address)?
             .map(|state_object| state_object.to_state()))
-    }
-
-    fn is_genesis(&self) -> bool {
-        //TODO
-        false
     }
 
     fn state_root(&self) -> HashValue {

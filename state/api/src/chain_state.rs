@@ -5,6 +5,7 @@ use anyhow::{ensure, Result};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_types::write_set::{WriteOp, WriteSet};
 use starcoin_types::{
     access_path::{self, AccessPath},
     account_address::AccountAddress,
@@ -14,6 +15,7 @@ use starcoin_types::{
     state_set::ChainStateSet,
 };
 use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::state_view::StateView;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
@@ -90,25 +92,11 @@ impl StateWithProof {
     }
 }
 
-pub trait ChainStateReader {
-    /// Gets the state data for a single access path.
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>>;
-
+pub trait ChainStateReader: StateView {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof>;
-
-    /// Gets state data for a list of access paths.
-    fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        access_paths
-            .iter()
-            .map(|access_path| self.get(access_path))
-            .collect()
-    }
 
     /// Gets account state
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>>;
-
-    /// VM needs this method to know whether the current state view is for genesis state creation.
-    fn is_genesis(&self) -> bool;
 
     /// Gets current state root.
     fn state_root(&self) -> HashValue;
@@ -125,6 +113,21 @@ pub trait ChainStateWriter {
 
     /// Apply dump result to ChainState
     fn apply(&self, state_set: ChainStateSet) -> Result<()>;
+
+    //TODO support batch write.
+    fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
+        for (access_path, write_op) in write_set {
+            match write_op {
+                WriteOp::Value(blob) => {
+                    self.set(&access_path, blob)?;
+                }
+                WriteOp::Deletion => {
+                    self.remove(&access_path)?;
+                }
+            }
+        }
+        Ok(())
+    }
 
     fn commit(&self) -> Result<HashValue>;
 
@@ -145,6 +148,8 @@ pub trait IntoSuper<Super: ?Sized> {
 pub trait ChainState:
     ChainStateReader
     + ChainStateWriter
+    + StateView
+    + IntoSuper<dyn StateView>
     + IntoSuper<dyn ChainStateReader>
     + IntoSuper<dyn ChainStateWriter>
 {
@@ -176,6 +181,21 @@ impl<'a, T: 'a + ChainStateWriter> IntoSuper<dyn ChainStateWriter + 'a> for T {
         self
     }
     fn into_super_arc(self: Arc<Self>) -> Arc<dyn ChainStateWriter + 'a> {
+        self
+    }
+}
+
+impl<'a, T: 'a + StateView> IntoSuper<dyn StateView + 'a> for T {
+    fn as_super(&self) -> &(dyn StateView + 'a) {
+        self
+    }
+    fn as_super_mut(&mut self) -> &mut (dyn StateView + 'a) {
+        self
+    }
+    fn into_super(self: Box<Self>) -> Box<dyn StateView + 'a> {
+        self
+    }
+    fn into_super_arc(self: Arc<Self>) -> Arc<dyn StateView + 'a> {
         self
     }
 }

@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::chain_state::StateStore;
 use crate::genesis_context::{GenesisContext, GenesisStateView};
 use crate::genesis_gas_schedule::INITIAL_GAS_SCHEDULE;
 use anyhow::Result;
@@ -13,17 +12,17 @@ use crypto::{
 use libra_types::on_chain_config::VMPublishingOption;
 use move_vm_state::data_cache::BlockDataCache;
 use move_vm_types::loaded_data::types::FatStructType;
-use move_vm_types::{chain_state::ChainState as LibraChainState, values::Value};
+use move_vm_types::{chain_state::ChainState as MoveChainState, values::Value};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainConfig;
-use starcoin_state_api::ChainState;
 use starcoin_types::{
     contract_event::ContractEvent, transaction::authenticator::AuthenticationKey,
 };
 use starcoin_vm_types::{
     account_config,
     language_storage::{StructTag, TypeTag},
+    transaction::ChangeSet,
     write_set::WriteSet,
 };
 use std::collections::BTreeMap;
@@ -57,15 +56,10 @@ static SUBSIDY_INIT: &str = "initialize_subsidy_info";
 
 const GENESIS_MODULE_NAME: &str = "Genesis";
 
-pub fn generate_genesis_state_set(
-    chain_config: &ChainConfig,
-    chain_state: &dyn ChainState,
-) -> Result<Vec<ContractEvent>> {
-    let mut state_store = StateStore::new(chain_state);
+pub fn generate_genesis_state_set(chain_config: &ChainConfig) -> Result<ChangeSet> {
     let modules = stdlib_modules(StdLibOptions::Staged);
     let (write_set, events, _) = encode_genesis_write_set(chain_config, modules);
-    state_store.add_write_set(&write_set);
-    Ok(events)
+    Ok(ChangeSet::new(write_set, events))
 }
 
 pub fn encode_genesis_write_set(
@@ -313,7 +307,7 @@ fn remove_genesis(stdlib_modules: &[VerifiedModule]) -> impl Iterator<Item = &Ve
 }
 
 /// Publish the standard library.
-fn publish_stdlib(interpreter_context: &mut dyn LibraChainState, stdlib: &[VerifiedModule]) {
+fn publish_stdlib(interpreter_context: &mut dyn MoveChainState, stdlib: &[VerifiedModule]) {
     for module in remove_genesis(stdlib) {
         assert!(module.self_id().name().as_str() != GENESIS_MODULE_NAME);
         let mut module_vec = vec![];

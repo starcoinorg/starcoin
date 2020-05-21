@@ -69,11 +69,6 @@ where
             storage,
             phantom: PhantomData,
         };
-        // chain
-        //     .block_accumulator
-        //     .append(vec![HashValue::random()].as_slice())
-        //     .unwrap();
-        // chain.block_accumulator.flush().unwrap();
         Ok(chain)
     }
 

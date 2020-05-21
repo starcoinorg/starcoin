@@ -10,7 +10,6 @@ use anyhow::{bail, Result};
 use logger::prelude::*;
 use lru::LruCache;
 use mirai_annotations::*;
-use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
 use std::collections::HashMap;
@@ -28,7 +27,7 @@ pub struct AccumulatorTree {
     /// The root hash of this accumulator.
     pub(crate) root_hash: HashValue,
     /// The index cache
-    index_cache: Lazy<Mutex<LruCache<NodeCacheKey, HashValue>>>,
+    index_cache: Mutex<LruCache<NodeCacheKey, HashValue>>,
     /// The storage of accumulator.
     store: Arc<dyn AccumulatorTreeStore>,
     /// The temp update nodes
@@ -48,7 +47,7 @@ impl AccumulatorTree {
         Self {
             id: accumulator_id,
             frozen_subtree_roots,
-            index_cache: Lazy::new(|| Mutex::new(LruCache::new(MAC_CACHE_SIZE))),
+            index_cache: Mutex::new(LruCache::new(MAC_CACHE_SIZE)),
             num_leaves,
             num_nodes,
             root_hash,
@@ -71,7 +70,7 @@ impl AccumulatorTree {
                 Ok(self.root_hash)
             };
         }
-
+        trace!("acc {} append_leaves: {:?}", self.id, new_leaves);
         let num_new_leaves = new_leaves.len();
         let last_new_leaf_count = self.num_leaves + num_new_leaves as LeafCount;
         let mut new_num_nodes = self.num_nodes;
@@ -211,10 +210,17 @@ impl AccumulatorTree {
     pub(crate) fn flush(&self) -> Result<()> {
         let mut nodes = self.update_nodes.lock();
         if !nodes.is_empty() {
-            let nodes_vec = nodes.iter().map(|(_, node)| node.clone()).collect();
+            let nodes_vec = nodes
+                .iter()
+                .map(|(_, node)| {
+                    trace!("save acc {} node: {:?}", self.id, node);
+                    node.clone()
+                })
+                .collect::<Vec<AccumulatorNode>>();
+            let nodes_len = nodes_vec.len();
             self.store.save_nodes(nodes_vec)?;
             nodes.clear();
-            info!("flush node to storage ok!");
+            debug!("flush {} acc node to storage.", nodes_len);
         }
         Ok(())
     }

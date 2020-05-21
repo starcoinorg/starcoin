@@ -4,7 +4,7 @@ use anyhow::Result;
 use criterion::{BatchSize, Bencher};
 use libp2p::multiaddr::Multiaddr;
 use starcoin_bus::BusActor;
-use starcoin_chain::{to_block_chain_collection, BlockChain, ChainActor, ChainActorRef};
+use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
 use starcoin_config::{get_available_port, NodeConfig};
 use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
@@ -209,17 +209,11 @@ async fn create_node(
         let miner_account = WalletAccount::random();
         for i in 0..n {
             let startup_info = chain.clone().master_startup_info().await?;
-            let collection = to_block_chain_collection(
-                node_config.clone(),
-                startup_info.clone(),
-                storage.clone(),
-            )?;
 
             let block_chain = BlockChain::<DummyConsensus, Storage>::new(
                 node_config.clone(),
-                collection.get_head(),
+                startup_info.master,
                 storage.clone(),
-                Arc::downgrade(&collection),
             )
             .unwrap();
 

@@ -3,7 +3,9 @@
 
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{ChainStateReader, ChainStateService, StateNodeStore, StateWithProof};
+use starcoin_state_api::{
+    ChainStateReader, ChainStateService, StateNodeStore, StateView, StateWithProof,
+};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
@@ -32,10 +34,6 @@ impl ChainStateService for ChainStateServiceImpl {
 }
 
 impl ChainStateReader for ChainStateServiceImpl {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        self.reader.get(access_path)
-    }
-
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
         self.reader.get_with_proof(access_path)
     }
@@ -44,15 +42,25 @@ impl ChainStateReader for ChainStateServiceImpl {
         self.reader.get_account_state(address)
     }
 
-    fn is_genesis(&self) -> bool {
-        false
-    }
-
     fn state_root(&self) -> HashValue {
         self.reader.state_root()
     }
 
     fn dump(&self) -> Result<ChainStateSet> {
         unimplemented!()
+    }
+}
+
+impl StateView for ChainStateServiceImpl {
+    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+        self.reader.get(access_path)
+    }
+
+    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
+        unimplemented!()
+    }
+
+    fn is_genesis(&self) -> bool {
+        false
     }
 }

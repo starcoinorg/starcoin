@@ -304,6 +304,7 @@ impl Block {
 pub struct BlockInfo {
     /// Block id
     pub block_id: HashValue,
+    //TODO group txn accumulator's fields.
     /// Accumulator root hash
     pub accumulator_root: HashValue,
     /// Frozen subtree roots of this accumulator.

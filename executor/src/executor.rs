@@ -3,19 +3,13 @@
 
 use crate::TransactionExecutor;
 use anyhow::Result;
-use crypto::HashValue;
 use starcoin_config::ChainConfig;
-use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_types::{
     account_address::AccountAddress,
-    contract_event::ContractEvent,
-    state_set::ChainStateSet,
     transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
-use statedb::ChainStateDB;
-use std::sync::Arc;
-use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
+use starcoin_vm_types::{state_view::StateView, transaction::ChangeSet};
 use vm_runtime::genesis::generate_genesis_state_set;
 use vm_runtime::{
     account::Account,
@@ -38,32 +32,21 @@ impl Executor {
 }
 
 impl TransactionExecutor for Executor {
-    fn init_genesis(
-        chain_config: &ChainConfig,
-    ) -> Result<(HashValue, ChainStateSet, Vec<ContractEvent>)> {
+    fn init_genesis(chain_config: &ChainConfig) -> Result<ChangeSet> {
         let timer = TXN_EXECUTION_HISTOGRAM
             .with_label_values(&["init_genesis"])
             .start_timer();
 
-        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
-            CacheStorage::new(),
-        ))?);
-        let chain_state_db = ChainStateDB::new(storage, None);
+        let change_set = generate_genesis_state_set(&chain_config)?;
 
-        let events = generate_genesis_state_set(&chain_config, &chain_state_db)
-            .expect("Generate genesis state set must succeed");
-        chain_state_db.commit()?;
-        chain_state_db.flush()?;
-
-        let state = chain_state_db.dump()?;
         timer.observe_duration();
-        Ok((chain_state_db.state_root(), state, events))
+        Ok(change_set)
     }
 
     fn execute_transactions(
-        chain_state: &dyn ChainState,
+        chain_state: &dyn StateView,
         txns: Vec<Transaction>,
-    ) -> Result<Vec<(HashValue, TransactionOutput)>> {
+    ) -> Result<Vec<TransactionOutput>> {
         let timer = TXN_EXECUTION_HISTOGRAM
             .with_label_values(&["execute_transactions"])
             .start_timer();
@@ -74,7 +57,7 @@ impl TransactionExecutor for Executor {
     }
 
     fn validate_transaction(
-        chain_state: &dyn ChainState,
+        chain_state: &dyn StateView,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         let timer = TXN_EXECUTION_HISTOGRAM

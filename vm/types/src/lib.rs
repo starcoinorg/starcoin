@@ -64,6 +64,10 @@ pub mod state_view {
     pub use libra_state_view::StateView;
 }
 
+pub mod transaction {
+    pub use libra_types::transaction::{ChangeSet, Module, Script};
+}
+
 pub mod access_path;
 pub mod account_config;
 pub mod event;

@@ -14,6 +14,7 @@ actix-rt = "1.0"
 parking_lot = "0.10.2"
 lru = "0.4.0"
 starcoin-types = {path = "../../types"}
+starcoin-vm-types = {path = "../../vm/types"}
 starcoin-state-api = {path = "../api"}
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-logger = {path = "../../commons/logger"}

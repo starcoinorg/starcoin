@@ -18,8 +18,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
 use starcoin_types::block::BlockInfo;
 use starcoin_types::startup_info::StartupInfo;
-use starcoin_types::state_set::ChainStateSet;
-use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::transaction::{ChangeSet, TransactionInfo};
 use starcoin_types::{
     accumulator_info::AccumulatorInfo, block::Block, transaction::Transaction,
     vm_error::StatusCode, U512,
@@ -36,14 +35,14 @@ pub static GENESIS_FILE_NAME: &str = "genesis";
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
-    state: ChainStateSet,
+    state: ChangeSet,
     block: Block,
 }
 
 impl Display for Genesis {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Genesis {{")?;
-        write!(f, "state: {{ len={} }}, ", self.state.len())?;
+        write!(f, "state: {{ len={} }}, ", self.state.write_set().len())?;
         write!(f, "block: {:?}", self.block)?;
         write!(f, "}}")?;
         Ok(())
@@ -64,15 +63,14 @@ impl Genesis {
     {
         debug!("Init genesis");
         let chain_config = net.get_config();
-        //TODO remove config argument, genesis not dependency NodeConfig.
-        let (_state_root, chain_state_set, _) = Executor::init_genesis(&chain_config)?;
+        let change_set = Executor::init_genesis(&chain_config)?;
 
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
         let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
-        let transaction_info = Self::execute_genesis_txn(chain_state_set.clone(), &chain_state_db)?;
+        let transaction_info = Self::execute_genesis_txn(change_set.clone(), &chain_state_db)?;
 
         let accumulator =
             MerkleAccumulator::new(*ACCUMULATOR_PLACEHOLDER_HASH, vec![], 0, 0, storage)?;
@@ -90,38 +88,43 @@ impl Genesis {
         debug!("Genesis block id : {:?}", block.header().id());
 
         let genesis = Self {
-            state: chain_state_set,
+            state: change_set,
             block,
         };
         Ok(genesis)
     }
 
     fn execute_genesis_txn(
-        chain_state_set: ChainStateSet,
+        change_set: ChangeSet,
         chain_state: &dyn ChainState,
     ) -> Result<TransactionInfo> {
-        let txn = Transaction::StateSet(chain_state_set);
+        let txn = Transaction::ChangeSet(change_set);
         let txn_hash = txn.crypto_hash();
 
-        let output = Executor::execute_transactions(chain_state, vec![txn])?;
+        let output = Executor::execute_transactions(chain_state.as_super(), vec![txn])?
+            .pop()
+            .expect("Execute output must exist.");
+        let (write_set, events, gas_used, status) = output.into_inner();
         ensure!(
-            output[0].1.status().vm_status().major_status == StatusCode::EXECUTED,
-            "Genesis txn execute fail."
+            status.vm_status().major_status == StatusCode::EXECUTED,
+            "Genesis txn execute fail for: {:?}",
+            status
         );
+        chain_state.apply_write_set(write_set)?;
         let state_root = chain_state.commit()?;
-
+        chain_state.flush()?;
         Ok(TransactionInfo::new(
             txn_hash,
             state_root,
             //TODO genesis event.
             HashValue::zero(),
-            output[0].1.events().to_vec(),
-            0,
-            output[0].1.status().vm_status().major_status,
+            events,
+            gas_used,
+            status.vm_status().major_status,
         ))
     }
 
-    pub fn state(&self) -> &ChainStateSet {
+    pub fn state(&self) -> &ChangeSet {
         &self.state
     }
 
@@ -181,14 +184,14 @@ impl Genesis {
         storage.commit_block(block.clone())?;
 
         let startup_info = StartupInfo::new(block.header().id(), vec![]);
-
-        //save block info for accumulator init
-        storage.save_block_info(BlockInfo::new_with_accumulator_info(
+        let block_info = BlockInfo::new_with_accumulator_info(
             block.header().id(),
             txn_accumulator_info,
             Self::genesis_block_accumulator_info(block.header().id(), storage.clone())?,
             U512::zero(),
-        ))?;
+        );
+        debug!("Genesis block_info: {:?}", block_info);
+        storage.save_block_info(block_info)?;
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)
     }
@@ -229,9 +232,12 @@ impl Genesis {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_state_api::AccountStateReader;
+    use starcoin_storage::block_info::BlockInfoStore;
     use starcoin_storage::cache_storage::CacheStorage;
     use starcoin_storage::storage::StorageInstance;
-    use starcoin_storage::Storage;
+    use starcoin_storage::{BlockStore, IntoSuper, Storage};
+    use starcoin_vm_types::account_config::association_address;
 
     #[stest::test]
     pub fn test_genesis() -> Result<()> {
@@ -244,7 +250,9 @@ mod tests {
     pub fn do_test_genesis(net: ChainNetwork) -> Result<()> {
         let temp_dir = starcoin_config::temp_path();
         let genesis = Genesis::build(net)?;
+        debug!("build genesis {} for {:?}", genesis, net);
         genesis.save(temp_dir.as_ref())?;
+        assert!(!genesis.state.write_set().is_empty());
         let genesis2 = Genesis::load(temp_dir.as_ref())?;
         assert!(genesis2.is_some(), "load genesis fail.");
         let genesis2 = genesis2.unwrap();
@@ -253,7 +261,7 @@ mod tests {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
-        let startup_info = genesis.execute(storage)?;
+        let startup_info = genesis.execute(storage.clone())?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
@@ -264,6 +272,49 @@ mod tests {
             startup_info, startup_info2,
             "genesis execute startup info different."
         );
+        let genesis_block = storage
+            .get_block(startup_info.master)?
+            .expect("Genesis block must exist.");
+        let state_db = ChainStateDB::new(
+            storage.clone().into_super_arc(),
+            Some(genesis_block.header().state_root()),
+        );
+        let account_state_reader = AccountStateReader::new(&state_db);
+        let account_resource = account_state_reader.get_account_resource(&association_address())?;
+        assert!(
+            account_resource.is_some(),
+            "association account must exist in genesis state."
+        );
+        let block_info = storage
+            .get_block_info(genesis_block.header().id())?
+            .expect("Genesis block info must exist.");
+
+        let txn_accumulator_info = block_info.get_txn_accumulator_info();
+        let txn_accumulator = MerkleAccumulator::new(
+            *txn_accumulator_info.get_accumulator_root(),
+            txn_accumulator_info.get_frozen_subtree_roots().clone(),
+            txn_accumulator_info.get_num_leaves(),
+            txn_accumulator_info.get_num_nodes(),
+            storage.clone().into_super_arc(),
+        )?;
+        //ensure block_accumulator can work.
+        txn_accumulator.append(&[HashValue::random()])?;
+        txn_accumulator.flush()?;
+
+        let block_accumulator_info = block_info.get_block_accumulator_info();
+        let block_accumulator = MerkleAccumulator::new(
+            *block_accumulator_info.get_accumulator_root(),
+            block_accumulator_info.get_frozen_subtree_roots().clone(),
+            block_accumulator_info.get_num_leaves(),
+            block_accumulator_info.get_num_nodes(),
+            storage.into_super_arc(),
+        )?;
+        let hash = block_accumulator.get_leaf(0)?.expect("leaf 0 must exist.");
+        assert_eq!(hash, block_info.block_id);
+        //ensure block_accumulator can work.
+        block_accumulator.append(&[HashValue::random()])?;
+        block_accumulator.flush()?;
+
         Ok(())
     }
 }
