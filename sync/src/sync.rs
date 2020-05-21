@@ -15,7 +15,7 @@ use starcoin_sync_api::sync_messages::{PeerNewBlock, SyncNotify};
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use traits::Consensus;
-use txpool::TxPoolRef;
+use txpool::TxPoolService;
 use types::peer_info::PeerId;
 
 pub struct SyncActor<C>
@@ -38,7 +38,7 @@ where
         bus: Addr<BusActor>,
         peer_id: Arc<PeerId>,
         chain: ChainActorRef<C>,
-        txpool: TxPoolRef,
+        txpool: TxPoolService,
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,

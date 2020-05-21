@@ -16,7 +16,7 @@ use starcoin_sync::{
     ProcessActor,
 };
 use starcoin_sync_api::SyncMetadata;
-use starcoin_txpool::{TxPool, TxPoolRef};
+use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -141,7 +141,7 @@ async fn create_node(
     Multiaddr,
     NetworkAsyncService,
     ChainActorRef<DummyConsensus>,
-    TxPoolRef,
+    TxPoolService,
     Arc<Storage>,
     futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
 )> {
@@ -166,6 +166,7 @@ async fn create_node(
     // genesis
     let genesis = Genesis::build(node_config.net()).unwrap();
     let genesis_hash = genesis.block().header().id();
+
     let genesis_startup_info = genesis.execute(storage.clone()).unwrap();
     let txpool = {
         let best_block_id = *genesis_startup_info.get_master();
@@ -175,8 +176,9 @@ async fn create_node(
             best_block_id,
             bus.clone(),
         )
-        .get_async_service()
     };
+
+    let txpool_service = txpool.get_service();
 
     // network
     let key_pair = node_config.clone().network.network_keypair();
@@ -198,7 +200,7 @@ async fn create_node(
         storage.clone(),
         Some(network.clone()),
         bus.clone(),
-        txpool.clone(),
+        txpool_service.clone(),
         sync_metadata_actor.clone(),
     )
     .unwrap();
@@ -239,5 +241,13 @@ async fn create_node(
             chain.clone().try_connect(block).await.unwrap().unwrap();
         }
     }
-    Ok((bus, my_addr, network, chain, txpool, storage, rpc_rx))
+    Ok((
+        bus,
+        my_addr,
+        network,
+        chain,
+        txpool_service,
+        storage,
+        rpc_rx,
+    ))
 }

@@ -11,13 +11,13 @@ use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
 use starcoin_bus::BusActor;
-use starcoin_crypto::HashValue;
+
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_storage::Store;
-use starcoin_txpool_api::{TxPoolAsyncService, TxnStatusFullEvent};
+use starcoin_txpool_api::TxnStatusFullEvent;
 use starcoin_types::filter::Filter;
-use starcoin_types::transaction;
+
 use std::convert::TryInto;
 use std::sync::{atomic, Arc};
 use subscribers::Subscribers;

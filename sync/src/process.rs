@@ -22,7 +22,7 @@ use starcoin_sync_api::sync_messages::{
 use std::sync::Arc;
 use traits::ChainAsyncService;
 use traits::Consensus;
-use txpool::TxPoolRef;
+use txpool::TxPoolService;
 
 pub struct ProcessActor<C>
 where
@@ -37,7 +37,7 @@ where
 {
     pub fn launch(
         chain_reader: ChainActorRef<C>,
-        txpool: TxPoolRef,
+        txpool: TxPoolService,
         storage: Arc<dyn Store>,
         rpc_rx: futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) -> Result<Addr<ProcessActor<C>>> {
@@ -177,7 +177,7 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     chain_reader: ChainActorRef<C>,
-    txpool: TxPoolRef,
+    txpool: TxPoolService,
     storage: Arc<dyn Store>,
 }
 
@@ -185,7 +185,11 @@ impl<C> Processor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    pub fn new(chain_reader: ChainActorRef<C>, txpool: TxPoolRef, storage: Arc<dyn Store>) -> Self {
+    pub fn new(
+        chain_reader: ChainActorRef<C>,
+        txpool: TxPoolService,
+        storage: Arc<dyn Store>,
+    ) -> Self {
         Processor {
             chain_reader,
             txpool,

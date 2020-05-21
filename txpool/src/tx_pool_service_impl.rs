@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::counters::TXPOOL_SERVICE_HISTOGRAM;
 use crate::{
     pool,
     pool::{
@@ -9,6 +10,7 @@ use crate::{
     },
     pool_client::{NonceCache, PoolClient},
 };
+
 use anyhow::Result;
 use common_crypto::hash::{HashValue, PlainCryptoHash};
 use futures_channel::mpsc;
@@ -71,10 +73,18 @@ impl TxPoolSyncService for TxPoolService {
         &self,
         txns: Vec<SignedUserTransaction>,
     ) -> Vec<Result<(), transaction::TransactionError>> {
+        // _timer will observe_duration when it's dropped.
+        // We don't need to call it explicitly.
+        let _timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["add_txns"])
+            .start_timer();
         self.inner.import_txns(txns)
     }
 
     fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction> {
+        let _timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["remove_txn"])
+            .start_timer();
         self.inner
             .remove_txn(txn_hash, is_invalid)
             .map(|t| t.signed().clone())
@@ -82,6 +92,9 @@ impl TxPoolSyncService for TxPoolService {
 
     /// Get all pending txns which is ok to be packaged to mining.
     fn get_pending_txns(&self, max_len: Option<u64>) -> Vec<SignedUserTransaction> {
+        let _timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["get_pending_txns"])
+            .start_timer();
         let r = self.inner.get_pending(max_len.unwrap_or(u64::MAX));
         r.into_iter().map(|t| t.signed().clone()).collect()
     }
@@ -89,6 +102,9 @@ impl TxPoolSyncService for TxPoolService {
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
+        let _timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["next_sequence_number"])
+            .start_timer();
         self.inner.next_sequence_number(address)
     }
 
@@ -96,6 +112,9 @@ impl TxPoolSyncService for TxPoolService {
     fn subscribe_txns(
         &self,
     ) -> mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>> {
+        let _timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["subscribe_txns"])
+            .start_timer();
         self.inner.subscribe_txns()
     }
 
@@ -105,6 +124,9 @@ impl TxPoolSyncService for TxPoolService {
         enacted: Vec<SignedUserTransaction>,
         retracted: Vec<SignedUserTransaction>,
     ) -> Result<()> {
+        let _timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["rollback"])
+            .start_timer();
         self.inner.chain_new_block(enacted, retracted)
     }
 }

@@ -6,7 +6,6 @@ use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::transaction::SignedUserTransaction;
 
-use crate::module::map_err;
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;
 use starcoin_types::account_address::AccountAddress;

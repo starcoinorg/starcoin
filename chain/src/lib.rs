@@ -29,7 +29,7 @@ use std::sync::Arc;
 use storage::Storage;
 use traits::Consensus;
 use traits::{ChainAsyncService, ChainService, ConnectResult};
-use txpool::TxPoolRef;
+use txpool::TxPoolService;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -43,7 +43,7 @@ pub struct ChainActor<C>
 where
     C: Consensus,
 {
-    service: ChainServiceImpl<C, Storage, TxPoolRef>,
+    service: ChainServiceImpl<C, Storage, TxPoolService>,
     bus: Addr<BusActor>,
 }
 
@@ -57,7 +57,7 @@ where
         storage: Arc<Storage>,
         network: Option<NetworkAsyncService>,
         bus: Addr<BusActor>,
-        txpool: TxPoolRef,
+        txpool: TxPoolService,
         sync_metadata: SyncMetadata,
     ) -> Result<ChainActorRef<C>> {
         let actor = ChainActor {

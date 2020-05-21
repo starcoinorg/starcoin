@@ -6,7 +6,7 @@ use common_crypto::keygen::KeyGen;
 use parking_lot::RwLock;
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolSyncService;
 use std::collections::HashMap;
 use std::sync::Arc;
 use types::account_address::{self, AccountAddress};
@@ -41,21 +41,20 @@ impl AccountSeqNumberClient for MockNonceClient {
 #[actix_rt::test]
 async fn test_tx_pool() -> Result<()> {
     let pool = test_helper::start_txpool();
+    let txpool_service = pool.get_service();
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
     let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.crypto_hash();
-    let mut result = pool.clone().add_txns(vec![txn]).await?;
+    let mut result = txpool_service.add_txns(vec![txn]);
     assert!(result.pop().unwrap().is_ok());
-    let mut pending_txns = pool.clone().get_pending_txns(Some(10)).await?;
+    let mut pending_txns = txpool_service.get_pending_txns(Some(10));
     assert_eq!(pending_txns.pop().unwrap().crypto_hash(), txn_hash);
 
-    let next_sequence_number = pool
-        .clone()
-        .next_sequence_number(account_config::association_address())
-        .await?;
+    let next_sequence_number =
+        txpool_service.next_sequence_number(account_config::association_address());
     assert_eq!(next_sequence_number, Some(2));
     Ok(())
 }
@@ -63,7 +62,7 @@ async fn test_tx_pool() -> Result<()> {
 #[actix_rt::test]
 async fn test_subscribe_txns() {
     let pool = test_helper::start_txpool();
-    let _ = pool.subscribe_txns().await.unwrap();
+    let _ = pool.get_service().subscribe_txns();
 }
 
 #[actix_rt::test]
@@ -76,7 +75,7 @@ async fn test_rollback() -> Result<()> {
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
         txn.as_signed_user_txn()?.clone()
     };
-    let _ = pool.clone().add_txns(vec![txn.clone()]).await?;
+    let _ = pool.get_service().add_txns(vec![txn.clone()]);
     let new_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
@@ -84,10 +83,10 @@ async fn test_rollback() -> Result<()> {
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 20000);
         txn.as_signed_user_txn()?.clone()
     };
-    pool.clone()
+    pool.get_service()
         .rollback(vec![txn], vec![new_txn.clone()])
-        .await?;
-    let txns = pool.clone().get_pending_txns(Some(100)).await?;
+        .unwrap();
+    let txns = pool.get_service().get_pending_txns(Some(100));
     assert_eq!(txns.len(), 1);
     let pending = txns.into_iter().next().unwrap();
     assert_eq!(pending.crypto_hash(), new_txn.crypto_hash());

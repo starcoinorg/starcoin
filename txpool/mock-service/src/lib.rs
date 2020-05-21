@@ -4,7 +4,6 @@
 use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
-use starcoin_txpool_api::TxPoolAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
@@ -45,7 +44,7 @@ impl TxPoolSyncService for MockTxPoolService {
     ///
     /// Attempts to "cancel" a transaction. If it was not propagated yet (or not accepted by other peers)
     /// there is a good chance that the transaction will actually be removed.
-    fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction> {
+    fn remove_txn(&self, _txn_hash: HashValue, _is_invalid: bool) -> Option<SignedUserTransaction> {
         unimplemented!()
     }
 
@@ -66,7 +65,7 @@ impl TxPoolSyncService for MockTxPoolService {
 
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
-    fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
+    fn next_sequence_number(&self, _address: AccountAddress) -> Option<u64> {
         todo!()
     }
 
@@ -80,67 +79,10 @@ impl TxPoolSyncService for MockTxPoolService {
     /// rollback
     fn rollback(
         &self,
-        enacted: Vec<SignedUserTransaction>,
-        retracted: Vec<SignedUserTransaction>,
-    ) -> Result<()> {
-        todo!()
-    }
-}
-
-#[async_trait::async_trait]
-impl TxPoolAsyncService for MockTxPoolService {
-    async fn add(self, txn: SignedUserTransaction) -> Result<bool> {
-        self.pool.lock().unwrap().push(txn);
-        //TODO check txn is exist.
-        Ok(true)
-    }
-    async fn add_txns(
-        self,
-        mut txns: Vec<SignedUserTransaction>,
-    ) -> Result<Vec<Result<(), transaction::TransactionError>>> {
-        let len = txns.len();
-        self.pool.lock().unwrap().append(&mut txns);
-        let mut results = vec![];
-        results.resize_with(len, || Ok(()));
-        Ok(results)
-    }
-    async fn remove_txn(
-        self,
-        _txn_hash: HashValue,
-        _is_invalid: bool,
-    ) -> Result<Option<SignedUserTransaction>> {
-        unimplemented!()
-    }
-
-    async fn get_pending_txns(self, max_len: Option<u64>) -> Result<Vec<SignedUserTransaction>> {
-        match max_len {
-            Some(max) => Ok(self
-                .pool
-                .lock()
-                .unwrap()
-                .iter()
-                .take(max as usize)
-                .cloned()
-                .collect::<Vec<_>>()),
-            None => Ok(self.pool.lock().unwrap().clone()),
-        }
-    }
-    async fn next_sequence_number(self, _address: AccountAddress) -> Result<Option<u64>> {
-        todo!()
-    }
-
-    async fn subscribe_txns(
-        self,
-    ) -> Result<mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>>> {
-        unimplemented!()
-    }
-
-    async fn rollback(
-        self,
         _enacted: Vec<SignedUserTransaction>,
         _retracted: Vec<SignedUserTransaction>,
     ) -> Result<()> {
-        unimplemented!()
+        todo!()
     }
 }
 
@@ -153,10 +95,11 @@ mod tests {
         let pool = MockTxPoolService::new();
 
         pool.clone()
-            .add(SignedUserTransaction::mock())
-            .await
+            .add_txns(vec![SignedUserTransaction::mock()])
+            .pop()
+            .unwrap()
             .unwrap();
-        let txns = pool.get_pending_txns(None).await.unwrap();
+        let txns = pool.get_pending_txns(None);
         assert_eq!(1, txns.len())
     }
 }

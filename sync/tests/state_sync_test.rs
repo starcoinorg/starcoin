@@ -61,7 +61,6 @@ fn test_state_sync() {
                 bus_1.clone(),
             )
         };
-        let txpool_ref_1 = txpool_1.get_async_service();
 
         // network
         let (network_1, addr_1, rx_1) = gen_network(
@@ -80,7 +79,7 @@ fn test_state_sync() {
             storage_1.clone(),
             Some(network_1.clone()),
             bus_1.clone(),
-            txpool_ref_1.clone(),
+            txpool_1.get_service(),
             sync_metadata_actor_1.clone(),
         )
         .unwrap();
@@ -91,7 +90,7 @@ fn test_state_sync() {
             bus_1.clone(),
             first_p,
             first_chain.clone(),
-            txpool_ref_1.clone(),
+            txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
             sync_metadata_actor_1.clone(),
@@ -162,7 +161,6 @@ fn test_state_sync() {
                 best_block_id,
                 bus_2.clone(),
             )
-            .get_async_service()
         };
         // network
         let (network_2, addr_2, rx_2) = gen_network(
@@ -186,7 +184,7 @@ fn test_state_sync() {
             storage_2.clone(),
             Some(network_2.clone()),
             bus_2.clone(),
-            txpool_2.clone(),
+            txpool_2.get_service(),
             sync_metadata_actor_2.clone(),
         )
         .unwrap();
@@ -197,7 +195,7 @@ fn test_state_sync() {
             bus_2.clone(),
             Arc::clone(&second_p),
             second_chain.clone(),
-            txpool_2.clone(),
+            txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
