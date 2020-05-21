@@ -27,4 +27,4 @@ jobs:
           command: bench
           args: --bench benchmarks --bench bench_state_tree --bench bench_vm
       - name: publish result
-        run: bash cp -rf benchmarks/target/criterion /mnt/volume_01/starcoin_benchmarks
+        run: bash ./scripts/benchmark.sh

@@ -17,6 +17,7 @@ pub struct MinerConfig {
     pub dev_period: u64,
     pub thread_num: u16,
     pub enable: bool,
+    pub block_gas_limit: u64,
     #[serde(skip)]
     pub pacemaker_strategy: PacemakerStrategy,
     #[serde(skip)]
@@ -54,6 +55,10 @@ impl ConfigModule for MinerConfig {
             ChainNetwork::Dev => get_available_port(),
             _ => DEFAULT_STRATUM_SERVER_PORT,
         };
+        let block_gas_limit = match net {
+            ChainNetwork::Dev => 100_000, // 10w
+            _ => 1_000_000,               //100w
+        };
         Self {
             stratum_server: format!("127.0.0.1:{}", port)
                 .parse::<SocketAddr>()
@@ -61,6 +66,7 @@ impl ConfigModule for MinerConfig {
             dev_period: 0,
             thread_num: 1,
             enable: true,
+            block_gas_limit,
             pacemaker_strategy,
             consensus_strategy,
         }
