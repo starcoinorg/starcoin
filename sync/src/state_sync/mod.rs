@@ -636,7 +636,7 @@ where
             info!("state sync end");
             if let Some((block, block_info)) = self.sync_metadata.get_pivot_block() {
                 self.connect_address
-                    .do_send(SyncEvent::DoPivot(block, block_info));
+                    .do_send(SyncEvent::DoPivot(Box::new(block), Box::new(block_info)));
             }
 
             if let Err(e) = self.sync_metadata.state_sync_done() {

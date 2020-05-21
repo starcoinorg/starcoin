@@ -38,7 +38,7 @@ use types::{
 #[rtype(result = "Result<()>")]
 pub enum SyncEvent {
     DoSync,
-    DoPivot(Block, BlockInfo),
+    DoPivot(Box<Block>, Box<BlockInfo>),
 }
 
 const MIN_PEER_SIZE: usize = 5;
@@ -182,7 +182,7 @@ where
                     block.header().number(),
                     block.id()
                 );
-                self.do_block_and_child(block, Some(block_info))
+                self.do_block_and_child(*block, Some(*block_info))
             }
         }
 
