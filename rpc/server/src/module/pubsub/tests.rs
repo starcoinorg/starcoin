@@ -119,8 +119,8 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
     let txpool = start_txpool();
     let service = PubSubService::new();
-
-    service.start_transaction_subscription_handler(txpool.clone());
+    let txn_receiver = txpool.subscribe_txns().await?;
+    service.start_transaction_subscription_handler(txn_receiver);
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
 
