@@ -9,7 +9,7 @@ use jsonrpc_pubsub::Session;
 use futures::compat::Stream01CompatExt;
 use futures::StreamExt;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address;
 use std::sync::Arc;
 use txpool::test_helper::start_txpool;
@@ -118,8 +118,9 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
     let txpool = start_txpool();
+    let txpool_service = txpool.get_service();
     let service = PubSubService::new();
-    let txn_receiver = txpool.subscribe_txns().await?;
+    let txn_receiver = txpool_service.subscribe_txns();
     service.start_transaction_subscription_handler(txn_receiver);
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
@@ -156,7 +157,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         txn.as_signed_user_txn()?.clone()
     };
     let txn_id = txn.crypto_hash();
-    txpool.clone().add_txns(vec![txn]).await?;
+    txpool_service.add_txns(vec![txn]).pop().unwrap().unwrap();
     let mut receiver = receiver.compat();
     let res = receiver.next().await.transpose().unwrap();
     let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;

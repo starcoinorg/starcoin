@@ -158,7 +158,6 @@ where
         bus.clone(),
     );
     let txpool_service = txpool.get_service();
-    let txpool_ref = txpool.get_async_service();
 
     let head_block = match storage.get_block(head_block_hash)? {
         Some(block) => block,
@@ -211,7 +210,7 @@ where
     let chain_storage = storage.clone();
     let chain_network = network.clone();
     let chain_bus = bus.clone();
-    let chain_txpool = txpool_ref.clone();
+    let chain_txpool_service = txpool_service.clone();
     let chain_sync_metadata = sync_metadata.clone();
 
     let chain = Arbiter::new()
@@ -222,7 +221,7 @@ where
                 chain_storage,
                 Some(chain_network),
                 chain_bus,
-                chain_txpool,
+                chain_txpool_service,
                 chain_sync_metadata,
             )
         })
@@ -238,7 +237,7 @@ where
 
     let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
-        txpool_service,
+        txpool_service.clone(),
         chain.clone(),
         account_service,
         chain_state_service,
@@ -260,7 +259,7 @@ where
     let sync_config = config.clone();
     let sync_bus = bus.clone();
     let sync_chain = chain.clone();
-    let sync_txpool = txpool_ref.clone();
+    let sync_txpool = txpool_service.clone();
     let sync_network = network.clone();
     let sync_storage = storage.clone();
     let sync_sync_metadata = sync_metadata.clone();

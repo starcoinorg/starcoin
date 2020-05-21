@@ -6,8 +6,8 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_sync_api::sync_messages::{GetTxns, StartSyncTxnEvent};
-use starcoin_txpool_api::TxPoolAsyncService;
-use txpool::TxPoolRef;
+use starcoin_txpool_api::TxPoolSyncService;
+use txpool::TxPoolService;
 use types::peer_info::PeerId;
 
 #[derive(Clone)]
@@ -18,7 +18,7 @@ pub struct TxnSyncActor {
 
 impl TxnSyncActor {
     pub fn launch(
-        txpool: TxPoolRef,
+        txpool: TxPoolService,
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
     ) -> Addr<TxnSyncActor> {
@@ -78,7 +78,7 @@ impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
 
 #[derive(Clone)]
 struct Inner {
-    pool: TxPoolRef,
+    pool: TxPoolService,
     network_service: NetworkAsyncService,
 }
 
@@ -103,7 +103,7 @@ impl Inner {
         let txn_data = helper::get_txns(&self.network_service, peer_id.clone(), GetTxns)
             .await?
             .txns;
-        let import_result = self.pool.clone().add_txns(txn_data).await?;
+        let import_result = self.pool.add_txns(txn_data);
         let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
         info!("succ to sync {} txn from peer {}", succ_num, peer_id);
         Ok(())

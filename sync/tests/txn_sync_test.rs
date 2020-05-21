@@ -19,7 +19,7 @@ use starcoin_storage::Storage;
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::sync_messages::StartSyncTxnEvent;
 use starcoin_sync_api::SyncMetadata;
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolSyncService;
 use std::{sync::Arc, time::Duration};
 use txpool::TxPool;
 use types::{
@@ -61,7 +61,6 @@ fn test_txn_sync_actor() {
                 best_block_id,
                 bus_1.clone(),
             )
-            .get_async_service()
         };
 
         // network
@@ -81,7 +80,7 @@ fn test_txn_sync_actor() {
             storage_1.clone(),
             Some(network_1.clone()),
             bus_1.clone(),
-            txpool_1.clone(),
+            txpool_1.get_service(),
             sync_metadata_actor_1.clone(),
         )
         .unwrap();
@@ -92,7 +91,7 @@ fn test_txn_sync_actor() {
             bus_1.clone(),
             first_p,
             first_chain.clone(),
-            txpool_1.clone(),
+            txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
             sync_metadata_actor_1.clone(),
@@ -103,9 +102,8 @@ fn test_txn_sync_actor() {
         // add txn to node1
         let user_txn = gen_user_txn();
         let import_result = txpool_1
+            .get_service()
             .add_txns(vec![user_txn.clone()])
-            .await
-            .unwrap()
             .pop();
         assert!(import_result.unwrap().is_ok());
 
@@ -142,7 +140,6 @@ fn test_txn_sync_actor() {
                 best_block_id,
                 bus_2.clone(),
             )
-            .get_async_service()
         };
         // network
         let (network_2, addr_2, rpc_rx_2) = gen_network(
@@ -162,7 +159,7 @@ fn test_txn_sync_actor() {
             storage_2.clone(),
             Some(network_2.clone()),
             bus_2.clone(),
-            txpool_2.clone(),
+            txpool_2.get_service(),
             sync_metadata_actor_2.clone(),
         )
         .unwrap();
@@ -173,7 +170,7 @@ fn test_txn_sync_actor() {
             bus_2.clone(),
             Arc::clone(&second_p),
             second_chain.clone(),
-            txpool_2.clone(),
+            txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
@@ -189,7 +186,7 @@ fn test_txn_sync_actor() {
         Delay::new(Duration::from_secs(10)).await;
 
         // check txn
-        let mut txns = txpool_2.get_pending_txns(None).await.unwrap();
+        let mut txns = txpool_2.get_service().get_pending_txns(None);
         assert!(txns.len() == 1);
         let txn = txns.pop().unwrap();
         assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());

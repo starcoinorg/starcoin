@@ -52,7 +52,7 @@ fn test_network_actor_rpc() {
         let genesis_1 = Genesis::build(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
-        let tx_pool1 = {
+        let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
                 node_config_1.tx_pool.clone(),
@@ -61,8 +61,7 @@ fn test_network_actor_rpc() {
                 bus_1.clone(),
             )
         };
-        let txpool_1 = tx_pool1.get_async_service();
-        let tx_pool_service = tx_pool1.get_service();
+        let tx_pool_service = txpool_1.get_service();
 
         // network
         let (network_1, addr_1, rx_1) = gen_network(
@@ -81,7 +80,7 @@ fn test_network_actor_rpc() {
             storage_1.clone(),
             Some(network_1.clone()),
             bus_1.clone(),
-            txpool_1.clone(),
+            tx_pool_service.clone(),
             sync_metadata_actor_1.clone(),
         )
         .unwrap();
@@ -92,7 +91,7 @@ fn test_network_actor_rpc() {
             bus_1.clone(),
             first_p,
             first_chain.clone(),
-            txpool_1.clone(),
+            txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
             sync_metadata_actor_1.clone(),
@@ -159,7 +158,6 @@ fn test_network_actor_rpc() {
                 best_block_id,
                 bus_2.clone(),
             )
-            .get_async_service()
         };
         // network
         let (network_2, addr_2, rx_2) = gen_network(
@@ -179,7 +177,7 @@ fn test_network_actor_rpc() {
             storage_2.clone(),
             Some(network_2.clone()),
             bus_2.clone(),
-            txpool_2.clone(),
+            txpool_2.get_service(),
             sync_metadata_actor_2.clone(),
         )
         .unwrap();
@@ -190,7 +188,7 @@ fn test_network_actor_rpc() {
             bus_2.clone(),
             Arc::clone(&second_p),
             second_chain.clone(),
-            txpool_2.clone(),
+            txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),
@@ -255,7 +253,6 @@ fn test_network_actor_rpc_2() {
                 best_block_id,
                 bus_1.clone(),
             )
-            .get_async_service()
         };
 
         // network
@@ -275,7 +272,7 @@ fn test_network_actor_rpc_2() {
             storage_1.clone(),
             Some(network_1.clone()),
             bus_1.clone(),
-            txpool_1.clone(),
+            txpool_1.get_service(),
             sync_metadata_actor_1.clone(),
         )
         .unwrap();
@@ -286,7 +283,7 @@ fn test_network_actor_rpc_2() {
             bus_1.clone(),
             first_p,
             first_chain.clone(),
-            txpool_1.clone(),
+            txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
             sync_metadata_actor_1.clone(),
@@ -334,7 +331,6 @@ fn test_network_actor_rpc_2() {
                 best_block_id,
                 bus_2.clone(),
             )
-            .get_async_service()
         };
         // network
         let (network_2, addr_2, rx_2) =
@@ -349,7 +345,7 @@ fn test_network_actor_rpc_2() {
             storage_2.clone(),
             Some(network_2.clone()),
             bus_2.clone(),
-            txpool_2.clone(),
+            txpool_2.get_service(),
             sync_metadata_actor_2.clone(),
         )
         .unwrap();
@@ -360,7 +356,7 @@ fn test_network_actor_rpc_2() {
             bus_2.clone(),
             Arc::clone(&second_p),
             second_chain.clone(),
-            txpool_2.clone(),
+            txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
             sync_metadata_actor_2.clone(),

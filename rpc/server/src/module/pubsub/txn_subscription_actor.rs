@@ -4,11 +4,9 @@
 use super::notify;
 use super::pubsub;
 use super::TxnSubscribers;
-use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
+use actix::AsyncContext;
 use futures::channel::mpsc;
-use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxnStatusFullEvent;
-use std::sync::Arc;
 
 pub struct TransactionSubscriptionActor {
     txn_receiver: Option<mpsc::UnboundedReceiver<TxnStatusFullEvent>>,

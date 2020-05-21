@@ -30,7 +30,7 @@ async fn gen_master_chain(
     let genesis = Genesis::build(node_config.net()).unwrap();
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
-    let txpool = {
+    let txpool_service = {
         let best_block_id = *startup_info.get_master();
         TxPool::start(
             node_config.tx_pool.clone(),
@@ -38,7 +38,7 @@ async fn gen_master_chain(
             best_block_id,
             bus.clone(),
         )
-        .get_async_service()
+        .get_service()
     };
     let sync_metadata = SyncMetadata::new(node_config.clone(), bus.clone());
     let chain = ChainActor::<DevConsensus>::launch(
@@ -47,7 +47,7 @@ async fn gen_master_chain(
         storage.clone(),
         None,
         bus.clone(),
-        txpool.clone(),
+        txpool_service,
         sync_metadata,
     )
     .unwrap();

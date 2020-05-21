@@ -12,7 +12,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
 use starcoin_sync_api::SyncMetadata;
-use starcoin_txpool::{TxPool, TxPoolRef};
+use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_wallet_api::WalletAccount;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -23,7 +23,7 @@ use traits::{ChainService, Consensus};
 
 /// Benchmarking support for chain.
 pub struct ChainBencher {
-    chain: Arc<RwLock<ChainServiceImpl<DummyConsensus, Storage, TxPoolRef>>>,
+    chain: Arc<RwLock<ChainServiceImpl<DummyConsensus, Storage, TxPoolService>>>,
     collection: Arc<BlockChainCollection<DummyConsensus, Storage>>,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
@@ -50,15 +50,14 @@ impl ChainBencher {
                 best_block_id,
                 bus.clone(),
             )
-            .get_async_service()
         };
         let sync_metadata = SyncMetadata::new(node_config.clone(), bus.clone());
-        let chain = ChainServiceImpl::<DummyConsensus, Storage, TxPoolRef>::new(
+        let chain = ChainServiceImpl::<DummyConsensus, Storage, TxPoolService>::new(
             node_config.clone(),
             startup_info,
             storage.clone(),
             None,
-            txpool,
+            txpool.get_service(),
             bus,
             sync_metadata,
         )

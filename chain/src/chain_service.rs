@@ -14,7 +14,7 @@ use network_api::NetworkService;
 use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
 use starcoin_sync_api::SyncMetadata;
-use starcoin_txpool_api::TxPoolAsyncService;
+use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
 use storage::Store;
 use traits::Consensus;
@@ -106,7 +106,7 @@ where
 pub struct ChainServiceImpl<C, S, P>
 where
     C: Consensus,
-    P: TxPoolAsyncService + 'static,
+    P: TxPoolSyncService + 'static,
     S: Store + 'static,
 {
     config: Arc<NodeConfig>,
@@ -121,7 +121,7 @@ where
 impl<C, S, P> ChainServiceImpl<C, S, P>
 where
     C: Consensus,
-    P: TxPoolAsyncService + 'static,
+    P: TxPoolSyncService + 'static,
     S: Store + 'static,
 {
     pub fn new(
@@ -241,12 +241,9 @@ where
         enacted: Vec<SignedUserTransaction>,
         retracted: Vec<SignedUserTransaction>,
     ) {
-        let txpool = self.txpool.clone();
-        Arbiter::spawn(async move {
-            if let Err(e) = txpool.rollback(enacted, retracted).await {
-                warn!("rollback err : {:?}", e);
-            }
-        });
+        if let Err(e) = self.txpool.rollback(enacted, retracted) {
+            warn!("rollback err : {:?}", e);
+        }
     }
 
     fn find_ancestors(
@@ -332,7 +329,7 @@ where
 impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
 where
     C: Consensus,
-    P: TxPoolAsyncService,
+    P: TxPoolSyncService,
     S: Store,
 {
     //TODO define connect result.

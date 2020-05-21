@@ -59,7 +59,6 @@ fn test_miner_with_schedule_pacemaker() {
                 bus.clone(),
             )
         };
-        let txpool_ref = txpool.get_async_service();
 
         let (network, rx) = NetworkActor::launch(
             config.clone(),
@@ -75,7 +74,7 @@ fn test_miner_with_schedule_pacemaker() {
             storage.clone(),
             Some(network.clone()),
             bus.clone(),
-            txpool_ref.clone(),
+            txpool.get_service(),
             sync_metadata.clone(),
         )
         .unwrap();
@@ -95,7 +94,7 @@ fn test_miner_with_schedule_pacemaker() {
             bus.clone(),
             peer_id,
             chain.clone(),
-            txpool_ref.clone(),
+            txpool.get_service(),
             network.clone(),
             storage.clone(),
             sync_metadata.clone(),
@@ -149,7 +148,7 @@ fn test_miner_with_ondemand_pacemaker() {
                 bus.clone(),
             )
         };
-        let txpool_ref = txpool.get_async_service();
+
         let txpool_service = txpool.get_service();
 
         let (network, rx) = NetworkActor::launch(
@@ -166,7 +165,7 @@ fn test_miner_with_ondemand_pacemaker() {
             storage.clone(),
             Some(network.clone()),
             bus.clone(),
-            txpool_ref.clone(),
+            txpool_service.clone(),
             sync_metadata.clone(),
         )
         .unwrap();
@@ -186,7 +185,7 @@ fn test_miner_with_ondemand_pacemaker() {
             bus,
             peer_id,
             chain.clone(),
-            txpool_ref.clone(),
+            txpool.get_service(),
             network.clone(),
             storage.clone(),
             sync_metadata.clone(),
