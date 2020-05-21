@@ -25,6 +25,6 @@ jobs:
           RUST_BACKTRACE: full
         with:
           command: bench
-          args: --bench benchmarks --bench bench_state_tree --bench bench_sync --bench bench_vm
+          args: --bench benchmarks --bench bench_state_tree --bench bench_vm
       - name: publish result
         run: bash cp -rf benchmarks/target/criterion /mnt/volume_01/starcoin_benchmarks
