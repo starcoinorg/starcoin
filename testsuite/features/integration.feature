@@ -1,23 +1,23 @@
 Feature: starcoin integration
   Background:
     Given a storage
-    Given a node config
 
 #
 #  1. node：
-#
-#  - [ ] single startup
-#  - [ ] Multiple startup
-#  - [ ] restart
-#  - [ ] stop
-  Scenario: Node start
-    Given a node handle
-    Given a rpc client
+  Scenario Outline: Node start and execute transfer
+    Given ipc file config "<conf>"
+    And a rpc client
     Then get node info
     Then get node status
     Then get node peers
-    Then node handle stop
+    Given an account
+    And default account
+    Then charge money to account
+    Then execute transfer transaction
 
+    Examples:
+      | conf |
+      | /Volumes/jiayi/project/rust/starcoin/conf/dev/starcoin.ipc |
 #
 #  2. sync:
 #
@@ -26,15 +26,6 @@ Feature: starcoin integration
 #  - [ ] partial data
 #  - [ ] full node
 #  - [ ] fast sync
-
-
-
-#  3. transaction:
-#
-#  - [ ] user transaction
-#  - [ ] block meterdata
-#  - [ ] mint
-#  - [ ] transfer
 
 
 

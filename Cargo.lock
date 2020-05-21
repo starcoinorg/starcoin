@@ -7100,10 +7100,13 @@ dependencies = [
  "starcoin-miner",
  "starcoin-network",
  "starcoin-node",
+ "starcoin-rpc-client",
  "starcoin-rpc-server",
+ "starcoin-state-api",
  "starcoin-storage",
  "starcoin-txpool",
  "starcoin-types",
+ "starcoin-wallet-api",
  "static_assertions 0.3.4",
 ]
 
