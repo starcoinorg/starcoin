@@ -564,9 +564,9 @@ impl StateSyncTaskActor {
         if self.sync_metadata.is_failed() {
             self.activation_task(address);
         } else if old_state_is_empty {
-            self.exe_state_sync_task(address.clone());
+            self.exe_state_sync_task(address);
         } else if old_accumulator_is_empty {
-            self.exe_accumulator_sync_task(address.clone());
+            self.exe_accumulator_sync_task(address);
         }
     }
 
