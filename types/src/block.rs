@@ -390,6 +390,10 @@ impl BlockInfo {
             self.num_nodes,
         )
     }
+
+    pub fn block_id(&self) -> &HashValue {
+        &self.block_id
+    }
 }
 
 impl

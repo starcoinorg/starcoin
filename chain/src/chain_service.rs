@@ -412,7 +412,10 @@ where
                     let pivot_flag = pivot_number == current_block_number;
                     if pivot_flag && !self.sync_metadata.state_done() {
                         debug!("block future {:?} for pivot.", block.header().id());
-                        return Ok(ConnectResult::Err(ConnectBlockError::FutureBlock));
+                        self.sync_metadata.set_pivot_block(block, block_info)?;
+                        return Ok(ConnectResult::Err(ConnectBlockError::Other(
+                            "pivot block wait state.".to_string(),
+                        )));
                     }
                     //todo:1. verify block header / verify accumulator / total difficulty
                     let (block_exist, fork) = self.find_or_fork(block.header())?;

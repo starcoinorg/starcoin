@@ -34,9 +34,12 @@ use types::{
     system_events::SyncBegin,
 };
 
-#[derive(Default, Debug, Message)]
+#[derive(Debug, Message)]
 #[rtype(result = "Result<()>")]
-struct SyncEvent {}
+pub enum SyncEvent {
+    DoSync,
+    DoPivot(Block, BlockInfo),
+}
 
 const MIN_PEER_SIZE: usize = 5;
 
@@ -128,7 +131,7 @@ where
 
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
             if !act.syncing.load(Ordering::Relaxed) {
-                if let Err(e) = act.sync_event_sender.try_send(SyncEvent {}) {
+                if let Err(e) = act.sync_event_sender.try_send(SyncEvent::DoSync) {
                     warn!("err:{:?}", e);
                 }
             }
@@ -143,7 +146,7 @@ where
 {
     type Result = ();
 
-    fn handle(&mut self, _msg: SyncBegin, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: SyncBegin, ctx: &mut Self::Context) -> Self::Result {
         info!("received SyncBegin event.");
         self.ready.store(true, Ordering::Relaxed);
 
@@ -160,6 +163,7 @@ where
             network,
             storage,
             sync_metadata,
+            ctx.address(),
         );
     }
 }
@@ -169,8 +173,19 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = Result<()>;
-    fn handle(&mut self, _item: SyncEvent, _ctx: &mut Self::Context) -> Self::Result {
-        self.sync_task();
+    fn handle(&mut self, item: SyncEvent, _ctx: &mut Self::Context) -> Self::Result {
+        match item {
+            SyncEvent::DoSync => self.sync_task(),
+            SyncEvent::DoPivot(block, block_info) => {
+                info!(
+                    "connect pivot block : {} : {:?}",
+                    block.header().number(),
+                    block.id()
+                );
+                self.do_block_and_child(block, Some(block_info))
+            }
+        }
+
         Ok(())
     }
 }
@@ -181,7 +196,7 @@ where
 {
     type Result = ();
 
-    fn handle(&mut self, msg: SyncNotify, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: SyncNotify, ctx: &mut Self::Context) -> Self::Result {
         let downloader = self.downloader.clone();
         let network = self.network.clone();
         let storage = self.storage.clone();
@@ -200,6 +215,7 @@ where
                         network,
                         storage,
                         sync_metadata,
+                        ctx.address(),
                     );
                 }
             }
@@ -210,9 +226,7 @@ where
                     peer_id
                 );
                 // connect block
-                Arbiter::spawn(async move {
-                    Downloader::do_block_and_child(downloader.clone(), *block, None).await;
-                });
+                self.do_block_and_child(*block, None);
             }
             SyncNotify::ClosePeerMsg(peer_id) => {
                 info!("close peer: {:?}", peer_id,);
@@ -232,6 +246,7 @@ where
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
+        address: Addr<DownloadActor<C>>,
     ) {
         Arbiter::spawn(async move {
             SYNC_METRICS
@@ -245,6 +260,7 @@ where
                 network.clone(),
                 storage.clone(),
                 sync_metadata.clone(),
+                address.clone(),
             )
             .await
             {
@@ -256,6 +272,7 @@ where
                     network,
                     storage,
                     sync_metadata,
+                    address,
                 );
             } else {
                 SYNC_METRICS
@@ -273,6 +290,7 @@ where
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
         sync_metadata: SyncMetadata,
+        address: Addr<DownloadActor<C>>,
     ) -> Result<()> {
         if !sync_metadata.state_syncing() {
             warn!("not fast sync mode.");
@@ -352,6 +370,7 @@ where
                         storage,
                         network.clone(),
                         sync_metadata.clone(),
+                        address,
                     );
                     sync_metadata.update_address(&state_sync_task_address)?
                 } else if let Some(_tmp) = sync_pivot {
@@ -560,6 +579,13 @@ where
         }
 
         Ok(())
+    }
+
+    pub fn do_block_and_child(&self, block: Block, block_info: Option<BlockInfo>) {
+        let downloader = self.downloader.clone();
+        Arbiter::spawn(async move {
+            Downloader::do_block_and_child(downloader, block, block_info).await;
+        });
     }
 }
 
@@ -905,7 +931,7 @@ where
         }
     }
 
-    async fn do_block_and_child(
+    pub async fn do_block_and_child(
         downloader: Arc<Downloader<C>>,
         block: Block,
         block_info: Option<BlockInfo>,
