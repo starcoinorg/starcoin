@@ -26,4 +26,8 @@ pub mod language_storage {
     };
 }
 
+pub mod write_set {
+    pub use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+}
+
 pub use ethereum_types::{H256, U256, U512};

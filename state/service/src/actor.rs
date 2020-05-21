@@ -10,7 +10,8 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{
-    ChainStateAsyncService, ChainStateReader, ChainStateService, StateNodeStore, StateWithProof,
+    ChainStateAsyncService, ChainStateReader, ChainStateService, StateNodeStore, StateView,
+    StateWithProof,
 };
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;

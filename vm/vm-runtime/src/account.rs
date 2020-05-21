@@ -98,7 +98,6 @@ impl Account {
         gas_specifier: TypeTag,
     ) -> SignedUserTransaction {
         let raw_txn = match payload {
-            TransactionPayload::StateSet(_state_set) => unimplemented!(),
             TransactionPayload::Module(module) => RawUserTransaction::new_module(
                 *self.address(),
                 sequence_number,

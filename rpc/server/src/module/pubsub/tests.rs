@@ -34,7 +34,7 @@ use starcoin_wallet_api::WalletAccount;
 pub async fn test_subscribe_to_events() -> Result<()> {
     // prepare
     let config = Arc::new(NodeConfig::random_for_test());
-    let (_collection, mut block_chain) =
+    let mut block_chain =
         chain_test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
     let miner_account = WalletAccount::random();
 
@@ -63,7 +63,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     let service = PubSubService::new();
     let bus = BusActor::launch();
-    service.start_chain_notify_handler(bus.clone(), block_chain.storage.clone());
+    service.start_chain_notify_handler(bus.clone(), block_chain.get_storage());
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
 

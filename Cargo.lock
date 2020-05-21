@@ -5739,6 +5739,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-types",
+ "starcoin-vm-types",
  "stest",
 ]
 
@@ -6102,6 +6103,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-types",
+ "starcoin-vm-types",
  "thiserror",
 ]
 

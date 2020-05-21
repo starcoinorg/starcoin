@@ -6,8 +6,9 @@ use anyhow::Result;
 use compiler::Compiler;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
-use starcoin_config::ChainNetwork;
+use starcoin_config::{ChainConfig, ChainNetwork};
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_types::transaction::TransactionOutput;
 use starcoin_types::{
     account_address::AccountAddress,
     account_config,
@@ -37,23 +38,45 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
     )
 });
 
-#[stest::test]
-fn test_validate_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+fn prepare_genesis() -> ChainStateDB {
+    prepare_genesis_with_chain_config(ChainNetwork::Dev.get_config())
+}
+
+fn prepare_genesis_with_chain_config(chain_config: &ChainConfig) -> ChainStateDB {
+    let change_set = Executor::init_genesis(chain_config).unwrap();
+    let (write_set, _event) = change_set.into_inner();
+
     let storage = MockStateNodeStore::new();
     let chain_state = ChainStateDB::new(Arc::new(storage), None);
 
     chain_state
-        .apply(state_set)
+        .apply_write_set(write_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+    chain_state
+}
+
+fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
+    let output = Executor::execute_transactions(chain_state, vec![txn])
+        .unwrap()
+        .pop()
+        .expect("Output must exist.");
+    chain_state
+        .apply_write_set(output.write_set().clone())
+        .expect("apply write_set should success.");
+    output
+}
+
+#[stest::test]
+fn test_validate_txn_with_starcoin_vm() -> Result<()> {
+    let chain_state = prepare_genesis();
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transactions(&chain_state, vec![txn1]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output1[0].1.status());
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let account2 = Account::new();
 
@@ -74,13 +97,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
 
 #[stest::test]
 fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config())?;
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply(state_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+    let chain_state = prepare_genesis();
 
     let sequence_number1 = get_sequence_number(account_config::association_address(), &chain_state);
     let account1 = Account::new();
@@ -89,8 +106,8 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transactions(&chain_state, vec![txn1])?;
-    assert_eq!(KEEP_STATUS.clone(), *output1[0].1.status());
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let sequence_number2 = get_sequence_number(account_config::association_address(), &chain_state);
     let account2 = Account::new();
@@ -99,8 +116,8 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number2, // fix me
         1_000,
     ));
-    let output2 = Executor::execute_transactions(&chain_state, vec![txn2])?;
-    assert_eq!(KEEP_STATUS.clone(), *output2[0].1.status());
+    let output2 = execute_and_apply(&chain_state, txn2);
+    assert_eq!(KEEP_STATUS.clone(), *output2.status());
 
     let sequence_number3 = get_sequence_number(*account1.address(), &chain_state);
     let txn3 = Transaction::UserTransaction(peer_to_peer_txn(
@@ -109,47 +126,35 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number3, // fix me
         100,
     ));
-    let output3 = Executor::execute_transactions(&chain_state, vec![txn3])?;
-    assert_eq!(KEEP_STATUS.clone(), *output3[0].1.status());
+    let output3 = execute_and_apply(&chain_state, txn3);
+    assert_eq!(KEEP_STATUS.clone(), *output3.status());
 
     Ok(())
 }
 
 #[stest::test]
 fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply(state_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+    let chain_state = prepare_genesis();
 
     let account = Account::new();
     let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
     let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
+    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
 
     Ok(())
 }
 
 #[stest::test]
 fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply(state_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+    let chain_state = prepare_genesis();
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transactions(&chain_state, vec![txn1]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output1[0].1.status());
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let account2 = Account::new();
 
@@ -165,21 +170,14 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
     let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
     let output = Executor::execute_transactions(&chain_state, vec![txn2]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
+    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
 
     Ok(())
 }
 
 #[stest::test]
 fn test_sequence_number() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply(state_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
-
+    let chain_state = prepare_genesis();
     let old_balance = get_balance(account_config::association_address(), &chain_state);
     info!("old balance: {:?}", old_balance);
 
@@ -188,8 +186,8 @@ fn test_sequence_number() -> Result<()> {
 
     let account = Account::new();
     let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
-    let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
+    let output = execute_and_apply(&chain_state, txn);
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
 
     let new_sequence_number =
         get_sequence_number(account_config::association_address(), &chain_state);
@@ -201,19 +199,13 @@ fn test_sequence_number() -> Result<()> {
 
 #[stest::test]
 fn test_gas_used() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply(state_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+    let chain_state = prepare_genesis();
 
     let account = Account::new();
     let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
-    let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
-    assert!(output[0].1.gas_used() > 0);
+    let output = execute_and_apply(&chain_state, txn);
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
+    assert!(output.gas_used() > 0);
 
     Ok(())
 }
@@ -251,21 +243,15 @@ pub fn compile_module_with_address(
 
 #[stest::test]
 fn test_publish_module() -> Result<()> {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply(state_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+    let chain_state = prepare_genesis();
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1, 1, // fix me
         50_000_000,
     ));
-    let output1 = Executor::execute_transactions(&chain_state, vec![txn1])?;
-    assert_eq!(KEEP_STATUS.clone(), *output1[0].1.status());
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
     let program = String::from(
         "
@@ -287,7 +273,7 @@ fn test_publish_module() -> Result<()> {
     ));
 
     let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
+    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
 
     Ok(())
 }
@@ -295,13 +281,7 @@ fn test_publish_module() -> Result<()> {
 #[stest::test]
 fn test_block_metadata() -> Result<()> {
     let chain_config = ChainNetwork::Dev.get_config();
-    let (_hash, state_set, _) = Executor::init_genesis(chain_config)?;
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply(state_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+    let chain_state = prepare_genesis_with_chain_config(chain_config);
 
     let account1 = Account::new();
 
@@ -317,8 +297,8 @@ fn test_block_metadata() -> Result<()> {
             *account1.address(),
             Some(account1.auth_key_prefix()),
         ));
-        let output = Executor::execute_transactions(&chain_state, vec![txn])?;
-        assert_eq!(KEEP_STATUS.clone(), *output[0].1.status());
+        let output = execute_and_apply(&chain_state, txn);
+        assert_eq!(KEEP_STATUS.clone(), *output.status());
     }
 
     let balance = get_balance(*account1.address(), &chain_state);

@@ -11,9 +11,12 @@ use starcoin_types::{
 
 mod chain_state;
 pub mod mock;
+
 pub use chain_state::{
     AccountStateReader, ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
 };
+
+pub use starcoin_vm_types::state_view::StateView;
 
 pub trait ChainStateService: ChainStateReader {
     ///Use new state_root for load chain state.

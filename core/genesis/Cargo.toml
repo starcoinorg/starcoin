@@ -21,5 +21,6 @@ stest = { path = "../../commons/stest"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-consensus = { path = "../../consensus"}
 starcoin-state-api = { path = "../../state/api"}
+starcoin-vm-types = { path = "../../vm/types"}
 traits = { path = "../../core/traits", package = "starcoin-traits"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}

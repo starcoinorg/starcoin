@@ -184,14 +184,26 @@ impl<'test> TxnExecutor<'test> {
 
             let execute_start = std::time::Instant::now();
 
-            BlockExecutor::block_execute(
+            let result = BlockExecutor::block_execute(
                 self.chain_state,
                 self.accumulator,
                 transactions,
                 u64::MAX,
-                true,
-            )
-            .unwrap();
+                false,
+            );
+            match result {
+                Err(e) => {
+                    error!("Execute error: {:?}", e);
+                }
+                Ok((acc_root, state_root, txn_infos)) => {
+                    debug!(
+                        "Execute success, acc_root: {}, state_root:{}, txn_infos:{}",
+                        acc_root,
+                        state_root,
+                        txn_infos.len()
+                    );
+                }
+            }
 
             let execute_time = std::time::Instant::now().duration_since(execute_start);
             let commit_start = std::time::Instant::now();
@@ -217,22 +229,25 @@ pub fn run_benchmark(
     block_size: usize,
     num_transfer_blocks: usize,
 ) {
-    let (_hash, state_set, _) = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let change_set = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let (write_set, _events) = change_set.into_inner();
     let cache_storage = CacheStorage::new();
-    let acc_storage =
+    let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(cache_storage)).unwrap());
 
-    let chain_state = ChainStateDB::new(acc_storage.clone(), None);
+    let chain_state = ChainStateDB::new(storage.clone(), None);
     chain_state
-        .apply(state_set)
+        .apply_write_set(write_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+    chain_state.commit().unwrap();
+    chain_state.flush().unwrap();
 
     let accumulator = MerkleAccumulator::new(
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
         0,
-        acc_storage.into_super_arc(),
+        storage.into_super_arc(),
     )
     .unwrap();
 

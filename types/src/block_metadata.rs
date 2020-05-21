@@ -26,7 +26,8 @@ use starcoin_crypto::{
 ///    information such as the current leader.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockMetadata {
-    id: HashValue,
+    /// Parent block id.
+    parent_id: HashValue,
     timestamp: u64,
     author: AccountAddress,
     auth_key_prefix: Option<Vec<u8>>,
@@ -35,26 +36,30 @@ pub struct BlockMetadata {
 
 impl BlockMetadata {
     pub fn new(
-        id: HashValue,
+        parent_id: HashValue,
         timestamp: u64,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
     ) -> Self {
         Self {
-            id,
+            parent_id,
             timestamp,
             author,
             auth_key_prefix,
         }
     }
 
-    pub fn into_inner(self) -> Result<(Vec<u8>, u64, AccountAddress, Option<Vec<u8>>)> {
-        let id = self.id.to_vec();
-        Ok((id, self.timestamp, self.author, self.auth_key_prefix))
+    pub fn into_inner(self) -> Result<(HashValue, u64, AccountAddress, Option<Vec<u8>>)> {
+        Ok((
+            self.parent_id,
+            self.timestamp,
+            self.author,
+            self.auth_key_prefix,
+        ))
     }
 
-    pub fn id(&self) -> HashValue {
-        self.id
+    pub fn parent_id(&self) -> HashValue {
+        self.parent_id
     }
 }
 

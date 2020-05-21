@@ -6,8 +6,8 @@ use crate::{
     account_config::stc_type_tag,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
-    state_set::ChainStateSet,
     vm_error::{StatusCode, StatusType, VMStatus},
+    write_set::WriteSet,
 };
 use anyhow::{format_err, Error, Result};
 use serde::{de, ser, Deserialize, Serialize};
@@ -34,10 +34,11 @@ mod pending_transaction;
 
 pub use error::CallError;
 pub use error::Error as TransactionError;
-pub use libra_types::transaction::{
-    parse_as_transaction_argument, Module, Script, TransactionArgument, SCRIPT_HASH_LENGTH,
-};
 pub use pending_transaction::{Condition, PendingTransaction};
+pub use starcoin_vm_types::{
+    transaction::{ChangeSet, Module, Script},
+    transaction_argument::{parse_as_transaction_argument, TransactionArgument},
+};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
@@ -173,24 +174,6 @@ impl RawUserTransaction {
         }
     }
 
-    pub fn new_state_set(
-        sender: AccountAddress,
-        sequence_number: u64,
-        state_set: ChainStateSet,
-    ) -> Self {
-        RawUserTransaction {
-            sender,
-            sequence_number,
-            payload: TransactionPayload::StateSet(state_set),
-            // Since write-set transactions bypass the VM, these fields aren't relevant.
-            max_gas_amount: 0,
-            gas_unit_price: 0,
-            gas_specifier: stc_type_tag(),
-            // Write-set transactions are special and important and shouldn't expire.
-            expiration_time: Duration::new(u64::max_value(), 0),
-        }
-    }
-
     /// Signs the given `RawUserTransaction`. Note that this consumes the `RawUserTransaction` and turns it
     /// into a `SignatureCheckedTransaction`.
     ///
@@ -217,7 +200,6 @@ impl RawUserTransaction {
                 (get_transaction_name(script.code()), script.args())
             }
             TransactionPayload::Module(_) => ("module publishing".to_string(), &empty_vec[..]),
-            TransactionPayload::StateSet(_) => ("genesis".to_string(), &empty_vec[..]),
         };
         let mut f_args: String = "".to_string();
         for arg in args {
@@ -285,8 +267,6 @@ pub enum TransactionPayload {
     Script(Script),
     /// A transaction that publishes code.
     Module(Module),
-    /// A transaction used for genesis.
-    StateSet(ChainStateSet),
 }
 
 /// A transaction that has been signed.
@@ -496,6 +476,8 @@ impl From<VMStatus> for TransactionStatus {
 /// The output of executing a transaction.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TransactionOutput {
+    write_set: WriteSet,
+
     /// The list of events emitted during this transaction.
     events: Vec<ContractEvent>,
 
@@ -507,12 +489,22 @@ pub struct TransactionOutput {
 }
 
 impl TransactionOutput {
-    pub fn new(events: Vec<ContractEvent>, gas_used: u64, status: TransactionStatus) -> Self {
+    pub fn new(
+        write_set: WriteSet,
+        events: Vec<ContractEvent>,
+        gas_used: u64,
+        status: TransactionStatus,
+    ) -> Self {
         TransactionOutput {
+            write_set,
             events,
             gas_used,
             status,
         }
+    }
+
+    pub fn write_set(&self) -> &WriteSet {
+        &self.write_set
     }
 
     pub fn events(&self) -> &[ContractEvent] {
@@ -525,6 +517,10 @@ impl TransactionOutput {
 
     pub fn status(&self) -> &TransactionStatus {
         &self.status
+    }
+
+    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, TransactionStatus) {
+        (self.write_set, self.events, self.gas_used, self.status)
     }
 }
 
@@ -617,9 +613,9 @@ pub enum Transaction {
     /// transaction, etc.
     UserTransaction(SignedUserTransaction),
 
-    /// Transaction that applies a StateSet to the current ChainState. This should be used for ONLY for
+    /// Transaction that applies a ChangeSet to the current ChainState. This should be used for ONLY for
     /// genesis right now.
-    StateSet(ChainStateSet),
+    ChangeSet(ChangeSet),
 
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
@@ -639,17 +635,14 @@ impl Transaction {
                 user_txn.format_for_client(get_transaction_name)
             }
             // TODO: display proper information for client
-            Transaction::StateSet(_write_set) => String::from("genesis"),
+            Transaction::ChangeSet(_write_set) => String::from("genesis"),
             // TODO: display proper information for client
             Transaction::BlockMetadata(_block_metadata) => String::from("block_metadata"),
         }
     }
     pub fn id(&self) -> HashValue {
-        match self {
-            Transaction::UserTransaction(user_txn) => user_txn.crypto_hash(),
-            Transaction::BlockMetadata(block_meta) => block_meta.id(),
-            _ => HashValue::zero(),
-        }
+        //TODO rethink txn id's represent.
+        self.crypto_hash()
     }
 }
 
@@ -707,7 +700,6 @@ impl Into<libra_types::transaction::TransactionPayload> for TransactionPayload {
             TransactionPayload::Module(m) => {
                 libra_types::transaction::TransactionPayload::Module(m)
             }
-            TransactionPayload::StateSet(_) => unimplemented!(),
         }
     }
 }
@@ -749,6 +741,7 @@ impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
 impl From<libra_types::transaction::TransactionOutput> for TransactionOutput {
     fn from(output: libra_types::transaction::TransactionOutput) -> Self {
         TransactionOutput::new(
+            output.write_set().clone(),
             output.events().to_vec(),
             output.gas_used(),
             TransactionStatus::from(output.status().clone()),

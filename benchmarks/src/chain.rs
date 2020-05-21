@@ -5,9 +5,7 @@ use parking_lot::RwLock;
 use rand::prelude::*;
 use rand::{RngCore, SeedableRng};
 use starcoin_bus::BusActor;
-use starcoin_chain::{
-    to_block_chain_collection, BlockChain, BlockChainCollection, ChainServiceImpl,
-};
+use starcoin_chain::{BlockChain, ChainServiceImpl};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
@@ -19,12 +17,11 @@ use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
-use traits::{ChainService, Consensus};
+use traits::{ChainReader, ChainService, Consensus};
 
 /// Benchmarking support for chain.
 pub struct ChainBencher {
     chain: Arc<RwLock<ChainServiceImpl<DummyConsensus, Storage, TxPoolService>>>,
-    collection: Arc<BlockChainCollection<DummyConsensus, Storage>>,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
     block_num: u64,
@@ -62,9 +59,6 @@ impl ChainBencher {
             sync_metadata,
         )
         .unwrap();
-        let startup_info = chain.master_startup_info();
-        let collection =
-            to_block_chain_collection(node_config.clone(), startup_info, storage.clone()).unwrap();
         let miner_account = WalletAccount::random();
 
         ChainBencher {
@@ -75,7 +69,6 @@ impl ChainBencher {
             },
             config: node_config,
             storage,
-            collection,
             account: miner_account,
             count: AtomicU64::new(0),
         }
@@ -87,9 +80,8 @@ impl ChainBencher {
         for i in 0..self.block_num {
             let block_chain = BlockChain::<DummyConsensus, Storage>::new(
                 self.config.clone(),
-                self.collection.get_head(),
+                self.chain.read().get_master().head_block().header().id(),
                 self.storage.clone(),
-                Arc::downgrade(&self.collection),
             )
             .unwrap();
 
