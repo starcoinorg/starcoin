@@ -9,7 +9,7 @@ module Version {
     }
 
     public fun initialize() {
-        Transaction::assert(Transaction::sender() == Config::default_account_config::config_address(), 1);
+        Transaction::assert(Transaction::sender() == Config::default_config_address(), 1);
 
         Config::publish_new_config<Self::T>(
             T { major: 1 },
