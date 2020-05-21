@@ -29,7 +29,7 @@ module Config {
     // Currently, it is invoked in the genesis transaction
     public fun initialize_configuration() {
         let sender = Transaction::sender();
-        Transaction::assert(sender == default_account_config::config_address(), 1);
+        Transaction::assert(sender == default_config_address(), 1);
 
         move_to_sender<Configuration>(Configuration {
             epoch: 0,
@@ -50,7 +50,7 @@ module Config {
 
     // Get a copy of `Config` value stored under `addr`.
     public fun get<Config: copyable>(): Config acquires T {
-        let addr = default_account_config::config_address();
+        let addr = default_config_address();
         Transaction::assert(::exists<T<Config>>(addr), 24);
         *&borrow_global<T<Config>>(addr).payload
     }
@@ -58,7 +58,7 @@ module Config {
     // Set a config item to a new value with the default capability stored under config address and trigger a
     // reconfiguration.
     public fun set<Config: copyable>(payload: Config) acquires T, Configuration {
-        let addr = default_account_config::config_address();
+        let addr = default_config_address();
         Transaction::assert(::exists<T<Config>>(addr), 24);
         Transaction::assert(
             ::exists<ModifyConfigCapability<Config>>(Transaction::sender())
@@ -77,7 +77,7 @@ module Config {
         _cap: &ModifyConfigCapability<Config>,
         payload: Config
     ) acquires T, Configuration {
-        let addr = default_account_config::config_address();
+        let addr = default_config_address();
         Transaction::assert(::exists<T<Config>>(addr), 24);
         let config = borrow_global_mut<T<Config>>(addr);
         config.payload = payload;
@@ -154,7 +154,7 @@ module Config {
            return ()
        };
 
-       let config_ref = borrow_global_mut<Configuration>(default_account_config::config_address());
+       let config_ref = borrow_global_mut<Configuration>(default_config_address());
 
        // Ensure that there is at most one reconfiguration per transaction. This ensures that there is a 1-1
        // correspondence between system reconfigurations and emitted ReconfigurationEvents.
@@ -170,7 +170,7 @@ module Config {
     // Emit a reconfiguration event. This function will be invoked by the genesis directly to generate the very first
     // reconfiguration event.
     fun emit_reconfiguration_event() acquires Configuration {
-        let config_ref = borrow_global_mut<Configuration>(default_account_config::config_address());
+        let config_ref = borrow_global_mut<Configuration>(default_config_address());
         config_ref.epoch = config_ref.epoch + 1;
 
         Event::emit_event<NewEpochEvent>(
@@ -181,7 +181,7 @@ module Config {
         );
     }
 
-    public fun default_account_config::config_address(): address {
+    public fun default_config_address(): address {
         0xF1A95
     }
 }

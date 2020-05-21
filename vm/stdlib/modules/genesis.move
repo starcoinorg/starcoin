@@ -72,7 +72,7 @@ module Genesis {
         Account::create_testnet_account<STC::T>(0xFEE, copy dummy_auth_key);
 
         // Create the config account
-        Account::create_account<STC::T>(Config::default_account_config::config_address(), copy dummy_auth_key);
+        Account::create_account<STC::T>(Config::default_config_address(), copy dummy_auth_key);
 
         // Create the mint account
         Account::create_account<STC::T>(mint_addr, copy dummy_auth_key);

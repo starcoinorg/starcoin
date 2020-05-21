@@ -38,7 +38,7 @@ module RegisteredCurrencies {
     }
 
     fun singleton_address(): address {
-        Config::default_account_config::config_address()
+        Config::default_config_address()
     }
 }
 

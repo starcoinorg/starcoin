@@ -35,7 +35,7 @@ module System {
     // the resource under that address.
     // It can only be called a single time. Currently, it is invoked in the genesis transaction.
     public fun initialize_validator_set() {
-        Transaction::assert(Transaction::sender() == Config::default_account_config::config_address(), 1);
+        Transaction::assert(Transaction::sender() == Config::default_config_address(), 1);
 
         let cap = Config::publish_new_config_with_capability<T>(T {
             scheme: 0,
@@ -52,7 +52,7 @@ module System {
     // This copies the vector of validators into the Config's resource
     // under ValidatorSet address
     fun set_validator_set(value: T) acquires CapabilityHolder {
-        Config::set_with_capability<T>(&borrow_global<CapabilityHolder>(Config::default_account_config::config_address()).cap, value)
+        Config::set_with_capability<T>(&borrow_global<CapabilityHolder>(Config::default_config_address()).cap, value)
     }
 
     public fun add_validator(account_address: address) acquires CapabilityHolder {
