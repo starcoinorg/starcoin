@@ -13,6 +13,7 @@ use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_HASH, LABEL_STATE, SYNC_METRICS};
 use config::NodeConfig;
 use crypto::HashValue;
+use futures_timer::Delay;
 use logger::prelude::*;
 use network::{get_unix_ts, NetworkAsyncService};
 use network_api::NetworkService;
@@ -360,8 +361,9 @@ where
                     info!("state sync already done during find_ancestor.");
                     return Ok(());
                 }
-                sync_metadata.clone().update_pivot(pivot, min_behind)?;
+
                 if sync_pivot.is_none() {
+                    sync_metadata.clone().update_pivot(pivot, min_behind)?;
                     let state_sync_task_address = StateSyncTaskActor::launch(
                         self_peer_id,
                         (
@@ -391,14 +393,11 @@ where
                     // }
                 }
             } else {
-                warn!("find_ancestor return none.");
+                return Err(format_err!("find_ancestor return none."));
             }
         } else {
-            warn!("best peer is none.");
-            if !sync_metadata.is_failed() {
-                let _ = sync_metadata.state_sync_done();
-                let _ = sync_metadata.pivot_connected_succ();
-            }
+            Delay::new(Duration::from_secs(5)).await;
+            return Err(format_err!("best peer is none."));
         }
 
         if sync_metadata.is_failed() {
