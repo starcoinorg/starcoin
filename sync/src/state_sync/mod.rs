@@ -425,6 +425,7 @@ where
             }
             let _ = lock.remove(&task_event.peer_id);
             if let Some(state_node) = task_event.state_node {
+                info!("state_node : {:?}", state_node);
                 if let Err(e) = self.storage.put(current_node_key, state_node.clone()) {
                     error!("error : {:?}", e);
                     lock.push_back((current_node_key, is_global));
@@ -531,6 +532,7 @@ where
             }
             let _ = lock.remove(&task_event.peer_id);
             if let Some(accumulator_node) = task_event.accumulator_node {
+                info!("accumulator_node : {:?}", accumulator_node);
                 if let Err(e) = self.storage.save_node(accumulator_node.clone()) {
                     error!("error : {:?}", e);
                     lock.push_back(current_node_key);
