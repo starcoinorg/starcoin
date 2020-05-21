@@ -1,14 +1,14 @@
 pub mod sync_messages;
 
 use actix::Addr;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use dyn_clone::{clone_box, DynClone};
 use parking_lot::RwLock;
 use starcoin_bus::{Broadcast, BusActor};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::BlockNumber;
+use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::system_events::SyncDone;
 use std::sync::Arc;
 
@@ -29,7 +29,7 @@ pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
 pub struct SyncMetadataInner {
     is_state_sync: bool,
     pivot_behind: Option<(BlockNumber, u64)>,
-    pivot_connected: bool,
+    pivot_connected: (bool, Option<Block>),
     state_sync_address: Option<Box<dyn StateSyncReset>>,
     state_sync_done: bool,
     block_sync_done: bool,
@@ -43,7 +43,7 @@ impl SyncMetadata {
         let inner = SyncMetadataInner {
             is_state_sync: config.sync.is_state_sync(),
             pivot_behind: None,
-            pivot_connected: false,
+            pivot_connected: (false, None),
             state_sync_address: None,
             state_sync_done: false,
             block_sync_done: false,
@@ -62,8 +62,9 @@ impl SyncMetadata {
         assert!(pivot > 0, "pivot must be positive integer.");
         assert!(behind > 0, "behind must be positive integer.");
         info!("update pivot : {}, {}", pivot, behind);
-        self.0.write().pivot_behind = Some((pivot, behind));
-        self.0.write().pivot_connected = false;
+        let mut lock = self.0.write();
+        lock.pivot_behind = Some((pivot, behind));
+        lock.pivot_connected = (false, None);
         Ok(())
     }
 
@@ -91,21 +92,37 @@ impl SyncMetadata {
         Ok(())
     }
 
+    pub fn pivot_block(&self, pivot_block: Block) -> Result<()> {
+        assert!(!self.pivot_connected(), "pivot block connected");
+        assert!(self.state_syncing(), "not in syncing state.");
+        let pivot_number = self.get_pivot()?.ok_or_else(|| {
+            format_err!(
+                "Pivot number is none when set pivot block {} : {:?}.",
+                pivot_block.id(),
+                pivot_block.header().parent_hash()
+            )
+        })?;
+        assert_eq!(pivot_number, pivot_block.header().number());
+        let mut lock = self.0.write();
+        lock.pivot_connected = (false, Some(pivot_block));
+        Ok(())
+    }
+
     pub fn pivot_connected_succ(&self) -> Result<()> {
         let mut lock = self.0.write();
-        lock.pivot_connected = true;
+        lock.pivot_connected = (true, None);
         info!("pivot block connected done.");
         Ok(())
     }
 
     pub fn pivot_connected(&self) -> bool {
-        self.0.read().pivot_connected
+        self.0.read().pivot_connected.0
     }
 
     pub fn block_sync_done(&self) -> Result<()> {
         info!("do block_sync_done");
         let read_lock = self.0.read();
-        if !read_lock.block_sync_done && (read_lock.pivot_connected || !self.fast_sync_mode()) {
+        if !read_lock.block_sync_done && (self.pivot_connected() || !self.fast_sync_mode()) {
             drop(read_lock);
             let mut lock = self.0.write();
             lock.block_sync_done = true;

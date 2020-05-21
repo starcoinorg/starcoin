@@ -203,6 +203,21 @@ where
 
         Ok(false)
     }
+
+    pub fn append_pivot(
+        &mut self,
+        block_id: HashValue,
+        block_accumulator_info: AccumulatorInfo,
+    ) -> Result<()> {
+        self.block_accumulator.append(&[block_id])?;
+        self.block_accumulator.flush()?;
+
+        let pivot_block_accumulator_info: AccumulatorInfo = (&self.block_accumulator).try_into()?;
+        assert_eq!(block_accumulator_info, pivot_block_accumulator_info);
+        debug!("save pivot {:?} succ.", block_id);
+
+        Ok(())
+    }
 }
 
 impl<C, S> Drop for BlockChain<C, S>
@@ -438,7 +453,7 @@ where
             "new transaction info used time: {}",
             (commit_begin_time - save_block_end_time)
         );
-        self.commit(block.clone(), block_info, false)?;
+        self.commit(block.clone(), block_info)?;
         let commit_end_time = get_unix_ts();
         debug!(
             "commit used time: {}",
@@ -447,20 +462,7 @@ where
         Ok(true)
     }
 
-    fn commit(&mut self, block: Block, block_info: BlockInfo, pivot_flag: bool) -> Result<()> {
-        if pivot_flag {
-            self.block_accumulator.append(&[block.id()])?;
-            self.block_accumulator.flush()?;
-
-            let pivot_block_accumulator_info: AccumulatorInfo =
-                (&self.block_accumulator).try_into()?;
-            assert_eq!(
-                *block_info.get_block_accumulator_info(),
-                pivot_block_accumulator_info
-            );
-            debug!("save pivot {:?} succ.", block.id());
-        }
-
+    fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()> {
         let block_id = block.id();
         self.save_block(&block);
         self.head = block;

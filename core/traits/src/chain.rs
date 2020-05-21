@@ -41,7 +41,7 @@ pub trait ChainWriter {
     /// execute and insert block to current chain.
     fn apply(&mut self, block: Block) -> Result<bool>;
     /// execute and insert block to current chain.
-    fn commit(&mut self, block: Block, block_info: BlockInfo, pivot_flag: bool) -> Result<()>;
+    fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()>;
     fn save(&mut self, block_id: HashValue, transactions: Vec<Transaction>) -> Result<()>;
     fn chain_state(&mut self) -> &dyn ChainState;
 }

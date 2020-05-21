@@ -409,7 +409,8 @@ where
             if let (Some(pivot_number), Some(latest_number)) = (pivot, latest_sync_number) {
                 let current_block_number = block.header().number();
                 if pivot_number >= current_block_number {
-                    if pivot_number == current_block_number && !self.sync_metadata.state_done() {
+                    let pivot_flag = pivot_number == current_block_number;
+                    if pivot_flag && !self.sync_metadata.state_done() {
                         debug!("block future {:?} for pivot.", block.header().id());
                         return Ok(ConnectResult::Err(ConnectBlockError::FutureBlock));
                     }
@@ -427,13 +428,15 @@ where
                     } else if let Some(mut branch) = fork {
                         if C::verify_header(self.config.clone(), &branch, block.header()).is_ok() {
                             // 2. commit block
-                            branch.commit(
-                                block,
-                                block_info,
-                                pivot_number == current_block_number,
-                            )?;
+                            if pivot_flag {
+                                branch.append_pivot(
+                                    block.id(),
+                                    block_info.get_block_accumulator_info().clone(),
+                                )?
+                            }
+                            branch.commit(block, block_info)?;
                             self.select_head(branch)?;
-                            if pivot_number == current_block_number {
+                            if pivot_flag {
                                 self.sync_metadata.pivot_connected_succ()?;
                             }
                             let master_header = self.collection.get_master().current_header();
