@@ -11,7 +11,6 @@ use crypto::HashValue;
 use logger::prelude::*;
 use network::{get_unix_ts, NetworkAsyncService};
 use network_api::NetworkService;
-use parking_lot::RwLock;
 use starcoin_statedb::ChainStateDB;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -27,82 +26,6 @@ use types::{
     transaction::{SignedUserTransaction, TransactionInfo},
 };
 
-pub struct BlockChainCollection<C, S>
-where
-    C: Consensus,
-    S: Store + 'static,
-{
-    startup_info: RwLock<StartupInfo>,
-    master: RwLock<Option<Arc<BlockChain<C, S>>>>,
-    _storage: Arc<S>,
-}
-
-impl<C, S> Drop for BlockChainCollection<C, S>
-where
-    C: Consensus,
-    S: Store + 'static,
-{
-    fn drop(&mut self) {
-        debug!("drop BlockChainCollection");
-    }
-}
-
-impl<C, S> BlockChainCollection<C, S>
-where
-    C: Consensus,
-    S: Store + 'static,
-{
-    pub fn new(startup_info: StartupInfo, _storage: Arc<S>) -> Self {
-        BlockChainCollection {
-            startup_info: RwLock::new(startup_info),
-            master: RwLock::new(None),
-            _storage,
-        }
-    }
-
-    pub fn init_master(&self, new_master: BlockChain<C, S>) {
-        assert!(self.master.read().is_none());
-        assert_eq!(
-            self.startup_info.read().get_master(),
-            &new_master.current_header().id()
-        );
-        self.update_master(new_master)
-    }
-
-    pub fn update_master(&self, new_master: BlockChain<C, S>) {
-        let header = new_master.current_header();
-        *self.master.write() = Some(Arc::new(new_master));
-        self.startup_info.write().update_master(&header);
-    }
-
-    pub fn insert_branch(&self, new_block_header: &BlockHeader) {
-        self.startup_info.write().insert_branch(new_block_header);
-    }
-
-    pub fn create_block_template(
-        &self,
-        author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
-        block_id: HashValue,
-        user_txns: Vec<SignedUserTransaction>,
-    ) -> Result<BlockTemplate> {
-        let block_chain = self.get_master().new_chain(block_id)?;
-        block_chain.create_block_template(author, auth_key_prefix, Some(block_id), user_txns)
-    }
-
-    pub fn to_startup_info(&self) -> StartupInfo {
-        self.startup_info.read().clone()
-    }
-
-    pub fn get_master(&self) -> Arc<BlockChain<C, S>> {
-        self.master.read().as_ref().unwrap().clone()
-    }
-
-    pub fn get_head(&self) -> HashValue {
-        *self.startup_info.read().get_master()
-    }
-}
-
 pub struct ChainServiceImpl<C, S, P>
 where
     C: Consensus,
@@ -110,7 +33,8 @@ where
     S: Store + 'static,
 {
     config: Arc<NodeConfig>,
-    collection: Arc<BlockChainCollection<C, S>>,
+    startup_info: StartupInfo,
+    master: BlockChain<C, S>,
     storage: Arc<S>,
     network: Option<NetworkAsyncService>,
     txpool: P,
@@ -133,10 +57,11 @@ where
         bus: Addr<BusActor>,
         sync_metadata: SyncMetadata,
     ) -> Result<Self> {
-        let collection = to_block_chain_collection(config.clone(), startup_info, storage.clone())?;
+        let master = BlockChain::new(config.clone(), startup_info.master, storage.clone())?;
         Ok(Self {
             config,
-            collection,
+            startup_info,
+            master,
             storage,
             network,
             txpool,
@@ -157,7 +82,6 @@ where
                     self.config.clone(),
                     header.parent_hash(),
                     self.storage.clone(),
-                    Arc::downgrade(&self.collection),
                 )?)
             } else {
                 None
@@ -180,14 +104,18 @@ where
         unimplemented!()
     }
 
+    pub fn get_master(&self) -> &BlockChain<C, S> {
+        &self.master
+    }
+
     fn select_head(&mut self, new_branch: BlockChain<C, S>) -> Result<()> {
         let block = new_branch.head_block();
         let block_header = block.header();
         let total_difficulty = new_branch.get_total_difficulty()?;
-        if total_difficulty > self.collection.get_master().get_total_difficulty()? {
+        if total_difficulty > self.get_master().get_total_difficulty()? {
             let mut enacted: Vec<SignedUserTransaction> = Vec::new();
             let mut retracted = Vec::new();
-            if block.header().parent_hash() == self.collection.get_head() {
+            if block.header().parent_hash() == self.startup_info.master {
                 enacted.append(&mut block.transactions().to_vec());
             } else {
                 CHAIN_METRICS.rollback_count.inc();
@@ -210,7 +138,7 @@ where
                 }
             }
 
-            self.collection.update_master(new_branch);
+            self.update_master(new_branch);
 
             self.commit_2_txpool(enacted, retracted);
             if self.sync_metadata.is_sync_done() {
@@ -221,17 +149,27 @@ where
                 self.broadcast_2_network(block_detail);
             }
         } else {
-            self.collection.insert_branch(block_header);
+            self.insert_branch(block_header);
         }
 
         CHAIN_METRICS
             .branch_total_count
-            .set(self.collection.startup_info.read().branches.len() as i64);
+            .set(self.startup_info.branches.len() as i64);
         self.save_startup()
     }
 
+    fn update_master(&mut self, new_master: BlockChain<C, S>) {
+        let header = new_master.current_header();
+        self.master = new_master;
+        self.startup_info.update_master(&header);
+    }
+
+    fn insert_branch(&mut self, new_block_header: &BlockHeader) {
+        self.startup_info.insert_branch(new_block_header);
+    }
+
     fn save_startup(&self) -> Result<()> {
-        let startup_info = self.collection.to_startup_info();
+        let startup_info = self.startup_info.clone();
         debug!("save startup info : {:?}", startup_info);
         self.storage.save_startup_info(startup_info)
     }
@@ -254,12 +192,12 @@ where
         Vec<SignedUserTransaction>,
         Vec<SignedUserTransaction>,
     )> {
-        let block_enacted = &new_branch.current_header().id();
-        let block_retracted = &self.collection.get_master().current_header().id();
+        let block_enacted = new_branch.current_header().id();
+        let block_retracted = self.get_master().current_header().id();
 
         let ancestor = self
             .storage
-            .get_common_ancestor(*block_enacted, *block_retracted)?
+            .get_common_ancestor(block_enacted, block_retracted)?
             .ok_or_else(|| {
                 format_err!(
                     "Can not find ancestor with {} and {}.",
@@ -268,8 +206,8 @@ where
                 )
             })?;
 
-        let enacted = self.find_blocks_until(*block_enacted, ancestor)?;
-        let retracted = self.find_blocks_until(*block_retracted, ancestor)?;
+        let enacted = self.find_blocks_until(block_enacted, ancestor)?;
+        let retracted = self.find_blocks_until(block_retracted, ancestor)?;
         let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
         let mut tx_retracted: Vec<SignedUserTransaction> = Vec::new();
         enacted.iter().for_each(|b| {
@@ -374,7 +312,7 @@ where
                             "select head used time: {}",
                             (select_head_end_time - apply_end_time)
                         );
-                        self.collection.get_master().latest_blocks(10);
+                        self.get_master().latest_blocks(10);
                         Ok(ConnectResult::Ok(()))
                     }
                 } else {
@@ -439,7 +377,7 @@ where
                             if pivot_flag {
                                 self.sync_metadata.pivot_connected_succ()?;
                             }
-                            let master_header = self.collection.get_master().current_header();
+                            let master_header = self.get_master().current_header();
                             info!(
                                 "block chain info :: number : {} , block_id : {:?}, parent_id : {:?}",
                                 master_header.number(),
@@ -486,11 +424,11 @@ where
     }
 
     fn master_head_block(&self) -> Block {
-        self.collection.get_master().head_block()
+        self.get_master().head_block()
     }
 
     fn master_head_header(&self) -> BlockHeader {
-        self.collection.get_master().current_header()
+        self.get_master().current_header()
     }
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -498,7 +436,7 @@ where
     }
 
     fn master_block_by_number(&self, number: u64) -> Result<Option<Block>> {
-        self.collection.get_master().get_block_by_number(number)
+        self.get_master().get_block_by_number(number)
     }
 
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {
@@ -518,19 +456,20 @@ where
     ) -> Result<BlockTemplate> {
         let block_id = match parent_hash {
             Some(hash) => hash,
-            None => self.collection.get_master().current_header().id(),
+            None => self.get_master().current_header().id(),
         };
 
         if let Ok(Some(_)) = self.get_block_by_hash(block_id) {
-            self.collection
-                .create_block_template(author, auth_key_prefix, block_id, user_txns)
+            //TODO ensure is need create a new chain?
+            let block_chain = self.get_master().new_chain(block_id)?;
+            block_chain.create_block_template(author, auth_key_prefix, Some(block_id), user_txns)
         } else {
             Err(format_err!("Block {:?} not exist.", block_id))
         }
     }
 
     fn master_startup_info(&self) -> StartupInfo {
-        self.collection.to_startup_info()
+        self.startup_info.clone()
     }
 
     fn master_blocks_by_number(
@@ -538,40 +477,14 @@ where
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>> {
-        self.collection
-            .get_master()
-            .get_blocks_by_number(number, count)
+        self.get_master().get_blocks_by_number(number, count)
     }
 
     fn get_transaction(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        self.collection.get_master().get_transaction_info(hash)
+        self.get_master().get_transaction_info(hash)
     }
 
     fn get_block_txn_ids(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
-        self.collection
-            .get_master()
-            .get_block_transactions(block_id)
+        self.get_master().get_block_transactions(block_id)
     }
-}
-
-pub fn to_block_chain_collection<C, S>(
-    config: Arc<NodeConfig>,
-    startup_info: StartupInfo,
-    storage: Arc<S>,
-) -> Result<Arc<BlockChainCollection<C, S>>>
-where
-    C: Consensus,
-    S: Store + 'static,
-{
-    let master_chain_info = *startup_info.get_master();
-    let collection = Arc::new(BlockChainCollection::new(startup_info, storage.clone()));
-    let master = BlockChain::new(
-        config,
-        master_chain_info,
-        storage,
-        Arc::downgrade(&collection),
-    )?;
-    collection.init_master(master);
-
-    Ok(collection)
 }
