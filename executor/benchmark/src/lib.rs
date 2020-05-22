@@ -44,6 +44,17 @@ impl AccountData {
             .prefix()
             .to_vec()
     }
+    pub fn random() -> Self {
+        let seed = [1u8; 32];
+        let mut rng = StdRng::from_seed(seed);
+        let private_key = Ed25519PrivateKey::generate(&mut rng);
+        let public_key = private_key.public_key();
+        let address = account_address::from_public_key(&public_key);
+        AccountData {
+            public_key,
+            address,
+        }
+    }
 }
 
 struct TransactionGenerator {
@@ -180,7 +191,7 @@ impl<'test> TxnExecutor<'test> {
 
     fn run(&mut self) {
         let mut version = 0;
-
+        let miner_account = AccountData::random();
         while let Ok(transactions) = self.block_receiver.recv() {
             let num_txns = transactions.len();
             version += num_txns as u64;
@@ -193,7 +204,7 @@ impl<'test> TxnExecutor<'test> {
                     .expect("Clock may have gone backwards")
                     .as_secs(),
                 AccountAddress::random(),
-                None,
+                Some(miner_account.auth_key_prefix()),
             );
             BlockExecutor::block_execute(
                 self.chain_state,
