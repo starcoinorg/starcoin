@@ -27,13 +27,18 @@ Feature: starcoin integration
 #  - [ ] full node
 #  - [ ] fast sync
 
-  Scenario: sync status
+  Scenario Outline: sync status
+    Given sync network config "<conf>" "<seed>"
     Given a node config
     And node handle
-    And a rpc client
+    And local rpc client
+    And remote rpc client
     Then basic check
     Then node stop
 
+    Examples:
+      | conf | seed |
+      | /Volumes/jiayi/project/rust/starcoin/conf/dev/starcoin.ipc | /ip4/127.0.0.1/tcp/59753/p2p/12D3KooWMLGtRBKR31BpSdAxNHe8Qwv2rGiQUJpVuFFFoNTejq79 |
 
 #  4.  genesis:
 #

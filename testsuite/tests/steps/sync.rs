@@ -3,6 +3,8 @@
 use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
 use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt, SyncMode};
+use starcoin_logger::prelude::*;
+use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -10,20 +12,33 @@ use std::time::Duration;
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
+        .given_regex(
+            r#"sync network config "([^"]*)" "([^"]*)""#,
+            |world: &mut MyWorld, args, _step| {
+                let path = args[1].parse().unwrap();
+                let seed = args[2].parse().unwrap();
+
+                info!("ipc config:{:?},{:?}", path, seed);
+                world.ipc_path = Some(path);
+                world.seed = Some(seed)
+            },
+        )
         .given("a node config", |world: &mut MyWorld, _step| {
+            let seed = world.seed.as_ref().take().unwrap();
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetwork::Dev);
             opt.data_dir = Some("./dev".parse().unwrap());
             opt.sync_mode = SyncMode::FULL;
-            opt.seed = Some(
-                "/ip4/127.0.0.1/tcp/59753/p2p/12D3KooWMLGtRBKR31BpSdAxNHe8Qwv2rGiQUJpVuFFFoNTejq79"
-                    .parse()
-                    .unwrap(),
-            );
+            opt.seed = Some(seed.clone().parse().unwrap());
             let config = NodeConfig::load_with_opt(&opt).unwrap();
             world.node_config = Some(config)
         })
-        .given("a rpc client", |world: &mut MyWorld, _step| {
+        .given("local rpc client", |world: &mut MyWorld, _step| {
+            let node_config = world.node_config.as_ref().take().unwrap();
+            let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
+            world.local_rpc_client = Some(client)
+        })
+        .given("remote rpc client", |world: &mut MyWorld, _step| {
             let path = world.ipc_path.as_ref().take().unwrap();
             let client = RpcClient::connect_ipc(path).unwrap();
             info!("rpc client created!");
@@ -38,6 +53,13 @@ pub fn steps() -> Steps<MyWorld> {
             let client = world.rpc_client.as_ref().take().unwrap();
             let status = client.clone().node_status();
             assert!(status.is_ok());
+            //read head from remote
+            let remote_chain = client.clone().chain_head().unwrap();
+            let header = remote_chain.get_head();
+            let local_client = world.local_rpc_client.as_ref().take().unwrap();
+            let local_chain = local_client.clone().chain_head().unwrap();
+            let local_header = local_chain.get_head();
+            assert_eq!(header.clone(), local_header.clone());
         })
         .then("node stop", |world: &mut MyWorld, _step| {
             thread::sleep(Duration::from_secs(5));

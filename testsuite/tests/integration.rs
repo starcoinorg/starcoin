@@ -15,9 +15,11 @@ use std::sync::Arc;
 #[derive(Default)]
 pub struct MyWorld {
     ipc_path: Option<String>,
+    seed: Option<String>,
     node_config: Option<NodeConfig>,
     storage: Option<Storage>,
     rpc_client: Option<RpcClient>,
+    local_rpc_client: Option<RpcClient>,
     default_account: Option<WalletAccount>,
     txn_account: Option<WalletAccount>,
     node_handle: Option<NodeHandle>,
@@ -91,7 +93,7 @@ use steps::*;
 
 cucumber! {
     features: "./features", // Path to our feature files
-    world: World, // The world needs to be the same for steps and the main cucumber call
+    world: MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
         crate::steps, // the `steps!` macro creates a `steps` function in a module
         transaction::steps,
