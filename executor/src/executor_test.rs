@@ -1,11 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::block_executor::BlockExecutor;
 use crate::{executor::Executor, TransactionExecutor};
 use anyhow::Result;
 use compiler::Compiler;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
+use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_accumulator::tree_store::MockAccumulatorStore;
+use starcoin_accumulator::MerkleAccumulator;
 use starcoin_config::{ChainConfig, ChainNetwork};
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_types::transaction::TransactionOutput;
@@ -64,6 +68,121 @@ fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transactio
         .apply_write_set(output.write_set().clone())
         .expect("apply write_set should success.");
     output
+}
+
+#[stest::test]
+fn test_block_execute_gas_limit() -> Result<()> {
+    let chain_state = prepare_genesis();
+    let sequence_number1 = get_sequence_number(account_config::association_address(), &chain_state);
+    let account1 = Account::new();
+    // create account uses about 26w gas.
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1,
+        sequence_number1, // fix me
+        50_000_000,
+    ));
+    let output = execute_and_apply(&chain_state, txn1);
+    info!("output: {:?}", output.gas_used());
+
+    let accumulator_store = MockAccumulatorStore::new();
+    let accumulator = MerkleAccumulator::new(
+        *ACCUMULATOR_PLACEHOLDER_HASH,
+        vec![],
+        0,
+        0,
+        Arc::new(accumulator_store),
+    )?;
+
+    let block_meta = BlockMetadata::new(
+        crypto::HashValue::random(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+        *account1.address(),
+        Some(account1.auth_key_prefix()),
+    );
+
+    // pre-run a txn to get gas_used
+    // transferring to an non-exists account uses about 30w gas.
+    let transfer_txn_gas = {
+        let txn =
+            Transaction::UserTransaction(peer_to_peer_txn(&account1, &Account::new(), 0, 10_000));
+        Executor::execute_transactions(&chain_state, vec![txn])
+            .unwrap()
+            .pop()
+            .expect("Output must exist.")
+            .gas_used()
+    };
+
+    let block_gas_limit = 1_000_000;
+    let max_include_txn_num: u64 = block_gas_limit / transfer_txn_gas;
+    {
+        let user_txns = (0u64..max_include_txn_num)
+            .map(|seq_number| {
+                Transaction::UserTransaction(peer_to_peer_txn(
+                    &account1,
+                    &Account::new(),
+                    seq_number,
+                    10_000,
+                ))
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(max_include_txn_num, user_txns.len() as u64);
+
+        let (_, _, txn_infos) = BlockExecutor::block_execute(
+            &chain_state,
+            &accumulator,
+            user_txns,
+            block_meta.clone(),
+            block_gas_limit,
+            true,
+        )?;
+
+        // all user txns can be included
+        assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
+        let block_gas_used = txn_infos.iter().fold(0u64, |acc, i| acc + i.gas_used());
+        assert!(
+            block_gas_used <= block_gas_limit,
+            "block_gas_used is bigger than block_gas_limit"
+        );
+    }
+
+    let latest_seq_number = max_include_txn_num;
+
+    {
+        let user_txns = (0..max_include_txn_num * 2)
+            .map(|i| {
+                let seq_number = i + latest_seq_number;
+                Transaction::UserTransaction(peer_to_peer_txn(
+                    &account1,
+                    &Account::new(),
+                    seq_number,
+                    10_000,
+                ))
+            })
+            .collect();
+
+        let (_, _, txn_infos) = BlockExecutor::block_execute(
+            &chain_state,
+            &accumulator,
+            user_txns,
+            block_meta,
+            block_gas_limit,
+            true,
+        )?;
+
+        // not all user txns can be included
+        assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
+        let block_gas_used = txn_infos.iter().fold(0u64, |acc, i| acc + i.gas_used());
+        assert!(
+            block_gas_used <= block_gas_limit,
+            "block_gas_used is bigger than block_gas_limit"
+        );
+    }
+
+    Ok(())
 }
 
 #[stest::test]
