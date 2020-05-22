@@ -469,19 +469,28 @@ impl StarcoinVM {
                     self.load_configs_impl(&data_cache);
                     for transaction in txns {
                         let output = self.execute_user_transaction(transaction, &mut data_cache);
+
+                        if let TransactionStatus::Keep(_) = output.status() {
+                            data_cache.push_write_set(output.write_set())
+                        }
+
                         result.push(output);
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
                     self.load_configs_impl(&data_cache);
-                    let out = self
+                    let output = self
                         .process_block_metadata(&mut data_cache, block_metadata)
                         .unwrap_or_else(discard_error_output);
-                    result.push(out);
+                    if let TransactionStatus::Keep(_) = output.status() {
+                        data_cache.push_write_set(output.write_set())
+                    }
+                    result.push(output);
                 }
                 TransactionBlock::ChangeSet(change_set) => {
                     //TODO change_set txn verify
                     let (write_set, events) = change_set.into_inner();
+                    data_cache.push_write_set(&write_set);
                     result.push(TransactionOutput::new(
                         write_set,
                         events,
