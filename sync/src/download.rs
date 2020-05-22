@@ -862,7 +862,7 @@ where
                 .await
                 .unwrap()
             {
-                if !need_executed || (need_executed && block_state == BlockState::Executed) {
+                if !need_executed || block_state == BlockState::Executed {
                     exist_ancestor = true;
                     info!("find ancestor hash : {:?}", hash);
                     ancestor = Some(hash);
