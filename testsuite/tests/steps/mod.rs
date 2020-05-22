@@ -2,4 +2,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod node;
+pub mod sync;
 pub mod transaction;
