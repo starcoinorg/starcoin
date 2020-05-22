@@ -184,26 +184,14 @@ impl<'test> TxnExecutor<'test> {
 
             let execute_start = std::time::Instant::now();
 
-            let result = BlockExecutor::block_execute(
+            BlockExecutor::block_execute(
                 self.chain_state,
                 self.accumulator,
                 transactions,
                 u64::MAX,
                 false,
-            );
-            match result {
-                Err(e) => {
-                    error!("Execute error: {:?}", e);
-                }
-                Ok((acc_root, state_root, txn_infos)) => {
-                    debug!(
-                        "Execute success, acc_root: {}, state_root:{}, txn_infos:{}",
-                        acc_root,
-                        state_root,
-                        txn_infos.len()
-                    );
-                }
-            }
+            )
+            .expect("Execute transactions fail.");
 
             let execute_time = std::time::Instant::now().duration_since(execute_start);
             let commit_start = std::time::Instant::now();

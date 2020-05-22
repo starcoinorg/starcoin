@@ -176,6 +176,51 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 }
 
 #[stest::test]
+fn test_execute_multi_txn_with_same_account() -> Result<()> {
+    let chain_state = prepare_genesis();
+
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 1, // fix me
+        50_000_000,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+
+    let account2 = Account::new();
+
+    let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(
+        Executor::build_transfer_txn(
+            *account1.address(),
+            *account2.address(),
+            account2.auth_key_prefix(),
+            0,
+            1000,
+            1,
+            TXN_RESERVED,
+        ),
+    ));
+
+    let txn3 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(
+        Executor::build_transfer_txn(
+            *account1.address(),
+            *account2.address(),
+            account2.auth_key_prefix(),
+            1,
+            1000,
+            1,
+            TXN_RESERVED,
+        ),
+    ));
+
+    let output = Executor::execute_transactions(&chain_state, vec![txn2, txn3]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
+    assert_eq!(KEEP_STATUS.clone(), *output[1].status());
+
+    Ok(())
+}
+
+#[stest::test]
 fn test_sequence_number() -> Result<()> {
     let chain_state = prepare_genesis();
     let old_balance = get_balance(account_config::association_address(), &chain_state);
