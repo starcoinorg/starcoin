@@ -3,7 +3,7 @@
 
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-    PrivateKey, Uniform,
+    HashValue, PrivateKey, Uniform,
 };
 use executor::block_executor::BlockExecutor;
 use executor::executor::Executor;
@@ -14,9 +14,11 @@ use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_config::ChainNetwork;
 use starcoin_state_api::{ChainState, ChainStateWriter};
+
 use statedb::ChainStateDB;
 use std::sync::mpsc;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::IntoSuper;
@@ -25,6 +27,7 @@ use types::{
     account_address,
     account_address::AccountAddress,
     account_config::{association_address, stc_type_tag},
+    block_metadata::BlockMetadata,
     transaction::{authenticator::AuthenticationKey, RawUserTransaction, Script, Transaction},
 };
 use vm_runtime::common_transactions::{encode_create_account_script, encode_transfer_script};
@@ -183,11 +186,20 @@ impl<'test> TxnExecutor<'test> {
             version += num_txns as u64;
 
             let execute_start = std::time::Instant::now();
-
-            BlockExecutor::block_execute(
+            let block_meta = BlockMetadata::new(
+                HashValue::random(),
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Clock may have gone backwards")
+                    .as_secs(),
+                AccountAddress::random(),
+                None,
+            );
+            let result = BlockExecutor::block_execute(
                 self.chain_state,
                 self.accumulator,
                 transactions,
+                block_meta,
                 u64::MAX,
                 false,
             )
