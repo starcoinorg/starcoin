@@ -124,19 +124,13 @@ where
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         //TODO calculate gas limit etc.
-        let mut txns = user_txns
+        let txns = user_txns
             .iter()
             .cloned()
             .map(Transaction::UserTransaction)
             .collect::<Vec<Transaction>>();
 
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-        txns.push(Transaction::BlockMetadata(BlockMetadata::new(
-            previous_header.id(),
-            timestamp,
-            author,
-            auth_key_prefix.clone(),
-        )));
         let chain_state =
             ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
         let block_info = self.get_block_info(previous_header.id())?;
@@ -153,6 +147,12 @@ where
             &chain_state,
             &txn_accumulator,
             txns,
+            BlockMetadata::new(
+                previous_header.id(),
+                timestamp,
+                author,
+                auth_key_prefix.clone(),
+            ),
             block_gas_limit,
             true,
         )?;
@@ -371,10 +371,10 @@ where
         //TODO custom verify macro
         assert_eq!(self.head.header().id(), header.parent_hash());
 
-        // ensure!(
-        //     block.header().gas_used() <= block.header().gas_limit(),
-        //     "invalid block: gas_used should not greater than gas_limit"
-        // );
+        ensure!(
+            block.header().gas_used() <= block.header().gas_limit(),
+            "invalid block: gas_used should not greater than gas_limit"
+        );
         let apply_begin_time = get_unix_ts();
         if let Err(e) = C::verify_header(self.config.clone(), self, header) {
             error!("err: {:?}", e);
@@ -392,7 +392,7 @@ where
             .collect::<Vec<Transaction>>();
         let block_metadata = header.clone().into_metadata();
 
-        txns.push(Transaction::BlockMetadata(block_metadata));
+        // txns.push(Transaction::BlockMetadata(block_metadata));
 
         let exe_begin_time = get_unix_ts();
 
@@ -400,9 +400,11 @@ where
             chain_state,
             &self.txn_accumulator,
             txns.clone(),
+            block_metadata.clone(),
             block.header().gas_limit(),
             false,
         )?;
+
         let exe_end_time = get_unix_ts();
         debug!("exe used time: {}", (exe_end_time - exe_begin_time));
         assert_eq!(
@@ -411,11 +413,7 @@ where
             "verify block:{:?} state_root fail.",
             block.header().id()
         );
-        // +1 because block_meta_data is not included in block.
-        ensure!(
-            vec_transaction_info.len() == block.transactions().len() + 1,
-            "invalid txn num in the block"
-        );
+
         let block_gas_used = vec_transaction_info
             .iter()
             .fold(0u64, |acc, i| acc + i.gas_used());
@@ -423,6 +421,14 @@ where
             block_gas_used == block.header().gas_used(),
             "invalid block: gas_used is not match"
         );
+
+        // +1 because block_meta_data is not included in block.
+        ensure!(
+            vec_transaction_info.len() == txns.len() + 1,
+            "invalid txn num in the block"
+        );
+        // push the extra meta txn to save.
+        txns.push(Transaction::BlockMetadata(block_metadata));
 
         let total_difficulty = {
             let pre_total_difficulty = self
