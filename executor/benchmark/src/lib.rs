@@ -195,7 +195,7 @@ impl<'test> TxnExecutor<'test> {
                 AccountAddress::random(),
                 None,
             );
-            let result = BlockExecutor::block_execute(
+            BlockExecutor::block_execute(
                 self.chain_state,
                 self.accumulator,
                 transactions,
