@@ -14,6 +14,7 @@ Feature: starcoin integration
     And default account
     Then charge money to account
     Then execute transfer transaction
+    Then state proof
 
     Examples:
       | conf |

@@ -72,6 +72,11 @@ pub fn steps() -> Steps<MyWorld> {
             let client = world.rpc_client.as_ref().take().unwrap();
             let account = client.clone().wallet_create("integration".parse().unwrap());
             world.txn_account = Some(account.unwrap())
+        })
+        .given("genesis ", |world: &mut MyWorld, _step| {
+            let client = world.rpc_client.as_ref().take().unwrap();
+            let account = client.clone().wallet_create("integration".parse().unwrap());
+            world.txn_account = Some(account.unwrap())
         });
     builder.build()
 }
@@ -99,6 +104,7 @@ cucumber! {
         transaction::steps,
         node::steps,
         sync::steps,
+        state::steps,
     ],
     setup: setup, // Optional; called once before everything
     before: &[
