@@ -4,6 +4,7 @@
 use crate::ConnectResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_types::block::BlockState;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{
@@ -19,6 +20,7 @@ pub trait ChainService {
     fn try_connect(&mut self, block: Block, pivot_sync: bool) -> Result<ConnectResult<()>>;
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
+    fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn try_connect_with_block_info(
         &mut self,
         block: Block,
@@ -54,10 +56,11 @@ pub trait ChainAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {
     /////////////////////////////////////////////// for chain service
-    /// connect to master or a fork branch.
+    /// gol.
     async fn try_connect(self, block: Block) -> Result<ConnectResult<()>>;
     async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader>;
     async fn get_block_by_hash(self, hash: HashValue) -> Result<Block>;
+    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn try_connect_with_block_info(
         &mut self,
         block: Block,

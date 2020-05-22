@@ -12,11 +12,38 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BranchNumber};
+use serde::{Deserialize, Serialize};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState, BranchNumber};
 use std::io::Write;
 use std::mem::size_of;
 use std::sync::{Arc, RwLock};
-define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct StorageBlock {
+    block: Block,
+    state: BlockState,
+}
+
+impl StorageBlock {
+    fn new(block: Block, state: BlockState) -> Self {
+        Self { block, state }
+    }
+
+    fn get_block(&self) -> &Block {
+        &self.block
+    }
+
+    fn get_block_state(&self) -> &BlockState {
+        &self.state
+    }
+}
+
+define_storage!(
+    BlockInnerStorage,
+    HashValue,
+    StorageBlock,
+    BLOCK_PREFIX_NAME
+);
 define_storage!(
     BlockHeaderStorage,
     HashValue,
@@ -65,7 +92,7 @@ pub struct BlockStorage {
     block_txns_store: BlockTransactionsStorage,
 }
 
-impl ValueCodec for Block {
+impl ValueCodec for StorageBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -163,13 +190,15 @@ impl BlockStorage {
             block_txns_store: BlockTransactionsStorage::new(instance),
         }
     }
-    pub fn save(&self, block: Block) -> Result<()> {
+    pub fn save(&self, block: Block, state: BlockState) -> Result<()> {
         debug!(
             "insert block:{:?}, block:{:?}",
             block.header().id(),
             block.header().parent_hash()
         );
-        self.block_store.put(block.header().id(), block)
+        let block_id = block.header().id();
+        let storage_block = StorageBlock::new(block, state);
+        self.block_store.put(block_id, storage_block)
     }
 
     pub fn save_header(&self, header: BlockHeader) -> Result<()> {
@@ -205,7 +234,13 @@ impl BlockStorage {
     }
 
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
-        self.block_store.get(block_id)
+        Ok(
+            if let Some(storage_block) = self.block_store.get(block_id)? {
+                Some(storage_block.get_block().clone())
+            } else {
+                None
+            },
+        )
     }
 
     pub fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
@@ -225,7 +260,7 @@ impl BlockStorage {
         self.branch_number_store.get(key)
     }
 
-    pub fn commit_block(&self, block: Block) -> Result<()> {
+    pub fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
         let (header, body) = block.clone().into_inner();
         //save header
         let block_id = header.id();
@@ -235,10 +270,15 @@ impl BlockStorage {
         //save body
         self.save_body(block_id, body).unwrap();
         //save block cache
-        self.save(block)
+        self.save(block, state)
     }
 
-    pub fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()> {
+    pub fn commit_branch_block(
+        &self,
+        branch_id: HashValue,
+        block: Block,
+        state: BlockState,
+    ) -> Result<()> {
         debug!("commit block: {:?}, block: {:?}", branch_id, block);
         let (header, body) = block.clone().into_inner();
         //save header
@@ -250,7 +290,7 @@ impl BlockStorage {
         //save body
         self.save_body(block_id, body).unwrap();
         //save block cache
-        self.save(block)
+        self.save(block, state)
     }
 
     ///返回某个块到分叉块的路径上所有块的hash
@@ -368,6 +408,16 @@ impl BlockStorage {
         self.get(block_id)
     }
 
+    pub fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>> {
+        Ok(
+            if let Some(storage_block) = self.block_store.get(block_id)? {
+                Some(storage_block.get_block_state().clone())
+            } else {
+                None
+            },
+        )
+    }
+
     pub fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
         match self.number_store.get(number).unwrap() {
             Some(block_id) => self.get_block_header_by_hash(block_id),
@@ -377,7 +427,7 @@ impl BlockStorage {
 
     pub fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         match self.number_store.get(number)? {
-            Some(block_id) => self.block_store.get(block_id),
+            Some(block_id) => self.get(block_id),
             None => Ok(None),
         }
     }

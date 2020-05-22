@@ -81,6 +81,7 @@ impl SyncBencher {
                     best_peer.get_peer_id(),
                     network.clone(),
                     begin_number,
+                    true,
                 )
                 .await?
                 {

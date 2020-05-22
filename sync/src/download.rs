@@ -30,7 +30,7 @@ use std::time::Duration;
 use traits::ChainAsyncService;
 use traits::{is_ok, ConnectBlockError, Consensus};
 use types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
     system_events::SyncBegin,
 };
@@ -324,6 +324,7 @@ where
                 best_peer.get_peer_id(),
                 network.clone(),
                 begin_number,
+                false,
             )
             .await?
             {
@@ -447,9 +448,18 @@ where
                 .sync_count
                 .with_label_values(&[LABEL_BLOCK])
                 .inc();
-            if let Err(e) =
-                Self::sync_block_from_best_peer_inner(self_peer_id.clone(), downloader, network)
-                    .await
+            let full_mode = if sync_metadata.fast_sync_mode() {
+                !sync_metadata.state_syncing()
+            } else {
+                sync_metadata.fast_sync_mode()
+            };
+            if let Err(e) = Self::sync_block_from_best_peer_inner(
+                self_peer_id.clone(),
+                downloader,
+                network,
+                full_mode,
+            )
+            .await
             {
                 error!("error: {:?}", e);
             } else {
@@ -469,6 +479,7 @@ where
         self_peer_id: PeerId,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
+        full_mode: bool,
     ) -> Result<()> {
         if let Some(best_peer) = network.best_peer().await? {
             info!("peers: {:?}, {:?}", self_peer_id, best_peer.get_peer_id());
@@ -480,6 +491,7 @@ where
                     best_peer.get_peer_id(),
                     network.clone(),
                     begin_number,
+                    full_mode,
                 )
                 .await?
                 {
@@ -790,6 +802,7 @@ where
         peer_id: PeerId,
         network: NetworkAsyncService,
         block_number: BlockNumber,
+        full_mode: bool,
     ) -> Result<Option<HashWithNumber>> {
         let mut hash_with_number = None;
         let mut begin_number = block_number;
@@ -814,6 +827,7 @@ where
                 downloader.clone(),
                 peer_id.clone(),
                 batch_hash_by_number_msg,
+                full_mode,
             )
             .await;
 
@@ -832,6 +846,7 @@ where
         downloader: Arc<Downloader<C>>,
         peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
+        need_executed: bool,
     ) -> Option<HashWithNumber> {
         //TODO
         let mut exist_ancestor = false;
@@ -840,17 +855,19 @@ where
         let mut not_exist_hash = Vec::new();
         hashs.reverse();
         for hash in hashs {
-            if downloader
+            if let Some(block_state) = downloader
                 .chain_reader
                 .clone()
-                .get_block_by_hash(hash.hash)
+                .get_block_state_by_hash(&hash.hash)
                 .await
-                .is_ok()
+                .unwrap()
             {
-                exist_ancestor = true;
-                info!("find ancestor hash : {:?}", hash);
-                ancestor = Some(hash);
-                break;
+                if !need_executed || (need_executed && block_state == BlockState::Executed) {
+                    exist_ancestor = true;
+                    info!("find ancestor hash : {:?}", hash);
+                    ancestor = Some(hash);
+                    break;
+                }
             } else {
                 not_exist_hash.push(hash);
             }

@@ -20,7 +20,7 @@ use traits::{ChainReader, ChainWriter};
 use types::{
     account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     block_metadata::BlockMetadata,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U512,
@@ -76,8 +76,8 @@ where
         Self::new(self.config.clone(), head_block_hash, self.storage.clone())
     }
 
-    pub fn save_block(&self, block: &Block) {
-        if let Err(e) = self.storage.commit_block(block.clone()) {
+    pub fn save_block(&self, block: &Block, block_state: BlockState) {
+        if let Err(e) = self.storage.commit_block(block.clone(), block_state) {
             warn!("err : {:?}", e);
         }
         debug!("commit block : {:?}", block.header().id());
@@ -461,7 +461,7 @@ where
             "new transaction info used time: {}",
             (commit_begin_time - save_block_end_time)
         );
-        self.commit(block.clone(), block_info)?;
+        self.commit(block.clone(), block_info, BlockState::Executed)?;
         let commit_end_time = get_unix_ts();
         debug!(
             "commit used time: {}",
@@ -470,9 +470,14 @@ where
         Ok(true)
     }
 
-    fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()> {
+    fn commit(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+        block_state: BlockState,
+    ) -> Result<()> {
         let block_id = block.id();
-        self.save_block(&block);
+        self.save_block(&block, block_state);
         self.head = block;
         self.save_block_info(block_info);
         self.chain_state =

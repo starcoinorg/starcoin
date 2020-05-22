@@ -6,7 +6,7 @@ use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U512,
 };
@@ -41,7 +41,12 @@ pub trait ChainWriter {
     /// execute and insert block to current chain.
     fn apply(&mut self, block: Block) -> Result<bool>;
     /// execute and insert block to current chain.
-    fn commit(&mut self, block: Block, block_info: BlockInfo) -> Result<()>;
+    fn commit(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+        block_state: BlockState,
+    ) -> Result<()>;
     fn save(&mut self, block_id: HashValue, transactions: Vec<Transaction>) -> Result<()>;
     fn chain_state(&mut self) -> &dyn ChainState;
 }

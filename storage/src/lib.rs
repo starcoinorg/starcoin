@@ -16,6 +16,7 @@ use starcoin_accumulator::{
     AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter,
 };
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+use starcoin_types::block::BlockState;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -92,13 +93,15 @@ pub trait BlockStore {
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
+    fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>>;
+
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
 
     fn get_branch_number(&self, branch_id: HashValue, number: u64) -> Result<Option<HashValue>>;
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>>;
 
-    fn commit_block(&self, block: Block) -> Result<()>;
+    fn commit_block(&self, block: Block, state: BlockState) -> Result<()>;
 
     fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
 
@@ -234,6 +237,10 @@ impl BlockStore for Storage {
         self.block_storage.get(block_id)
     }
 
+    fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>> {
+        self.block_storage.get_block_state(block_id)
+    }
+
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
         self.block_storage.get_body(block_id)
     }
@@ -250,8 +257,8 @@ impl BlockStore for Storage {
         self.block_storage.get_number(number)
     }
 
-    fn commit_block(&self, block: Block) -> Result<()> {
-        self.block_storage.commit_block(block)
+    fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
+        self.block_storage.commit_block(block, state)
     }
 
     fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
