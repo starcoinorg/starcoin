@@ -27,6 +27,12 @@ Feature: starcoin integration
 #  - [ ] full node
 #  - [ ] fast sync
 
+  Scenario: sync status
+    Given a node config
+    And node handle
+    And a rpc client
+    Then basic check
+    Then node stop
 
 
 #  4.  genesis:

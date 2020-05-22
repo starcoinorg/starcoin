@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use cucumber::{after, before, cucumber, Steps, StepsBuilder};
-use starcoin_config::{ChainConfig, ChainNetwork, Connect, NodeConfig, StarcoinOpt};
+use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_client::RpcClient;
@@ -15,10 +15,12 @@ use std::sync::Arc;
 #[derive(Default)]
 pub struct MyWorld {
     ipc_path: Option<String>,
+    node_config: Option<NodeConfig>,
     storage: Option<Storage>,
     rpc_client: Option<RpcClient>,
     default_account: Option<WalletAccount>,
     txn_account: Option<WalletAccount>,
+    node_handle: Option<NodeHandle>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {
@@ -93,7 +95,8 @@ cucumber! {
     steps: &[
         crate::steps, // the `steps!` macro creates a `steps` function in a module
         transaction::steps,
-        node::steps
+        node::steps,
+        sync::steps,
     ],
     setup: setup, // Optional; called once before everything
     before: &[
