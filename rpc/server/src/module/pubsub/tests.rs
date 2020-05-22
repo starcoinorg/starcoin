@@ -23,6 +23,7 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{Genesis, PrivateKey};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
+use starcoin_logger::prelude::*;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter, Consensus};
 use starcoin_types::block::BlockDetail;
@@ -52,6 +53,10 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         None,
         vec![txn.clone()],
     )?;
+    debug!(
+        "block_template: gas_used: {}, gas_limit: {}",
+        block_template.gas_used, block_template.gas_limit
+    );
     let new_block = DevConsensus::create_block(config.clone(), &block_chain, block_template)?;
     block_chain.apply(new_block.clone())?;
 
