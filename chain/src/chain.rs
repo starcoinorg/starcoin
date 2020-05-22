@@ -392,8 +392,6 @@ where
             .collect::<Vec<Transaction>>();
         let block_metadata = header.clone().into_metadata();
 
-        // txns.push(Transaction::BlockMetadata(block_metadata));
-
         let exe_begin_time = get_unix_ts();
 
         let (_, state_root, vec_transaction_info) = BlockExecutor::block_execute(
