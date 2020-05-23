@@ -12,6 +12,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::helpers::TransactionSigner;
+use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
 
 pub fn steps() -> Steps<MyWorld> {
@@ -43,14 +44,7 @@ fn transfer_txn(
     from: AccountAddress,
     amount: Option<u64>,
 ) -> Result<bool, Error> {
-    let chain_config = client.node_info().unwrap().net.get_config();
-    let pre_mine_config = chain_config
-        .pre_mine_config
-        .as_ref()
-        .expect("Dev net pre mine config must exist.");
-
     let to_auth_key_prefix = AuthenticationKey::ed25519(&to.public_key).prefix();
-
     let chain_state_reader = RemoteStateReader::new(client);
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     let account_resource = account_state_reader
@@ -66,6 +60,24 @@ fn transfer_txn(
         account_resource.sequence_number(),
         amount,
     );
-    let txn = pre_mine_config.sign_txn(raw_txn).unwrap();
+
+    let txn = sign_txn(client, raw_txn).unwrap();
     client.submit_transaction(txn.clone())
+}
+fn sign_txn(
+    client: &RpcClient,
+    raw_txn: RawUserTransaction,
+) -> Result<SignedUserTransaction, Error> {
+    let net = client.node_info().unwrap().net;
+    let result = if net.is_dev() {
+        let chain_config = net.get_config();
+        let pre_mine_config = chain_config
+            .pre_mine_config
+            .as_ref()
+            .expect("Dev net pre mine config must exist.");
+        pre_mine_config.sign_txn(raw_txn).unwrap()
+    } else {
+        client.wallet_sign_txn(raw_txn).unwrap()
+    };
+    Ok(result)
 }
