@@ -48,7 +48,8 @@ pub fn steps() -> Steps<MyWorld> {
             world.storage = Some(storage)
         })
         .given("a rpc client", |world: &mut MyWorld, _step| {
-            let client = RpcClient::connect_ipc(env!("STARCOIN_IPC").to_string()).unwrap();
+            // let client = RpcClient::connect_ipc(env!("STARCOIN_IPC").to_string()).unwrap();
+            let client = RpcClient::connect_websocket(env!("STARCOIN_WS")).unwrap();
             info!("rpc client created!");
             world.rpc_client = Some(client)
         })
