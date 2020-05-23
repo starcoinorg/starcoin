@@ -12,38 +12,27 @@ use std::time::Duration;
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
-        .given_regex(
-            r#"sync network config "([^"]*)" "([^"]*)""#,
-            |world: &mut MyWorld, args, _step| {
-                let path = args[1].parse().unwrap();
-                let seed = args[2].parse().unwrap();
-
-                info!("ipc config:{:?},{:?}", path, seed);
-                world.ipc_path = Some(path);
-                world.seed = Some(seed)
-            },
-        )
         .given("a node config", |world: &mut MyWorld, _step| {
-            let seed = world.seed.as_ref().take().unwrap();
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetwork::Dev);
             opt.data_dir = Some("./dev".parse().unwrap());
             opt.sync_mode = SyncMode::FULL;
-            opt.seed = Some(seed.clone().parse().unwrap());
+            opt.seed = Some(env!("STARCOIN_SEED").to_string().parse().unwrap());
             let config = NodeConfig::load_with_opt(&opt).unwrap();
             world.node_config = Some(config)
         })
         .given("local rpc client", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
             let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
+            info!("node local rpc client created!");
             world.local_rpc_client = Some(client)
         })
-        .given("remote rpc client", |world: &mut MyWorld, _step| {
-            let path = world.ipc_path.as_ref().take().unwrap();
-            let client = RpcClient::connect_ipc(path).unwrap();
-            info!("rpc client created!");
-            world.rpc_client = Some(client)
-        })
+        // .given("remote rpc client", |world: &mut MyWorld, _step| {
+        //     let path = world.ipc_path.as_ref().take().unwrap();
+        //     let client = RpcClient::connect_ipc(path).unwrap();
+        //     info!("rpc client created!");
+        //     world.rpc_client = Some(client)
+        // })
         .given("node handle", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
             let handle = starcoin_node::run_dev_node(Arc::new(node_config.clone()));

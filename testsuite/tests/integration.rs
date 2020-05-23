@@ -14,8 +14,6 @@ use std::sync::Arc;
 
 #[derive(Default)]
 pub struct MyWorld {
-    ipc_path: Option<String>,
-    seed: Option<String>,
     node_config: Option<NodeConfig>,
     storage: Option<Storage>,
     rpc_client: Option<RpcClient>,
@@ -38,14 +36,6 @@ impl cucumber::World for MyWorld {}
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
-        .given_regex(
-            r#"ipc file config "([^"]*)""#,
-            |world: &mut MyWorld, args, _step| {
-                let path = args[1].parse().unwrap();
-                info!("ipc config:{:?}", path);
-                world.ipc_path = Some(path)
-            },
-        )
         .given("a storage", |world: &mut MyWorld, _step| {
             let cache_storage = Arc::new(CacheStorage::new());
             let db_storage = Arc::new(DBStorage::new(starcoin_config::temp_path().as_ref()));
@@ -58,8 +48,7 @@ pub fn steps() -> Steps<MyWorld> {
             world.storage = Some(storage)
         })
         .given("a rpc client", |world: &mut MyWorld, _step| {
-            let path = world.ipc_path.as_ref().take().unwrap();
-            let client = RpcClient::connect_ipc(path).unwrap();
+            let client = RpcClient::connect_ipc(env!("STARCOIN_IPC").to_string()).unwrap();
             info!("rpc client created!");
             world.rpc_client = Some(client)
         })
