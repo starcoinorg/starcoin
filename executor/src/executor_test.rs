@@ -11,6 +11,9 @@ use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_accumulator::tree_store::MockAccumulatorStore;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_config::{ChainConfig, ChainNetwork};
+use starcoin_functional_tests::account::{
+    create_account_txn_sent_as_association, peer_to_peer_txn, Account,
+};
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_types::transaction::TransactionOutput;
 use starcoin_types::{
@@ -27,10 +30,7 @@ use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use vm_runtime::{
-    account::Account,
-    common_transactions::{create_account_txn_sent_as_association, peer_to_peer_txn, TXN_RESERVED},
-};
+use vm_runtime::common_transactions::TXN_RESERVED;
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
     Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
@@ -208,7 +208,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
         1,
         TXN_RESERVED,
     );
-    let txn2 = account1.create_user_txn_from_raw_txn(raw_txn);
+    let txn2 = account1.sign_txn(raw_txn);
     let output = Executor::validate_transaction(&chain_state, txn2);
     assert_eq!(output, None);
     Ok(())
@@ -287,7 +287,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         TXN_RESERVED,
     );
 
-    let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(raw_txn));
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
     let output = Executor::execute_transactions(&chain_state, vec![txn2]).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output[0].status());
 
@@ -308,29 +308,25 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
 
     let account2 = Account::new();
 
-    let txn2 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(
-        Executor::build_transfer_txn(
-            *account1.address(),
-            *account2.address(),
-            account2.auth_key_prefix(),
-            0,
-            1000,
-            1,
-            TXN_RESERVED,
-        ),
-    ));
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(Executor::build_transfer_txn(
+        *account1.address(),
+        *account2.address(),
+        account2.auth_key_prefix(),
+        0,
+        1000,
+        1,
+        TXN_RESERVED,
+    )));
 
-    let txn3 = Transaction::UserTransaction(account1.create_user_txn_from_raw_txn(
-        Executor::build_transfer_txn(
-            *account1.address(),
-            *account2.address(),
-            account2.auth_key_prefix(),
-            1,
-            1000,
-            1,
-            TXN_RESERVED,
-        ),
-    ));
+    let txn3 = Transaction::UserTransaction(account1.sign_txn(Executor::build_transfer_txn(
+        *account1.address(),
+        *account2.address(),
+        account2.auth_key_prefix(),
+        1,
+        1000,
+        1,
+        TXN_RESERVED,
+    )));
 
     let output = Executor::execute_transactions(&chain_state, vec![txn2, txn3]).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output[0].status());
@@ -433,7 +429,6 @@ fn test_publish_module() -> Result<()> {
         0,
         100_000,
         1,
-        account_config::stc_type_tag(),
     ));
 
     let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();

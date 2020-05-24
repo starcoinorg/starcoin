@@ -6,7 +6,6 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config;
 use starcoin_types::transaction::{Module, RawUserTransaction};
 use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule};
 use std::fs::OpenOptions;
@@ -105,7 +104,6 @@ impl CommandAction for DeployCommand {
             Module::new(bytecode),
             opt.max_gas_amount,
             opt.gas_price,
-            account_config::stc_type_tag(),
             expiration_time,
         );
 

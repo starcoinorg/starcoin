@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod account;
 pub mod common_transactions;
 pub mod genesis;
 pub mod starcoin_vm;

@@ -27,3 +27,4 @@ stdlib = { package="stdlib", path = "../vm/stdlib"}
 compiler = { package="compiler",  git = "https://github.com/starcoinorg/libra", rev="ed50e7ec5ac5581803b45b48d0427ba833c211df" }
 
 [dev-dependencies]
+starcoin-functional-tests = { path = "../vm/functional-tests"}
