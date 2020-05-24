@@ -1,15 +1,15 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
-use functional_tests::compiler::{Compiler, ScriptOrModule};
-use libra_types::account_address::AccountAddress as LibraAddress;
 use move_lang::{
     compiled_unit::CompiledUnit,
     move_compile_no_report,
     shared::Address,
     test_utils::{read_bool_var, stdlib_files},
 };
+use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
 use starcoin_functional_tests::testsuite;
+use starcoin_vm_types::account_address::AccountAddress;
 use std::{convert::TryFrom, fmt, io::Write, path::Path};
 use tempfile::NamedTempFile;
 
@@ -43,7 +43,7 @@ impl Compiler for MoveSourceCompiler {
     fn compile<Logger: FnMut(String) -> ()>(
         &mut self,
         _log: Logger,
-        address: LibraAddress,
+        address: AccountAddress,
         input: &str,
     ) -> Result<ScriptOrModule> {
         let cur_file = NamedTempFile::new()?;

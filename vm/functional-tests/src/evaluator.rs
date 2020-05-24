@@ -5,21 +5,10 @@ use crate::{
     compiler::{Compiler, ScriptOrModule},
     config::{global::Config as GlobalConfig, transaction::Config as TransactionConfig},
     errors::*,
+    executor::FakeExecutor,
 };
 use bytecode_verifier::verifier::{
     verify_module_dependencies, verify_script_dependencies, VerifiedModule, VerifiedScript,
-};
-use language_e2e_tests::executor::FakeExecutor;
-use libra_state_view::StateView;
-use libra_types::{
-    access_path::AccessPath,
-    account_address::AccountAddress,
-    block_metadata::BlockMetadata,
-    transaction::{
-        Module as TransactionModule, RawTransaction, Script as TransactionScript,
-        SignedTransaction, Transaction as LibraTransaction, TransactionOutput, TransactionStatus,
-    },
-    vm_error::{StatusCode, VMStatus},
 };
 use mirai_annotations::checked_verify;
 use move_core_types::{
@@ -29,6 +18,20 @@ use move_core_types::{
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
+use starcoin_types::{
+    access_path::AccessPath,
+    account_address::AccountAddress,
+    block_metadata::BlockMetadata,
+    transaction::{
+        Module as TransactionModule, RawUserTransaction, Script as TransactionScript,
+        SignedUserTransaction, Transaction as StarcoinTransaction, TransactionOutput,
+        TransactionStatus,
+    },
+    vm_error::{StatusCode, VMStatus},
+};
+use starcoin_vm_types::{account_config::STC_IDENTIFIER, state_view::StateView};
+use std::fmt;
+use std::str::FromStr;
 use std::time::Duration;
 use stdlib::{stdlib_modules, StdLibOptions};
 use vm::{
@@ -36,10 +39,160 @@ use vm::{
     views::ModuleView,
 };
 
-pub use functional_tests::evaluator::{
-    Command, EvaluationLog, EvaluationOutput, OutputType, Stage, Status, Transaction, TransactionId,
-};
-use starcoin_types::account_config::STC;
+pub type TransactionId = usize;
+
+/// A transaction to be evaluated by the testing infra.
+/// Contains code and a transaction config.
+#[derive(Debug)]
+pub struct Transaction<'a> {
+    pub config: TransactionConfig<'a>,
+    pub input: String,
+}
+
+/// Commands that drives the operation of LibraVM. Such as:
+/// 1. Execute user transaction
+/// 2. Publish a new block metadata
+///
+/// In the future we will add more commands to mimic the full public API of LibraVM,
+/// including reloading the on-chain configuration that will affect the code path for LibraVM,
+/// cleaning the cache in the LibraVM, etc.
+#[derive(Debug)]
+pub enum Command<'a> {
+    Transaction(Transaction<'a>),
+    BlockMetadata(BlockMetadata),
+}
+
+/// Indicates one step in the pipeline the given move module/program goes through.
+//  Ord is derived as we need to be able to determine if one stage is before another.
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub enum Stage {
+    Compiler,
+    Verifier,
+    Serializer,
+    Runtime,
+}
+
+impl FromStr for Stage {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "compiler" => Ok(Stage::Compiler),
+            "verifier" => Ok(Stage::Verifier),
+            "serializer" => Ok(Stage::Serializer),
+            "runtime" => Ok(Stage::Runtime),
+            _ => Err(ErrorKind::Other(format!("unrecognized stage '{:?}'", s)).into()),
+        }
+    }
+}
+
+/// Evaluation status: success or failure.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Status {
+    Success,
+    Failure,
+}
+
+#[derive(Debug, Clone)]
+pub enum OutputType {
+    CompiledModule(Box<CompiledModule>),
+    CompiledScript(Box<CompiledScript>),
+    CompilerLog(String),
+    TransactionOutput(Box<TransactionOutput>),
+}
+
+impl OutputType {
+    pub fn to_check_string(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
+/// An entry in the `EvaluationLog`.
+#[derive(Debug)]
+pub enum EvaluationOutput {
+    Transaction(TransactionId),
+    Stage(Stage),
+    Output(OutputType),
+    Error(Box<Error>),
+    Status(Status),
+}
+
+impl EvaluationOutput {
+    pub fn is_error(&self) -> bool {
+        matches!(self, Self::Error(_))
+    }
+}
+
+/// A log consisting of outputs from all stages and the final status.
+/// This is checked against the directives.
+#[derive(Debug, Default)]
+pub struct EvaluationLog {
+    pub outputs: Vec<EvaluationOutput>,
+}
+
+impl EvaluationLog {
+    pub fn new() -> Self {
+        Self { outputs: vec![] }
+    }
+
+    pub fn get_failed_transactions(&self) -> Vec<(usize, Stage)> {
+        let mut res = vec![];
+        let mut last_txn = None;
+        let mut last_stage = None;
+
+        for output in &self.outputs {
+            match output {
+                EvaluationOutput::Transaction(idx) => last_txn = Some(idx),
+                EvaluationOutput::Stage(stage) => last_stage = Some(stage),
+                EvaluationOutput::Status(Status::Failure) => match (last_txn, last_stage) {
+                    (Some(idx), Some(stage)) => res.push((*idx, *stage)),
+                    _ => unreachable!(),
+                },
+                _ => (),
+            }
+        }
+
+        res
+    }
+
+    pub fn append(&mut self, output: EvaluationOutput) {
+        self.outputs.push(output);
+    }
+}
+
+impl fmt::Display for OutputType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use OutputType::*;
+        match self {
+            CompiledModule(cm) => write!(f, "{:#?}", cm),
+            CompiledScript(cs) => write!(f, "{:#?}", cs),
+            CompilerLog(s) => write!(f, "{}", s),
+            TransactionOutput(output) => write!(f, "{:#?}", output),
+        }
+    }
+}
+
+impl fmt::Display for EvaluationOutput {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use EvaluationOutput::*;
+        match self {
+            Transaction(idx) => write!(f, "Transaction {}", idx),
+            Stage(stage) => write!(f, "Stage: {:?}", stage),
+            Output(output) => write!(f, "{}", output),
+            Error(error) => write!(f, "Error: {:#?}", error),
+            Status(status) => write!(f, "Status: {:?}", status),
+        }
+    }
+}
+
+impl fmt::Display for EvaluationLog {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (i, output) in self.outputs.iter().enumerate() {
+            writeln!(f, "[{}] {}", i, output)?;
+        }
+        Ok(())
+    }
+}
 
 fn fetch_script_dependencies(
     exec: &mut FakeExecutor,
@@ -158,13 +311,13 @@ fn make_script_transaction(
     exec: &FakeExecutor,
     config: &TransactionConfig,
     script: CompiledScript,
-) -> Result<SignedTransaction> {
+) -> Result<SignedUserTransaction> {
     let mut blob = vec![];
     script.serialize(&mut blob)?;
     let script = TransactionScript::new(blob, config.ty_args.clone(), config.args.clone());
 
     let params = get_transaction_parameters(exec, config);
-    Ok(RawTransaction::new_script(
+    Ok(RawUserTransaction::new_script(
         params.sender_addr,
         params.sequence_number,
         script,
@@ -181,13 +334,13 @@ fn make_module_transaction(
     exec: &FakeExecutor,
     config: &TransactionConfig,
     module: CompiledModule,
-) -> Result<SignedTransaction> {
+) -> Result<SignedUserTransaction> {
     let mut blob = vec![];
     module.serialize(&mut blob)?;
     let module = TransactionModule::new(blob);
 
     let params = get_transaction_parameters(exec, config);
-    Ok(RawTransaction::new_module(
+    Ok(RawUserTransaction::new_module(
         params.sender_addr,
         params.sequence_number,
         module,
@@ -202,7 +355,7 @@ fn make_module_transaction(
 /// Runs a single transaction using the fake executor.
 fn run_transaction(
     exec: &mut FakeExecutor,
-    transaction: SignedTransaction,
+    transaction: SignedUserTransaction,
 ) -> Result<TransactionOutput> {
     let mut outputs = exec.execute_block(vec![transaction]).unwrap();
     if outputs.len() == 1 {
@@ -219,10 +372,6 @@ fn run_transaction(
             }
             TransactionStatus::Discard(status) => {
                 error!("VM status:: {:?}", status);
-                checked_verify!(output.write_set().is_empty());
-                Err(ErrorKind::DiscardedTransaction(output).into())
-            }
-            TransactionStatus::Retry => {
                 checked_verify!(output.write_set().is_empty());
                 Err(ErrorKind::DiscardedTransaction(output).into())
             }
@@ -385,22 +534,31 @@ pub fn eval_block_metadata(
     block_metadata: BlockMetadata,
     log: &mut EvaluationLog,
 ) -> Result<Status> {
-    let outputs =
-        executor.execute_transaction_block(vec![LibraTransaction::BlockMetadata(block_metadata)]);
+    let outputs = executor
+        .execute_transaction_block(vec![StarcoinTransaction::BlockMetadata(block_metadata)]);
 
     match outputs {
         Ok(mut outputs) => {
             let output = outputs
                 .pop()
                 .expect("There should be one output in the result");
-            executor.apply_write_set(output.write_set());
-            log.append(EvaluationOutput::Output(OutputType::TransactionOutput(
-                Box::new(output),
-            )));
-            Ok(Status::Success)
+            match output.status() {
+                TransactionStatus::Keep(_status) => {
+                    executor.apply_write_set(output.write_set());
+                    log.append(EvaluationOutput::Output(OutputType::TransactionOutput(
+                        Box::new(output),
+                    )));
+                    Ok(Status::Success)
+                }
+                TransactionStatus::Discard(status) => {
+                    let err: Error = ErrorKind::VerificationError(status.clone()).into();
+                    log.append(EvaluationOutput::Error(Box::new(err)));
+                    Ok(Status::Failure)
+                }
+            }
         }
         Err(err) => {
-            let err: Error = ErrorKind::VerificationError(err).into();
+            let err: Error = ErrorKind::Other(err.to_string()).into();
             log.append(EvaluationOutput::Error(Box::new(err)));
             Ok(Status::Failure)
         }
@@ -425,7 +583,7 @@ pub fn eval<TComp: Compiler>(
         let mut data = data.clone();
         //just a hack, set default currency.
         // TODO use a more graceful method.
-        data.set_balance_currency(STC.clone());
+        data.set_balance_currency(STC_IDENTIFIER.clone());
         exec.add_account_data(&data);
     }
 

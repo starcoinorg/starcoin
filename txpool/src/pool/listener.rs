@@ -186,7 +186,6 @@ mod tests {
             TransactionPayload::Script(Script::new(vec![1, 2, 3], vec![], vec![])),
             100_000,
             10,
-            types::account_config::stc_type_tag(),
             Duration::from_secs(60),
         );
         let mut rng = rand::rngs::StdRng::from_seed([0; 32]);

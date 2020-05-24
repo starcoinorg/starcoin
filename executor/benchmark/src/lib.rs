@@ -26,7 +26,7 @@ use storage::Storage;
 use types::{
     account_address,
     account_address::AccountAddress,
-    account_config::{association_address, stc_type_tag},
+    account_config::association_address,
     block_metadata::BlockMetadata,
     transaction::{authenticator::AuthenticationKey, RawUserTransaction, Script, Transaction},
 };
@@ -305,7 +305,6 @@ fn create_transaction(
         program,
         400_000, /* max_gas_amount */
         1,       /* gas_unit_price */
-        stc_type_tag(),
         expiration_time,
     );
 

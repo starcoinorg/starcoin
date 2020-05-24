@@ -12,11 +12,7 @@ use starcoin_types::{
 use starcoin_vm_types::{state_view::StateView, transaction::ChangeSet};
 use vm_runtime::genesis::generate_genesis_state_set;
 use vm_runtime::{
-    account::Account,
-    common_transactions::{
-        create_account_txn_sent_as_association, peer_to_peer_txn_sent_as_association,
-        raw_peer_to_peer_txn,
-    },
+    common_transactions::{peer_to_peer_txn_sent_as_association, raw_peer_to_peer_txn},
     counters::TXN_EXECUTION_HISTOGRAM,
     starcoin_vm::StarcoinVM,
 };
@@ -102,12 +98,4 @@ impl TransactionExecutor for Executor {
             max_gas,
         )
     }
-}
-
-pub fn mock_create_account_txn() -> Transaction {
-    let account1 = Account::new();
-    Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 1, // fix me
-        1_000,
-    ))
 }

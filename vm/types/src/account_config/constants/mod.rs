@@ -17,11 +17,13 @@ pub mod event {
     };
 }
 
+pub mod account_type;
 pub mod chain;
 pub mod coin;
 pub mod stc;
 
 pub use account::*;
+pub use account_type::*;
 pub use addresses::*;
 pub use chain::*;
 pub use coin::*;

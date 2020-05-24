@@ -13,7 +13,7 @@ serde = { version = "1.0.99", default-features = false }
 num_enum = "0.4.1"
 move-core-types = {git = "https://github.com/starcoinorg/libra", rev="ed50e7ec5ac5581803b45b48d0427ba833c211df" }
 move-vm-types = {git = "https://github.com/starcoinorg/libra", rev="ed50e7ec5ac5581803b45b48d0427ba833c211df" }
-libra_types = { package="libra-types", git = "https://github.com/starcoinorg/libra", rev="ed50e7ec5ac5581803b45b48d0427ba833c211df" }
+libra_types = { package="libra-types", features=["fuzzing"], git = "https://github.com/starcoinorg/libra", rev="ed50e7ec5ac5581803b45b48d0427ba833c211df" }
 vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="ed50e7ec5ac5581803b45b48d0427ba833c211df" }
 libra-state-view = { package="libra-state-view", git = "https://github.com/starcoinorg/libra", rev="ed50e7ec5ac5581803b45b48d0427ba833c211df" }
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}

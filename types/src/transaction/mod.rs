@@ -18,7 +18,6 @@ use starcoin_crypto::{
     traits::*,
     HashValue,
 };
-use starcoin_vm_types::language_storage::TypeTag;
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt, time::Duration};
 
@@ -59,7 +58,6 @@ pub struct RawUserTransaction {
     // Maximal price can be paid per gas.
     gas_unit_price: u64,
 
-    gas_specifier: TypeTag,
     // Expiration time for this transaction.  If storage is queried and
     // the time returned is greater than or equal to this time and this
     // transaction has not been included, you can be certain that it will
@@ -113,7 +111,6 @@ impl RawUserTransaction {
         payload: TransactionPayload,
         max_gas_amount: u64,
         gas_unit_price: u64,
-        gas_specifier: TypeTag,
         expiration_time: Duration,
     ) -> Self {
         RawUserTransaction {
@@ -122,7 +119,6 @@ impl RawUserTransaction {
             payload,
             max_gas_amount,
             gas_unit_price,
-            gas_specifier,
             expiration_time,
         }
     }
@@ -136,7 +132,6 @@ impl RawUserTransaction {
         script: Script,
         max_gas_amount: u64,
         gas_unit_price: u64,
-        gas_specifier: TypeTag,
         expiration_time: Duration,
     ) -> Self {
         RawUserTransaction {
@@ -145,7 +140,6 @@ impl RawUserTransaction {
             payload: TransactionPayload::Script(script),
             max_gas_amount,
             gas_unit_price,
-            gas_specifier,
             expiration_time,
         }
     }
@@ -160,7 +154,6 @@ impl RawUserTransaction {
         module: Module,
         max_gas_amount: u64,
         gas_unit_price: u64,
-        gas_specifier: TypeTag,
         expiration_time: Duration,
     ) -> Self {
         RawUserTransaction {
@@ -169,7 +162,6 @@ impl RawUserTransaction {
             payload: TransactionPayload::Module(module),
             max_gas_amount,
             gas_unit_price,
-            gas_specifier,
             expiration_time,
         }
     }
@@ -243,7 +235,6 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(vec![], vec![], vec![])),
             0,
             0,
-            stc_type_tag(),
             Duration::new(0, 0),
         )
     }
@@ -255,7 +246,6 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(compiled_script, vec![stc_type_tag()], vec![])),
             600,
             0,
-            stc_type_tag(),
             Duration::new(0, 0),
         )
     }

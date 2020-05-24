@@ -6,7 +6,6 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config;
 use starcoin_types::transaction::{
     parse_as_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
@@ -124,7 +123,6 @@ impl CommandAction for ExecuteCommand {
             Script::new(bytecode, type_tags, args),
             opt.max_gas_amount,
             opt.gas_price,
-            account_config::stc_type_tag(),
             expiration_time,
         );
 

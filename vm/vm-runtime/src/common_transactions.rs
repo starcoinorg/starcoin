@@ -3,113 +3,20 @@
 
 //! Support for encoding transactions for common situations.
 
-use crate::starcoin_vm::DEFAULT_CURRENCY_TY;
-use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN};
-use crate::{account::create_signed_txn_with_association_account, account::Account};
+use crate::genesis::GENESIS_KEYPAIR;
+use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, PEER_TO_PEER_TXN};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
 };
+use starcoin_vm_types::account_config;
+use starcoin_vm_types::language_storage::TypeTag;
 use std::time::Duration;
 
-//TODO
+//TODO move to transaction_builder crate.
 pub const TXN_RESERVED: u64 = 2_000_000;
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
-
-/// Returns a transaction to create a new account with the given arguments.
-pub fn create_account_txn(
-    sender: &Account,
-    new_account: &Account,
-    seq_num: u64,
-    initial_amount: u64,
-) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(*new_account.address()));
-    args.push(TransactionArgument::U8Vector(new_account.auth_key_prefix()));
-    args.push(TransactionArgument::U64(initial_amount));
-
-    sender.create_signed_txn_with_args(
-        CREATE_ACCOUNT_TXN.clone(),
-        vec![],
-        args,
-        seq_num,
-        TXN_RESERVED,
-        1,
-        stc_type_tag(),
-    )
-}
-
-/// Returns a transaction to transfer coin from one account to another (possibly new) one, with the
-/// given arguments.
-pub fn peer_to_peer_txn(
-    sender: &Account,
-    receiver: &Account,
-    seq_num: u64,
-    transfer_amount: u64,
-) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(*receiver.address()));
-    args.push(TransactionArgument::U8Vector(receiver.auth_key_prefix()));
-    args.push(TransactionArgument::U64(transfer_amount));
-
-    // get a SignedTransaction
-    sender.create_signed_txn_with_args(
-        PEER_TO_PEER_TXN.clone(),
-        vec![stc_type_tag()],
-        args,
-        seq_num,
-        TXN_RESERVED, // this is a default for gas
-        1,            // this is a default for gas
-        stc_type_tag(),
-    )
-}
-
-/// Returns a transaction to mint new funds with the given arguments.
-pub fn mint_txn(
-    sender: &Account,
-    receiver: &Account,
-    seq_num: u64,
-    transfer_amount: u64,
-) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(*receiver.address()));
-    args.push(TransactionArgument::U8Vector(receiver.auth_key_prefix()));
-    args.push(TransactionArgument::U64(transfer_amount));
-
-    // get a SignedTransaction
-    sender.create_signed_txn_with_args(
-        MINT_TXN.clone(),
-        vec![],
-        args,
-        seq_num,
-        TXN_RESERVED, // this is a default for gas
-        1,            // this is a default for gas
-        stc_type_tag(),
-    )
-}
-
-/// Returns a transaction to create a new account with the given arguments.
-pub fn create_account_txn_sent_as_association(
-    new_account: &Account,
-    seq_num: u64,
-    initial_amount: u64,
-) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(*new_account.address()));
-    args.push(TransactionArgument::U8Vector(new_account.auth_key_prefix()));
-    args.push(TransactionArgument::U64(initial_amount));
-
-    create_signed_txn_with_association_account(
-        CREATE_ACCOUNT_TXN.clone(),
-        vec![DEFAULT_CURRENCY_TY.clone()],
-        args,
-        seq_num,
-        TXN_RESERVED,
-        1,
-        stc_type_tag(),
-    )
-}
 
 pub fn peer_to_peer_txn_sent_as_association(
     addr: AccountAddress,
@@ -129,7 +36,6 @@ pub fn peer_to_peer_txn_sent_as_association(
         seq_num,
         TXN_RESERVED,
         1,
-        stc_type_tag(),
     )
 }
 
@@ -157,7 +63,6 @@ pub fn raw_peer_to_peer_txn(
         )),
         max_gas,
         gas_price,
-        stc_type_tag(),
         Duration::from_secs(DEFAULT_EXPIRATION_TIME),
     )
 }
@@ -192,4 +97,26 @@ pub fn encode_transfer_script(
             TransactionArgument::U64(amount),
         ],
     )
+}
+
+pub fn create_signed_txn_with_association_account(
+    program: Vec<u8>,
+    ty_args: Vec<TypeTag>,
+    args: Vec<TransactionArgument>,
+    sequence_number: u64,
+    max_gas_amount: u64,
+    gas_unit_price: u64,
+) -> SignedUserTransaction {
+    RawUserTransaction::new(
+        account_config::association_address(),
+        sequence_number,
+        TransactionPayload::Script(Script::new(program, ty_args, args)),
+        max_gas_amount,
+        gas_unit_price,
+        // TTL is 86400s. Initial time was set to 0.
+        Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+    )
+    .sign(&GENESIS_KEYPAIR.0, GENESIS_KEYPAIR.1.clone())
+    .unwrap()
+    .into_inner()
 }

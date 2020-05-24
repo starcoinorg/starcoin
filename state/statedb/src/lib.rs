@@ -9,9 +9,7 @@ use parking_lot::{Mutex, MutexGuard};
 use scs::SCSCodec;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_logger::prelude::*;
-use starcoin_state_api::{
-    ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
-};
+use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::{
     access_path::{self, AccessPath, DataType},
@@ -23,6 +21,10 @@ use starcoin_vm_types::state_view::StateView;
 use std::convert::TryInto;
 use std::sync::Arc;
 use thiserror::Error;
+
+pub use starcoin_state_api::{
+    ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
+};
 
 #[derive(Error, Debug)]
 pub enum StateError {
@@ -220,6 +222,10 @@ pub struct ChainStateDB {
 static DEFAULT_CACHE_SIZE: usize = 10240;
 
 impl ChainStateDB {
+    pub fn mock() -> Self {
+        Self::new(Arc::new(MockStateNodeStore::new()), None)
+    }
+
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
         Self {
             store: store.clone(),
