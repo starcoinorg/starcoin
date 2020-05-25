@@ -453,21 +453,36 @@ impl StarcoinVM {
         }
     }
 
-    pub fn execute_transactions(
+    /// Execute a block transactions with gas_limit,
+    /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
+    pub fn execute_block_transactions(
         &mut self,
         state_view: &dyn StateView,
         transactions: Vec<Transaction>,
+        block_gas_limit: Option<u64>,
     ) -> Result<Vec<TransactionOutput>> {
         let mut data_cache = BlockDataCache::new(state_view);
 
+        let check_gas = block_gas_limit.is_some();
+        // only used when check_gas
+        let mut gas_left = block_gas_limit.unwrap_or_default();
+
         let mut result = vec![];
         let blocks = chunk_block_transactions(transactions);
-        for block in blocks {
+        'outer: for block in blocks {
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     self.load_configs_impl(&data_cache);
                     for transaction in txns {
                         let output = self.execute_user_transaction(transaction, &mut data_cache);
+
+                        // only need to check for user transactions.
+                        if check_gas {
+                            match gas_left.checked_sub(output.gas_used()) {
+                                Some(l) => gas_left = l,
+                                None => break 'outer,
+                            }
+                        }
 
                         if let TransactionStatus::Keep(_) = output.status() {
                             data_cache.push_write_set(output.write_set())
@@ -500,6 +515,14 @@ impl StarcoinVM {
             }
         }
         Ok(result)
+    }
+
+    pub fn execute_transactions(
+        &mut self,
+        state_view: &dyn StateView,
+        transactions: Vec<Transaction>,
+    ) -> Result<Vec<TransactionOutput>> {
+        self.execute_block_transactions(state_view, transactions, None)
     }
 }
 

@@ -52,6 +52,22 @@ impl TransactionExecutor for Executor {
         Ok(result)
     }
 
+    /// Execute a block transactions with gas_limit,
+    /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
+    fn execute_block_transactions(
+        chain_state: &dyn StateView,
+        txns: Vec<Transaction>,
+        block_gas_limit: u64,
+    ) -> Result<Vec<TransactionOutput>> {
+        let timer = TXN_EXECUTION_HISTOGRAM
+            .with_label_values(&["execute_block_transactions"])
+            .start_timer();
+        let mut vm = StarcoinVM::new();
+        let result = vm.execute_block_transactions(chain_state, txns, Some(block_gas_limit))?;
+        timer.observe_duration();
+        Ok(result)
+    }
+
     fn validate_transaction(
         chain_state: &dyn StateView,
         txn: SignedUserTransaction,

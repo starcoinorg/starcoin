@@ -18,7 +18,7 @@ pub struct BlockExecutor {}
 
 impl BlockExecutor {
     /// Execute block transaction, only update state in cache.
-    /// Caller should decide flush or not.
+    /// Caller should decide whether flush or not.
     pub fn block_execute(
         chain_state: &dyn ChainState,
         txns: Vec<Transaction>,
@@ -26,14 +26,19 @@ impl BlockExecutor {
         block_gas_limit: u64,
     ) -> ExecutorResult<(HashValue, Vec<TransactionInfo>)> {
         let mut vec_transaction_info = vec![];
-        // ignore for now. wait transaction output refactor.
-        let mut gas_left = block_gas_limit;
-        for txn in txns {
+        let txn_outputs = Executor::execute_block_transactions(
+            chain_state.as_super(),
+            txns.clone(),
+            block_gas_limit,
+        )
+        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+
+        for (txn, output) in txns
+            .iter()
+            .take(txn_outputs.len())
+            .zip(txn_outputs.into_iter())
+        {
             let txn_hash = txn.id();
-            // execute txn one by one, and check block gas limit before commit the transaction output.
-            let mut results = Executor::execute_transactions(chain_state.as_super(), vec![txn])
-                .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
-            let output = results.pop().expect("execute txn has output");
             let (write_set, events, gas_used, status) = output.into_inner();
             match status {
                 TransactionStatus::Discard(status) => {
@@ -44,19 +49,10 @@ impl BlockExecutor {
                 }
                 TransactionStatus::Keep(status) => {
                     TXN_STATUS_COUNTERS.with_label_values(&["KEEP"]).inc();
-
-                    // check block gas
-                    match gas_left.checked_sub(gas_used) {
-                        None => {
-                            // now gas left is not enough to include this txn, just stop here.
-                            break;
-                        }
-                        Some(left) => gas_left = left,
-                    }
-
                     chain_state
                         .apply_write_set(write_set)
                         .map_err(BlockExecutorError::BlockChainStateErr)?;
+
                     let txn_state_root = chain_state
                         .commit()
                         .map_err(BlockExecutorError::BlockChainStateErr)?;

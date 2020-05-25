@@ -21,9 +21,19 @@ pub trait TransactionExecutor: std::marker::Unpin + Clone {
     fn init_genesis(config: &ChainConfig) -> Result<ChangeSet>;
 
     /// Execute transactions, update state to state_store, and return State roots and TransactionOutputs.
+    /// TODO: should mark deprecated.
     fn execute_transactions(
         state_view: &dyn StateView,
         txns: Vec<Transaction>,
+    ) -> Result<Vec<TransactionOutput>>;
+
+    /// Execute a block transactions with gas_limit,
+    /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
+    /// Meant to replace `execute_transactions`.
+    fn execute_block_transactions(
+        state_view: &dyn StateView,
+        transactions: Vec<Transaction>,
+        block_gas_limit: u64,
     ) -> Result<Vec<TransactionOutput>>;
 
     /// Executes the prologue and verifies that the transaction is valid.
