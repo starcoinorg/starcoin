@@ -10,8 +10,6 @@ use executor::executor::Executor;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
-use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
-use starcoin_accumulator::MerkleAccumulator;
 use starcoin_config::ChainNetwork;
 use starcoin_state_api::{ChainState, ChainStateWriter};
 
@@ -21,7 +19,6 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
-use storage::IntoSuper;
 use storage::Storage;
 use types::{
     account_address,
@@ -172,19 +169,16 @@ impl TransactionGenerator {
 
 struct TxnExecutor<'test> {
     chain_state: &'test dyn ChainState,
-    accumulator: &'test MerkleAccumulator,
     block_receiver: mpsc::Receiver<Vec<Transaction>>,
 }
 
 impl<'test> TxnExecutor<'test> {
     fn new(
         chain_state: &'test dyn ChainState,
-        accumulator: &'test MerkleAccumulator,
         block_receiver: mpsc::Receiver<Vec<Transaction>>,
     ) -> Self {
         Self {
             chain_state,
-            accumulator,
             block_receiver,
         }
     }
@@ -206,15 +200,10 @@ impl<'test> TxnExecutor<'test> {
                 AccountAddress::random(),
                 Some(miner_account.auth_key_prefix()),
             );
-            BlockExecutor::block_execute(
-                self.chain_state,
-                self.accumulator,
-                transactions,
-                block_meta,
-                u64::MAX,
-                false,
-            )
-            .expect("Execute transactions fail.");
+            let (_state_root, _txn_infos) =
+                BlockExecutor::block_execute(self.chain_state, transactions, block_meta, u64::MAX)
+                    .expect("Execute transactions fail.");
+            self.chain_state.flush().expect("flush state should be ok");
 
             let execute_time = std::time::Instant::now().duration_since(execute_start);
             let commit_start = std::time::Instant::now();
@@ -246,21 +235,12 @@ pub fn run_benchmark(
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(cache_storage)).unwrap());
 
-    let chain_state = ChainStateDB::new(storage.clone(), None);
+    let chain_state = ChainStateDB::new(storage, None);
     chain_state
         .apply_write_set(write_set)
         .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
     chain_state.commit().unwrap();
     chain_state.flush().unwrap();
-
-    let accumulator = MerkleAccumulator::new(
-        *ACCUMULATOR_PLACEHOLDER_HASH,
-        vec![],
-        0,
-        0,
-        storage.into_super_arc(),
-    )
-    .unwrap();
 
     let (block_sender, block_receiver) = mpsc::sync_channel(50 /* bound */);
 
@@ -276,7 +256,7 @@ pub fn run_benchmark(
     let exe_thread = std::thread::Builder::new()
         .name("txn_executor".to_string())
         .spawn(move || {
-            let mut exe = TxnExecutor::new(&chain_state, &accumulator, block_receiver);
+            let mut exe = TxnExecutor::new(&chain_state, block_receiver);
             exe.run();
         })
         .expect("Failed to spawn transaction executor thread.");

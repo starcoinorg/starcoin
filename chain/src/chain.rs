@@ -8,7 +8,7 @@ use executor::block_executor::BlockExecutor;
 use logger::prelude::*;
 use network::get_unix_ts;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
-use starcoin_state_api::{ChainState, ChainStateReader};
+use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::marker::PhantomData;
@@ -22,6 +22,7 @@ use types::{
     accumulator_info::AccumulatorInfo,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     block_metadata::BlockMetadata,
+    error::BlockExecutorError,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U512,
 };
@@ -143,9 +144,10 @@ where
             self.storage.clone(),
         )?;
         let block_gas_limit = self.config.miner.block_gas_limit;
-        let (accumulator_root, state_root, txn_infos) = BlockExecutor::block_execute(
+
+        // execute block txns
+        let (state_root, txn_infos) = BlockExecutor::block_execute(
             &chain_state,
-            &txn_accumulator,
             txns,
             BlockMetadata::new(
                 previous_header.id(),
@@ -154,8 +156,17 @@ where
                 auth_key_prefix.clone(),
             ),
             block_gas_limit,
-            true,
         )?;
+
+        // calculate txn accumulator root
+        let (accumulator_root, _) = {
+            let included_txn_hashes: Vec<_> = txn_infos
+                .iter()
+                .map(|info| info.transaction_hash())
+                .collect();
+            txn_accumulator.append(&included_txn_hashes)?
+        };
+
         let block_gas_used = txn_infos.iter().fold(0u64, |acc, i| acc + i.gas_used());
         let included_user_txns = user_txns
             .into_iter()
@@ -394,13 +405,11 @@ where
 
         let exe_begin_time = get_unix_ts();
 
-        let (_, state_root, vec_transaction_info) = BlockExecutor::block_execute(
+        let (state_root, vec_transaction_info) = BlockExecutor::block_execute(
             chain_state,
-            &self.txn_accumulator,
             txns.clone(),
             block_metadata.clone(),
             block.header().gas_limit(),
-            false,
         )?;
 
         let exe_end_time = get_unix_ts();
@@ -427,6 +436,49 @@ where
         );
         // push the extra meta txn to save.
         txns.push(Transaction::BlockMetadata(block_metadata));
+
+        // txn accumulator verify.
+        let executed_accumulator_root = {
+            let included_txn_hashes: Vec<_> = vec_transaction_info
+                .iter()
+                .map(|info| info.transaction_hash())
+                .collect();
+            let (accumulator_root, first_leaf_idx) =
+                self.txn_accumulator.append(&included_txn_hashes)?;
+            let mut i = 0;
+            for hash in included_txn_hashes {
+                let leaf_index = first_leaf_idx + i as u64;
+                if let Some(proof) = self
+                    .txn_accumulator
+                    .get_proof(leaf_index)
+                    .map_err(|_err| BlockExecutorError::BlockAccumulatorGetProofErr)?
+                {
+                    proof
+                        .verify(accumulator_root, hash, leaf_index)
+                        .map_err(|_err| {
+                            BlockExecutorError::BlockAccumulatorVerifyErr(
+                                accumulator_root,
+                                leaf_index,
+                            )
+                        })?;
+                }
+                i += 1;
+            }
+            accumulator_root
+        };
+        ensure!(
+            executed_accumulator_root == block.header().accumulator_root(),
+            "verify block: txn accumulator root mismatch"
+        );
+
+        // If chain state is matched, and accumulator is matched,
+        // then, we save flush states, and save block data.
+        self.txn_accumulator
+            .flush()
+            .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
+        self.chain_state
+            .flush()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
 
         let total_difficulty = {
             let pre_total_difficulty = self
