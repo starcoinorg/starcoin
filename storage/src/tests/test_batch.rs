@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 #[test]
 fn test_db_batch() {
-    let tmpdir = libra_temppath::TempPath::new();
+    let tmpdir = starcoin_config::temp_path();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let mut write_batch = WriteBatch::new();
     let transaction_info1 = TransactionInfo::new(
@@ -120,7 +120,7 @@ fn test_cache_batch() {
 
 #[test]
 fn test_batch_comm() {
-    let tmpdir = libra_temppath::TempPath::new();
+    let tmpdir = starcoin_config::temp_path();
     let key = HashValue::random();
     let value = HashValue::zero();
     let db = DBStorage::new(tmpdir.path());
