@@ -3,7 +3,7 @@
 
 use crate::account::Account;
 use crate::{common::strip, config::global::Config as GlobalConfig, errors::*, evaluator::Stage};
-use move_core_types::{
+use starcoin_vm_types::{
     language_storage::TypeTag,
     parser::parse_type_tags,
     transaction_argument::{parse_as_transaction_argument, TransactionArgument},

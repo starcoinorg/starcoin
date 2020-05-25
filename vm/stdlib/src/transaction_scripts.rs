@@ -9,8 +9,8 @@
 
 use anyhow::{anyhow, Error, Result};
 use include_dir::{include_dir, Dir};
-use libra_crypto::HashValue;
-use libra_types::transaction::SCRIPT_HASH_LENGTH;
+use starcoin_crypto::HashValue;
+use starcoin_vm_types::on_chain_config::SCRIPT_HASH_LENGTH;
 use std::{convert::TryFrom, fmt, path::PathBuf};
 
 // This includes the compiled transaction scripts as binaries. We must use this hack to work around

@@ -6,10 +6,10 @@
 
 use crate::account::{Account, AccountData, AccountTypeSpecifier};
 use crate::{common::strip, errors::*, genesis_accounts::make_genesis_accounts};
-use move_core_types::identifier::Identifier;
 use once_cell::sync::Lazy;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::account_config;
+use starcoin_vm_types::identifier::Identifier;
 use std::{
     collections::{btree_map, BTreeMap},
     str::FromStr,

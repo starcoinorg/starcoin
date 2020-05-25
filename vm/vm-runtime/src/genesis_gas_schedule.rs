@@ -3,8 +3,8 @@
 
 //! This file contains the starting gas schedule published at genesis.
 
-use move_core_types::gas_schedule::GasCost;
 use once_cell::sync::Lazy;
+use starcoin_vm_types::gas_schedule::GasCost;
 use vm::{
     file_format::{
         Bytecode, ConstantPoolIndex, FieldHandleIndex, FieldInstantiationIndex,
