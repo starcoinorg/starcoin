@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 #[test]
 fn test_reopen() {
-    let tmpdir = libra_temppath::TempPath::new();
+    let tmpdir = starcoin_config::temp_path();
     let key = HashValue::random();
     let value = HashValue::zero();
     {
@@ -39,7 +39,7 @@ fn test_reopen() {
 
 #[test]
 fn test_open_read_only() {
-    let tmpdir = libra_temppath::TempPath::new();
+    let tmpdir = starcoin_config::temp_path();
     let db = DBStorage::new(tmpdir.path());
     let key = HashValue::random();
     let value = HashValue::zero();
@@ -56,7 +56,7 @@ fn test_open_read_only() {
 #[test]
 fn test_storage() {
     let cache_storage = Arc::new(CacheStorage::new());
-    let tmpdir = libra_temppath::TempPath::new();
+    let tmpdir = starcoin_config::temp_path();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
         cache_storage,
@@ -83,7 +83,7 @@ fn test_storage() {
 #[test]
 fn test_two_level_storage() {
     let cache_storage = Arc::new(CacheStorage::new());
-    let tmpdir = libra_temppath::TempPath::new();
+    let tmpdir = starcoin_config::temp_path();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
         cache_storage.clone(),
@@ -138,7 +138,7 @@ fn test_two_level_storage() {
 
 #[test]
 fn test_two_level_storage_read_through() -> Result<()> {
-    let tmpdir = libra_temppath::TempPath::new();
+    let tmpdir = starcoin_config::temp_path();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = Storage::new(StorageInstance::new_db_instance(db_storage.clone())).unwrap();
 
