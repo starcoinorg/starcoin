@@ -82,6 +82,7 @@ impl SyncBencher {
                     network.clone(),
                     begin_number,
                     true,
+                    true,
                 )
                 .await?
                 {

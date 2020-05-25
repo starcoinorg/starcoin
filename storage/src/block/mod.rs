@@ -28,13 +28,11 @@ impl StorageBlock {
     fn new(block: Block, state: BlockState) -> Self {
         Self { block, state }
     }
+}
 
-    fn get_block(&self) -> &Block {
-        &self.block
-    }
-
-    fn get_block_state(&self) -> &BlockState {
-        &self.state
+impl Into<(Block, BlockState)> for StorageBlock {
+    fn into(self) -> (Block, BlockState) {
+        (self.block, self.state)
     }
 }
 
@@ -236,7 +234,8 @@ impl BlockStorage {
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
         Ok(
             if let Some(storage_block) = self.block_store.get(block_id)? {
-                Some(storage_block.get_block().clone())
+                let (block, _) = storage_block.into();
+                Some(block)
             } else {
                 None
             },
@@ -411,7 +410,8 @@ impl BlockStorage {
     pub fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>> {
         Ok(
             if let Some(storage_block) = self.block_store.get(block_id)? {
-                Some(storage_block.get_block_state().clone())
+                let (_, block_state) = storage_block.into();
+                Some(block_state)
             } else {
                 None
             },
