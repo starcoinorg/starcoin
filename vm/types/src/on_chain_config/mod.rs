@@ -21,7 +21,7 @@ mod vm_config;
 pub use self::{
     registered_currencies::RegisteredCurrencies,
     version::Version,
-    vm_config::{VMConfig, VMPublishingOption},
+    vm_config::{VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
 };
 
 /// To register an on-chain config in Rust:

@@ -9,10 +9,7 @@ use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     PrivateKey, Uniform,
 };
-use libra_types::on_chain_config::VMPublishingOption;
 use move_vm_state::data_cache::BlockDataCache;
-use move_vm_types::loaded_data::types::FatStructType;
-use move_vm_types::{chain_state::ChainState as MoveChainState, values::Value};
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainConfig;
@@ -21,8 +18,12 @@ use starcoin_types::{
 };
 use starcoin_vm_types::{
     account_config,
+    chain_state::ChainState as MoveChainState,
     language_storage::{StructTag, TypeTag},
+    loaded_data::types::FatStructType,
+    on_chain_config::VMPublishingOption,
     transaction::ChangeSet,
+    values::Value,
     write_set::WriteSet,
 };
 use std::collections::BTreeMap;
@@ -126,7 +127,8 @@ fn create_and_initialize_main_accounts(
     let burn_account_address = account_config::burn_account_address();
     let fee_account_address = account_config::transaction_fee_address();
     // create the mint account
-    let mint_address: libra_types::account_address::AccountAddress = account_config::mint_address();
+    let mint_address: starcoin_vm_types::account_address::AccountAddress =
+        account_config::mint_address();
 
     context.set_sender(root_association_address);
 

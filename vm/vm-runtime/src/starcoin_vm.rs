@@ -3,9 +3,8 @@
 
 use anyhow::Result;
 use move_vm_runtime::MoveVM;
-use move_vm_state::data_cache::RemoteStorage;
 use move_vm_state::{
-    data_cache::{BlockDataCache, RemoteCache},
+    data_cache::{BlockDataCache, RemoteCache, RemoteStorage},
     execution_context::{ExecutionContext, SystemExecutionContext, TransactionExecutionContext},
 };
 use once_cell::sync::Lazy;

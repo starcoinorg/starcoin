@@ -9,7 +9,7 @@ use anyhow::{format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
-const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
+pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 
 /// Defines and holds the publishing policies for the VM. There are three possible configurations:
 /// 1. No module publishing, only whitelisted scripts are allowed.

@@ -58,6 +58,8 @@ pub mod file_format {
     pub use vm::file_format::*;
 }
 
+pub mod data_cache {}
+
 pub mod access {
     pub use vm::access::{ModuleAccess, ScriptAccess};
 }
@@ -76,6 +78,10 @@ pub mod state_view {
 
 pub mod transaction {
     pub use libra_types::transaction::{ChangeSet, Module, Script};
+}
+
+pub mod contract_event {
+    pub use libra_types::contract_event::{ContractEvent, ContractEventV0, EventWithProof};
 }
 
 pub mod access_path;

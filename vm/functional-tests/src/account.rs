@@ -4,11 +4,6 @@
 //! Test infrastructure for modeling Libra accounts.
 
 use anyhow::{Error, Result};
-use move_core_types::{
-    identifier::{IdentStr, Identifier},
-    language_storage::{ResourceKey, StructTag, TypeTag},
-    move_resource::MoveResource,
-};
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::{
@@ -24,16 +19,21 @@ use starcoin_types::{
 use starcoin_vm_runtime::common_transactions::{
     create_signed_txn_with_association_account, TXN_RESERVED,
 };
-use starcoin_vm_runtime::genesis::GENESIS_KEYPAIR;
-use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
-use starcoin_vm_runtime::transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN};
-use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_runtime::{
+    genesis::GENESIS_KEYPAIR,
+    starcoin_vm::DEFAULT_CURRENCY_TY,
+    transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN},
+};
 use starcoin_vm_types::{
+    account_config::stc_type_tag,
     account_config::{
         self, from_currency_code_string, type_tag_for_currency_code, AccountResource,
         BalanceResource, ReceivedPaymentEvent, SentPaymentEvent, STC_NAME,
     },
+    identifier::{IdentStr, Identifier},
+    language_storage::{ResourceKey, StructTag, TypeTag},
     loaded_data::types::{FatStructType, FatType},
+    move_resource::MoveResource,
     values::{Struct, Value},
 };
 use std::{str::FromStr, time::Duration};

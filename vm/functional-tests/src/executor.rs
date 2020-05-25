@@ -4,20 +4,22 @@
 //! Support for running the VM to execute and verify transactions.
 use crate::account::{Account, AccountData};
 use anyhow::Result;
-use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use starcoin_crypto::HashValue;
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
-use starcoin_types::account_config::association_address;
 use starcoin_types::{
     access_path::AccessPath,
-    account_config::{AccountResource, BalanceResource},
     block_metadata::BlockMetadata,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
     write_set::WriteSet,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::{
+    account_config::{association_address, AccountResource, BalanceResource},
+    identifier::Identifier,
+    language_storage::ModuleId,
+    state_view::StateView,
+};
 use vm::CompiledModule;
 
 /// Provides an environment to run a VM instance.

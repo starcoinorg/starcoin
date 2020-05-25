@@ -11,10 +11,6 @@ use bytecode_verifier::verifier::{
     verify_module_dependencies, verify_script_dependencies, VerifiedModule, VerifiedScript,
 };
 use mirai_annotations::checked_verify;
-use move_core_types::{
-    gas_schedule::{GasAlgebra, GasConstants},
-    language_storage::ModuleId,
-};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
@@ -29,7 +25,12 @@ use starcoin_types::{
     },
     vm_error::{StatusCode, VMStatus},
 };
-use starcoin_vm_types::{account_config::STC_IDENTIFIER, state_view::StateView};
+use starcoin_vm_types::{
+    account_config::STC_IDENTIFIER,
+    gas_schedule::{GasAlgebra, GasConstants},
+    language_storage::ModuleId,
+    state_view::StateView,
+};
 use std::fmt;
 use std::str::FromStr;
 use std::time::Duration;
