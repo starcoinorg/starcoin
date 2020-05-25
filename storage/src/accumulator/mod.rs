@@ -10,19 +10,23 @@ use anyhow::Result;
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::hash::HashValue;
 use scs::SCSCodec;
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::node_index::NodeIndex;
 use starcoin_accumulator::{
     AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter,
 };
+use std::io::Write;
 use std::mem::size_of;
 use std::sync::Arc;
 
 define_storage!(
     AccumulatorNodeStore,
-    HashValue,
+    AccumulatorNodeKey,
     AccumulatorNode,
     ACCUMULATOR_NODE_PREFIX_NAME
 );
+
+pub type AccumulatorNodeKey = (HashValue, AccumulatorStoreType);
 
 pub struct AccumulatorStorage {
     node_store: AccumulatorNodeStore,
@@ -32,6 +36,26 @@ impl AccumulatorStorage {
     pub fn new(instance: StorageInstance) -> Self {
         let node_store = AccumulatorNodeStore::new(instance);
         Self { node_store }
+    }
+    pub fn get_store_key(store_type: AccumulatorStoreType, hash: HashValue) -> AccumulatorNodeKey {
+        (hash, store_type)
+    }
+}
+
+impl KeyCodec for AccumulatorNodeKey {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        let (hash, store_type) = self.clone();
+
+        let mut encoded_key = Vec::with_capacity(size_of::<AccumulatorNodeKey>());
+        encoded_key.write_all(&hash.to_vec()).unwrap();
+        encoded_key.write_all(&store_type.encode()?).unwrap();
+        Ok(encoded_key)
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self, Error> {
+        let hash = HashValue::from_slice(&data[..HashValue::LENGTH])?;
+        let store_type = AccumulatorStoreType::decode(&data[HashValue::LENGTH..])?;
+        Ok((hash, store_type))
     }
 }
 
@@ -59,32 +83,49 @@ impl ValueCodec for AccumulatorNode {
 
 impl AccumulatorTreeStore for AccumulatorStorage {}
 impl AccumulatorReader for AccumulatorStorage {
-    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
-        self.node_store.get(hash)
+    fn get_node(
+        &self,
+        store_type: AccumulatorStoreType,
+        hash: HashValue,
+    ) -> Result<Option<AccumulatorNode>> {
+        self.node_store.get(Self::get_store_key(store_type, hash))
     }
 
-    fn multiple_get(&self, _hash_vec: Vec<HashValue>) -> Result<Vec<AccumulatorNode>, Error> {
+    fn multiple_get(
+        &self,
+        _store_type: AccumulatorStoreType,
+        _hash_vec: Vec<HashValue>,
+    ) -> Result<Vec<AccumulatorNode>, Error> {
         unimplemented!()
     }
 }
 
 impl AccumulatorWriter for AccumulatorStorage {
-    fn save_node(&self, node: AccumulatorNode) -> Result<()> {
-        self.node_store.put(node.hash(), node)
+    fn save_node(&self, store_type: AccumulatorStoreType, node: AccumulatorNode) -> Result<()> {
+        self.node_store
+            .put(Self::get_store_key(store_type, node.hash()), node)
     }
 
-    fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<(), Error> {
+    fn save_nodes(
+        &self,
+        store_type: AccumulatorStoreType,
+        nodes: Vec<AccumulatorNode>,
+    ) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for node in nodes {
-            batch.put(node.hash(), node)?;
+            batch.put(Self::get_store_key(store_type.clone(), node.hash()), node)?;
         }
         self.node_store.write_batch(batch)
     }
 
-    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
+    fn delete_nodes(
+        &self,
+        store_type: AccumulatorStoreType,
+        node_hash_vec: Vec<HashValue>,
+    ) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for key in node_hash_vec {
-            batch.delete(key)?;
+            batch.delete(Self::get_store_key(store_type.clone(), key))?;
         }
         self.node_store.write_batch(batch)
     }

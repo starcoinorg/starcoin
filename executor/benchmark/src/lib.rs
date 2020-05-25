@@ -10,7 +10,7 @@ use executor::executor::Executor;
 use executor::TransactionExecutor;
 use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
-use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_config::ChainNetwork;
 use starcoin_state_api::{ChainState, ChainStateWriter};
@@ -258,6 +258,7 @@ pub fn run_benchmark(
         vec![],
         0,
         0,
+        AccumulatorStoreType::Transaction,
         storage.into_super_arc(),
     )
     .unwrap();

@@ -3,7 +3,7 @@
 use benchmarks::storage::StorageBencher;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use crypto::HashValue;
-use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -55,6 +55,7 @@ fn accumulator_append(c: &mut Criterion) {
                     vec![],
                     0,
                     0,
+                    AccumulatorStoreType::Transaction,
                     storage.clone().into_super_arc(),
                 )
                 .unwrap()

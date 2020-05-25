@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::node::AccumulatorStoreType;
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
@@ -51,18 +52,34 @@ pub trait Accumulator {
 
 pub trait AccumulatorReader {
     ///get node by node hash
-    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>>;
+    fn get_node(
+        &self,
+        store_type: AccumulatorStoreType,
+        hash: HashValue,
+    ) -> Result<Option<AccumulatorNode>>;
     /// multiple get nodes
-    fn multiple_get(&self, hash_vec: Vec<HashValue>) -> Result<Vec<AccumulatorNode>>;
+    fn multiple_get(
+        &self,
+        store_type: AccumulatorStoreType,
+        hash_vec: Vec<HashValue>,
+    ) -> Result<Vec<AccumulatorNode>>;
 }
 
 pub trait AccumulatorWriter {
     /// save node
-    fn save_node(&self, node: AccumulatorNode) -> Result<()>;
+    fn save_node(&self, store_type: AccumulatorStoreType, node: AccumulatorNode) -> Result<()>;
     /// batch save nodes
-    fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<()>;
+    fn save_nodes(
+        &self,
+        store_type: AccumulatorStoreType,
+        nodes: Vec<AccumulatorNode>,
+    ) -> Result<()>;
     ///delete node
-    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()>;
+    fn delete_nodes(
+        &self,
+        store_type: AccumulatorStoreType,
+        node_hash_vec: Vec<HashValue>,
+    ) -> Result<()>;
 }
 
 pub trait AccumulatorTreeStore:
@@ -72,6 +89,7 @@ pub trait AccumulatorTreeStore:
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
 pub struct MerkleAccumulator {
+    store_type: AccumulatorStoreType,
     tree: Mutex<AccumulatorTree>,
     node_store: Arc<dyn AccumulatorTreeStore>,
 }
@@ -82,15 +100,19 @@ impl MerkleAccumulator {
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: LeafCount,
         num_notes: NodeCount,
+        store_type: AccumulatorStoreType,
         node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<Self> {
+        let sub_store_type = store_type.clone();
         Ok(Self {
+            store_type,
             tree: Mutex::new(AccumulatorTree::new(
                 HashValue::random(),
                 frozen_subtree_roots,
                 num_leaves,
                 num_notes,
                 root_hash,
+                sub_store_type,
                 node_store.clone(),
             )),
             node_store: node_store.clone(),
@@ -102,7 +124,10 @@ impl MerkleAccumulator {
     }
 
     pub fn get_node_from_storage(&self, hash: HashValue) -> AccumulatorNode {
-        self.node_store.get_node(hash).unwrap().unwrap()
+        self.node_store
+            .get_node(self.store_type.clone(), hash)
+            .unwrap()
+            .unwrap()
     }
 }
 

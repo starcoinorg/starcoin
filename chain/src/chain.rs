@@ -7,6 +7,7 @@ use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
 use logger::prelude::*;
 use network::get_unix_ts;
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
@@ -62,8 +63,16 @@ where
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain = Self {
             config,
-            txn_accumulator: info_2_accumulator(txn_accumulator_info, storage.clone())?,
-            block_accumulator: info_2_accumulator(block_accumulator_info.clone(), storage.clone())?,
+            txn_accumulator: info_2_accumulator(
+                txn_accumulator_info,
+                AccumulatorStoreType::Transaction,
+                storage.clone(),
+            )?,
+            block_accumulator: info_2_accumulator(
+                block_accumulator_info.clone(),
+                AccumulatorStoreType::Block,
+                storage.clone(),
+            )?,
             head,
             chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
             storage,
@@ -140,6 +149,7 @@ where
             txn_accumulator_info.get_frozen_subtree_roots().clone(),
             txn_accumulator_info.get_num_leaves(),
             txn_accumulator_info.get_num_nodes(),
+            AccumulatorStoreType::Transaction,
             self.storage.clone(),
         )?;
         let block_gas_limit = self.config.miner.block_gas_limit;
@@ -505,6 +515,7 @@ where
 
 pub(crate) fn info_2_accumulator(
     accumulator_info: AccumulatorInfo,
+    store_type: AccumulatorStoreType,
     node_store: Arc<dyn AccumulatorTreeStore>,
 ) -> Result<MerkleAccumulator> {
     MerkleAccumulator::new(
@@ -512,6 +523,7 @@ pub(crate) fn info_2_accumulator(
         accumulator_info.get_frozen_subtree_roots().clone(),
         accumulator_info.get_num_leaves(),
         accumulator_info.get_num_nodes(),
+        store_type,
         node_store,
     )
 }

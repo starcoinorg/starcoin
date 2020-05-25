@@ -7,7 +7,7 @@ use anyhow::Result;
 use compiler::Compiler;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
-use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::tree_store::MockAccumulatorStore;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_config::{ChainConfig, ChainNetwork};
@@ -90,6 +90,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         vec![],
         0,
         0,
+        AccumulatorStoreType::Transaction,
         Arc::new(accumulator_store),
     )?;
 

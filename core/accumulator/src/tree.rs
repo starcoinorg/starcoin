@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0s
 
-use crate::node::ACCUMULATOR_PLACEHOLDER_HASH;
+use crate::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use crate::node_index::FrozenSubTreeIterator;
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
@@ -28,6 +28,8 @@ pub struct AccumulatorTree {
     pub(crate) root_hash: HashValue,
     /// The index cache
     index_cache: Mutex<LruCache<NodeCacheKey, HashValue>>,
+    /// The store type
+    store_type: AccumulatorStoreType,
     /// The storage of accumulator.
     store: Arc<dyn AccumulatorTreeStore>,
     /// The temp update nodes
@@ -41,6 +43,7 @@ impl AccumulatorTree {
         num_leaves: LeafCount,
         num_nodes: NodeCount,
         root_hash: HashValue,
+        store_type: AccumulatorStoreType,
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
         trace!("accumulator cache new: {:?}", accumulator_id.short_str());
@@ -51,6 +54,7 @@ impl AccumulatorTree {
             num_leaves,
             num_nodes,
             root_hash,
+            store_type,
             store,
             update_nodes: Mutex::new(HashMap::new()),
         }
@@ -196,7 +200,7 @@ impl AccumulatorTree {
             }
         }
 
-        let node = match self.store.clone().get_node(hash) {
+        let node = match self.store.clone().get_node(self.store_type.clone(), hash) {
             Ok(Some(node)) => node,
             _ => {
                 error!("get accumulator node from store err:{:?}", hash.short_str());
@@ -218,7 +222,7 @@ impl AccumulatorTree {
                 })
                 .collect::<Vec<AccumulatorNode>>();
             let nodes_len = nodes_vec.len();
-            self.store.save_nodes(nodes_vec)?;
+            self.store.save_nodes(self.store_type.clone(), nodes_vec)?;
             nodes.clear();
             debug!("flush {} acc node to storage.", nodes_len);
         }

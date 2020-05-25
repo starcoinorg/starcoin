@@ -10,6 +10,7 @@ use crypto::hash::HashValue;
 use logger::prelude::*;
 use network::get_unix_ts;
 use network::RawRpcRequestMessage;
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
@@ -317,12 +318,15 @@ where
         nodes_hash: Vec<HashValue>,
     ) -> Vec<(HashValue, Option<AccumulatorNode>)> {
         let mut accumulator_nodes = Vec::new();
-        nodes_hash
-            .iter()
-            .for_each(|node_key| match processor.storage.get_node(*node_key) {
+        nodes_hash.iter().for_each(|node_key| {
+            match processor
+                .storage
+                .get_node(AccumulatorStoreType::Transaction, *node_key)
+            {
                 Ok(node) => accumulator_nodes.push((*node_key, node)),
                 Err(e) => error!("error: {:?}", e),
-            });
+            }
+        });
 
         accumulator_nodes
     }

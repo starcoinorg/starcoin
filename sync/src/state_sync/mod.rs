@@ -12,7 +12,7 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
 use parking_lot::Mutex;
-use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
@@ -478,7 +478,11 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
-            if let Some(accumulator_node) = self.storage.get_node(node_key).unwrap() {
+            if let Some(accumulator_node) = self
+                .storage
+                .get_node(AccumulatorStoreType::Transaction, node_key)
+                .unwrap()
+            {
                 debug!("find accumulator_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), node_key);
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
@@ -533,7 +537,10 @@ where
             let _ = lock.remove(&task_event.peer_id);
             if let Some(accumulator_node) = task_event.accumulator_node {
                 info!("accumulator_node : {:?}", accumulator_node);
-                if let Err(e) = self.storage.save_node(accumulator_node.clone()) {
+                if let Err(e) = self
+                    .storage
+                    .save_node(AccumulatorStoreType::Transaction, accumulator_node.clone())
+                {
                     error!("error : {:?}", e);
                     lock.push_back(current_node_key);
                 } else {

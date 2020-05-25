@@ -12,6 +12,7 @@ use crate::transaction_info::TransactionInfoStorage;
 use anyhow::{ensure, Error, Result};
 use crypto::HashValue;
 use once_cell::sync::Lazy;
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{
     AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter,
 };
@@ -323,28 +324,45 @@ impl BlockStore for Storage {
 impl AccumulatorTreeStore for Storage {}
 impl AccumulatorReader for Storage {
     ///get node by node hash
-    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
-        self.accumulator_storage.get_node(hash)
+    fn get_node(
+        &self,
+        store_type: AccumulatorStoreType,
+        hash: HashValue,
+    ) -> Result<Option<AccumulatorNode>> {
+        self.accumulator_storage.get_node(store_type, hash)
     }
 
-    fn multiple_get(&self, _hash_vec: Vec<HashValue>) -> Result<Vec<AccumulatorNode>, Error> {
+    fn multiple_get(
+        &self,
+        _store_type: AccumulatorStoreType,
+        _hash_vec: Vec<HashValue>,
+    ) -> Result<Vec<AccumulatorNode>, Error> {
         unimplemented!()
     }
 }
 
 impl AccumulatorWriter for Storage {
     /// save node
-    fn save_node(&self, node: AccumulatorNode) -> Result<()> {
-        self.accumulator_storage.save_node(node)
+    fn save_node(&self, store_type: AccumulatorStoreType, node: AccumulatorNode) -> Result<()> {
+        self.accumulator_storage.save_node(store_type, node)
     }
 
-    fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<(), Error> {
-        self.accumulator_storage.save_nodes(nodes)
+    fn save_nodes(
+        &self,
+        store_type: AccumulatorStoreType,
+        nodes: Vec<AccumulatorNode>,
+    ) -> Result<(), Error> {
+        self.accumulator_storage.save_nodes(store_type, nodes)
     }
 
     ///delete node
-    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()> {
-        self.accumulator_storage.delete_nodes(node_hash_vec)
+    fn delete_nodes(
+        &self,
+        store_type: AccumulatorStoreType,
+        node_hash_vec: Vec<HashValue>,
+    ) -> Result<()> {
+        self.accumulator_storage
+            .delete_nodes(store_type, node_hash_vec)
     }
 }
 
