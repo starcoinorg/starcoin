@@ -157,6 +157,12 @@ pub enum DataDirPath {
     TempPath(Arc<TempPath>),
 }
 
+impl DataDirPath {
+    pub fn path(&self) -> &Path {
+        self.as_ref()
+    }
+}
+
 impl AsRef<Path> for DataDirPath {
     fn as_ref(&self) -> &Path {
         match self {
