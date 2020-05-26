@@ -75,7 +75,7 @@ where
                         break;
                     }
                     Err(e) => {
-                        error!("error: {:?}", e);
+                        error!("{:?}", e);
                     }
                 };
             }

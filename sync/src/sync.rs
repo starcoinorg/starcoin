@@ -90,7 +90,6 @@ where
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-        info!("Sync actor started");
     }
 }
 
@@ -119,7 +118,7 @@ where
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
-                info!("connect new peer:{:?}", open_peer_id);
+                debug!("connect new peer:{:?}", open_peer_id);
                 let download_msg = SyncNotify::NewPeerMsg(open_peer_id);
                 self.download_address
                     .send(download_msg)
@@ -128,7 +127,7 @@ where
                     .wait(ctx);
             }
             PeerEvent::Close(close_peer_id) => {
-                info!("disconnect peer: {:?}", close_peer_id);
+                debug!("disconnect peer: {:?}", close_peer_id);
                 let download_msg = SyncNotify::ClosePeerMsg(close_peer_id);
                 self.download_address
                     .send(download_msg)

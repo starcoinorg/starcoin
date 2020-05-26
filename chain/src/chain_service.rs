@@ -9,7 +9,7 @@ use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use network::{get_unix_ts, NetworkAsyncService};
+use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_statedb::ChainStateDB;
 use starcoin_sync_api::SyncMetadata;
@@ -170,7 +170,6 @@ where
 
     fn save_startup(&self) -> Result<()> {
         let startup_info = self.startup_info.clone();
-        debug!("save startup info : {:?}", startup_info);
         self.storage.save_startup_info(startup_info)
     }
 
@@ -180,7 +179,7 @@ where
         retracted: Vec<SignedUserTransaction>,
     ) {
         if let Err(e) = self.txpool.rollback(enacted, retracted) {
-            warn!("rollback err : {:?}", e);
+            error!("rollback err : {:?}", e);
         }
     }
 
@@ -200,7 +199,7 @@ where
             .get_common_ancestor(block_enacted, block_retracted)?
             .ok_or_else(|| {
                 format_err!(
-                    "Can not find ancestor with {} and {}.",
+                    "Can not find ancestor with {:?} and {:?}.",
                     block_enacted,
                     block_retracted
                 )
@@ -234,7 +233,7 @@ where
             let block = self
                 .storage
                 .get_block(tmp)?
-                .ok_or_else(|| format_err!("Can not find block {}.", tmp))?;
+                .ok_or_else(|| format_err!("Can not find block {:?}.", tmp))?;
             tmp = block.header().parent_hash();
             blocks.push(block);
         }
@@ -253,12 +252,13 @@ where
     pub fn broadcast_2_network(&self, block: BlockDetail) {
         if let Some(network) = self.network.clone() {
             Arbiter::spawn(async move {
-                let id = block.header().id();
-                let is_ok = network
+                let block_id = block.header().id();
+                if let Err(e) = network
                     .broadcast_new_head_block(NewHeadBlock(Arc::new(block)))
                     .await
-                    .is_ok();
-                debug!("broadcast system event : {:?}, is_ok:{}", id, is_ok);
+                {
+                    error!("broadcast new head block {:?} failed : {:?}", block_id, e);
+                }
             });
         };
     }
@@ -272,64 +272,42 @@ where
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block, pivot_sync: bool) -> Result<ConnectResult<()>> {
-        let connect_begin_time = get_unix_ts();
         if !self.sync_metadata.state_syncing() || pivot_sync {
             if !self.sync_metadata.state_syncing()
                 || (pivot_sync && self.sync_metadata.state_done())
             {
                 let (block_exist, fork) = self.find_or_fork(block.header())?;
-                info!(
-                    "startup_info branch try_connect : {:?}, {:?}, :{:?}",
-                    block.header().parent_hash(),
-                    block.header().id(),
-                    block_exist
-                );
                 if block_exist {
                     CHAIN_METRICS.duplicate_conn_count.inc();
                     Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
                 } else if let Some(mut branch) = fork {
-                    let fork_end_time = get_unix_ts();
-                    debug!("fork used time: {}", (fork_end_time - connect_begin_time));
-
                     let timer = CHAIN_METRICS
                         .exe_block_time
                         .with_label_values(&["time"])
                         .start_timer();
-
                     let connected = branch.apply(block.clone())?;
                     timer.observe_duration();
-                    let apply_end_time = get_unix_ts();
-                    let apply_total_time = apply_end_time - fork_end_time;
-                    debug!("apply used time: {}", apply_total_time);
                     if !connected {
                         debug!("connected failed {:?}", block.header().id());
                         CHAIN_METRICS.verify_fail_count.inc();
                         Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                     } else {
                         self.select_head(branch)?;
-                        let select_head_end_time = get_unix_ts();
-                        debug!(
-                            "select head used time: {}",
-                            (select_head_end_time - apply_end_time)
-                        );
-                        self.get_master().latest_blocks(10);
                         Ok(ConnectResult::Ok(()))
                     }
                 } else {
-                    debug!("future block 1 {:?}", block.header().id());
                     Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                 }
             } else {
-                debug!("future block 2 {:?}", block.header().id());
                 Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
             }
         } else {
-            Ok(ConnectResult::Err(ConnectBlockError::Other(
-                format!("error connect type. pivot_sync: {}, state_syncing: {:?}, block_id: {:?}, number : {}, \
-                pivot_connected: {}, pivot : {:?}, ", pivot_sync,
-                        self.sync_metadata.state_syncing(), block.header().id(), block.header().number(),
-                        self.sync_metadata.pivot_connected(), self.sync_metadata.get_pivot()),
-            )))
+            Ok(ConnectResult::Err(ConnectBlockError::Other(format!(
+                "error connect type. pivot_sync : {}, block header : {:?}, sync metadata : {:?}.",
+                pivot_sync,
+                block.header(),
+                self.sync_metadata
+            ))))
         }
     }
 
@@ -346,7 +324,6 @@ where
                 if pivot_number >= current_block_number {
                     let pivot_flag = pivot_number == current_block_number;
                     if pivot_flag && !self.sync_metadata.state_done() {
-                        debug!("block future {:?} for pivot.", block.header().id());
                         self.sync_metadata.set_pivot_block(block, block_info)?;
                         return Ok(ConnectResult::Err(ConnectBlockError::Other(
                             "pivot block wait state.".to_string(),
@@ -354,12 +331,6 @@ where
                     }
                     //todo:1. verify block header / verify accumulator / total difficulty
                     let (block_exist, fork) = self.find_or_fork(block.header())?;
-                    debug!(
-                        "startup_info branch try_connect_with_block_info : {:?}, {:?}, :{:?}",
-                        block.header().parent_hash(),
-                        block.header().id(),
-                        block_exist
-                    );
                     if block_exist {
                         CHAIN_METRICS.duplicate_conn_count.inc();
                         Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
@@ -377,33 +348,23 @@ where
                             if pivot_flag {
                                 self.sync_metadata.pivot_connected_succ()?;
                             }
-                            let master_header = self.get_master().current_header();
-                            info!(
-                                "block chain info :: number : {} , block_id : {:?}, parent_id : {:?}",
-                                master_header.number(),
-                                master_header.id(),
-                                master_header.parent_hash()
-                            );
                             Ok(ConnectResult::Ok(()))
                         } else {
-                            debug!("verify failed {:?}", block.header().id());
                             Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
                         }
                     } else {
-                        debug!("block future {:?}", block.header().id());
                         Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
                     }
                 } else if latest_number >= current_block_number {
                     if self.sync_metadata.state_done() {
                         let connect_result = self.try_connect(block, true)?;
                         // 3. update sync metadata
-                        info!(
-                            "connect block : {}, {}, {:?}",
-                            latest_number, current_block_number, connect_result
-                        );
                         if latest_number == current_block_number && is_ok(&connect_result) {
                             if let Err(err) = self.sync_metadata.block_sync_done() {
-                                warn!("err:{:?}", err);
+                                error!(
+                                    "update block_sync_done in sync_metadata failed : {:?}",
+                                    err
+                                );
                             }
                         }
                         Ok(connect_result)
