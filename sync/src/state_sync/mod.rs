@@ -107,7 +107,7 @@ async fn sync_accumulator_node<C>(
         node_key,
         accumulator_node,
     )) {
-        error!("{:?}", err);
+        error!("Send accumulator StateSyncTaskEvent failed : {:?}", err);
     };
 }
 
@@ -158,7 +158,7 @@ async fn sync_state_node<C>(
 
     if let Err(err) = address.try_send(StateSyncTaskEvent::new_state(peer_id, node_key, state_node))
     {
-        error!("{:?}", err);
+        error!("Send state StateSyncTaskEvent failed : {:?}", err);
     };
 }
 
@@ -190,13 +190,13 @@ where
             }))
             .await
         {
-            error!("{:?}", e);
+            error!("Send RESET StateSyncEvent failed : {:?}", e);
         }
     }
 
     async fn act(&self) {
         if let Err(e) = self.address.send(StateSyncEvent::ACT {}).await {
-            error!("{:?}", e);
+            error!("Send ACT StateSyncEvent failed : {:?}", e);
         }
     }
 }
@@ -371,7 +371,7 @@ where
                     node_key,
                     Some(state_node),
                 )) {
-                    error!("{:?}", err);
+                    error!("Send state StateSyncTaskEvent failed : {:?}", err);
                 };
             } else {
                 let network_service = self.network_service.clone();
@@ -430,7 +430,7 @@ where
                             }
                             match AccountState::try_from(leaf.blob().as_ref()) {
                                 Err(e) => {
-                                    error!("{:?}", e);
+                                    error!("AccountState decode from blob failed : {:?}", e);
                                 }
                                 Ok(account_state) => {
                                     account_state.storage_roots().iter().for_each(|key| {
@@ -477,7 +477,7 @@ where
                     node_key,
                     Some(accumulator_node),
                 )) {
-                    error!("{:?}", err);
+                    error!("Send accumulator StateSyncTaskEvent failed : {:?}", err);
                 };
             } else {
                 let network_service = self.network_service.clone();
@@ -627,7 +627,7 @@ where
             }
 
             if let Err(e) = self.sync_metadata.state_sync_done() {
-                error!("{:?}", e);
+                error!("update state_sync_done in sync_metadata failed : {:?}", e);
             } else {
                 ctx.stop();
             }

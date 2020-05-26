@@ -78,7 +78,7 @@ where
 
     pub fn save_block(&self, block: &Block, block_state: BlockState) {
         if let Err(e) = self.storage.commit_block(block.clone(), block_state) {
-            warn!("save block : {:?}", e);
+            error!("save block {:?} failed : {:?}", block.id(), e);
         }
     }
 
@@ -89,8 +89,9 @@ where
             .ok_or_else(|| format_err!("Can not find block info by hash {}", block_id))?)
     }
     pub fn save_block_info(&self, block_info: BlockInfo) {
+        let block_id = *block_info.block_id();
         if let Err(e) = self.storage.save_block_info(block_info) {
-            warn!("save_block_info : {:?}", e);
+            error!("save block info {:?} failed : {:?}", block_id, e);
         }
     }
 
@@ -101,7 +102,6 @@ where
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
-        //TODO calculate gas limit etc.
         let txns = user_txns
             .iter()
             .cloned()
@@ -363,7 +363,7 @@ where
             "invalid block: gas_used should not greater than gas_limit"
         );
         if let Err(e) = C::verify_header(self.config.clone(), self, header) {
-            error!("{:?}", e);
+            error!("verify header failed : {:?}", e);
             return Ok(false);
         }
 

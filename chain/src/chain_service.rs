@@ -252,11 +252,12 @@ where
     pub fn broadcast_2_network(&self, block: BlockDetail) {
         if let Some(network) = self.network.clone() {
             Arbiter::spawn(async move {
+                let block_id = block.header().id();
                 if let Err(e) = network
                     .broadcast_new_head_block(NewHeadBlock(Arc::new(block)))
                     .await
                 {
-                    error!("{:?}", e);
+                    error!("broadcast new head block {:?} failed : {:?}", block_id, e);
                 }
             });
         };
@@ -360,7 +361,10 @@ where
                         // 3. update sync metadata
                         if latest_number == current_block_number && is_ok(&connect_result) {
                             if let Err(err) = self.sync_metadata.block_sync_done() {
-                                error!("err:{:?}", err);
+                                error!(
+                                    "update block_sync_done in sync_metadata failed : {:?}",
+                                    err
+                                );
                             }
                         }
                         Ok(connect_result)

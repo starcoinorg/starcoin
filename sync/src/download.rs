@@ -436,7 +436,7 @@ where
             if let Err(e) =
                 Self::sync_block_from_best_peer_inner(downloader, network, full_mode).await
             {
-                error!("{:?}", e);
+                error!("sync block from best peer failed : {:?}", e);
             } else {
                 let _ = sync_metadata.block_sync_done();
                 SYNC_METRICS
@@ -918,6 +918,7 @@ where
                 .await
         };
 
+        let block_id = block.id();
         match connect_result {
             Ok(connect) => {
                 if is_ok(&connect) {
@@ -927,11 +928,11 @@ where
                         ConnectBlockError::FutureBlock => {
                             downloader.future_blocks.add_future_block(block, block_info)
                         }
-                        _ => error!("{:?}", err),
+                        _ => debug!("Connect block {:?} succ, but : {:?}", block_id, err),
                     }
                 }
             }
-            Err(e) => error!("{:?}", e),
+            Err(e) => error!("Connect block {:?} failed : {:?}", block_id, e),
         }
 
         false

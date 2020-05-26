@@ -77,7 +77,7 @@ where
                         if let Err(e) =
                             do_get_hash_by_number(responder, batch_hash_by_number_msg).await
                         {
-                            error!("{:?}", e);
+                            error!("do get_hash_by_number request failed : {:?}", e);
                         }
                     }
                     SyncRpcRequest::GetDataByHashMsg(get_data_by_hash_msg) => {
@@ -107,7 +107,7 @@ where
                             )
                             .await
                             {
-                                error!("{:?}", e);
+                                error!("do get_block_by_hash request failed : {:?}", e);
                             }
                         }
                     }
@@ -119,7 +119,7 @@ where
                         if let Some((_, state_node_res)) = state_nodes.pop() {
                             if let Some(state_node) = state_node_res {
                                 if let Err(e) = do_state_node(responder, state_node).await {
-                                    error!("{:?}", e);
+                                    error!("do state_node request failed : {:?}", e);
                                 }
                             } else {
                                 debug!("{:?}", "state_node is none.");
@@ -138,7 +138,7 @@ where
                                 if let Err(e) =
                                     do_accumulator_node(responder, accumulator_node).await
                                 {
-                                    error!("{:?}", e);
+                                    error!("do accumulator_node request failed : {:?}", e);
                                 }
                             } else {
                                 debug!("accumulator_node {:?} is none.", accumulator_node_key);
@@ -277,7 +277,7 @@ where
             .iter()
             .for_each(|node_key| match processor.storage.get(node_key) {
                 Ok(node) => state_nodes.push((*node_key, node)),
-                Err(e) => error!("{:?}", e),
+                Err(e) => error!("handle state_node {:?} err : {:?}", node_key, e),
             });
 
         state_nodes
@@ -292,7 +292,7 @@ where
             .iter()
             .for_each(|node_key| match processor.storage.get_node(*node_key) {
                 Ok(node) => accumulator_nodes.push((*node_key, node)),
-                Err(e) => error!("{:?}", e),
+                Err(e) => error!("handle accumulator_node {:?} err : {:?}", node_key, e),
             });
 
         accumulator_nodes
