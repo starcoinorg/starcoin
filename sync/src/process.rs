@@ -143,11 +143,18 @@ where
                         warn!("{:?}", "state_nodes is none.");
                     }
                 }
-                SyncRpcRequest::GetAccumulatorNodeByNodeHash(accumulator_node_key) => {
+                SyncRpcRequest::GetAccumulatorNodeByNodeHash(
+                    accumulator_node_key,
+                    accumulator_type,
+                ) => {
                     let mut keys = Vec::new();
                     keys.push(accumulator_node_key);
-                    let mut accumulator_nodes =
-                        Processor::handle_accumulator_node_msg(processor.clone(), keys).await;
+                    let mut accumulator_nodes = Processor::handle_accumulator_node_msg(
+                        processor.clone(),
+                        keys,
+                        accumulator_type,
+                    )
+                    .await;
                     if let Some((_, accumulator_node_res)) = accumulator_nodes.pop() {
                         if let Some(accumulator_node) = accumulator_node_res {
                             if let Err(e) = do_accumulator_node(responder, accumulator_node).await {
@@ -316,12 +323,13 @@ where
     pub async fn handle_accumulator_node_msg(
         processor: Arc<Processor<C>>,
         nodes_hash: Vec<HashValue>,
+        accumulator_type: AccumulatorStoreType,
     ) -> Vec<(HashValue, Option<AccumulatorNode>)> {
         let mut accumulator_nodes = Vec::new();
         nodes_hash.iter().for_each(|node_key| {
             match processor
                 .storage
-                .get_node(AccumulatorStoreType::Transaction, *node_key)
+                .get_node(accumulator_type.clone(), *node_key)
             {
                 Ok(node) => accumulator_nodes.push((*node_key, node)),
                 Err(e) => error!("error: {:?}", e),

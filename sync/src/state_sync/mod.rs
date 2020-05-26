@@ -57,6 +57,7 @@ async fn sync_accumulator_node<C>(
     peer_id: PeerId,
     network_service: NetworkAsyncService,
     address: Addr<StateSyncTaskActor<C>>,
+    accumulator_type: AccumulatorStoreType,
 ) where
     C: Consensus + Sync + Send + 'static + Clone,
 {
@@ -68,6 +69,7 @@ async fn sync_accumulator_node<C>(
         &network_service,
         peer_id.clone(),
         node_key,
+        accumulator_type.clone(),
     )
     .await
     {
@@ -110,6 +112,7 @@ async fn sync_accumulator_node<C>(
         peer_id,
         node_key,
         accumulator_node,
+        accumulator_type,
     )) {
         warn!("err:{:?}", err);
     };
@@ -208,10 +211,11 @@ where
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum TaskType {
     STATE,
-    ACCUMULATOR,
+    TxnAccumulator,
+    BlockAccumulator,
 }
 
 #[derive(Debug, Message)]
@@ -239,18 +243,18 @@ impl StateSyncTaskEvent {
         peer_id: PeerId,
         node_key: HashValue,
         accumulator_node: Option<AccumulatorNode>,
+        accumulator_type: AccumulatorStoreType,
     ) -> Self {
         StateSyncTaskEvent {
             peer_id,
             node_key,
             state_node: None,
             accumulator_node,
-            task_type: TaskType::ACCUMULATOR,
+            task_type: match accumulator_type {
+                AccumulatorStoreType::Block => TaskType::BlockAccumulator,
+                AccumulatorStoreType::Transaction => TaskType::TxnAccumulator,
+            },
         }
-    }
-
-    fn is_state(&self) -> bool {
-        self.task_type == TaskType::STATE
     }
 }
 
@@ -264,15 +268,15 @@ where
     network_service: NetworkAsyncService,
     sync_metadata: SyncMetadata,
     state_sync_task: Arc<Mutex<SyncTask<(HashValue, bool)>>>,
-    accumulator_sync_task: Arc<Mutex<SyncTask<HashValue>>>,
-    state_sync_count: AtomicU64,
-    accumulator_sync_count: AtomicU64,
+    txn_accumulator_sync_task: Arc<Mutex<SyncTask<HashValue>>>,
+    block_accumulator_sync_task: Arc<Mutex<SyncTask<HashValue>>>,
     connect_address: Addr<DownloadActor<C>>,
 }
 
 pub struct SyncTask<T> {
     wait_2_sync: VecDeque<T>,
     syncing_nodes: HashMap<PeerId, T>,
+    done_tasks: AtomicU64,
 }
 
 impl<T> SyncTask<T> {
@@ -280,15 +284,24 @@ impl<T> SyncTask<T> {
         Self {
             wait_2_sync: VecDeque::new(),
             syncing_nodes: HashMap::new(),
+            done_tasks: AtomicU64::new(0),
         }
+    }
+
+    fn do_one_task(&self) {
+        self.done_tasks.fetch_add(1, Ordering::Relaxed);
     }
 
     fn is_empty(&mut self) -> bool {
         self.wait_2_sync.is_empty() && self.syncing_nodes.is_empty()
     }
 
-    fn task_len(&self) -> (usize, usize) {
-        (self.wait_2_sync.len(), self.syncing_nodes.len())
+    fn task_info(&self) -> (usize, usize, u64) {
+        (
+            self.wait_2_sync.len(),
+            self.syncing_nodes.len(),
+            self.done_tasks.load(Ordering::Relaxed),
+        )
     }
 
     pub fn push_back(&mut self, value: T) {
@@ -302,6 +315,7 @@ impl<T> SyncTask<T> {
     pub fn clear(&mut self) {
         self.wait_2_sync.clear();
         self.syncing_nodes.clear();
+        self.done_tasks = AtomicU64::new(0);
     }
 
     pub fn insert(&mut self, peer_id: PeerId, value: T) -> Option<T> {
@@ -332,9 +346,10 @@ where
         let roots = Roots::new(root.0, root.1, root.2);
         let mut state_sync_task = SyncTask::new();
         state_sync_task.push_back((*roots.state_root(), true));
-        let mut accumulator_sync_task = SyncTask::new();
-        accumulator_sync_task.push_back(*roots.txn_accumulator_root());
-        accumulator_sync_task.push_back(*roots.block_accumulator_root());
+        let mut txn_accumulator_sync_task = SyncTask::new();
+        txn_accumulator_sync_task.push_back(*roots.txn_accumulator_root());
+        let mut block_accumulator_sync_task = SyncTask::new();
+        block_accumulator_sync_task.push_back(*roots.block_accumulator_root());
         let address = StateSyncTaskActor::create(move |_ctx| Self {
             self_peer_id,
             roots,
@@ -342,9 +357,8 @@ where
             network_service,
             sync_metadata,
             state_sync_task: Arc::new(Mutex::new(state_sync_task)),
-            accumulator_sync_task: Arc::new(Mutex::new(accumulator_sync_task)),
-            state_sync_count: AtomicU64::new(0),
-            accumulator_sync_count: AtomicU64::new(0),
+            txn_accumulator_sync_task: Arc::new(Mutex::new(txn_accumulator_sync_task)),
+            block_accumulator_sync_task: Arc::new(Mutex::new(block_accumulator_sync_task)),
             connect_address: address,
         });
         StateSyncTaskRef { address }
@@ -352,14 +366,16 @@ where
 
     fn sync_end(&self) -> bool {
         info!(
-            "state_sync_task len : {:?}, accumulator_sync_task len : {:?},\
-         save state nodes : {} , save accumulator nodes : {}",
-            self.state_sync_task.lock().task_len(),
-            self.accumulator_sync_task.lock().task_len(),
-            self.state_sync_count.load(Ordering::Relaxed),
-            self.accumulator_sync_count.load(Ordering::Relaxed),
+            "state sync task info : {:?},\
+             txn accumulator sync task info : {:?},\
+             block accumulator sync task info : {:?}.",
+            self.state_sync_task.lock().task_info(),
+            self.txn_accumulator_sync_task.lock().task_info(),
+            self.block_accumulator_sync_task.lock().task_info(),
         );
-        self.state_sync_task.lock().is_empty() && self.accumulator_sync_task.lock().is_empty()
+        self.state_sync_task.lock().is_empty()
+            && self.txn_accumulator_sync_task.lock().is_empty()
+            && self.block_accumulator_sync_task.lock().is_empty()
     }
 
     fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
@@ -431,7 +447,7 @@ where
                     lock.push_back((current_node_key, is_global));
                 } else {
                     debug!("receive state_node: {:?}", state_node.0.hash());
-                    self.state_sync_count.fetch_add(1, Ordering::Relaxed);
+                    lock.do_one_task();
                     match state_node.inner() {
                         Node::Leaf(leaf) => {
                             if !is_global {
@@ -470,39 +486,65 @@ where
         }
     }
 
-    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
-        let mut lock = self.accumulator_sync_task.lock();
+    fn exe_accumulator_sync_task(
+        &self,
+        address: Addr<StateSyncTaskActor<C>>,
+        accumulator_type: AccumulatorStoreType,
+    ) {
+        Self::exe_accumulator_sync_task_inner(
+            self.self_peer_id.clone(),
+            self.storage.clone(),
+            self.network_service.clone(),
+            self.sync_metadata.clone(),
+            match accumulator_type {
+                AccumulatorStoreType::Transaction => self.txn_accumulator_sync_task.clone(),
+                AccumulatorStoreType::Block => self.block_accumulator_sync_task.clone(),
+            },
+            address,
+            accumulator_type,
+        );
+    }
+
+    fn exe_accumulator_sync_task_inner(
+        self_peer_id: PeerId,
+        storage: Arc<dyn Store>,
+        network_service: NetworkAsyncService,
+        sync_metadata: SyncMetadata,
+        accumulator_sync_task: Arc<Mutex<SyncTask<HashValue>>>,
+        address: Addr<StateSyncTaskActor<C>>,
+        accumulator_type: AccumulatorStoreType,
+    ) {
+        let mut lock = accumulator_sync_task.lock();
         let value = lock.pop_front();
         if let Some(node_key) = value {
             SYNC_METRICS
                 .sync_total_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
-            if let Some(accumulator_node) = self
-                .storage
+            if let Some(accumulator_node) = storage
                 .get_node(AccumulatorStoreType::Transaction, node_key)
                 .unwrap()
             {
                 debug!("find accumulator_node {:?} in db.", node_key);
-                lock.insert(self.self_peer_id.clone(), node_key);
+                lock.insert(self_peer_id.clone(), node_key);
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
-                    self.self_peer_id.clone(),
+                    self_peer_id,
                     node_key,
                     Some(accumulator_node),
+                    accumulator_type,
                 )) {
                     warn!("err:{:?}", err);
                 };
             } else {
-                let network_service = self.network_service.clone();
+                let network_service_tmp = network_service.clone();
                 let best_peer_info =
-                    block_on(async move { network_service.best_peer().await.unwrap() });
+                    block_on(async move { network_service_tmp.best_peer().await.unwrap() });
                 debug!(
                     "sync accumulator_node {:?} from peer {:?}.",
                     node_key, best_peer_info
                 );
                 if let Some(best_peer) = best_peer_info {
-                    if self.self_peer_id != best_peer.get_peer_id() {
-                        let network_service = self.network_service.clone();
+                    if self_peer_id != best_peer.get_peer_id() {
                         lock.insert(best_peer.get_peer_id(), node_key);
                         Arbiter::spawn(async move {
                             sync_accumulator_node(
@@ -510,20 +552,35 @@ where
                                 best_peer.get_peer_id(),
                                 network_service,
                                 address,
+                                accumulator_type,
                             )
                             .await;
                         });
                     }
                 } else {
                     warn!("{:?}", "best peer is none.");
-                    self.sync_metadata.update_failed(true);
+                    sync_metadata.update_failed(true);
                 }
             }
         }
     }
 
     fn handle_accumulator_sync(&mut self, task_event: StateSyncTaskEvent) {
-        let mut lock = self.accumulator_sync_task.lock();
+        Self::handle_accumulator_sync_inner(
+            self.storage.clone(),
+            match task_event.task_type {
+                TaskType::TxnAccumulator => self.txn_accumulator_sync_task.clone(),
+                _ => self.block_accumulator_sync_task.clone(),
+            },
+            task_event,
+        );
+    }
+    fn handle_accumulator_sync_inner(
+        storage: Arc<dyn Store>,
+        accumulator_sync_task: Arc<Mutex<SyncTask<HashValue>>>,
+        task_event: StateSyncTaskEvent,
+    ) {
+        let mut lock = accumulator_sync_task.lock();
         if let Some(accumulator_node_hash) = lock.get(&task_event.peer_id) {
             //1. push back
             let current_node_key = task_event.node_key;
@@ -537,15 +594,14 @@ where
             let _ = lock.remove(&task_event.peer_id);
             if let Some(accumulator_node) = task_event.accumulator_node {
                 info!("accumulator_node : {:?}", accumulator_node);
-                if let Err(e) = self
-                    .storage
-                    .save_node(AccumulatorStoreType::Transaction, accumulator_node.clone())
+                if let Err(e) =
+                    storage.save_node(AccumulatorStoreType::Transaction, accumulator_node.clone())
                 {
                     error!("error : {:?}", e);
                     lock.push_back(current_node_key);
                 } else {
                     debug!("receive accumulator_node: {:?}", accumulator_node);
-                    self.accumulator_sync_count.fetch_add(1, Ordering::Relaxed);
+                    lock.do_one_task();
                     match accumulator_node {
                         AccumulatorNode::Leaf(_leaf) => {}
                         AccumulatorNode::Internal(n) => {
@@ -578,25 +634,34 @@ where
     ) {
         info!("reset state sync task.");
         self.roots = Roots::new(*state_root, *txn_accumulator_root, *block_accumulator_root);
+
         let mut state_lock = self.state_sync_task.lock();
         let old_state_is_empty = state_lock.is_empty();
         state_lock.clear();
         state_lock.push_back((*self.roots.state_root(), true));
         drop(state_lock);
-        let mut accumulator_lock = self.accumulator_sync_task.lock();
-        let old_accumulator_is_empty = accumulator_lock.is_empty();
-        accumulator_lock.clear();
-        accumulator_lock.push_back(*self.roots.txn_accumulator_root());
-        accumulator_lock.push_back(*self.roots.block_accumulator_root());
-        drop(accumulator_lock);
-        self.state_sync_count = AtomicU64::new(0);
-        self.accumulator_sync_count = AtomicU64::new(0);
+        let mut txn_accumulator_lock = self.txn_accumulator_sync_task.lock();
+        let old_txn_accumulator_is_empty = txn_accumulator_lock.is_empty();
+        txn_accumulator_lock.clear();
+        txn_accumulator_lock.push_back(*self.roots.txn_accumulator_root());
+        drop(txn_accumulator_lock);
+        let mut block_accumulator_lock = self.block_accumulator_sync_task.lock();
+        let old_block_accumulator_is_empty = block_accumulator_lock.is_empty();
+        block_accumulator_lock.clear();
+        block_accumulator_lock.push_back(*self.roots.block_accumulator_root());
+        drop(block_accumulator_lock);
         if self.sync_metadata.is_failed() {
             self.activation_task(address);
-        } else if old_state_is_empty {
-            self.exe_state_sync_task(address);
-        } else if old_accumulator_is_empty {
-            self.exe_accumulator_sync_task(address);
+        } else {
+            if old_state_is_empty {
+                self.exe_state_sync_task(address.clone());
+            }
+            if old_txn_accumulator_is_empty {
+                self.exe_accumulator_sync_task(address.clone(), AccumulatorStoreType::Transaction);
+            }
+            if old_block_accumulator_is_empty {
+                self.exe_accumulator_sync_task(address, AccumulatorStoreType::Block);
+            }
         }
     }
 
@@ -605,7 +670,8 @@ where
         if self.sync_metadata.is_failed() {
             self.sync_metadata.update_failed(false);
             self.exe_state_sync_task(address.clone());
-            self.exe_accumulator_sync_task(address);
+            self.exe_accumulator_sync_task(address.clone(), AccumulatorStoreType::Transaction);
+            self.exe_accumulator_sync_task(address, AccumulatorStoreType::Block);
         }
     }
 }
@@ -619,7 +685,8 @@ where
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("StateSyncTaskActor actor started.");
         self.exe_state_sync_task(ctx.address());
-        self.exe_accumulator_sync_task(ctx.address());
+        self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Transaction);
+        self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Block);
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
@@ -634,11 +701,10 @@ where
     type Result = Result<()>;
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
-        let state_or_accumulator = task_event.is_state();
-        if state_or_accumulator {
-            self.handle_state_sync(task_event);
-        } else {
-            self.handle_accumulator_sync(task_event);
+        let task_type = task_event.task_type.clone();
+        match task_type.clone() {
+            TaskType::STATE => self.handle_state_sync(task_event),
+            _ => self.handle_accumulator_sync(task_event),
         }
 
         if self.sync_end() {
@@ -655,10 +721,16 @@ where
 
                 ctx.stop();
             }
-        } else if state_or_accumulator {
-            self.exe_state_sync_task(ctx.address());
         } else {
-            self.exe_accumulator_sync_task(ctx.address());
+            match task_type {
+                TaskType::STATE => self.exe_state_sync_task(ctx.address()),
+                TaskType::TxnAccumulator => {
+                    self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Transaction)
+                }
+                TaskType::BlockAccumulator => {
+                    self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Block)
+                }
+            }
         }
         Ok(())
     }
