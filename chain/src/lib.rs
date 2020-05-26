@@ -21,7 +21,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
-use network::{get_unix_ts, NetworkAsyncService};
+use network::NetworkAsyncService;
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use storage::Storage;
@@ -30,7 +30,7 @@ use traits::{ChainAsyncService, ChainService, ConnectResult};
 use txpool::TxPoolService;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::MinedBlock,
     transaction::{SignedUserTransaction, TransactionInfo},
@@ -110,7 +110,11 @@ where
                 self.service.master_head_block(),
             ))),
             ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(Box::new(
-                self.service.master_block_by_number(number)?.unwrap(),
+                self.service
+                    .master_block_by_number(number)?
+                    .ok_or_else(|| {
+                        format_err!("Can not find block from master by number {:?}", number)
+                    })?,
             ))),
             ChainRequest::CreateBlockTemplate(author, auth_key_prefix, parent_hash, txs) => Ok(
                 ChainResponse::BlockTemplate(Box::new(self.service.create_block_template(
@@ -127,20 +131,27 @@ where
                     None
                 },
             )),
+            ChainRequest::GetBlockStateByHash(hash) => Ok(ChainResponse::BlockState(
+                if let Some(block_state) = self.service.get_block_state_by_hash(hash)? {
+                    Some(Box::new(block_state))
+                } else {
+                    None
+                },
+            )),
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(Box::new(
                 self.service.get_block_info_by_hash(hash)?,
             ))),
             ChainRequest::ConnectBlock(block, mut block_info) => {
-                let begin_time = get_unix_ts();
                 let conn_state = if block_info.is_none() {
                     self.service.try_connect(*block, false)?
                 } else {
-                    self.service
-                        .try_connect_with_block_info(*block, *block_info.take().unwrap())?
+                    self.service.try_connect_with_block_info(
+                        *block,
+                        *block_info
+                            .take()
+                            .ok_or_else(|| format_err!("{:?}", "block info can not be none."))?,
+                    )?
                 };
-
-                let end_time = get_unix_ts();
-                debug!("connect block used time {:?}", (end_time - begin_time));
                 Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
@@ -150,7 +161,9 @@ where
                 *self.service.master_startup_info().get_master(),
             ))),
             ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(
-                self.service.get_transaction(hash)?.unwrap(),
+                self.service
+                    .get_transaction(hash)?
+                    .ok_or_else(|| format_err!("Can not find transaction by hash {:?}", hash))?,
             )),
             ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
                 self.service.master_blocks_by_number(number, count)?,
@@ -224,29 +237,35 @@ where
         }
     }
 
-    async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader> {
+    async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>> {
         if let ChainResponse::BlockHeader(header) = self
             .address
             .send(ChainRequest::GetHeaderByHash(*hash))
-            .await
-            .unwrap()
-            .unwrap()
+            .await??
         {
             if let Some(h) = *header {
-                return Some(h);
+                return Ok(Some(h));
             }
         }
-        None
+        Ok(None)
+    }
+
+    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>> {
+        if let ChainResponse::BlockState(Some(block_state)) = self
+            .address
+            .send(ChainRequest::GetBlockStateByHash(*hash))
+            .await??
+        {
+            return Ok(Some(*block_state));
+        }
+        Ok(None)
     }
 
     async fn get_block_by_hash(self, hash: HashValue) -> Result<Block> {
-        debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlock(block) = self
             .address
             .send(ChainRequest::GetBlockByHash(hash))
-            .await
-            .unwrap()
-            .unwrap()
+            .await??
         {
             match block {
                 Some(b) => Ok(*b),
@@ -277,43 +296,32 @@ where
         }
     }
 
-    async fn get_block_info_by_hash(self, hash: &HashValue) -> Option<BlockInfo> {
+    async fn get_block_info_by_hash(self, hash: &HashValue) -> Result<Option<BlockInfo>> {
         debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlockInfo(block_info) = self
             .address
             .send(ChainRequest::GetBlockInfoByHash(*hash))
-            .await
-            .unwrap()
-            .unwrap()
+            .await??
         {
-            return *block_info;
+            return Ok(*block_info);
         }
-        None
+        Ok(None)
     }
 
-    async fn master_head_header(self) -> Option<BlockHeader> {
-        if let Ok(ChainResponse::BlockHeader(header)) = self
-            .address
-            .send(ChainRequest::CurrentHeader())
-            .await
-            .unwrap()
+    async fn master_head_header(self) -> Result<Option<BlockHeader>> {
+        if let Ok(ChainResponse::BlockHeader(header)) =
+            self.address.send(ChainRequest::CurrentHeader()).await?
         {
-            return *header;
+            return Ok(*header);
         }
-        None
+        Ok(None)
     }
 
-    async fn master_head_block(self) -> Option<Block> {
-        if let ChainResponse::Block(block) = self
-            .address
-            .send(ChainRequest::HeadBlock())
-            .await
-            .unwrap()
-            .unwrap()
-        {
-            Some(*block)
+    async fn master_head_block(self) -> Result<Option<Block>> {
+        if let ChainResponse::Block(block) = self.address.send(ChainRequest::HeadBlock()).await?? {
+            Ok(Some(*block))
         } else {
-            None
+            Ok(None)
         }
     }
 
@@ -405,7 +413,7 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
-    ) -> Option<BlockTemplate> {
+    ) -> Result<Option<BlockTemplate>> {
         let address = self.address.clone();
         drop(self);
         if let ChainResponse::BlockTemplate(block_template) = address
@@ -415,13 +423,11 @@ where
                 parent_hash,
                 txs,
             ))
-            .await
-            .unwrap()
-            .unwrap()
+            .await??
         {
-            Some(*block_template)
+            Ok(Some(*block_template))
         } else {
-            None
+            Ok(None)
         }
     }
 }

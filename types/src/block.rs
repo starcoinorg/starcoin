@@ -572,3 +572,9 @@ impl BlockDetail {
         self.block.header()
     }
 }
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub enum BlockState {
+    Executed,
+    Verified,
+}

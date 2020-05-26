@@ -119,7 +119,7 @@ impl NetworkService for NetworkAsyncService {
         let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
         self.raw_message_processor.add_future(request_id, tx).await;
-        info!("send request to {} with id {}", peer_id, request_id);
+        debug!("send request to {} with id {}", peer_id, request_id);
         let processor = self.raw_message_processor.clone();
         let peer_id_clone = peer_id.clone();
 
@@ -134,7 +134,7 @@ impl NetworkService for NetworkAsyncService {
             if !timeout {
                 return;
             }
-            warn!(
+            debug!(
                 "send request to {} with id {} timeout",
                 peer_id_clone, request_id
             );
@@ -145,7 +145,7 @@ impl NetworkService for NetworkAsyncService {
 
         self.handle.spawn(task);
         let response = message_future.await;
-        info!("receive response from {} with id {}", peer_id, request_id);
+        debug!("receive response from {} with id {}", peer_id, request_id);
         response
     }
 
@@ -156,10 +156,10 @@ impl NetworkService for NetworkAsyncService {
             if self.peer_id.eq(peer_id) {
                 continue;
             }
-            info!("peer_id is {},peer_info is {:?}", peer_id, peer);
+            debug!("peer_id is {},peer_info is {:?}", peer_id, peer);
             result.push(peer.peer_info.clone());
         }
-        info!("result is {:?}", result);
+        debug!("result is {:?}", result);
         Ok(result)
     }
     /// get all peers and sort by difficulty decreasely.
@@ -227,8 +227,6 @@ impl NetworkActor {
         NetworkAsyncService,
         mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) {
-        let has_seed = !node_config.network.seeds.is_empty();
-
         // merge seeds from chain config
         let mut config = node_config.network.clone();
         if !node_config.network.disable_seed {
@@ -240,6 +238,7 @@ impl NetworkActor {
             };
             config.seeds.extend(seeds);
         }
+        let has_seed = !config.seeds.is_empty();
 
         let (service, tx, rx, event_rx, tx_command) =
             build_network_service(&config, handle.clone(), genesis_hash, self_info.clone());
@@ -307,9 +306,10 @@ impl NetworkActor {
         ));
 
         if has_seed {
+            info!("Seed was in configuration and not ignored.So wait for connection open event.");
             futures::executor::block_on(async move {
                 let event = connected_rx.next().await.unwrap();
-                info!("receive event {:?}", event);
+                info!("receive event {:?},network started.", event);
             });
         }
 
@@ -341,15 +341,15 @@ impl NetworkActor {
             futures::select! {
                 message = net_rx.select_next_some()=>{
                     handle.spawn(Inner::handle_network_receive(inner.clone(),message));
-                    info!("receive net message");
+                    debug!("receive net message");
                 },
                 event = event_rx.select_next_some()=>{
                     handle.spawn(Inner::handle_event_receive(inner.clone(),event));
-                    info!("receive net event");
+                    debug!("receive net event");
                 },
                 complete => {
                     close_tx.unbounded_send(()).unwrap();
-                    warn!("all stream are complete");
+                    debug!("all stream are complete");
                     break;
                 }
             }
@@ -359,7 +359,7 @@ impl NetworkActor {
 
 impl Inner {
     async fn handle_network_receive(inner: Arc<Inner>, network_msg: NetworkMessage) -> Result<()> {
-        info!("receive network_message ");
+        debug!("receive network_message ");
         let message = PeerMessage::decode(&network_msg.data);
         match message {
             Ok(msg) => {
@@ -368,7 +368,7 @@ impl Inner {
                     .await?
             }
             Err(e) => {
-                warn!("get error {:?}", e);
+                debug!("get error {:?}", e);
             }
         }
         Ok(())
@@ -377,7 +377,7 @@ impl Inner {
     async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         match msg {
             PeerMessage::UserTransactions(txns) => {
-                info!("receive new txn list from {:?} ", peer_id);
+                debug!("receive new txn list from {:?} ", peer_id);
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
                     for txn in &txns {
                         let id = txn.crypto_hash();
@@ -396,7 +396,7 @@ impl Inner {
             PeerMessage::Block(block) => {
                 let block_hash = block.header().id();
 
-                info!(
+                debug!(
                     "receive new block from {:?} with hash {:?}",
                     peer_id, block_hash
                 );
@@ -422,16 +422,8 @@ impl Inner {
                     .await?;
             }
             PeerMessage::RawRPCRequest(id, request) => {
-                info!("do request.");
+                debug!("do request {} from peer {}", id, peer_id);
                 let (tx, rx) = mpsc::channel(1);
-                // self.bus
-                //     .send(Broadcast {
-                //         msg: RawRpcRequestMessage {
-                //             responder: tx,
-                //             request,
-                //         },
-                //     })
-                //     .await?;
                 self.rpc_tx.unbounded_send(RawRpcRequestMessage {
                     responder: tx,
                     request,
@@ -439,10 +431,9 @@ impl Inner {
                 let network_service = self.network_service.clone();
                 self.handle
                     .spawn(Self::handle_response(id, peer_id, rx, network_service));
-                info!("receive rpc request");
             }
             PeerMessage::RawRPCResponse(id, response) => {
-                info!("do response.");
+                debug!("do response {} from peer {}", id, peer_id);
                 self.raw_message_processor
                     .send_response(id, response)
                     .await?;
@@ -466,19 +457,18 @@ impl Inner {
                 Ok(())
             }
             None => {
-                info!("can't get response by id {}", id);
+                debug!("can't get response by id {}", id);
                 Ok(())
             }
         }
     }
 
     async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) -> Result<()> {
-        info!("event is {:?}", event);
+        debug!("event is {:?}", event);
         match event.clone() {
             PeerEvent::Open(peer_id, peer_info) => {
                 inner.on_peer_connected(peer_id.into(), peer_info).await?;
                 if inner.need_send_event.load(Ordering::Acquire) {
-                    info!("send event");
                     let mut connected_tx = inner.connected_tx.clone();
                     connected_tx.send(event.clone()).await?;
                     inner.need_send_event.swap(false, Ordering::Acquire);
@@ -489,7 +479,7 @@ impl Inner {
             }
         }
         inner.bus.send(Broadcast { msg: event }).await?;
-        info!("already broadcast event");
+        debug!("already broadcast event");
         Ok(())
     }
 
@@ -570,7 +560,7 @@ impl Actor for NetworkActor {
             .into_actor(self)
             .then(|res, act, ctx| {
                 if let Err(e) = res {
-                    error!("fail to subscribe txn propagate events, err: {:?}", e);
+                    warn!("fail to subscribe txn propagate events, err: {:?}", e);
                     ctx.terminate();
                 }
                 async {}.into_actor(act)
@@ -586,7 +576,7 @@ impl Handler<NewHeadBlock> for NetworkActor {
 
     fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
         let NewHeadBlock(block) = msg;
-        info!("broadcast a new block {:?}", block.header().id());
+        debug!("broadcast a new block {:?}", block.header().id());
 
         let id = block.header().id();
         let peers = self.peers.clone();
@@ -649,7 +639,7 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
         if txns.is_empty() {
             return;
         }
-        info!("propagate new txns, len: {}", txns.len());
+        debug!("propagate new txns, len: {}", txns.len());
 
         let peers = self.peers.clone();
         let network_service = self.network_service.clone();

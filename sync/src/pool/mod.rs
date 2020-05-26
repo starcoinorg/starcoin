@@ -1,6 +1,6 @@
+use parking_lot::RwLock;
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashSet};
-use std::sync::RwLock;
 use std::time::Duration;
 use types::{block::BlockNumber, peer_info::PeerId};
 
@@ -77,9 +77,9 @@ where
     /// add entry to pool
     pub(crate) fn insert(&self, peer: PeerId, number: BlockNumber, entry: E) {
         let mut ttl_entry = TTLEntry::new(peer.clone(), number, entry);
-        let mut lock = self.data.write().unwrap();
+        let mut lock = self.data.write();
         if lock.contains(&ttl_entry) {
-            ttl_entry = lock.take(&ttl_entry).expect("entry not exist.")
+            ttl_entry = lock.take(&ttl_entry).expect("Entry is none.");
         };
 
         ttl_entry.peers.insert(peer);
@@ -88,25 +88,25 @@ where
 
     /// take entry from pool
     pub(crate) fn take(&self, size: usize) -> Vec<E> {
-        let mut lock = self.data.write().unwrap();
-        let mut set_iter = lock.iter();
+        let mut lock = self.data.write();
         let mut entries = Vec::new();
-        loop {
-            if entries.len() >= size {
-                break;
+        {
+            let mut set_iter = lock.iter();
+            loop {
+                if entries.len() >= size {
+                    break;
+                }
+
+                if let Some(entry) = set_iter.next() {
+                    let ttl_entry = entry.clone();
+                    entries.push(ttl_entry);
+                } else {
+                    break;
+                }
             }
 
-            let entry = set_iter.next();
-
-            if entry.is_none() {
-                break;
-            }
-
-            let ttl_entry = entry.expect("entry is none.").clone();
-            entries.push(ttl_entry);
+            drop(set_iter);
         }
-
-        drop(set_iter);
 
         if !entries.is_empty() {
             entries.iter().for_each(|e| {
@@ -123,6 +123,6 @@ where
     }
 
     pub(crate) fn _size(&self) -> usize {
-        self.data.read().unwrap().len()
+        self.data.read().len()
     }
 }

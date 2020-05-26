@@ -22,7 +22,10 @@ use std::convert::TryFrom;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use traits::Consensus;
-use types::{account_state::AccountState, peer_info::PeerId};
+use types::{
+    account_state::AccountState,
+    peer_info::{PeerId, PeerInfo},
+};
 
 struct Roots {
     state: HashValue,
@@ -74,10 +77,6 @@ async fn sync_accumulator_node<C>(
     .await
     {
         Ok(accumulator_node) => {
-            debug!(
-                "get_accumulator_node_by_node_hash_resp:{:?}",
-                accumulator_node
-            );
             if node_key == accumulator_node.hash() {
                 SYNC_METRICS
                     .sync_succ_count
@@ -90,7 +89,7 @@ async fn sync_accumulator_node<C>(
                     .with_label_values(&[LABEL_ACCUMULATOR])
                     .inc();
                 warn!(
-                    "accumulator node hash not match {} :{:?}",
+                    "accumulator node hash miss match {} :{:?}",
                     node_key,
                     accumulator_node.hash()
                 );
@@ -102,7 +101,7 @@ async fn sync_accumulator_node<C>(
                 .sync_fail_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
-            error!("error: {:?}", e);
+            debug!("{:?}", e);
             None
         }
     };
@@ -114,7 +113,7 @@ async fn sync_accumulator_node<C>(
         accumulator_node,
         accumulator_type,
     )) {
-        warn!("err:{:?}", err);
+        error!("Send accumulator StateSyncTaskEvent failed : {:?}", err);
     };
 }
 
@@ -126,8 +125,6 @@ async fn sync_state_node<C>(
 ) where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    debug!("sync_state_node : {:?}", node_key);
-
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_STATE])
@@ -135,7 +132,6 @@ async fn sync_state_node<C>(
     let state_node =
         match get_state_node_by_node_hash(&network_service, peer_id.clone(), node_key).await {
             Ok(state_node) => {
-                debug!("get_state_node_by_node_hash_resp:{:?}", state_node);
                 if node_key == state_node.0.hash() {
                     SYNC_METRICS
                         .sync_succ_count
@@ -148,7 +144,7 @@ async fn sync_state_node<C>(
                         .with_label_values(&[LABEL_STATE])
                         .inc();
                     warn!(
-                        "state node hash not match {} :{:?}",
+                        "state node hash miss match {} :{:?}",
                         node_key,
                         state_node.0.hash()
                     );
@@ -160,7 +156,7 @@ async fn sync_state_node<C>(
                     .sync_fail_count
                     .with_label_values(&[LABEL_STATE])
                     .inc();
-                error!("error: {:?}", e);
+                debug!("{:?}", e);
                 None
             }
         };
@@ -168,7 +164,7 @@ async fn sync_state_node<C>(
 
     if let Err(err) = address.try_send(StateSyncTaskEvent::new_state(peer_id, node_key, state_node))
     {
-        warn!("err:{:?}", err);
+        error!("Send state StateSyncTaskEvent failed : {:?}", err);
     };
 }
 
@@ -200,13 +196,13 @@ where
             }))
             .await
         {
-            warn!("err : {:?}", e);
+            error!("Send RESET StateSyncEvent failed : {:?}", e);
         }
     }
 
     async fn act(&self) {
         if let Err(e) = self.address.send(StateSyncEvent::ACT {}).await {
-            warn!("err : {:?}", e);
+            error!("Send ACT StateSyncEvent failed : {:?}", e);
         }
     }
 }
@@ -366,12 +362,12 @@ where
 
     fn sync_end(&self) -> bool {
         info!(
-            "state sync task info : {:?},\
-             txn accumulator sync task info : {:?},\
-             block accumulator sync task info : {:?}.",
-            self.state_sync_task.lock().task_info(),
-            self.txn_accumulator_sync_task.lock().task_info(),
-            self.block_accumulator_sync_task.lock().task_info(),
+            "state sync task len : {:?}, accumulator sync task len : {:?},\
+         save state nodes : {} , save accumulator nodes : {}",
+            self.state_sync_task.lock().task_len(),
+            self.accumulator_sync_task.lock().task_len(),
+            self.state_sync_count.load(Ordering::Relaxed),
+            self.accumulator_sync_count.load(Ordering::Relaxed),
         );
         self.state_sync_task.lock().is_empty()
             && self.txn_accumulator_sync_task.lock().is_empty()
@@ -386,7 +382,7 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_STATE])
                 .inc();
-            if let Some(state_node) = self.storage.get(&node_key).unwrap() {
+            if let Ok(Some(state_node)) = self.storage.get(&node_key) {
                 debug!("find state_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), (node_key, is_global));
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_state(
@@ -394,14 +390,12 @@ where
                     node_key,
                     Some(state_node),
                 )) {
-                    warn!("err:{:?}", err);
+                    error!("Send state StateSyncTaskEvent failed : {:?}", err);
                 };
             } else {
-                let network_service = self.network_service.clone();
-                let best_peer_info =
-                    block_on(async move { network_service.best_peer().await.unwrap() });
+                let best_peer_info = get_best_peer_info(self.network_service.clone());
                 debug!(
-                    "sync state_node {:?} from peer {:?}.",
+                    "sync state node {:?} from peer {:?}.",
                     node_key, best_peer_info
                 );
                 if let Some(best_peer) = best_peer_info {
@@ -419,7 +413,7 @@ where
                         });
                     }
                 } else {
-                    warn!("{:?}", "best peer is none.");
+                    warn!("{:?}", "best peer is none, state sync may be failed.");
                     self.sync_metadata.update_failed(true);
                 }
             }
@@ -433,21 +427,19 @@ where
             //1. push back
             let current_node_key = task_event.node_key;
             if state_node_hash != &current_node_key {
-                warn!(
-                    "hash not match {:} : {:?}",
+                debug!(
+                    "hash miss match {:} : {:?}",
                     state_node_hash, current_node_key
                 );
                 return;
             }
             let _ = lock.remove(&task_event.peer_id);
             if let Some(state_node) = task_event.state_node {
-                info!("state_node : {:?}", state_node);
                 if let Err(e) = self.storage.put(current_node_key, state_node.clone()) {
-                    error!("error : {:?}", e);
+                    debug!("{:?}, retry {:?}.", e, current_node_key);
                     lock.push_back((current_node_key, is_global));
                 } else {
-                    debug!("receive state_node: {:?}", state_node.0.hash());
-                    lock.do_one_task();
+                    self.state_sync_count.fetch_add(1, Ordering::Relaxed);
                     match state_node.inner() {
                         Node::Leaf(leaf) => {
                             if !is_global {
@@ -455,7 +447,7 @@ where
                             }
                             match AccountState::try_from(leaf.blob().as_ref()) {
                                 Err(e) => {
-                                    error!("error : {:?}", e);
+                                    error!("AccountState decode from blob failed : {:?}", e);
                                 }
                                 Ok(account_state) => {
                                     account_state.storage_roots().iter().for_each(|key| {
@@ -474,7 +466,7 @@ where
                             }
                         }
                         _ => {
-                            warn!("node {:?} is null.", current_node_key);
+                            debug!("node {:?} is null.", current_node_key);
                         }
                     }
                 }
@@ -482,7 +474,7 @@ where
                 lock.push_back((current_node_key, is_global));
             }
         } else {
-            warn!("discard state event : {:?}", task_event);
+            debug!("discard state event : {:?}", task_event);
         }
     }
 
@@ -533,14 +525,14 @@ where
                     Some(accumulator_node),
                     accumulator_type,
                 )) {
-                    warn!("err:{:?}", err);
+                    error!("Send accumulator StateSyncTaskEvent failed : {:?}", err);
                 };
             } else {
                 let network_service_tmp = network_service.clone();
                 let best_peer_info =
                     block_on(async move { network_service_tmp.best_peer().await.unwrap() });
                 debug!(
-                    "sync accumulator_node {:?} from peer {:?}.",
+                    "sync accumulator node {:?} from peer {:?}.",
                     node_key, best_peer_info
                 );
                 if let Some(best_peer) = best_peer_info {
@@ -586,7 +578,7 @@ where
             let current_node_key = task_event.node_key;
             if accumulator_node_hash != &current_node_key {
                 warn!(
-                    "hash not match {:} : {:?}",
+                    "hash miss match {:} : {:?}",
                     accumulator_node_hash, current_node_key
                 );
                 return;
@@ -613,7 +605,7 @@ where
                             }
                         }
                         _ => {
-                            warn!("node {:?} is null.", current_node_key);
+                            debug!("node {:?} is null.", current_node_key);
                         }
                     }
                 }
@@ -621,7 +613,7 @@ where
                 lock.push_back(current_node_key);
             }
         } else {
-            warn!("discard state event : {:?}", task_event);
+            debug!("discard state event : {:?}", task_event);
         }
     }
 
@@ -632,7 +624,8 @@ where
         block_accumulator_root: &HashValue,
         address: Addr<StateSyncTaskActor<C>>,
     ) {
-        info!("reset state sync task.");
+        debug!("reset state sync task with state root : {:?}, txn accumulator root : {:?}, block accumulator root : {:?}.",
+               state_root, txn_accumulator_root, block_accumulator_root);
         self.roots = Roots::new(*state_root, *txn_accumulator_root, *block_accumulator_root);
 
         let mut state_lock = self.state_sync_task.lock();
@@ -666,7 +659,7 @@ where
     }
 
     fn activation_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
-        info!("activation state sync task.");
+        debug!("activation state sync task.");
         if self.sync_metadata.is_failed() {
             self.sync_metadata.update_failed(false);
             self.exe_state_sync_task(address.clone());
@@ -683,14 +676,9 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        info!("StateSyncTaskActor actor started.");
         self.exe_state_sync_task(ctx.address());
         self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Transaction);
         self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Block);
-    }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("StateSyncTaskActor actor stopped.");
     }
 }
 
@@ -708,17 +696,14 @@ where
         }
 
         if self.sync_end() {
-            info!("state sync end");
             if let Some((block, block_info)) = self.sync_metadata.get_pivot_block() {
                 self.connect_address
                     .do_send(SyncEvent::DoPivot(Box::new(block), Box::new(block_info)));
             }
 
             if let Err(e) = self.sync_metadata.state_sync_done() {
-                warn!("err:{:?}", e);
+                error!("update state_sync_done in sync_metadata failed : {:?}", e);
             } else {
-                info!("sync_done : {:?}", self.sync_metadata.get_pivot());
-
                 ctx.stop();
             }
         } else {
@@ -771,4 +756,14 @@ where
         }
         Ok(())
     }
+}
+
+fn get_best_peer_info(network_service: NetworkAsyncService) -> Option<PeerInfo> {
+    block_on(async move {
+        if let Ok(peer_info) = network_service.best_peer().await {
+            peer_info
+        } else {
+            None
+        }
+    })
 }

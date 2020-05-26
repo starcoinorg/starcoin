@@ -49,14 +49,7 @@ impl SyncBencher {
                 .unwrap();
             let first = chain_1.clone().master_head().await.unwrap();
             let second = chain_2.clone().master_head().await.unwrap();
-            if first.get_head() != second.get_head() {
-                println!("{:?}", first);
-                println!("{:?}", second);
-            }
-            // assert_eq!(
-            //     chain_1.master_head().await.unwrap().get_head(),
-            //     chain_2.master_head().await.unwrap().get_head()
-            // );
+            assert_eq!(first.get_head(), second.get_head());
         });
     }
 
@@ -73,7 +66,7 @@ impl SyncBencher {
         network: NetworkAsyncService,
     ) -> Result<()> {
         if let Some(best_peer) = network.best_peer().await? {
-            if let Some(header) = downloader.get_chain_reader().master_head_header().await {
+            if let Some(header) = downloader.get_chain_reader().master_head_header().await? {
                 let mut begin_number = header.number();
 
                 if let Some(hash_number) = Downloader::find_ancestor(
@@ -81,6 +74,8 @@ impl SyncBencher {
                     best_peer.get_peer_id(),
                     network.clone(),
                     begin_number,
+                    true,
+                    true,
                 )
                 .await?
                 {
@@ -228,6 +223,7 @@ async fn create_node(
                     txn_vec,
                 )
                 .await
+                .unwrap()
                 .unwrap();
             let block =
                 DummyConsensus::create_block(node_config.clone(), &block_chain, block_template)

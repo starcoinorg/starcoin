@@ -12,11 +12,36 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BranchNumber};
+use serde::{Deserialize, Serialize};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState, BranchNumber};
 use std::io::Write;
 use std::mem::size_of;
 use std::sync::{Arc, RwLock};
-define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct StorageBlock {
+    block: Block,
+    state: BlockState,
+}
+
+impl StorageBlock {
+    fn new(block: Block, state: BlockState) -> Self {
+        Self { block, state }
+    }
+}
+
+impl Into<(Block, BlockState)> for StorageBlock {
+    fn into(self) -> (Block, BlockState) {
+        (self.block, self.state)
+    }
+}
+
+define_storage!(
+    BlockInnerStorage,
+    HashValue,
+    StorageBlock,
+    BLOCK_PREFIX_NAME
+);
 define_storage!(
     BlockHeaderStorage,
     HashValue,
@@ -65,7 +90,7 @@ pub struct BlockStorage {
     block_txns_store: BlockTransactionsStorage,
 }
 
-impl ValueCodec for Block {
+impl ValueCodec for StorageBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -163,13 +188,15 @@ impl BlockStorage {
             block_txns_store: BlockTransactionsStorage::new(instance),
         }
     }
-    pub fn save(&self, block: Block) -> Result<()> {
+    pub fn save(&self, block: Block, state: BlockState) -> Result<()> {
         debug!(
             "insert block:{:?}, block:{:?}",
             block.header().id(),
             block.header().parent_hash()
         );
-        self.block_store.put(block.header().id(), block)
+        let block_id = block.header().id();
+        let storage_block = StorageBlock::new(block, state);
+        self.block_store.put(block_id, storage_block)
     }
 
     pub fn save_header(&self, header: BlockHeader) -> Result<()> {
@@ -182,7 +209,6 @@ impl BlockStorage {
         let mut key_hashes = vec![];
         for hash in self.header_store.keys().unwrap() {
             let hashval = HashValue::from_slice(hash.as_slice()).unwrap();
-            debug!("header key:{}", hashval.to_hex());
             key_hashes.push(hashval)
         }
         Ok(key_hashes)
@@ -205,7 +231,14 @@ impl BlockStorage {
     }
 
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
-        self.block_store.get(block_id)
+        Ok(
+            if let Some(storage_block) = self.block_store.get(block_id)? {
+                let (block, _) = storage_block.into();
+                Some(block)
+            } else {
+                None
+            },
+        )
     }
 
     pub fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
@@ -225,7 +258,7 @@ impl BlockStorage {
         self.branch_number_store.get(key)
     }
 
-    pub fn commit_block(&self, block: Block) -> Result<()> {
+    pub fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
         let (header, body) = block.clone().into_inner();
         //save header
         let block_id = header.id();
@@ -235,10 +268,15 @@ impl BlockStorage {
         //save body
         self.save_body(block_id, body).unwrap();
         //save block cache
-        self.save(block)
+        self.save(block, state)
     }
 
-    pub fn commit_branch_block(&self, branch_id: HashValue, block: Block) -> Result<()> {
+    pub fn commit_branch_block(
+        &self,
+        branch_id: HashValue,
+        block: Block,
+        state: BlockState,
+    ) -> Result<()> {
         debug!("commit block: {:?}, block: {:?}", branch_id, block);
         let (header, body) = block.clone().into_inner();
         //save header
@@ -250,7 +288,7 @@ impl BlockStorage {
         //save body
         self.save_body(block_id, body).unwrap();
         //save block cache
-        self.save(block)
+        self.save(block, state)
     }
 
     ///返回某个块到分叉块的路径上所有块的hash
@@ -258,7 +296,6 @@ impl BlockStorage {
         let mut vev_hash = Vec::new();
         let mut temp_block_id = block_id;
         loop {
-            debug!("block_id: {}", temp_block_id.to_hex());
             //get header by block_id
             match self.get_block_header_by_hash(temp_block_id)? {
                 Some(header) => {
@@ -290,7 +327,6 @@ impl BlockStorage {
         let mut parent_id1 = block_id1;
         let mut parent_id2 = block_id2;
         let mut found;
-        debug!("common ancestor: {:?}, {:?}", block_id1, block_id2);
         if let Ok(Some(hash)) = self.get_relationship(block_id1, block_id2) {
             return Ok(Some(hash));
         }
@@ -310,7 +346,6 @@ impl BlockStorage {
                             if sons1.len() > 1 {
                                 // get parent2 from block2
                                 loop {
-                                    debug!("parent2 : {:?}", parent_id2);
                                     ensure!(
                                         parent_id2 != HashValue::zero(),
                                         "invaild block id is zero."
@@ -368,6 +403,17 @@ impl BlockStorage {
         self.get(block_id)
     }
 
+    pub fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>> {
+        Ok(
+            if let Some(storage_block) = self.block_store.get(block_id)? {
+                let (_, block_state) = storage_block.into();
+                Some(block_state)
+            } else {
+                None
+            },
+        )
+    }
+
     pub fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
         match self.number_store.get(number).unwrap() {
             Some(block_id) => self.get_block_header_by_hash(block_id),
@@ -377,7 +423,7 @@ impl BlockStorage {
 
     pub fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         match self.number_store.get(number)? {
-            Some(block_id) => self.block_store.get(block_id),
+            Some(block_id) => self.get(block_id),
             None => Ok(None),
         }
     }
@@ -450,7 +496,7 @@ impl BlockStorage {
     }
 
     fn put_sons(&self, parent_hash: HashValue, son_hash: HashValue) -> Result<()> {
-        debug!("put son:{}, {}", parent_hash, son_hash);
+        trace!("put son:{}, {}", parent_hash, son_hash);
         match self.get_sons(parent_hash) {
             Ok(mut vec_hash) => {
                 debug!("branch block:{}, {:?}", parent_hash, vec_hash);

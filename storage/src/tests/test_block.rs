@@ -10,9 +10,8 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
-use logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
 use std::sync::Arc;
@@ -63,7 +62,10 @@ fn test_block() {
         .unwrap();
     let block1 = Block::new(block_header1.clone(), block_body1);
     // save block1
-    storage.block_storage.save(block1.clone()).unwrap();
+    storage
+        .block_storage
+        .save(block1.clone(), BlockState::Executed)
+        .unwrap();
     //read to block2
     let block2 = storage.block_storage.get(block_id).unwrap();
     assert!(block2.is_some());
@@ -124,7 +126,10 @@ fn test_block_number() {
     let block1 = Block::new(block_header1.clone(), block_body1);
 
     // save block1
-    storage.block_storage.save(block1.clone()).unwrap();
+    storage
+        .block_storage
+        .save(block1.clone(), BlockState::Executed)
+        .unwrap();
     let block_number1 = block_header1.number();
     storage
         .block_storage
@@ -189,7 +194,10 @@ fn test_branch_number() {
     let block1 = Block::new(block_header1.clone(), block_body1);
 
     // save block1
-    storage.block_storage.save(block1.clone()).unwrap();
+    storage
+        .block_storage
+        .save(block1.clone(), BlockState::Executed)
+        .unwrap();
     let block_number1 = block_header1.number();
     let branch_id = HashValue::random();
     storage
@@ -270,7 +278,6 @@ fn test_block_branch_hashes() {
         .save_header(block_header1.clone())
         .unwrap();
     let block_id = block_header1.id();
-    debug!("header1: {}", block_id.to_hex());
     let block_header2 = BlockHeader::new(
         parent_hash,
         HashValue::random(),
@@ -288,8 +295,6 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header2.clone())
         .unwrap();
-    debug!("header2: {}", block_header2.id().to_hex());
-
     let block_header3 = BlockHeader::new(
         block_id,
         HashValue::random(),
@@ -307,7 +312,6 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header3.clone())
         .unwrap();
-    debug!("header3: {}", block_header3.id().to_hex());
 
     let block_header4 = BlockHeader::new(
         block_header3.id(),
@@ -326,7 +330,6 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header4.clone())
         .unwrap();
-    debug!("header4: {}", block_header4.id().to_hex());
     let hashes = storage
         .block_storage
         .get_branch_hashes(block_header4.id())

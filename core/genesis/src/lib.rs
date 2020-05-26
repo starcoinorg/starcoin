@@ -16,7 +16,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
-use starcoin_types::block::BlockInfo;
+use starcoin_types::block::{BlockInfo, BlockState};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::{ChangeSet, TransactionInfo};
 use starcoin_types::{
@@ -188,7 +188,7 @@ impl Genesis {
             "Genesis block accumulator root mismatch."
         );
         //TODO verify consensus header
-        storage.commit_block(block.clone())?;
+        storage.commit_block(block.clone(), BlockState::Executed)?;
 
         let startup_info = StartupInfo::new(block.header().id(), vec![]);
         let block_info = BlockInfo::new_with_accumulator_info(

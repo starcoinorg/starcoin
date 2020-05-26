@@ -74,7 +74,6 @@ impl AccumulatorTree {
                 Ok(self.root_hash)
             };
         }
-        trace!("acc {} append_leaves: {:?}", self.id, new_leaves);
         let num_new_leaves = new_leaves.len();
         let last_new_leaf_count = self.num_leaves + num_new_leaves as LeafCount;
         let mut new_num_nodes = self.num_nodes;
@@ -179,7 +178,7 @@ impl AccumulatorTree {
             .map(|p| self.get_node_hash(p).unwrap())
             .collect::<Vec<_>>();
         self.num_nodes = new_num_nodes;
-
+        trace!("acc {} append_leaves ok: {:?}", self.id, new_leaves);
         Ok(hash)
     }
 
@@ -203,7 +202,10 @@ impl AccumulatorTree {
         let node = match self.store.clone().get_node(self.store_type.clone(), hash) {
             Ok(Some(node)) => node,
             _ => {
-                error!("get accumulator node from store err:{:?}", hash.short_str());
+                info!(
+                    "get accumulator node from store none:{:?}",
+                    hash.short_str()
+                );
                 AccumulatorNode::new_empty()
             }
         };
@@ -216,10 +218,7 @@ impl AccumulatorTree {
         if !nodes.is_empty() {
             let nodes_vec = nodes
                 .iter()
-                .map(|(_, node)| {
-                    trace!("save acc {} node: {:?}", self.id, node);
-                    node.clone()
-                })
+                .map(|(_, node)| node.clone())
                 .collect::<Vec<AccumulatorNode>>();
             let nodes_len = nodes_vec.len();
             self.store.save_nodes(self.store_type.clone(), nodes_vec)?;
@@ -264,18 +263,11 @@ impl AccumulatorTree {
             Ok(*ACCUMULATOR_PLACEHOLDER_HASH)
         } else {
             self.get_node_hash_always(node_index)
-            // println!(
-            //     "get id:{:?}, index: {:?}, hash: {:?}",
-            //     self.id.short_str(),
-            //     node_index,
-            //     node_hash.short_str()
-            // );
         }
     }
 
     /// Update node to cache.
     fn update_cache(&self, node_vec: Vec<AccumulatorNode>) -> Result<()> {
-        trace!("accumulator update cache.");
         self.save_node_indexes(node_vec)
     }
 
@@ -367,7 +359,7 @@ impl AccumulatorTree {
         let mut cache = self.index_cache.lock();
         for node in nodes {
             if let Some(old) = cache.put(NodeCacheKey::new(self.id, node.index()), node.hash()) {
-                warn!(
+                debug!(
                     "cache exist node hash: {:?}-{:?}-{:?}",
                     self.id.short_str(),
                     node.index(),

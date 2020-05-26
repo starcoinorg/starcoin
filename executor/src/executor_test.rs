@@ -7,9 +7,6 @@ use anyhow::Result;
 use compiler::Compiler;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
-use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
-use starcoin_accumulator::tree_store::MockAccumulatorStore;
-use starcoin_accumulator::MerkleAccumulator;
 use starcoin_config::{ChainConfig, ChainNetwork};
 use starcoin_functional_tests::account::{
     create_account_txn_sent_as_association, peer_to_peer_txn, Account,
@@ -84,16 +81,6 @@ fn test_block_execute_gas_limit() -> Result<()> {
     let output = execute_and_apply(&chain_state, txn1);
     info!("output: {:?}", output.gas_used());
 
-    let accumulator_store = MockAccumulatorStore::new();
-    let accumulator = MerkleAccumulator::new(
-        *ACCUMULATOR_PLACEHOLDER_HASH,
-        vec![],
-        0,
-        0,
-        AccumulatorStoreType::Transaction,
-        Arc::new(accumulator_store),
-    )?;
-
     let block_meta = BlockMetadata::new(
         crypto::HashValue::random(),
         SystemTime::now()
@@ -132,13 +119,11 @@ fn test_block_execute_gas_limit() -> Result<()> {
 
         assert_eq!(max_include_txn_num, user_txns.len() as u64);
 
-        let (_, _, txn_infos) = BlockExecutor::block_execute(
+        let (_, txn_infos) = BlockExecutor::block_execute(
             &chain_state,
-            &accumulator,
             user_txns,
             block_meta.clone(),
             block_gas_limit,
-            true,
         )?;
 
         // all user txns can be included
@@ -165,14 +150,8 @@ fn test_block_execute_gas_limit() -> Result<()> {
             })
             .collect();
 
-        let (_, _, txn_infos) = BlockExecutor::block_execute(
-            &chain_state,
-            &accumulator,
-            user_txns,
-            block_meta,
-            block_gas_limit,
-            true,
-        )?;
+        let (_, txn_infos) =
+            BlockExecutor::block_execute(&chain_state, user_txns, block_meta, block_gas_limit)?;
 
         // not all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
