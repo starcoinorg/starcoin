@@ -195,7 +195,8 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     }
 });
 
-pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
+pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
+    ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 1000,
@@ -210,10 +211,14 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
         private_key: None,
         pre_mine_percent: 20,
     }),
-    boot_nodes: vec![],
+    boot_nodes: vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
+                     "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
+                     "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),],
+}
 });
 
-pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
+pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
+    ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 10000,
@@ -221,7 +226,10 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     difficulty: U256::max_value(),
     consensus_header: vec![],
     pre_mine_config: None,
-    boot_nodes: vec![],
+    boot_nodes: vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
+                     "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
+                     "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),],
+}
 });
 
 pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
