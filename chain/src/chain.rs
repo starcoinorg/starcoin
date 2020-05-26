@@ -443,27 +443,8 @@ where
                 .iter()
                 .map(|info| info.transaction_hash())
                 .collect();
-            let (accumulator_root, first_leaf_idx) =
+            let (accumulator_root, _first_leaf_idx) =
                 self.txn_accumulator.append(&included_txn_hashes)?;
-            let mut i = 0;
-            for hash in included_txn_hashes {
-                let leaf_index = first_leaf_idx + i as u64;
-                if let Some(proof) = self
-                    .txn_accumulator
-                    .get_proof(leaf_index)
-                    .map_err(|_err| BlockExecutorError::BlockAccumulatorGetProofErr)?
-                {
-                    proof
-                        .verify(accumulator_root, hash, leaf_index)
-                        .map_err(|_err| {
-                            BlockExecutorError::BlockAccumulatorVerifyErr(
-                                accumulator_root,
-                                leaf_index,
-                            )
-                        })?;
-                }
-                i += 1;
-            }
             accumulator_root
         };
         ensure!(
