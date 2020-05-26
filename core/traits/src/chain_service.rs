@@ -58,7 +58,7 @@ pub trait ChainAsyncService:
 {
     /// chain service
     async fn try_connect(self, block: Block) -> Result<ConnectResult<()>>;
-    async fn get_header_by_hash(self, hash: &HashValue) -> Option<BlockHeader>;
+    async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(self, hash: HashValue) -> Result<Block>;
     async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn try_connect_with_block_info(
@@ -66,11 +66,11 @@ pub trait ChainAsyncService:
         block: Block,
         block_info: BlockInfo,
     ) -> Result<ConnectResult<()>>;
-    async fn get_block_info_by_hash(self, hash: &HashValue) -> Option<BlockInfo>;
+    async fn get_block_info_by_hash(self, hash: &HashValue) -> Result<Option<BlockInfo>>;
 
     /// for master
-    async fn master_head_header(self) -> Option<BlockHeader>;
-    async fn master_head_block(self) -> Option<Block>;
+    async fn master_head_header(self) -> Result<Option<BlockHeader>>;
+    async fn master_head_block(self) -> Result<Option<Block>>;
     async fn master_block_by_number(self, number: BlockNumber) -> Result<Block>;
     async fn master_blocks_by_number(
         self,
@@ -89,5 +89,5 @@ pub trait ChainAsyncService:
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
-    ) -> Option<BlockTemplate>;
+    ) -> Result<Option<BlockTemplate>>;
 }

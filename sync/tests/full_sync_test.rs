@@ -120,7 +120,12 @@ fn test_network_actor_rpc() {
         );
         MinerClientActor::new(node_config_1.miner.clone()).start();
         Delay::new(Duration::from_secs(20)).await;
-        let block_1 = first_chain.clone().master_head_block().await.unwrap();
+        let block_1 = first_chain
+            .clone()
+            .master_head_block()
+            .await
+            .unwrap()
+            .unwrap();
         let number = block_1.header().number();
         debug!("first chain :{:?}", number);
         assert!(number > 0);
@@ -204,11 +209,21 @@ fn test_network_actor_rpc() {
 
         for i in 0..5 as usize {
             Delay::new(Duration::from_secs(2)).await;
-            let block_1 = first_chain.clone().master_head_block().await.unwrap();
+            let block_1 = first_chain
+                .clone()
+                .master_head_block()
+                .await
+                .unwrap()
+                .unwrap();
             let number_1 = block_1.header().number();
             debug!("index : {}, first chain number is {}", i, number_1);
 
-            let block_2 = second_chain.clone().master_head_block().await.unwrap();
+            let block_2 = second_chain
+                .clone()
+                .master_head_block()
+                .await
+                .unwrap()
+                .unwrap();
             let number_2 = block_2.header().number();
             debug!("index : {}, second chain number is {}", i, number_2);
 
@@ -296,7 +311,12 @@ fn test_network_actor_rpc_2() {
         }
 
         info!("here");
-        let block_1 = first_chain.clone().master_head_block().await.unwrap();
+        let block_1 = first_chain
+            .clone()
+            .master_head_block()
+            .await
+            .unwrap()
+            .unwrap();
         let number = block_1.header().number();
         info!("first chain :{:?} : {:?}", number, block_1.header().id());
 
@@ -368,7 +388,12 @@ fn test_network_actor_rpc_2() {
             error!("error: {:?}", e);
         }
 
-        let block_2 = second_chain.clone().master_head_block().await.unwrap();
+        let block_2 = second_chain
+            .clone()
+            .master_head_block()
+            .await
+            .unwrap()
+            .unwrap();
         let number = block_2.header().number();
         debug!("second chain :{:?} : {:?}", number, block_2.header().id());
 

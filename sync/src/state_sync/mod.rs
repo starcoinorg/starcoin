@@ -22,7 +22,10 @@ use std::convert::TryFrom;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use traits::Consensus;
-use types::{account_state::AccountState, peer_info::PeerId};
+use types::{
+    account_state::AccountState,
+    peer_info::{PeerId, PeerInfo},
+};
 
 struct Roots {
     state: HashValue,
@@ -363,7 +366,7 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_STATE])
                 .inc();
-            if let Some(state_node) = self.storage.get(&node_key).unwrap() {
+            if let Ok(Some(state_node)) = self.storage.get(&node_key) {
                 debug!("find state_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), (node_key, is_global));
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_state(
@@ -374,9 +377,7 @@ where
                     error!("Send state StateSyncTaskEvent failed : {:?}", err);
                 };
             } else {
-                let network_service = self.network_service.clone();
-                let best_peer_info =
-                    block_on(async move { network_service.best_peer().await.unwrap() });
+                let best_peer_info = get_best_peer_info(self.network_service.clone());
                 debug!(
                     "sync state node {:?} from peer {:?}.",
                     node_key, best_peer_info
@@ -469,7 +470,7 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
-            if let Some(accumulator_node) = self.storage.get_node(node_key).unwrap() {
+            if let Ok(Some(accumulator_node)) = self.storage.get_node(node_key) {
                 debug!("find accumulator_node {:?} in db.", node_key);
                 lock.insert(self.self_peer_id.clone(), node_key);
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
@@ -480,9 +481,7 @@ where
                     error!("Send accumulator StateSyncTaskEvent failed : {:?}", err);
                 };
             } else {
-                let network_service = self.network_service.clone();
-                let best_peer_info =
-                    block_on(async move { network_service.best_peer().await.unwrap() });
+                let best_peer_info = get_best_peer_info(self.network_service.clone());
                 debug!(
                     "sync accumulator node {:?} from peer {:?}.",
                     node_key, best_peer_info
@@ -675,4 +674,14 @@ where
         }
         Ok(())
     }
+}
+
+fn get_best_peer_info(network_service: NetworkAsyncService) -> Option<PeerInfo> {
+    block_on(async move {
+        if let Ok(peer_info) = network_service.best_peer().await {
+            peer_info
+        } else {
+            None
+        }
+    })
 }

@@ -116,10 +116,20 @@ fn test_state_sync() {
         );
         MinerClientActor::new(node_config_1.miner.clone()).start();
         Delay::new(Duration::from_secs(30)).await;
-        let mut block_1 = first_chain.clone().master_head_block().await.unwrap();
+        let mut block_1 = first_chain
+            .clone()
+            .master_head_block()
+            .await
+            .unwrap()
+            .unwrap();
         while block_1.header().number() <= 11 {
             Delay::new(Duration::from_secs(5)).await;
-            block_1 = first_chain.clone().master_head_block().await.unwrap();
+            block_1 = first_chain
+                .clone()
+                .master_head_block()
+                .await
+                .unwrap()
+                .unwrap();
         }
 
         ////////////////////////

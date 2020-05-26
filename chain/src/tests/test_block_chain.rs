@@ -68,6 +68,7 @@ async fn gen_master_chain(
                     Vec::new(),
                 )
                 .await
+                .unwrap()
                 .unwrap();
             let block =
                 DevConsensus::create_block(node_config.clone(), &block_chain, block_template)
@@ -87,7 +88,10 @@ async fn test_block_chain_head() {
     ::logger::init_for_test();
     let times = 10;
     let (chain, _) = gen_master_chain(times, false).await;
-    assert_eq!(chain.master_head_header().await.unwrap().number(), times);
+    assert_eq!(
+        chain.master_head_header().await.unwrap().unwrap().number(),
+        times
+    );
 }
 
 #[actix_rt::test]
@@ -111,6 +115,7 @@ async fn test_block_chain_forks() {
                 )
                 .await
                 .unwrap()
+                .unwrap()
                 .into_block(DummyHeader {}, U256::max_value());
             info!(
                 "{}:{:?}:{:?}:{:?}",
@@ -124,7 +129,10 @@ async fn test_block_chain_forks() {
         }
     }
 
-    assert_eq!(chain.master_head_header().await.unwrap().id(), parent_hash)
+    assert_eq!(
+        chain.master_head_header().await.unwrap().unwrap().id(),
+        parent_hash
+    )
 }
 
 #[stest::test]

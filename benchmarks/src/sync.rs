@@ -66,7 +66,7 @@ impl SyncBencher {
         network: NetworkAsyncService,
     ) -> Result<()> {
         if let Some(best_peer) = network.best_peer().await? {
-            if let Some(header) = downloader.get_chain_reader().master_head_header().await {
+            if let Some(header) = downloader.get_chain_reader().master_head_header().await? {
                 let mut begin_number = header.number();
 
                 if let Some(hash_number) = Downloader::find_ancestor(
@@ -223,6 +223,7 @@ async fn create_node(
                     txn_vec,
                 )
                 .await
+                .unwrap()
                 .unwrap();
             let block =
                 DummyConsensus::create_block(node_config.clone(), &block_chain, block_template)
