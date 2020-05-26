@@ -10,7 +10,6 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
-use logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
 use starcoin_types::transaction::SignedUserTransaction;
@@ -279,7 +278,6 @@ fn test_block_branch_hashes() {
         .save_header(block_header1.clone())
         .unwrap();
     let block_id = block_header1.id();
-    debug!("header1: {}", block_id.to_hex());
     let block_header2 = BlockHeader::new(
         parent_hash,
         HashValue::random(),
@@ -297,8 +295,6 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header2.clone())
         .unwrap();
-    debug!("header2: {}", block_header2.id().to_hex());
-
     let block_header3 = BlockHeader::new(
         block_id,
         HashValue::random(),
@@ -316,7 +312,6 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header3.clone())
         .unwrap();
-    debug!("header3: {}", block_header3.id().to_hex());
 
     let block_header4 = BlockHeader::new(
         block_header3.id(),
@@ -335,7 +330,6 @@ fn test_block_branch_hashes() {
         .block_storage
         .save_header(block_header4.clone())
         .unwrap();
-    debug!("header4: {}", block_header4.id().to_hex());
     let hashes = storage
         .block_storage
         .get_branch_hashes(block_header4.id())

@@ -5,7 +5,6 @@ use crate::node::InternalNode;
 use crate::node_index::NodeIndex;
 use crate::MAX_ACCUMULATOR_PROOF_DEPTH;
 use anyhow::{ensure, Result};
-use logger::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
@@ -41,7 +40,6 @@ impl AccumulatorProof {
             MAX_ACCUMULATOR_PROOF_DEPTH,
             self.siblings.len()
         );
-        debug!("accumulator verify proof: {:?}", expected_root_hash);
         let actual_root_hash = self
             .siblings
             .iter()
