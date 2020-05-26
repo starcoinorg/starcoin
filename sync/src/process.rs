@@ -221,13 +221,14 @@ where
     ) -> BatchHeaderMsg {
         let mut headers = Vec::new();
         for hash in get_header_by_hash_msg.hashs {
-            let header = processor
+            if let Ok(Some(header)) = processor
                 .chain_reader
                 .clone()
                 .get_header_by_hash(&hash)
                 .await
-                .unwrap();
-            headers.push(header);
+            {
+                headers.push(header);
+            }
         }
         BatchHeaderMsg { headers }
     }
@@ -256,7 +257,7 @@ where
     ) -> BatchBlockInfo {
         let mut infos = Vec::new();
         for hash in get_body_by_hash_msg.hashs {
-            if let Some(block_info) = processor
+            if let Ok(Some(block_info)) = processor
                 .chain_reader
                 .clone()
                 .get_block_info_by_hash(&hash)

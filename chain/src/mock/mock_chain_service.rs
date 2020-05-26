@@ -23,7 +23,7 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn get_header_by_hash(self, _hash: &HashValue) -> Option<BlockHeader> {
+    async fn get_header_by_hash(self, _hash: &HashValue) -> Result<Option<BlockHeader>> {
         unimplemented!()
     }
 
@@ -43,15 +43,15 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn get_block_info_by_hash(self, _hash: &HashValue) -> Option<BlockInfo> {
+    async fn get_block_info_by_hash(self, _hash: &HashValue) -> Result<Option<BlockInfo>> {
         unimplemented!()
     }
 
-    async fn master_head_header(self) -> Option<BlockHeader> {
+    async fn master_head_header(self) -> Result<Option<BlockHeader>> {
         unimplemented!()
     }
 
-    async fn master_head_block(self) -> Option<Block> {
+    async fn master_head_block(self) -> Result<Option<Block>> {
         unimplemented!()
     }
 
@@ -89,7 +89,7 @@ impl ChainAsyncService for MockChainService {
         _auth_key_prefix: Option<Vec<u8>>,
         _parent_hash: Option<HashValue>,
         _txs: Vec<SignedUserTransaction>,
-    ) -> Option<BlockTemplate> {
+    ) -> Result<Option<BlockTemplate>> {
         unimplemented!()
     }
 }

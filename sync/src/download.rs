@@ -299,8 +299,8 @@ where
                 .chain_reader
                 .clone()
                 .master_head_header()
-                .await
-                .unwrap()
+                .await?
+                .ok_or_else(|| format_err!("Master head is none."))?
                 .number();
 
             if let Some(hash_with_number) = Downloader::find_ancestor(
@@ -338,7 +338,7 @@ where
                 // 3. StateSyncActor
                 let root = Self::get_pivot(&network, best_peer.get_peer_id(), pivot).await?;
                 let sync_pivot = sync_metadata.get_pivot()?;
-                if !(sync_pivot.is_none() || sync_pivot.unwrap() < pivot) {
+                if !(sync_pivot.is_none() || sync_pivot.expect("sync pivot is none.") < pivot) {
                     debug!("pivot {:?} : {}", sync_pivot, pivot);
                     return Ok(());
                 }
@@ -455,7 +455,7 @@ where
         full_mode: bool,
     ) -> Result<()> {
         if let Some(best_peer) = network.best_peer().await? {
-            if let Some(header) = downloader.chain_reader.clone().master_head_header().await {
+            if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
                 let mut begin_number = header.number();
                 let head_executed = if let Some(head_state) = downloader
                     .chain_reader
@@ -765,7 +765,7 @@ where
                 batch_hash_by_number_msg,
                 need_executed,
             )
-            .await;
+            .await?;
 
             if end || hash_with_number.is_some() {
                 if end && hash_with_number.is_none() {
@@ -783,7 +783,7 @@ where
         peer: PeerId,
         batch_hash_by_number_msg: BatchHashByNumberMsg,
         need_executed: bool,
-    ) -> Option<HashWithNumber> {
+    ) -> Result<Option<HashWithNumber>> {
         let mut exist_ancestor = false;
         let mut ancestor = None;
         let mut hashs = batch_hash_by_number_msg.hashs.clone();
@@ -794,8 +794,7 @@ where
                 .chain_reader
                 .clone()
                 .get_block_state_by_hash(&hash.hash)
-                .await
-                .unwrap()
+                .await?
             {
                 if !need_executed || block_state == BlockState::Executed {
                     exist_ancestor = true;
@@ -812,7 +811,7 @@ where
                 downloader.hash_pool.insert(peer.clone(), hash.number, hash);
             }
         }
-        ancestor
+        Ok(ancestor)
     }
 
     pub fn put_hash_2_hash_pool(
@@ -854,16 +853,16 @@ where
 
     pub async fn _take_task_from_header_pool(
         downloader: Arc<Downloader<C>>,
-    ) -> Option<GetDataByHashMsg> {
+    ) -> Result<Option<GetDataByHashMsg>> {
         let header_vec = downloader._header_pool.take(100);
         if !header_vec.is_empty() {
             let hashs = header_vec.iter().map(|header| header.id()).collect();
-            Some(GetDataByHashMsg {
+            Ok(Some(GetDataByHashMsg {
                 hashs,
                 data_type: DataType::BODY,
-            })
+            }))
         } else {
-            None
+            Ok(None)
         }
     }
 
@@ -874,13 +873,17 @@ where
         infos: Vec<BlockInfo>,
     ) {
         assert_eq!(headers.len(), bodies.len());
+        assert_eq!(headers.len(), infos.len());
         for i in 0..headers.len() {
-            let block = Block::new(
-                headers.get(i).unwrap().clone(),
-                bodies.get(i).unwrap().clone().transactions,
-            );
-            let block_info = infos.get(i).unwrap().clone();
-            Self::do_block_and_child(downloader.clone(), block, Some(block_info)).await;
+            if let Some(header) = headers.get(i) {
+                if let Some(body) = bodies.get(i) {
+                    if let Some(info) = infos.get(i) {
+                        let block = Block::new(header.clone(), body.clone().transactions);
+                        Self::do_block_and_child(downloader.clone(), block, Some(info.clone()))
+                            .await;
+                    }
+                }
+            }
         }
     }
 
@@ -908,7 +911,10 @@ where
             downloader
                 .chain_reader
                 .clone()
-                .try_connect_with_block_info(block.clone(), block_info.clone().unwrap())
+                .try_connect_with_block_info(
+                    block.clone(),
+                    block_info.clone().expect("block info can not be none."),
+                )
                 .await
         } else {
             downloader
