@@ -15,7 +15,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network::{get_unix_ts, NetworkAsyncService};
+use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_storage::Store;
 use starcoin_sync_api::sync_messages::{
@@ -134,11 +134,10 @@ where
         ctx.run_interval(self.sync_duration, move |act, _ctx| {
             if !act.syncing.load(Ordering::Relaxed) {
                 if let Err(e) = act.sync_event_sender.try_send(SyncEvent::DoSync) {
-                    warn!("err:{:?}", e);
+                    error!("{:?}", e);
                 }
             }
         });
-        info!("download actor started.")
     }
 }
 
@@ -149,7 +148,6 @@ where
     type Result = ();
 
     fn handle(&mut self, _msg: SyncBegin, ctx: &mut Self::Context) -> Self::Result {
-        info!("received SyncBegin event.");
         self.ready.store(true, Ordering::Relaxed);
 
         let downloader = self.downloader.clone();
@@ -179,11 +177,6 @@ where
         match item {
             SyncEvent::DoSync => self.sync_task(),
             SyncEvent::DoPivot(block, block_info) => {
-                info!(
-                    "connect pivot block : {} : {:?}",
-                    block.header().number(),
-                    block.id()
-                );
                 self.do_block_and_child(*block, Some(*block_info))
             }
         }
@@ -207,8 +200,7 @@ where
         let self_peer_id = self.self_peer_id.as_ref().clone();
         let ready = self.ready.load(Ordering::Relaxed);
         match msg {
-            SyncNotify::NewPeerMsg(peer_id) => {
-                info!("new peer msg: {:?}, ready: {}", peer_id, ready);
+            SyncNotify::NewPeerMsg(_peer_id) => {
                 if ready {
                     Self::sync_state(
                         self_peer_id,
@@ -221,17 +213,9 @@ where
                     );
                 }
             }
-            SyncNotify::NewHeadBlock(peer_id, block) => {
-                info!(
-                    "receive new block: {:?} from {:?}",
-                    block.header().id(),
-                    peer_id
-                );
-                // connect block
-                self.do_block_and_child(*block, None);
-            }
+            SyncNotify::NewHeadBlock(_peer_id, block) => self.do_block_and_child(*block, None),
             SyncNotify::ClosePeerMsg(peer_id) => {
-                info!("close peer: {:?}", peer_id,);
+                debug!("close peer: {:?}", peer_id);
             }
         }
     }
@@ -266,7 +250,7 @@ where
             )
             .await
             {
-                error!("error : {:?}", e);
+                debug!("error : {:?}", e);
                 Self::sync_state(
                     self_peer_id,
                     main_network,
@@ -295,17 +279,17 @@ where
         address: Addr<DownloadActor<C>>,
     ) -> Result<()> {
         if !sync_metadata.state_syncing() {
-            warn!("not fast sync mode.");
+            debug!("not fast sync mode.");
             return Ok(());
         }
 
         if sync_metadata.state_done() {
-            info!("state sync already done.");
+            debug!("state sync already done.");
             return Ok(());
         }
 
         if main_network && network.get_peer_set_size().await? < MIN_PEER_SIZE {
-            warn!("condition is not satisfied when sync state.");
+            debug!("condition is not satisfied when sync state.");
             return Ok(());
         }
 
@@ -339,7 +323,7 @@ where
                     MIN_BLOCKS_BEHIND
                 };
                 if (ancestor + min_behind) > latest_number {
-                    info!(
+                    debug!(
                         "do not need sync state : {:?}, {:?}, {:?}",
                         ancestor, min_behind, latest_number
                     );
@@ -355,12 +339,12 @@ where
                 let root = Self::get_pivot(&network, best_peer.get_peer_id(), pivot).await?;
                 let sync_pivot = sync_metadata.get_pivot()?;
                 if !(sync_pivot.is_none() || sync_pivot.unwrap() < pivot) {
-                    info!("pivot {:?} : {}", sync_pivot, pivot);
+                    debug!("pivot {:?} : {}", sync_pivot, pivot);
                     return Ok(());
                 }
 
                 if sync_metadata.state_done() {
-                    info!("state sync already done during find_ancestor.");
+                    debug!("state sync already done during find_ancestor.");
                     return Ok(());
                 }
 
@@ -390,7 +374,7 @@ where
                     //             )
                     //             .await;
                     //     } else {
-                    //         info!("state sync reset address is none.");
+                    //         debug!("state sync reset address is none.");
                     //     }
                     // }
                 }
@@ -439,12 +423,11 @@ where
     fn sync_block_from_best_peer(
         sync_metadata: SyncMetadata,
         syncing: Arc<AtomicBool>,
-        self_peer_id: PeerId,
+        _self_peer_id: PeerId,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
     ) {
         Arbiter::spawn(async move {
-            debug!("peer {:?} begin sync.", self_peer_id);
             SYNC_METRICS
                 .sync_count
                 .with_label_values(&[LABEL_BLOCK])
@@ -453,14 +436,13 @@ where
             if let Err(e) =
                 Self::sync_block_from_best_peer_inner(downloader, network, full_mode).await
             {
-                error!("error: {:?}", e);
+                error!("sync block from best peer failed : {:?}", e);
             } else {
                 let _ = sync_metadata.block_sync_done();
                 SYNC_METRICS
                     .sync_done_count
                     .with_label_values(&[LABEL_BLOCK])
                     .inc();
-                debug!("peer {:?} end sync.", self_peer_id);
             };
 
             syncing.store(false, Ordering::Relaxed);
@@ -497,90 +479,67 @@ where
                 .await?
                 {
                     begin_number = hash_number.number + 1;
-                    loop {
-                        //1. sync hash
-                        let _sync_begin_time = get_unix_ts();
-                        if let Some((get_hash_by_number_msg, end, next_number)) =
-                            Downloader::<C>::get_hash_by_number_msg_forward(
-                                network.clone(),
-                                best_peer.get_peer_id(),
-                                begin_number,
-                            )
-                            .await?
-                        {
-                            begin_number = next_number;
-                            let sync_hash_begin_time = get_unix_ts();
+                    //1. sync hash
+                    while let Some((get_hash_by_number_msg, end, next_number)) =
+                        Downloader::<C>::get_hash_by_number_msg_forward(
+                            network.clone(),
+                            best_peer.get_peer_id(),
+                            begin_number,
+                        )
+                        .await?
+                    {
+                        begin_number = next_number;
+                        SYNC_METRICS
+                            .sync_total_count
+                            .with_label_values(&[LABEL_HASH])
+                            .inc_by(get_hash_by_number_msg.numbers.len() as i64);
+                        let hash_timer = SYNC_METRICS
+                            .sync_done_time
+                            .with_label_values(&[LABEL_HASH])
+                            .start_timer();
+                        let batch_hash_by_number_msg = get_hash_by_number(
+                            &network,
+                            best_peer.get_peer_id(),
+                            get_hash_by_number_msg,
+                        )
+                        .await?;
+                        hash_timer.observe_duration();
+
+                        Downloader::put_hash_2_hash_pool(
+                            downloader.clone(),
+                            best_peer.get_peer_id(),
+                            batch_hash_by_number_msg,
+                        );
+
+                        let hashs = Downloader::take_task_from_hash_pool(downloader.clone());
+                        if !hashs.is_empty() {
                             SYNC_METRICS
                                 .sync_total_count
-                                .with_label_values(&[LABEL_HASH])
-                                .inc_by(get_hash_by_number_msg.numbers.len() as i64);
-                            let hash_timer = SYNC_METRICS
+                                .with_label_values(&[LABEL_BLOCK])
+                                .inc_by(hashs.len() as i64);
+                            let block_timer = SYNC_METRICS
                                 .sync_done_time
-                                .with_label_values(&[LABEL_HASH])
+                                .with_label_values(&[LABEL_BLOCK])
                                 .start_timer();
-                            let batch_hash_by_number_msg = get_hash_by_number(
-                                &network,
-                                best_peer.get_peer_id(),
-                                get_hash_by_number_msg,
-                            )
-                            .await?;
-                            hash_timer.observe_duration();
-                            let sync_hash_end_time = get_unix_ts();
-                            debug!(
-                                "sync hash used time {:?}",
-                                (sync_hash_end_time - sync_hash_begin_time)
-                            );
-
-                            Downloader::put_hash_2_hash_pool(
+                            let (headers, bodies, infos) =
+                                get_block_by_hash(&network, best_peer.get_peer_id(), hashs).await?;
+                            block_timer.observe_duration();
+                            SYNC_METRICS
+                                .sync_succ_count
+                                .with_label_values(&[LABEL_BLOCK])
+                                .inc_by(headers.headers.len() as i64);
+                            Downloader::do_blocks(
                                 downloader.clone(),
-                                best_peer.get_peer_id(),
-                                batch_hash_by_number_msg,
-                            );
-
-                            let hashs = Downloader::take_task_from_hash_pool(downloader.clone());
-                            if !hashs.is_empty() {
-                                SYNC_METRICS
-                                    .sync_total_count
-                                    .with_label_values(&[LABEL_BLOCK])
-                                    .inc_by(hashs.len() as i64);
-                                let sync_block_begin_time = get_unix_ts();
-                                let block_timer = SYNC_METRICS
-                                    .sync_done_time
-                                    .with_label_values(&[LABEL_BLOCK])
-                                    .start_timer();
-                                let (headers, bodies, infos) =
-                                    get_block_by_hash(&network, best_peer.get_peer_id(), hashs)
-                                        .await?;
-                                block_timer.observe_duration();
-                                SYNC_METRICS
-                                    .sync_succ_count
-                                    .with_label_values(&[LABEL_BLOCK])
-                                    .inc_by(headers.headers.len() as i64);
-                                let sync_block_end_time = get_unix_ts();
-                                debug!(
-                                    "sync block used time {:?}",
-                                    (sync_block_end_time - sync_block_begin_time)
-                                );
-                                Downloader::do_blocks(
-                                    downloader.clone(),
-                                    headers.headers,
-                                    bodies.bodies,
-                                    infos.infos,
-                                )
-                                .await;
-                                let do_block_end_time = get_unix_ts();
-                                debug!(
-                                    "do block used time {:?}",
-                                    (do_block_end_time - sync_block_end_time)
-                                );
-                            } else {
-                                info!("{:?}", "hash pool is empty.");
-                            }
-
-                            if end {
-                                break;
-                            }
+                                headers.headers,
+                                bodies.bodies,
+                                infos.infos,
+                            )
+                            .await;
                         } else {
+                            debug!("{:?}", "hash pool is empty.");
+                        }
+
+                        if end {
                             break;
                         }
                     }
@@ -590,7 +549,7 @@ where
             }
         } else {
             //return Err(format_err!("{:?}", "best peer is none."));
-            debug!("{:?}", "best peer is none.");
+            debug!("{:?}", "best peer is none when sync block.");
         }
 
         Ok(())
@@ -719,15 +678,8 @@ where
         begin_number: u64,
     ) -> Result<Option<(GetHashByNumberMsg, bool, u64)>> {
         //todo：binary search
-
         if let Some(peer_info) = network.get_peer(&peer_id.clone().into()).await? {
             let number = peer_info.get_block_number();
-            info!(
-                "sync with peer {:?} : latest number: {} , begin number : {}",
-                peer_info.get_peer_id(),
-                number,
-                begin_number
-            );
 
             if begin_number < number {
                 let mut numbers = Vec::new();
@@ -735,24 +687,17 @@ where
                 let mut next_number = 0;
                 if begin_number < HEAD_CT {
                     for i in 0..(begin_number + 1) {
-                        info!("best peer backward number : {}, number : {}", number, i);
                         numbers.push(i);
                         end = true;
                     }
                 } else {
                     for i in (begin_number - HEAD_CT + 1)..(begin_number + 1) {
-                        info!("best peer backward number : {}, number : {}, ", number, i);
                         numbers.push(i);
                     }
                     next_number = begin_number - HEAD_CT;
                 };
-                info!(
-                    "best peer backward number : {}, next number : {}",
-                    number, next_number
-                );
                 Ok(Some((GetHashByNumberMsg { numbers }, end, next_number)))
             } else {
-                info!("GetHashByNumberMsg is none.");
                 Ok(None)
             }
         } else {
@@ -772,23 +717,17 @@ where
                 let mut end = false;
                 let next_number = if (number - begin_number) < HEAD_CT {
                     for i in begin_number..(number + 1) {
-                        info!("best peer forward number : {}, next number : {}", number, i,);
                         numbers.push(i);
                         end = true;
                     }
                     number + 1
                 } else {
                     for i in begin_number..(begin_number + HEAD_CT) {
-                        info!("best peer forward number : {}, next number : {}", number, i,);
                         numbers.push(i);
                     }
                     begin_number + HEAD_CT
                 };
 
-                info!(
-                    "best peer forward number : {}, next number : {}",
-                    number, next_number
-                );
                 Ok(Some((GetHashByNumberMsg { numbers }, end, next_number)))
             } else {
                 Ok(None)
@@ -845,7 +784,6 @@ where
         batch_hash_by_number_msg: BatchHashByNumberMsg,
         need_executed: bool,
     ) -> Option<HashWithNumber> {
-        //TODO
         let mut exist_ancestor = false;
         let mut ancestor = None;
         let mut hashs = batch_hash_by_number_msg.hashs.clone();
@@ -861,7 +799,6 @@ where
             {
                 if !need_executed || block_state == BlockState::Executed {
                     exist_ancestor = true;
-                    info!("find ancestor hash : {:?}", hash);
                     ancestor = Some(hash);
                     break;
                 }
@@ -967,7 +904,6 @@ where
         block: Block,
         block_info: Option<BlockInfo>,
     ) -> bool {
-        info!("do block info {:?}", block.header().id());
         let connect_result = if block_info.is_some() {
             downloader
                 .chain_reader
@@ -982,6 +918,7 @@ where
                 .await
         };
 
+        let block_id = block.id();
         match connect_result {
             Ok(connect) => {
                 if is_ok(&connect) {
@@ -991,11 +928,11 @@ where
                         ConnectBlockError::FutureBlock => {
                             downloader.future_blocks.add_future_block(block, block_info)
                         }
-                        _ => error!("err: {:?}", err),
+                        _ => debug!("Connect block {:?} succ, but : {:?}", block_id, err),
                     }
                 }
             }
-            Err(e) => error!("err: {:?}", e),
+            Err(e) => error!("Connect block {:?} failed : {:?}", block_id, e),
         }
 
         false
