@@ -2,18 +2,14 @@ use crate::{test_helper, BlockChain, ChainActor, ChainActorRef, ChainAsyncServic
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
-use consensus::dev::DevConsensus;
-use consensus::dev::DummyHeader;
+use consensus::dev::{DevConsensus, DummyHeader};
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
-use storage::cache_storage::CacheStorage;
-use storage::storage::StorageInstance;
-use storage::Storage;
-use traits::Consensus;
-use traits::{ChainReader, ChainWriter};
+use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
+use traits::{ChainReader, ChainWriter, Consensus};
 use txpool::TxPool;
 use types::U256;
 
@@ -143,7 +139,7 @@ async fn test_chain_apply() -> Result<()> {
     debug!("genesis header: {:?}", header);
 
     let miner_account = WalletAccount::random();
-    let block_template = block_chain.create_block_template(
+    let (block_template, _) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),
         Some(header.id()),

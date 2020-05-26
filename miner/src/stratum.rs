@@ -5,11 +5,9 @@ use crate::miner::{MineCtx, Miner};
 use config::NodeConfig;
 use logger::prelude::*;
 use sc_stratum::*;
-use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
-use traits::ChainReader;
-use traits::Consensus;
-use types::transaction::SignedUserTransaction;
+use traits::{ChainReader, Consensus};
+use types::block::BlockTemplate;
 
 pub struct StratumManager<C>
 where
@@ -42,19 +40,12 @@ pub fn mint<C>(
     stratum: Arc<Stratum>,
     mut miner: Miner<C>,
     config: Arc<NodeConfig>,
-    miner_account: WalletAccount,
-    txns: Vec<SignedUserTransaction>,
     chain: &dyn ChainReader,
+    block_template: BlockTemplate,
 ) -> anyhow::Result<()>
 where
     C: Consensus,
 {
-    let block_template = chain.create_block_template(
-        *miner_account.address(),
-        Some(miner_account.get_auth_key().prefix().to_vec()),
-        None,
-        txns,
-    )?;
     let difficulty = C::calculate_next_difficulty(config, chain);
     miner.set_mint_job(MineCtx::new(block_template, difficulty));
     let job = miner.get_mint_job();
