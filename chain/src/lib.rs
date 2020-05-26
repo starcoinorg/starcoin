@@ -10,6 +10,8 @@ pub mod chain_service;
 pub mod message;
 pub mod mock;
 pub mod test_helper;
+pub mod opened_block;
+
 
 pub use chain_service::ChainServiceImpl;
 
