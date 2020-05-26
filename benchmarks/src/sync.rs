@@ -49,14 +49,7 @@ impl SyncBencher {
                 .unwrap();
             let first = chain_1.clone().master_head().await.unwrap();
             let second = chain_2.clone().master_head().await.unwrap();
-            if first.get_head() != second.get_head() {
-                println!("{:?}", first);
-                println!("{:?}", second);
-            }
-            // assert_eq!(
-            //     chain_1.master_head().await.unwrap().get_head(),
-            //     chain_2.master_head().await.unwrap().get_head()
-            // );
+            assert_eq!(first.get_head(), second.get_head());
         });
     }
 
