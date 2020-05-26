@@ -30,7 +30,7 @@ use traits::{ChainAsyncService, ChainService, ConnectResult};
 use txpool::TxPoolService;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::MinedBlock,
     transaction::{SignedUserTransaction, TransactionInfo},
@@ -123,6 +123,13 @@ where
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
                 if let Some(block) = self.service.get_block_by_hash(hash)? {
                     Some(Box::new(block))
+                } else {
+                    None
+                },
+            )),
+            ChainRequest::GetBlockStateByHash(hash) => Ok(ChainResponse::BlockState(
+                if let Some(block_state) = self.service.get_block_state_by_hash(hash)? {
+                    Some(Box::new(block_state))
                 } else {
                     None
                 },
@@ -237,6 +244,18 @@ where
             }
         }
         None
+    }
+
+    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>> {
+        if let ChainResponse::BlockState(Some(block_state)) = self
+            .address
+            .send(ChainRequest::GetBlockStateByHash(*hash))
+            .await?
+            .unwrap()
+        {
+            return Ok(Some(*block_state));
+        }
+        Ok(None)
     }
 
     async fn get_block_by_hash(self, hash: HashValue) -> Result<Block> {

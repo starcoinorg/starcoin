@@ -8,7 +8,7 @@ use crypto::HashValue;
 use types::startup_info::ChainInfo;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::StartupInfo,
     transaction::{SignedUserTransaction, TransactionInfo},
 };
@@ -19,7 +19,7 @@ pub struct MockChainService;
 
 #[async_trait::async_trait]
 impl ChainAsyncService for MockChainService {
-    async fn try_connect(self, _block: Block) -> Result<ConnectResult<()>, Error> {
+    async fn try_connect(self, _block: Block) -> Result<ConnectResult<()>> {
         unimplemented!()
     }
 
@@ -27,7 +27,11 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn get_block_by_hash(self, _hash: HashValue) -> Result<Block, Error> {
+    async fn get_block_by_hash(self, _hash: HashValue) -> Result<Block> {
+        unimplemented!()
+    }
+
+    async fn get_block_state_by_hash(self, _hash: &HashValue) -> Result<Option<BlockState>> {
         unimplemented!()
     }
 
@@ -63,19 +67,19 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn master_startup_info(self) -> Result<StartupInfo, Error> {
+    async fn master_startup_info(self) -> Result<StartupInfo> {
         unimplemented!()
     }
 
-    async fn master_head(self) -> Result<ChainInfo, Error> {
+    async fn master_head(self) -> Result<ChainInfo> {
         unimplemented!()
     }
 
-    async fn get_transaction(self, _txn_id: HashValue) -> Result<TransactionInfo, Error> {
+    async fn get_transaction(self, _txn_id: HashValue) -> Result<TransactionInfo> {
         unimplemented!()
     }
 
-    async fn get_block_txn(self, _block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+    async fn get_block_txn(self, _block_id: HashValue) -> Result<Vec<TransactionInfo>> {
         unimplemented!()
     }
 

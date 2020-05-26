@@ -20,7 +20,7 @@ use traits::Consensus;
 use traits::{is_ok, ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult};
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::StartupInfo,
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, TransactionInfo},
@@ -372,7 +372,7 @@ where
                                     block_info.get_block_accumulator_info().clone(),
                                 )?
                             }
-                            branch.commit(block, block_info)?;
+                            branch.commit(block, block_info, BlockState::Verified)?;
                             self.select_head(branch)?;
                             if pivot_flag {
                                 self.sync_metadata.pivot_connected_succ()?;
@@ -441,6 +441,10 @@ where
 
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {
         self.storage.get_block_by_hash(hash)
+    }
+
+    fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>> {
+        self.storage.get_block_state(hash)
     }
 
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>> {

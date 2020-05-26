@@ -5,7 +5,7 @@ use crypto::HashValue;
 use traits::ConnectResult;
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, TransactionInfo},
 };
@@ -31,6 +31,7 @@ pub enum ChainRequest {
     GetTransaction(HashValue),
     GetTransactionIdByBlock(HashValue),
     GetBlocksByNumber(Option<BlockNumber>, u64),
+    GetBlockStateByHash(HashValue),
 }
 
 impl Message for ChainRequest {
@@ -51,4 +52,5 @@ pub enum ChainResponse {
     VecTransactionInfo(Vec<TransactionInfo>),
     None,
     Conn(ConnectResult<()>),
+    BlockState(Option<Box<BlockState>>),
 }
