@@ -9,13 +9,12 @@ use move_vm_state::{
 };
 use once_cell::sync::Lazy;
 use starcoin_logger::prelude::*;
-use starcoin_types::transaction::ChangeSet;
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
     transaction::{
-        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus,
+        ChangeSet, SignatureCheckedTransaction, SignedUserTransaction, Transaction,
+        TransactionArgument, TransactionOutput, TransactionPayload, TransactionStatus,
     },
     vm_error::{sub_status, StatusCode, VMStatus},
     write_set::WriteSet,
@@ -390,33 +389,31 @@ impl StarcoinVM {
         let mut interpreter_context =
             TransactionExecutionContext::new(txn_data.max_gas_amount(), remote_cache);
 
-        if let Ok((parent_id, timestamp, author, auth)) = block_metadata.into_inner() {
-            let vote_maps = vec![];
-            let round = 0u64;
-            let args = vec![
-                Value::u64(round),
-                Value::u64(timestamp),
-                Value::vector_u8(parent_id.to_vec()),
-                Value::vector_address(vote_maps),
-                Value::address(author),
-                match auth {
-                    Some(prefix) => Value::vector_u8(prefix),
-                    None => Value::vector_u8(Vec::new()),
-                },
-            ];
+        let (parent_id, timestamp, author, auth) = block_metadata.into_inner();
+        let vote_maps = vec![];
+        let round = 0u64;
+        let args = vec![
+            Value::u64(round),
+            Value::u64(timestamp),
+            Value::vector_u8(parent_id.to_vec()),
+            Value::vector_address(vote_maps),
+            Value::address(author),
+            match auth {
+                Some(prefix) => Value::vector_u8(prefix),
+                None => Value::vector_u8(Vec::new()),
+            },
+        ];
 
-            self.move_vm.execute_function(
-                &account_config::BLOCK_MODULE,
-                &account_config::BLOCK_PROLOGUE,
-                &ZERO_TABLE,
-                &mut interpreter_context,
-                &txn_data,
-                vec![],
-                args,
-            )?
-        } else {
-            return Err(VMStatus::new(StatusCode::MALFORMED));
-        };
+        self.move_vm.execute_function(
+            &account_config::BLOCK_MODULE,
+            &account_config::BLOCK_PROLOGUE,
+            &ZERO_TABLE,
+            &mut interpreter_context,
+            &txn_data,
+            vec![],
+            args,
+        )?;
+
         get_transaction_output(
             &mut interpreter_context,
             &txn_data,

@@ -1,26 +1,22 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::opened_block::OpenedBlock;
 use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
-use crypto::HashValue;
+use crypto::{hash::PlainCryptoHash, HashValue};
 use executor::block_executor::BlockExecutor;
 use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use std::convert::TryInto;
-use std::marker::PhantomData;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{convert::TryInto, marker::PhantomData, sync::Arc};
 use storage::Store;
-use traits::Consensus;
-use traits::{ChainReader, ChainWriter};
+use traits::{ChainReader, ChainWriter, Consensus, ExcludedTxns};
 use types::{
     account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
-    block_metadata::BlockMetadata,
     error::BlockExecutorError,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U512,
@@ -101,69 +97,17 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
-    ) -> Result<BlockTemplate> {
-        let txns = user_txns
-            .iter()
-            .cloned()
-            .map(Transaction::UserTransaction)
-            .collect::<Vec<Transaction>>();
-
-        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-        let chain_state =
-            ChainStateDB::new(self.storage.clone(), Some(previous_header.state_root()));
-        let block_info = self.get_block_info(previous_header.id())?;
-        let txn_accumulator_info = block_info.get_txn_accumulator_info();
-        let txn_accumulator = MerkleAccumulator::new(
-            *txn_accumulator_info.get_accumulator_root(),
-            txn_accumulator_info.get_frozen_subtree_roots().clone(),
-            txn_accumulator_info.get_num_leaves(),
-            txn_accumulator_info.get_num_nodes(),
+    ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
-        )?;
-        let block_gas_limit = self.config.miner.block_gas_limit;
-
-        // execute block txns
-        let (state_root, txn_infos) = BlockExecutor::block_execute(
-            &chain_state,
-            txns,
-            BlockMetadata::new(
-                previous_header.id(),
-                timestamp,
-                author,
-                auth_key_prefix.clone(),
-            ),
-            block_gas_limit,
-        )?;
-
-        // calculate txn accumulator root
-        let (accumulator_root, _) = {
-            let included_txn_hashes: Vec<_> = txn_infos
-                .iter()
-                .map(|info| info.transaction_hash())
-                .collect();
-            txn_accumulator.append(&included_txn_hashes)?
-        };
-
-        let block_gas_used = txn_infos.iter().fold(0u64, |acc, i| acc + i.gas_used());
-        let included_user_txns = user_txns
-            .into_iter()
-            .take(txn_infos.len() - 1)
-            .collect::<Vec<_>>();
-        Ok(BlockTemplate::new(
-            previous_header.id(),
-            *block_info
-                .get_block_accumulator_info()
-                .get_accumulator_root(),
-            timestamp,
-            previous_header.number() + 1,
+            previous_header,
+            self.config.miner.block_gas_limit,
             author,
             auth_key_prefix,
-            accumulator_root,
-            state_root,
-            block_gas_used,
-            block_gas_limit,
-            included_user_txns.into(),
-        ))
+        )?;
+        let excluded_txns = opened_block.push_txns(user_txns)?;
+        let template = opened_block.finalize()?;
+        Ok((template, excluded_txns))
     }
 
     fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
@@ -309,7 +253,7 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
-    ) -> Result<BlockTemplate> {
+    ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let block_id = match parent_hash {
             Some(hash) => hash,
             None => self.current_header().id(),
@@ -408,12 +352,12 @@ where
 
         // txn accumulator verify.
         let executed_accumulator_root = {
-            let included_txn_hashes: Vec<_> = vec_transaction_info
+            let included_txn_info_hashes: Vec<_> = vec_transaction_info
                 .iter()
-                .map(|info| info.transaction_hash())
+                .map(|info| info.crypto_hash())
                 .collect();
             let (accumulator_root, _first_leaf_idx) =
-                self.txn_accumulator.append(&included_txn_hashes)?;
+                self.txn_accumulator.append(&included_txn_info_hashes)?;
             accumulator_root
         };
         ensure!(

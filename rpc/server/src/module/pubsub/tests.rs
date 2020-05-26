@@ -1,13 +1,12 @@
-use crate::metadata::Metadata;
-use crate::module::PubSubImpl;
-use crate::module::PubSubService;
+use crate::{
+    metadata::Metadata,
+    module::{PubSubImpl, PubSubService},
+};
 use anyhow::Result;
-use jsonrpc_core::futures as futures01;
-use jsonrpc_core::MetaIoHandler;
+use jsonrpc_core::{futures as futures01, MetaIoHandler};
 use jsonrpc_pubsub::Session;
 // use starcoin_crypto::hash::HashValue;
-use futures::compat::Stream01CompatExt;
-use futures::StreamExt;
+use futures::{compat::Stream01CompatExt, StreamExt};
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address;
@@ -18,17 +17,14 @@ use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::test_helper as chain_test_helper;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::dev::DevConsensus;
-use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::{Genesis, PrivateKey};
-use starcoin_executor::executor::Executor;
-use starcoin_executor::TransactionExecutor;
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
+use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter, Consensus};
-use starcoin_types::block::BlockDetail;
-use starcoin_types::system_events::NewHeadBlock;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_types::{
+    block::BlockDetail, system_events::NewHeadBlock, transaction::authenticator::AuthenticationKey,
+};
 use starcoin_wallet_api::WalletAccount;
 
 #[actix_rt::test]
@@ -47,7 +43,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
         txn.as_signed_user_txn()?.clone()
     };
-    let block_template = block_chain.create_block_template(
+    let (block_template, _) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),
         None,

@@ -1,8 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::chain::BlockChain;
-use crate::chain_metrics::CHAIN_METRICS;
+use crate::{chain::BlockChain, chain_metrics::CHAIN_METRICS};
 use actix::prelude::*;
 use anyhow::{format_err, Error, Result};
 use bus::{Broadcast, BusActor};
@@ -16,8 +15,9 @@ use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
 use storage::Store;
-use traits::Consensus;
-use traits::{is_ok, ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult};
+use traits::{
+    is_ok, ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult, Consensus,
+};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -427,7 +427,9 @@ where
         if let Ok(Some(_)) = self.get_block_by_hash(block_id) {
             //TODO ensure is need create a new chain?
             let block_chain = self.get_master().new_chain(block_id)?;
-            block_chain.create_block_template(author, auth_key_prefix, Some(block_id), user_txns)
+            block_chain
+                .create_block_template(author, auth_key_prefix, Some(block_id), user_txns)
+                .map(|t| t.0)
         } else {
             Err(format_err!("Block {:?} not exist.", block_id))
         }

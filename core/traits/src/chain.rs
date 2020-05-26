@@ -11,6 +11,13 @@ use starcoin_types::{
     U512,
 };
 
+/// TODO: figure out a better place for it.
+#[derive(Clone, Debug)]
+pub struct ExcludedTxns {
+    pub discarded_txns: Vec<SignedUserTransaction>,
+    pub untouched_txns: Vec<SignedUserTransaction>,
+}
+
 pub trait ChainReader {
     fn head_block(&self) -> Block;
     fn current_header(&self) -> BlockHeader;
@@ -30,7 +37,7 @@ pub trait ChainReader {
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
-    ) -> Result<BlockTemplate>;
+    ) -> Result<(BlockTemplate, ExcludedTxns)>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
     fn get_total_difficulty(&self) -> Result<U512>;
