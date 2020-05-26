@@ -8,6 +8,8 @@ module Coin {
     use 0x0::RegisteredCurrencies;
     use 0x0::Transaction;
     use 0x0::Vector;
+    use 0x0::Generic;
+    use 0x0::Debug;
 
     // The currency has a `CoinType` color that tells us what currency the
     // `value` inside represents.
@@ -28,14 +30,14 @@ module Coin {
     struct MintEvent {
         // funds added to the system
         amount: u64,
-        // UTF-8 encoded symbol for the coin type (e.g., "LBR")
+        // UTF-8 encoded symbol for the coin type (e.g., "STC")
         currency_code: vector<u8>,
     }
 
     struct BurnEvent {
         // funds removed from the system
         amount: u64,
-        // UTF-8 encoded symbol for the coin type (e.g., "LBR")
+        // UTF-8 encoded symbol for the coin type (e.g., "STC")
         currency_code: vector<u8>,
         // address with the Preburn resource that stored the now-burned funds
         preburn_address: address,
@@ -44,7 +46,7 @@ module Coin {
     struct PreburnEvent {
         // funds waiting to be removed from the system
         amount: u64,
-        // UTF-8 encoded symbol for the coin type (e.g., "LBR")
+        // UTF-8 encoded symbol for the coin type (e.g., "STC")
         currency_code: vector<u8>,
         // address with the Preburn resource that now holds the funds
         preburn_address: address,
@@ -53,14 +55,14 @@ module Coin {
     struct CancelBurnEvent {
         // funds returned
         amount: u64,
-        // UTF-8 encoded symbol for the coin type (e.g., "LBR")
+        // UTF-8 encoded symbol for the coin type (e.g., "STC")
         currency_code: vector<u8>,
         // address with the Preburn resource that holds the now-returned funds
         preburn_address: address,
     }
 
     // The information for every supported currency is stored in a resource
-    // under the `currency_addr()` address. Unless they are specified
+    // under the `issuer_addr()` address. Unless they are specified
     // otherwise the fields in this resource are immutable.
     resource struct CurrencyInfo<CoinType> {
         // The total value for the currency represented by
@@ -68,11 +70,10 @@ module Coin {
         total_value: u128,
         // Value of funds that are in the process of being burned
         preburn_value: u64,
-        // The (rough) exchange rate from `CoinType` to LBR.
-        to_lbr_exchange_rate: FixedPoint32::T,
-        // Holds whether or not this currency is synthetic (contributes to the
-        // off-chain reserve) or not. An example of such a currency would be
-        // the LBR.
+        // The (rough) exchange rate from `CoinType` to STC.
+        // For support pay custom Token as gas.
+        to_stc_exchange_rate: FixedPoint32::T,
+        //TODO remove this.
         is_synthetic: bool,
         // The scaling factor for the coin (i.e. the amount to multiply by
         // to get to the human-readable reprentation for this currency). e.g. 10^6 for Coin1
@@ -82,7 +83,7 @@ module Coin {
         // 10^2 for Coin1 cents)
         fractional_part: u64,
         // The code symbol for this `CoinType`. UTF-8 encoded.
-        // e.g. for "LBR" this is x"4C4252". No character limit.
+        // e.g. for "STC" this is x"4C4252". No character limit.
         currency_code: vector<u8>,
         // We may want to disable the ability to mint further coins of a
         // currency while that currency is still around. Mutable.
@@ -134,19 +135,19 @@ module Coin {
     // Returns a MintCapability for the `CoinType` currency. `CoinType`
     // must be a registered currency type.
     public fun grant_mint_capability<CoinType>(): MintCapability<CoinType> {
-        assert_assoc_and_currency<CoinType>();
+        assert_issuer_and_currency<CoinType>();
         MintCapability<CoinType> { }
     }
 
     // Returns a `BurnCapability` for the `CoinType` currency. `CoinType`
     // must be a registered currency type.
     public fun grant_burn_capability<CoinType>(): BurnCapability<CoinType> {
-        assert_assoc_and_currency<CoinType>();
+        assert_issuer_and_currency<CoinType>();
         BurnCapability<CoinType> { }
     }
 
     public fun grant_burn_capability_for_sender<CoinType>() {
-        Transaction::assert(Transaction::sender() == 0xD1E, 0);
+        //Transaction::assert(Transaction::sender() == 0xD1E, 0);
         move_to_sender(grant_burn_capability<CoinType>());
     }
 
@@ -199,7 +200,7 @@ module Coin {
         // Transaction::assert(value <= 1000000000 * 1000000, 11);
         let currency_code = currency_code<Token>();
         // update market cap resource to reflect minting
-        let info = borrow_global_mut<CurrencyInfo<Token>>(0xA550C18);
+        let info = borrow_global_mut<CurrencyInfo<Token>>(issuer_addr<Token>());
         Transaction::assert(info.can_mint, 4);
         info.total_value = info.total_value + (value as u128);
         // don't emit mint events for synthetic currenices
@@ -424,8 +425,8 @@ module Coin {
 
     // Destroy a coin
     // Fails if the value is non-zero
-    // The amount of LibraCoin.T in the system is a tightly controlled property,
-    // so you cannot "burn" any non-zero amount of LibraCoin.T
+    // The amount of Coin.T in the system is a tightly controlled property,
+    // so you cannot "burn" any non-zero amount of Coin.T
     public fun destroy_zero<CoinType>(coin: T<CoinType>) {
         let T { value } = coin;
         Transaction::assert(value == 0, 5)
@@ -438,25 +439,26 @@ module Coin {
     // Register the type `CoinType` as a currency. Without this, a type
     // cannot be used as a coin/currency unit n Libra.
     public fun register_currency<CoinType>(
-        to_lbr_exchange_rate: FixedPoint32::T,
-        is_synthetic: bool,
+        to_stc_exchange_rate: FixedPoint32::T,
         scaling_factor: u64,
         fractional_part: u64,
-        currency_code: vector<u8>,
     ) acquires CurrencyRegistrationCapability {
         // And only callable by the designated currency address.
         //Transaction::assert(Association::has_privilege<AddCurrency>(Transaction::sender()), 8);
-
+        assert_issuer<CoinType>();
+        let (coin_module_address,coin_module_name,struct_name) = Generic::type_of<CoinType>();
+        // CoinType's struct name must be T. TODO consider a more graceful approach.
+        Transaction::assert(struct_name == x"54", 8);
         move_to_sender(MintCapability<CoinType>{});
         move_to_sender(BurnCapability<CoinType>{});
         move_to_sender(CurrencyInfo<CoinType> {
             total_value: 0,
             preburn_value: 0,
-            to_lbr_exchange_rate,
-            is_synthetic,
+            to_stc_exchange_rate,
+            is_synthetic: false,
             scaling_factor,
             fractional_part,
-            currency_code: copy currency_code,
+            currency_code: copy coin_module_name,
             can_mint: true,
             mint_events: Event::new_event_handle<MintEvent>(),
             burn_events: Event::new_event_handle<BurnEvent>(),
@@ -464,7 +466,8 @@ module Coin {
             cancel_burn_events: Event::new_event_handle<CancelBurnEvent>()
         });
         RegisteredCurrencies::add_currency_code(
-            currency_code,
+            coin_module_address,
+            coin_module_name,
             &borrow_global<CurrencyRegistrationCapability>(Config::default_config_address()).cap
         )
     }
@@ -472,36 +475,36 @@ module Coin {
     // Return the total amount of currency minted of type `CoinType`
     public fun market_cap<CoinType>(): u128
     acquires CurrencyInfo {
-        borrow_global<CurrencyInfo<CoinType>>(currency_addr()).total_value
+        borrow_global<CurrencyInfo<CoinType>>(issuer_addr<CoinType>()).total_value
     }
 
-    // Returns the value of the coin in the `FromCoinType` currency in LBR.
+    // Returns the value of the coin in the `FromCoinType` currency in STC.
     // This should only be used where a _rough_ approximation of the exchange
     // rate is needed.
-    public fun approx_lbr_for_value<FromCoinType>(from_value: u64): u64
+    public fun approx_stc_for_value<FromCoinType>(from_value: u64): u64
     acquires CurrencyInfo {
-        let lbr_exchange_rate = lbr_exchange_rate<FromCoinType>();
-        FixedPoint32::multiply_u64(from_value, lbr_exchange_rate)
+        let stc_exchange_rate = stc_exchange_rate<FromCoinType>();
+        FixedPoint32::multiply_u64(from_value, stc_exchange_rate)
     }
 
-    // Returns the value of the coin in the `FromCoinType` currency in LBR.
+    // Returns the value of the coin in the `FromCoinType` currency in STC.
     // This should only be used where a rough approximation of the exchange
     // rate is needed.
-    public fun approx_lbr_for_coin<FromCoinType>(coin: &T<FromCoinType>): u64
+    public fun approx_stc_for_coin<FromCoinType>(coin: &T<FromCoinType>): u64
     acquires CurrencyInfo {
         let from_value = value(coin);
-        approx_lbr_for_value<FromCoinType>(from_value)
+        approx_stc_for_value<FromCoinType>(from_value)
     }
 
     // Return true if the type `CoinType` is a registered currency.
     public fun is_currency<CoinType>(): bool {
-        exists<CurrencyInfo<CoinType>>(currency_addr())
+        exists<CurrencyInfo<CoinType>>(issuer_addr<CoinType>())
     }
 
     // Predicate on whether `CoinType` is a synthetic currency.
     public fun is_synthetic_currency<CoinType>(): bool
     acquires CurrencyInfo {
-        let addr = currency_addr();
+        let addr = issuer_addr<CoinType>();
         exists<CurrencyInfo<CoinType>>(addr) &&
             borrow_global<CurrencyInfo<CoinType>>(addr).is_synthetic
     }
@@ -509,33 +512,33 @@ module Coin {
     // Returns the scaling factor for the `CoinType` currency.
     public fun scaling_factor<CoinType>(): u64
     acquires CurrencyInfo {
-        borrow_global<CurrencyInfo<CoinType>>(currency_addr()).scaling_factor
+        borrow_global<CurrencyInfo<CoinType>>(issuer_addr<CoinType>()).scaling_factor
     }
 
     // Returns the representable fractional part for the `CoinType` currency.
     public fun fractional_part<CoinType>(): u64
     acquires CurrencyInfo {
-        borrow_global<CurrencyInfo<CoinType>>(currency_addr()).fractional_part
+        borrow_global<CurrencyInfo<CoinType>>(issuer_addr<CoinType>()).fractional_part
     }
 
     // Return the currency code for the registered currency.
     public fun currency_code<CoinType>(): vector<u8>
     acquires CurrencyInfo {
-        *&borrow_global<CurrencyInfo<CoinType>>(currency_addr()).currency_code
+        *&borrow_global<CurrencyInfo<CoinType>>(issuer_addr<CoinType>()).currency_code
     }
 
-    // Updates the exchange rate for `FromCoinType` to LBR exchange rate held on chain.
-    public fun update_lbr_exchange_rate<FromCoinType>(lbr_exchange_rate: FixedPoint32::T)
+    // Updates the exchange rate for `FromCoinType` to STC exchange rate held on chain.
+    public fun update_stc_exchange_rate<FromCoinType>(stc_exchange_rate: FixedPoint32::T)
     acquires CurrencyInfo {
-        assert_assoc_and_currency<FromCoinType>();
-        let currency_info = borrow_global_mut<CurrencyInfo<FromCoinType>>(currency_addr());
-        currency_info.to_lbr_exchange_rate = lbr_exchange_rate;
+        assert_issuer_and_currency<FromCoinType>();
+        let currency_info = borrow_global_mut<CurrencyInfo<FromCoinType>>(issuer_addr<FromCoinType>());
+        currency_info.to_stc_exchange_rate = stc_exchange_rate;
     }
 
-    // Return the (rough) exchange rate between `CoinType` and LBR
-    public fun lbr_exchange_rate<CoinType>(): FixedPoint32::T
+    // Return the (rough) exchange rate between `CoinType` and STC
+    public fun stc_exchange_rate<CoinType>(): FixedPoint32::T
     acquires CurrencyInfo {
-        *&borrow_global<CurrencyInfo<CoinType>>(currency_addr()).to_lbr_exchange_rate
+        *&borrow_global<CurrencyInfo<CoinType>>(issuer_addr<CoinType>()).to_stc_exchange_rate
     }
 
     // There may be situations in which we disallow the further minting of
@@ -544,7 +547,7 @@ module Coin {
     // `CoinType` can be minted or not.
     public fun update_minting_ability<CoinType>(can_mint: bool)
     acquires CurrencyInfo {
-        assert_assoc_and_currency<CoinType>();
+        assert_issuer_and_currency<CoinType>();
         let currency_info = borrow_global_mut<CurrencyInfo<CoinType>>(Transaction::sender());
         currency_info.can_mint = can_mint;
     }
@@ -555,14 +558,30 @@ module Coin {
 
     // The (singleton) address under which the currency registration
     // information is published.
-    fun currency_addr(): address {
-        0xA550C18
+    fun issuer_addr<CoinType>(): address {
+        let (coin_type_addr, _,_) = Generic::type_of<CoinType>();
+        Debug::print(&coin_type_addr);
+        if (coin_type_addr == 0x0) {
+            0xA550C18
+        }else{
+            coin_type_addr
+        }
     }
 
     // Assert that the sender is an association account, and that
     // `CoinType` is a regstered currency type.
     fun assert_assoc_and_currency<CoinType>() {
         Association::assert_sender_is_association();
+        assert_is_coin<CoinType>();
+    }
+
+    fun assert_issuer<CoinType>(){
+        let issuer_addr = issuer_addr<CoinType>();
+        Transaction::assert(issuer_addr == Transaction::sender(), 8);
+    }
+
+    public fun assert_issuer_and_currency<CoinType>(){
+        assert_issuer<CoinType>();
         assert_is_coin<CoinType>();
     }
 

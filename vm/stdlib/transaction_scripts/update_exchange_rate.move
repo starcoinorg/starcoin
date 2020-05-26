@@ -6,6 +6,6 @@ fun main<Currency>(new_exchange_rate_denominator: u64, new_exchange_rate_numerat
         new_exchange_rate_denominator,
         new_exchange_rate_numerator,
     );
-    Coin::update_lbr_exchange_rate<Currency>(rate);
+    Coin::update_stc_exchange_rate<Currency>(rate);
 }
 }

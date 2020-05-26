@@ -9,6 +9,7 @@ use crate::{
     event::EventHandle,
 };
 use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::{
     identifier::{IdentStr, Identifier},
     language_storage::{ResourceKey, StructTag},
@@ -21,7 +22,7 @@ use serde::{Deserialize, Serialize};
 pub struct CurrencyInfoResource {
     total_value: u128,
     preburn_value: u64,
-    to_lbr_exchange_rate: u64,
+    to_stc_exchange_rate: u64,
     is_synthetic: bool,
     scaling_factor: u64,
     fractional_part: u64,
@@ -34,7 +35,7 @@ pub struct CurrencyInfoResource {
 }
 
 impl MoveResource for CurrencyInfoResource {
-    const MODULE_NAME: &'static str = "Libra";
+    const MODULE_NAME: &'static str = "Coin";
     const STRUCT_NAME: &'static str = "CurrencyInfo";
 }
 
@@ -52,30 +53,50 @@ impl CurrencyInfoResource {
     }
 
     pub fn convert_to_lbr(&self, amount: u64) -> u64 {
-        let mut mult = (amount as u128) * (self.to_lbr_exchange_rate as u128);
+        let mut mult = (amount as u128) * (self.to_stc_exchange_rate as u128);
         mult >>= 32;
         mult as u64
     }
 
-    pub fn struct_tag_for(currency_code: Identifier) -> StructTag {
+    pub fn struct_tag_for(
+        currency_module_address: AccountAddress,
+        currency_code: Identifier,
+    ) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             module: CurrencyInfoResource::module_identifier(),
             name: CurrencyInfoResource::struct_identifier(),
-            type_params: vec![type_tag_for_currency_code(currency_code)],
+            type_params: vec![type_tag_for_currency_code(
+                Some(currency_module_address),
+                currency_code,
+            )],
         }
     }
 
-    pub fn resource_path_for(currency_code: Identifier) -> AccessPath {
+    pub fn resource_path_for(
+        currency_module_address: AccountAddress,
+        currency_code: Identifier,
+    ) -> AccessPath {
+        let resource_address = if currency_module_address == CORE_CODE_ADDRESS {
+            association_address()
+        } else {
+            currency_module_address
+        };
         let resource_key = ResourceKey::new(
-            association_address(),
-            CurrencyInfoResource::struct_tag_for(currency_code),
+            resource_address,
+            CurrencyInfoResource::struct_tag_for(currency_module_address, currency_code),
         );
         AccessPath::resource_access_path(&resource_key)
     }
 
-    pub fn access_path_for(currency_code: Identifier) -> Vec<u8> {
-        AccessPath::resource_access_vec(&CurrencyInfoResource::struct_tag_for(currency_code))
+    pub fn access_path_for(
+        currency_module_address: AccountAddress,
+        currency_code: Identifier,
+    ) -> Vec<u8> {
+        AccessPath::resource_access_vec(&CurrencyInfoResource::struct_tag_for(
+            currency_module_address,
+            currency_code,
+        ))
     }
 
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {

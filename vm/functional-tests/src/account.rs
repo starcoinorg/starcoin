@@ -130,7 +130,7 @@ impl Account {
     ///
     /// Use this to retrieve or publish the Account balance blob.
     pub fn make_balance_access_path(&self, balance_currency_code: Identifier) -> AccessPath {
-        let type_tag = type_tag_for_currency_code(balance_currency_code);
+        let type_tag = type_tag_for_currency_code(None, balance_currency_code);
         // TODO/XXX: Convert this to BalanceResource::struct_tag once that takes type args
         self.make_access_path(BalanceResource::struct_tag_for_currency(type_tag))
     }

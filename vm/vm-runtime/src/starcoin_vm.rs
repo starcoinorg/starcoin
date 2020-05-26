@@ -20,6 +20,7 @@ use starcoin_types::{
     vm_error::{sub_status, StatusCode, VMStatus},
     write_set::WriteSet,
 };
+use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::{
     chain_state::ChainState as MoveChainState,
     errors::{convert_prologue_runtime_error, VMResult},
@@ -57,9 +58,7 @@ pub struct StarcoinVM {
 static ZERO_TABLE: Lazy<CostTable> = Lazy::new(gas_schedule::zero_cost_schedule);
 
 //TODO define as argument.
-pub static DEFAULT_CURRENCY_TY: Lazy<TypeTag> = Lazy::new(|| {
-    account_config::type_tag_for_currency_code(account_config::STC_IDENTIFIER.to_owned())
-});
+pub static DEFAULT_CURRENCY_TY: Lazy<TypeTag> = Lazy::new(stc_type_tag);
 
 impl StarcoinVM {
     pub fn new() -> Self {

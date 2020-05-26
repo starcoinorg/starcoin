@@ -10,11 +10,9 @@ module STC {
     public fun initialize() {
         Transaction::assert(Transaction::sender() == 0xA550C18, 0);
         Coin::register_currency<T>(
-            FixedPoint32::create_from_rational(1, 1), // exchange rate to LBR
-            true,    // is_synthetic
+            FixedPoint32::create_from_rational(1, 1), // exchange rate to STC
             1000000, // scaling_factor = 10^6
             1000,    // fractional_part = 10^3
-            x"535443" // UTF8-encoded "STC" as a hex string
         );
     }
 }
