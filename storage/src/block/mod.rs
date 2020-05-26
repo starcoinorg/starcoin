@@ -209,7 +209,6 @@ impl BlockStorage {
         let mut key_hashes = vec![];
         for hash in self.header_store.keys().unwrap() {
             let hashval = HashValue::from_slice(hash.as_slice()).unwrap();
-            debug!("header key:{}", hashval.to_hex());
             key_hashes.push(hashval)
         }
         Ok(key_hashes)
@@ -297,7 +296,6 @@ impl BlockStorage {
         let mut vev_hash = Vec::new();
         let mut temp_block_id = block_id;
         loop {
-            debug!("block_id: {}", temp_block_id.to_hex());
             //get header by block_id
             match self.get_block_header_by_hash(temp_block_id)? {
                 Some(header) => {
@@ -329,7 +327,6 @@ impl BlockStorage {
         let mut parent_id1 = block_id1;
         let mut parent_id2 = block_id2;
         let mut found;
-        debug!("common ancestor: {:?}, {:?}", block_id1, block_id2);
         if let Ok(Some(hash)) = self.get_relationship(block_id1, block_id2) {
             return Ok(Some(hash));
         }
@@ -349,7 +346,6 @@ impl BlockStorage {
                             if sons1.len() > 1 {
                                 // get parent2 from block2
                                 loop {
-                                    debug!("parent2 : {:?}", parent_id2);
                                     ensure!(
                                         parent_id2 != HashValue::zero(),
                                         "invaild block id is zero."
@@ -500,7 +496,7 @@ impl BlockStorage {
     }
 
     fn put_sons(&self, parent_hash: HashValue, son_hash: HashValue) -> Result<()> {
-        debug!("put son:{}, {}", parent_hash, son_hash);
+        trace!("put son:{}, {}", parent_hash, son_hash);
         match self.get_sons(parent_hash) {
             Ok(mut vec_hash) => {
                 debug!("branch block:{}, {:?}", parent_hash, vec_hash);
