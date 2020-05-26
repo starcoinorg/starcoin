@@ -2,7 +2,8 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-SEED_NODE_KEY=a52cb7fe64b154d192cebd35a0b129c80481f89dd94f2aa2978b71417304a858
+NODE_KEYS=("a52cb7fe64b154d192cebd35a0b129c80481f89dd94f2aa2978b71417304a858" "6a5d25da2a86dab3b46639aae7db33bc7d1fe2006c7c8a9fdf93e20775b8bc8d" "17f42931c760ce8d4611a8907e0e8325ce59569aa3e3eb207cb0eef596f44af6")
+
 SEED_PORT=9840
 SEED_METRICS_PORT=9101
 
@@ -61,9 +62,9 @@ function start_cluster(){
     SEED_HOST=$(docker-machine ip $cluster_name-0)
     SEED=/ip4/$SEED_HOST/tcp/$SEED_PORT/p2p/QmcejhDq4ubxLnx7sNENECJroAuepMiL6Zkjp63LMmwVaT
     
-    start_starcoin $cluster_name-0 starcoin-0 $SEED_PORT $SEED_METRICS_PORT $net --node-key $SEED_NODE_KEY -s full
+    start_starcoin $cluster_name-0 starcoin-0 $SEED_PORT $SEED_METRICS_PORT $net --node-key ${NODE_KEYS[0]} -s full
     for((c=1; c<$number;c++));do
-	start_starcoin $cluster_name-$c starcoin-$c $((SEED_PORT + c)) $((SEED_METRICS_PORT + c)) $net --seed $SEED -s full
+	start_starcoin $cluster_name-$c starcoin-$c $SEED_PORT $SEED_METRICS_PORT $net --seed $SEED -s full --node-key ${NODE_KEYS[$c]}
     done
     start_txfactory $cluster_name-0 starcoin-0 txfactory-0 $net
 }
