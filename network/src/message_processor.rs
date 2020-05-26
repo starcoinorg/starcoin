@@ -44,7 +44,7 @@ impl<T> Future for MessageFuture<T> {
                     }
                 },
                 None => {
-                    warn!("no data,return timeout");
+                    debug!("no data,return timeout");
                     return Poll::Ready(Err(anyhow!("future time out")));
                 }
             }
@@ -83,13 +83,13 @@ where
             Some(tx) => {
                 match tx.clone().send(Ok(value)).await {
                     Ok(_new_tx) => {
-                        info!("send message succ");
+                        debug!("send message succ");
                         tx_map.remove(&id);
                     }
-                    Err(_) => warn!("send message error"),
+                    Err(_) => debug!("send message error"),
                 };
             }
-            _ => info!("tx id  not in map"),
+            _ => debug!("tx id  not in map"),
         }
         Ok(())
     }

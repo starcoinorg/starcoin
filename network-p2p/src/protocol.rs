@@ -274,12 +274,6 @@ impl DiscoveryNetBehaviour for Protocol {
     }
 }
 
-// impl Drop for Protocol {
-//     fn drop(&mut self) {
-//         //debug!(target: "sync", "Network stats:\n{}", self.format_stats());
-//     }
-// }
-
 impl Protocol {
     /// Create a new instance.
     pub fn new(
@@ -433,7 +427,7 @@ impl Protocol {
 
     /// Called when a new peer is connected
     pub fn on_peer_connected(&mut self, who: PeerId) {
-        info!(target: "sync", "Connecting {}", who);
+        debug!(target: "sync", "Connecting {}", who);
         self.handshaking_peers.insert(
             who.clone(),
             HandshakingPeer {
@@ -490,7 +484,7 @@ impl Protocol {
             for (who, _) in self.handshaking_peers.iter().filter(|(_, handshaking)| {
                 (tick - handshaking.timestamp).as_secs() > REQUEST_TIMEOUT_SEC
             }) {
-                info!(
+                debug!(
                     target: "sync",
                     "Handshake timeout {}", who
                 );
@@ -519,13 +513,7 @@ impl Protocol {
         protocol_name: Cow<'static, [u8]>,
         message: impl Into<Vec<u8>>,
     ) {
-        // self.send_message(
-        //     &target,
-        //     Message::Consensus(ConsensusMessage {
-        //         data: message.into(),
-        //     }),
-        // );
-        let fallback = Message::Consensus(ConsensusMessage {
+        let msg = Message::Consensus(ConsensusMessage {
             data: message.into(),
         })
         .encode();
@@ -533,7 +521,7 @@ impl Protocol {
         self.behaviour.write_notification(
             &target,
             protocol_name,
-            fallback.expect("should succ"),
+            msg.expect("should succ"),
             vec![],
         );
     }
@@ -546,7 +534,10 @@ impl Protocol {
         self.behaviour
             .register_notif_protocol(protocol_name.clone(), Vec::new());
 
-        info!("register protocol {:?}", str::from_utf8(&protocol_name));
+        info!(
+            "register protocol {:?} successful",
+            str::from_utf8(&protocol_name)
+        );
         self.context_data
             .peers
             .iter()

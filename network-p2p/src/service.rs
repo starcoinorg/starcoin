@@ -447,7 +447,7 @@ impl NetworkService {
         match rx.await {
             Ok(t) => t,
             Err(e) => {
-                warn!("sth wrong {}", e);
+                debug!("sth wrong {}", e);
                 HashSet::new()
             }
         }
@@ -461,7 +461,7 @@ impl NetworkService {
         match rx.await {
             Ok(t) => t,
             Err(e) => {
-                warn!("sth wrong {}", e);
+                debug!("sth wrong {}", e);
                 Vec::new()
             }
         }
