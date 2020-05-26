@@ -211,8 +211,8 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         private_key: None,
         pre_mine_percent: 20,
     }),
-    boot_nodes: vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWHaSiYiqeViVGW4cbLBx6juLr9NkYCUzJzqevshxGZ1nY".parse().expect("parse multi addr should be ok"),
-                     "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWQ94X754WGbHQnKkNtHcQCk27Bh4WvUAz7ga8bwb6voEt".parse().expect("parse multi addr should be ok"),
+    boot_nodes: vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
+                     "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
                      "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),],
 }
 });
