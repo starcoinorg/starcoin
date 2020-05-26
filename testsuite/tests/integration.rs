@@ -56,11 +56,13 @@ pub fn steps() -> Steps<MyWorld> {
         .given("default account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let default_account = client.clone().wallet_default();
+            info!("default account config success!");
             world.default_account = default_account.unwrap()
         })
         .given("an account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let account = client.clone().wallet_create("integration".parse().unwrap());
+            info!("a account create success!");
             world.txn_account = Some(account.unwrap())
         });
     builder.build()

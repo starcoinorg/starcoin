@@ -27,12 +27,6 @@ pub fn steps() -> Steps<MyWorld> {
             info!("node local rpc client created!");
             world.local_rpc_client = Some(client)
         })
-        // .given("remote rpc client", |world: &mut MyWorld, _step| {
-        //     let path = world.ipc_path.as_ref().take().unwrap();
-        //     let client = RpcClient::connect_ipc(path).unwrap();
-        //     info!("rpc client created!");
-        //     world.rpc_client = Some(client)
-        // })
         .given("node handle", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
             let handle = starcoin_node::run_dev_node(Arc::new(node_config.clone()));
