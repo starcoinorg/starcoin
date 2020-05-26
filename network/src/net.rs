@@ -110,7 +110,7 @@ impl SNetworkService {
                     break;
                 }
                 complete => {
-                    warn!("all stream are complete");
+                    debug!("all stream are complete");
                     break;
                 }
             }
@@ -129,7 +129,7 @@ impl SNetworkService {
         //let (tx, rx) = oneshot::channel::<()>();
         let (protocol_msg, _message_id) = Message::new_payload(message);
 
-        info!("Send message to {} with ack", peer_id);
+        debug!("Send message to {} with ack", peer_id);
         self.service
             .write_notification(peer_id, PROTOCOL_NAME.into(), protocol_msg.into_bytes());
         //self.waker.wake();
@@ -140,7 +140,7 @@ impl SNetworkService {
     }
 
     pub async fn broadcast_message(&mut self, message: Vec<u8>) {
-        info!("broadcast message");
+        debug!("broadcast message");
         let (protocol_msg, _message_id) = Message::new_payload(message);
 
         let message_bytes = protocol_msg.into_bytes();
@@ -172,10 +172,10 @@ impl NetworkInner {
     ) -> Result<()> {
         match event {
             Event::Dht(_) => {
-                info!("ignore dht event");
+                debug!("ignore dht event");
             }
             Event::NotificationStreamOpened { remote, info } => {
-                info!(
+                debug!(
                     "Connected peer {:?},Myself is {:?}",
                     remote,
                     self.service.peer_id()
@@ -184,7 +184,7 @@ impl NetworkInner {
                 event_tx.unbounded_send(open_msg)?;
             }
             Event::NotificationStreamClosed { remote } => {
-                info!(
+                debug!(
                     "Close peer {:?},Myself is {:?}",
                     remote,
                     self.service.peer_id()
@@ -205,7 +205,7 @@ impl NetworkInner {
         messages: Vec<Bytes>,
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
     ) -> Result<()> {
-        info!("Receive message with peer_id:{:?}", &peer_id);
+        debug!("Receive message with peer_id:{:?}", &peer_id);
         for message in messages {
             let message = Message::from_bytes(message.as_ref())?;
             match message {
@@ -216,16 +216,9 @@ impl NetworkInner {
                         data: payload.data,
                     };
                     net_tx.unbounded_send(user_msg)?;
-                    // if payload.id != 0 {
-                    //     self.service.write_notification(
-                    //         peer_id.clone(),
-                    //         PROTOCOL_NAME.into(),
-                    //         Message::ACK(payload.id).into_bytes(),
-                    //     );
-                    // }
                 }
                 Message::ACK(message_id) => {
-                    info!("Receive message ack");
+                    debug!("Receive message ack");
                     if let Some(tx) = self.acks.lock().remove(&message_id) {
                         let _ = tx.send(());
                     } else {
