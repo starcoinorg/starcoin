@@ -362,12 +362,12 @@ where
 
     fn sync_end(&self) -> bool {
         info!(
-            "state sync task len : {:?}, accumulator sync task len : {:?},\
-         save state nodes : {} , save accumulator nodes : {}",
-            self.state_sync_task.lock().task_len(),
-            self.accumulator_sync_task.lock().task_len(),
-            self.state_sync_count.load(Ordering::Relaxed),
-            self.accumulator_sync_count.load(Ordering::Relaxed),
+            "state sync task info : {:?},\
+             txn accumulator sync task info : {:?},\
+             block accumulator sync task info : {:?}.",
+            self.state_sync_task.lock().task_info(),
+            self.txn_accumulator_sync_task.lock().task_info(),
+            self.block_accumulator_sync_task.lock().task_info(),
         );
         self.state_sync_task.lock().is_empty()
             && self.txn_accumulator_sync_task.lock().is_empty()
@@ -439,7 +439,7 @@ where
                     debug!("{:?}, retry {:?}.", e, current_node_key);
                     lock.push_back((current_node_key, is_global));
                 } else {
-                    self.state_sync_count.fetch_add(1, Ordering::Relaxed);
+                    lock.do_one_task();
                     match state_node.inner() {
                         Node::Leaf(leaf) => {
                             if !is_global {

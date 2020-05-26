@@ -129,11 +129,18 @@ where
                             debug!("{:?}", "state_nodes is none.");
                         }
                     }
-                    SyncRpcRequest::GetAccumulatorNodeByNodeHash(accumulator_node_key) => {
+                    SyncRpcRequest::GetAccumulatorNodeByNodeHash(
+                        accumulator_node_key,
+                        accumulator_type,
+                    ) => {
                         let mut keys = Vec::new();
                         keys.push(accumulator_node_key);
-                        let mut accumulator_nodes =
-                            Processor::handle_accumulator_node_msg(processor.clone(), keys).await;
+                        let mut accumulator_nodes = Processor::handle_accumulator_node_msg(
+                            processor.clone(),
+                            keys,
+                            accumulator_type,
+                        )
+                        .await;
                         if let Some((_, accumulator_node_res)) = accumulator_nodes.pop() {
                             if let Some(accumulator_node) = accumulator_node_res {
                                 if let Err(e) =
@@ -298,7 +305,8 @@ where
             {
                 Ok(node) => accumulator_nodes.push((*node_key, node)),
                 Err(e) => error!("handle accumulator_node {:?} err : {:?}", node_key, e),
-            });
+            }
+        });
 
         accumulator_nodes
     }

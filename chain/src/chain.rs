@@ -6,7 +6,6 @@ use config::NodeConfig;
 use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
 use logger::prelude::*;
-use network::get_unix_ts;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
