@@ -934,7 +934,7 @@ where
                         ConnectBlockError::FutureBlock => {
                             downloader.future_blocks.add_future_block(block, block_info)
                         }
-                        _ => debug!("Connect block {:?} succ, but : {:?}", block_id, err),
+                        _ => debug!("Connect block {:?} failed, because : {:?}", block_id, err),
                     }
                 }
             }

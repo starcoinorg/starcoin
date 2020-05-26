@@ -514,7 +514,7 @@ where
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
             if let Some(accumulator_node) = storage
-                .get_node(AccumulatorStoreType::Transaction, node_key)
+                .get_node(accumulator_type.clone(), node_key)
                 .unwrap()
             {
                 debug!("find accumulator_node {:?} in db.", node_key);
@@ -586,9 +586,13 @@ where
             let _ = lock.remove(&task_event.peer_id);
             if let Some(accumulator_node) = task_event.accumulator_node {
                 info!("accumulator_node : {:?}", accumulator_node);
-                if let Err(e) =
-                    storage.save_node(AccumulatorStoreType::Transaction, accumulator_node.clone())
-                {
+                if let Err(e) = storage.save_node(
+                    match task_event.task_type {
+                        TaskType::TxnAccumulator => AccumulatorStoreType::Transaction,
+                        _ => AccumulatorStoreType::Block,
+                    },
+                    accumulator_node.clone(),
+                ) {
                     error!("error : {:?}", e);
                     lock.push_back(current_node_key);
                 } else {
