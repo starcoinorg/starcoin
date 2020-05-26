@@ -227,8 +227,6 @@ impl NetworkActor {
         NetworkAsyncService,
         mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) {
-        let has_seed = !node_config.network.seeds.is_empty();
-
         // merge seeds from chain config
         let mut config = node_config.network.clone();
         if !node_config.network.disable_seed {
@@ -240,6 +238,7 @@ impl NetworkActor {
             };
             config.seeds.extend(seeds);
         }
+        let has_seed = !config.seeds.is_empty();
 
         let (service, tx, rx, event_rx, tx_command) =
             build_network_service(&config, handle.clone(), genesis_hash, self_info.clone());
