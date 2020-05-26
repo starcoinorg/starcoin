@@ -6,7 +6,6 @@ use config::NodeConfig;
 use crypto::HashValue;
 use executor::block_executor::BlockExecutor;
 use logger::prelude::*;
-use network::get_unix_ts;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -79,9 +78,8 @@ where
 
     pub fn save_block(&self, block: &Block, block_state: BlockState) {
         if let Err(e) = self.storage.commit_block(block.clone(), block_state) {
-            warn!("err : {:?}", e);
+            warn!("save block : {:?}", e);
         }
-        debug!("commit block : {:?}", block.header().id());
     }
 
     fn get_block_info(&self, block_id: HashValue) -> Result<BlockInfo> {
@@ -92,28 +90,7 @@ where
     }
     pub fn save_block_info(&self, block_info: BlockInfo) {
         if let Err(e) = self.storage.save_block_info(block_info) {
-            warn!("err : {:?}", e);
-        }
-    }
-
-    pub fn latest_blocks(&self, size: u64) {
-        let mut count = 0;
-        let mut last = self.head.header().clone();
-        loop {
-            info!(
-                "block chain :: number : {} , block_id : {:?}",
-                last.number(),
-                last.id()
-            );
-            if last.number() == 0 || count >= size {
-                break;
-            }
-            last = self
-                .get_header(last.parent_hash())
-                .unwrap()
-                .unwrap()
-                .clone();
-            count += 1;
+            warn!("save_block_info : {:?}", e);
         }
     }
 
@@ -205,7 +182,7 @@ where
                 return Ok(true);
             } else {
                 debug!(
-                    "block is miss match {:?} : {:?}",
+                    "block id miss match {:?} : {:?}",
                     block_id,
                     block_header.id()
                 );
@@ -300,7 +277,7 @@ where
                 }
             }
             None => {
-                debug!("Get block from storage return none.");
+                debug!("Get block {:?} from storage return none.", hash);
             }
         }
 
@@ -378,7 +355,6 @@ where
 {
     fn apply(&mut self, block: Block) -> Result<bool> {
         let header = block.header();
-        debug!("Apply block {:?} to {:?}", header, self.head.header());
         //TODO custom verify macro
         assert_eq!(self.head.header().id(), header.parent_hash());
 
@@ -386,13 +362,10 @@ where
             block.header().gas_used() <= block.header().gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
         );
-        let apply_begin_time = get_unix_ts();
         if let Err(e) = C::verify_header(self.config.clone(), self, header) {
-            error!("err: {:?}", e);
+            error!("{:?}", e);
             return Ok(false);
         }
-        let verify_end_time = get_unix_ts();
-        debug!("verify used time: {}", (verify_end_time - apply_begin_time));
 
         let chain_state = &self.chain_state;
         let mut txns = block
@@ -403,8 +376,6 @@ where
             .collect::<Vec<Transaction>>();
         let block_metadata = header.clone().into_metadata();
 
-        let exe_begin_time = get_unix_ts();
-
         let (state_root, vec_transaction_info) = BlockExecutor::block_execute(
             chain_state,
             txns.clone(),
@@ -412,8 +383,6 @@ where
             block.header().gas_limit(),
         )?;
 
-        let exe_end_time = get_unix_ts();
-        debug!("exe used time: {}", (exe_end_time - exe_begin_time));
         assert_eq!(
             block.header().state_root(),
             state_root,
@@ -468,8 +437,6 @@ where
             pre_total_difficulty + header.difficulty().into()
         };
 
-        let new_block_info_begin_time = get_unix_ts();
-
         self.block_accumulator.append(&[block.id()])?;
         self.block_accumulator.flush()?;
         let txn_accumulator_info: AccumulatorInfo = (&self.txn_accumulator).try_into()?;
@@ -480,30 +447,10 @@ where
             block_accumulator_info,
             total_difficulty,
         );
-        let new_block_info_end_time = get_unix_ts();
-        debug!(
-            "new block info used time: {}",
-            (new_block_info_end_time - new_block_info_begin_time)
-        );
         // save block's transaction relationship and save transaction
         self.save(header.id(), txns)?;
-        let save_block_end_time = get_unix_ts();
-        debug!(
-            "save block used time: {}",
-            (save_block_end_time - new_block_info_end_time)
-        );
         self.storage.save_transaction_infos(vec_transaction_info)?;
-        let commit_begin_time = get_unix_ts();
-        debug!(
-            "new transaction info used time: {}",
-            (commit_begin_time - save_block_end_time)
-        );
         self.commit(block.clone(), block_info, BlockState::Executed)?;
-        let commit_end_time = get_unix_ts();
-        debug!(
-            "commit used time: {}",
-            (commit_end_time - commit_begin_time)
-        );
         Ok(true)
     }
 

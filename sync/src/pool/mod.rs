@@ -89,24 +89,26 @@ where
     /// take entry from pool
     pub(crate) fn take(&self, size: usize) -> Vec<E> {
         let mut lock = self.data.write().unwrap();
-        let mut set_iter = lock.iter();
         let mut entries = Vec::new();
-        loop {
-            if entries.len() >= size {
-                break;
+        {
+            let mut set_iter = lock.iter();
+            loop {
+                if entries.len() >= size {
+                    break;
+                }
+
+                let entry = set_iter.next();
+
+                if entry.is_none() {
+                    break;
+                }
+
+                let ttl_entry = entry.expect("entry is none.").clone();
+                entries.push(ttl_entry);
             }
 
-            let entry = set_iter.next();
-
-            if entry.is_none() {
-                break;
-            }
-
-            let ttl_entry = entry.expect("entry is none.").clone();
-            entries.push(ttl_entry);
+            drop(set_iter);
         }
-
-        drop(set_iter);
 
         if !entries.is_empty() {
             entries.iter().for_each(|e| {

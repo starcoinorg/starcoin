@@ -10,6 +10,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::system_events::SyncDone;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::Arc;
 
 #[async_trait::async_trait]
@@ -23,7 +24,7 @@ pub trait StateSyncReset: DynClone + Send + Sync {
     async fn act(&self);
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
 
 pub struct SyncMetadataInner {
@@ -37,9 +38,22 @@ pub struct SyncMetadataInner {
     state_sync_failed: Option<bool>,
 }
 
+impl Debug for SyncMetadataInner {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_tuple("SyncMetadata")
+            .field(&self.is_state_sync)
+            .field(&self.pivot_behind)
+            .field(&self.pivot_connected)
+            .field(&self.state_sync_done)
+            .field(&self.block_sync_done)
+            .field(&self.state_sync_failed)
+            .finish()
+    }
+}
+
 impl SyncMetadata {
     pub fn new(config: Arc<NodeConfig>, bus: Addr<BusActor>) -> SyncMetadata {
-        info!("is_state_sync : {}", config.sync.is_state_sync());
+        debug!("is state sync : {}", config.sync.is_state_sync());
         let inner = SyncMetadataInner {
             is_state_sync: config.sync.is_state_sync(),
             pivot_behind: None,
@@ -61,7 +75,7 @@ impl SyncMetadata {
         assert!(self.state_syncing(), "cat not update pivot.");
         assert!(pivot > 0, "pivot must be positive integer.");
         assert!(behind > 0, "behind must be positive integer.");
-        info!("update pivot : {}, {}", pivot, behind);
+        debug!("update pivot : {}, {}", pivot, behind);
         let mut lock = self.0.write();
         lock.pivot_behind = Some((pivot, behind));
         lock.pivot_connected = (false, None);
@@ -84,11 +98,11 @@ impl SyncMetadata {
     pub fn state_sync_done(&self) -> Result<()> {
         assert!(self.fast_sync_mode(), "chain is not in fast sync mode.");
         assert!(!self.0.read().state_sync_done, "state sync already done.");
-        let mut lock = self.0.write();
-        lock.state_sync_done = true;
-        drop(lock);
+        {
+            let mut lock = self.0.write();
+            lock.state_sync_done = true;
+        }
         self.sync_done()?;
-        info!("state sync done.");
         Ok(())
     }
 
@@ -116,7 +130,6 @@ impl SyncMetadata {
     pub fn pivot_connected_succ(&self) -> Result<()> {
         let mut lock = self.0.write();
         lock.pivot_connected = (true, None);
-        info!("pivot block connected done.");
         Ok(())
     }
 
@@ -125,15 +138,14 @@ impl SyncMetadata {
     }
 
     pub fn block_sync_done(&self) -> Result<()> {
-        info!("do block_sync_done");
         let read_lock = self.0.read();
         if !read_lock.block_sync_done && (self.pivot_connected() || !self.fast_sync_mode()) {
             drop(read_lock);
-            let mut lock = self.0.write();
-            lock.block_sync_done = true;
-            drop(lock);
+            {
+                let mut lock = self.0.write();
+                lock.block_sync_done = true;
+            }
             self.sync_done()?;
-            info!("block sync done.");
         }
         Ok(())
     }
@@ -150,7 +162,7 @@ impl SyncMetadata {
             lock.state_sync_address = None;
             lock.state_sync_failed = None;
             lock.bus.do_send(Broadcast { msg: SyncDone });
-            info!("state sync and block sync done.");
+            info!("state and block both sync done.");
         }
         Ok(())
     }
