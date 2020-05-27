@@ -149,6 +149,7 @@ impl crate::pool::Client for PoolClient {
             None => Ok(checked_txn),
             Some(status) => {
                 // Ok(checked_txn)
+                debug!(target: "txpool", "validate txn failure, vm status: {:?}", &status);
                 Err(TransactionError::CallErr(CallError::Execution(status)))
             }
         }

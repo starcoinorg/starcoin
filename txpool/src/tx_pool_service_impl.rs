@@ -226,7 +226,7 @@ impl Inner {
         enacted: Vec<SignedUserTransaction>,
         retracted: Vec<SignedUserTransaction>,
     ) -> Result<()> {
-        info!(
+        debug!(
             "receive chain_new_block msg, enacted: {:?}, retracted: {:?}",
             enacted
                 .iter()
