@@ -3,7 +3,7 @@ use crypto::hash::{HashValue, PlainCryptoHash};
 use executor::{executor::Executor, TransactionExecutor};
 use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_state_api::ChainStateWriter;
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use std::{
     convert::TryInto,
@@ -73,6 +73,41 @@ impl OpenedBlock {
             included_user_txns: vec![],
         };
         Ok(opened_block)
+    }
+
+    pub fn gas_used(&self) -> u64 {
+        self.gas_used
+    }
+
+    pub fn gas_limit(&self) -> u64 {
+        self.gas_limit
+    }
+
+    // TODO: should use check_sub or not
+    pub fn gas_left(&self) -> u64 {
+        debug_assert!(self.gas_limit >= self.gas_used);
+        self.gas_limit - self.gas_used
+    }
+
+    pub fn included_user_txns(&self) -> &[SignedUserTransaction] {
+        &self.included_user_txns
+    }
+    pub fn state_root(&self) -> HashValue {
+        self.state.state_root()
+    }
+    pub fn accumulator_root(&self) -> HashValue {
+        self.txn_accumulator.root_hash()
+    }
+
+    pub fn block_meta(&self) -> &BlockMetadata {
+        &self.block_meta
+    }
+    pub fn block_number(&self) -> u64 {
+        self.previous_header.number() + 1
+    }
+
+    pub fn state_reader(&self) -> &impl ChainStateReader {
+        &self.state
     }
 
     /// Try to add `user_txns` into this block.
