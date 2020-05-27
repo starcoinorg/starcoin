@@ -1,29 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::headblock_pacemaker::HeadBlockPacemaker;
-use crate::ondemand_pacemaker::OndemandPacemaker;
-use crate::schedule_pacemaker::SchedulePacemaker;
-use crate::stratum::mint;
+use crate::{
+    headblock_pacemaker::HeadBlockPacemaker, ondemand_pacemaker::OndemandPacemaker,
+    schedule_pacemaker::SchedulePacemaker, stratum::mint,
+};
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
 use chain::BlockChain;
 use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
-use crypto::hash::HashValue;
-use futures::channel::mpsc;
-use futures::prelude::*;
+use crypto::hash::{HashValue, PlainCryptoHash};
+use futures::{channel::mpsc, prelude::*};
 use logger::prelude::*;
 pub use miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use sc_stratum::Stratum;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_wallet_api::WalletAccount;
-use std::marker::PhantomData;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{marker::PhantomData, sync::Arc, time::Duration};
 use storage::Store;
-use traits::ChainAsyncService;
-use traits::Consensus;
+use traits::{ChainAsyncService, ChainReader, Consensus};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
@@ -163,7 +159,19 @@ where
             );
             let master = *startup_info.get_master();
             let block_chain = BlockChain::<C, S>::new(config.clone(), master, storage)?;
-            mint::<C>(stratum, miner, config, miner_account, txns, &block_chain)?;
+            let (block_template, excluded_txns) = block_chain.create_block_template(
+                *miner_account.address(),
+                Some(miner_account.get_auth_key().prefix().to_vec()),
+                None,
+                txns,
+            )?;
+
+            // remove invalid txn from txpool
+            for invalid_txn in excluded_txns.discarded_txns {
+                let _ = txpool.remove_txn(invalid_txn.crypto_hash(), true);
+            }
+
+            mint::<C>(stratum, miner, config, &block_chain, block_template)?;
             Ok(())
         }
         .map(|result: Result<()>| {

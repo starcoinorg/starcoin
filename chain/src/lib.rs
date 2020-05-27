@@ -9,6 +9,7 @@ mod chain_metrics;
 pub mod chain_service;
 pub mod message;
 pub mod mock;
+pub mod opened_block;
 pub mod test_helper;
 
 pub use chain_service::ChainServiceImpl;
@@ -25,8 +26,7 @@ use network::NetworkAsyncService;
 use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use storage::Storage;
-use traits::Consensus;
-use traits::{ChainAsyncService, ChainService, ConnectResult};
+use traits::{ChainAsyncService, ChainService, ConnectResult, Consensus};
 use txpool::TxPoolService;
 use types::{
     account_address::AccountAddress,
@@ -432,4 +432,5 @@ where
     }
 }
 
+#[cfg(test)]
 mod tests;

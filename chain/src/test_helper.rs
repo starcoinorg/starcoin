@@ -3,9 +3,7 @@ use anyhow::Result;
 use config::NodeConfig;
 use starcoin_genesis::Genesis;
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
-use storage::storage::StorageInstance;
-use storage::Storage;
+use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use traits::Consensus;
 
 pub fn gen_blockchain_for_test<C: Consensus>(

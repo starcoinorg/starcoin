@@ -4,9 +4,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_address::AccountAddress;
-use crate::block::BlockHeader;
-use anyhow::Result;
+use crate::{account_address::AccountAddress, block::BlockHeader};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},
@@ -49,13 +47,13 @@ impl BlockMetadata {
         }
     }
 
-    pub fn into_inner(self) -> Result<(HashValue, u64, AccountAddress, Option<Vec<u8>>)> {
-        Ok((
+    pub fn into_inner(self) -> (HashValue, u64, AccountAddress, Option<Vec<u8>>) {
+        (
             self.parent_id,
             self.timestamp,
             self.author,
             self.auth_key_prefix,
-        ))
+        )
     }
 
     pub fn parent_id(&self) -> HashValue {
