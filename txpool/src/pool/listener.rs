@@ -14,10 +14,9 @@ pub struct Logger;
 
 impl tx_pool::Listener<Transaction> for Logger {
     fn added(&mut self, tx: &Arc<Transaction>, old: Option<&Arc<Transaction>>) {
-        debug!(target: "txqueue", "[{:?}] Added to the pool.", tx.hash());
         debug!(
             target: "txqueue",
-            "[{hash:?}] Sender: {sender}, nonce: {nonce}, gasPrice: {gas_price}, gas: {gas}, dataLen: {data:?}))",
+            "Txn added. [{hash:?}] Sender: {sender}, nonce: {nonce}, gasPrice: {gas_price}, gas: {gas}, dataLen: {data:?}))",
             hash = tx.hash(),
             sender = tx.sender(),
             nonce = tx.signed().sequence_number(),
@@ -33,10 +32,10 @@ impl tx_pool::Listener<Transaction> for Logger {
 
     fn rejected<H: fmt::Debug + fmt::LowerHex>(
         &mut self,
-        _tx: &Arc<Transaction>,
+        tx: &Arc<Transaction>,
         reason: &tx_pool::Error<H>,
     ) {
-        trace!(target: "txqueue", "Rejected {}.", reason);
+        debug!(target: "txqueue", "[{hash:?}] Rejected. {reason}.",  hash = tx.hash(), reason = reason);
     }
 
     fn dropped(&mut self, tx: &Arc<Transaction>, new: Option<&Transaction>) {
