@@ -513,9 +513,7 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
-            if let Some(accumulator_node) = storage
-                .get_node(accumulator_type.clone(), node_key)
-                .unwrap()
+            if let Ok(Some(accumulator_node)) = storage.get_node(accumulator_type.clone(), node_key)
             {
                 debug!("find accumulator_node {:?} in db.", node_key);
                 lock.insert(self_peer_id.clone(), node_key);
@@ -528,9 +526,7 @@ where
                     error!("Send accumulator StateSyncTaskEvent failed : {:?}", err);
                 };
             } else {
-                let network_service_tmp = network_service.clone();
-                let best_peer_info =
-                    block_on(async move { network_service_tmp.best_peer().await.unwrap() });
+                let best_peer_info = get_best_peer_info(network_service.clone());
                 debug!(
                     "sync accumulator node {:?} from peer {:?}.",
                     node_key, best_peer_info
@@ -585,7 +581,6 @@ where
             }
             let _ = lock.remove(&task_event.peer_id);
             if let Some(accumulator_node) = task_event.accumulator_node {
-                info!("accumulator_node : {:?}", accumulator_node);
                 if let Err(e) = storage.save_node(
                     match task_event.task_type {
                         TaskType::TxnAccumulator => AccumulatorStoreType::Transaction,
@@ -593,7 +588,7 @@ where
                     },
                     accumulator_node.clone(),
                 ) {
-                    error!("error : {:?}", e);
+                    debug!("{:?}", e);
                     lock.push_back(current_node_key);
                 } else {
                     debug!("receive accumulator_node: {:?}", accumulator_node);
