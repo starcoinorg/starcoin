@@ -181,6 +181,7 @@ fn create_and_initialize_main_accounts(
         vec![Value::address(burn_account_address)],
     );
 
+    //TODO conform coin burn strategy and account.
     context.set_sender(burn_account_address);
     context.exec(
         GENESIS_MODULE_NAME,
@@ -325,4 +326,16 @@ fn reconfigure(context: &mut GenesisContext) {
     context.set_sender(account_config::association_address());
     context.exec("Timestamp", "initialize", vec![], vec![]);
     context.exec("Config", "emit_reconfiguration_event", vec![], vec![]);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use starcoin_config::ChainNetwork;
+
+    #[test]
+    fn test_genesis() {
+        let change_set = generate_genesis_state_set(ChainNetwork::Dev.get_config()).unwrap();
+        assert!(!change_set.write_set().is_empty())
+    }
 }

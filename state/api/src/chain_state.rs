@@ -14,8 +14,10 @@ use starcoin_types::{
     language_storage::TypeTag,
     state_set::ChainStateSet,
 };
-use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::account_config::{stc_type_tag, type_tag_for_currency_code};
+use starcoin_vm_types::on_chain_config::{ConfigStorage, OnChainConfig, RegisteredCurrencies};
 use starcoin_vm_types::state_view::StateView;
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
@@ -102,6 +104,12 @@ pub trait ChainStateReader: StateView {
     fn state_root(&self) -> HashValue;
 
     fn dump(&self) -> Result<ChainStateSet>;
+}
+
+impl ConfigStorage for &dyn ChainStateReader {
+    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
+        self.get(&access_path).ok().flatten()
+    }
 }
 
 pub trait ChainStateWriter {
@@ -224,13 +232,25 @@ impl<'a> AccountStateReader<'a> {
             })
     }
 
-    /// Get starcoin account balance by address
-    pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
-        self.get_token_balance(address, &stc_type_tag())
+    pub fn get_on_chain_config<C>(&self) -> Option<C>
+    where
+        C: OnChainConfig,
+    {
+        C::fetch_config(self.reader)
     }
 
-    /// Get token balance by address
-    pub fn get_token_balance(
+    pub fn get_registered_currencies(&self) -> RegisteredCurrencies {
+        self.get_on_chain_config()
+            .expect("RegisteredCurrencies on chain config should exist.")
+    }
+
+    /// Get default coin balance by address
+    pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
+        self.get_balance_by_type(address, &stc_type_tag())
+    }
+
+    /// Get balance by address and coin type
+    pub fn get_balance_by_type(
         &self,
         address: &AccountAddress,
         type_tag: &TypeTag,
@@ -246,5 +266,28 @@ impl<'a> AccountStateReader<'a> {
                 None => Ok(None),
             })?
             .map(|resource| resource.coin()))
+    }
+
+    /// Get all balance of account
+    pub fn get_balances(&self, address: &AccountAddress) -> Result<HashMap<String, u64>> {
+        let currencies = self.get_registered_currencies();
+        let mut result = HashMap::new();
+        //TODO batch get.
+        for record in currencies.currency_codes() {
+            let balance = self
+                .get_balance_by_type(
+                    &address,
+                    &type_tag_for_currency_code(
+                        Some(record.module_address),
+                        record.currency_code.clone(),
+                    ),
+                )
+                .ok()
+                .flatten();
+            if let Some(balance) = balance {
+                result.insert(record.currency_code.as_str().to_owned(), balance);
+            }
+        }
+        Ok(result)
     }
 }

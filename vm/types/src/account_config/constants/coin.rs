@@ -7,6 +7,7 @@ use crate::{
     language_storage::{ModuleId, StructTag, TypeTag},
 };
 use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
 use once_cell::sync::Lazy;
 
 pub const COIN_MODULE_NAME: &str = "Coin";
@@ -25,13 +26,14 @@ pub fn coin_struct_name() -> &'static IdentStr {
 }
 
 // TODO: This imposes a few implied restrictions:
-//   1) The currency module must be published under the core code address.
-//   2) The module name must be the same as the gas specifier.
-//   3) The struct name must be "T"
+//   1) The struct name must be "T"
 // We need to consider whether we want to switch to a more or fully qualified name.
-pub fn type_tag_for_currency_code(currency_code: Identifier) -> TypeTag {
+pub fn type_tag_for_currency_code(
+    module_address: Option<AccountAddress>,
+    currency_code: Identifier,
+) -> TypeTag {
     TypeTag::Struct(StructTag {
-        address: CORE_CODE_ADDRESS,
+        address: module_address.unwrap_or(CORE_CODE_ADDRESS),
         module: currency_code,
         name: coin_struct_name().to_owned(),
         type_params: vec![],

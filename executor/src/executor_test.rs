@@ -459,5 +459,5 @@ fn get_token_balance(
     let account_state_reader = AccountStateReader::new(state_db);
     let type_tag = parser::parse_type_tags(token.as_ref())?[0].clone();
     debug!("type_tag= {:?}", type_tag);
-    account_state_reader.get_token_balance(&address, &type_tag)
+    account_state_reader.get_balance_by_type(&address, &type_tag)
 }

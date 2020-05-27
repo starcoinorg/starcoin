@@ -144,7 +144,7 @@ module Account {
         let travel_rule_limit = 1000;
         // travel rule only applies for payments over a threshold
         let above_threshold =
-            Coin::approx_lbr_for_value<Token>(deposit_value) >= travel_rule_limit;
+            Coin::approx_stc_for_value<Token>(deposit_value) >= travel_rule_limit;
         // travel rule only applies if the sender and recipient are both VASPs
         let both_vasps = VASP::is_vasp(sender) && VASP::is_vasp(payee);
         // Don't check the travel rule if we're on testnet and sender

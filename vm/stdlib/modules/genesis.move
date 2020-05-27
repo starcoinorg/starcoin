@@ -7,11 +7,8 @@ module Genesis {
     use 0x0::AccountTrack;
     use 0x0::AccountType;
     use 0x0::Association;
-    use 0x0::Coin1;
-    use 0x0::Coin2;
     use 0x0::Empty;
     use 0x0::Event;
-    use 0x0::LBR;
     use 0x0::STC;
     use 0x0::Coin;
     use 0x0::Account;
@@ -44,9 +41,6 @@ module Genesis {
 
         // Event and currency setup
         Event::grant_event_generator();
-        Coin1::initialize();
-        Coin2::initialize();
-        LBR::initialize();
         STC::initialize();
         Config::apply_for_creator_privilege();
         Config::grant_creator_privilege(0xA550C18);
@@ -92,15 +86,14 @@ module Genesis {
     }
 
     fun grant_burn_capabilities_for_sender(auth_key: vector<u8>) {
-        Coin::grant_burn_capability_for_sender<Coin1::T>();
-        Coin::grant_burn_capability_for_sender<Coin2::T>();
-        Coin::grant_burn_capability_for_sender<STC::T>();
+        //TODO conform burn capability.
+        //Coin::grant_burn_capability_for_sender<Coin1::T>();
+        //Coin::grant_burn_capability_for_sender<Coin2::T>();
+        //Coin::grant_burn_capability_for_sender<STC::T>();
         Account::rotate_authentication_key(auth_key);
     }
 
     fun initialize_txn_fee_account(auth_key: vector<u8>) {
-        Account::add_currency<Coin1::T>();
-        Account::add_currency<Coin2::T>();
         TransactionFee::initialize_transaction_fees();
         Account::rotate_authentication_key(auth_key);
     }

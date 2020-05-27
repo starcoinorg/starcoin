@@ -1,5 +1,8 @@
 // Test for Generic Module in Move
+//! account: alice
+//! account: bob
 
+//! sender: alice
 module M {
     struct T{
     }
@@ -9,16 +12,16 @@ module M {
 
 
 //! new-transaction
-
+//! sender: bob
 script {
-use {{default}}::M;
+use {{alice}}::M;
 use 0x0::Generic;
 use 0x0::Transaction;
 
 fun main() {
 
     let (address, module_name, struct_name) = Generic::type_of<M::T>();
-    Transaction::assert(address == {{default}}, 8001);
+    Transaction::assert(address == {{alice}}, 8001);
     // M
     Transaction::assert(module_name == x"4d", 8002);
     // T

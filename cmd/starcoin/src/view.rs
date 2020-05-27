@@ -8,6 +8,7 @@ use starcoin_state_api::StateWithProof;
 use starcoin_types::block::Block;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountWithStateView {
@@ -15,8 +16,7 @@ pub struct AccountWithStateView {
     // hex encoded bytes
     pub auth_key_prefix: String,
     pub sequence_number: Option<u64>,
-    pub balance: Option<u64>,
-    pub token_balance: Option<u64>,
+    pub balances: HashMap<String, u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
