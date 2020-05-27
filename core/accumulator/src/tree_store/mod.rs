@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::node::AccumulatorStoreType;
 use crate::node_index::NodeIndex;
 use crate::{AccumulatorNode, AccumulatorReader, AccumulatorTreeStore, AccumulatorWriter};
 use anyhow::{bail, Error, Result};
@@ -24,8 +25,10 @@ impl NodeCacheKey {
     }
 }
 
+pub type AccumulatorNodeKey = (HashValue, AccumulatorStoreType);
+
 pub struct MockAccumulatorStore {
-    node_store: Mutex<HashMap<HashValue, AccumulatorNode>>,
+    node_store: Mutex<HashMap<AccumulatorNodeKey, AccumulatorNode>>,
 }
 
 impl MockAccumulatorStore {
@@ -33,6 +36,9 @@ impl MockAccumulatorStore {
         MockAccumulatorStore {
             node_store: Mutex::new(HashMap::new()),
         }
+    }
+    pub fn get_store_key(store_type: AccumulatorStoreType, hash: HashValue) -> AccumulatorNodeKey {
+        (hash, store_type)
     }
 }
 
@@ -44,34 +50,55 @@ impl Default for MockAccumulatorStore {
 
 impl AccumulatorTreeStore for MockAccumulatorStore {}
 impl AccumulatorReader for MockAccumulatorStore {
-    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
-        match self.node_store.lock().get(&hash) {
+    fn get_node(
+        &self,
+        store_type: AccumulatorStoreType,
+        hash: HashValue,
+    ) -> Result<Option<AccumulatorNode>> {
+        let key = Self::get_store_key(store_type, hash);
+        let map = self.node_store.lock();
+        match map.get(&key) {
             Some(node) => Ok(Some(node.clone())),
             None => bail!("get node is null: {}", hash),
         }
     }
 
-    fn multiple_get(&self, _hash_vec: Vec<HashValue>) -> Result<Vec<AccumulatorNode>, Error> {
+    fn multiple_get(
+        &self,
+        _store_type: AccumulatorStoreType,
+        _hash_vec: Vec<HashValue>,
+    ) -> Result<Vec<AccumulatorNode>, Error> {
         unimplemented!()
     }
 }
 impl AccumulatorWriter for MockAccumulatorStore {
-    fn save_node(&self, node: AccumulatorNode) -> Result<()> {
-        self.node_store.lock().insert(node.hash(), node);
+    fn save_node(&self, store_type: AccumulatorStoreType, node: AccumulatorNode) -> Result<()> {
+        let key = Self::get_store_key(store_type, node.hash());
+        self.node_store.lock().insert(key, node);
         Ok(())
     }
 
-    fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<(), Error> {
+    fn save_nodes(
+        &self,
+        store_type: AccumulatorStoreType,
+        nodes: Vec<AccumulatorNode>,
+    ) -> Result<(), Error> {
         let mut store = self.node_store.lock();
         for node in nodes {
-            store.insert(node.hash(), node);
+            store.insert(Self::get_store_key(store_type.clone(), node.hash()), node);
         }
         Ok(())
     }
 
-    fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<(), Error> {
+    fn delete_nodes(
+        &self,
+        store_type: AccumulatorStoreType,
+        node_hash_vec: Vec<HashValue>,
+    ) -> Result<(), Error> {
         for hash in node_hash_vec {
-            self.node_store.lock().remove(&hash);
+            self.node_store
+                .lock()
+                .remove(&Self::get_store_key(store_type.clone(), hash));
         }
         Ok(())
     }

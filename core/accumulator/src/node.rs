@@ -14,6 +14,12 @@ use starcoin_crypto::{
 pub static ACCUMULATOR_PLACEHOLDER_HASH: Lazy<HashValue> =
     Lazy::new(|| create_literal_hash("ACCUMULATOR_PLACEHOLDER_HASH"));
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+pub enum AccumulatorStoreType {
+    Transaction,
+    Block,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub enum AccumulatorNode {
     Internal(InternalNode),

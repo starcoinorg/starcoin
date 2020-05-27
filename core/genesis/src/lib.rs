@@ -3,7 +3,7 @@
 
 use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
@@ -72,8 +72,14 @@ impl Genesis {
 
         let transaction_info = Self::execute_genesis_txn(change_set.clone(), &chain_state_db)?;
 
-        let accumulator =
-            MerkleAccumulator::new(*ACCUMULATOR_PLACEHOLDER_HASH, vec![], 0, 0, storage)?;
+        let accumulator = MerkleAccumulator::new(
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            vec![],
+            0,
+            0,
+            AccumulatorStoreType::Transaction,
+            storage,
+        )?;
         let txn_info_hash = transaction_info.crypto_hash();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
@@ -163,6 +169,7 @@ impl Genesis {
             vec![],
             0,
             0,
+            AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
         )?;
         let txn_info_hash = transaction_info.crypto_hash();
@@ -220,6 +227,7 @@ impl Genesis {
             vec![],
             0,
             0,
+            AccumulatorStoreType::Block,
             storage.clone().into_super_arc(),
         )?;
 
@@ -316,6 +324,7 @@ mod tests {
             txn_accumulator_info.get_frozen_subtree_roots().clone(),
             txn_accumulator_info.get_num_leaves(),
             txn_accumulator_info.get_num_nodes(),
+            AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
         )?;
         //ensure block_accumulator can work.
@@ -328,6 +337,7 @@ mod tests {
             block_accumulator_info.get_frozen_subtree_roots().clone(),
             block_accumulator_info.get_num_leaves(),
             block_accumulator_info.get_num_nodes(),
+            AccumulatorStoreType::Block,
             storage.into_super_arc(),
         )?;
         let hash = block_accumulator.get_leaf(0)?.expect("leaf 0 must exist.");

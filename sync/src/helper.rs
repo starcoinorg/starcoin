@@ -5,6 +5,7 @@ use futures::channel::mpsc::Sender;
 use futures::sink::SinkExt;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
@@ -129,11 +130,12 @@ pub async fn get_accumulator_node_by_node_hash(
     network: &NetworkAsyncService,
     peer_id: PeerId,
     node_key: HashValue,
+    accumulator_type: AccumulatorStoreType,
 ) -> Result<AccumulatorNode> {
     if let SyncRpcResponse::GetAccumulatorNodeByNodeHash(accumulator_node) = do_request(
         &network,
         peer_id,
-        SyncRpcRequest::GetAccumulatorNodeByNodeHash(node_key),
+        SyncRpcRequest::GetAccumulatorNodeByNodeHash(node_key, accumulator_type),
     )
     .await?
     {

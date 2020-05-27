@@ -1,6 +1,7 @@
 use actix::prelude::*;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::StateNode;
@@ -42,7 +43,7 @@ pub enum SyncRpcRequest {
     GetHashByNumberMsg(GetHashByNumberMsg),
     GetDataByHashMsg(GetDataByHashMsg),
     GetStateNodeByNodeHash(HashValue),
-    GetAccumulatorNodeByNodeHash(HashValue),
+    GetAccumulatorNodeByNodeHash(HashValue, AccumulatorStoreType),
     GetTxns(GetTxns),
 }
 

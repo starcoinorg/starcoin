@@ -2,6 +2,7 @@ use anyhow::{bail, format_err, Result};
 use crypto::hash::{HashValue, PlainCryptoHash};
 use executor::{executor::Executor, TransactionExecutor};
 use logger::prelude::*;
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -54,6 +55,7 @@ impl OpenedBlock {
             txn_accumulator_info.get_frozen_subtree_roots().clone(),
             txn_accumulator_info.get_num_leaves(),
             txn_accumulator_info.get_num_nodes(),
+            AccumulatorStoreType::Transaction,
             storage.clone(),
         )?;
         let block_timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
