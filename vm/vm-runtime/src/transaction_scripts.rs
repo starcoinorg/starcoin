@@ -25,6 +25,8 @@ pub static ADD_VALIDATOR_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("add_validator
 
 pub static PEER_TO_PEER_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("peer_to_peer"));
 
+pub static ACCEPT_COIN_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("accept_coin"));
+
 pub static PEER_TO_PEER_WITH_METADATA_TXN: Lazy<Vec<u8>> =
     Lazy::new(|| script("peer_to_peer_with_metadata"));
 

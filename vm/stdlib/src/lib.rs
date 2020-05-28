@@ -6,10 +6,10 @@
 pub mod transaction_scripts;
 
 use bytecode_verifier::{batch_verify_modules, VerifiedModule};
-use move_lang::{compiled_unit::CompiledUnit, move_compile, shared::Address};
 use once_cell::sync::Lazy;
+use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
+use starcoin_vm_types::file_format::CompiledModule;
 use std::path::PathBuf;
-use vm::file_format::CompiledModule;
 
 pub const STD_LIB_DIR: &str = "modules";
 pub const MOVE_EXTENSION: &str = "move";
@@ -43,7 +43,7 @@ pub const STAGED_STDLIB_BYTES: &[u8] = std::include_bytes!("../staged/stdlib.mv"
 // specified either by the MOVE_NO_USE_STAGED env var, or by passing the "StdLibOptions::Fresh"
 // option to `stdlib_modules`.
 static STAGED_MOVELANG_STDLIB: Lazy<Vec<VerifiedModule>> = Lazy::new(|| {
-    let modules = lcs::from_bytes::<Vec<Vec<u8>>>(STAGED_STDLIB_BYTES)
+    let modules = scs::from_bytes::<Vec<Vec<u8>>>(STAGED_STDLIB_BYTES)
         .unwrap()
         .into_iter()
         .map(|bytes| CompiledModule::deserialize(&bytes).unwrap())
@@ -130,7 +130,7 @@ pub fn compile_script(source_file_str: String) -> Vec<u8> {
     )
     .unwrap();
     let mut script_bytes = vec![];
-    assert!(compiled_program.len() == 1);
+    assert_eq!(compiled_program.len(), 1);
     match compiled_program.pop().unwrap() {
         CompiledUnit::Module { .. } => panic!("Unexpected module when compiling script"),
         CompiledUnit::Script { script, .. } => script.serialize(&mut script_bytes).unwrap(),

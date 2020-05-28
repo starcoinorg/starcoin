@@ -4,7 +4,7 @@
 //! Support for encoding transactions for common situations.
 
 use crate::genesis::GENESIS_KEYPAIR;
-use crate::transaction_scripts::{CREATE_ACCOUNT_TXN, PEER_TO_PEER_TXN};
+use crate::transaction_scripts::{ACCEPT_COIN_TXN, CREATE_ACCOUNT_TXN, PEER_TO_PEER_TXN};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::transaction::{
@@ -47,6 +47,7 @@ pub fn raw_peer_to_peer_txn(
     seq_num: u64,
     gas_price: u64,
     max_gas: u64,
+    coin_type: TypeTag,
 ) -> RawUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(receiver));
@@ -56,10 +57,27 @@ pub fn raw_peer_to_peer_txn(
     RawUserTransaction::new(
         sender,
         seq_num,
+        TransactionPayload::Script(Script::new(PEER_TO_PEER_TXN.clone(), vec![coin_type], args)),
+        max_gas,
+        gas_price,
+        Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+    )
+}
+
+pub fn raw_accept_coin_txn(
+    sender: AccountAddress,
+    seq_num: u64,
+    gas_price: u64,
+    max_gas: u64,
+    coin_type: TypeTag,
+) -> RawUserTransaction {
+    RawUserTransaction::new(
+        sender,
+        seq_num,
         TransactionPayload::Script(Script::new(
-            PEER_TO_PEER_TXN.clone(),
-            vec![stc_type_tag()],
-            args,
+            ACCEPT_COIN_TXN.clone(),
+            vec![coin_type],
+            vec![],
         )),
         max_gas,
         gas_price,

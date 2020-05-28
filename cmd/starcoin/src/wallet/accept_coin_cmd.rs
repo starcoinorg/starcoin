@@ -6,19 +6,20 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_executor::executor::Executor;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::{Module, RawUserTransaction};
-use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule};
-use std::fs::OpenOptions;
-use std::io::Read;
-use std::time::Duration;
+use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "deploy")]
-pub struct DeployOpt {
+#[structopt(name = "accept_coin")]
+pub struct AcceptCoinOpt {
+    #[structopt(short = "s")]
+    /// if `sender` is absent, use default account.
+    sender: Option<AccountAddress>,
+
     #[structopt(
         short = "g",
         name = "max-gas-amount",
@@ -36,12 +37,12 @@ pub struct DeployOpt {
     gas_price: u64,
 
     #[structopt(
-        name = "expiration_time",
-        long = "timeout",
-        default_value = "3000",
-        help = "how long(in seconds) the txn stay alive"
+    name = "coin_type",
+    help = "coin's type tag, for example: 0x0::STC::T, default is STC",
+    parse(try_from_str = parse_type_tag)
     )]
-    expiration_time: u64,
+    coin_type: TypeTag,
+
     #[structopt(
         short = "b",
         name = "blocking-mode",
@@ -49,17 +50,14 @@ pub struct DeployOpt {
         help = "blocking wait txn mined"
     )]
     blocking: bool,
-
-    #[structopt(name = "bytecode_file", help = "module bytecode file path")]
-    bytecode_file: String,
 }
 
-pub struct DeployCommand;
+pub struct AcceptCoinCommand;
 
-impl CommandAction for DeployCommand {
+impl CommandAction for AcceptCoinCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = DeployOpt;
+    type Opt = AcceptCoinOpt;
     type ReturnItem = HashValue;
 
     fn run(
@@ -67,47 +65,31 @@ impl CommandAction for DeployCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let bytecode_path = ctx.opt().bytecode_file.clone();
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(false)
-            .open(bytecode_path)?;
-        let mut bytecode = vec![];
-        file.read_to_end(&mut bytecode)?;
-        let compiled_module = match CompiledModule::deserialize(bytecode.as_slice()) {
-            Err(e) => {
-                bail!("invalid bytecode file, cannot deserialize as module, {}", e);
-            }
-            Ok(compiled_module) => compiled_module,
-        };
-        let module_address = *compiled_module.address();
-        // from libra address to our address
-        let module_address = AccountAddress::new(module_address.into());
         let client = ctx.state().client();
+
+        let sender = ctx.state().wallet_account_or_default(opt.sender.clone())?;
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
-        let account_resource = account_state_reader.get_account_resource(&module_address)?;
+        let account_resource = account_state_reader.get_account_resource(&sender.address)?;
 
         if account_resource.is_none() {
             bail!(
                 "account of module address {} not exists on chain",
-                &module_address
+                sender.address
             );
         }
 
         let account_resource = account_resource.unwrap();
 
-        let expiration_time = Duration::from_secs(opt.expiration_time);
-        let deploy_txn = RawUserTransaction::new_module(
-            module_address,
+        let accept_coin_txn = Executor::build_accept_coin_txn(
+            sender.address,
             account_resource.sequence_number(),
-            Module::new(bytecode),
-            opt.max_gas_amount,
             opt.gas_price,
-            expiration_time,
+            opt.max_gas_amount,
+            opt.coin_type.clone(),
         );
 
-        let signed_txn = client.wallet_sign_txn(deploy_txn)?;
+        let signed_txn = client.wallet_sign_txn(accept_coin_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
         if !succ {

@@ -29,7 +29,15 @@ pub mod transaction_argument {
 }
 
 pub mod parser {
+    use crate::language_storage::TypeTag;
+    use anyhow::{format_err, Result};
     pub use move_core_types::parser::parse_type_tags;
+
+    pub fn parse_type_tag(s: &str) -> Result<TypeTag> {
+        parse_type_tags(s)?
+            .pop()
+            .ok_or_else(|| format_err!("parse type fail from {}", s))
+    }
 }
 
 pub mod transaction_metadata {
@@ -56,6 +64,10 @@ pub mod chain_state {
 
 pub mod file_format {
     pub use vm::file_format::*;
+}
+
+pub mod views {
+    pub use vm::views::*;
 }
 
 pub mod data_cache {}

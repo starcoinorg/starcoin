@@ -6,6 +6,7 @@ use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
@@ -80,6 +81,7 @@ impl CommandAction for GetCoinCommand {
         );
         let txn = pre_mine_config.sign_txn(raw_txn)?;
         client.submit_transaction(txn.clone())?;
+        ctx.state().watch_txn(txn.crypto_hash())?;
         Ok(txn.into())
     }
 }

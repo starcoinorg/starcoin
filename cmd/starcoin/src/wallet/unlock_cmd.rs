@@ -20,8 +20,11 @@ pub struct UnlockOpt {
         default_value = "300"
     )]
     duration: u32,
-    #[structopt(name = "account_address")]
-    account_address: AccountAddress,
+    #[structopt(
+        name = "account_address",
+        help = "The wallet account address witch to unlock, if absent, unlock the default wallet."
+    )]
+    account_address: Option<AccountAddress>,
 }
 
 pub struct UnlockCommand;
@@ -38,11 +41,16 @@ impl CommandAction for UnlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt: &UnlockOpt = ctx.opt();
+
+        let account = ctx
+            .state()
+            .wallet_account_or_default(opt.account_address.clone())?;
+
         let duration = Duration::from_secs(opt.duration as u64);
-        client.wallet_unlock(opt.account_address, opt.password.clone(), duration)?;
+        client.wallet_unlock(account.address, opt.password.clone(), duration)?;
         Ok(format!(
             "account {} unlocked for {:?}",
-            &opt.account_address, duration
+            account.address, duration
         ))
     }
 }

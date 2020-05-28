@@ -16,7 +16,6 @@ mod dev;
 mod helper;
 mod node;
 mod state;
-mod txn;
 mod view;
 mod wallet;
 
@@ -90,13 +89,14 @@ fn run() -> Result<()> {
             Command::with_name("wallet")
                 .subcommand(wallet::CreateCommand)
                 .subcommand(wallet::ShowCommand)
+                .subcommand(wallet::TransferCommand)
+                .subcommand(wallet::AcceptCoinCommand)
                 .subcommand(wallet::ListCommand)
                 .subcommand(wallet::SignTxnCommand)
                 .subcommand(wallet::UnlockCommand)
                 .subcommand(wallet::ExportCommand)
                 .subcommand(wallet::ImportCommand),
         )
-        .command(Command::with_name("txn").subcommand(txn::TransferCommand))
         .command(
             Command::with_name("state")
                 .subcommand(state::GetCommand)

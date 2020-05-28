@@ -31,14 +31,14 @@ use starcoin_vm_types::{
     language_storage::ModuleId,
     state_view::StateView,
 };
+use starcoin_vm_types::{
+    file_format::{CompiledModule, CompiledScript},
+    views::ModuleView,
+};
 use std::fmt;
 use std::str::FromStr;
 use std::time::Duration;
 use stdlib::{stdlib_modules, StdLibOptions};
-use vm::{
-    file_format::{CompiledModule, CompiledScript},
-    views::ModuleView,
-};
 
 pub type TransactionId = usize;
 

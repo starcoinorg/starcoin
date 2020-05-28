@@ -5912,7 +5912,6 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.5",
  "hex 0.4.2",
- "move-lang",
  "scmd",
  "serde",
  "serde_json",
@@ -5922,6 +5921,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-logger",
+ "starcoin-move-compiler",
  "starcoin-node",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
@@ -6101,13 +6101,13 @@ dependencies = [
  "bytecode-verifier",
  "datatest-stable",
  "mirai-annotations",
- "move-lang",
  "once_cell",
  "regex",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-move-compiler",
  "starcoin-statedb",
  "starcoin-types",
  "starcoin-vm-runtime",
@@ -6116,7 +6116,6 @@ dependencies = [
  "tempfile",
  "termcolor",
  "thiserror",
- "vm",
 ]
 
 [[package]]
@@ -6216,6 +6215,19 @@ dependencies = [
  "structopt",
  "thiserror",
  "tokio 0.2.20",
+]
+
+[[package]]
+name = "starcoin-move-compiler"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "move-lang",
+ "once_cell",
+ "regex",
+ "starcoin-crypto",
+ "starcoin-vm-types",
+ "tempfile",
 ]
 
 [[package]]
@@ -6881,12 +6893,11 @@ dependencies = [
  "bytecode-verifier",
  "datatest-stable",
  "include_dir 0.5.0",
- "libra-canonical-serialization",
- "move-lang",
  "once_cell",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-move-compiler",
  "starcoin-vm-types",
- "vm",
 ]
 
 [[package]]

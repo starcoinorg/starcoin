@@ -16,11 +16,11 @@ use starcoin_types::{
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::{
     account_config::{association_address, AccountResource, BalanceResource},
+    file_format::CompiledModule,
     identifier::Identifier,
     language_storage::ModuleId,
     state_view::StateView,
 };
-use vm::CompiledModule;
 
 /// Provides an environment to run a VM instance.
 pub struct FakeExecutor {

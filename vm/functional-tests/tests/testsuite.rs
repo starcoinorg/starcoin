@@ -1,14 +1,14 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
-use move_lang::{
+use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
+use starcoin_functional_tests::testsuite;
+use starcoin_move_compiler::{
     compiled_unit::CompiledUnit,
     move_compile_no_report,
     shared::Address,
     test_utils::{read_bool_var, stdlib_files},
 };
-use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
-use starcoin_functional_tests::testsuite;
 use starcoin_vm_types::account_address::AccountAddress;
 use std::{convert::TryFrom, fmt, io::Write, path::Path};
 use tempfile::NamedTempFile;
@@ -57,9 +57,9 @@ impl Compiler for MoveSourceCompiler {
         let unit = match units_or_errors {
             Err(errors) => {
                 let error_buffer = if read_bool_var(testsuite::PRETTY) {
-                    move_lang::errors::report_errors_to_color_buffer(files, errors)
+                    starcoin_move_compiler::errors::report_errors_to_color_buffer(files, errors)
                 } else {
-                    move_lang::errors::report_errors_to_buffer(files, errors)
+                    starcoin_move_compiler::errors::report_errors_to_buffer(files, errors)
                 };
                 return Err(
                     MoveSourceCompilerError(String::from_utf8(error_buffer).unwrap()).into(),
