@@ -130,6 +130,8 @@ pub trait BlockStore {
         number: u64,
     ) -> Result<Option<Block>>;
 
+    /// TODO: this may be implemented in upper layer, not in storage.
+    // Storage should only contain simple store and retrieve functions.
     fn get_common_ancestor(
         &self,
         block_id1: HashValue,

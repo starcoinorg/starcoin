@@ -121,6 +121,7 @@ where
                 CHAIN_METRICS.rollback_count.inc();
                 debug!("rollback branch.");
 
+                // TODO: this may can be refactored.
                 let (enacted_blocks, mut enacted_tmp, mut retracted_tmp) =
                     self.find_ancestors(&new_branch)?;
                 enacted.append(&mut enacted_tmp);
@@ -194,6 +195,7 @@ where
         let block_enacted = new_branch.current_header().id();
         let block_retracted = self.get_master().current_header().id();
 
+        // TODO: maybe better implement get_common_ancestor in here,(just like `find_blocks_until`), not in storage.
         let ancestor = self
             .storage
             .get_common_ancestor(block_enacted, block_retracted)?
@@ -207,6 +209,8 @@ where
 
         let enacted = self.find_blocks_until(block_enacted, ancestor)?;
         let retracted = self.find_blocks_until(block_retracted, ancestor)?;
+        // why not just return (enacted, retracted) blocks.
+        // let caller retrieve txns in blocks.
         let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
         let mut tx_retracted: Vec<SignedUserTransaction> = Vec::new();
         enacted.iter().for_each(|b| {
@@ -273,6 +277,7 @@ where
     //TODO define connect result.
     fn try_connect(&mut self, block: Block, pivot_sync: bool) -> Result<ConnectResult<()>> {
         if !self.sync_metadata.state_syncing() || pivot_sync {
+            // TODO: can be changed to `if self.sync_metadata.state_done()` ?
             if !self.sync_metadata.state_syncing()
                 || (pivot_sync && self.sync_metadata.state_done())
             {
