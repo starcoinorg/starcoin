@@ -341,7 +341,7 @@ impl NetworkActor {
             NetworkAsyncService {
                 addr,
                 raw_message_processor,
-                network_service: service.clone(),
+                network_service: service,
                 tx,
                 peer_id,
                 inner,
