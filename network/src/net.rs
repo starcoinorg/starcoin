@@ -23,7 +23,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Handle;
 use types::peer_info::PeerInfo;
 
-const PROTOCOL_ID: &[u8] = b"stargate";
+const PROTOCOL_ID: &[u8] = b"starcoin";
 
 #[derive(Clone)]
 pub struct SNetworkService {
