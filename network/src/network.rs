@@ -27,6 +27,7 @@ use config::{
 };
 use scs::SCSCodec;
 use starcoin_sync_api::sync_messages::PeerNewBlock;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::Path;
@@ -47,6 +48,7 @@ pub struct NetworkAsyncService {
     addr: Addr<NetworkActor>,
     raw_message_processor: MessageProcessor<u128, Vec<u8>>,
     tx: mpsc::UnboundedSender<NetworkMessage>,
+    network_service: SNetworkService,
     peer_id: PeerId,
     handle: Handle,
     inner: Arc<Inner>,
@@ -84,17 +86,39 @@ impl PeerInfoNet {
     }
 }
 
+#[rtype(result = "()")]
+#[derive(Message)]
+struct BlockMessage {
+    protocol_name: Cow<'static, [u8]>,
+    event: NewHeadBlock,
+}
+
 #[async_trait]
 impl NetworkService for NetworkAsyncService {
-    async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
+    async fn send_peer_message(
+        &self,
+        protocol_name: Cow<'static, [u8]>,
+        peer_id: PeerId,
+        msg: PeerMessage,
+    ) -> Result<()> {
         let data = msg.encode()?;
-        let network_message = NetworkMessage { peer_id, data };
-        self.tx.unbounded_send(network_message)?;
+        self.network_service
+            .send_message(peer_id, protocol_name, data)
+            .await?;
 
         Ok(())
     }
-    async fn broadcast_new_head_block(&self, event: NewHeadBlock) -> Result<()> {
-        self.addr.send(event).await?;
+    async fn broadcast_new_head_block(
+        &self,
+        protocol_name: Cow<'static, [u8]>,
+        event: NewHeadBlock,
+    ) -> Result<()> {
+        self.addr
+            .send(BlockMessage {
+                protocol_name,
+                event,
+            })
+            .await?;
         Ok(())
     }
 
@@ -104,6 +128,7 @@ impl NetworkService for NetworkAsyncService {
 
     async fn send_request_bytes(
         &self,
+        protocol_name: Cow<'static, [u8]>,
         peer_id: PeerId,
         message: Vec<u8>,
         time_out: Duration,
@@ -111,11 +136,10 @@ impl NetworkService for NetworkAsyncService {
         let request_id = get_unix_ts();
         let peer_msg = PeerMessage::RawRPCRequest(request_id, message);
         let data = peer_msg.encode()?;
-        let network_message = NetworkMessage {
-            peer_id: peer_id.clone(),
-            data,
-        };
-        self.tx.unbounded_send(network_message)?;
+        self.network_service
+            .send_message(peer_id.clone(), protocol_name, data)
+            .await?;
+
         let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
         self.raw_message_processor.add_future(request_id, tx).await;
@@ -285,7 +309,7 @@ impl NetworkActor {
         let (rpc_tx, rpc_rx) = mpsc::unbounded();
 
         let inner = Inner {
-            network_service: service,
+            network_service: service.clone(),
             bus,
             handle: handle.clone(),
             raw_message_processor: raw_message_processor_clone,
@@ -317,6 +341,7 @@ impl NetworkActor {
             NetworkAsyncService {
                 addr,
                 raw_message_processor,
+                network_service: service,
                 tx,
                 peer_id,
                 inner,
@@ -445,15 +470,17 @@ impl Inner {
     async fn handle_response(
         id: u128,
         peer_id: PeerId,
-        mut rx: mpsc::Receiver<Vec<u8>>,
+        mut rx: mpsc::Receiver<(Cow<'static, [u8]>, Vec<u8>)>,
         network_service: SNetworkService,
     ) -> Result<()> {
         let response = rx.next().await;
         match response {
-            Some(response) => {
+            Some((protocol_name, response)) => {
                 let peer_msg = PeerMessage::RawRPCResponse(id, response);
                 let data = peer_msg.encode()?;
-                network_service.send_message(peer_id, data).await?;
+                network_service
+                    .send_message(peer_id, protocol_name, data)
+                    .await?;
                 Ok(())
             }
             None => {
@@ -571,11 +598,12 @@ impl Actor for NetworkActor {
 }
 
 /// handler system events.
-impl Handler<NewHeadBlock> for NetworkActor {
+impl Handler<BlockMessage> for NetworkActor {
     type Result = ();
 
-    fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
-        let NewHeadBlock(block) = msg;
+    fn handle(&mut self, msg: BlockMessage, _ctx: &mut Self::Context) -> Self::Result {
+        let protocol_name = msg.protocol_name;
+        let NewHeadBlock(block) = msg.event;
         debug!("broadcast a new block {:?}", block.header().id());
 
         let id = block.header().id();
@@ -618,7 +646,7 @@ impl Handler<NewHeadBlock> for NetworkActor {
                 }
 
                 network_service
-                    .send_message(peer_id.clone(), bytes.clone())
+                    .send_message(peer_id.clone(), protocol_name.clone(), bytes.clone())
                     .await
                     .expect("send message failed ,check network service please");
             }
@@ -633,8 +661,8 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
     type Result = <PropagateNewTransactions as Message>::Result;
 
     fn handle(&mut self, msg: PropagateNewTransactions, _ctx: &mut Self::Context) -> Self::Result {
+        let protocol_name = msg.protocol_name();
         let txns = msg.transactions_to_propagate();
-
         // false positive
         if txns.is_empty() {
             return;
@@ -662,7 +690,7 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
 
                 let bytes = msg.encode().expect("encode should succ");
                 network_service
-                    .send_message(peer_id.clone(), bytes)
+                    .send_message(peer_id.clone(), protocol_name.clone(), bytes)
                     .await
                     .expect("check network service");
             }
@@ -777,6 +805,7 @@ mod tests {
             info!("req :{:?}", request);
             let resp = network1
                 .send_request_bytes(
+                    network_p2p::PROTOCOL_NAME.into(),
                     network2.identify().clone(),
                     request.encode().unwrap(),
                     Duration::from_secs(1),
@@ -867,7 +896,10 @@ mod tests {
         fn handle(&mut self, msg: RawRpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
             let mut responder = msg.responder.clone();
             let f = async move {
-                responder.send(msg.request).await.unwrap();
+                responder
+                    .send((network_p2p::PROTOCOL_NAME.into(), msg.request))
+                    .await
+                    .unwrap();
             };
             let f = actix::fut::wrap_future(f);
             ctx.spawn(Box::new(f));

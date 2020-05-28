@@ -9,6 +9,7 @@ use starcoin_types::block::BlockDetail;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::SignedUserTransaction;
+use std::borrow::Cow;
 use std::sync::Arc;
 
 #[derive(Message)]
@@ -29,7 +30,7 @@ pub enum PeerMessage {
 #[derive(Debug, Message, Clone)]
 pub struct RawRpcRequestMessage {
     pub request: Vec<u8>,
-    pub responder: Sender<Vec<u8>>,
+    pub responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
 }
 
 #[rtype(result = "Result<()>")]

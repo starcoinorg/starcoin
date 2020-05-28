@@ -206,7 +206,7 @@ mod tests {
                 );
 
                 service2_clone
-                    .send_message(peer_id, random_bytes)
+                    .send_message(peer_id, network_p2p::PROTOCOL_NAME.into(), random_bytes)
                     .await
                     .unwrap();
             };
