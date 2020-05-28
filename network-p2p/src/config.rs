@@ -10,6 +10,7 @@ use libp2p::{
     multiaddr::Protocol,
     wasm_ext,
 };
+use std::borrow::Cow;
 use std::fmt;
 use std::{
     error::Error,
@@ -91,6 +92,8 @@ pub struct NetworkConfiguration {
     pub self_info: PeerInfo,
 
     pub disable_seed: bool,
+
+    pub protocols: Vec<Cow<'static, [u8]>>,
 }
 
 /// Configuration for the transport layer.
@@ -147,6 +150,7 @@ impl Default for NetworkConfiguration {
             genesis_hash: HashValue::default(),
             self_info: PeerInfo::default(),
             disable_seed: false,
+            protocols: vec![],
         }
     }
 }

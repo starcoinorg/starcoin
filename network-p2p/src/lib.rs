@@ -40,6 +40,7 @@ use std::{
 };
 
 const MAX_CONNECTIONS_PER_PEER: usize = 2;
+pub const PROTOCOL_NAME: &[u8] = b"/starcoin/consensus/1";
 
 trait DiscoveryNetBehaviour {
     /// Notify the protocol that we have learned about the existence of nodes.

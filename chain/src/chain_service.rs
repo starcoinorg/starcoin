@@ -24,6 +24,7 @@ use types::{
     startup_info::StartupInfo,
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, TransactionInfo},
+    BLOCK_PROTOCOL_NAME,
 };
 
 pub struct ChainServiceImpl<C, S, P>
@@ -254,7 +255,10 @@ where
             Arbiter::spawn(async move {
                 let block_id = block.header().id();
                 if let Err(e) = network
-                    .broadcast_new_head_block(NewHeadBlock(Arc::new(block)))
+                    .broadcast_new_head_block(
+                        BLOCK_PROTOCOL_NAME.into(),
+                        NewHeadBlock(Arc::new(block)),
+                    )
                     .await
                 {
                     error!("broadcast new head block {:?} failed : {:?}", block_id, e);

@@ -13,6 +13,8 @@ use starcoin_crypto::{
 };
 use starcoin_logger::prelude::*;
 use starcoin_types::peer_info::PeerId;
+use starcoin_types::{BLOCK_PROTOCOL_NAME, CHAIN_PROTOCOL_NAME, TXN_PROTOCOL_NAME};
+use std::borrow::Cow;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -33,6 +35,8 @@ pub struct NetworkConfig {
     #[serde(skip)]
     pub self_address: Option<Multiaddr>,
     pub disable_seed: bool,
+    #[serde(skip)]
+    pub protocols: Vec<Cow<'static, [u8]>>,
 }
 
 impl Default for NetworkConfig {
@@ -87,6 +91,11 @@ impl ConfigModule for NetworkConfig {
             self_peer_id: None,
             self_address: None,
             disable_seed: false,
+            protocols: vec![
+                CHAIN_PROTOCOL_NAME.into(),
+                TXN_PROTOCOL_NAME.into(),
+                BLOCK_PROTOCOL_NAME.into(),
+            ],
         }
     }
 
@@ -139,6 +148,9 @@ impl ConfigModule for NetworkConfig {
         self.set_peer_id();
 
         self.disable_seed = opt.disable_seed;
+        self.protocols.push(CHAIN_PROTOCOL_NAME.into());
+        self.protocols.push(TXN_PROTOCOL_NAME.into());
+        self.protocols.push(BLOCK_PROTOCOL_NAME.into());
 
         Ok(())
     }

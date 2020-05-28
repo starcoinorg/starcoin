@@ -8,16 +8,27 @@ pub mod messages;
 
 use async_trait::async_trait;
 use starcoin_types::peer_info::PeerInfo;
+use std::borrow::Cow;
 
 #[async_trait]
 pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin {
-    async fn send_peer_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()>;
-    async fn broadcast_new_head_block(&self, event: NewHeadBlock) -> Result<()>;
+    async fn send_peer_message(
+        &self,
+        protocol_name: Cow<'static, [u8]>,
+        peer_id: PeerId,
+        msg: PeerMessage,
+    ) -> Result<()>;
+    async fn broadcast_new_head_block(
+        &self,
+        protocol_name: Cow<'static, [u8]>,
+        event: NewHeadBlock,
+    ) -> Result<()>;
 
     fn identify(&self) -> &PeerId;
 
     async fn send_request_bytes(
         &self,
+        protocol_name: Cow<'static, [u8]>,
         peer_id: PeerId,
         message: Vec<u8>,
         time_out: Duration,
@@ -50,11 +61,20 @@ impl DummyNetworkService {
 
 #[async_trait]
 impl NetworkService for DummyNetworkService {
-    async fn send_peer_message(&self, _peer_id: PeerId, _msg: PeerMessage) -> Result<()> {
+    async fn send_peer_message(
+        &self,
+        _protocol_name: Cow<'static, [u8]>,
+        _peer_id: PeerId,
+        _msg: PeerMessage,
+    ) -> Result<()> {
         Ok(())
     }
 
-    async fn broadcast_new_head_block(&self, _event: NewHeadBlock) -> Result<()> {
+    async fn broadcast_new_head_block(
+        &self,
+        _protocol_name: Cow<'static, [u8]>,
+        _event: NewHeadBlock,
+    ) -> Result<()> {
         Ok(())
     }
 
@@ -64,6 +84,7 @@ impl NetworkService for DummyNetworkService {
 
     async fn send_request_bytes(
         &self,
+        _protocol_name: Cow<'static, [u8]>,
         _peer_id: PeerId,
         _message: Vec<u8>,
         _time_out: Duration,

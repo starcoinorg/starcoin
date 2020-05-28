@@ -56,12 +56,12 @@ use crate::network_state::{
 };
 use crate::protocol::event::Event;
 use crate::protocol::{ChainInfo, Protocol};
-use crate::Multiaddr;
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
     parse_addr, parse_str_addr, ConnectedPoint,
 };
 use crate::{config::NonReservedPeerMode, transport};
+use crate::{Multiaddr, PROTOCOL_NAME};
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -180,7 +180,7 @@ impl NetworkWorker {
             genesis_hash: params.network_config.genesis_hash,
             self_info: params.network_config.self_info,
         };
-        let (protocol, peerset_handle) = Protocol::new(
+        let (mut protocol, peerset_handle) = Protocol::new(
             peerset_config,
             params.protocol_id.clone(),
             chain_info,
@@ -219,12 +219,18 @@ impl NetworkWorker {
                 config
             };
 
+            protocol.register_notifications_protocol(PROTOCOL_NAME);
+            for protocol_name in params.network_config.protocols {
+                protocol.register_notifications_protocol(protocol_name);
+            }
+
             let behaviour = futures::executor::block_on(Behaviour::new(
                 protocol,
                 user_agent,
                 local_public,
                 discovery_config,
             ));
+
             let (transport, bandwidth) = {
                 let (config_mem, config_wasm, flowctrl) = match params.network_config.transport {
                     TransportConfig::MemoryOnly => (true, None, false),

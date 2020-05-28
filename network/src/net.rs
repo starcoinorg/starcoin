@@ -14,15 +14,15 @@ use futures::{
 use libp2p::PeerId;
 use network_p2p::{
     identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
-    Params, Secret,
+    Params, Secret, PROTOCOL_NAME,
 };
 use parity_codec::alloc::collections::HashSet;
 use parking_lot::Mutex;
+use std::borrow::Cow;
 use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Handle;
 use types::peer_info::PeerInfo;
 
-const PROTOCOL_NAME: &[u8] = b"/starcoin/consensus/1";
 const PROTOCOL_ID: &[u8] = b"stargate";
 
 #[derive(Clone)]
@@ -46,7 +46,6 @@ impl SNetworkService {
         let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
         let service = worker.service().clone();
         let worker = worker;
-        service.register_notifications_protocol(PROTOCOL_NAME);
 
         let acks = Arc::new(Mutex::new(HashMap::new()));
 
@@ -125,13 +124,18 @@ impl SNetworkService {
         self.service.peer_id()
     }
 
-    pub async fn send_message(&self, peer_id: PeerId, message: Vec<u8>) -> Result<()> {
+    pub async fn send_message(
+        &self,
+        peer_id: PeerId,
+        protocol_name: Cow<'static, [u8]>,
+        message: Vec<u8>,
+    ) -> Result<()> {
         //let (tx, rx) = oneshot::channel::<()>();
         let (protocol_msg, _message_id) = Message::new_payload(message);
 
         debug!("Send message to {} with ack", peer_id);
         self.service
-            .write_notification(peer_id, PROTOCOL_NAME.into(), protocol_msg.into_bytes());
+            .write_notification(peer_id, protocol_name, protocol_msg.into_bytes());
         //self.waker.wake();
         //self.inner.acks.lock().insert(message_id, tx);
         //rx.await?;
@@ -139,14 +143,14 @@ impl SNetworkService {
         Ok(())
     }
 
-    pub async fn broadcast_message(&mut self, message: Vec<u8>) {
+    pub async fn broadcast_message(&mut self, protocol_name: Cow<'static, [u8]>, message: Vec<u8>) {
         debug!("broadcast message");
         let (protocol_msg, _message_id) = Message::new_payload(message);
 
         let message_bytes = protocol_msg.into_bytes();
 
         self.service
-            .broadcast_message(PROTOCOL_NAME.into(), message_bytes)
+            .broadcast_message(protocol_name, message_bytes)
             .await;
     }
 
@@ -266,6 +270,7 @@ pub fn build_network_service(
             .unwrap();
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
+        protocols: cfg.protocols.clone(),
         genesis_hash,
         self_info,
         ..NetworkConfiguration::default()

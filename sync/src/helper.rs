@@ -13,7 +13,8 @@ use starcoin_sync_api::sync_messages::{
     BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, DataType, GetDataByHashMsg,
     GetHashByNumberMsg, GetTxns, SyncRpcRequest, SyncRpcResponse, TransactionsData,
 };
-use types::peer_info::PeerId;
+use std::borrow::Cow;
+use types::{peer_info::PeerId, CHAIN_PROTOCOL_NAME};
 
 async fn do_request(
     network: &NetworkAsyncService,
@@ -22,7 +23,12 @@ async fn do_request(
 ) -> Result<SyncRpcResponse> {
     let request = req.encode()?;
     let response = network
-        .send_request_bytes(peer_id.into(), request, do_duration(DELAY_TIME))
+        .send_request_bytes(
+            CHAIN_PROTOCOL_NAME.into(),
+            peer_id.into(),
+            request,
+            do_duration(DELAY_TIME),
+        )
         .await?;
     SyncRpcResponse::decode(&response)
 }
@@ -147,8 +153,15 @@ pub async fn get_accumulator_node_by_node_hash(
 
 /////////////////////////////////////////////////////////////////////////
 
-async fn do_response(responder: Sender<Vec<u8>>, resp: Vec<u8>) -> Result<()> {
-    if let Err(e) = responder.clone().send(resp).await {
+async fn do_response(
+    responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
+    resp: Vec<u8>,
+) -> Result<()> {
+    if let Err(e) = responder
+        .clone()
+        .send((CHAIN_PROTOCOL_NAME.into(), resp))
+        .await
+    {
         Err(format_err!("{:?}", e))
     } else {
         Ok(())
@@ -156,7 +169,7 @@ async fn do_response(responder: Sender<Vec<u8>>, resp: Vec<u8>) -> Result<()> {
 }
 
 pub async fn do_get_hash_by_number(
-    responder: Sender<Vec<u8>>,
+    responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
     batch_hash_by_number_msg: BatchHashByNumberMsg,
 ) -> Result<()> {
     let resp = SyncRpcResponse::encode(&SyncRpcResponse::BatchHashByNumberMsg(
@@ -166,7 +179,7 @@ pub async fn do_get_hash_by_number(
 }
 
 pub async fn do_get_block_by_hash(
-    responder: Sender<Vec<u8>>,
+    responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
     batch_header_msg: BatchHeaderMsg,
     batch_body_msg: BatchBodyMsg,
     batch_block_info_msg: BatchBlockInfo,
@@ -179,13 +192,16 @@ pub async fn do_get_block_by_hash(
     do_response(responder, resp).await
 }
 
-pub async fn do_state_node(responder: Sender<Vec<u8>>, state_node: StateNode) -> Result<()> {
+pub async fn do_state_node(
+    responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
+    state_node: StateNode,
+) -> Result<()> {
     let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetStateNodeByNodeHash(state_node))?;
     do_response(responder, resp).await
 }
 
 pub async fn do_accumulator_node(
-    responder: Sender<Vec<u8>>,
+    responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
     accumulator_node: AccumulatorNode,
 ) -> Result<()> {
     let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetAccumulatorNodeByNodeHash(
@@ -195,7 +211,7 @@ pub async fn do_accumulator_node(
 }
 
 pub async fn do_response_get_txns(
-    responder: Sender<Vec<u8>>,
+    responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
     txns_data: TransactionsData,
 ) -> Result<()> {
     let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetTxns(txns_data))?;
