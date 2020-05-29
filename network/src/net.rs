@@ -184,7 +184,7 @@ impl NetworkInner {
                     remote,
                     self.service.peer_id()
                 );
-                let open_msg = PeerEvent::Open(remote.into(), info.as_ref().clone());
+                let open_msg = PeerEvent::Open(remote.into(), Box::new(info.as_ref().clone()));
                 event_tx.unbounded_send(open_msg)?;
             }
             Event::NotificationStreamClosed { remote } => {

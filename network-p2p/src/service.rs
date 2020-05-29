@@ -476,7 +476,7 @@ impl NetworkService {
     pub fn update_self_info(&self, info: PeerInfo) {
         let _ = self
             .to_worker
-            .unbounded_send(ServiceToWorkerMsg::SelfInfo(info));
+            .unbounded_send(ServiceToWorkerMsg::SelfInfo(Box::new(info)));
     }
 
     /// Returns a stream containing the events that happen on the network.
@@ -652,7 +652,7 @@ enum ServiceToWorkerMsg {
     DisconnectPeer(PeerId),
     IsConnected(PeerId, oneshot::Sender<bool>),
     ConnectedPeers(oneshot::Sender<HashSet<PeerId>>),
-    SelfInfo(PeerInfo),
+    SelfInfo(Box<PeerInfo>),
     AddressByPeerID(PeerId, oneshot::Sender<Vec<Multiaddr>>),
 }
 
@@ -733,7 +733,7 @@ impl Future for NetworkWorker {
                 ServiceToWorkerMsg::SelfInfo(info) => {
                     this.network_service
                         .user_protocol_mut()
-                        .update_self_info(info);
+                        .update_self_info(*info);
                 }
                 ServiceToWorkerMsg::AddressByPeerID(peer_id, tx) => {
                     let _ = tx.send(this.network_service.get_address(&peer_id));

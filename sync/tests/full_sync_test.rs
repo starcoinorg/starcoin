@@ -16,9 +16,7 @@ use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_sync::helper::get_hash_by_number;
 use starcoin_sync::SyncActor;
-use starcoin_sync_api::sync_messages::GetHashByNumberMsg;
 use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
@@ -396,16 +394,6 @@ fn test_network_actor_rpc_2() {
             .unwrap();
         let number = block_2.header().number();
         debug!("second chain :{:?} : {:?}", number, block_2.header().id());
-
-        let mut numbers = Vec::new();
-        numbers.push(0);
-        let _ = get_hash_by_number(
-            &network_1,
-            network_2.identify().clone().into(),
-            GetHashByNumberMsg { numbers },
-        )
-        .await
-        .unwrap();
 
         Delay::new(Duration::from_secs(2)).await;
     };

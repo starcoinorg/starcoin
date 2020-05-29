@@ -1,6 +1,6 @@
 use crate::get_txns_handler::GetTxnsHandler;
 use crate::helper::{
-    do_accumulator_node, do_get_block_by_hash, do_get_hash_by_number, do_state_node,
+    do_accumulator_node, do_get_body_by_hash, do_get_headers, do_get_info_by_hash, do_state_node,
 };
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, StreamHandler};
@@ -15,14 +15,12 @@ use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
 /// Sync message which inbound
-use starcoin_sync_api::sync_messages::{
-    BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, BlockBody, DataType,
-    GetDataByHashMsg, GetHashByNumberMsg, HashWithNumber, SyncRpcRequest,
-};
+use starcoin_sync_api::sync_messages::{BlockBody, GetBlockHeaders, SyncRpcRequest};
 use std::sync::Arc;
 use traits::ChainAsyncService;
 use traits::Consensus;
 use txpool::TxPoolService;
+use types::block::{BlockHeader, BlockInfo};
 
 pub struct ProcessActor<C>
 where
@@ -69,47 +67,29 @@ where
         if let Ok(req) = SyncRpcRequest::decode(msg.request.as_slice()) {
             Arbiter::spawn(async move {
                 match req {
-                    SyncRpcRequest::GetHashByNumberMsg(get_hash_by_number_msg) => {
-                        let batch_hash_by_number_msg = Processor::handle_get_hash_by_number_msg(
+                    SyncRpcRequest::GetBlockHeaders(get_block_headers) => {
+                        let headers = Processor::handle_get_block_headers_msg(
                             processor.clone(),
-                            get_hash_by_number_msg,
+                            get_block_headers,
                         )
                         .await;
-                        if let Err(e) =
-                            do_get_hash_by_number(responder, batch_hash_by_number_msg).await
-                        {
-                            error!("do get_hash_by_number request failed : {:?}", e);
+                        if let Err(e) = do_get_headers(responder, headers).await {
+                            error!("do_get_headers request failed : {:?}", e);
                         }
                     }
-                    SyncRpcRequest::GetDataByHashMsg(get_data_by_hash_msg) => {
-                        if let DataType::HEADER = get_data_by_hash_msg.data_type {
-                            let batch_header_msg = Processor::handle_get_header_by_hash_msg(
-                                processor.clone(),
-                                get_data_by_hash_msg.clone(),
-                            )
-                            .await;
-                            let batch_body_msg = Processor::handle_get_body_by_hash_msg(
-                                processor.clone(),
-                                get_data_by_hash_msg.clone(),
-                            )
-                            .await;
-                            let batch_block_info_msg =
-                                Processor::handle_get_block_info_by_hash_msg(
-                                    processor.clone(),
-                                    get_data_by_hash_msg,
-                                )
+                    SyncRpcRequest::GetBlockInfos(hashs) => {
+                        let infos =
+                            Processor::handle_get_block_info_by_hash_msg(processor.clone(), hashs)
                                 .await;
-
-                            if let Err(e) = do_get_block_by_hash(
-                                responder,
-                                batch_header_msg,
-                                batch_body_msg,
-                                batch_block_info_msg,
-                            )
-                            .await
-                            {
-                                error!("do get_block_by_hash request failed : {:?}", e);
-                            }
+                        if let Err(e) = do_get_info_by_hash(responder, infos).await {
+                            error!("do_get_info_by_hash request failed : {:?}", e);
+                        }
+                    }
+                    SyncRpcRequest::GetBlockBodies(hashs) => {
+                        let bodies =
+                            Processor::handle_get_body_by_hash_msg(processor.clone(), hashs).await;
+                        if let Err(e) = do_get_body_by_hash(responder, bodies).await {
+                            error!("do_get_body_by_hash request failed : {:?}", e);
                         }
                     }
                     SyncRpcRequest::GetStateNodeByNodeHash(state_node_key) => {
@@ -194,59 +174,54 @@ where
         }
     }
 
-    pub async fn handle_get_hash_by_number_msg(
+    pub async fn handle_get_block_headers_msg(
         processor: Arc<Processor<C>>,
-        get_hash_by_number_msg: GetHashByNumberMsg,
-    ) -> BatchHashByNumberMsg {
-        let mut hashs = Vec::new();
-        for number in get_hash_by_number_msg.numbers {
-            let block = processor
-                .chain_reader
-                .clone()
-                .master_block_by_number(number)
-                .await;
-            match block {
-                Ok(b) => {
-                    let hash_with_number = HashWithNumber {
-                        number: b.header().number(),
-                        hash: b.header().id(),
-                    };
-
-                    hashs.push(hash_with_number);
-                }
-                Err(e) => {
-                    debug!("{:?}", e);
-                }
-            }
-        }
-
-        BatchHashByNumberMsg { hashs }
-    }
-
-    pub async fn handle_get_header_by_hash_msg(
-        processor: Arc<Processor<C>>,
-        get_header_by_hash_msg: GetDataByHashMsg,
-    ) -> BatchHeaderMsg {
+        get_block_headers: GetBlockHeaders,
+    ) -> Vec<BlockHeader> {
         let mut headers = Vec::new();
-        for hash in get_header_by_hash_msg.hashs {
-            if let Ok(Some(header)) = processor
-                .chain_reader
-                .clone()
-                .get_header_by_hash(&hash)
-                .await
-            {
-                headers.push(header);
+        if let Ok(Some(header)) = processor
+            .chain_reader
+            .clone()
+            .get_header_by_hash(&get_block_headers.block_id)
+            .await
+        {
+            let mut last_number = header.number();
+            while headers.len() < get_block_headers.max_size {
+                let block_number = if get_block_headers.reverse {
+                    if last_number > get_block_headers.step as u64 {
+                        last_number - get_block_headers.step as u64
+                    } else {
+                        0
+                    }
+                } else {
+                    last_number + get_block_headers.step as u64
+                };
+                if let Ok(header) = processor
+                    .chain_reader
+                    .clone()
+                    .master_block_header_by_number(block_number)
+                    .await
+                {
+                    headers.push(header);
+                } else {
+                    break;
+                }
+
+                if block_number == 0 {
+                    break;
+                }
+                last_number = block_number;
             }
         }
-        BatchHeaderMsg { headers }
+        headers
     }
 
     pub async fn handle_get_body_by_hash_msg(
         processor: Arc<Processor<C>>,
-        get_body_by_hash_msg: GetDataByHashMsg,
-    ) -> BatchBodyMsg {
+        hashs: Vec<HashValue>,
+    ) -> Vec<BlockBody> {
         let mut bodies = Vec::new();
-        for hash in get_body_by_hash_msg.hashs {
+        for hash in hashs {
             let transactions = match processor.chain_reader.clone().get_block_by_hash(hash).await {
                 Ok(block) => block.transactions().to_vec(),
                 _ => Vec::new(),
@@ -256,15 +231,15 @@ where
 
             bodies.push(body);
         }
-        BatchBodyMsg { bodies }
+        bodies
     }
 
     pub async fn handle_get_block_info_by_hash_msg(
         processor: Arc<Processor<C>>,
-        get_body_by_hash_msg: GetDataByHashMsg,
-    ) -> BatchBlockInfo {
+        hashs: Vec<HashValue>,
+    ) -> Vec<BlockInfo> {
         let mut infos = Vec::new();
-        for hash in get_body_by_hash_msg.hashs {
+        for hash in hashs {
             if let Ok(Some(block_info)) = processor
                 .chain_reader
                 .clone()
@@ -274,7 +249,7 @@ where
                 infos.push(block_info);
             }
         }
-        BatchBlockInfo { infos }
+        infos
     }
 
     pub async fn handle_state_node_msg(

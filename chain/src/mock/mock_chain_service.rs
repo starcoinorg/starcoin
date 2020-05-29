@@ -35,6 +35,10 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
+    async fn master_block_header_by_number(self, _number: BlockNumber) -> Result<BlockHeader> {
+        unimplemented!()
+    }
+
     async fn try_connect_with_block_info(
         &mut self,
         _block: Block,

@@ -29,6 +29,6 @@ pub mod generic {
         /// Consensus protocol message.
         Consensus(ConsensusMessage),
         /// Status message for handshake
-        Status(Status),
+        Status(Box<Status>),
     }
 }

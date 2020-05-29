@@ -1,9 +1,6 @@
 mod download;
-mod download_body;
-mod download_header;
 mod get_txns_handler;
 pub mod helper;
-mod pool;
 mod process;
 pub mod state_sync;
 mod sync;

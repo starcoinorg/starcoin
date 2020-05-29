@@ -400,8 +400,12 @@ where
         self.storage.get_block_header_by_hash(hash)
     }
 
-    fn master_block_by_number(&self, number: u64) -> Result<Option<Block>> {
+    fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
         self.get_master().get_block_by_number(number)
+    }
+
+    fn master_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
+        self.get_master().get_header_by_number(number)
     }
 
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {

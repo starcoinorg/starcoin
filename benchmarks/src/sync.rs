@@ -2,6 +2,7 @@ use crate::random_txn;
 use actix::{Addr, System};
 use anyhow::Result;
 use criterion::{BatchSize, Bencher};
+use crypto::HashValue;
 use libp2p::multiaddr::Multiaddr;
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
@@ -12,7 +13,7 @@ use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
 use starcoin_network_api::NetworkService;
 use starcoin_sync::Downloader;
 use starcoin_sync::{
-    helper::{get_block_by_hash, get_hash_by_number},
+    helper::{get_body_by_hash, get_headers, get_info_by_hash},
     ProcessActor,
 };
 use starcoin_sync_api::SyncMetadata;
@@ -67,9 +68,10 @@ impl SyncBencher {
     ) -> Result<()> {
         if let Some(best_peer) = network.best_peer().await? {
             if let Some(header) = downloader.get_chain_reader().master_head_header().await? {
-                let mut begin_number = header.number();
+                let begin_number = header.number();
+                let end_number = best_peer.get_block_number();
 
-                if let Some(hash_number) = Downloader::find_ancestor(
+                if let Some(ancestor_header) = Downloader::find_ancestor_header(
                     downloader.clone(),
                     best_peer.get_peer_id(),
                     network.clone(),
@@ -79,45 +81,29 @@ impl SyncBencher {
                 )
                 .await?
                 {
-                    begin_number = hash_number.number + 1;
-                    while let Some((get_hash_by_number_msg, end, next_number)) =
-                        Downloader::<DummyConsensus>::get_hash_by_number_msg_forward(
-                            network.clone(),
-                            best_peer.get_peer_id(),
-                            begin_number,
-                        )
-                        .await?
-                    {
-                        begin_number = next_number;
-                        let batch_hash_by_number_msg = get_hash_by_number(
-                            &network,
-                            best_peer.get_peer_id(),
-                            get_hash_by_number_msg,
-                        )
-                        .await?;
-
-                        Downloader::put_hash_2_hash_pool(
-                            downloader.clone(),
-                            best_peer.get_peer_id(),
-                            batch_hash_by_number_msg,
-                        );
-
-                        let hashs = Downloader::take_task_from_hash_pool(downloader.clone());
-                        if !hashs.is_empty() {
-                            let (headers, bodies, infos) =
-                                get_block_by_hash(&network, best_peer.get_peer_id(), hashs).await?;
-                            Downloader::do_blocks(
-                                downloader.clone(),
-                                headers.headers,
-                                bodies.bodies,
-                                infos.infos,
-                            )
-                            .await;
-                        }
-
-                        if end {
+                    let mut latest_block_id = ancestor_header.id();
+                    let mut latest_number = ancestor_header.number();
+                    loop {
+                        if end_number <= latest_number {
                             break;
                         }
+                        let get_headers_req =
+                            Downloader::<DummyConsensus>::get_headers_msg_for_common(
+                                latest_block_id,
+                            );
+                        let headers =
+                            get_headers(&network, best_peer.get_peer_id(), get_headers_req).await?;
+                        let latest_header = headers.last().expect("headers is empty.");
+                        latest_block_id = latest_header.id();
+                        latest_number = latest_header.number();
+                        let hashs: Vec<HashValue> =
+                            headers.iter().map(|header| header.id()).collect();
+                        let bodies =
+                            get_body_by_hash(&network, best_peer.get_peer_id(), hashs.clone())
+                                .await?;
+                        let infos =
+                            get_info_by_hash(&network, best_peer.get_peer_id(), hashs).await?;
+                        Downloader::do_blocks(downloader.clone(), headers, bodies, infos).await;
                     }
                 }
             }

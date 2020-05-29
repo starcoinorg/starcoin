@@ -40,8 +40,9 @@ impl PeerNewBlock {
 #[derive(Message, Clone, Serialize, Deserialize, Debug)]
 #[rtype(result = "Result<()>")]
 pub enum SyncRpcRequest {
-    GetHashByNumberMsg(GetHashByNumberMsg),
-    GetDataByHashMsg(GetDataByHashMsg),
+    GetBlockHeaders(GetBlockHeaders),
+    GetBlockInfos(Vec<HashValue>),
+    GetBlockBodies(Vec<HashValue>),
     GetStateNodeByNodeHash(HashValue),
     GetAccumulatorNodeByNodeHash(HashValue, AccumulatorStoreType),
     GetTxns(GetTxns),
@@ -50,10 +51,11 @@ pub enum SyncRpcRequest {
 #[derive(Message, Clone, Serialize, Deserialize)]
 #[rtype(result = "Result<()>")]
 pub enum SyncRpcResponse {
-    BatchHashByNumberMsg(BatchHashByNumberMsg),
-    BatchHeaderAndBodyMsg(BatchHeaderMsg, BatchBodyMsg, BatchBlockInfo),
-    GetStateNodeByNodeHash(StateNode),
-    GetAccumulatorNodeByNodeHash(AccumulatorNode),
+    BlockHeaders(Vec<BlockHeader>),
+    BlockBodies(Vec<BlockBody>),
+    BlockInfos(Vec<BlockInfo>),
+    StateNode(StateNode),
+    AccumulatorNode(AccumulatorNode),
     GetTxns(TransactionsData),
 }
 
@@ -74,46 +76,27 @@ pub struct TransactionsData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GetHashByNumberMsg {
-    pub numbers: Vec<u64>,
+pub struct GetBlockHeaders {
+    pub block_id: HashValue,
+    pub max_size: usize,
+    pub step: usize,
+    pub reverse: bool,
 }
 
-#[derive(Eq, Serialize, Deserialize, PartialEq, PartialOrd, Clone, Debug)]
-pub struct HashWithNumber {
-    pub hash: HashValue,
-    pub number: u64,
-}
-
-impl Ord for HashWithNumber {
-    fn cmp(&self, other: &HashWithNumber) -> Ordering {
-        match self.number.cmp(&other.number) {
-            Ordering::Equal => self.hash.cmp(&other.hash),
-            ordering => ordering,
+impl GetBlockHeaders {
+    pub fn new(
+        block_id: HashValue,
+        step: usize,
+        reverse: bool,
+        max_size: usize,
+    ) -> GetBlockHeaders {
+        GetBlockHeaders {
+            block_id,
+            max_size,
+            step,
+            reverse,
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct BatchHashByNumberMsg {
-    pub hashs: Vec<HashWithNumber>,
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum DataType {
-    HEADER,
-    BODY,
-    INFO,
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct GetDataByHashMsg {
-    pub hashs: Vec<HashValue>,
-    pub data_type: DataType,
-}
-
-#[derive(Clone, Eq, Serialize, Deserialize, PartialEq, Debug)]
-pub struct BatchHeaderMsg {
-    pub headers: Vec<BlockHeader>,
 }
 
 #[derive(Eq, Serialize, Deserialize, PartialEq, Clone, Debug)]
@@ -132,14 +115,4 @@ impl Ord for BlockBody {
     fn cmp(&self, other: &BlockBody) -> Ordering {
         self.hash.cmp(&other.hash)
     }
-}
-
-#[derive(Eq, Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct BatchBodyMsg {
-    pub bodies: Vec<BlockBody>,
-}
-
-#[derive(Eq, Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct BatchBlockInfo {
-    pub infos: Vec<BlockInfo>,
 }

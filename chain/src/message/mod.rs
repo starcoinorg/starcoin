@@ -15,7 +15,8 @@ pub enum ChainRequest {
     CurrentHeader(),
     GetHeaderByHash(HashValue),
     HeadBlock(),
-    GetBlockByNumber(u64),
+    GetBlockByNumber(BlockNumber),
+    GetBlockHeaderByNumber(BlockNumber),
     CreateBlockTemplate(
         AccountAddress,
         Option<Vec<u8>>,
@@ -30,7 +31,7 @@ pub enum ChainRequest {
     GetHeadChainInfo(),
     GetTransaction(HashValue),
     GetTransactionIdByBlock(HashValue),
-    GetBlocksByNumber(Option<BlockNumber>, u64),
+    GetBlocksByNumber(Option<BlockNumber>, BlockNumber),
     GetBlockStateByHash(HashValue),
 }
 
