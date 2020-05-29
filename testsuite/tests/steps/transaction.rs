@@ -14,8 +14,8 @@ use starcoin_types::account_config;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::helpers::TransactionSigner;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::WalletAccount;
 use starcoin_vm_runtime::common_transactions::TXN_RESERVED;
+use starcoin_wallet_api::WalletAccount;
 use std::time::Duration;
 
 pub fn steps() -> Steps<MyWorld> {
@@ -75,7 +75,6 @@ fn transfer_txn(
 
     let txn = sign_txn(client, raw_txn).unwrap();
     client.submit_transaction(txn.clone())
-
 }
 fn sign_txn(
     client: &RpcClient,
