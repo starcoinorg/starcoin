@@ -1,26 +1,21 @@
-address 0xeae6b71b9583150c1c32bc9500ee5d15:
-
 module MyToken {
-     use 0x0::Libra;
+     use 0x0::Coin;
+     use 0x0::FixedPoint32;
      use 0x0::Account;
-     use 0x0::Transaction;
 
      struct T { }
 
-     public fun issue(amount: u64) {
-         // only specific address can issue the token
-         Transaction::assert(Transaction::sender() == 0xeae6b71b9583150c1c32bc9500ee5d15, 8000);
-
-         // register token
-         Libra::register<T>(T{});
-
-         // mint 'amount' tokens
-         let coin = Libra::mint<T>(amount);
-
-         // create 'Balance<Token>' resource under sender account
-         Account::create_new_balance<T>();
-
-         // deposit tokens into sender's Balance resource
-         Account::deposit_to_sender<T>(coin)
+     public fun init() {
+         Coin::register_currency<T>(
+                     FixedPoint32::create_from_rational(1, 1), // exchange rate to STC
+                     1000000, // scaling_factor = 10^6
+                     1000,    // fractional_part = 10^3
+         );
+         Account::add_currency<T>();
      }
- }
+
+     public fun mint(amount: u64) {
+        let coin = Coin::mint<T>(amount);
+        Account::deposit_to_sender<T>(coin)
+     }
+}

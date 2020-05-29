@@ -6,23 +6,28 @@ use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
 use starcoin_executor::executor::Executor;
-use starcoin_executor::TransactionExecutor;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::parser::parse_type_tag;
 use structopt::StructOpt;
+
+//TODO this command should be a wallet sub command?
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "transfer")]
 pub struct TransferOpt {
-    #[structopt(short = "f")]
-    /// if `from` is absent, use default account.
-    from: Option<AccountAddress>,
-    #[structopt(short = "t")]
-    to: AccountAddress,
+    #[structopt(short = "s")]
+    /// if `sender` is absent, use default account.
+    sender: Option<AccountAddress>,
+    #[structopt(short = "r")]
+    receiver: AccountAddress,
     #[structopt(short = "k")]
     /// if `to` account not exist on chain, must provide public_key of the account.
     public_key: Option<String>,
@@ -44,6 +49,23 @@ pub struct TransferOpt {
         help = "gas price used"
     )]
     gas_price: u64,
+
+    #[structopt(
+    short = "c",
+    long = "coin",
+    name = "coin_type",
+    help = "coin's type tag, for example: 0x0::STC::T, default is STC",
+    parse(try_from_str = parse_type_tag)
+    )]
+    coin_type: Option<TypeTag>,
+
+    #[structopt(
+        short = "b",
+        name = "blocking-mode",
+        long = "blocking",
+        help = "blocking wait txn mined"
+    )]
+    blocking: bool,
 }
 
 pub struct TransferCommand;
@@ -60,7 +82,7 @@ impl CommandAction for TransferCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let sender = match opt.from {
+        let sender = match opt.sender {
             Some(from) => client
                 .wallet_get(from)?
                 .ok_or_else(|| format_err!("Can not find WalletAccount by address: {}", from))?,
@@ -68,12 +90,14 @@ impl CommandAction for TransferCommand {
                 format_err!("Can not find default account, Please input from account.")
             })?,
         };
-        let to = opt.to;
+        let receiver = opt.receiver;
 
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
-        let to_exist_on_chain = account_state_reader.get_account_resource(&to)?.is_some();
-        let to_auth_key_prefix = if to_exist_on_chain {
+        let receiver_exist_on_chain = account_state_reader
+            .get_account_resource(&receiver)?
+            .is_some();
+        let receiver_auth_key_prefix = if receiver_exist_on_chain {
             vec![]
         } else {
             opt.public_key
@@ -81,7 +105,7 @@ impl CommandAction for TransferCommand {
                 .ok_or_else(|| {
                     format_err!(
                         "To account {} not exist on chain, please provide public_key",
-                        to
+                        receiver
                     )
                 })
                 .and_then(|pubkey_str| {
@@ -102,17 +126,22 @@ impl CommandAction for TransferCommand {
                     sender.address()
                 )
             })?;
-        let raw_txn = Executor::build_transfer_txn(
+        let coin_type = opt.coin_type.clone().unwrap_or_else(stc_type_tag);
+        let raw_txn = Executor::build_transfer_txn_by_coin_type(
             sender.address,
-            to,
-            to_auth_key_prefix,
+            receiver,
+            receiver_auth_key_prefix,
             account_resource.sequence_number(),
             opt.amount,
             opt.gas_price,
             opt.max_gas_amount,
+            coin_type,
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
         client.submit_transaction(txn.clone())?;
+        if opt.blocking {
+            ctx.state().watch_txn(txn.crypto_hash())?;
+        }
         Ok(txn.into())
     }
 }

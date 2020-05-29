@@ -28,7 +28,7 @@
    dev get_coin
    ```
    ​	
-   Run wallet show your account address again, your account should already have some coins.
+   Run wallet show your account address again, your account should already have some STC coins.
 
 ### Transfer coin to another account: 
 
@@ -45,7 +45,7 @@
     The default account password is empty string. 
 3. Transfer coin to new account by command:
     ```shell
-    txn transfer -f $your_default_account_address -t $your_new_account_address -k $your_new_account_public_key -v $transfer_amount
+    wallet transfer -s $your_default_account_address -r $your_new_account_address -k $your_new_account_public_key -v $transfer_amount
     ```
 ### Startup multi dev node to build a network
 

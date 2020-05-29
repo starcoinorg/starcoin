@@ -468,7 +468,7 @@ module Account {
     public fun balance<Token>(addr: address): u64 acquires Balance {
         balance_for(borrow_global<Balance<Token>>(addr))
     }
-
+    //TODO use a unify name https://github.com/starcoinorg/starcoin/issues/570
     // Add a balance of `Token` type to the sending account.
     public fun add_currency<Token>() {
         move_to_sender(Balance<Token>{ coin: Coin::zero<Token>() })
