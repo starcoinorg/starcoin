@@ -8,6 +8,7 @@ use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_wallet_api::WalletAccount;
 use std::path::Path;
+use std::time::Duration;
 
 pub struct CliState {
     net: ChainNetwork,
@@ -17,6 +18,8 @@ pub struct CliState {
 }
 
 impl CliState {
+    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
+
     pub fn new(net: ChainNetwork, client: RpcClient, join_handle: Option<NodeHandle>) -> CliState {
         Self {
             net,
@@ -58,7 +61,9 @@ impl CliState {
     }
 
     pub fn watch_txn(&self, txn_hash: HashValue) -> Result<()> {
-        let block = self.client.watch_txn(txn_hash, None)?;
+        let block = self
+            .client
+            .watch_txn(txn_hash, Some(Self::DEFAULT_WATCH_TIMEOUT))?;
         println!(
             "txn mined in block hight: {}, hash: {:#x}",
             block.header().number(),
