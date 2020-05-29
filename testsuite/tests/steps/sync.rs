@@ -4,7 +4,6 @@ use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
