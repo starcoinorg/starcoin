@@ -7111,6 +7111,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-txpool",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-wallet-api",
  "static_assertions 0.3.4",
 ]

@@ -37,6 +37,7 @@ starcoin-node = {path = "../node"}
 starcoin-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-logger = {path = "../commons/logger"}
 starcoin-types = {path = "../types"}
+starcoin-vm-runtime = {path = "../vm/vm-runtime"}
 starcoin-wallet-api= {path ="../wallet/api"}
 starcoin-state-api = {path = "../state/api"}
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }
