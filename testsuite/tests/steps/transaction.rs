@@ -81,7 +81,7 @@ fn sign_txn(
     raw_txn: RawUserTransaction,
 ) -> Result<SignedUserTransaction, Error> {
     let net = client.node_info().unwrap().net;
-    let result = if net.is_dev() {
+    let result = if raw_txn.sender() == account_config::association_address() {
         let chain_config = net.get_config();
         let pre_mine_config = chain_config
             .pre_mine_config
