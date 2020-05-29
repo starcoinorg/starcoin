@@ -92,8 +92,8 @@ impl CommandAction for AcceptCoinCommand {
         let signed_txn = client.wallet_sign_txn(accept_coin_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
-        if !succ {
-            bail!("execute-txn is reject by node")
+        if let Err(e) = succ {
+            bail!("execute-txn is reject by node, reason: {}", &e)
         }
         println!("txn {:#x} submitted.", txn_hash);
 

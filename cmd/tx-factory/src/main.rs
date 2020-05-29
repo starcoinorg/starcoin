@@ -129,20 +129,14 @@ fn main() {
     let handle = std::thread::spawn(move || {
         while !stopping_signal.load(Ordering::SeqCst) {
             let success = tx_mocker.gen_and_submit_txn();
-            match success {
-                Ok(s) => {
-                    warn!("submit status: {}", s);
-                    // if txn is rejected, recheck sequence number, and start over
-                    if !s {
-                        if let Err(e) = tx_mocker.recheck_sequence_number() {
-                            error!("fail to start over, err: {:?}", e);
-                        }
-                    }
-                }
-                Err(e) => {
-                    error!("fail to generate/submit mock txn, err: {:?}", &e);
+            if let Err(e) = success {
+                error!("fail to generate/submit mock txn, err: {:?}", &e);
+                // if txn is rejected, recheck sequence number, and start over
+                if let Err(e) = tx_mocker.recheck_sequence_number() {
+                    error!("fail to start over, err: {:?}", e);
                 }
             }
+
             std::thread::sleep(interval);
         }
     });
@@ -222,7 +216,7 @@ impl TxnMocker {
         };
         Ok(())
     }
-    fn gen_and_submit_txn(&mut self) -> Result<bool> {
+    fn gen_and_submit_txn(&mut self) -> Result<()> {
         // check txpool, in case some txn is failed, and the sequence number will be gap-ed.
         // let seq_number_in_pool = self.client.next_sequence_number_in_txpool(self.account_address)?;
         // if let Some(n) = seq_number_in_pool {
@@ -264,10 +258,10 @@ impl TxnMocker {
             user_txn.sender(),
             user_txn.sequence_number(),
         );
-        let result = self.client.submit_transaction(user_txn);
+        let result = self.client.submit_transaction(user_txn).and_then(|r| r);
 
         // increase sequence number if added in pool.
-        if matches!(result, Ok(t) if t) {
+        if matches!(result, Ok(_)) {
             self.next_sequence_number += 1;
         }
         result

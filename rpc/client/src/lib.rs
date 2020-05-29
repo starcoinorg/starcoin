@@ -214,10 +214,14 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<bool> {
+    pub fn submit_transaction(
+        &self,
+        txn: SignedUserTransaction,
+    ) -> anyhow::Result<Result<(), anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             inner.txpool_client.submit_transaction(txn).compat().await
         })
+        .map(|r| r.map_err(|e| anyhow::format_err!("{}", e)))
         .map_err(map_err)
     }
     //TODO should split client for different api ?

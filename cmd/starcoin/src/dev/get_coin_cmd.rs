@@ -80,7 +80,10 @@ impl CommandAction for GetCoinCommand {
             TXN_RESERVED,
         );
         let txn = pre_mine_config.sign_txn(raw_txn)?;
-        client.submit_transaction(txn.clone())?;
+        let succ = client.submit_transaction(txn.clone())?;
+        if let Err(e) = succ {
+            bail!("execute-txn is reject by node, reason: {}", &e)
+        }
         ctx.state().watch_txn(txn.crypto_hash())?;
         Ok(txn.into())
     }

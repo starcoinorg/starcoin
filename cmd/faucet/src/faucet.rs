@@ -25,7 +25,7 @@ impl Faucet {
         amount: u64,
         receiver: AccountAddress,
         auth_key: Vec<u8>,
-    ) -> Result<bool> {
+    ) -> Result<Result<(), anyhow::Error>> {
         let chain_state_reader = RemoteStateReader::new(&self.client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader

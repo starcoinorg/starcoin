@@ -30,14 +30,15 @@ impl<S> TxPoolApi for TxPoolRpcImpl<S>
 where
     S: TxPoolSyncService,
 {
-    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<bool> {
+    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<Result<(), String>> {
         let result = self
             .service
             .add_txns(vec![txn])
             .pop()
             .expect("txpool should return result");
-        let success = result.is_ok();
-        Box::new(jsonrpc_core::futures::done(Ok(success)))
+        Box::new(jsonrpc_core::futures::done(Ok(
+            result.map_err(|e| format!("{:?}", e))
+        )))
     }
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {
         let result = self.service.next_sequence_number(address);
@@ -64,7 +65,7 @@ mod tests {
         let txpool_service = MockTxPoolService::new();
         io.extend_with(TxPoolRpcImpl::new(txpool_service).to_delegate());
         let request = r#"{"jsonrpc":"2.0","method":"txpool.submit_transaction","params":[{"public_key":"731fe437a8d3fbb25fa389307ac615e3a503e49be40e1b8cf9e5136fb44b9e5f","raw_txn":{"expiration_time":0,"gas_specifier":{"Struct":{"address":"00000000000000000000000000000000","module":"Starcoin","name":"T","type_params":[]}},"gas_unit_price":0,"max_gas_amount":0,"payload":{"Script":{"args":[],"ty_args":[],"code":[]}},"sender":"00000000000000000000000000000000","sequence_number":0},"signature":"6d2bcccb51de9046890e88e1a1c351b4b6342a1c59159074483ce511a17755ee778907ed6664ea637d7fabad1685de78cd277ca82ed8b75094e42901b152ef07"}],"id":0}"#;
-        let response = r#"{"jsonrpc":"2.0","result":true,"id":0}"#;
+        let response = r#"{"jsonrpc":"2.0","result":{"Ok":null},"id":0}"#;
         assert_eq!(
             io.handle_request(request).wait().unwrap(),
             Some(response.to_string())
