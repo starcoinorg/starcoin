@@ -5,7 +5,7 @@ use starcoin_genesis::Genesis;
 use std::sync::Arc;
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 
-pub fn start_txpool() -> TxPool {
+pub fn start_txpool() -> (TxPool, Arc<Storage>) {
     let cache_storage = CacheStorage::new();
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(cache_storage)).unwrap());
@@ -15,10 +15,11 @@ pub fn start_txpool() -> TxPool {
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
 
-    TxPool::start(
+    let pool = TxPool::start(
         TxPoolConfig::default(),
-        storage,
+        storage.clone(),
         *startup_info.get_master(),
         bus,
-    )
+    );
+    (pool, storage)
 }

@@ -118,7 +118,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
-    let txpool = start_txpool();
+    let (txpool, _) = start_txpool();
     let txpool_service = txpool.get_service();
     let service = PubSubService::new();
     let txn_receiver = txpool_service.subscribe_txns();

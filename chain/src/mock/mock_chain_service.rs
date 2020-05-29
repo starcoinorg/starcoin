@@ -1,15 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ChainAsyncService;
-use crate::ConnectResult;
+use crate::{ChainAsyncService, ConnectResult};
 use anyhow::{Error, Result};
 use crypto::HashValue;
-use types::startup_info::ChainInfo;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
-    startup_info::StartupInfo,
+    startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, TransactionInfo},
 };
 

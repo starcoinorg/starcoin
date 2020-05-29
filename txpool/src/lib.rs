@@ -40,6 +40,7 @@ pub struct TxPool {
 }
 
 impl TxPool {
+    // TODO: use static dispatching instead of dynamic dispatch for storage instance.
     pub fn start(
         pool_config: TxPoolConfig,
         storage: Arc<dyn Store>,

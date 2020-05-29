@@ -4,8 +4,9 @@
 use anyhow::Result;
 use futures_channel::mpsc;
 use starcoin_crypto::hash::HashValue;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::{transaction, transaction::SignedUserTransaction};
+use starcoin_types::{
+    account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
+};
 use std::sync::Arc;
 
 pub type TxnStatusFullEvent = Arc<Vec<(HashValue, transaction::TxStatus)>>;
@@ -33,9 +34,5 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent>;
 
     /// rollback
-    fn rollback(
-        &self,
-        enacted: Vec<SignedUserTransaction>,
-        retracted: Vec<SignedUserTransaction>,
-    ) -> Result<()>;
+    fn rollback(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()>;
 }

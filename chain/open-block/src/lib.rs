@@ -2,8 +2,7 @@ use anyhow::{bail, format_err, Result};
 use crypto::hash::{HashValue, PlainCryptoHash};
 use executor::{executor::Executor, TransactionExecutor};
 use logger::prelude::*;
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use std::{

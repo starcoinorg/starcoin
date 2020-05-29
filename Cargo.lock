@@ -5888,6 +5888,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-network",
+ "starcoin-open-block",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
@@ -6311,6 +6312,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-open-block"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures 0.3.5",
+ "once_cell",
+ "parking_lot 0.9.0",
+ "starcoin-accumulator",
+ "starcoin-bus",
+ "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-executor",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-metrics",
+ "starcoin-state-api",
+ "starcoin-statedb",
+ "starcoin-storage",
+ "starcoin-traits",
+ "starcoin-types",
+ "stest",
+]
+
+[[package]]
 name = "starcoin-rpc-api"
 version = "0.1.0"
 dependencies = [
@@ -6684,6 +6710,8 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-open-block",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",

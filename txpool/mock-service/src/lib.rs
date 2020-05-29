@@ -5,11 +5,13 @@ use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
 use starcoin_txpool_api::TxPoolSyncService;
-use std::iter::Iterator;
-use std::sync::{Arc, Mutex};
-use types::account_address::AccountAddress;
-use types::transaction;
-use types::transaction::SignedUserTransaction;
+use std::{
+    iter::Iterator,
+    sync::{Arc, Mutex},
+};
+use types::{
+    account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
+};
 
 #[derive(Clone, Default)]
 pub struct MockTxPoolService {
@@ -77,11 +79,7 @@ impl TxPoolSyncService for MockTxPoolService {
     }
 
     /// rollback
-    fn rollback(
-        &self,
-        _enacted: Vec<SignedUserTransaction>,
-        _retracted: Vec<SignedUserTransaction>,
-    ) -> Result<()> {
+    fn rollback(&self, _enacted: Vec<Block>, _retracted: Vec<Block>) -> Result<()> {
         todo!()
     }
 }
