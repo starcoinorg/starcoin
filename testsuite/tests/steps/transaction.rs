@@ -53,7 +53,7 @@ fn transfer_txn(
     to: &WalletAccount,
     from: AccountAddress,
     amount: Option<u64>,
-) -> Result<bool, Error> {
+) -> Result<(), Error> {
     let to_auth_key_prefix = AuthenticationKey::ed25519(&to.public_key).prefix();
     let chain_state_reader = RemoteStateReader::new(client);
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
@@ -74,7 +74,7 @@ fn transfer_txn(
     );
 
     let txn = sign_txn(client, raw_txn).unwrap();
-    client.submit_transaction(txn.clone())
+    client.submit_transaction(txn.clone()).and_then(|r| r)
 }
 fn sign_txn(
     client: &RpcClient,

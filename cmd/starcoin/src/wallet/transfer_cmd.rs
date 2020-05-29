@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::view::TransactionView;
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
@@ -138,7 +138,11 @@ impl CommandAction for TransferCommand {
             coin_type,
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
-        client.submit_transaction(txn.clone())?;
+        let succ = client.submit_transaction(txn.clone())?;
+        if let Err(e) = succ {
+            bail!("execute-txn is reject by node, reason: {}", &e)
+        }
+
         if opt.blocking {
             ctx.state().watch_txn(txn.crypto_hash())?;
         }

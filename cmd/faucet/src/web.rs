@@ -39,7 +39,7 @@ async fn handle_fund(faucet: &Faucet, query: &str) -> Response<Cursor<String>> {
         ),
         response_custom(500, "Inner error")
     );
-    if !ret {
+    if ret.is_err() {
         return response_custom(400, "Fund too frequently");
     }
     response_custom(200, "Success")

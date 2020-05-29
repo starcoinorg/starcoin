@@ -126,7 +126,7 @@ impl CommandAction for GenTxnCommand {
             gen_result.total_amount += opt.amount;
             let txn = client.wallet_sign_txn(raw_txn)?;
             let result = client.submit_transaction(txn.clone())?;
-            if result {
+            if result.is_ok() {
                 gen_result.submit_success += 1;
             } else {
                 gen_result.submit_fail += 1;

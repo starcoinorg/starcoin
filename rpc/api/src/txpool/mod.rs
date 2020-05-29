@@ -11,7 +11,7 @@ use starcoin_types::account_address::AccountAddress;
 #[rpc]
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
-    fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<bool>;
+    fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<Result<(), String>>;
 
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender in txpool.
