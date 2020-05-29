@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
-use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt, SyncMode};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;

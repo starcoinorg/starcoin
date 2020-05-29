@@ -55,9 +55,16 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("default account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
-            let default_account = client.clone().wallet_default();
+            let default_account = client.clone().wallet_default().unwrap().unwrap();
             info!("default account config success!");
-            world.default_account = default_account.unwrap()
+            client
+                .wallet_unlock(
+                    default_account.address,
+                    "".parse().unwrap(),
+                    Duration::from_secs(300 as u64),
+                )
+                .unwrap();
+            world.default_account = Some(default_account)
         })
         .given("an account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();

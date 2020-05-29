@@ -14,6 +14,8 @@ use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::helpers::TransactionSigner;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
+use starcoin_vm_runtime::common_transactions::TXN_RESERVED;
+use std::time::Duration;
 
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
@@ -24,6 +26,12 @@ pub fn steps() -> Steps<MyWorld> {
             let pre_mine_address = account_config::association_address();
             let result = transfer_txn(client, to, pre_mine_address, None);
             assert!(result.is_ok());
+            std::thread::sleep(Duration::from_millis(3000));
+            let chain_state_reader = RemoteStateReader::new(client);
+            let account_state_reader = AccountStateReader::new(&chain_state_reader);
+            let balances = account_state_reader.get_balances(to.address());
+            assert!(balances.is_ok());
+            info!("charge into default account ok:{:?}", balances.unwrap());
         })
         .then(
             "execute transfer transaction",
@@ -63,6 +71,7 @@ fn transfer_txn(
 
     let txn = sign_txn(client, raw_txn).unwrap();
     client.submit_transaction(txn.clone())
+
 }
 fn sign_txn(
     client: &RpcClient,
