@@ -47,10 +47,15 @@ pub fn steps() -> Steps<MyWorld> {
             info!("storage created!");
             world.storage = Some(storage)
         })
-        .given("a rpc client", |world: &mut MyWorld, _step| {
-            // let client = RpcClient::connect_ipc(env!("STARCOIN_IPC").to_string()).unwrap();
+        .given("remote rpc client", |world: &mut MyWorld, _step| {
             let client = RpcClient::connect_websocket(env!("STARCOIN_WS")).unwrap();
             info!("rpc client created!");
+            world.rpc_client = Some(client)
+        })
+        .given("dev rpc client", |world: &mut MyWorld, _step| {
+            let node_config = world.node_config.as_ref().take().unwrap();
+            let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
+            info!("dev node local rpc client created!");
             world.rpc_client = Some(client)
         })
         .given("default account", |world: &mut MyWorld, _step| {
@@ -68,9 +73,20 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("an account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
-            let account = client.clone().wallet_create("integration".parse().unwrap());
+            let password = "integration";
+            let account = client
+                .clone()
+                .wallet_create(password.clone().parse().unwrap())
+                .unwrap();
+            client
+                .wallet_unlock(
+                    account.address,
+                    password.clone().parse().unwrap(),
+                    Duration::from_secs(300 as u64),
+                )
+                .unwrap();
             info!("a account create success!");
-            world.txn_account = Some(account.unwrap())
+            world.txn_account = Some(account.clone())
         });
     builder.build()
 }
@@ -88,6 +104,7 @@ fn setup() {}
 
 mod steps;
 use starcoin_wallet_api::WalletAccount;
+use std::time::Duration;
 use steps::*;
 
 cucumber! {

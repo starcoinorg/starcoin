@@ -6,6 +6,7 @@ use anyhow::Error;
 use cucumber::{Steps, StepsBuilder};
 use starcoin_executor::executor::Executor;
 use starcoin_executor::TransactionExecutor;
+use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -39,7 +40,8 @@ pub fn steps() -> Steps<MyWorld> {
                 let client = world.rpc_client.as_ref().take().unwrap();
                 let from_account = world.default_account.as_ref().take().unwrap();
                 let to_account = world.txn_account.as_ref().take().unwrap();
-                let result = transfer_txn(client, to_account, from_account.address, Some(100));
+                info!("transfer from: {:?} to: {:?}", from_account, to_account);
+                let result = transfer_txn(client, to_account, from_account.address, Some(1000));
                 assert!(result.is_ok());
             },
         );
@@ -67,6 +69,8 @@ fn transfer_txn(
         to_auth_key_prefix.to_vec(),
         account_resource.sequence_number(),
         amount,
+        1,
+        TXN_RESERVED,
     );
 
     let txn = sign_txn(client, raw_txn).unwrap();

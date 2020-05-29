@@ -2,10 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
+use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt};
+use std::path::PathBuf;
+use std::sync::Arc;
 
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
+        .given("a dev node config", |world: &mut MyWorld, _step| {
+            let mut opt = StarcoinOpt::default();
+            opt.net = Some(ChainNetwork::Dev);
+            opt.data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
+            let config = NodeConfig::load_with_opt(&opt).unwrap();
+            world.node_config = Some(config)
+        })
+        .given("halley node config", |world: &mut MyWorld, _step| {
+            let mut opt = StarcoinOpt::default();
+            opt.net = Some(ChainNetwork::Halley);
+            opt.data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
+            let config = NodeConfig::load_with_opt(&opt).unwrap();
+            world.node_config = Some(config)
+        })
+        .given("node handle", |world: &mut MyWorld, _step| {
+            let node_config = world.node_config.as_ref().take().unwrap();
+            let handle = starcoin_node::run_dev_node(Arc::new(node_config.clone()));
+            world.node_handle = Some(handle)
+        })
         .then("get node info", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info();
