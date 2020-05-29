@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::counters::TXPOOL_SERVICE_HISTOGRAM;
 use crate::{
+    counters::TXPOOL_SERVICE_HISTOGRAM,
     pool,
     pool::{
         Gas, PendingOrdering, PendingSettings, PoolTransaction, PrioritizationStrategy, Status,
@@ -20,7 +20,9 @@ use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
 use storage::Store;
 use types::{
-    account_address::AccountAddress, block::BlockHeader, transaction,
+    account_address::AccountAddress,
+    block::{Block, BlockHeader},
+    transaction,
     transaction::SignedUserTransaction,
 };
 
@@ -58,6 +60,11 @@ impl TxPoolService {
         };
 
         Self { inner }
+    }
+
+    #[cfg(test)]
+    pub fn get_store(&self) -> Arc<dyn Store> {
+        self.inner.storage.clone()
     }
 
     pub(crate) fn from_inner(inner: Inner) -> TxPoolService {
@@ -119,11 +126,7 @@ impl TxPoolSyncService for TxPoolService {
     }
 
     /// rollback
-    fn rollback(
-        &self,
-        enacted: Vec<SignedUserTransaction>,
-        retracted: Vec<SignedUserTransaction>,
-    ) -> Result<()> {
+    fn rollback(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
             .with_label_values(&["rollback"])
             .start_timer();
@@ -221,35 +224,46 @@ impl Inner {
         rx
     }
 
-    pub(crate) fn chain_new_block(
-        &self,
-        enacted: Vec<SignedUserTransaction>,
-        retracted: Vec<SignedUserTransaction>,
-    ) -> Result<()> {
+    pub(crate) fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
         debug!(
             "receive chain_new_block msg, enacted: {:?}, retracted: {:?}",
             enacted
                 .iter()
-                .map(|t| (t.sender(), t.sequence_number()))
+                .map(|b| b.header().number())
                 .collect::<Vec<_>>(),
             retracted
                 .iter()
-                .map(|t| (t.sender(), t.sequence_number()))
-                .collect::<Vec<_>>(),
+                .map(|b| b.header().number())
+                .collect::<Vec<_>>()
         );
 
-        let hashes: Vec<_> = enacted.iter().map(|t| t.crypto_hash()).collect();
+        let hashes: Vec<_> = enacted
+            .iter()
+            .flat_map(|b| b.transactions().iter())
+            .map(|t| t.crypto_hash())
+            .collect();
         let _ = self.queue.remove(hashes.iter(), false);
+
+        // new head block, update chain header
+        if let Some(block) = enacted.last() {
+            self.notify_new_chain_header(block.header().clone());
+        }
 
         let txns = retracted
             .into_iter()
+            .flat_map(|b| {
+                let txns: Vec<SignedUserTransaction> = b.into_inner().1.into();
+                txns.into_iter()
+            })
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
         let _ = self.queue.import(self.get_pool_client(), txns);
+
         // ignore import result
         // for r in import_result {
         //     r?;
         // }
         // self.queue.cull(client);
+
         Ok(())
     }
 

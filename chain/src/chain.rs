@@ -1,14 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::opened_block::OpenedBlock;
 use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
 use crypto::{hash::PlainCryptoHash, HashValue};
 use executor::block_executor::BlockExecutor;
 use logger::prelude::*;
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
+use starcoin_accumulator::{
+    node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
+};
+use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use std::{convert::TryInto, marker::PhantomData, sync::Arc};

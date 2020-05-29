@@ -32,6 +32,7 @@ members = [
     "executor",
     "executor/benchmark",
     "chain",
+    "chain/open-block",
     "node",
     "sync",
     "sync/api",

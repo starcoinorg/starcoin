@@ -1,19 +1,16 @@
-use crate::opened_block::OpenedBlock;
 use crate::test_helper;
 use anyhow::Result;
 use config::NodeConfig;
 use consensus::dev::DevConsensus;
 use crypto::keygen::KeyGen;
-use executor::executor::Executor;
-use executor::TransactionExecutor;
+use executor::{executor::Executor, TransactionExecutor};
 use logger::prelude::*;
+use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
 use starcoin_wallet_api::WalletAccount;
-use std::convert::TryInto;
-use std::sync::Arc;
+use std::{convert::TryInto, sync::Arc};
 use traits::ChainReader;
-use types::account_address;
-use types::transaction::authenticator::AuthenticationKey;
+use types::{account_address, transaction::authenticator::AuthenticationKey};
 
 #[test]
 pub fn test_open_block() -> Result<()> {

@@ -114,39 +114,29 @@ where
         let block_header = block.header();
         let total_difficulty = new_branch.get_total_difficulty()?;
         if total_difficulty > self.get_master().get_total_difficulty()? {
-            let mut enacted: Vec<SignedUserTransaction> = Vec::new();
-            let mut retracted = Vec::new();
-            if block.header().parent_hash() == self.startup_info.master {
-                enacted.append(&mut block.transactions().to_vec());
-            } else {
-                CHAIN_METRICS.rollback_count.inc();
-                debug!("rollback branch.");
-
-                let (enacted_blocks, mut enacted_tmp, mut retracted_tmp) =
-                    self.find_ancestors(&new_branch)?;
-                enacted.append(&mut enacted_tmp);
-                retracted.append(&mut retracted_tmp);
-                if self.sync_metadata.is_sync_done() {
-                    enacted_blocks.into_iter().for_each(|enacted_block| {
-                        if let Ok(Some(b_i)) =
-                            self.storage.get_block_info(enacted_block.header().id())
-                        {
-                            let enacted_block_detail =
-                                BlockDetail::new(enacted_block, b_i.get_total_difficulty());
-                            self.broadcast_2_bus(enacted_block_detail);
-                        }
-                    });
-                }
-            }
+            // we can just let find_ancestors do it work, no matter whether fork or not.
+            let (enacted_blocks, retracted_blocks) = self.find_ancestors(&new_branch)?;
+            debug_assert!(!enacted_blocks.is_empty());
+            debug_assert_eq!(enacted_blocks.last().unwrap(), &block);
 
             self.update_master(new_branch);
+            self.commit_2_txpool(enacted_blocks, retracted_blocks);
 
-            self.commit_2_txpool(enacted, retracted);
+            // we don't need to broadcast the enacted blocks as head blocks, only the newest one.
+            // if self.sync_metadata.is_sync_done() {
+            //     enacted_blocks.into_iter().for_each(|enacted_block| {
+            //         if let Ok(Some(b_i)) = self.storage.get_block_info(enacted_block.header().id())
+            //         {
+            //             let enacted_block_detail =
+            //                 BlockDetail::new(enacted_block, b_i.get_total_difficulty());
+            //             self.broadcast_2_bus(enacted_block_detail);
+            //         }
+            //     });
+            // }
             if self.sync_metadata.is_sync_done() {
                 CHAIN_METRICS.broadcast_head_count.inc();
                 let block_detail = BlockDetail::new(block, total_difficulty);
                 self.broadcast_2_bus(block_detail.clone());
-
                 self.broadcast_2_network(block_detail);
             }
         } else {
@@ -174,24 +164,13 @@ where
         self.storage.save_startup_info(startup_info)
     }
 
-    fn commit_2_txpool(
-        &self,
-        enacted: Vec<SignedUserTransaction>,
-        retracted: Vec<SignedUserTransaction>,
-    ) {
+    fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
         if let Err(e) = self.txpool.rollback(enacted, retracted) {
             error!("rollback err : {:?}", e);
         }
     }
 
-    fn find_ancestors(
-        &self,
-        new_branch: &BlockChain<C, S>,
-    ) -> Result<(
-        Vec<Block>,
-        Vec<SignedUserTransaction>,
-        Vec<SignedUserTransaction>,
-    )> {
+    fn find_ancestors(&self, new_branch: &BlockChain<C, S>) -> Result<(Vec<Block>, Vec<Block>)> {
         let block_enacted = new_branch.current_header().id();
         let block_retracted = self.get_master().current_header().id();
 
@@ -208,20 +187,12 @@ where
 
         let enacted = self.find_blocks_until(block_enacted, ancestor)?;
         let retracted = self.find_blocks_until(block_retracted, ancestor)?;
-        let mut tx_enacted: Vec<SignedUserTransaction> = Vec::new();
-        let mut tx_retracted: Vec<SignedUserTransaction> = Vec::new();
-        enacted.iter().for_each(|b| {
-            tx_enacted.append(&mut b.transactions().to_vec());
-        });
-        retracted.iter().for_each(|b| {
-            tx_retracted.append(&mut b.transactions().to_vec());
-        });
         debug!(
-            "commit size:{}, rollback size:{}",
-            tx_enacted.len(),
-            tx_retracted.len()
+            "commit block num:{}, rollback block num:{}",
+            enacted.len(),
+            retracted.len(),
         );
-        Ok((enacted, tx_enacted, tx_retracted))
+        Ok((enacted, retracted))
     }
 
     fn find_blocks_until(&self, from: HashValue, until: HashValue) -> Result<Vec<Block>> {
