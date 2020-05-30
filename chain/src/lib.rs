@@ -116,6 +116,18 @@ where
                         format_err!("Can not find block from master by number {:?}", number)
                     })?,
             ))),
+            ChainRequest::GetBlockHeaderByNumber(number) => {
+                Ok(ChainResponse::BlockHeader(Box::new(Some(
+                    self.service
+                        .master_block_header_by_number(number)?
+                        .ok_or_else(|| {
+                            format_err!(
+                                "Can not find block header from master by number {:?}",
+                                number
+                            )
+                        })?,
+                ))))
+            }
             ChainRequest::CreateBlockTemplate(author, auth_key_prefix, parent_hash, txs) => Ok(
                 ChainResponse::BlockTemplate(Box::new(self.service.create_block_template(
                     author,
@@ -336,6 +348,20 @@ where
         } else {
             bail!("Get chain block by number response error.")
         }
+    }
+
+    async fn master_block_header_by_number(self, number: BlockNumber) -> Result<BlockHeader> {
+        if let ChainResponse::BlockHeader(header) = self
+            .address
+            .send(ChainRequest::GetBlockHeaderByNumber(number))
+            .await
+            .map_err(Into::<Error>::into)??
+        {
+            if let Some(h) = *header {
+                return Ok(h);
+            }
+        }
+        bail!("Get chain block header by number response error.")
     }
 
     async fn master_blocks_by_number(

@@ -419,13 +419,12 @@ impl Inner {
                     .await?;
             }
             PeerMessage::Block(block) => {
-                let block_hash = block.header().id();
-
                 debug!(
                     "receive new block from {:?} with hash {:?}",
-                    peer_id, block_hash
+                    peer_id,
+                    block.header().id()
                 );
-                let block_number = block.header().number();
+                let block_header = block.header().clone();
                 let total_difficulty = block.get_total_difficulty();
 
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
@@ -434,8 +433,7 @@ impl Inner {
                         total_difficulty, peer_info
                     );
                     if total_difficulty > peer_info.peer_info.total_difficulty {
-                        peer_info.peer_info.block_number = block_number;
-                        peer_info.peer_info.block_id = block_hash;
+                        peer_info.peer_info.latest_header = block_header;
                         peer_info.peer_info.total_difficulty = total_difficulty;
                     }
                 }
@@ -494,7 +492,7 @@ impl Inner {
         debug!("event is {:?}", event);
         match event.clone() {
             PeerEvent::Open(peer_id, peer_info) => {
-                inner.on_peer_connected(peer_id.into(), peer_info).await?;
+                inner.on_peer_connected(peer_id.into(), *peer_info).await?;
                 if inner.need_send_event.load(Ordering::Acquire) {
                     let mut connected_tx = inner.connected_tx.clone();
                     connected_tx.send(event.clone()).await?;
@@ -611,8 +609,9 @@ impl Handler<BlockMessage> for NetworkActor {
 
         let network_service = self.network_service.clone();
 
-        let block_hash = block.header().id();
-        let block_number = block.header().number();
+        // let block_hash = block.header().id();
+        // let block_number = block.header().number();
+        let block_header = block.header().clone();
 
         let total_difficulty = block.get_total_difficulty();
         let msg = PeerMessage::Block(block);
@@ -620,9 +619,8 @@ impl Handler<BlockMessage> for NetworkActor {
 
         let self_info = PeerInfo::new(
             self.peer_id.clone().into(),
-            block_number,
             total_difficulty,
-            block_hash,
+            block_header.clone(),
         );
         let self_id = self.peer_id.clone();
         Arbiter::spawn(async move {
@@ -632,8 +630,7 @@ impl Handler<BlockMessage> for NetworkActor {
                     total_difficulty, peer_info
                 );
                 if total_difficulty > peer_info.peer_info.total_difficulty {
-                    peer_info.peer_info.block_number = block_number;
-                    peer_info.peer_info.block_id = block_hash;
+                    peer_info.peer_info.latest_header = block_header;
                     peer_info.peer_info.total_difficulty = total_difficulty;
                 }
             }
@@ -708,7 +705,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use tokio::runtime::{Handle, Runtime};
     use tokio::task;
-    use types::transaction::SignedUserTransaction;
+    use types::{block::BlockHeader, transaction::SignedUserTransaction, U256};
 
     #[rtype(result = "Result<()>")]
     #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
@@ -719,7 +716,12 @@ mod tests {
     #[test]
     fn test_peer_info() {
         let mut peer_info = PeerInfo::default();
-        peer_info.block_number = 1;
+        peer_info.latest_header = BlockHeader::genesis_block_header(
+            HashValue::random(),
+            HashValue::random(),
+            U256::zero(),
+            Vec::new(),
+        );
         let data = peer_info.encode().unwrap();
         let peer_info_decode = PeerInfo::decode(&data).unwrap();
         assert_eq!(peer_info, peer_info_decode);

@@ -6,6 +6,7 @@ use libp2p::multihash;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 
+use crate::block::BlockHeader;
 use crate::{block::BlockNumber, U512};
 use starcoin_crypto::HashValue;
 use std::convert::TryFrom;
@@ -142,32 +143,24 @@ impl fmt::Display for PeerId {
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
     pub peer_id: PeerId,
-    pub block_number: BlockNumber,
+    pub latest_header: BlockHeader,
     pub total_difficulty: U512,
-    pub block_id: HashValue,
 }
 
 impl PeerInfo {
     pub fn new_for_test(peer_id: PeerId) -> Self {
         PeerInfo {
             peer_id,
-            block_number: 0,
+            latest_header: BlockHeader::default(),
             total_difficulty: U512::zero(),
-            block_id: HashValue::random(),
         }
     }
 
-    pub fn new(
-        peer_id: PeerId,
-        block_number: BlockNumber,
-        total_difficulty: U512,
-        block_id: HashValue,
-    ) -> Self {
+    pub fn new(peer_id: PeerId, total_difficulty: U512, latest_header: BlockHeader) -> Self {
         PeerInfo {
             peer_id,
-            block_number,
+            latest_header,
             total_difficulty,
-            block_id,
         }
     }
 
@@ -176,15 +169,22 @@ impl PeerInfo {
     }
 
     pub fn get_block_number(&self) -> BlockNumber {
-        self.block_number
+        self.latest_header.number()
+    }
+
+    pub fn get_block_id(&self) -> HashValue {
+        self.latest_header.id()
+    }
+
+    pub fn get_total_difficulty(&self) -> U512 {
+        self.total_difficulty
     }
 
     pub fn default() -> Self {
         Self {
             peer_id: PeerId::random(),
-            block_number: 0,
             total_difficulty: U512::from(0),
-            block_id: HashValue::default(),
+            latest_header: BlockHeader::default(),
         }
     }
 }

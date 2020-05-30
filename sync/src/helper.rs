@@ -10,11 +10,14 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
 use starcoin_sync_api::sync_messages::{
-    BatchBlockInfo, BatchBodyMsg, BatchHashByNumberMsg, BatchHeaderMsg, DataType, GetDataByHashMsg,
-    GetHashByNumberMsg, GetTxns, SyncRpcRequest, SyncRpcResponse, TransactionsData,
+    BlockBody, GetBlockHeaders, GetTxns, SyncRpcRequest, SyncRpcResponse, TransactionsData,
 };
 use std::borrow::Cow;
-use types::{peer_info::PeerId, CHAIN_PROTOCOL_NAME};
+use types::{
+    block::{BlockHeader, BlockInfo},
+    peer_info::PeerId,
+    CHAIN_PROTOCOL_NAME,
+};
 
 async fn do_request(
     network: &NetworkAsyncService,
@@ -46,52 +49,16 @@ pub async fn get_txns(
     }
 }
 
-pub async fn get_hash_by_number(
+pub async fn get_headers(
     network: &NetworkAsyncService,
     peer_id: PeerId,
-    req: GetHashByNumberMsg,
-) -> Result<BatchHashByNumberMsg> {
-    let request = SyncRpcRequest::GetHashByNumberMsg(req);
-
-    if let SyncRpcResponse::BatchHashByNumberMsg(batch_hash_by_number_msg) =
-        do_request(&network, peer_id, request).await?
+    req: GetBlockHeaders,
+) -> Result<Vec<BlockHeader>> {
+    let get_block_headers_req = SyncRpcRequest::GetBlockHeaders(req.clone());
+    if let SyncRpcResponse::BlockHeaders(headers) =
+        do_request(&network, peer_id, get_block_headers_req).await?
     {
-        Ok(batch_hash_by_number_msg)
-    } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
-    }
-}
-
-pub async fn get_block_by_hash(
-    network: &NetworkAsyncService,
-    peer_id: PeerId,
-    hashs: Vec<HashValue>,
-) -> Result<(BatchHeaderMsg, BatchBodyMsg, BatchBlockInfo)> {
-    let get_data_by_hash_req = SyncRpcRequest::GetDataByHashMsg(GetDataByHashMsg {
-        hashs,
-        data_type: DataType::HEADER,
-    });
-    if let SyncRpcResponse::BatchHeaderAndBodyMsg(headers, bodies, infos) =
-        do_request(&network, peer_id, get_data_by_hash_req).await?
-    {
-        Ok((headers, bodies, infos))
-    } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
-    }
-}
-
-pub async fn get_header_by_hash(
-    network: &NetworkAsyncService,
-    peer_id: PeerId,
-    hashs: Vec<HashValue>,
-) -> Result<BatchHeaderMsg> {
-    let get_data_by_hash_req = SyncRpcRequest::GetDataByHashMsg(GetDataByHashMsg {
-        hashs,
-        data_type: DataType::HEADER,
-    });
-    if let SyncRpcResponse::BatchHeaderAndBodyMsg(headers, _bodies, _infos) =
-        do_request(&network, peer_id, get_data_by_hash_req).await?
-    {
+        //todo: Verify response
         Ok(headers)
     } else {
         Err(format_err!("{:?}", "error SyncRpcResponse type."))
@@ -99,19 +66,33 @@ pub async fn get_header_by_hash(
 }
 
 pub async fn get_body_by_hash(
-    _network: &NetworkAsyncService,
-    _peer_id: PeerId,
-    _hashs: Vec<HashValue>,
-) -> Result<BatchBodyMsg> {
-    unimplemented!()
+    network: &NetworkAsyncService,
+    peer_id: PeerId,
+    hashs: Vec<HashValue>,
+) -> Result<Vec<BlockBody>> {
+    let get_body_by_hash_req = SyncRpcRequest::GetBlockBodies(hashs);
+    if let SyncRpcResponse::BlockBodies(bodies) =
+        do_request(&network, peer_id, get_body_by_hash_req).await?
+    {
+        Ok(bodies)
+    } else {
+        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+    }
 }
 
 pub async fn get_info_by_hash(
-    _network: &NetworkAsyncService,
-    _peer_id: PeerId,
-    _hashs: Vec<HashValue>,
-) -> Result<BatchBlockInfo> {
-    unimplemented!()
+    network: &NetworkAsyncService,
+    peer_id: PeerId,
+    hashs: Vec<HashValue>,
+) -> Result<Vec<BlockInfo>> {
+    let get_info_by_hash_req = SyncRpcRequest::GetBlockInfos(hashs);
+    if let SyncRpcResponse::BlockInfos(infos) =
+        do_request(&network, peer_id, get_info_by_hash_req).await?
+    {
+        Ok(infos)
+    } else {
+        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+    }
 }
 
 pub async fn get_state_node_by_node_hash(
@@ -119,7 +100,7 @@ pub async fn get_state_node_by_node_hash(
     peer_id: PeerId,
     node_key: HashValue,
 ) -> Result<StateNode> {
-    if let SyncRpcResponse::GetStateNodeByNodeHash(state_node) = do_request(
+    if let SyncRpcResponse::StateNode(state_node) = do_request(
         &network,
         peer_id,
         SyncRpcRequest::GetStateNodeByNodeHash(node_key),
@@ -138,7 +119,7 @@ pub async fn get_accumulator_node_by_node_hash(
     node_key: HashValue,
     accumulator_type: AccumulatorStoreType,
 ) -> Result<AccumulatorNode> {
-    if let SyncRpcResponse::GetAccumulatorNodeByNodeHash(accumulator_node) = do_request(
+    if let SyncRpcResponse::AccumulatorNode(accumulator_node) = do_request(
         &network,
         peer_id,
         SyncRpcRequest::GetAccumulatorNodeByNodeHash(node_key, accumulator_type),
@@ -168,27 +149,27 @@ async fn do_response(
     }
 }
 
-pub async fn do_get_hash_by_number(
+pub async fn do_get_headers(
     responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
-    batch_hash_by_number_msg: BatchHashByNumberMsg,
+    headers: Vec<BlockHeader>,
 ) -> Result<()> {
-    let resp = SyncRpcResponse::encode(&SyncRpcResponse::BatchHashByNumberMsg(
-        batch_hash_by_number_msg,
-    ))?;
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::BlockHeaders(headers))?;
     do_response(responder, resp).await
 }
 
-pub async fn do_get_block_by_hash(
+pub async fn do_get_info_by_hash(
     responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
-    batch_header_msg: BatchHeaderMsg,
-    batch_body_msg: BatchBodyMsg,
-    batch_block_info_msg: BatchBlockInfo,
+    infos: Vec<BlockInfo>,
 ) -> Result<()> {
-    let resp = SyncRpcResponse::encode(&SyncRpcResponse::BatchHeaderAndBodyMsg(
-        batch_header_msg,
-        batch_body_msg,
-        batch_block_info_msg,
-    ))?;
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::BlockInfos(infos))?;
+    do_response(responder, resp).await
+}
+
+pub async fn do_get_body_by_hash(
+    responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
+    bodies: Vec<BlockBody>,
+) -> Result<()> {
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::BlockBodies(bodies))?;
     do_response(responder, resp).await
 }
 
@@ -196,7 +177,7 @@ pub async fn do_state_node(
     responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
     state_node: StateNode,
 ) -> Result<()> {
-    let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetStateNodeByNodeHash(state_node))?;
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::StateNode(state_node))?;
     do_response(responder, resp).await
 }
 
@@ -204,9 +185,7 @@ pub async fn do_accumulator_node(
     responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
     accumulator_node: AccumulatorNode,
 ) -> Result<()> {
-    let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetAccumulatorNodeByNodeHash(
-        accumulator_node,
-    ))?;
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::AccumulatorNode(accumulator_node))?;
     do_response(responder, resp).await
 }
 

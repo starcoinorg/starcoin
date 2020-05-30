@@ -36,6 +36,6 @@ pub struct RawRpcRequestMessage {
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Eq, PartialEq, Message, Clone)]
 pub enum PeerEvent {
-    Open(PeerId, PeerInfo),
+    Open(PeerId, Box<PeerInfo>),
     Close(PeerId),
 }

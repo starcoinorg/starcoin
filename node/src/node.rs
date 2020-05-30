@@ -174,9 +174,8 @@ where
         .expect("Self peer_id must has been set.");
     let self_info = PeerInfo::new(
         peer_id.clone(),
-        head_block.header().number(),
         head_block_info.get_total_difficulty(),
-        head_block_hash,
+        head_block.header().clone(),
     );
     let network_config = config.clone();
     let network_bus = bus.clone();

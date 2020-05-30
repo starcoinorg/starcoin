@@ -352,7 +352,7 @@ impl Protocol {
                 remote: who,
                 messages: vec![Bytes::from(msg.data)],
             },
-            Message::Status(status) => self.on_status_message(who, status),
+            Message::Status(status) => self.on_status_message(who, *status),
         }
     }
 
@@ -446,7 +446,7 @@ impl Protocol {
             info: self.chain_info.self_info.clone(),
         };
 
-        self.send_message(&who, Message::Status(status))
+        self.send_message(&who, Message::Status(Box::new(status)))
             .expect("should succ")
     }
 
