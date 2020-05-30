@@ -51,7 +51,7 @@ fn head_row(first_value: &Value) -> Result<(Row, Box<dyn RowBuilder>)> {
         let mut flat = json!({});
         flatten(first_value, &mut flat, None, true)
             .map_err(|e| anyhow::Error::msg(e.description().to_string()))?;
-        let obj = flat.as_object().expect("must be a object");
+        let obj = flat.as_object().expect("must be an object");
         let mut cells = vec![];
         let mut field_names = vec![];
         for (k, _v) in obj {
@@ -85,7 +85,7 @@ fn print_vec_table(values: Vec<Value>) -> Result<()> {
         return Ok(());
     }
     if first_value.is_array() {
-        bail!("Not support embed array in Action Result.")
+        bail!("Not support embedding array in Action Result.")
     }
     let (head_row, row_builder) = head_row(&first_value)?;
     let mut rows = vec![];
@@ -105,12 +105,12 @@ fn print_value_table(value: Value) -> Result<()> {
     if simple_value {
         println!("{}", value_to_string(&value));
     } else {
-        // value must be a object at here.
+        // value must be an object here.
         let bold = CellFormat::builder().bold(true).build();
         let mut flat = json!({});
         flatten(&value, &mut flat, None, true)
             .map_err(|e| anyhow::Error::msg(e.description().to_string()))?;
-        let obj = flat.as_object().expect("must be a object");
+        let obj = flat.as_object().expect("must be an object");
         let mut rows = vec![];
         for (k, v) in obj {
             let row = Row::new(vec![
@@ -159,7 +159,7 @@ impl RowBuilder for ObjectRowBuilder {
         let mut flat = json!({});
         flatten(value, &mut flat, None, true)
             .map_err(|e| anyhow::Error::msg(e.description().to_string()))?;
-        let obj = flat.as_object().expect("must be a object");
+        let obj = flat.as_object().expect("must be an object");
         let mut cells = vec![];
         for field in &self.field_names {
             let v = obj.get(field).unwrap_or(&Value::Null);

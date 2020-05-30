@@ -127,7 +127,7 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
     if enable_stderr {
         let stderr = ConsoleAppender::builder()
             .encoder(Box::new(PatternEncoder::new(LOG_PATTERN)))
-            .target(Target::Stderr)
+            .target(Target::Stderr)    //为什么用stderr 而不用stdout？有什么特殊考量？
             .build();
         builder = builder.appender(Appender::builder().build("stderr", Box::new(stderr)));
         root_builder = root_builder.appender("stderr");
