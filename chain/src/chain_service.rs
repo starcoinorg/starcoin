@@ -114,25 +114,21 @@ where
         let block_header = block.header();
         let total_difficulty = new_branch.get_total_difficulty()?;
         if total_difficulty > self.get_master().get_total_difficulty()? {
-            // we can just let find_ancestors do it work, no matter whether fork or not.
-            let (enacted_blocks, retracted_blocks) = self.find_ancestors(&new_branch)?;
+            let (enacted_blocks, retracted_blocks) =
+                if block.header().parent_hash() == self.startup_info.master {
+                    (vec![block.clone()], vec![])
+                } else {
+                    // TODO: After review the impl of find_common_ancestor in storage.
+                    // we can just let find_ancestors do it work, no matter whether fork or not.
+                    self.find_ancestors(&new_branch)?
+                };
+
             debug_assert!(!enacted_blocks.is_empty());
             debug_assert_eq!(enacted_blocks.last().unwrap(), &block);
 
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
 
-            // we don't need to broadcast the enacted blocks as head blocks, only the newest one.
-            // if self.sync_metadata.is_sync_done() {
-            //     enacted_blocks.into_iter().for_each(|enacted_block| {
-            //         if let Ok(Some(b_i)) = self.storage.get_block_info(enacted_block.header().id())
-            //         {
-            //             let enacted_block_detail =
-            //                 BlockDetail::new(enacted_block, b_i.get_total_difficulty());
-            //             self.broadcast_2_bus(enacted_block_detail);
-            //         }
-            //     });
-            // }
             if self.sync_metadata.is_sync_done() {
                 CHAIN_METRICS.broadcast_head_count.inc();
                 let block_detail = BlockDetail::new(block, total_difficulty);
