@@ -94,6 +94,7 @@ impl AccountSeqNumberClient for CachedSeqNumberClient {
             return sequence_number;
         }
 
+        //两个问题：添加时做清理，如果很快达到limit，会不会影响性能？另外刚插入的，清理掉会影响后面的逻辑？
         debug!(target: "txpool", "NonceCache: reached limit");
         trace_time!("nonce_cache: clear");
         let to_remove: Vec<_> = cache.keys().take(self.cache.limit / 2).cloned().collect();

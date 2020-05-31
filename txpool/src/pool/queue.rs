@@ -501,6 +501,7 @@ impl TransactionQueue {
             removed
         };
 
+        //为什么每个删除操作都需要清理掉pending呢?
         if results.iter().any(Option::is_some) {
             self.cached_pending.write().clear();
         }

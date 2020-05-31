@@ -90,6 +90,7 @@ impl TxPoolSyncService for TxPoolService {
             .map(|t| t.signed().clone())
     }
 
+    // 为什么get时设置呢？
     /// Get all pending txns which is ok to be packaged to mining.
     fn get_pending_txns(&self, max_len: Option<u64>) -> Vec<SignedUserTransaction> {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
@@ -253,6 +254,7 @@ impl Inner {
         Ok(())
     }
 
+    // 为什么每次都需要new一个client？
     fn get_pool_client(&self) -> PoolClient {
         PoolClient::new(
             self.chain_header.read().clone(),

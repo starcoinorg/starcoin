@@ -4,6 +4,7 @@
 use std::{fmt, sync::Arc};
 
 use super::{TxStatus, VerifiedTransaction as Transaction};
+// 这儿为什么要重命名？
 use common_crypto::hash::HashValue as H256;
 use futures_channel::mpsc;
 use transaction_pool as tx_pool;
