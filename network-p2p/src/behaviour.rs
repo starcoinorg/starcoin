@@ -145,8 +145,16 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
                         remote,
                     }));
             }
-            CustomMessageOutcome::NotificationsReceived { remote,protocol_name, messages } => {
-                let ev = Event::NotificationsReceived { remote, protocol_name, messages };
+            CustomMessageOutcome::NotificationsReceived {
+                remote,
+                protocol_name,
+                messages,
+            } => {
+                let ev = Event::NotificationsReceived {
+                    remote,
+                    protocol_name,
+                    messages,
+                };
                 self.events.push_back(BehaviourOut::Event(ev));
             }
             CustomMessageOutcome::None => {}
