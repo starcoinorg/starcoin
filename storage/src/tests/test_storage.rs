@@ -7,7 +7,7 @@ use crypto::{hash::PlainCryptoHash, HashValue};
 
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{InnerStore, StorageInstance, ValueCodec};
+use crate::storage::{CacheObject,InnerStore, StorageInstance, ValueCodec};
 use crate::{Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
 use anyhow::Result;
 use starcoin_types::transaction::TransactionInfo;
@@ -177,6 +177,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
 
 #[test]
 fn test_missing_key_handle() -> Result<()> {
+    println!("test :{:?}" , CacheObject::None.to_vec());
     let tmpdir = starcoin_config::temp_path();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let cache_storage = Arc::new(CacheStorage::new());
@@ -187,8 +188,8 @@ fn test_missing_key_handle() -> Result<()> {
     let result = storage.get_transaction_info(key)?;
     assert!(result.is_none());
     let value2 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
-    assert!(value2.is_some());
-    assert!(value2.unwrap().is_empty());
+    assert_eq!(CacheObject::transform(value2), CacheObject::None);
+    // assert!(value2.unwrap().is_empty());
     let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value3.is_none());
     // test remove

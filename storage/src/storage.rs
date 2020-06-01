@@ -9,6 +9,8 @@ use crypto::HashValue;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use serde::{Deserialize, Serialize};
+use scs::SCSCodec;
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -37,6 +39,27 @@ pub trait InnerStore: Send + Sync {
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
+}
+
+/// Define cache object distinguish between normal objects and missing
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub  enum CacheObject {
+    Value(Vec<u8>),
+    None,
+}
+impl CacheObject {
+    pub fn transform(result: Option<Vec<u8>>) -> Self {
+        match result {
+            Some(v) => CacheObject::Value(v),
+            None => CacheObject::None,
+        }
+    }
+    pub fn to_vec(&self) -> Vec<u8> {
+        match self {
+            CacheObject::Value(v) => v.to_vec(),
+            CacheObject::None => self.encode().unwrap(),
+        }
+    }
 }
 
 ///Storage instance type define
@@ -73,11 +96,10 @@ impl InnerStore for StorageInstance {
             StorageInstance::DB { db } => db.get(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
-                if let Ok(Some(v)) = cache.get(prefix_name, key.clone()) {
-                    if v.is_empty() {
-                        Ok(None)
-                    } else {
-                        Ok(Some(v))
+                if let Ok(value) = cache.get(prefix_name, key.clone()) {
+                    match CacheObject::transform(value) {
+                        CacheObject::Value(v) => Ok(Some(v)),
+                        CacheObject::None =>Ok(None),
                     }
                 } else {
                     match db.get(prefix_name, key.clone())? {
@@ -87,7 +109,7 @@ impl InnerStore for StorageInstance {
                         }
                         None => {
                             // put null vec to cache for avoid repeatedly querying non-existent data from db
-                            cache.put(prefix_name, key, vec![])?;
+                            cache.put(prefix_name, key, CacheObject::None.to_vec())?;
                             Ok(None)
                         }
                     }
@@ -113,11 +135,10 @@ impl InnerStore for StorageInstance {
             StorageInstance::DB { db } => db.contains_key(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 match cache.get(prefix_name, key.clone()) {
-                    Ok(Some(v)) => {
-                        if v.is_empty() {
-                            db.contains_key(prefix_name, key)
-                        } else {
-                            Ok(true)
+                    Ok(value) => {
+                        match CacheObject::transform(value) {
+                            CacheObject::Value(_v) => Ok(true),
+                            CacheObject::None =>db.contains_key(prefix_name, key),
                         }
                     }
                     _ => db.contains_key(prefix_name, key),
