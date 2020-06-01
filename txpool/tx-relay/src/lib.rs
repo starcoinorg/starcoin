@@ -1,6 +1,4 @@
 use starcoin_types::transaction::SignedUserTransaction;
-use starcoin_types::TXN_PROTOCOL_NAME;
-use std::borrow::Cow;
 
 pub enum TxnRelayMessage {
     /// propagate local txns to remote peers,
@@ -10,29 +8,16 @@ pub enum TxnRelayMessage {
 }
 
 #[derive(Clone, Debug)]
-pub struct PropagateNewTransactions {
-    txns: Vec<SignedUserTransaction>,
-    protocol_name: Cow<'static, [u8]>,
+pub enum PropagateNewTransactions {
+    V1(Vec<SignedUserTransaction>),
 }
 
 impl From<Vec<SignedUserTransaction>> for PropagateNewTransactions {
     fn from(txns: Vec<SignedUserTransaction>) -> Self {
-        Self {
-            txns,
-            protocol_name: TXN_PROTOCOL_NAME.into(),
-        }
+        PropagateNewTransactions::V1(txns)
     }
 }
 
-impl PropagateNewTransactions {
-    pub fn transactions_to_propagate(self) -> Vec<SignedUserTransaction> {
-        self.txns
-    }
-
-    pub fn protocol_name(&self) -> Cow<'static, [u8]> {
-        self.protocol_name.clone()
-    }
-}
 impl actix::Message for PropagateNewTransactions {
     type Result = ();
 }

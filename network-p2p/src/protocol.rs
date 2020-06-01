@@ -20,7 +20,7 @@ use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
 
-use crate::protocol::message::generic::{ConsensusMessage, Message, Status};
+use crate::protocol::message::generic::{Message, Status};
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::borrow::Cow;
@@ -73,6 +73,7 @@ pub enum CustomMessageOutcome {
     /// Messages have been received on one or more notifications protocols.
     NotificationsReceived {
         remote: PeerId,
+        protocol_name: Cow<'static, [u8]>,
         messages: Vec<Bytes>,
     },
     None,
@@ -210,13 +211,21 @@ impl NetworkBehaviour for Protocol {
                 CustomMessageOutcome::NotificationStreamClosed { remote: peer_id }
             }
             GenericProtoOut::LegacyMessage { peer_id, message } => {
-                self.on_custom_message(peer_id, message)
+                self.on_legacy_message(peer_id, message)
             }
             GenericProtoOut::Notification {
                 peer_id,
-                protocol_name: _protocol_name,
+                protocol_name,
                 message,
-            } => self.on_custom_message(peer_id, message),
+            } => {
+                trace!("receive notification message from {} ", peer_id);
+
+                CustomMessageOutcome::NotificationsReceived {
+                    remote: peer_id,
+                    protocol_name,
+                    messages: vec![Bytes::from(message)],
+                }
+            }
             GenericProtoOut::Clogged {
                 peer_id,
                 messages: _,
@@ -336,7 +345,7 @@ impl Protocol {
         self.behaviour.peerset_debug_info()
     }
 
-    pub fn on_custom_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
+    pub fn on_legacy_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
         trace!("receive custom message from {} ", who);
         let message = match Message::decode(&data[..]) {
             Ok(message) => message,
@@ -348,10 +357,6 @@ impl Protocol {
         };
 
         match message {
-            Message::Consensus(msg) => CustomMessageOutcome::NotificationsReceived {
-                remote: who,
-                messages: vec![Bytes::from(msg.data)],
-            },
             Message::Status(status) => self.on_status_message(who, *status),
         }
     }
@@ -513,17 +518,8 @@ impl Protocol {
         protocol_name: Cow<'static, [u8]>,
         message: impl Into<Vec<u8>>,
     ) {
-        let msg = Message::Consensus(ConsensusMessage {
-            data: message.into(),
-        })
-        .encode();
-
-        self.behaviour.write_notification(
-            &target,
-            protocol_name,
-            msg.expect("should succ"),
-            vec![],
-        );
+        self.behaviour
+            .write_notification(&target, protocol_name, message, vec![]);
     }
 
     pub fn register_notifications_protocol(

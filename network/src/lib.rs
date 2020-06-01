@@ -24,6 +24,7 @@ pub use network_p2p::PeerId;
 
 use anyhow::*;
 use parity_codec::{Decode, Encode};
+use std::borrow::Cow;
 use types::account_address::AccountAddress;
 
 #[derive(Clone, Hash, Debug)]
@@ -90,5 +91,6 @@ impl Message {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct NetworkMessage {
     pub peer_id: PeerId,
+    pub protocol_name: Cow<'static, [u8]>,
     pub data: Vec<u8>,
 }
