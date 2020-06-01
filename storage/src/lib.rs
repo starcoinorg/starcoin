@@ -53,7 +53,7 @@ pub const BLOCK_SONS_PREFIX_NAME: ColumnFamilyName = "block_sons";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
-pub const BLOCK_TRANSATIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
+pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "startup_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
@@ -70,7 +70,7 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         BLOCK_BODY_PREFIX_NAME,
         BLOCK_NUM_PREFIX_NAME,
         BLOCK_INFO_PREFIX_NAME,
-        BLOCK_TRANSATIONS_PREFIX_NAME,
+        BLOCK_TRANSACTIONS_PREFIX_NAME,
         STATE_NODE_PREFIX_NAME,
         STARTUP_INFO_PREFIX_NAME,
         TRANSACTION_PREFIX_NAME,

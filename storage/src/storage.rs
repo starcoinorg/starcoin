@@ -74,14 +74,22 @@ impl InnerStore for StorageInstance {
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
                 if let Ok(Some(v)) = cache.get(prefix_name, key.clone()) {
-                    Ok(Some(v))
+                    if v.is_empty() {
+                        Ok(None)
+                    } else {
+                        Ok(Some(v))
+                    }
                 } else {
                     match db.get(prefix_name, key.clone())? {
                         Some(value) => {
                             cache.put(prefix_name, key, value.clone())?;
                             Ok(Some(value))
                         }
-                        None => Ok(None),
+                        None => {
+                            // put null vec to cache for avoid repeatedly querying non-existent data from db
+                            cache.put(prefix_name, key, vec![])?;
+                            Ok(None)
+                        }
                     }
                 }
             }
@@ -104,9 +112,15 @@ impl InnerStore for StorageInstance {
             StorageInstance::CACHE { cache } => cache.contains_key(prefix_name, key),
             StorageInstance::DB { db } => db.contains_key(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
-                match cache.contains_key(prefix_name, key.clone()) {
-                    Err(_) => db.contains_key(prefix_name, key),
-                    Ok(is_contains) => Ok(is_contains),
+                match cache.get(prefix_name, key.clone()) {
+                    Ok(Some(v)) => {
+                        if v.is_empty() {
+                            db.contains_key(prefix_name, key)
+                        } else {
+                            Ok(true)
+                        }
+                    }
+                    _ => db.contains_key(prefix_name, key),
                 }
             }
         }
