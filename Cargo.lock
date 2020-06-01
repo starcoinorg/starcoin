@@ -5901,6 +5901,7 @@ dependencies = [
  "starcoin-wallet-api",
  "stest",
  "thiserror",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6465,6 +6466,7 @@ dependencies = [
  "stest",
  "thiserror",
  "tokio 0.1.22",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6499,6 +6501,7 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-types",
  "stest",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6875,6 +6878,7 @@ dependencies = [
  "starcoin-wallet-lib",
  "stest",
  "tempfile",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6938,6 +6942,7 @@ dependencies = [
  "log 0.4.8",
  "starcoin-logger",
  "stest-macro",
+ "tokio 0.2.20",
 ]
 
 [[package]]

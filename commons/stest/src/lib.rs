@@ -22,14 +22,20 @@ where
     T: Send + 'static,
 {
     let tx_clone = tx.clone();
+    let tx_cl = tx.clone();
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(timeout));
         let _ = tx.send(None);
     });
 
-    std::thread::spawn(move || {
+    let t = std::thread::spawn(move || {
         let t = f();
         let _ = tx_clone.send(Some(t));
+    });
+    std::thread::spawn(move || {
+        if t.join().is_err() {
+            let _ = tx_cl.send(None);
+        };
     });
 }
 
@@ -52,14 +58,17 @@ pub async fn timeout_future<T>(timeout: u64, tx: UnboundedSender<Option<T>>) {
 
 pub async fn test_future<F, T>(f: F, tx: UnboundedSender<Option<T>>)
 where
-    F: Future<Output = T>,
+    F: Future<Output = T> + Send + 'static,
+    T: Send + 'static,
 {
-    let t = f.await;
-    let _ = tx.unbounded_send(Some(t));
+    let join = tokio::task::spawn_local(f);
+    let t = join.await.ok();
+    let _ = tx.unbounded_send(t);
 }
 
 pub async fn wait_result<T>(mut rx: UnboundedReceiver<Option<T>>) -> T {
     let result = rx.next().await;
+    actix_rt::System::current().stop();
     match result {
         Some(Some(t)) => t,
         _ => panic!(),

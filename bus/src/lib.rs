@@ -303,6 +303,7 @@ mod tests {
     #[stest::test]
     async fn test_bus_actor() {
         let bus_actor = BusActor::launch();
+
         let actor = MyActor {
             counter: 0,
             bus: bus_actor.clone(),

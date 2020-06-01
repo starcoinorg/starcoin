@@ -46,3 +46,4 @@ starcoin-open-block = {path = "./open-block"}
 
 [dev-dependencies]
 starcoin-wallet-api = { path = "../wallet/api"}
+tokio = { version = "0.2", features = ["full"] }
