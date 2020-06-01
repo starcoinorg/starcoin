@@ -53,6 +53,7 @@ pub enum StorageInstance {
         db: Arc<dyn InnerStore>,
     },
 }
+
 impl StorageInstance {
     pub fn new_cache_instance(cache: CacheStorage) -> Self {
         StorageInstance::CACHE {
@@ -66,6 +67,7 @@ impl StorageInstance {
         Self::CacheAndDb { cache, db }
     }
 }
+
 impl InnerStore for StorageInstance {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         match self {
@@ -92,10 +94,9 @@ impl InnerStore for StorageInstance {
         match self {
             StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
             StorageInstance::DB { db } => db.put(prefix_name, key, value),
-            StorageInstance::CacheAndDb { cache, db } => {
-                db.put(prefix_name, key.clone(), value.clone()).unwrap();
-                cache.put(prefix_name, key, value)
-            }
+            StorageInstance::CacheAndDb { cache, db } => db
+                .put(prefix_name, key.clone(), value)
+                .and_then(|_| cache.remove(prefix_name, key)),
         }
     }
 

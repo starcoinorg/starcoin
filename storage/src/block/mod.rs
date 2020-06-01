@@ -124,7 +124,7 @@ impl ValueCodec for Vec<HashValue> {
     fn encode_value(&self) -> Result<Vec<u8>> {
         let mut encoded = vec![];
         for hash in self {
-            encoded.write_all(&hash.to_vec()).unwrap();
+            encoded.write_all(&hash.to_vec())?
         }
         Ok(encoded)
     }
@@ -164,7 +164,7 @@ impl KeyCodec for BranchNumber {
         let (branch_id, number) = *self;
 
         let mut encoded_key = Vec::with_capacity(size_of::<BranchNumber>());
-        encoded_key.write_all(&branch_id.to_vec()).unwrap();
+        encoded_key.write_all(&branch_id.to_vec())?;
         encoded_key.write_u64::<BigEndian>(number)?;
         Ok(encoded_key)
     }
@@ -200,15 +200,15 @@ impl BlockStorage {
     }
 
     pub fn save_header(&self, header: BlockHeader) -> Result<()> {
-        self.header_store.put(header.id(), header.clone()).unwrap();
+        self.header_store.put(header.id(), header.clone())?;
         //save sons relationship
         self.put_sons(header.parent_hash(), header.id())
     }
 
     pub fn get_headers(&self) -> Result<Vec<HashValue>> {
         let mut key_hashes = vec![];
-        for hash in self.header_store.keys().unwrap() {
-            let hashval = HashValue::from_slice(hash.as_slice()).unwrap();
+        for hash in self.header_store.keys()? {
+            let hashval = HashValue::from_slice(hash.as_slice())?;
             key_hashes.push(hashval)
         }
         Ok(key_hashes)
@@ -262,11 +262,11 @@ impl BlockStorage {
         let (header, body) = block.clone().into_inner();
         //save header
         let block_id = header.id();
-        self.save_header(header.clone()).unwrap();
+        self.save_header(header.clone())?;
         //save number
-        self.save_number(header.number(), block_id).unwrap();
+        self.save_number(header.number(), block_id)?;
         //save body
-        self.save_body(block_id, body).unwrap();
+        self.save_body(block_id, body)?;
         //save block cache
         self.save(block, state)
     }
@@ -281,12 +281,11 @@ impl BlockStorage {
         let (header, body) = block.clone().into_inner();
         //save header
         let block_id = header.id();
-        self.save_header(header.clone()).unwrap();
+        self.save_header(header.clone())?;
         //save number
-        self.save_branch_number(branch_id, header.number(), block_id)
-            .unwrap();
+        self.save_branch_number(branch_id, header.number(), block_id)?;
         //save body
-        self.save_body(block_id, body).unwrap();
+        self.save_body(block_id, body)?;
         //save block cache
         self.save(block, state)
     }
@@ -318,7 +317,6 @@ impl BlockStorage {
         Ok(vev_hash)
     }
     /// Get common ancestor
-    #[allow(dead_code)]
     pub fn get_common_ancestor(
         &self,
         block_id1: HashValue,
@@ -389,10 +387,10 @@ impl BlockStorage {
         self.get_block_header_by_number(max_number - 1)
     }
 
-    pub fn get_latest_block(&self) -> Result<Block> {
+    pub fn get_latest_block(&self) -> Result<Option<Block>> {
         //get storage current len
         let max_number = self.number_store.get_len()?;
-        Ok(self.get_block_by_number(max_number - 1)?.unwrap())
+        self.get_block_by_number(max_number - 1)
     }
 
     pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
@@ -415,7 +413,7 @@ impl BlockStorage {
     }
 
     pub fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        match self.number_store.get(number).unwrap() {
+        match self.number_store.get(number)? {
             Some(block_id) => self.get_block_header_by_hash(block_id),
             None => bail!("can't find block header by number:{}", number),
         }
@@ -434,7 +432,7 @@ impl BlockStorage {
         number: u64,
     ) -> Result<Option<BlockHeader>> {
         let key = (branch_id, number);
-        match self.branch_number_store.get(key).unwrap() {
+        match self.branch_number_store.get(key)? {
             Some(block_id) => self.get_block_header_by_hash(block_id),
             None => bail!(
                 "can't find header by branch number:{:?}, {}",
@@ -450,7 +448,7 @@ impl BlockStorage {
         number: u64,
     ) -> Result<Option<Block>> {
         let key = (branch_id, number);
-        match self.branch_number_store.get(key).unwrap() {
+        match self.branch_number_store.get(key)? {
             Some(block_id) => self.get(block_id),
             None => bail!(
                 "can't find block by branch number:{:?}, {}",
