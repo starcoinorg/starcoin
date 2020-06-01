@@ -176,7 +176,6 @@ fn test_two_level_storage_read_through() -> Result<()> {
 
 #[test]
 fn test_missing_key_handle() -> Result<()> {
-    println!("test :{:?}", CacheObject::None.to_vec());
     let tmpdir = starcoin_config::temp_path();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let cache_storage = Arc::new(CacheStorage::new());

@@ -59,9 +59,7 @@ impl InnerStore for CacheStorage {
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("cache", prefix_name, "remove").end_with(|| {
             let compose = compose_key(prefix_name.to_string(), key)?;
-            match self.cache.lock().pop(&compose) {
-                _ => {}
-            }
+            self.cache.lock().pop(&compose);
             Ok(())
         })
     }
