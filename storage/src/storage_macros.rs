@@ -27,19 +27,15 @@ macro_rules! define_storage {
             pub fn get(&self, key: $key_type) -> Result<Option<$value_type>> {
                 self.store.get(key)
             }
-            #[allow(dead_code)]
             pub fn remove(&self, key: $key_type) -> Result<()> {
                 self.store.remove(key)
             }
-            #[allow(dead_code)]
             pub fn write_batch(&self, batch: WriteBatch) -> Result<()> {
                 self.store.write_batch(batch)
             }
-            #[allow(dead_code)]
             pub fn get_len(&self) -> Result<u64> {
                 self.store.get_len()
             }
-            #[allow(dead_code)]
             pub fn keys(&self) -> Result<Vec<Vec<u8>>> {
                 self.store.keys()
             }

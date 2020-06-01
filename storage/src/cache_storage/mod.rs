@@ -59,7 +59,7 @@ impl InnerStore for CacheStorage {
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("cache", prefix_name, "remove").end_with(|| {
             let compose = compose_key(prefix_name.to_string(), key)?;
-            self.cache.lock().pop(&compose).unwrap();
+            self.cache.lock().pop(&compose);
             Ok(())
         })
     }
@@ -68,10 +68,8 @@ impl InnerStore for CacheStorage {
         record_metrics("cache", "batch", prefix_name).end_with(|| {
             for (key, write_op) in &batch.rows {
                 match write_op {
-                    WriteOp::Value(value) => {
-                        self.put(prefix_name, key.to_vec(), value.to_vec()).unwrap()
-                    }
-                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
+                    WriteOp::Value(value) => self.put(prefix_name, key.to_vec(), value.to_vec())?,
+                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec())?,
                 };
             }
             Ok(())
