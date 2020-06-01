@@ -6,7 +6,7 @@ cfg_root=/mnt/volume_01/starcoin_cfg
 create_node(){
     local node=$1
     local access_token=$2
-    docker-machine  create --driver digitalocean --digitalocean-region sgp1 --digitalocean-image "ubuntu-18-04-x64" --digitalocean-size "c-4" --digitalocean-access-token  $access_token $node
+    docker-machine  create --driver digitalocean --digitalocean-region sgp1 --digitalocean-image "ubuntu-18-04-x64" --digitalocean-size "c-4" --digitalocean-private-networking --digitalocean-access-token  $access_token $node
 }
 
 create_nodes(){
