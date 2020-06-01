@@ -129,7 +129,7 @@ fn test_two_level_storage() {
     let value6 = cache_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
-    assert!(value6.unwrap().is_empty());
+    assert_eq!(CacheObject::transform(value6), CacheObject::None);
     let value7 = db_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
