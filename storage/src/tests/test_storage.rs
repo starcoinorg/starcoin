@@ -3,13 +3,12 @@
 
 extern crate chrono;
 
-use crypto::{hash::PlainCryptoHash, HashValue};
-
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{CacheObject,InnerStore, StorageInstance, ValueCodec};
+use crate::storage::{CacheObject, InnerStore, StorageInstance, ValueCodec};
 use crate::{Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
 use anyhow::Result;
+use crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;
@@ -177,7 +176,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
 
 #[test]
 fn test_missing_key_handle() -> Result<()> {
-    println!("test :{:?}" , CacheObject::None.to_vec());
+    println!("test :{:?}", CacheObject::None.to_vec());
     let tmpdir = starcoin_config::temp_path();
     let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let cache_storage = Arc::new(CacheStorage::new());

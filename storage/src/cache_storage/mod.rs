@@ -60,7 +60,7 @@ impl InnerStore for CacheStorage {
         record_metrics("cache", prefix_name, "remove").end_with(|| {
             let compose = compose_key(prefix_name.to_string(), key)?;
             match self.cache.lock().pop(&compose) {
-                _ => {},
+                _ => {}
             }
             Ok(())
         })

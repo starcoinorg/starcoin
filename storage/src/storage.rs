@@ -6,11 +6,11 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use anyhow::{bail, Result};
 use crypto::HashValue;
+use scs::SCSCodec;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use serde::{Deserialize, Serialize};
-use scs::SCSCodec;
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -43,7 +43,7 @@ pub trait InnerStore: Send + Sync {
 
 /// Define cache object distinguish between normal objects and missing
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub  enum CacheObject {
+pub enum CacheObject {
     Value(Vec<u8>),
     None,
 }
@@ -99,7 +99,7 @@ impl InnerStore for StorageInstance {
                 if let Ok(value) = cache.get(prefix_name, key.clone()) {
                     match CacheObject::transform(value) {
                         CacheObject::Value(v) => Ok(Some(v)),
-                        CacheObject::None =>Ok(None),
+                        CacheObject::None => Ok(None),
                     }
                 } else {
                     match db.get(prefix_name, key.clone())? {
@@ -135,12 +135,10 @@ impl InnerStore for StorageInstance {
             StorageInstance::DB { db } => db.contains_key(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 match cache.get(prefix_name, key.clone()) {
-                    Ok(value) => {
-                        match CacheObject::transform(value) {
-                            CacheObject::Value(_v) => Ok(true),
-                            CacheObject::None =>db.contains_key(prefix_name, key),
-                        }
-                    }
+                    Ok(value) => match CacheObject::transform(value) {
+                        CacheObject::Value(_v) => Ok(true),
+                        CacheObject::None => db.contains_key(prefix_name, key),
+                    },
                     _ => db.contains_key(prefix_name, key),
                 }
             }
