@@ -128,7 +128,7 @@ fn test_two_level_storage() {
     let value6 = cache_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
-    assert_eq!(CacheObject::transform(value6), CacheObject::None);
+    assert_eq!(value6.unwrap(), CacheObject::None.to_vec());
     let value7 = db_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
@@ -163,12 +163,10 @@ fn test_two_level_storage_read_through() -> Result<()> {
     .unwrap();
 
     let transaction_info2 = storage2.transaction_info_storage.get(id).unwrap();
-    assert!(transaction_info2.is_some());
     assert_eq!(transaction_info1, transaction_info2.unwrap());
 
     //verfiy cache storage
     let transaction_info_data = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
-    assert!(transaction_info_data.is_some());
     let transaction_info3 = TransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
     assert_eq!(transaction_info3, transaction_info1);
     Ok(())
@@ -186,8 +184,7 @@ fn test_missing_key_handle() -> Result<()> {
     let result = storage.get_transaction_info(key)?;
     assert!(result.is_none());
     let value2 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
-    assert_eq!(CacheObject::transform(value2), CacheObject::None);
-    // assert!(value2.unwrap().is_empty());
+    assert_eq!(value2.unwrap(), CacheObject::None.to_vec());
     let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value3.is_none());
     // test remove

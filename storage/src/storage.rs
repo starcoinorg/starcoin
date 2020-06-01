@@ -54,6 +54,9 @@ impl CacheObject {
             None => CacheObject::None,
         }
     }
+    pub fn is_none(result: Vec<u8>) -> bool {
+        result == CacheObject::None.encode().unwrap()
+    }
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
             CacheObject::Value(v) => v.to_vec(),
@@ -96,10 +99,11 @@ impl InnerStore for StorageInstance {
             StorageInstance::DB { db } => db.get(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
-                if let Ok(value) = cache.get(prefix_name, key.clone()) {
-                    match CacheObject::transform(value) {
-                        CacheObject::Value(v) => Ok(Some(v)),
-                        CacheObject::None => Ok(None),
+                if let Ok(Some(value)) = cache.get(prefix_name, key.clone()) {
+                    if CacheObject::is_none(value.clone()) {
+                        Ok(None)
+                    } else {
+                        Ok(Some(value))
                     }
                 } else {
                     match db.get(prefix_name, key.clone())? {
@@ -135,10 +139,13 @@ impl InnerStore for StorageInstance {
             StorageInstance::DB { db } => db.contains_key(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 match cache.get(prefix_name, key.clone()) {
-                    Ok(value) => match CacheObject::transform(value) {
-                        CacheObject::Value(_v) => Ok(true),
-                        CacheObject::None => db.contains_key(prefix_name, key),
-                    },
+                    Ok(Some(value)) => {
+                        if CacheObject::is_none(value) {
+                            Ok(false)
+                        } else {
+                            Ok(true)
+                        }
+                    }
                     _ => db.contains_key(prefix_name, key),
                 }
             }
