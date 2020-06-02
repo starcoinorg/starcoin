@@ -76,7 +76,7 @@ where
         };
         let difficulty = state.as_ref().unwrap().difficulty;
         let block = block_template.into_block(consensus_header, difficulty);
-        info!("Miner new block: {:?}", block);
+        info!("Miner new block with id: {:?}", block.id());
         self.bus.do_send(Broadcast {
             msg: MinedBlock(Arc::new(block)),
         });

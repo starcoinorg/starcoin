@@ -5,7 +5,9 @@ use anyhow::Result;
 use config::MinerConfig;
 use futures::channel::mpsc;
 use futures::stream::StreamExt;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
+use std::thread;
 use types::U256;
 
 pub struct Miner {
@@ -13,6 +15,8 @@ pub struct Miner {
     nonce_rx: mpsc::UnboundedReceiver<(Vec<u8>, u64)>,
     worker_controller: WorkerController,
     stratum_client: StratumClient,
+    pb: ProgressBar,
+    num_seals_found: u64,
 }
 
 impl Miner {
@@ -20,12 +24,21 @@ impl Miner {
         let mut stratum_client = StratumClient::new(&config)?;
         let job_rx = stratum_client.subscribe().await?;
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
-        let worker_controller = start_worker(&config, nonce_tx);
+
+        let mp = MultiProgress::new();
+        let pb = mp.add(ProgressBar::new(10));
+        pb.set_style(ProgressStyle::default_bar().template("{msg:.green}"));
+        let worker_controller = start_worker(&config, nonce_tx, &mp);
+        thread::spawn(move || {
+            mp.join().expect("MultiProgress join failed");
+        });
         Ok(Self {
             job_rx,
             nonce_rx,
             worker_controller,
             stratum_client,
+            pb,
+            num_seals_found: 0,
         })
     }
 
@@ -50,8 +63,19 @@ impl Miner {
         self.worker_controller
             .send_message(WorkerMessage::Stop)
             .await;
-        if let Err(err) = self.stratum_client.submit_seal((pow_header, nonce)).await {
+        if let Err(err) = self
+            .stratum_client
+            .submit_seal((pow_header.clone(), nonce))
+            .await
+        {
             error!("Submit seal to stratum failed: {:?}", err);
+            return;
+        }
+        {
+            self.num_seals_found += 1;
+            self.pb
+                .set_message(&format!("Total seals found: {:>3}", self.num_seals_found));
+            self.pb.inc(1);
         }
     }
 
