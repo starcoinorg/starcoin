@@ -52,7 +52,7 @@ impl StratumClient {
             let mut lines = reader.lines();
             while let Some(line) = lines.next().await {
                 let response: String = line.unwrap();
-                info!("Receive from stratum: {}", &response);
+                debug!("Receive from stratum: {}", &response);
                 if let Ok(job) = StratumClient::process_response(response) {
                     if let Err(e) = job_tx.send(job).await {
                         error!("stratum subscribe job tx send failed:{:?}", e);

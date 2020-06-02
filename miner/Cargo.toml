@@ -46,6 +46,7 @@ starcoin-txpool-api = {path = "../txpool/api"}
 hex = { version = "0.4.2", default-features = false }
 thiserror = "1.0"
 structopt = "0.3.2"
+indicatif = "0.14"
 
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }

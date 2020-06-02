@@ -5,21 +5,30 @@ use consensus::difficulty::difficult_to_target;
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use types::{H256, U256};
+
+const HASH_RATE_UPDATE_DURATION_MILLIS: u128 = 300;
 
 pub fn start_worker(
     config: &MinerConfig,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
+    mp: &MultiProgress,
 ) -> WorkerController {
     match config.consensus_strategy {
         ConsensusStrategy::Argon(thread_num) => {
             let worker_txs = (0..thread_num)
                 .map(|i| {
+                    let pb = mp.add(ProgressBar::new(100));
+                    pb.set_style(ProgressStyle::default_bar().template(
+                        "{prefix:.bold.dim} {spinner:.cyan/blue} [{elapsed_precise}] {msg}",
+                    ));
                     let (worker_tx, worker_rx) = mpsc::unbounded();
-                    let worker_name = format!("starcoin-miner-argon-worker-{}", i);
+                    let worker_name = format!("starcoin-miner-argon-cpu-worker-{}", i);
+                    pb.set_prefix(&worker_name);
                     let nonce_range = partition_nonce(i as u64, thread_num as u64);
                     let nonce_tx_clone = nonce_tx.clone();
                     thread::Builder::new()
@@ -27,7 +36,7 @@ pub fn start_worker(
                         .spawn(move || {
                             let mut worker = Worker::new(worker_rx, nonce_tx_clone);
                             let rng = nonce_generator(nonce_range);
-                            worker.run(rng, argon_solver);
+                            worker.run(rng, argon_solver, pb);
                         })
                         .expect("Start worker thread failed");
                     info!("start mine worker: {:?}", worker_name);
@@ -37,15 +46,21 @@ pub fn start_worker(
             WorkerController::new(worker_txs)
         }
         ConsensusStrategy::Dummy(_dev_period) => {
+            let pb = mp.add(ProgressBar::new(100));
+            pb.set_style(
+                ProgressStyle::default_bar()
+                    .template("{prefix:.bold.dim} {spinner:.cyan/blue} [{elapsed_precise}] {msg}"),
+            );
             let (worker_tx, worker_rx) = mpsc::unbounded();
             let worker_name = "starcoin-miner-dummy-worker".to_owned();
+            pb.set_prefix(&worker_name);
             let nonce_range = partition_nonce(1 as u64, 2 as u64);
             thread::Builder::new()
                 .name(worker_name)
                 .spawn(move || {
                     let mut worker = Worker::new(worker_rx, nonce_tx);
                     let rng = nonce_generator(nonce_range);
-                    worker.run(rng, dummy_solver);
+                    worker.run(rng, dummy_solver, pb);
                 })
                 .expect("Start worker thread failed");
             WorkerController::new(vec![worker_tx])
@@ -83,6 +98,7 @@ pub struct Worker {
     diff: U256,
     pow_header: Option<Vec<u8>>,
     start: bool,
+    num_seal_found: u64,
 }
 
 impl Worker {
@@ -96,6 +112,7 @@ impl Worker {
             diff: U256::max_value(),
             pow_header: None,
             start: false,
+            num_seal_found: 0,
         }
     }
 
@@ -106,18 +123,36 @@ impl Worker {
         &mut self,
         mut rng: G,
         solver: S,
+        pb: ProgressBar,
     ) {
+        let mut hash_counter = 0usize;
+        let mut start = Instant::now();
         loop {
             self.refresh_new_work();
             if self.start {
                 if let Some(pow_header) = self.pow_header.clone() {
-                    if solver(&pow_header, rng(), self.diff, self.nonce_tx.clone()) {
-                        self.start = false;
+                    hash_counter += 1;
+                    let elapsed = start.elapsed();
+                    if elapsed.as_millis() > HASH_RATE_UPDATE_DURATION_MILLIS {
+                        let elapsed_sec: f64 = elapsed.as_nanos() as f64 / 1_000_000_000.0;
+                        pb.set_message(&format!(
+                            "Hash rate: {:>10.3} Seals found: {:>3}",
+                            hash_counter as f64 / elapsed_sec,
+                            self.num_seal_found,
+                        ));
+                        start = Instant::now();
+                        hash_counter = 0;
+                        if solver(&pow_header, rng(), self.diff, self.nonce_tx.clone()) {
+                            self.start = false;
+                            self.num_seal_found += 1;
+                            pb.reset_elapsed();
+                        }
                     }
+                } else {
+                    // Wait next work
+                    hash_counter = 0;
+                    thread::sleep(Duration::from_millis(500));
                 }
-            } else {
-                // Wait next work
-                thread::sleep(Duration::from_millis(500));
             }
         }
     }
