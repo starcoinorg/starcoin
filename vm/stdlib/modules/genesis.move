@@ -4,10 +4,7 @@
 // genesis (for now).
 address 0x0 {
 module Genesis {
-    use 0x0::AccountTrack;
-    use 0x0::AccountType;
     use 0x0::Association;
-    use 0x0::Empty;
     use 0x0::Event;
     use 0x0::STC;
     use 0x0::Coin;
@@ -16,9 +13,6 @@ module Genesis {
     use 0x0::Config;
     use 0x0::TransactionTimeout;
     use 0x0::WriteSetManager;
-    use 0x0::TransactionFee;
-    use 0x0::Unhosted;
-    use 0x0::VASP;
     use 0x0::Testnet;
 
     fun initialize_association(association_root_addr: address) {
@@ -45,14 +39,8 @@ module Genesis {
         Config::apply_for_creator_privilege();
         Config::grant_creator_privilege(0xA550C18);
 
-        //// Account type setup
-        AccountType::register<Unhosted::T>();
-        AccountType::register<Empty::T>();
-        VASP::initialize();
 
-        AccountTrack::initialize();
         Account::initialize();
-        Unhosted::publish_global_limits_definition();
         Account::create_account<STC::T>(
             association_root_addr,
             copy dummy_auth_key,
@@ -90,11 +78,6 @@ module Genesis {
         //Coin::grant_burn_capability_for_sender<Coin1::T>();
         //Coin::grant_burn_capability_for_sender<Coin2::T>();
         //Coin::grant_burn_capability_for_sender<STC::T>();
-        Account::rotate_authentication_key(auth_key);
-    }
-
-    fun initialize_txn_fee_account(auth_key: vector<u8>) {
-        TransactionFee::initialize_transaction_fees();
         Account::rotate_authentication_key(auth_key);
     }
 

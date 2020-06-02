@@ -2,20 +2,17 @@ address 0x0 {
 
 // The module for the account resource that governs every account
 module Account {
-    use 0x0::AccountTrack;
     use 0x0::AccountType;
     use 0x0::Association;
-    use 0x0::Empty;
     use 0x0::Event;
     use 0x0::Hash;
     use 0x0::LCS;
     use 0x0::Coin;
     use 0x0::TransactionTimeout;
-    use 0x0::Signature;
     use 0x0::Testnet;
     use 0x0::Transaction;
-    use 0x0::VASP;
     use 0x0::Vector;
+    use 0x0::Empty;
 
     // Every account has a Account::T resource
     resource struct T {
@@ -85,21 +82,19 @@ module Account {
     struct FreezingPrivilege { }
 
     resource struct AccountOperationsCapability {
-        tracking_cap: AccountTrack::CallingCapability,
         event_creation_cap: Event::EventHandleGeneratorCreationCapability,
     }
 
     public fun initialize() {
         Transaction::assert(Transaction::sender() == 0xA550C18, 0);
         move_to_sender(AccountOperationsCapability {
-            tracking_cap: AccountTrack::grant_calling_capability(),
             event_creation_cap: Event::grant_event_handle_creation_operation(),
         });
     }
 
     // Deposits the `to_deposit` coin into the `payee`'s account balance
     public fun deposit<Token>(payee: address, to_deposit: Coin::T<Token>)
-    acquires T, Balance, AccountOperationsCapability {
+    acquires T, Balance {
         // Since we don't have vector<u8> literals in the source language at
         // the moment.
         deposit_with_metadata(payee, to_deposit, x"", x"")
@@ -107,7 +102,7 @@ module Account {
 
     // Deposits the `to_deposit` coin into the sender's account balance
     public fun deposit_to_sender<Token>(to_deposit: Coin::T<Token>)
-    acquires T, Balance, AccountOperationsCapability {
+    acquires T, Balance {
         deposit(Transaction::sender(), to_deposit)
     }
 
@@ -117,7 +112,7 @@ module Account {
         to_deposit: Coin::T<Token>,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         deposit_with_sender_and_metadata(
             payee,
             Transaction::sender(),
@@ -134,51 +129,23 @@ module Account {
         sender: address,
         to_deposit: Coin::T<Token>,
         metadata: vector<u8>,
-        metadata_signature: vector<u8>
-    ) acquires T, Balance, AccountOperationsCapability {
+        _metadata_signature: vector<u8>
+    ) acquires T, Balance {
         // Check that the `to_deposit` coin is non-zero
         let deposit_value = Coin::value(&to_deposit);
         Transaction::assert(deposit_value > 0, 7);
 
-        // TODO: on-chain config for travel rule limit instead of hardcoded value
-        let travel_rule_limit = 1000;
-        // travel rule only applies for payments over a threshold
-        let above_threshold =
-            Coin::approx_stc_for_value<Token>(deposit_value) >= travel_rule_limit;
-        // travel rule only applies if the sender and recipient are both VASPs
-        let both_vasps = VASP::is_vasp(sender) && VASP::is_vasp(payee);
-        // Don't check the travel rule if we're on testnet and sender
-        // doesn't specify a metadata signature
-        let is_testnet_transfer = Testnet::is_testnet() && Vector::is_empty(&metadata_signature);
-        if (!is_testnet_transfer &&
-            above_threshold &&
-            both_vasps &&
-            // travel rule does not apply for intra-VASP transactions
-            VASP::root_vasp_address(sender) != VASP::root_vasp_address(payee)
-        ) {
-            // sanity check of signature validity
-            Transaction::assert(Vector::length(&metadata_signature) == 64, 9001);
-            // cryptographic check of signature validity
-            Transaction::assert(
-                Signature::ed25519_verify(
-                    metadata_signature,
-                    VASP::travel_rule_public_key(payee),
-                    copy metadata
-                ),
-                9002, // TODO: proper error code
-            );
-        };
-
-        // Ensure that this deposit is compliant with the account limits on
-        // this account.
-        Transaction::assert(
-            AccountTrack::update_deposit_limits<Token>(
-                deposit_value,
-                payee,
-                &borrow_global<AccountOperationsCapability>(0xA550C18).tracking_cap
-            ),
-            9
-        );
+        //TODO check signature
+        //Transaction::assert(Vector::length(&metadata_signature) == 64, 9001);
+        // cryptographic check of signature validity
+        //Transaction::assert(
+        //    Signature::ed25519_verify(
+        //        metadata_signature,
+        //        VASP::travel_rule_public_key(payee),
+        //        copy metadata
+        //    ),
+        //    9002, // TODO: proper error code
+        //);
 
         // Get the code symbol for this currency
         let currency_code = Coin::currency_code<Token>();
@@ -220,7 +187,7 @@ module Account {
     public fun mint_to_address<Token>(
         payee: address,
         amount: u64
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         // Mint and deposit the coin
         deposit(payee, Coin::mint<Token>(amount));
     }
@@ -229,28 +196,19 @@ module Account {
     // Fails if the sender does not have a published MintCapability.
     public fun cancel_burn<Token>(
         preburn_address: address,
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         let to_return = Coin::cancel_burn<Token>(preburn_address);
         deposit(preburn_address, to_return)
     }
 
     // Helper to withdraw `amount` from the given account balance and return the withdrawn Coin::T<Token>
-    fun withdraw_from_balance<Token>(addr: address, balance: &mut Balance<Token>, amount: u64): Coin::T<Token>
-    acquires AccountOperationsCapability {
-        // Make sure that this withdrawal is compliant with the limits on
-        // the account.
-        let can_withdraw = AccountTrack::update_withdrawal_limits<Token>(
-            amount,
-            addr,
-            &borrow_global<AccountOperationsCapability>(0xA550C18).tracking_cap
-        );
-        Transaction::assert(can_withdraw, 11);
+    fun withdraw_from_balance<Token>(_addr: address, balance: &mut Balance<Token>, amount: u64): Coin::T<Token>{
         Coin::withdraw(&mut balance.coin, amount)
     }
 
     // Withdraw `amount` Coin::T<Token> from the transaction sender's account balance
     public fun withdraw_from_sender<Token>(amount: u64): Coin::T<Token>
-    acquires T, Balance, AccountOperationsCapability {
+    acquires T, Balance {
         let sender = Transaction::sender();
         let sender_account = borrow_global_mut<T>(sender);
         let sender_balance = borrow_global_mut<Balance<Token>>(sender);
@@ -263,7 +221,7 @@ module Account {
     // Withdraw `amount` Coin::T<Token> from the account under cap.account_address
     public fun withdraw_with_capability<Token>(
         cap: &WithdrawalCapability, amount: u64
-    ): Coin::T<Token> acquires Balance, AccountOperationsCapability {
+    ): Coin::T<Token> acquires Balance {
         let balance = borrow_global_mut<Balance<Token>>(cap.account_address);
         withdraw_from_balance<Token>(cap.account_address, balance , amount)
     }
@@ -300,7 +258,7 @@ module Account {
         amount: u64,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         deposit_with_sender_and_metadata<Token>(
             payee,
             *&cap.account_address,
@@ -318,7 +276,7 @@ module Account {
         amount: u64,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         deposit_with_metadata<Token>(
             payee,
             withdraw_from_sender(amount),
@@ -333,7 +291,7 @@ module Account {
     public fun pay_from_sender<Token>(
         payee: address,
         amount: u64
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         pay_from_sender_with_metadata<Token>(payee, amount, x"", x"");
     }
 
@@ -395,19 +353,10 @@ module Account {
     public fun create_testnet_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>)
     acquires AccountOperationsCapability {
         Transaction::assert(Testnet::is_testnet(), 10042);
-         let vasp_credential = VASP::create_root_vasp_credential(
-              // "testnet"
-              x"746573746E6574",
-              // "https://libra.org"
-              x"68747470733A2F2F6C696272612E6F72672F",
-              x"",
-              // An empty travel-rule key
-              x"00000000000000000000000000000000",
-         );
-         make_account<Token, VASP::RootVASP>(fresh_address, auth_key_prefix, vasp_credential);
+        create_account<Token>(fresh_address, auth_key_prefix);
     }
 
-    // Creates a new `Empty` account at `fresh_address` with a balance of zero and authentication
+    // Creates a new account at `fresh_address` with a balance of zero and authentication
     // key `auth_key_prefix` | `fresh_address`.
     // Creating an account at address 0x0 will cause runtime failure as it is a
     // reserved address for the MoveVM.
@@ -419,7 +368,7 @@ module Account {
     fun make_account<Token, AT: copyable>(
         fresh_address: address,
         auth_key_prefix: vector<u8>,
-        account_metadata: AT
+        account_metadata: AT,
     ) acquires AccountOperationsCapability {
         let generator = Event::new_event_generator(
             fresh_address,
@@ -451,7 +400,7 @@ module Account {
     }
 
     // Save an account to a given address if the address does not have account resources yet
-    native fun save_account<Token, AT: copyable>(
+    native fun save_account<Token, AT:copyable>(
         account_type: AccountType::T<AT>,
         balance: Balance<Token>,
         account: Self::T,
@@ -596,7 +545,7 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         // Load the transaction sender's account and balance resources
         let sender_account = borrow_global_mut<T>(Transaction::sender());
         let sender_balance = borrow_global_mut<Balance<Token>>(Transaction::sender());
@@ -621,14 +570,6 @@ module Account {
             // sent/received payment event.
             let transaction_fee_balance = borrow_global_mut<Balance<Token>>(0xFEE);
             Coin::deposit(&mut transaction_fee_balance.coin, transaction_fee);
-            Transaction::assert(
-                AccountTrack::update_deposit_limits<Token>(
-                    transaction_fee_amount,
-                    0xFEE,
-                    &borrow_global<AccountOperationsCapability>(0xA550C18).tracking_cap
-                ),
-                9
-            );
         }
     }
 }
