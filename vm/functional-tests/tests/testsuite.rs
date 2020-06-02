@@ -13,6 +13,9 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::{convert::TryFrom, fmt, io::Write, path::Path};
 use tempfile::NamedTempFile;
 
+pub const STD_LIB_DIR: &str = "../stdlib/modules";
+pub const FUNCTIONAL_TEST_DIR: &str = "tests";
+
 struct MoveSourceCompiler {
     deps: Vec<String>,
     temp_files: Vec<NamedTempFile>,
@@ -93,7 +96,7 @@ impl Compiler for MoveSourceCompiler {
 
 fn functional_testsuite(path: &Path) -> datatest_stable::Result<()> {
     let _log = starcoin_logger::init_for_test();
-    testsuite::functional_tests(MoveSourceCompiler::new(stdlib_files()), path)
+    testsuite::functional_tests(MoveSourceCompiler::new(stdlib_files(STD_LIB_DIR)), path)
 }
 
-datatest_stable::harness!(functional_testsuite, "tests/testsuite", r".*\.move");
+datatest_stable::harness!(functional_testsuite, FUNCTIONAL_TEST_DIR, r".*\.move");

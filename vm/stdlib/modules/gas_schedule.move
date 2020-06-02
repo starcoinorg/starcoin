@@ -14,6 +14,7 @@ address 0x0{
 module GasSchedule {
     use 0x0::Vector;
     use 0x0::Transaction;
+    use 0x0::Signer;
 
     // The gas cost for each instruction is represented using two amounts;
     // one for the cpu, and the other for storage.
@@ -28,9 +29,9 @@ module GasSchedule {
     }
 
     // Initialize the table under the association account
-    fun initialize(gas_schedule: T) {
-        Transaction::assert(Transaction::sender() == 0xA550C18, 0);
-        move_to_sender<T>(gas_schedule);
+    fun initialize(account: &signer, gas_schedule: T) {
+        Transaction::assert(Signer::address_of(account) == 0xA550C18, 0);
+        move_to<T>(account, gas_schedule);
     }
 
     public fun instruction_table_size(): u64 acquires T {

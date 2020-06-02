@@ -21,8 +21,6 @@ fn script(script_name: &str) -> Vec<u8> {
         .to_vec()
 }
 
-pub static ADD_VALIDATOR_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("add_validator"));
-
 pub static PEER_TO_PEER_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("peer_to_peer"));
 
 pub static ACCEPT_COIN_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("accept_coin"));
@@ -32,16 +30,6 @@ pub static PEER_TO_PEER_WITH_METADATA_TXN: Lazy<Vec<u8>> =
 
 pub static CREATE_ACCOUNT_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("create_account"));
 
-pub static REGISTER_VALIDATOR_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("register_validator"));
-
-pub static REMOVE_VALIDATOR_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("remove_validator"));
-
-pub static ROTATE_CONSENSUS_PUBKEY_TXN: Lazy<Vec<u8>> =
-    Lazy::new(|| script("rotate_consensus_pubkey"));
-
-pub static ROTATE_AUTHENTICATION_KEY_TXN: Lazy<Vec<u8>> =
-    Lazy::new(|| script("rotate_authentication_key"));
-
 pub static MINT_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("mint"));
 
 pub static EMPTY_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("empty_script"));
@@ -50,17 +38,13 @@ pub static EMPTY_TXN: Lazy<Vec<u8>> = Lazy::new(|| script("empty_script"));
 mod test {
     use super::*;
 
+    //TODO verify all scripts.
     #[test]
     fn verify_txn_scripts() {
         let txn_scripts = &[
-            &ADD_VALIDATOR_TXN,
             &PEER_TO_PEER_TXN,
             &PEER_TO_PEER_WITH_METADATA_TXN,
             &CREATE_ACCOUNT_TXN,
-            &REGISTER_VALIDATOR_TXN,
-            &REMOVE_VALIDATOR_TXN,
-            &ROTATE_CONSENSUS_PUBKEY_TXN,
-            &ROTATE_AUTHENTICATION_KEY_TXN,
             &MINT_TXN,
             &EMPTY_TXN,
         ];

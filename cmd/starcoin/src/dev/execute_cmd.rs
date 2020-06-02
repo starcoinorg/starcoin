@@ -10,7 +10,7 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
-    parse_as_transaction_argument, RawUserTransaction, Script, TransactionArgument,
+    parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::fs::OpenOptions;
@@ -33,7 +33,7 @@ pub struct ExecuteOpt {
     )]
     type_tags: Vec<TypeTag>,
 
-    #[structopt(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_as_transaction_argument))]
+    #[structopt(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument))]
     args: Vec<TransactionArgument>,
 
     #[structopt(

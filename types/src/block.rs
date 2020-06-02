@@ -222,6 +222,12 @@ impl Ord for BlockHeader {
     }
 }
 
+impl Into<BlockMetadata> for BlockHeader {
+    fn into(self) -> BlockMetadata {
+        self.into_metadata()
+    }
+}
+
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockBody {
     /// The transactions in this block.

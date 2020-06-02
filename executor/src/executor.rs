@@ -17,7 +17,7 @@ use vm_runtime::{
     common_transactions::{
         peer_to_peer_txn_sent_as_association, raw_accept_coin_txn, raw_peer_to_peer_txn,
     },
-    counters::TXN_EXECUTION_HISTOGRAM,
+    metrics::TXN_EXECUTION_HISTOGRAM,
     starcoin_vm::StarcoinVM,
 };
 

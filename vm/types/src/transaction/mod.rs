@@ -30,13 +30,15 @@ pub mod authenticator {
 mod error;
 pub mod helpers;
 mod pending_transaction;
+mod transaction_argument;
 
+use crate::transaction::authenticator::TransactionAuthenticator;
 pub use error::CallError;
 pub use error::Error as TransactionError;
+pub use libra_types::transaction::{ChangeSet, Module, Script};
 pub use pending_transaction::{Condition, PendingTransaction};
-pub use starcoin_vm_types::{
-    transaction::{ChangeSet, Module, Script},
-    transaction_argument::{parse_as_transaction_argument, TransactionArgument},
+pub use transaction_argument::{
+    parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
@@ -272,12 +274,8 @@ pub struct SignedUserTransaction {
     /// The raw transaction
     raw_txn: RawUserTransaction,
 
-    /// Sender's public key. When checking the signature, we first need to check whether this key
-    /// is indeed the pre-image of the pubkey hash stored under sender's account.
-    public_key: Ed25519PublicKey,
-
-    /// Signature of the transaction that correspond to the public key
-    signature: Ed25519Signature,
+    /// Public key and signature to authenticate
+    authenticator: TransactionAuthenticator,
 }
 
 /// A transaction for which the signature has been verified. Created by
@@ -309,13 +307,12 @@ impl fmt::Debug for SignedUserTransaction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "SignedUserTransaction {{ \n \
+            "SignedTransaction {{ \n \
              {{ raw_txn: {:#?}, \n \
-             public_key: {:#?}, \n \
-             signature: {:#?}, \n \
+             authenticator: {:#?}, \n \
              }} \n \
              }}",
-            self.raw_txn, self.public_key, self.signature,
+            self.raw_txn, self.authenticator
         )
     }
 }
@@ -326,23 +323,19 @@ impl SignedUserTransaction {
         public_key: Ed25519PublicKey,
         signature: Ed25519Signature,
     ) -> SignedUserTransaction {
+        let authenticator = TransactionAuthenticator::ed25519(public_key, signature);
         SignedUserTransaction {
             raw_txn,
-            public_key,
-            signature,
+            authenticator,
         }
+    }
+
+    pub fn authenticator(&self) -> TransactionAuthenticator {
+        self.authenticator.clone()
     }
 
     pub fn raw_txn(&self) -> &RawUserTransaction {
         &self.raw_txn
-    }
-
-    pub fn public_key(&self) -> Ed25519PublicKey {
-        self.public_key.clone()
-    }
-
-    pub fn signature(&self) -> Ed25519Signature {
-        self.signature.clone()
     }
 
     pub fn sender(&self) -> AccountAddress {
@@ -382,22 +375,9 @@ impl SignedUserTransaction {
     /// Checks that the signature of given transaction. Returns `Ok(SignatureCheckedTransaction)` if
     /// the signature is valid.
     pub fn check_signature(self) -> Result<SignatureCheckedTransaction> {
-        self.public_key
-            .verify_signature(&self.raw_txn.crypto_hash(), &self.signature)?;
+        self.authenticator
+            .verify_signature(&self.raw_txn.crypto_hash())?;
         Ok(SignatureCheckedTransaction(self))
-    }
-
-    pub fn format_for_client(&self, get_transaction_name: impl Fn(&[u8]) -> String) -> String {
-        format!(
-            "SignedUserTransaction {{ \n \
-             raw_txn: {}, \n \
-             public_key: {:#?}, \n \
-             signature: {:#?}, \n \
-             }}",
-            self.raw_txn.format_for_client(get_transaction_name),
-            self.public_key,
-            self.signature,
-        )
     }
 
     //TODO
@@ -619,17 +599,6 @@ impl Transaction {
         }
     }
 
-    pub fn format_for_client(&self, get_transaction_name: impl Fn(&[u8]) -> String) -> String {
-        match self {
-            Transaction::UserTransaction(user_txn) => {
-                user_txn.format_for_client(get_transaction_name)
-            }
-            // TODO: display proper information for client
-            Transaction::ChangeSet(_write_set) => String::from("genesis"),
-            // TODO: display proper information for client
-            Transaction::BlockMetadata(_block_metadata) => String::from("block_metadata"),
-        }
-    }
     pub fn id(&self) -> HashValue {
         //TODO rethink txn id's represent.
         self.crypto_hash()
@@ -694,23 +663,24 @@ impl Into<libra_types::transaction::TransactionPayload> for TransactionPayload {
     }
 }
 
-impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction {
-    fn into(self) -> libra_types::transaction::SignedTransaction {
-        let raw_txn = libra_types::transaction::RawTransaction::new(
-            self.sender(),
-            self.sequence_number(),
-            self.payload().clone().into(),
-            self.max_gas_amount(),
-            self.gas_unit_price(),
-            self.expiration_time(),
-        );
-        libra_types::transaction::SignedTransaction::new(
-            raw_txn,
-            self.public_key(),
-            self.signature(),
-        )
-    }
-}
+// impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction {
+//     fn into(self) -> libra_types::transaction::SignedTransaction {
+//         let raw_txn = libra_types::transaction::RawTransaction::new(
+//             self.sender(),
+//             self.sequence_number(),
+//             self.payload().clone().into(),
+//             self.max_gas_amount(),
+//             self.gas_unit_price(),
+//             STC_NAME.to_owned(),
+//             self.expiration_time(),
+//         );
+//         libra_types::transaction::SignedTransaction::new(
+//             raw_txn,
+//             self.public_key(),
+//             self.signature(),
+//         )
+//     }
+// }
 
 impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
     fn from(status: libra_types::transaction::TransactionStatus) -> Self {

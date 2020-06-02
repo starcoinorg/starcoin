@@ -148,7 +148,7 @@ pub(crate) type Children = HashMap<Nibble, Child>;
 /// Though we choose the same internal node structure as that of Patricia Merkle tree, the root hash
 /// computation logic is similar to a 4-level sparse Merkle tree except for some customizations. See
 /// the `CryptoHash` trait implementation below for details.
-#[derive(Clone, Debug, Eq, PartialEq, CryptoHasher)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InternalNode {
     // Up to 16 children.
     children: Children,
@@ -200,9 +200,8 @@ pub struct InternalNode {
 /// height
 /// Note: @ denotes placeholder hash.
 /// ```
-impl CryptoHash for InternalNode {
-    type Hasher = InternalNodeHasher;
-    fn hash(&self) -> HashValue {
+impl PlainCryptoHash for InternalNode {
+    fn crypto_hash(&self) -> HashValue {
         self.merkle_hash(
             0,  // start index
             16, // the number of leaves in the subtree of which we want the hash of root
@@ -616,7 +615,7 @@ impl Node {
     }
 }
 
-#[derive(CryptoHasher)]
+#[derive(CryptoHasher, Serialize, Deserialize, CryptoHash)]
 pub struct SparseMerkleInternalNode {
     left_child: HashValue,
     right_child: HashValue,
@@ -631,17 +630,7 @@ impl SparseMerkleInternalNode {
     }
 }
 
-impl CryptoHash for SparseMerkleInternalNode {
-    type Hasher = SparseMerkleInternalNodeHasher;
-    fn hash(&self) -> HashValue {
-        from_iter_sha3(vec![
-            self.left_child.as_ref().as_ref(),
-            self.right_child.as_ref().as_ref(),
-        ])
-    }
-}
-
-#[derive(CryptoHasher)]
+#[derive(CryptoHasher, Deserialize, Serialize, CryptoHash)]
 pub struct SparseMerkleLeafNode {
     key: HashValue,
     value_hash: HashValue,
@@ -650,16 +639,6 @@ pub struct SparseMerkleLeafNode {
 impl SparseMerkleLeafNode {
     pub fn new(key: HashValue, value_hash: HashValue) -> Self {
         SparseMerkleLeafNode { key, value_hash }
-    }
-}
-
-impl CryptoHash for SparseMerkleLeafNode {
-    type Hasher = SparseMerkleLeafNodeHasher;
-    fn hash(&self) -> HashValue {
-        from_iter_sha3(vec![
-            self.key.as_ref().as_ref(),
-            self.value_hash.as_ref().as_ref(),
-        ])
     }
 }
 

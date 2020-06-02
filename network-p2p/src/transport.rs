@@ -45,17 +45,16 @@ pub fn build_transport(
     Arc<bandwidth::BandwidthSinks>,
 ) {
     // Build configuration objects for encryption mechanisms.
-    let noise_config =
-        {
-            let noise_keypair = noise::Keypair::new().into_authentic(&keypair)
-			// For more information about this panic, see in "On the Importance of Checking
-			// Cryptographic Protocols for Faults" by Dan Boneh, Richard A. DeMillo,
-			// and Richard J. Lipton.
-			.expect("can only fail in case of a hardware bug; since this signing is performed only \
+    let noise_config = {
+        let noise_keypair = noise::Keypair::<noise::X25519>::new()
+            .into_authentic(&keypair)
+            .expect(
+                "can only fail in case of a hardware bug; since this signing is performed only \
 				once and at initialization, we're taking the bet that the inconvenience of a very \
-				rare panic here is basically zero");
-            noise::NoiseConfig::ix(noise_keypair)
-        };
+				rare panic here is basically zero",
+            );
+        noise::NoiseConfig::ix(noise_keypair)
+    };
 
     // Build configuration objects for multiplexing mechanisms.
     let mut mplex_config = mplex::MplexConfig::new();

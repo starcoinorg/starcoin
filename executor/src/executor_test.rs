@@ -61,9 +61,12 @@ fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transactio
         .unwrap()
         .pop()
         .expect("Output must exist.");
-    chain_state
-        .apply_write_set(output.write_set().clone())
-        .expect("apply write_set should success.");
+    if let TransactionStatus::Keep(_) = output.status() {
+        chain_state
+            .apply_write_set(output.write_set().clone())
+            .expect("apply write_set should success.");
+    }
+
     output
 }
 

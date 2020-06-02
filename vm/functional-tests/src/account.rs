@@ -3,7 +3,6 @@
 
 //! Test infrastructure for modeling Libra accounts.
 
-use anyhow::{Error, Result};
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::{
@@ -36,7 +35,8 @@ use starcoin_vm_types::{
     move_resource::MoveResource,
     values::{Struct, Value},
 };
-use std::{str::FromStr, time::Duration};
+use std::collections::BTreeMap;
+use std::time::Duration;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -133,21 +133,6 @@ impl Account {
         let type_tag = type_tag_for_currency_code(None, balance_currency_code);
         // TODO/XXX: Convert this to BalanceResource::struct_tag once that takes type args
         self.make_access_path(BalanceResource::struct_tag_for_currency(type_tag))
-    }
-
-    /// Returns the AccessPath that describes the Account type resource instance.
-    ///
-    /// Use this to retrieve or publish the Account AccountType blob.
-    pub fn make_account_type_access_path(
-        &self,
-        account_specifier: AccountTypeSpecifier,
-    ) -> AccessPath {
-        let struct_tag = match account_specifier {
-            AccountTypeSpecifier::Empty => account_config::empty_account_type_struct_tag(),
-            AccountTypeSpecifier::Vasp => account_config::vasp_account_type_struct_tag(),
-            AccountTypeSpecifier::Unhosted => account_config::unhosted_account_type_struct_tag(),
-        };
-        self.make_access_path(struct_tag)
     }
 
     // TODO: plug in the account type
@@ -401,7 +386,7 @@ impl Balance {
 
     /// Returns the Move Value for the account balance
     pub fn to_value(&self) -> Value {
-        Value::struct_(Struct::pack(vec![Value::u64(self.coin)]))
+        Value::struct_(Struct::pack(vec![Value::u64(self.coin)], true))
     }
 
     /// Returns the value layout for the account balance
@@ -413,150 +398,6 @@ impl Balance {
             is_resource: true,
             ty_args: vec![],
             layout: vec![FatType::U64],
-        }
-    }
-}
-
-//---------------------------------------------------------------------------
-// Account type represenation
-//---------------------------------------------------------------------------
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum AccountTypeSpecifier {
-    Empty,
-    Vasp,
-    Unhosted,
-}
-
-impl FromStr for AccountTypeSpecifier {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "empty" => Ok(AccountTypeSpecifier::Empty),
-            "unhosted" => Ok(AccountTypeSpecifier::Unhosted),
-            "vasp" => Ok(AccountTypeSpecifier::Vasp),
-            other => Err(Error::msg(format!(
-                "Unrecognized account type specifier {} found.",
-                other
-            ))),
-        }
-    }
-}
-
-impl Default for AccountTypeSpecifier {
-    fn default() -> Self {
-        AccountTypeSpecifier::Vasp
-    }
-}
-
-//---------------------------------------------------------------------------
-// Account type resource represenation
-//---------------------------------------------------------------------------
-
-/// Struct that represents an account type for testing.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AccountType {
-    self_address: AccountAddress,
-    account_specifier: AccountTypeSpecifier,
-}
-
-impl AccountType {
-    /// Create a new AccountType testing account.
-    pub fn new(self_address: AccountAddress, account_specifier: AccountTypeSpecifier) -> Self {
-        Self {
-            self_address,
-            account_specifier,
-        }
-    }
-
-    pub fn account_specifier(&self) -> AccountTypeSpecifier {
-        self.account_specifier
-    }
-
-    fn empty_account_type() -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: account_config::empty_account_type_module_name().to_owned(),
-            name: account_config::empty_account_type_struct_name().to_owned(),
-            is_resource: false,
-            ty_args: vec![],
-            layout: vec![FatType::Bool],
-        }
-    }
-
-    fn vasp_account_type() -> FatStructType {
-        let root_vasp_metadata = FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: account_config::vasp_type_module_name().to_owned(),
-            name: account_config::root_vasp_type_struct_name().to_owned(),
-            is_resource: false,
-            ty_args: vec![],
-            layout: vec![
-                FatType::Vector(Box::new(FatType::U8)),
-                FatType::Vector(Box::new(FatType::U8)),
-                FatType::U64,
-                FatType::Vector(Box::new(FatType::U8)),
-                FatType::Vector(Box::new(FatType::U8)),
-            ],
-        };
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: account_config::vasp_type_module_name().to_owned(),
-            name: account_config::root_vasp_type_struct_name().to_owned(),
-            is_resource: false,
-            ty_args: vec![],
-            layout: vec![FatType::Struct(Box::new(root_vasp_metadata))],
-        }
-    }
-
-    fn type_layout(account_specifier: AccountTypeSpecifier) -> Vec<FatType> {
-        let inner_type = match account_specifier {
-            AccountTypeSpecifier::Empty => Self::empty_account_type(),
-            AccountTypeSpecifier::Vasp => Self::vasp_account_type(),
-            AccountTypeSpecifier::Unhosted => unimplemented!(),
-        };
-        vec![
-            FatType::Bool,
-            FatType::Struct(Box::new(inner_type)),
-            FatType::Address,
-        ]
-    }
-
-    /// Returns the Move Value representation of the AccountType.
-    pub fn to_value(&self) -> Value {
-        let inner_type_structure = match self.account_specifier {
-            AccountTypeSpecifier::Empty => Struct::pack(vec![Value::bool(false)]),
-            AccountTypeSpecifier::Vasp => Struct::pack(vec![Value::struct_(Struct::pack(vec![
-                Value::vector_u8(vec![]),
-                Value::vector_u8(vec![]),
-                Value::u64(u64::MAX),
-                Value::vector_u8(vec![]),
-                Value::vector_u8(vec![0u8; 16]),
-            ]))]),
-            AccountTypeSpecifier::Unhosted => {
-                Struct::pack(vec![Value::struct_(Struct::pack(vec![
-                    Value::u64(0),
-                    Value::u64(0),
-                    Value::u64(0),
-                    Value::u64(0),
-                ]))])
-            }
-        };
-        Value::struct_(Struct::pack(vec![
-            Value::bool(true),
-            Value::struct_(inner_type_structure),
-            Value::address(self.self_address),
-        ]))
-    }
-
-    pub fn type_(account_specifier: AccountTypeSpecifier) -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: account_config::account_type_module_name().to_owned(),
-            name: account_config::account_type_struct_name().to_owned(),
-            is_resource: true,
-            ty_args: vec![],
-            layout: Self::type_layout(account_specifier),
         }
     }
 }
@@ -582,10 +423,10 @@ impl EventHandleGenerator {
     }
 
     pub fn to_value(&self) -> Value {
-        Value::struct_(Struct::pack(vec![
-            Value::u64(self.counter),
-            Value::address(self.addr),
-        ]))
+        Value::struct_(Struct::pack(
+            vec![Value::u64(self.counter), Value::address(self.addr)],
+            true,
+        ))
     }
 
     pub fn type_() -> FatStructType {
@@ -612,11 +453,9 @@ pub struct AccountData {
     sent_events: EventHandle,
     received_events: EventHandle,
     is_frozen: bool,
-    balance_currency_code: Identifier,
 
-    balance: Balance,
+    balances: BTreeMap<Identifier, Balance>,
     event_generator: EventHandleGenerator,
-    account_type: AccountType,
 }
 
 fn new_event_handle(count: u64) -> EventHandle {
@@ -633,18 +472,11 @@ impl AccountData {
             balance,
             stc_currency_code(),
             sequence_number,
-            AccountTypeSpecifier::Vasp,
         )
     }
 
     pub fn new_empty() -> Self {
-        Self::with_account(
-            Account::new(),
-            0,
-            stc_currency_code(),
-            0,
-            AccountTypeSpecifier::Vasp,
-        )
+        Self::with_account(Account::new(), 0, stc_currency_code(), 0)
     }
 
     /// Creates a new `AccountData` with the provided account.
@@ -653,7 +485,6 @@ impl AccountData {
         balance: u64,
         balance_currency_code: Identifier,
         sequence_number: u64,
-        account_specifier: AccountTypeSpecifier,
     ) -> Self {
         Self::with_account_and_event_counts(
             account,
@@ -664,7 +495,6 @@ impl AccountData {
             0,
             false,
             false,
-            account_specifier,
             false,
         )
     }
@@ -676,16 +506,9 @@ impl AccountData {
         balance: u64,
         balance_currency_code: Identifier,
         sequence_number: u64,
-        account_specifier: AccountTypeSpecifier,
     ) -> Self {
         let account = Account::with_keypair(privkey, pubkey);
-        Self::with_account(
-            account,
-            balance,
-            balance_currency_code,
-            sequence_number,
-            account_specifier,
-        )
+        Self::with_account(account, balance, balance_currency_code, sequence_number)
     }
 
     /// Creates a new `AccountData` with custom parameters.
@@ -698,27 +521,26 @@ impl AccountData {
         received_events_count: u64,
         delegated_key_rotation_capability: bool,
         delegated_withdrawal_capability: bool,
-        account_specifier: AccountTypeSpecifier,
         is_frozen: bool,
     ) -> Self {
+        let mut balances = BTreeMap::new();
+        balances.insert(balance_currency_code, Balance::new(balance));
         Self {
-            account_type: AccountType::new(*account.address(), account_specifier),
             event_generator: EventHandleGenerator::new_with_event_count(*account.address(), 2),
             account,
-            balance: Balance::new(balance),
+            balances,
             sequence_number,
             is_frozen,
             delegated_key_rotation_capability,
             delegated_withdrawal_capability,
             sent_events: new_event_handle(sent_events_count),
             received_events: new_event_handle(received_events_count),
-            balance_currency_code,
         }
     }
 
-    /// Changes the balance held by this account to the one represented as balance_currency_code
-    pub fn set_balance_currency(&mut self, balance_currency_code: Identifier) {
-        self.balance_currency_code = balance_currency_code;
+    /// Adds the balance held by this account to the one represented as balance_currency_code
+    pub fn add_balance_currency(&mut self, balance_currency_code: Identifier) {
+        self.balances.insert(balance_currency_code, Balance::new(0));
     }
 
     /// Changes the keys for this account to the provided ones.
@@ -787,41 +609,45 @@ impl AccountData {
                 )))),
                 FatType::U64,
                 FatType::Bool,
-                FatType::Vector(Box::new(FatType::U8)),
             ],
         }
     }
 
-    /// Returns whether the underlying account is an an empty account type or not.
-    pub fn account_type(&self) -> AccountTypeSpecifier {
-        self.account_type.account_specifier()
-    }
-
     /// Creates and returns the top-level resources to be published under the account
-    pub fn to_value(&self) -> (Value, Value, Value, Value) {
+    pub fn to_value(&self) -> (Value, Vec<(Identifier, Value)>, Value) {
         // TODO: publish some concept of Account
-        let balance = self.balance.to_value();
-        let assoc_cap = self.account_type.to_value();
+        let balances: Vec<_> = self
+            .balances
+            .iter()
+            .map(|(code, balance)| (code.clone(), balance.to_value()))
+            .collect();
         let event_generator = self.event_generator.to_value();
-        let balance_currency_code = self.balance_currency_code.as_bytes();
-        let account = Value::struct_(Struct::pack(vec![
-            // TODO: this needs to compute the auth key instead
-            Value::vector_u8(AuthenticationKey::ed25519(&self.account.pubkey).to_vec()),
-            Value::bool(self.delegated_key_rotation_capability),
-            Value::bool(self.delegated_withdrawal_capability),
-            Value::struct_(Struct::pack(vec![
-                Value::u64(self.received_events.count()),
-                Value::vector_u8(self.received_events.key().to_vec()),
-            ])),
-            Value::struct_(Struct::pack(vec![
-                Value::u64(self.sent_events.count()),
-                Value::vector_u8(self.sent_events.key().to_vec()),
-            ])),
-            Value::u64(self.sequence_number),
-            Value::bool(self.is_frozen),
-            Value::vector_u8(balance_currency_code.to_vec()),
-        ]));
-        (account, balance, assoc_cap, event_generator)
+        let account = Value::struct_(Struct::pack(
+            vec![
+                // TODO: this needs to compute the auth key instead
+                Value::vector_u8(AuthenticationKey::ed25519(&self.account.pubkey).to_vec()),
+                Value::bool(self.delegated_key_rotation_capability),
+                Value::bool(self.delegated_withdrawal_capability),
+                Value::struct_(Struct::pack(
+                    vec![
+                        Value::u64(self.received_events.count()),
+                        Value::vector_u8(self.received_events.key().to_vec()),
+                    ],
+                    true,
+                )),
+                Value::struct_(Struct::pack(
+                    vec![
+                        Value::u64(self.sent_events.count()),
+                        Value::vector_u8(self.sent_events.key().to_vec()),
+                    ],
+                    true,
+                )),
+                Value::u64(self.sequence_number),
+                Value::bool(self.is_frozen),
+            ],
+            true,
+        ));
+        (account, balances, event_generator)
     }
 
     /// Returns the AccessPath that describes the Account resource instance.
@@ -834,9 +660,8 @@ impl AccountData {
     /// Returns the AccessPath that describes the Account balance resource instance.
     ///
     /// Use this to retrieve or publish the Account blob.
-    pub fn make_balance_access_path(&self) -> AccessPath {
-        self.account
-            .make_balance_access_path(self.balance_currency_code.to_owned())
+    pub fn make_balance_access_path(&self, code: Identifier) -> AccessPath {
+        self.account.make_balance_access_path(code)
     }
 
     /// Returns the AccessPath that describes the EventHandleGenerator resource instance.
@@ -846,56 +671,39 @@ impl AccountData {
         self.account.make_event_generator_access_path()
     }
 
-    /// Returns the AccessPath that describes the Account balance resource instance.
-    ///
-    /// Use this to retrieve or publish the Account blob.
-    pub fn make_account_type_access_path(
-        &self,
-        account_specifier: AccountTypeSpecifier,
-    ) -> AccessPath {
-        self.account
-            .make_account_type_access_path(account_specifier)
-    }
-
+    //TODO create account by Move, avoid serialize data in rust.
     /// Creates a writeset that contains the account data and can be patched to the storage
     /// directly.
     pub fn to_writeset(&self) -> WriteSet {
-        let account_type_specifier = self.account_type();
-        let (account_blob, balance_blob, account_type_blob, event_generator_blob) = self.to_value();
+        let (account_blob, balance_blobs, event_generator_blob) = self.to_value();
+        let mut write_set = Vec::new();
         let account = account_blob
             .value_as::<Struct>()
-            .unwrap()
+            .expect("account blob must be struct")
             .simple_serialize(&AccountData::type_())
-            .unwrap();
-        let balance = balance_blob
-            .value_as::<Struct>()
-            .unwrap()
-            .simple_serialize(&Balance::type_())
-            .unwrap();
-        let account_type = account_type_blob
-            .value_as::<Struct>()
-            .unwrap()
-            .simple_serialize(&AccountType::type_(account_type_specifier))
-            .unwrap();
+            .expect("account serialize must success.");
+        write_set.push((self.make_account_access_path(), WriteOp::Value(account)));
+        for (code, balance_blob) in balance_blobs.into_iter() {
+            let balance = balance_blob
+                .value_as::<Struct>()
+                .expect("balance blob must be struct")
+                .simple_serialize(&Balance::type_())
+                .expect("balance serialize must success");
+            write_set.push((self.make_balance_access_path(code), WriteOp::Value(balance)));
+        }
+
         let event_generator = event_generator_blob
             .value_as::<Struct>()
-            .unwrap()
+            .expect("event blob must be struct")
             .simple_serialize(&EventHandleGenerator::type_())
-            .unwrap();
-        WriteSetMut::new(vec![
-            (self.make_account_access_path(), WriteOp::Value(account)),
-            (
-                self.make_event_generator_access_path(),
-                WriteOp::Value(event_generator),
-            ),
-            (self.make_balance_access_path(), WriteOp::Value(balance)),
-            (
-                self.make_account_type_access_path(account_type_specifier),
-                WriteOp::Value(account_type),
-            ),
-        ])
-        .freeze()
-        .unwrap()
+            .expect("event serialize must success");
+        write_set.push((
+            self.make_event_generator_access_path(),
+            WriteOp::Value(event_generator),
+        ));
+        WriteSetMut::new(write_set)
+            .freeze()
+            .expect("freeze write_set must success.")
     }
 
     /// Returns the address of the account. This is a hash of the public key the account was created
@@ -917,8 +725,11 @@ impl AccountData {
     }
 
     /// Returns the initial balance.
-    pub fn balance(&self) -> u64 {
-        self.balance.coin()
+    pub fn balance(&self, currency_code: &IdentStr) -> u64 {
+        self.balances
+            .get(currency_code)
+            .expect("get balance by currency_code fail")
+            .coin()
     }
 
     /// Returns the initial sequence number.
@@ -944,10 +755,6 @@ impl AccountData {
     /// Returns the initial received events count.
     pub fn received_events_count(&self) -> u64 {
         self.received_events.count()
-    }
-
-    pub fn balance_currency_code(&self) -> &IdentStr {
-        &self.balance_currency_code
     }
 }
 

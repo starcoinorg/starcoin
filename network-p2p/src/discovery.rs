@@ -26,12 +26,12 @@
 //!
 //! - mDNS. Discovers nodes on the local network by broadcasting UDP packets.
 //!
-//! - Kademlia random walk. Once connected, we perform random Kademlia `FIND_NODE` requests in
-//! order for nodes to propagate to us their view of the network. This is performed automatically
-//! by the `DiscoveryBehaviour`.
+//! - Kademlia random walk. Once connected, we perform random Kademlia `FIND_NODE` requests on the
+//! configured Kademlia DHTs in order for nodes to propagate to us their view of the network. This
+//! is performed automatically by the `DiscoveryBehaviour`.
 //!
 //! Additionally, the `DiscoveryBehaviour` is also capable of storing and loading value in the
-//! network-wide DHT.
+//! configured DHTs.
 //!
 //! ## Usage
 //!
@@ -54,10 +54,13 @@ use libp2p::core::{
     ConnectedPoint, Multiaddr, PeerId, PublicKey,
 };
 use libp2p::kad::handler::KademliaHandler;
-use libp2p::kad::record::{self, store::MemoryStore};
+use libp2p::kad::record::{
+    self,
+    store::{MemoryStore, RecordStore},
+};
 use libp2p::kad::GetClosestPeersError;
 use libp2p::kad::QueryId;
-use libp2p::kad::{Kademlia, KademliaConfig, KademliaEvent, Quorum, Record};
+use libp2p::kad::{Kademlia, KademliaConfig, KademliaEvent, QueryResult, Quorum, Record};
 #[cfg(not(target_os = "unknown"))]
 use libp2p::mdns::{Mdns, MdnsEvent};
 use libp2p::multiaddr::Protocol;
@@ -65,7 +68,7 @@ use libp2p::swarm::protocols_handler::multi::MultiHandler;
 #[cfg(not(target_os = "unknown"))]
 use libp2p::swarm::toggle::Toggle;
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters, ProtocolsHandler};
-use log::{debug, error, info, trace, warn};
+use log::{debug, info, trace, warn};
 use std::task::{Context, Poll};
 use std::{
     cmp,
@@ -75,6 +78,9 @@ use std::{
 };
 
 /// `DiscoveryBehaviour` configuration.
+///
+/// Note: In order to discover nodes or load and store values via Kademlia one has to add at least
+///       one protocol via [`DiscoveryConfig::add_protocol`].
 pub struct DiscoveryConfig {
     local_peer_id: PeerId,
     user_defined: Vec<(PeerId, Multiaddr)>,
@@ -88,7 +94,7 @@ pub struct DiscoveryConfig {
 impl DiscoveryConfig {
     /// Create a default configuration with the given public key.
     pub fn new(local_public_key: PublicKey) -> Self {
-        let mut this = DiscoveryConfig {
+        DiscoveryConfig {
             local_peer_id: local_public_key.into_peer_id(),
             user_defined: Vec::new(),
             allow_private_ipv4: true,
@@ -96,15 +102,7 @@ impl DiscoveryConfig {
             discovery_only_if_under_num: std::u64::MAX,
             enable_mdns: false,
             kademlias: HashMap::new(),
-        };
-
-        // Temporary hack to retain backwards compatibility.
-        // We should eventually remove the special handling of DEFAULT_PROTO_NAME.
-        let proto_id = ProtocolId::from(libp2p::kad::protocol::DEFAULT_PROTO_NAME);
-        let proto_name = Vec::from(proto_id.as_bytes());
-        this.add_kademlia(proto_id, proto_name);
-
-        this
+        }
     }
 
     /// Set the number of active connections at which we pause discovery.
@@ -189,7 +187,7 @@ impl DiscoveryConfig {
             kademlias: self.kademlias,
             next_kad_random_query: Delay::new(Duration::new(0, 0)),
             duration_to_next_kad: Duration::from_secs(1),
-            discoveries: VecDeque::new(),
+            pending_events: VecDeque::new(),
             local_peer_id: self.local_peer_id,
             num_connections: 0,
             allow_private_ipv4: self.allow_private_ipv4,
@@ -225,8 +223,8 @@ pub struct DiscoveryBehaviour {
     next_kad_random_query: Delay,
     /// After `next_kad_random_query` triggers, the next one triggers after this duration.
     duration_to_next_kad: Duration,
-    /// Discovered nodes to return.
-    discoveries: VecDeque<PeerId>,
+    /// Events to return in priority when polled.
+    pending_events: VecDeque<DiscoveryOut>,
     /// Identity of our local node.
     local_peer_id: PeerId,
     /// Number of nodes we're currently connected to.
@@ -269,7 +267,8 @@ impl DiscoveryBehaviour {
             for k in self.kademlias.values_mut() {
                 k.add_address(&peer_id, addr.clone())
             }
-            self.discoveries.push_back(peer_id.clone());
+            self.pending_events
+                .push_back(DiscoveryOut::Discovered(peer_id.clone()));
             self.user_defined.push((peer_id, addr));
         }
     }
@@ -293,7 +292,7 @@ impl DiscoveryBehaviour {
     /// A corresponding `ValueFound` or `ValueNotFound` event will later be generated.
     pub fn get_value(&mut self, key: &record::Key) {
         for k in self.kademlias.values_mut() {
-            k.get_record(key, Quorum::One)
+            k.get_record(key, Quorum::One);
         }
     }
 
@@ -303,8 +302,43 @@ impl DiscoveryBehaviour {
     /// A corresponding `ValuePut` or `ValuePutFailed` event will later be generated.
     pub fn put_value(&mut self, key: record::Key, value: Vec<u8>) {
         for k in self.kademlias.values_mut() {
-            k.put_record(Record::new(key.clone(), value.clone()), Quorum::All)
+            if let Err(e) = k.put_record(Record::new(key.clone(), value.clone()), Quorum::All) {
+                warn!(target: "sub-libp2p", "Libp2p => Failed to put record: {:?}", e);
+                self.pending_events
+                    .push_back(DiscoveryOut::ValuePutFailed(key.clone()));
+            }
         }
+    }
+
+    /// Returns the number of nodes that are in the Kademlia k-buckets.
+    pub fn _num_kbuckets_entries(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
+        self.kademlias
+            .iter_mut()
+            .map(|(id, kad)| (id, kad.kbuckets_entries().count()))
+    }
+
+    /// Returns the number of records in the Kademlia record stores.
+    pub fn _num_kademlia_records(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
+        // Note that this code is ok only because we use a `MemoryStore`.
+        self.kademlias.iter_mut().map(|(id, kad)| {
+            let num = kad.store_mut().records().count();
+            (id, num)
+        })
+    }
+
+    /// Returns the total size in bytes of all the records in the Kademlia record stores.
+    pub fn _kademlia_records_total_size(
+        &mut self,
+    ) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
+        // Note that this code is ok only because we use a `MemoryStore`. If the records were
+        // for example stored on disk, this would load every single one of them every single time.
+        self.kademlias.iter_mut().map(|(id, kad)| {
+            let size = kad
+                .store_mut()
+                .records()
+                .fold(0, |tot, rec| tot + rec.value.len());
+            (id, size)
+        })
     }
 
     /// Can the given `Multiaddr` be put into the DHT?
@@ -497,7 +531,6 @@ impl NetworkBehaviour for DiscoveryBehaviour {
     }
 
     fn inject_expired_listen_addr(&mut self, addr: &Multiaddr) {
-        info!(target: "sub-libp2p", "No longer listening on {}", addr);
         for k in self.kademlias.values_mut() {
             NetworkBehaviour::inject_expired_listen_addr(k, addr)
         }
@@ -516,14 +549,12 @@ impl NetworkBehaviour for DiscoveryBehaviour {
     }
 
     fn inject_listener_error(&mut self, id: ListenerId, err: &(dyn std::error::Error + 'static)) {
-        error!(target: "sub-libp2p", "Error on libp2p listener {:?}: {}", id, err);
         for k in self.kademlias.values_mut() {
             NetworkBehaviour::inject_listener_error(k, id, err)
         }
     }
 
     fn inject_listener_closed(&mut self, id: ListenerId, reason: Result<(), &io::Error>) {
-        error!(target: "sub-libp2p", "Libp2p listener {:?} closed", id);
         for k in self.kademlias.values_mut() {
             NetworkBehaviour::inject_listener_closed(k, id, reason)
         }
@@ -540,8 +571,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         >,
     > {
         // Immediately process the content of `discovered`.
-        if let Some(peer_id) = self.discoveries.pop_front() {
-            let ev = DiscoveryOut::Discovered(peer_id);
+        if let Some(ev) = self.pending_events.pop_front() {
             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
         }
 
@@ -553,7 +583,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                        "Libp2p <= Starting random Kademlia request for {:?}",
                        random_peer_id);
                 for k in self.kademlias.values_mut() {
-                    k.get_closest_peers(random_peer_id.clone())
+                    k.get_closest_peers(random_peer_id.clone());
                 }
                 true
             } else {
@@ -591,11 +621,14 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             let ev = DiscoveryOut::Discovered(peer);
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
                         }
-                        KademliaEvent::GetClosestPeersResult(res) => match res {
+                        KademliaEvent::QueryResult {
+                            result: QueryResult::GetClosestPeers(res),
+                            ..
+                        } => match res {
                             Err(GetClosestPeersError::Timeout { key, peers }) => {
                                 debug!(target: "sub-libp2p",
                                            "Libp2p => Query for {:?} timed out with {} results",
-                                           hex::encode(&key), peers.len());
+                                       hex::encode(&key), peers.len());
                             }
                             Ok(ok) => {
                                 trace!(target: "sub-libp2p",
@@ -607,7 +640,10 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                                 }
                             }
                         },
-                        KademliaEvent::GetRecordResult(res) => {
+                        KademliaEvent::QueryResult {
+                            result: QueryResult::GetRecord(res),
+                            ..
+                        } => {
                             let ev = match res {
                                 Ok(ok) => {
                                     let results =
@@ -628,7 +664,10 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             };
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
                         }
-                        KademliaEvent::PutRecordResult(res) => {
+                        KademliaEvent::QueryResult {
+                            result: QueryResult::PutRecord(res),
+                            ..
+                        } => {
                             let ev = match res {
                                 Ok(ok) => DiscoveryOut::ValuePut(ok.key),
                                 Err(e) => {
@@ -639,7 +678,10 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             };
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
                         }
-                        KademliaEvent::RepublishRecordResult(res) => match res {
+                        KademliaEvent::QueryResult {
+                            result: QueryResult::RepublishRecord(res),
+                            ..
+                        } => match res {
                             Ok(ok) => debug!(target: "sub-libp2p",
                                                  "Libp2p => Record republished: {:?}",
                                                  ok.key),
@@ -689,9 +731,9 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             continue;
                         }
 
-                        self.discoveries.extend(list.map(|(peer_id, _)| peer_id));
-                        if let Some(peer_id) = self.discoveries.pop_front() {
-                            let ev = DiscoveryOut::Discovered(peer_id);
+                        self.pending_events
+                            .extend(list.map(|(peer_id, _)| DiscoveryOut::Discovered(peer_id)));
+                        if let Some(ev) = self.pending_events.pop_front() {
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
                         }
                     }
@@ -717,6 +759,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
 #[cfg(test)]
 mod tests {
     use super::{DiscoveryConfig, DiscoveryOut};
+    use crate::config::ProtocolId;
     use futures::prelude::*;
     use libp2p::core::transport::{MemoryTransport, Transport};
     use libp2p::core::upgrade;
@@ -727,7 +770,6 @@ mod tests {
     use std::{collections::HashSet, task::Poll};
 
     #[test]
-    #[allow(clippy::single_match)]
     fn discovery_working() {
         let mut user_defined = Vec::new();
 
@@ -751,12 +793,16 @@ mod tests {
                     });
 
                 let behaviour = {
+                    let protocol_id: &[u8] = b"/test/kad/1.0.0";
+
                     let mut config = DiscoveryConfig::new(keypair.public());
                     config
                         .with_user_defined(user_defined.clone())
                         .allow_private_ipv4(true)
                         .allow_non_globals_in_dht(true)
-                        .discovery_limit(50);
+                        .discovery_limit(50)
+                        .add_protocol(ProtocolId::from(protocol_id));
+
                     config.finish()
                 };
 

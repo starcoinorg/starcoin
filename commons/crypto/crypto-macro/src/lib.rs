@@ -5,13 +5,12 @@
 extern crate proc_macro;
 
 mod hasher;
-mod unions;
 
 use crate::hasher::camel_to_snake;
-use crate::unions::get_type_from_attrs;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
+use std::iter::FromIterator;
 use syn::{parse_macro_input, DeriveInput, Ident};
 
 #[proc_macro_derive(CryptoHash)]
@@ -19,6 +18,10 @@ pub fn crypto_hash(input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as DeriveInput);
     let name = &item.ident;
     let hasher_name = Ident::new(&format!("{}Hasher", name.to_string()), Span::call_site());
+    let error_msg = syn::LitStr::new(
+        &format!("Serialization of {} should not fail", name.to_string()),
+        Span::call_site(),
+    );
 
     let out = quote!(
 
@@ -26,9 +29,7 @@ pub fn crypto_hash(input: TokenStream) -> TokenStream {
             type Hasher = #hasher_name;
             fn hash(&self) -> starcoin_crypto::HashValue {
                 let mut state = Self::Hasher::default();
-                state.update(scs::to_bytes(self)
-                    .expect("Serialization should work.")
-                    .as_slice());
+                scs::serialize_into(&mut state, &self).expect(#error_msg);
                 state.finish()
             }
         }
@@ -37,7 +38,7 @@ pub fn crypto_hash(input: TokenStream) -> TokenStream {
     out.into()
 }
 
-#[proc_macro_derive(CryptoHasher, attributes(CryptoHasherSalt))]
+#[proc_macro_derive(CryptoHasher)]
 pub fn hasher_dispatch(input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as DeriveInput);
     let hasher_name = Ident::new(
@@ -45,24 +46,37 @@ pub fn hasher_dispatch(input: TokenStream) -> TokenStream {
         Span::call_site(),
     );
     let snake_name = camel_to_snake(&item.ident.to_string());
+    let static_seed_name = Ident::new(
+        &format!("{}_SEED", snake_name.to_uppercase()),
+        Span::call_site(),
+    );
+
     let static_hasher_name = Ident::new(
         &format!("{}_HASHER", snake_name.to_uppercase()),
         Span::call_site(),
     );
-    let fn_name = get_type_from_attrs(&item.attrs, "CryptoHasherSalt")
-        .unwrap_or_else(|_| syn::LitStr::new(&item.ident.to_string(), Span::call_site()));
+    let type_name = &item.ident;
+    let param = if item.generics.params.is_empty() {
+        quote!()
+    } else {
+        let args = proc_macro2::TokenStream::from_iter(
+            std::iter::repeat(quote!(())).take(item.generics.params.len()),
+        );
+        quote!(<#args>)
+    };
 
     let out = quote!(
         #[derive(Clone)]
         pub struct #hasher_name(starcoin_crypto::hash::DefaultHasher);
 
+        static #static_seed_name: starcoin_crypto::_once_cell::sync::OnceCell<[u8; 32]> = starcoin_crypto::_once_cell::sync::OnceCell::new();
+
         impl #hasher_name {
             fn new() -> Self {
-                let mp = module_path!();
-                let f_name = #fn_name;
-
+                let name = starcoin_crypto::_serde_name::trace_name::<#type_name #param>()
+                    .expect("The `CryptoHasher` macro only applies to structs and enums");
                 #hasher_name(
-                    starcoin_crypto::hash::DefaultHasher::new_with_salt(&format!("{}::{}", f_name, mp).as_bytes()))
+                    starcoin_crypto::hash::DefaultHasher::new(&name.as_bytes()))
             }
         }
 
@@ -78,13 +92,20 @@ pub fn hasher_dispatch(input: TokenStream) -> TokenStream {
         }
 
         impl starcoin_crypto::hash::CryptoHasher for #hasher_name {
-            fn finish(self) -> HashValue {
-                self.0.finish()
+            fn seed() -> &'static [u8; 32] {
+                #static_seed_name.get_or_init(|| {
+                    let name = starcoin_crypto::_serde_name::trace_name::<#type_name #param>()
+                        .expect("The `CryptoHasher` macro only applies to structs and enums.").as_bytes();
+                    starcoin_crypto::hash::DefaultHasher::prefixed_hash(&name)
+                })
             }
 
-            fn update(&mut self, bytes: &[u8]) -> &mut Self {
+            fn update(&mut self, bytes: &[u8]) {
                 self.0.update(bytes);
-                self
+            }
+
+            fn finish(self) -> starcoin_crypto::hash::HashValue {
+                self.0.finish()
             }
         }
 

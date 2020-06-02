@@ -4,7 +4,7 @@
 // The config holds the options that define the testing environment.
 // A config entry starts with "//!", differentiating it from a directive.
 
-use crate::account::{Account, AccountData, AccountTypeSpecifier};
+use crate::account::{Account, AccountData};
 use crate::{common::strip, errors::*, genesis_accounts::make_genesis_accounts};
 use once_cell::sync::Lazy;
 use starcoin_crypto::keygen::KeyGen;
@@ -19,12 +19,6 @@ static DEFAULT_BALANCE: Lazy<Balance> = Lazy::new(|| Balance {
     amount: 1_000_000,
     currency_code: account_config::from_currency_code_string(account_config::STC_NAME).unwrap(),
 });
-
-#[derive(Debug)]
-pub enum Role {
-    /// Means that the account is a current validator; its address is in the on-chain validator set
-    Validator,
-}
 
 #[derive(Debug, Clone)]
 pub struct Balance {
@@ -64,21 +58,6 @@ pub struct AccountDefinition {
     pub balance: Option<Balance>,
     /// The initial sequence number of the account.
     pub sequence_number: Option<u64>,
-    /// Special role this account has in the system (if any)
-    pub role: Option<Role>,
-    /// Specifier on what type of account this is. Default is VASP.
-    pub account_type_specifier: Option<AccountTypeSpecifier>,
-}
-
-impl FromStr for Role {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "validator" => Ok(Role::Validator),
-            other => Err(ErrorKind::Other(format!("Invalid account role {:?}", other)).into()),
-        }
-    }
 }
 
 /// A raw entry extracted from the input. Used to build the global config table.
@@ -86,18 +65,6 @@ impl FromStr for Role {
 pub enum Entry {
     /// Defines an account that can be used in tests.
     AccountDefinition(AccountDefinition),
-}
-
-impl Entry {
-    pub fn is_validator(&self) -> bool {
-        matches!(
-            self,
-            Entry::AccountDefinition(AccountDefinition {
-                role: Some(Role::Validator),
-                ..
-            })
-        )
-    }
 }
 
 impl FromStr for Entry {
@@ -122,17 +89,12 @@ impl FromStr for Entry {
             }
             let balance = v.get(1).and_then(|s| s.parse::<Balance>().ok());
             let sequence_number = v.get(2).and_then(|s| s.parse::<u64>().ok());
-            let role = v.get(3).and_then(|s| s.parse::<Role>().ok());
             // These two are mutually exclusive, so we can double-use the third position
-            let account_type_specifier = v
-                .get(3)
-                .and_then(|s| s.parse::<AccountTypeSpecifier>().ok());
+
             return Ok(Entry::AccountDefinition(AccountDefinition {
                 name: v[0].to_string(),
                 balance,
                 sequence_number,
-                role,
-                account_type_specifier,
             }));
         }
         Err(ErrorKind::Other(format!("failed to parse '{}' as global config entry", s)).into())
@@ -163,20 +125,14 @@ impl Config {
             match entry {
                 Entry::AccountDefinition(def) => {
                     let balance = def.balance.as_ref().unwrap_or(&DEFAULT_BALANCE).clone();
-                    //TODO remove validator config.
-                    let account_data = if entry.is_validator() {
-                        panic!("Unsupported validator config.")
-                    } else {
-                        let (privkey, pubkey) = keygen.generate_keypair();
-                        AccountData::with_keypair(
-                            privkey,
-                            pubkey,
-                            balance.amount,
-                            balance.currency_code,
-                            def.sequence_number.unwrap_or(0),
-                            def.account_type_specifier.unwrap_or_default(),
-                        )
-                    };
+                    let (privkey, pubkey) = keygen.generate_keypair();
+                    let account_data = AccountData::with_keypair(
+                        privkey,
+                        pubkey,
+                        balance.amount,
+                        balance.currency_code,
+                        def.sequence_number.unwrap_or(0),
+                    );
                     let name = def.name.to_ascii_lowercase();
                     let entry = accounts.entry(name);
                     match entry {
@@ -204,7 +160,6 @@ impl Config {
                 DEFAULT_BALANCE.currency_code.clone(),
                 /* sequence_number */
                 0,
-                /* is_empty_account_type */ AccountTypeSpecifier::default(),
             ));
         }
         Ok(Config {

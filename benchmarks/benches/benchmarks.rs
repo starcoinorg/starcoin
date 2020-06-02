@@ -65,7 +65,7 @@ fn accumulator_append(c: &mut Criterion) {
     });
 }
 fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
-    nums.map(|x| HashValue::from_sha3_256(x.to_be_bytes().as_ref()))
+    nums.map(|x| HashValue::sha3_256_of(x.to_be_bytes().as_ref()))
         .collect()
 }
 criterion_group!(starcoin_benches, storage_transaction, accumulator_append);

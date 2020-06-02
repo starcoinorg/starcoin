@@ -3,6 +3,13 @@
 
 pub mod account_address {
     pub use move_core_types::account_address::AccountAddress;
+
+    use crate::transaction::authenticator::AuthenticationKey;
+    use starcoin_crypto::ed25519::Ed25519PublicKey;
+
+    pub fn from_public_key(public_key: &Ed25519PublicKey) -> AccountAddress {
+        AuthenticationKey::ed25519(public_key).derived_address()
+    }
 }
 
 pub mod gas_schedule {
@@ -31,7 +38,7 @@ pub mod transaction_argument {
 pub mod parser {
     use crate::language_storage::TypeTag;
     use anyhow::{format_err, Result};
-    pub use move_core_types::parser::parse_type_tags;
+    pub use move_core_types::parser::{parse_transaction_argument, parse_type_tags};
 
     pub fn parse_type_tag(s: &str) -> Result<TypeTag> {
         parse_type_tags(s)?
@@ -40,9 +47,7 @@ pub mod parser {
     }
 }
 
-pub mod transaction_metadata {
-    pub use move_vm_types::transaction_metadata::TransactionMetadata;
-}
+pub mod transaction_metadata;
 
 pub mod values {
     pub use move_vm_types::values::*;
@@ -58,8 +63,8 @@ pub mod loaded_data {
     }
 }
 
-pub mod chain_state {
-    pub use move_vm_types::chain_state::ChainState;
+pub mod data_store {
+    pub use move_vm_types::data_store::DataStore;
 }
 
 pub mod file_format {
@@ -88,15 +93,24 @@ pub mod state_view {
     pub use libra_state_view::StateView;
 }
 
-pub mod transaction {
-    pub use libra_types::transaction::{ChangeSet, Module, Script};
-}
+pub mod transaction;
 
 pub mod contract_event {
-    pub use libra_types::contract_event::{ContractEvent, ContractEventV0, EventWithProof};
+    pub use libra_types::contract_event::{
+        ContractEvent, ContractEventHasher, ContractEventV0, EventWithProof,
+    };
+}
+
+pub mod vm_error {
+    pub use libra_types::vm_error::*;
+
+    pub mod sub_status {
+        pub use libra_types::vm_error::sub_status::*;
+    }
 }
 
 pub mod access_path;
 pub mod account_config;
+pub mod block_metadata;
 pub mod event;
 pub mod on_chain_config;

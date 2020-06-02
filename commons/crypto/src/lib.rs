@@ -27,3 +27,5 @@ pub use crate::traits::*;
 // Reexport once_cell for use in CryptoHasher Derive implementation
 #[doc(hidden)]
 pub use once_cell as _once_cell;
+#[doc(hidden)]
+pub use serde_name as _serde_name;

@@ -11,8 +11,8 @@ starcoin-types = {path = "../../types"}
 actix = "0.9"
 anyhow = "1.0"
 futures = "0.3"
-serde = { version = "1.0.99", default-features = false }
+serde = { version = "1.0", default-features = false }
 starcoin-crypto = { path = "../../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 async-trait = "0.1.13"
-libp2p = "0.18.1"
+libp2p = "0.19.1"

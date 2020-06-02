@@ -4,7 +4,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{account_address::AccountAddress, block::BlockHeader};
+use crate::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},
@@ -58,11 +58,5 @@ impl BlockMetadata {
 
     pub fn parent_id(&self) -> HashValue {
         self.parent_id
-    }
-}
-
-impl From<BlockHeader> for BlockMetadata {
-    fn from(header: BlockHeader) -> Self {
-        header.into_metadata()
     }
 }

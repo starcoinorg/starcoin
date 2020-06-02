@@ -5,8 +5,8 @@ use crate::account::Account;
 use crate::{common::strip, config::global::Config as GlobalConfig, errors::*, evaluator::Stage};
 use starcoin_vm_types::{
     language_storage::TypeTag,
-    parser::parse_type_tags,
-    transaction_argument::{parse_as_transaction_argument, TransactionArgument},
+    parser::{parse_transaction_argument, parse_type_tags},
+    transaction_argument::TransactionArgument,
 };
 use std::{collections::BTreeSet, str::FromStr, time::Duration};
 
@@ -21,7 +21,7 @@ impl FromStr for Argument {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        if let Ok(arg) = parse_as_transaction_argument(s) {
+        if let Ok(arg) = parse_transaction_argument(s) {
             return Ok(Argument::SelfContained(arg));
         }
         if s.starts_with("{{") && s.ends_with("}}") {
