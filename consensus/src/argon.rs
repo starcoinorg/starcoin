@@ -75,7 +75,7 @@ impl Consensus for ArgonConsensus {
             ArgonConsensusHeader::try_from(header.consensus_header().to_vec())?;
         let nonce = consensus_header.nonce;
         let header = header.parent_hash().to_hex();
-        info!(
+        debug!(
             "Verify header, nonce, difficulty :{:?}, {:o}, {:x}",
             header, nonce, difficulty
         );
