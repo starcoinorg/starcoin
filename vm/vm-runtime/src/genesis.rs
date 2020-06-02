@@ -125,7 +125,6 @@ fn create_and_initialize_main_accounts(
 
     let root_association_address = account_config::association_address();
     let burn_account_address = account_config::burn_account_address();
-    let fee_account_address = account_config::transaction_fee_address();
     // create the mint account
     let mint_address: starcoin_vm_types::account_address::AccountAddress =
         account_config::mint_address();
@@ -186,14 +185,6 @@ fn create_and_initialize_main_accounts(
     context.exec(
         GENESIS_MODULE_NAME,
         "grant_burn_capabilities_for_sender",
-        vec![],
-        vec![Value::vector_u8(genesis_auth_key.clone())],
-    );
-
-    context.set_sender(fee_account_address);
-    context.exec(
-        GENESIS_MODULE_NAME,
-        "initialize_txn_fee_account",
         vec![],
         vec![Value::vector_u8(genesis_auth_key.clone())],
     );
