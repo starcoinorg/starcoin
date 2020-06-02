@@ -44,7 +44,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
         blocks
     };
     if blocks.len() <= 1 {
-        info!(
+        debug!(
             "Block length less than 1, set target to 1 difficulty:{:?}",
             difficult_1_target() / 100.into()
         );
@@ -75,19 +75,19 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
     let new_target =
         if let Some(new_target) = (avg_target / time_plan.into()).checked_mul(avg_time.into()) {
             if new_target / 2.into() > avg_target {
-                info!("target increase too fast, limit to 2 times");
+                debug!("target increase too fast, limit to 2 times");
                 avg_target * 2
             } else if new_target < avg_target / 2.into() {
-                info!("target reduce too fase, limit to 2 times");
+                debug!("target reduce too fase, limit to 2 times");
                 avg_target / 2.into()
             } else {
                 new_target
             }
         } else {
-            info!("target large than max value, set to 1_difficulty");
+            debug!("target large than max value, set to 1_difficulty");
             difficult_1_target()
         };
-    info!(
+    debug!(
         "avg_time:{:?}s, time_plan:{:?}s, target: {:?}",
         avg_time, time_plan, new_target
     );
