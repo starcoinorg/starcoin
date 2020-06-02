@@ -12,7 +12,7 @@ A Layered Cryptocurrency and Decentralized Blockchain System.
 cargo build 
 ```
 
-For prerequisites and detailed build instructions please read [Build from source](./docs/build.md) document.
+For prerequisites and detailed build instructions please read [Build from source](http://developer.starcoin.org/en/build/) document.
 
 
 ## Run dev node:
@@ -21,7 +21,7 @@ For prerequisites and detailed build instructions please read [Build from source
 starcoin -n dev console
 ```
 
-More detailed dev instructions please read [Start starcoin dev network](./docs/dev_network.md) document.
+More detailed dev instructions please read [Run starcoin dev network](http://developer.starcoin.org/en/runnetwork/) document.
 
 ## Join a test network
 
@@ -29,9 +29,7 @@ More detailed dev instructions please read [Start starcoin dev network](./docs/d
 starcoin -n halley console
 ```
 
-Note:The halley test network will be released soon, so stay tuned. 
-
-More detailed test network info please read [Join starcoin test network](./docs/test_network.md).
+More detailed test network info please read [Join starcoin test network](http://developer.starcoin.org/en/runnetwork/).
 
 
 ## Contribution
