@@ -7,8 +7,9 @@ on:
     paths-ignore:
       - '**.md'
   pull_request:
-    paths-ignore:
-      - '**.md'
+    branches:
+      - master
+
 jobs:
   build-and-test:
     name: build and test
