@@ -1,6 +1,6 @@
 //! account: alice
 
-//! sender: association
+//! sender: alice
 script {
 fun main() {
 

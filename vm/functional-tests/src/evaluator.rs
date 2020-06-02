@@ -26,14 +26,13 @@ use starcoin_types::{
     vm_error::{StatusCode, VMStatus},
 };
 use starcoin_vm_types::{
-    account_config::STC_IDENTIFIER,
+    file_format::{CompiledModule, CompiledScript},
+    views::ModuleView,
+};
+use starcoin_vm_types::{
     gas_schedule::{GasAlgebra, GasConstants},
     language_storage::ModuleId,
     state_view::StateView,
-};
-use starcoin_vm_types::{
-    file_format::{CompiledModule, CompiledScript},
-    views::ModuleView,
 };
 use std::fmt;
 use std::str::FromStr;
@@ -581,10 +580,6 @@ pub fn eval<TComp: Compiler>(
     // Set up a fake executor with the genesis block and create the accounts.
     let mut exec = FakeExecutor::from_genesis(&genesis_write_set);
     for data in config.accounts.values() {
-        let mut data = data.clone();
-        //just a hack, set default currency.
-        // TODO use a more graceful method.
-        data.set_balance_currency(STC_IDENTIFIER.clone());
         exec.add_account_data(&data);
     }
 

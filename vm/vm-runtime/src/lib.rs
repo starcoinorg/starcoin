@@ -9,6 +9,7 @@ pub mod transaction_scripts;
 #[macro_use]
 extern crate prometheus;
 
-pub mod counters;
+pub mod data_cache;
 pub mod genesis_context;
 pub mod genesis_gas_schedule;
+pub mod metrics;

@@ -275,7 +275,7 @@ fn proof_verify(
 
 // Helper function to create a list of leaves.
 fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
-    nums.map(|x| HashValue::from_sha3_256(x.to_be_bytes().as_ref()))
+    nums.map(|x| HashValue::sha3_256_of(x.to_be_bytes().as_ref()))
         .collect()
 }
 

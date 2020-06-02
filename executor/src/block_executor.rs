@@ -14,7 +14,7 @@ use starcoin_types::error::ExecutorResult;
 use starcoin_types::proof::InMemoryAccumulator;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use vm_runtime::counters::TXN_STATUS_COUNTERS;
+use vm_runtime::metrics::TXN_STATUS_COUNTERS;
 
 #[derive(Clone)]
 pub struct BlockExecutor {}

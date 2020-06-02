@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{account_config::constants::ACCOUNT_MODULE_NAME, event::EventHandle};
-use move_core_types::{
-    identifier::{IdentStr, Identifier},
-    move_resource::MoveResource,
-};
+use move_core_types::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
 /// A Rust representation of an Account resource.
@@ -19,7 +16,6 @@ pub struct AccountResource {
     sent_events: EventHandle,
     sequence_number: u64,
     is_frozen: bool,
-    balance_currency_code: Identifier,
 }
 
 impl AccountResource {
@@ -32,7 +28,6 @@ impl AccountResource {
         sent_events: EventHandle,
         received_events: EventHandle,
         is_frozen: bool,
-        balance_currency_code: Identifier,
     ) -> Self {
         AccountResource {
             sequence_number,
@@ -42,7 +37,6 @@ impl AccountResource {
             sent_events,
             received_events,
             is_frozen,
-            balance_currency_code,
         }
     }
 
@@ -79,11 +73,6 @@ impl AccountResource {
     /// Return the the is_frozen flag for the given AccountResource
     pub fn is_frozen(&self) -> bool {
         self.is_frozen
-    }
-
-    /// Return the currency code for the currency held by this account
-    pub fn balance_currency_code(&self) -> &IdentStr {
-        &self.balance_currency_code
     }
 }
 

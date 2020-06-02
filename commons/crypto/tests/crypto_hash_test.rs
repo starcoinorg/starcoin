@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{
-    hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
-    HashValue,
-};
+use starcoin_crypto::hash::{CryptoHash, CryptoHasher, PlainCryptoHash};
 
 #[derive(Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 struct TestStruct {

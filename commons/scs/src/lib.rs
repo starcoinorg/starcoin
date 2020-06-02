@@ -43,6 +43,8 @@ where
     }
 }
 
+pub use lcs::{is_human_readable, serialize_into, serialized_size};
+
 #[cfg(test)]
 mod tests {
     use super::*;

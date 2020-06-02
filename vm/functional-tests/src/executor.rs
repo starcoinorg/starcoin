@@ -14,6 +14,7 @@ use starcoin_types::{
     write_set::WriteSet,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_types::account_config::STC_IDENTIFIER;
 use starcoin_vm_types::{
     account_config::{association_address, AccountResource, BalanceResource},
     file_format::CompiledModule,
@@ -124,11 +125,8 @@ impl FakeExecutor {
         account: &Account,
     ) -> Option<(AccountResource, BalanceResource)> {
         self.read_account_resource(account).and_then(|ar| {
-            self.read_balance_resource_from_currency_code(
-                account,
-                ar.balance_currency_code().to_owned(),
-            )
-            .map(|br| (ar, br))
+            self.read_balance_resource_from_currency_code(account, STC_IDENTIFIER.clone())
+                .map(|br| (ar, br))
         })
     }
 
@@ -196,5 +194,20 @@ impl FakeExecutor {
         //assert!(event.key() == &new_block_event_key());
         //assert!(scs::from_bytes::<NewBlockEvent>(event.event_data()).is_ok());
         self.apply_write_set(output.write_set());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::account::AccountData;
+    use crate::executor::FakeExecutor;
+
+    #[test]
+    fn test_executor() {
+        let account_data = AccountData::new(10_000_000, 0);
+        let mut executor = FakeExecutor::no_genesis();
+        executor.add_account_data(&account_data);
+        let resource = executor.read_account_resource(account_data.account());
+        assert!(resource.is_some());
     }
 }

@@ -1,7 +1,7 @@
 script {
 use 0x0::Version;
 
-fun main(major: u64) {
-    Version::set(major)
+fun main(account: &signer,major: u64) {
+    Version::set(account, major)
 }
 }

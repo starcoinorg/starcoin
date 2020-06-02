@@ -108,7 +108,7 @@ impl InternalNode {
     pub fn hash(&self) -> HashValue {
         let mut bytes = self.left.to_vec();
         bytes.extend(self.right.to_vec());
-        HashValue::from_sha3_256(bytes.as_slice())
+        HashValue::sha3_256_of(bytes.as_slice())
     }
 
     pub fn index(&self) -> NodeIndex {

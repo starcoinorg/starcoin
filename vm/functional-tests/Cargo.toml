@@ -9,8 +9,8 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 tempfile = "3.1.0"
-datatest-stable = {git = "https://github.com/starcoinorg/libra", rev="45cecc9abf89c6f660a4debe5d95aeeaeff9dead" }
-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/libra", version = "0.1.0",rev="45cecc9abf89c6f660a4debe5d95aeeaeff9dead" }
+datatest-stable = {git = "https://github.com/starcoinorg/libra", rev="627e66029eb748c1e3e05d6c8fd6db11935f80b4" }
+bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/libra", version = "0.1.0",rev="627e66029eb748c1e3e05d6c8fd6db11935f80b4" }
 stdlib = { package="stdlib", path = "../stdlib"}
 once_cell = "1.4.0"
 regex = { version = "1.3.6", default-features = false, features = ["std", "perf"] }

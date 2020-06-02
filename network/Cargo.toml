@@ -21,7 +21,7 @@ hex = "0.4.2"
 bytes = "0.5.0"
 
 parity-codec = { version = "3.2", features = ["derive"] }
-libp2p = "0.18.1"
+libp2p = "0.19.1"
 
 tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}
@@ -44,7 +44,7 @@ rand = "0.7.3"
 parking_lot = "0.10.0"
 lru = "0.4.0"
 
-serde = { version = "1.0.101", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.41"
 slog = { version = "2.5.2", features = ["nested-values"] }
 slog_derive = "0.2.0"
