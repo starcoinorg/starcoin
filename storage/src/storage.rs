@@ -6,6 +6,8 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use anyhow::{bail, Result};
 use crypto::HashValue;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -39,17 +41,34 @@ pub trait InnerStore: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
 }
 
+pub static CACHE_NONE_OBJECT: Lazy<CacheObject> = Lazy::new(|| CacheObject::None);
+/// Define cache object distinguish between normal objects and missing
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum CacheObject {
+    Value(Vec<u8>),
+    None,
+}
+
+impl From<&CacheObject> for Option<Vec<u8>> {
+    fn from(cache_obj: &CacheObject) -> Option<Vec<u8>> {
+        match cache_obj.clone() {
+            CacheObject::Value(v) => Some(v),
+            CacheObject::None => None,
+        }
+    }
+}
+
 ///Storage instance type define
 #[derive(Clone)]
 pub enum StorageInstance {
     CACHE {
-        cache: Arc<dyn InnerStore>,
+        cache: Arc<CacheStorage>,
     },
     DB {
         db: Arc<dyn InnerStore>,
     },
     CacheAndDb {
-        cache: Arc<dyn InnerStore>,
+        cache: Arc<CacheStorage>,
         db: Arc<dyn InnerStore>,
     },
 }
@@ -75,15 +94,22 @@ impl InnerStore for StorageInstance {
             StorageInstance::DB { db } => db.get(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
-                if let Ok(Some(v)) = cache.get(prefix_name, key.clone()) {
-                    Ok(Some(v))
+                if let Ok(Some(cache_obj)) = cache.get_obj(prefix_name, key.clone()) {
+                    match cache_obj {
+                        CacheObject::Value(value) => Ok(Some(value)),
+                        CacheObject::None => Ok(None),
+                    }
                 } else {
                     match db.get(prefix_name, key.clone())? {
                         Some(value) => {
-                            cache.put(prefix_name, key, value.clone())?;
+                            cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
                             Ok(Some(value))
                         }
-                        None => Ok(None),
+                        None => {
+                            // put null vec to cache for avoid repeatedly querying non-existent data from db
+                            cache.put_obj(prefix_name, key, CACHE_NONE_OBJECT.clone())?;
+                            Ok(None)
+                        }
                     }
                 }
             }
@@ -95,8 +121,8 @@ impl InnerStore for StorageInstance {
             StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
             StorageInstance::DB { db } => db.put(prefix_name, key, value),
             StorageInstance::CacheAndDb { cache, db } => db
-                .put(prefix_name, key.clone(), value)
-                .and_then(|_| cache.remove(prefix_name, key)),
+                .put(prefix_name, key.clone(), value.clone())
+                .and_then(|_| cache.put_obj(prefix_name, key, CacheObject::Value(value))),
         }
     }
 
@@ -105,9 +131,12 @@ impl InnerStore for StorageInstance {
             StorageInstance::CACHE { cache } => cache.contains_key(prefix_name, key),
             StorageInstance::DB { db } => db.contains_key(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
-                match cache.contains_key(prefix_name, key.clone()) {
-                    Err(_) => db.contains_key(prefix_name, key),
-                    Ok(is_contains) => Ok(is_contains),
+                match cache.get_obj(prefix_name, key.clone()) {
+                    Ok(Some(cache_obj)) => match cache_obj {
+                        CacheObject::Value(_value) => Ok(true),
+                        CacheObject::None => Ok(false),
+                    },
+                    _ => db.contains_key(prefix_name, key),
                 }
             }
         }
@@ -132,7 +161,7 @@ impl InnerStore for StorageInstance {
             StorageInstance::DB { db } => db.write_batch(prefix_name, batch),
             StorageInstance::CacheAndDb { cache, db } => {
                 match db.write_batch(prefix_name, batch.clone()) {
-                    Ok(_) => cache.write_batch(prefix_name, batch),
+                    Ok(_) => cache.write_batch_obj(prefix_name, batch),
                     Err(err) => bail!("write batch db error: {}", err),
                 }
             }

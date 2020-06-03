@@ -3,13 +3,12 @@
 
 extern crate chrono;
 
-use crypto::{hash::PlainCryptoHash, HashValue};
-
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{InnerStore, StorageInstance, ValueCodec};
-use crate::{Storage, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
+use crate::storage::{InnerStore, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
+use crate::{Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
 use anyhow::Result;
+use crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;
@@ -127,9 +126,9 @@ fn test_two_level_storage() {
     assert_eq!(transaction_info5, None);
     // verify cache storage is null
     let value6 = cache_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
+        .get_obj(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
-    assert_eq!(value6, None);
+    assert_eq!(value6.unwrap(), CACHE_NONE_OBJECT.clone());
     let value7 = db_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
@@ -164,13 +163,36 @@ fn test_two_level_storage_read_through() -> Result<()> {
     .unwrap();
 
     let transaction_info2 = storage2.transaction_info_storage.get(id).unwrap();
-    assert!(transaction_info2.is_some());
     assert_eq!(transaction_info1, transaction_info2.unwrap());
 
     //verfiy cache storage
     let transaction_info_data = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
-    assert!(transaction_info_data.is_some());
     let transaction_info3 = TransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
     assert_eq!(transaction_info3, transaction_info1);
+    Ok(())
+}
+
+#[test]
+fn test_missing_key_handle() -> Result<()> {
+    let tmpdir = starcoin_config::temp_path();
+    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
+    let cache_storage = Arc::new(CacheStorage::new());
+    let instance =
+        StorageInstance::new_cache_and_db_instance(cache_storage.clone(), db_storage.clone());
+    let storage = Storage::new(instance.clone()).unwrap();
+    let key = HashValue::random();
+    let result = storage.get_transaction_info(key)?;
+    assert!(result.is_none());
+    let value2 = cache_storage.get_obj(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    assert_eq!(value2.unwrap(), CACHE_NONE_OBJECT.clone());
+    let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    assert!(value3.is_none());
+    // test remove
+    let result2 = instance.remove(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec());
+    assert!(result2.is_ok());
+    let value4 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    assert!(value4.is_none());
+    let contains = instance.contains_key(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    assert_eq!(contains, false);
     Ok(())
 }

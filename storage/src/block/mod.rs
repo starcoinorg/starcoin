@@ -5,7 +5,7 @@ use crate::define_storage;
 use crate::storage::{CodecStorage, KeyCodec, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_SONS_PREFIX_NAME, BLOCK_TRANSATIONS_PREFIX_NAME,
+    BLOCK_SONS_PREFIX_NAME, BLOCK_TRANSACTIONS_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -76,7 +76,7 @@ define_storage!(
     BlockTransactionsStorage,
     HashValue,
     Vec<HashValue>,
-    BLOCK_TRANSATIONS_PREFIX_NAME
+    BLOCK_TRANSACTIONS_PREFIX_NAME
 );
 
 pub struct BlockStorage {

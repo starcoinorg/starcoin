@@ -3,7 +3,7 @@
 
 use crate::batch::WriteBatch;
 use crate::metrics::{record_metrics, CACHE_ITEMS};
-use crate::storage::{InnerStore, WriteOp};
+use crate::storage::{CacheObject, InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
 use parking_lot::Mutex;
@@ -11,7 +11,7 @@ use parking_lot::Mutex;
 const LRU_CACHE_DEFAULT_SIZE: usize = 65535;
 
 pub struct CacheStorage {
-    cache: Mutex<LruCache<Vec<u8>, Vec<u8>>>,
+    cache: Mutex<LruCache<Vec<u8>, CacheObject>>,
 }
 
 impl CacheStorage {
@@ -25,6 +25,40 @@ impl CacheStorage {
             cache: Mutex::new(LruCache::new(size)),
         }
     }
+    pub fn get_obj(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<CacheObject>> {
+        record_metrics("cache", prefix_name, "get").end_with(|| {
+            compose_key(prefix_name.to_string(), key)
+                .and_then(|key| Ok(self.cache.lock().get(&key).cloned()))
+        })
+    }
+
+    pub fn put_obj(&self, prefix_name: &str, key: Vec<u8>, obj: CacheObject) -> Result<()> {
+        record_metrics("cache", prefix_name, "put").end_with(|| {
+            let mut cache = self.cache.lock();
+            cache.put(compose_key(prefix_name.to_string(), key)?, obj);
+            CACHE_ITEMS.set(cache.len() as u64);
+            Ok(())
+        })
+    }
+
+    pub fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
+        // <CacheStorage as InnerStore>::contains_key(self, prefix_name, key)
+        InnerStore::contains_key(self, prefix_name, key)
+    }
+
+    pub fn write_batch_obj(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
+        record_metrics("cache", "batch", prefix_name).end_with(|| {
+            for (key, write_op) in &batch.rows {
+                match write_op {
+                    WriteOp::Value(value) => self
+                        .put_obj(prefix_name, key.to_vec(), CacheObject::Value(value.clone()))
+                        .unwrap(),
+                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
+                };
+            }
+            Ok(())
+        })
+    }
 }
 
 impl Default for CacheStorage {
@@ -37,14 +71,17 @@ impl InnerStore for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         record_metrics("cache", prefix_name, "get").end_with(|| {
             compose_key(prefix_name.to_string(), key)
-                .and_then(|key| Ok(self.cache.lock().get(&key).map(|v| v.to_vec())))
+                .and_then(|key| Ok(self.cache.lock().get(&key).and_then(|v| v.into())))
         })
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         record_metrics("cache", prefix_name, "put").end_with(|| {
             let mut cache = self.cache.lock();
-            cache.put(compose_key(prefix_name.to_string(), key)?, value);
+            cache.put(
+                compose_key(prefix_name.to_string(), key)?,
+                CacheObject::Value(value),
+            );
             CACHE_ITEMS.set(cache.len() as u64);
             Ok(())
         })
