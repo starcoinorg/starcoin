@@ -164,9 +164,9 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 stest::init_test_logger();
                 let (tx,mut rx) = stest::make_channel();
 
-                let mut rt = tokio::runtime::Runtime::new().unwrap();
+                let mut rt = stest::Runtime::new().unwrap();
 
-                let local = tokio::task::LocalSet::new();
+                let local = stest::LocalSet::new();
                 let future = actix_rt::System::run_in_tokio("test", &local);
                 local.spawn_local(future);
 
@@ -184,9 +184,9 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 stest::init_test_logger();
                 let (tx,mut rx) = stest::make_channel();
 
-                let mut rt = tokio::runtime::Runtime::new().unwrap();
+                let mut rt = stest::Runtime::new().unwrap();
 
-                let local = tokio::task::LocalSet::new();
+                let local = stest::LocalSet::new();
                 let future = actix_rt::System::run_in_tokio("test", &local);
                 local.spawn_local(future);
 

@@ -10,6 +10,7 @@ use futures::Future;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 pub use stest_macro::test;
+pub use tokio::{runtime::Runtime, task::LocalSet};
 
 pub fn init_test_logger() {
     starcoin_logger::init_for_test();
