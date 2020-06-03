@@ -547,6 +547,10 @@ impl Protocol {
     pub fn update_self_info(&mut self, self_info: PeerInfo) {
         self.chain_info.self_info = self_info;
     }
+
+    pub fn exist_notif_protocol(&self, proto_name: Cow<'static, [u8]>) -> bool {
+        self.behaviour.exist_notif_protocol(proto_name)
+    }
 }
 
 fn send_message(

@@ -9,6 +9,7 @@ use starcoin_crypto::ed25519::Ed25519PublicKey;
 use crate::block::BlockHeader;
 use crate::{block::BlockNumber, U512};
 use starcoin_crypto::HashValue;
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
@@ -145,22 +146,53 @@ pub struct PeerInfo {
     pub peer_id: PeerId,
     pub latest_header: BlockHeader,
     pub total_difficulty: U512,
+    pub rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>,
 }
 
 impl PeerInfo {
-    pub fn new_for_test(peer_id: PeerId) -> Self {
+    pub fn new_for_test(
+        peer_id: PeerId,
+        rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>,
+    ) -> Self {
         PeerInfo {
             peer_id,
             latest_header: BlockHeader::default(),
             total_difficulty: U512::zero(),
+            rpc_protocols,
         }
     }
 
-    pub fn new(peer_id: PeerId, total_difficulty: U512, latest_header: BlockHeader) -> Self {
+    pub fn new_with_proto(
+        peer_id: PeerId,
+        total_difficulty: U512,
+        latest_header: BlockHeader,
+        rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>,
+    ) -> Self {
         PeerInfo {
             peer_id,
             latest_header,
             total_difficulty,
+            rpc_protocols,
+        }
+    }
+
+    pub fn new_only_proto(rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>) -> Self {
+        let mut only_proto = Self::default();
+        only_proto.rpc_protocols = rpc_protocols;
+        only_proto
+    }
+
+    pub fn new_with_peer_info(
+        peer_id: PeerId,
+        total_difficulty: U512,
+        latest_header: BlockHeader,
+        old_peer_info: &PeerInfo,
+    ) -> Self {
+        PeerInfo {
+            peer_id,
+            latest_header,
+            total_difficulty,
+            rpc_protocols: old_peer_info.rpc_protocols.clone(),
         }
     }
 
@@ -180,11 +212,53 @@ impl PeerInfo {
         self.total_difficulty
     }
 
+    pub fn exist_rpc_proto(&self, rpc_proto_name: &[u8]) -> bool {
+        let mut exist = false;
+        for (name, _) in &self.rpc_protocols {
+            if name == &Cow::Borrowed(rpc_proto_name) {
+                exist = true;
+                break;
+            }
+        }
+
+        exist
+    }
+
+    pub fn register_rpc_proto(&mut self, rpc_proto_name: Cow<'static, [u8]>, rpc_info: RpcInfo) {
+        assert!(!rpc_info.is_empty());
+        // self.rpc_protocols
+        //     .retain(|(name, _)| name != &rpc_proto_name);
+        if !self.exist_rpc_proto(&rpc_proto_name) {
+            self.rpc_protocols.push((rpc_proto_name, rpc_info));
+        }
+    }
+
     pub fn default() -> Self {
         Self {
             peer_id: PeerId::random(),
             total_difficulty: U512::from(0),
             latest_header: BlockHeader::default(),
+            rpc_protocols: Vec::new(),
         }
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct RpcInfo {
+    paths: Vec<String>,
+}
+
+impl RpcInfo {
+    pub fn is_empty(&self) -> bool {
+        self.paths.is_empty()
+    }
+
+    pub fn new(paths: Vec<String>) -> Self {
+        let mut inner = Vec::new();
+        paths.iter().for_each(|path| {
+            inner.retain(|p| p != path);
+            inner.push(path.clone());
+        });
+        Self { paths: inner }
     }
 }

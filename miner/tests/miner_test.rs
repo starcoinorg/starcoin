@@ -60,12 +60,16 @@ fn test_miner_with_schedule_pacemaker() {
             )
         };
 
+        let mut rpc_proto_info = Vec::new();
+        let sync_rpc_proto_info = sync::helper::sync_rpc_info();
+        rpc_proto_info.push((sync_rpc_proto_info.0.into(), sync_rpc_proto_info.1));
+
         let (network, rx) = NetworkActor::launch(
             config.clone(),
             bus.clone(),
             handle.clone(),
             genesis_hash,
-            PeerInfo::default(),
+            PeerInfo::new_only_proto(rpc_proto_info),
         );
         let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
         let chain = ChainActor::launch(
@@ -157,12 +161,15 @@ fn test_miner_with_ondemand_pacemaker() {
 
         let txpool_service = txpool.get_service();
 
+        let mut rpc_proto_info = Vec::new();
+        let sync_rpc_proto_info = sync::helper::sync_rpc_info();
+        rpc_proto_info.push((sync_rpc_proto_info.0.into(), sync_rpc_proto_info.1));
         let (network, rx) = NetworkActor::launch(
             config.clone(),
             bus.clone(),
             handle.clone(),
             genesis_hash,
-            PeerInfo::default(),
+            PeerInfo::new_only_proto(rpc_proto_info),
         );
         let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
         let chain = ChainActor::launch(

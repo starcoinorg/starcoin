@@ -351,6 +351,19 @@ impl GenericProto {
             .push((protocol_name.into(), handshake_msg.into()));
     }
 
+    /// protocol exist
+    pub fn exist_notif_protocol(&self, protocol_name: impl Into<Cow<'static, [u8]>>) -> bool {
+        let mut exist = false;
+        let protocol_name = protocol_name.into();
+        for (name, _) in &self.notif_protocols {
+            if name == &protocol_name {
+                exist = true;
+                break;
+            }
+        }
+        exist
+    }
+
     /// Modifies the handshake of the given notifications protocol.
     ///
     /// Has no effect if the protocol is unknown.
