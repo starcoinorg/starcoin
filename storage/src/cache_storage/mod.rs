@@ -6,12 +6,29 @@ use crate::metrics::{record_metrics, CACHE_ITEMS};
 use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
+use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use scs::SCSCodec;
+use serde::{Deserialize, Serialize};
 
 const LRU_CACHE_DEFAULT_SIZE: usize = 65535;
-
+pub static CACHE_NONE_OBJECT: Lazy<Vec<u8>> = Lazy::new(|| CacheObject::None.to_vec());
+/// Define cache object distinguish between normal objects and missing
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum CacheObject {
+    Value(Vec<u8>),
+    None,
+}
+impl CacheObject {
+    pub fn to_vec(&self) -> Vec<u8> {
+        match self {
+            CacheObject::Value(v) => v.to_vec(),
+            CacheObject::None => self.encode().unwrap(),
+        }
+    }
+}
 pub struct CacheStorage {
-    cache: Mutex<LruCache<Vec<u8>, Vec<u8>>>,
+    cache: Mutex<LruCache<Vec<u8>, CacheObject>>,
 }
 
 impl CacheStorage {
@@ -44,7 +61,10 @@ impl InnerStore for CacheStorage {
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         record_metrics("cache", prefix_name, "put").end_with(|| {
             let mut cache = self.cache.lock();
-            cache.put(compose_key(prefix_name.to_string(), key)?, value);
+            cache.put(
+                compose_key(prefix_name.to_string(), key)?,
+                CacheObject::Value(value),
+            );
             CACHE_ITEMS.set(cache.len() as u64);
             Ok(())
         })

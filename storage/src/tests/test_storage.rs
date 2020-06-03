@@ -3,9 +3,9 @@
 
 extern crate chrono;
 
-use crate::cache_storage::CacheStorage;
+use crate::cache_storage::{CacheStorage, CACHE_NONE_OBJECT};
 use crate::db_storage::DBStorage;
-use crate::storage::{CacheObject, InnerStore, StorageInstance, ValueCodec};
+use crate::storage::{InnerStore, StorageInstance, ValueCodec};
 use crate::{Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
 use anyhow::Result;
 use crypto::{hash::PlainCryptoHash, HashValue};
@@ -128,7 +128,7 @@ fn test_two_level_storage() {
     let value6 = cache_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
-    assert_eq!(value6.unwrap(), CacheObject::None.to_vec());
+    assert_eq!(value6.unwrap(), CACHE_NONE_OBJECT.clone());
     let value7 = db_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
@@ -184,7 +184,7 @@ fn test_missing_key_handle() -> Result<()> {
     let result = storage.get_transaction_info(key)?;
     assert!(result.is_none());
     let value2 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
-    assert_eq!(value2.unwrap(), CacheObject::None.to_vec());
+    assert_eq!(value2.unwrap(), CACHE_NONE_OBJECT.clone());
     let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value3.is_none());
     // test remove

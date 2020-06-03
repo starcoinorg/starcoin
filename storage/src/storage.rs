@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::cache_storage::CacheStorage;
+use crate::cache_storage::{CacheStorage, CACHE_NONE_OBJECT};
 use crate::db_storage::DBStorage;
 use anyhow::{bail, Result};
 use crypto::HashValue;
-use scs::SCSCodec;
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -39,30 +37,6 @@ pub trait InnerStore: Send + Sync {
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
-}
-
-/// Define cache object distinguish between normal objects and missing
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum CacheObject {
-    Value(Vec<u8>),
-    None,
-}
-impl CacheObject {
-    pub fn transform(result: Option<Vec<u8>>) -> Self {
-        match result {
-            Some(v) => CacheObject::Value(v),
-            None => CacheObject::None,
-        }
-    }
-    pub fn is_none(result: Vec<u8>) -> bool {
-        result == CacheObject::None.encode().unwrap()
-    }
-    pub fn to_vec(&self) -> Vec<u8> {
-        match self {
-            CacheObject::Value(v) => v.to_vec(),
-            CacheObject::None => self.encode().unwrap(),
-        }
-    }
 }
 
 ///Storage instance type define
@@ -100,7 +74,7 @@ impl InnerStore for StorageInstance {
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
                 if let Ok(Some(value)) = cache.get(prefix_name, key.clone()) {
-                    if CacheObject::is_none(value.clone()) {
+                    if CACHE_NONE_OBJECT.clone() == value.clone() {
                         Ok(None)
                     } else {
                         Ok(Some(value))
@@ -113,7 +87,7 @@ impl InnerStore for StorageInstance {
                         }
                         None => {
                             // put null vec to cache for avoid repeatedly querying non-existent data from db
-                            cache.put(prefix_name, key, CacheObject::None.to_vec())?;
+                            cache.put(prefix_name, key, CACHE_NONE_OBJECT.clone())?;
                             Ok(None)
                         }
                     }
@@ -140,7 +114,7 @@ impl InnerStore for StorageInstance {
             StorageInstance::CacheAndDb { cache, db } => {
                 match cache.get(prefix_name, key.clone()) {
                     Ok(Some(value)) => {
-                        if CacheObject::is_none(value) {
+                        if CACHE_NONE_OBJECT.clone() == value {
                             Ok(false)
                         } else {
                             Ok(true)
