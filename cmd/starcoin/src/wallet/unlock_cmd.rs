@@ -9,7 +9,7 @@ use starcoin_types::account_address::AccountAddress;
 use std::time::Duration;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 #[structopt(name = "unlock")]
 pub struct UnlockOpt {
     #[structopt(short = "p", default_value = "")]
