@@ -17,6 +17,8 @@ pub struct MinerConfig {
     pub dev_period: u64,
     pub thread_num: u16,
     pub enable: bool,
+    #[serde(skip)]
+    pub enable_stderr: bool,
     pub block_gas_limit: u64,
     #[serde(skip)]
     pub pacemaker_strategy: PacemakerStrategy,
@@ -66,6 +68,7 @@ impl ConfigModule for MinerConfig {
             dev_period: 0,
             thread_num: 1,
             enable: true,
+            enable_stderr: false,
             block_gas_limit,
             pacemaker_strategy,
             consensus_strategy,

@@ -1,12 +1,6 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-
-NODE_KEYS=("a52cb7fe64b154d192cebd35a0b129c80481f89dd94f2aa2978b71417304a858" "6a5d25da2a86dab3b46639aae7db33bc7d1fe2006c7c8a9fdf93e20775b8bc8d" "17f42931c760ce8d4611a8907e0e8325ce59569aa3e3eb207cb0eef596f44af6")
-
-SEED_PORT=9840
-SEED_METRICS_PORT=9101
-
 cfg_root=/mnt/volume_01/starcoin_cfg
 
 check_errs() {
@@ -59,12 +53,17 @@ function start_cluster(){
     local cluster_name=$2;
     local net=$3
     shift 3;
-    SEED_HOST=$(docker-machine ip $cluster_name-0)
-    SEED=/ip4/$SEED_HOST/tcp/$SEED_PORT/p2p/QmcejhDq4ubxLnx7sNENECJroAuepMiL6Zkjp63LMmwVaT
-    
-    start_starcoin $cluster_name-0 starcoin-0 $SEED_PORT $SEED_METRICS_PORT $net --node-key ${NODE_KEYS[0]} -s full
+    if [ -z "$NODE_KEYS" ];then
+       exit -1;
+    fi
+    IFS=', ' read -r -a node_keys <<< $NODE_KEYS
+    seed_host=$(docker-machine ip $cluster_name-0)
+    start_starcoin $cluster_name-0 starcoin-0 9840 9101 $net --node-key ${node_keys[0]} -s full
+    sleep 2
+    seed_peer_id=$(docker-machine ssh $cluster_name-0 grep  "peer_id\ is"  /mnt/volume_01/starcoin_cfg/starcoin-0/halley/starcoin.log|awk '{print $8}'|tac|head -n 1)
+    seed=/ip4/$seed_host/tcp/9840/p2p/$seed_peer_id
     for((c=1; c<$number;c++));do
-	start_starcoin $cluster_name-$c starcoin-$c $SEED_PORT $SEED_METRICS_PORT $net --seed $SEED -s full --node-key ${NODE_KEYS[$c]}
+	start_starcoin $cluster_name-$c starcoin-$c 9840 9101 $net --seed $seed -s full --node-key ${node_keys[$c]}
     done
     start_txfactory $cluster_name-0 starcoin-0 txfactory-0 $net
 }

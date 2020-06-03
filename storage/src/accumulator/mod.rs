@@ -47,8 +47,8 @@ impl KeyCodec for AccumulatorNodeKey {
         let (hash, store_type) = self.clone();
 
         let mut encoded_key = Vec::with_capacity(size_of::<AccumulatorNodeKey>());
-        encoded_key.write_all(&hash.to_vec()).unwrap();
-        encoded_key.write_all(&store_type.encode()?).unwrap();
+        encoded_key.write_all(&hash.to_vec())?;
+        encoded_key.write_all(&store_type.encode()?)?;
         Ok(encoded_key)
     }
 

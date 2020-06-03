@@ -4,12 +4,17 @@
 use crate::helper::{get_unix_ts, is_global};
 use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
+use crate::network_metrics::NetworkMetrics;
 use crate::{NetworkMessage, PeerEvent, PeerMessage};
 use actix::prelude::*;
 use anyhow::{bail, Result};
+use async_trait::async_trait;
 use bitflags::_core::sync::atomic::Ordering;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
+use config::{
+    ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
+};
 use crypto::{hash::PlainCryptoHash, HashValue};
 use futures::lock::Mutex;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
@@ -19,12 +24,6 @@ use libp2p::PeerId;
 use lru::LruCache;
 use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
-
-use crate::network_metrics::NetworkMetrics;
-use async_trait::async_trait;
-use config::{
-    ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
-};
 use scs::SCSCodec;
 use starcoin_sync_api::sync_messages::PeerNewBlock;
 use std::borrow::Cow;
@@ -39,6 +38,7 @@ use tx_relay::*;
 use types::peer_info::PeerInfo;
 use types::system_events::NewHeadBlock;
 use types::transaction::SignedUserTransaction;
+use types::TXN_PROTOCOL_NAME;
 
 const LRU_CACHE_SIZE: usize = 1024;
 const PEERS_FILE_NAME: &str = "peers.json";
@@ -47,6 +47,7 @@ const PEERS_FILE_NAME: &str = "peers.json";
 pub struct NetworkAsyncService {
     addr: Addr<NetworkActor>,
     raw_message_processor: MessageProcessor<u128, Vec<u8>>,
+    /// TODO: tx is unused?
     tx: mpsc::UnboundedSender<NetworkMessage>,
     network_service: SNetworkService,
     peer_id: PeerId,
@@ -385,39 +386,53 @@ impl NetworkActor {
 impl Inner {
     async fn handle_network_receive(inner: Arc<Inner>, network_msg: NetworkMessage) -> Result<()> {
         debug!("receive network_message ");
-        let message = PeerMessage::decode(&network_msg.data);
-        match message {
-            Ok(msg) => {
-                inner
-                    .handle_network_message(network_msg.peer_id, msg)
-                    .await?
-            }
-            Err(e) => {
-                debug!("get error {:?}", e);
+        // decode msg based on protocol name.
+        // when protocol upgrade, we can decoded data based on the new protocol.
+        if network_msg.protocol_name.as_ref() == TXN_PROTOCOL_NAME {
+            let txns: Vec<SignedUserTransaction> = scs::from_bytes(network_msg.data.as_slice())?;
+            inner.handle_txn_message(network_msg.peer_id, txns).await?;
+        } else {
+            // Other peer message can be refactored in the similar way.
+            let message = PeerMessage::decode(&network_msg.data);
+            match message {
+                Ok(msg) => {
+                    inner
+                        .handle_network_message(network_msg.peer_id, msg)
+                        .await?
+                }
+                Err(e) => {
+                    debug!("get error {:?}", e);
+                }
             }
         }
         Ok(())
     }
 
+    async fn handle_txn_message(
+        &self,
+        peer_id: PeerId,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Result<()> {
+        debug!("receive new txn list from {:?} ", peer_id);
+        if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
+            for txn in &txns {
+                let id = txn.crypto_hash();
+                if !peer_info.known_transactions.contains(&id) {
+                    peer_info.known_transactions.put(id, ());
+                } else {
+                    return Ok(());
+                }
+            }
+        }
+        self.bus
+            .clone()
+            .broadcast(PeerTransactions::new(txns))
+            .await?;
+        Ok(())
+    }
+
     async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         match msg {
-            PeerMessage::UserTransactions(txns) => {
-                debug!("receive new txn list from {:?} ", peer_id);
-                if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
-                    for txn in &txns {
-                        let id = txn.crypto_hash();
-                        if !peer_info.known_transactions.contains(&id) {
-                            peer_info.known_transactions.put(id, ());
-                        } else {
-                            return Ok(());
-                        }
-                    }
-                }
-                self.bus
-                    .clone()
-                    .broadcast(PeerTransactions::new(txns))
-                    .await?;
-            }
             PeerMessage::Block(block) => {
                 debug!(
                     "receive new block from {:?} with hash {:?}",
@@ -658,8 +673,10 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
     type Result = <PropagateNewTransactions as Message>::Result;
 
     fn handle(&mut self, msg: PropagateNewTransactions, _ctx: &mut Self::Context) -> Self::Result {
-        let protocol_name = msg.protocol_name();
-        let txns = msg.transactions_to_propagate();
+        let (protocol_name, txns) = match msg {
+            PropagateNewTransactions::V1(txns) => (TXN_PROTOCOL_NAME, txns),
+            // new version of txn message can come here
+        };
         // false positive
         if txns.is_empty() {
             return;
@@ -683,11 +700,9 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
                     }
                 }
 
-                let msg = PeerMessage::UserTransactions(txns_unhandled);
-
-                let bytes = msg.encode().expect("encode should succ");
+                let bytes = scs::to_bytes(&txns_unhandled).expect("encode should succ");
                 network_service
-                    .send_message(peer_id.clone(), protocol_name.clone(), bytes)
+                    .send_message(peer_id.clone(), Cow::Borrowed(protocol_name), bytes)
                     .await
                     .expect("check network service");
             }

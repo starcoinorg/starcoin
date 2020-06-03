@@ -948,6 +948,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "console"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c0994e656bba7b922d8dd1245db90672ffb701e684e45be58f20719d69abc5a"
+dependencies = [
+ "encode_unicode",
+ "lazy_static",
+ "libc",
+ "regex",
+ "terminal_size",
+ "termios",
+ "unicode-width",
+ "winapi 0.3.8",
+ "winapi-util",
+]
+
+[[package]]
 name = "const-random"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1514,6 +1531,12 @@ name = "either"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
+
+[[package]]
+name = "encode_unicode"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
 name = "encoding_rs"
@@ -2488,6 +2511,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "076f042c5b7b98f31d205f1249267e12a6518c1481e9dae9764af19b707d2292"
 dependencies = [
  "autocfg 1.0.0",
+]
+
+[[package]]
+name = "indicatif"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49a68371cf417889c9d7f98235b7102ea7c54fc59bcbd22f3dea785be9d27e40"
+dependencies = [
+ "console",
+ "lazy_static",
+ "number_prefix",
+ "regex",
 ]
 
 [[package]]
@@ -4128,6 +4163,12 @@ dependencies = [
  "quote 1.0.5",
  "syn 1.0.21",
 ]
+
+[[package]]
+name = "number_prefix"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17b02fc0ff9a9e4b35b3342880f48e896ebf69f2967921fe8646bf5b7125956a"
 
 [[package]]
 name = "once_cell"
@@ -5901,6 +5942,7 @@ dependencies = [
  "starcoin-wallet-api",
  "stest",
  "thiserror",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6182,8 +6224,10 @@ dependencies = [
  "futures-channel",
  "futures-timer 3.0.2",
  "hex 0.4.2",
+ "indicatif",
  "jsonrpc-core 12.2.0",
  "jsonrpc-tcp-server 12.2.0",
+ "once_cell",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "rust-argon2 0.8.2",
@@ -6198,6 +6242,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
+ "starcoin-metrics",
  "starcoin-network",
  "starcoin-state-api",
  "starcoin-state-tree",
@@ -6465,6 +6510,7 @@ dependencies = [
  "stest",
  "thiserror",
  "tokio 0.1.22",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6499,6 +6545,7 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-types",
  "stest",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6875,6 +6922,7 @@ dependencies = [
  "starcoin-wallet-lib",
  "stest",
  "tempfile",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -6938,6 +6986,7 @@ dependencies = [
  "log 0.4.8",
  "starcoin-logger",
  "stest-macro",
+ "tokio 0.2.20",
 ]
 
 [[package]]
@@ -7101,6 +7150,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb6bfa289a4d7c5766392812c0a1f4c1ba45afa1ad47803c11e1f407d846d75f"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "terminal_size"
+version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8038f95fc7a6f351163f4b964af631bd26c9e828f7db085f2a84aca56f70d13b"
+dependencies = [
+ "libc",
+ "winapi 0.3.8",
+]
+
+[[package]]
+name = "termios"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f0fcee7b24a25675de40d5bb4de6e41b0df07bc9856295e7e2b3a3600c400c2"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

@@ -24,9 +24,20 @@ struct TestAttributeOpts {
 /// async fn my_async_test() {
 ///     assert!(true);
 /// }
+///
 /// #[stest::test]
-/// fn my_async_test() {
+/// fn my_sync_test() {
 ///     assert!(true);
+/// }
+///
+/// #[stest::test]
+/// async fn my_async_test_false() {
+///     assert!(false);
+/// }
+///
+/// #[stest::test]
+/// fn my_sync_test_false() {
+///     assert!(false);
 /// }
 ///
 /// #[stest::test(timeout = 1)]
@@ -55,6 +66,36 @@ struct TestAttributeOpts {
 ///     actix_rt::time::delay_for(Duration::from_secs(6)).await;
 ///     Ok(())
 /// }
+///
+/// #[stest::test(timeout = 10)]
+/// async fn my_async_test_false() {
+///     actix::clock::delay_for(Duration::from_secs(1)).await;
+///     assert!(false);
+/// }
+///
+/// #[stest::test(timeout = 10)]
+/// async fn my_async_test_actor() {
+///     let myactor = MyActor {};
+///     myactor.start();
+///
+///     assert!(false);
+/// }
+///
+/// struct MyActor;
+/// impl Actor for MyActor {
+///     type Context = Context<Self>;
+/// }
+///
+/// #[stest::test(timeout = 10)]
+/// fn my_sync_test_actor() {
+///     assert!(false);
+/// }
+///
+/// #[stest::test(timeout = 1)]
+/// fn test_timeout() {
+///     std::thread::sleep(Duration::from_secs(6));
+/// }
+///
 ///
 /// ```
 #[proc_macro_attribute]
@@ -123,11 +164,16 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 stest::init_test_logger();
                 let (tx,mut rx) = stest::make_channel();
 
-                let mut system = actix_rt::System::new("test");
+                let mut rt = stest::Runtime::new().unwrap();
+
+                let local = stest::LocalSet::new();
+                let future = actix_rt::System::run_in_tokio("test", &local);
+                local.spawn_local(future);
+
                 actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
                 actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
-                system.block_on(stest::wait_result(rx))
+                local.block_on(&mut rt,stest::wait_result(rx))
             }
         }
     } else {
@@ -138,11 +184,16 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 stest::init_test_logger();
                 let (tx,mut rx) = stest::make_channel();
 
-                let mut system = actix_rt::System::new("test");
+                let mut rt = stest::Runtime::new().unwrap();
+
+                let local = stest::LocalSet::new();
+                let future = actix_rt::System::run_in_tokio("test", &local);
+                local.spawn_local(future);
+
                 actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
                 actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
-                system.block_on(stest::wait_result(rx))
+                local.block_on(&mut rt,stest::wait_result(rx))
              }
         }
     };

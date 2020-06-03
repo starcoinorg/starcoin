@@ -1,12 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics::MINER_METRICS;
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
+use starcoin_metrics::HistogramTimer;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -25,20 +27,27 @@ where
     phantom: PhantomData<C>,
 }
 
-#[derive(Clone)]
 pub struct MineCtx {
     header_hash: HashValue,
     block_template: BlockTemplate,
     difficulty: U256,
+    metrics_timer: Option<HistogramTimer>,
 }
 
 impl MineCtx {
     pub fn new(block_template: BlockTemplate, difficulty: U256) -> MineCtx {
         let header_hash = block_template.parent_hash;
+        let metrics_timer = Some(
+            MINER_METRICS
+                .block_mint_time
+                .with_label_values(&["mint"])
+                .start_timer(),
+        );
         MineCtx {
             header_hash,
             block_template,
             difficulty,
+            metrics_timer,
         }
     }
 }
@@ -67,8 +76,10 @@ where
     }
 
     pub fn submit(&self, payload: String) -> Result<()> {
-        let state = self.state.lock().unwrap();
+        let mut state = self.state.lock().unwrap();
+        let metrics_timer = state.as_mut().unwrap().metrics_timer.take();
         let block_template = state.as_ref().unwrap().block_template.clone();
+
         let payload = hex::decode(payload).unwrap();
         let consensus_header = match C::ConsensusHeader::try_from(payload) {
             Ok(h) => h,
@@ -76,10 +87,14 @@ where
         };
         let difficulty = state.as_ref().unwrap().difficulty;
         let block = block_template.into_block(consensus_header, difficulty);
-        info!("Miner new block: {:?}", block);
+        info!("Miner new block with id: {:?}", block.id());
         self.bus.do_send(Broadcast {
             msg: MinedBlock(Arc::new(block)),
         });
+        MINER_METRICS.block_mint_count.inc();
+        if let Some(timer) = metrics_timer {
+            timer.observe_duration();
+        }
         Ok(())
     }
 }

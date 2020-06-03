@@ -26,8 +26,6 @@ pub mod generic {
 
     #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
     pub enum Message {
-        /// Consensus protocol message.
-        Consensus(ConsensusMessage),
         /// Status message for handshake
         Status(Box<Status>),
     }

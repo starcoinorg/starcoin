@@ -66,23 +66,26 @@ impl Consensus for ArgonConsensus {
     }
 
     fn verify_header(
-        _config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
+        config: Arc<NodeConfig>,
+        reader: &dyn ChainReader,
         header: &BlockHeader,
     ) -> Result<()> {
-        let difficulty = header.difficulty();
+        let difficulty = ArgonConsensus::calculate_next_difficulty(config, reader);
+        if header.difficulty() != difficulty {
+            return Err(anyhow::Error::msg("Invalid difficulty"));
+        }
         let consensus_header: ArgonConsensusHeader =
             ArgonConsensusHeader::try_from(header.consensus_header().to_vec())?;
         let nonce = consensus_header.nonce;
         let header = header.parent_hash().to_hex();
-        info!(
+        debug!(
             "Verify header, nonce, difficulty :{:?}, {:o}, {:x}",
             header, nonce, difficulty
         );
         if verify(header.as_bytes(), nonce, difficulty) {
             Ok(())
         } else {
-            Err(anyhow::Error::msg("invalid header"))
+            Err(anyhow::Error::msg("Invalid header"))
         }
     }
 }

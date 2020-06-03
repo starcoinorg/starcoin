@@ -14,6 +14,7 @@ mod tests {
     };
     use futures_timer::Delay;
     use network_p2p::Multiaddr;
+    use network_p2p::PROTOCOL_NAME;
     use std::{thread, time::Duration};
     use tokio::runtime::{Handle, Runtime};
     use types::peer_info::PeerInfo;
@@ -125,11 +126,14 @@ mod tests {
                 match if count % 2 == 0 {
                     tx2.unbounded_send(NetworkMessage {
                         peer_id: msg_peer_id_1.clone(),
+                        // `PROTOCOL_NAME` is a build-in protocol.
+                        protocol_name: std::borrow::Cow::Borrowed(PROTOCOL_NAME),
                         data: random_bytes,
                     })
                 } else {
                     tx1.unbounded_send(NetworkMessage {
                         peer_id: msg_peer_id_2.clone(),
+                        protocol_name: std::borrow::Cow::Borrowed(PROTOCOL_NAME),
                         data: random_bytes,
                     })
                 } {

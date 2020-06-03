@@ -108,7 +108,7 @@ pub trait BlockStore {
 
     fn get_latest_block_header(&self) -> Result<Option<BlockHeader>>;
 
-    fn get_latest_block(&self) -> Result<Block>;
+    fn get_latest_block(&self) -> Result<Option<Block>>;
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
 
@@ -270,7 +270,7 @@ impl BlockStore for Storage {
         self.block_storage.get_latest_block_header()
     }
 
-    fn get_latest_block(&self) -> Result<Block> {
+    fn get_latest_block(&self) -> Result<Option<Block>> {
         self.block_storage.get_latest_block()
     }
 

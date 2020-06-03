@@ -67,10 +67,12 @@ mod tests {
                 match event {
                     Event::NotificationsReceived {
                         remote,
+                        protocol_name,
                         mut messages,
                     } => {
                         let msg = messages.remove(0).to_vec();
                         info!("receive message {:?} from {} ", msg, remote);
+                        assert_eq!(protocol_name.as_ref(), PROTOCOL_NAME);
                         assert_eq!(msg, data);
                         break;
                     }

@@ -105,10 +105,8 @@ impl InnerStore for CacheStorage {
         record_metrics("cache", "batch", prefix_name).end_with(|| {
             for (key, write_op) in &batch.rows {
                 match write_op {
-                    WriteOp::Value(value) => {
-                        self.put(prefix_name, key.to_vec(), value.to_vec()).unwrap()
-                    }
-                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
+                    WriteOp::Value(value) => self.put(prefix_name, key.to_vec(), value.to_vec())?,
+                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec())?,
                 };
             }
             Ok(())

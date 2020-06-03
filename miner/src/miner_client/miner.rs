@@ -5,7 +5,9 @@ use anyhow::Result;
 use config::MinerConfig;
 use futures::channel::mpsc;
 use futures::stream::StreamExt;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
+use std::thread;
 use types::U256;
 
 pub struct Miner {
@@ -13,6 +15,8 @@ pub struct Miner {
     nonce_rx: mpsc::UnboundedReceiver<(Vec<u8>, u64)>,
     worker_controller: WorkerController,
     stratum_client: StratumClient,
+    pb: Option<ProgressBar>,
+    num_seals_found: u64,
 }
 
 impl Miner {
@@ -20,12 +24,27 @@ impl Miner {
         let mut stratum_client = StratumClient::new(&config)?;
         let job_rx = stratum_client.subscribe().await?;
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
-        let worker_controller = start_worker(&config, nonce_tx);
+        let (worker_controller, pb) = if config.enable_stderr {
+            let mp = MultiProgress::new();
+            let pb = mp.add(ProgressBar::new(10));
+            pb.set_style(ProgressStyle::default_bar().template("{msg:.green}"));
+            let worker_controller = start_worker(&config, nonce_tx, Some(&mp));
+            thread::spawn(move || {
+                mp.join().expect("MultiProgress join failed");
+            });
+            (worker_controller, Some(pb))
+        } else {
+            let worker_controller = start_worker(&config, nonce_tx, None);
+            (worker_controller, None)
+        };
+
         Ok(Self {
             job_rx,
             nonce_rx,
             worker_controller,
             stratum_client,
+            pb,
+            num_seals_found: 0,
         })
     }
 
@@ -50,8 +69,26 @@ impl Miner {
         self.worker_controller
             .send_message(WorkerMessage::Stop)
             .await;
-        if let Err(err) = self.stratum_client.submit_seal((pow_header, nonce)).await {
+        if let Err(err) = self
+            .stratum_client
+            .submit_seal((pow_header.clone(), nonce))
+            .await
+        {
             error!("Submit seal to stratum failed: {:?}", err);
+            return;
+        }
+        {
+            self.num_seals_found += 1;
+            let msg = format!(
+                "Miner client Total seals found: {:>3}",
+                self.num_seals_found
+            );
+            if let Some(pb) = self.pb.as_ref() {
+                pb.set_message(&msg);
+                pb.inc(1);
+            } else {
+                info!("{}", msg)
+            }
         }
     }
 

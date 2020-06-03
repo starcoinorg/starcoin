@@ -4,3 +4,7 @@
 mod account_proof;
 
 pub use account_proof::AccountProof;
+
+// reuse libra in memory accumulator.
+pub use libra_types::proof::accumulator::InMemoryAccumulator;
+pub use libra_types::proof::{MerkleTreeInternalNode, SparseMerkleLeafNode};

@@ -196,8 +196,13 @@ impl NetworkInner {
                 let open_msg = PeerEvent::Close(remote.into());
                 event_tx.unbounded_send(open_msg)?;
             }
-            Event::NotificationsReceived { remote, messages } => {
-                self.handle_messages(remote, messages, net_tx).await?;
+            Event::NotificationsReceived {
+                remote,
+                protocol_name,
+                messages,
+            } => {
+                self.handle_messages(remote, protocol_name, messages, net_tx)
+                    .await?;
             }
         }
         Ok(())
@@ -206,6 +211,7 @@ impl NetworkInner {
     async fn handle_messages(
         &self,
         peer_id: PeerId,
+        protocol_name: Cow<'static, [u8]>,
         messages: Vec<Bytes>,
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
     ) -> Result<()> {
@@ -217,6 +223,7 @@ impl NetworkInner {
                     //receive message
                     let user_msg = NetworkMessage {
                         peer_id: peer_id.clone(),
+                        protocol_name: protocol_name.clone(),
                         data: payload.data,
                     };
                     net_tx.unbounded_send(user_msg)?;
@@ -237,6 +244,7 @@ impl NetworkInner {
         Ok(())
     }
 
+    // TODO: can be unfied with `send_message` method?
     async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
         let account_addr = message.peer_id.clone();
         self.service.write_notification(
