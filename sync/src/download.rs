@@ -283,6 +283,7 @@ where
             return Ok(());
         }
 
+        // TODO: why only sync state for main network?
         if main_network && network.get_peer_set_size().await? < MIN_PEER_SIZE {
             debug!("condition is not satisfied when sync state.");
             return Ok(());
@@ -366,6 +367,7 @@ where
                     );
                     sync_metadata.update_address(&state_sync_task_address)?
                 } else if let Some(_tmp) = sync_pivot {
+                    // TODO: don't update pivot if sync_pivot < pivot?
                     // if tmp < pivot {
                     //     if let Some(address) = sync_metadata.get_address() {
                     //         address
@@ -384,6 +386,7 @@ where
                 return Err(format_err!("find_ancestor return none."));
             }
         } else {
+            // TODO: why delay 5s ?
             Delay::new(Duration::from_secs(5)).await;
             return Err(format_err!("best peer is none."));
         }

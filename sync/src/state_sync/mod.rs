@@ -200,6 +200,7 @@ where
         }
     }
 
+    // TODO: better to use full name. `act` is confusing.
     async fn act(&self) {
         if let Err(e) = self.address.send(StateSyncEvent::ACT {}).await {
             error!("Send ACT StateSyncEvent failed : {:?}", e);
@@ -288,6 +289,7 @@ impl<T> SyncTask<T> {
         self.done_tasks.fetch_add(1, Ordering::Relaxed);
     }
 
+    // TODO: no need of mut self.
     fn is_empty(&mut self) -> bool {
         self.wait_2_sync.is_empty() && self.syncing_nodes.is_empty()
     }
@@ -581,6 +583,7 @@ where
             }
             let _ = lock.remove(&task_event.peer_id);
             if let Some(accumulator_node) = task_event.accumulator_node {
+                // TODO: no need to save_node if accumulator_node came from myself.
                 if let Err(e) = storage.save_node(
                     match task_event.task_type {
                         TaskType::TxnAccumulator => AccumulatorStoreType::Transaction,
@@ -727,6 +730,7 @@ enum StateSyncEvent {
     ACT,
 }
 
+// TODO: rest or reset
 #[derive(Debug, Clone)]
 struct RestRoots {
     state_root: HashValue,
@@ -758,6 +762,7 @@ where
 }
 
 fn get_best_peer_info(network_service: NetworkAsyncService) -> Option<PeerInfo> {
+    // TODO: should not block_on which will block the current thread.
     block_on(async move {
         if let Ok(peer_info) = network_service.best_peer().await {
             peer_info
