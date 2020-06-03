@@ -11,8 +11,18 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "info")]
 pub struct InfoOpt {}
-
+impl InfoOpt {
+    pub fn new() -> Self {
+        InfoOpt {}
+    }
+}
 pub struct InfoCommand;
+
+impl InfoCommand {
+    pub fn new() -> Self {
+        InfoCommand {}
+    }
+}
 
 impl CommandAction for InfoCommand {
     type State = CliState;

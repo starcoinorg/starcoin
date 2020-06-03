@@ -281,7 +281,7 @@ where
         }
     }
 
-    fn init_global_opt(&self, matches: &ArgMatches) -> Result<(GlobalOpt, State)> {
+    pub fn init_global_opt(&self, matches: &ArgMatches) -> Result<(GlobalOpt, State)> {
         let global_opt = GlobalOpt::from_clap(&matches);
         let state = self.state_initializer.as_ref()(&global_opt)?;
         Ok((global_opt, state))
