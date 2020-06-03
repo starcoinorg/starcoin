@@ -18,6 +18,7 @@ fn main() {
     let opts: StarcoinOpt = StarcoinOpt::from_args();
     let config = {
         let mut cfg = MinerConfig::default();
+        cfg.enable_stderr = true;
         cfg.consensus_strategy = ConsensusStrategy::Argon(opts.thread_num);
         cfg.stratum_server = opts
             .stratum_server
