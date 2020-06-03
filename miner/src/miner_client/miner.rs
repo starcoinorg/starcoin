@@ -15,7 +15,7 @@ pub struct Miner {
     nonce_rx: mpsc::UnboundedReceiver<(Vec<u8>, u64)>,
     worker_controller: WorkerController,
     stratum_client: StratumClient,
-    pb: ProgressBar,
+    pb: Option<ProgressBar>,
     num_seals_found: u64,
 }
 
@@ -24,14 +24,20 @@ impl Miner {
         let mut stratum_client = StratumClient::new(&config)?;
         let job_rx = stratum_client.subscribe().await?;
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
+        let (worker_controller, pb) = if config.enable_stderr {
+            let mp = MultiProgress::new();
+            let pb = mp.add(ProgressBar::new(10));
+            pb.set_style(ProgressStyle::default_bar().template("{msg:.green}"));
+            let worker_controller = start_worker(&config, nonce_tx, Some(&mp));
+            thread::spawn(move || {
+                mp.join().expect("MultiProgress join failed");
+            });
+            (worker_controller, Some(pb))
+        } else {
+            let worker_controller = start_worker(&config, nonce_tx, None);
+            (worker_controller, None)
+        };
 
-        let mp = MultiProgress::new();
-        let pb = mp.add(ProgressBar::new(10));
-        pb.set_style(ProgressStyle::default_bar().template("{msg:.green}"));
-        let worker_controller = start_worker(&config, nonce_tx, &mp);
-        thread::spawn(move || {
-            mp.join().expect("MultiProgress join failed");
-        });
         Ok(Self {
             job_rx,
             nonce_rx,
@@ -73,9 +79,16 @@ impl Miner {
         }
         {
             self.num_seals_found += 1;
-            self.pb
-                .set_message(&format!("Total seals found: {:>3}", self.num_seals_found));
-            self.pb.inc(1);
+            let msg = format!(
+                "Miner client Total seals found: {:>3}",
+                self.num_seals_found
+            );
+            if let Some(pb) = self.pb.as_ref() {
+                pb.set_message(&msg);
+                pb.inc(1);
+            } else {
+                info!("{}", msg)
+            }
         }
     }
 

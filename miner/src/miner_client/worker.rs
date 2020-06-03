@@ -16,19 +16,24 @@ const HASH_RATE_UPDATE_DURATION_MILLIS: u128 = 300;
 pub fn start_worker(
     config: &MinerConfig,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
-    mp: &MultiProgress,
+    mp: Option<&MultiProgress>,
 ) -> WorkerController {
     match config.consensus_strategy {
         ConsensusStrategy::Argon(thread_num) => {
             let worker_txs = (0..thread_num)
                 .map(|i| {
-                    let pb = mp.add(ProgressBar::new(100));
-                    pb.set_style(ProgressStyle::default_bar().template(
-                        "{prefix:.bold.dim} {spinner:.cyan/blue} [{elapsed_precise}] {msg}",
-                    ));
                     let (worker_tx, worker_rx) = mpsc::unbounded();
                     let worker_name = format!("starcoin-miner-argon-cpu-worker-{}", i);
-                    pb.set_prefix(&worker_name);
+                    let pb = if let Some(mp) = mp {
+                        let pb = mp.add(ProgressBar::new(100));
+                        pb.set_style(ProgressStyle::default_bar().template(
+                            "{prefix:.bold.dim} {spinner:.cyan/blue} [{elapsed_precise}] {msg}",
+                        ));
+                        pb.set_prefix(&worker_name);
+                        Some(pb)
+                    } else {
+                        None
+                    };
                     let nonce_range = partition_nonce(i as u64, thread_num as u64);
                     let nonce_tx_clone = nonce_tx.clone();
                     thread::Builder::new()
@@ -46,14 +51,19 @@ pub fn start_worker(
             WorkerController::new(worker_txs)
         }
         ConsensusStrategy::Dummy(_dev_period) => {
-            let pb = mp.add(ProgressBar::new(100));
-            pb.set_style(
-                ProgressStyle::default_bar()
-                    .template("{prefix:.bold.dim} {spinner:.cyan/blue} [{elapsed_precise}] {msg}"),
-            );
             let (worker_tx, worker_rx) = mpsc::unbounded();
             let worker_name = "starcoin-miner-dummy-worker".to_owned();
-            pb.set_prefix(&worker_name);
+            let pb =
+                if let Some(mp) = mp.as_ref() {
+                    let pb = mp.add(ProgressBar::new(100));
+                    pb.set_style(ProgressStyle::default_bar().template(
+                        "{prefix:.bold.dim} {spinner:.cyan/blue} [{elapsed_precise}] {msg}",
+                    ));
+                    pb.set_prefix(&worker_name);
+                    Some(pb)
+                } else {
+                    None
+                };
             let nonce_range = partition_nonce(1 as u64, 2 as u64);
             thread::Builder::new()
                 .name(worker_name)
@@ -123,10 +133,11 @@ impl Worker {
         &mut self,
         mut rng: G,
         solver: S,
-        pb: ProgressBar,
+        pb: Option<ProgressBar>,
     ) {
         let mut hash_counter = 0usize;
         let mut start = Instant::now();
+        let pb = pb.as_ref();
         loop {
             self.refresh_new_work();
             if self.start {
@@ -135,17 +146,21 @@ impl Worker {
                     let elapsed = start.elapsed();
                     if elapsed.as_millis() > HASH_RATE_UPDATE_DURATION_MILLIS {
                         let elapsed_sec: f64 = elapsed.as_nanos() as f64 / 1_000_000_000.0;
-                        pb.set_message(&format!(
-                            "Hash rate: {:>10.3} Seals found: {:>3}",
-                            hash_counter as f64 / elapsed_sec,
-                            self.num_seal_found,
-                        ));
+                        if let Some(pb) = pb {
+                            pb.set_message(&format!(
+                                "Hash rate: {:>10.3} Seals found: {:>3}",
+                                hash_counter as f64 / elapsed_sec,
+                                self.num_seal_found
+                            ));
+                        }
                         start = Instant::now();
                         hash_counter = 0;
                         if solver(&pow_header, rng(), self.diff, self.nonce_tx.clone()) {
                             self.start = false;
                             self.num_seal_found += 1;
-                            pb.reset_elapsed();
+                            if let Some(pb) = pb {
+                                pb.reset_elapsed()
+                            }
                         }
                     }
                 } else {
