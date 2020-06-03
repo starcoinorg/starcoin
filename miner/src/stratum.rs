@@ -8,7 +8,6 @@ use sc_stratum::*;
 use std::sync::Arc;
 use traits::{ChainReader, Consensus};
 use types::block::BlockTemplate;
-
 pub struct StratumManager<C>
 where
     C: Consensus + Sync + Send + 'static,

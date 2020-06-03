@@ -23,12 +23,12 @@ use traits::{ChainAsyncService, ChainReader, Consensus};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
+mod metrics;
 mod miner;
 mod miner_client;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
 mod stratum;
-
 pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 
 #[derive(Default, Debug, Message)]
