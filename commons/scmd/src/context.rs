@@ -287,6 +287,11 @@ where
         Ok((global_opt, state))
     }
 
+    pub fn matcher_and_opt(&mut self, vec: Vec<&str>) -> Result<(GlobalOpt, State)> {
+        let matcher = self.app.get_matches_from_safe_borrow(vec)?;
+        Self::init_global_opt(self, &matcher)
+    }
+
     pub fn console(mut self) {
         let matches = self
             .app

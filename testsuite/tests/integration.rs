@@ -114,8 +114,8 @@ pub fn steps() -> Steps<MyWorld> {
                         }
                     }
                 },
-                |_app, _opt, _state| println!("Start a console:"),
-                |_app, _opt, _state| println!("good bye."),
+                |_app, _opt, _state| {},
+                |_app, _opt, _state| {},
             );
             world.context = Some(context);
         });
