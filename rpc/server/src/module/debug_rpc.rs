@@ -22,9 +22,21 @@ impl DebugRpcImpl {
 }
 
 impl DebugApi for DebugRpcImpl {
-    fn set_log_level(&self, level: String) -> Result<()> {
-        self.log_handle
-            .update_level(LevelFilter::from_str(level.as_str()).map_err(to_invalid_param_err)?);
+    fn set_log_level(&self, logger_name: Option<String>, level: String) -> Result<()> {
+        let logger_name = logger_name.and_then(|s| {
+            let s = s.trim();
+            if s.is_empty() {
+                None
+            } else {
+                Some(s.to_string())
+            }
+        });
+        let level = LevelFilter::from_str(level.as_str()).map_err(to_invalid_param_err)?;
+        match logger_name {
+            None => self.log_handle.update_level(level),
+            Some(n) => self.log_handle.set_log_level(n, level),
+        }
+
         Ok(())
     }
 

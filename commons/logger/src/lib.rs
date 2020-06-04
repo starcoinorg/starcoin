@@ -93,6 +93,20 @@ impl LoggerHandle {
         self.update_logger(arg);
     }
 
+    pub fn set_log_level(&self, logger_name: String, level: LevelFilter) {
+        let mut arg = self.arg.lock().unwrap().clone();
+        if let Some(t) = arg
+            .module_levels
+            .iter_mut()
+            .find(|(n, _)| n == &logger_name)
+        {
+            t.1 = level;
+        } else {
+            arg.module_levels.push((logger_name, level));
+        }
+        self.update_logger(arg);
+    }
+
     fn update_logger(&self, arg: LoggerConfigArg) {
         let mut origin_arg = self.arg.lock().unwrap();
         if *origin_arg != arg {
