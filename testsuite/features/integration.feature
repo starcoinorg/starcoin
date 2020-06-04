@@ -5,8 +5,6 @@ Feature: integration
 #
 #  1. node：
   Scenario: DEV node start and execute transfer
-    Given cmd context
-    Given [cmd] node info
     Given a dev node config
     And node handle
     And dev rpc client
