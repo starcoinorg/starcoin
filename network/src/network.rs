@@ -663,16 +663,6 @@ impl Handler<BlockMessage> for NetworkActor {
 
         let self_id = self.peer_id.clone();
         Arbiter::spawn(async move {
-            if let Some(old_self_info) = peers.lock().await.get(&self_id) {
-                let self_info = PeerInfo::new_with_peer_info(
-                    self_id.clone().into(),
-                    total_difficulty,
-                    block_header.clone(),
-                    old_self_info.get_peer_info(),
-                );
-                network_service.update_self_info(self_info);
-            }
-
             if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
                 debug!(
                     "total_difficulty is {},peer_info is {:?}",
@@ -682,6 +672,15 @@ impl Handler<BlockMessage> for NetworkActor {
                     peer_info.peer_info.latest_header = block_header;
                     peer_info.peer_info.total_difficulty = total_difficulty;
                 }
+
+                // update self peer info
+                let self_info = PeerInfo::new_with_peer_info(
+                    self_id.clone().into(),
+                    peer_info.peer_info.total_difficulty,
+                    peer_info.peer_info.latest_header.clone(),
+                    peer_info.get_peer_info(),
+                );
+                network_service.update_self_info(self_info);
             }
 
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
