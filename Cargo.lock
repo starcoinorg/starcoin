@@ -511,6 +511,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-executor-benchmark",
  "starcoin-genesis",
+ "starcoin-logger",
  "starcoin-network",
  "starcoin-state-store-api",
  "starcoin-state-tree",

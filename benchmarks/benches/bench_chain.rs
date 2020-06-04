@@ -6,6 +6,7 @@ use criterion::{criterion_group, criterion_main, Benchmark, Criterion};
 use starcoin_bus::BusActor;
 
 fn block_try_connect(c: &mut Criterion) {
+    ::logger::init_for_test();
     for i in vec![100u64, 500].into_iter() {
         c.bench(
             "block_try_connect",
