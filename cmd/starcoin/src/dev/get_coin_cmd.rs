@@ -19,7 +19,7 @@ use structopt::StructOpt;
 
 /// Get coin to default account.
 /// This command only available in dev network.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 #[structopt(name = "get_coin")]
 pub struct GetCoinOpt {
     #[structopt(short = "v")]

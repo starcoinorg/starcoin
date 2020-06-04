@@ -13,6 +13,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_wallet_api::WalletAccount;
 use std::borrow::Borrow;
 use std::sync::Arc;
@@ -31,6 +32,7 @@ pub struct MyWorld {
     txn_account: Option<WalletAccount>,
     node_handle: Option<NodeHandle>,
     context: Option<CmdContext<CliState, StarcoinOpt>>,
+    default_address: Option<AccountAddress>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {

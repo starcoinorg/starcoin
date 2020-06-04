@@ -8,7 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_wallet_api::WalletAccount;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 #[structopt(name = "create")]
 pub struct CreateOpt {
     #[structopt(short = "p")]

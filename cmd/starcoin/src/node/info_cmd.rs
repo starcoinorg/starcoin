@@ -8,21 +8,11 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::node::NodeInfo;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 #[structopt(name = "info")]
 pub struct InfoOpt {}
-impl InfoOpt {
-    pub fn new() -> Self {
-        InfoOpt {}
-    }
-}
-pub struct InfoCommand;
 
-impl InfoCommand {
-    pub fn new() -> Self {
-        InfoCommand {}
-    }
-}
+pub struct InfoCommand;
 
 impl CommandAction for InfoCommand {
     type State = CliState;

@@ -5,5 +5,8 @@ Feature: cmd integration test
 #  1. node：
   Scenario: cmd
     Given cmd context
-    Given [cmd] node info
-
+    Then [cmd] node info
+    Then [cmd] wallet list
+    Then [cmd] wallet show
+    Then [cmd] dev get_coin
+    Then [cmd] wallet create

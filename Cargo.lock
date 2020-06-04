@@ -7150,6 +7150,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-wallet-api",
  "static_assertions 0.3.4",
+ "structopt",
 ]
 
 [[package]]
