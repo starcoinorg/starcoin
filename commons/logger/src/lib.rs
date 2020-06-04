@@ -12,7 +12,7 @@ use log4rs::{
         },
         rolling_file::RollingFileAppender,
     },
-    config::{Appender, Config, Root},
+    config::{Appender, Config, Logger, Root},
     encode::pattern::PatternEncoder,
     Handle,
 };
@@ -28,17 +28,25 @@ pub mod prelude {
 #[derive(Debug, Clone, PartialOrd, PartialEq, Ord, Eq)]
 struct LoggerConfigArg {
     enable_stderr: bool,
+    // global level
     level: LevelFilter,
+    // sub path level
+    module_levels: Vec<(String, LevelFilter)>,
     log_path: Option<PathBuf>,
     max_file_size: u64,
     max_backup: u32,
 }
 
 impl LoggerConfigArg {
-    pub fn new(enable_stderr: bool, level: LevelFilter) -> Self {
+    pub fn new(
+        enable_stderr: bool,
+        level: LevelFilter,
+        module_levels: Vec<(String, LevelFilter)>,
+    ) -> Self {
         Self {
             enable_stderr,
             level,
+            module_levels,
             log_path: None,
             max_file_size: 0,
             max_backup: 0,
@@ -115,6 +123,7 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
     let LoggerConfigArg {
         enable_stderr,
         level,
+        module_levels,
         log_path,
         max_file_size,
         max_backup,
@@ -154,16 +163,28 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         root_builder = root_builder.appender("file");
     }
 
+    builder = builder.loggers(
+        module_levels
+            .into_iter()
+            .map(|(name, level)| Logger::builder().build(name, level)),
+    );
+
     builder
         .build(root_builder.build(level))
         .map_err(|e| e.into())
 }
 
-fn env_log_level(default_level: &str) -> LevelFilter {
-    let level = std::env::var("RUST_LOG").unwrap_or_else(|_| default_level.to_string());
-    level
-        .parse()
-        .unwrap_or_else(|_| panic!("Unexpect log level: {}", level))
+/// read log level filters from `RUST_LOG` env.
+/// return global level filter and specified level filters.
+fn env_log_level(default_level: &str) -> (LevelFilter, Vec<(String, LevelFilter)>) {
+    let level_str = std::env::var("RUST_LOG").unwrap_or_default();
+    let level_filters = parse_spec(level_str.as_str());
+    let default_level = level_filters.global_level.unwrap_or_else(|| {
+        default_level
+            .parse()
+            .unwrap_or_else(|_| panic!("Unexpect log level: {}", default_level))
+    });
+    (default_level, level_filters.module_levels)
 }
 
 lazy_static! {
@@ -175,9 +196,9 @@ pub fn init() -> Arc<LoggerHandle> {
 }
 
 pub fn init_with_default_level(default_level: &str) -> Arc<LoggerHandle> {
-    let level = env_log_level(default_level);
+    let (global_level, module_levels) = env_log_level(default_level);
     LOG_INIT.call_once(|| {
-        let arg = LoggerConfigArg::new(true, level);
+        let arg = LoggerConfigArg::new(true, global_level, module_levels);
         let config = build_config(arg.clone()).expect("build log config fail.");
         let handle = match log4rs::init_config(config) {
             Ok(handle) => handle,
@@ -194,8 +215,8 @@ pub fn init_with_default_level(default_level: &str) -> Arc<LoggerHandle> {
         .as_ref()
         .expect("logger handle must has been set.")
         .clone();
-    if logger_handle.level() != level {
-        logger_handle.update_level(level);
+    if logger_handle.level() != global_level {
+        logger_handle.update_level(global_level);
     }
     logger_handle
 }
@@ -206,9 +227,98 @@ pub fn init_for_test() -> Arc<LoggerHandle> {
     init_with_default_level("debug")
 }
 
+#[derive(Default, Eq, PartialEq, Clone, Debug)]
+struct LogLevelSpec {
+    global_level: Option<LevelFilter>,
+    module_levels: Vec<(String, LevelFilter)>,
+}
+
+/// Parse a logging specification string (e.g: "crate1,crate2::mod3,crate3::x=error/foo")
+/// and return a vector with log filters.
+fn parse_spec(spec: &str) -> LogLevelSpec {
+    let mut parts = spec.split('/');
+    let mods = parts.next();
+    let filter = parts.next();
+    if parts.next().is_some() {
+        eprintln!(
+            "warning: invalid logging spec '{}', \
+             ignoring it (too many '/'s)",
+            spec
+        );
+        return LogLevelSpec::default();
+    }
+    let mut dirs = Vec::new();
+    let mut global_fallback_level: Option<LevelFilter> = None;
+    if let Some(m) = mods {
+        for s in m.split(',') {
+            if s.is_empty() {
+                continue;
+            }
+            let mut parts = s.split('=');
+            let (log_level, name) =
+                match (parts.next(), parts.next().map(|s| s.trim()), parts.next()) {
+                    (Some(part0), None, None) => {
+                        // if the single argument is a log-level string or number,
+                        // treat that as a global fallback
+                        match part0.parse() {
+                            Ok(num) => {
+                                if global_fallback_level.is_some() {
+                                    eprintln!(
+                                    "warning: multi global level specified, only use first one!"
+                                );
+                                } else {
+                                    global_fallback_level = Some(num);
+                                }
+                                continue;
+                            }
+                            Err(_) => (LevelFilter::max(), part0),
+                        }
+                    }
+                    (Some(part0), Some(""), None) => (LevelFilter::max(), part0),
+                    (Some(part0), Some(part1), None) => match part1.parse() {
+                        Ok(num) => (num, part0),
+                        _ => {
+                            eprintln!(
+                                "warning: invalid logging spec '{}', \
+                                 ignoring it",
+                                part1
+                            );
+                            continue;
+                        }
+                    },
+                    _ => {
+                        eprintln!(
+                            "warning: invalid logging spec '{}', \
+                             ignoring it",
+                            s
+                        );
+                        continue;
+                    }
+                };
+            dirs.push((name.to_string(), log_level));
+        }
+    }
+    if filter.is_some() {
+        eprintln!("warning: filter by regexp is not supported yet");
+    }
+    // let filter = filter.map_or(None, |filter| match inner::Filter::new(filter) {
+    //     Ok(re) => Some(re),
+    //     Err(e) => {
+    //         eprintln!("warning: invalid regex filter - {}", e);
+    //         None
+    //     }
+    // });
+
+    LogLevelSpec {
+        global_level: global_fallback_level,
+        module_levels: dirs,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::prelude::*;
+    use crate::LogLevelSpec;
 
     #[test]
     fn test_log() {
@@ -229,5 +339,34 @@ mod tests {
         assert_eq!(handle.level(), handle2.level());
 
         handle.update_level(origin_level);
+    }
+
+    #[test]
+    fn test_log_level_spec() {
+        let test_cases = vec![
+            ("", LogLevelSpec::default()),
+            (
+                "info",
+                LogLevelSpec {
+                    global_level: Some(LevelFilter::Info),
+                    module_levels: vec![],
+                },
+            ),
+            (
+                "debug,common=info,network=warn",
+                LogLevelSpec {
+                    global_level: Some(LevelFilter::Debug),
+                    module_levels: vec![
+                        ("common".to_string(), LevelFilter::Info),
+                        ("network".to_string(), LevelFilter::Warn),
+                    ],
+                },
+            ),
+        ];
+
+        for (spec_str, expected) in test_cases {
+            let actual = super::parse_spec(spec_str);
+            assert_eq!(actual, expected);
+        }
     }
 }
