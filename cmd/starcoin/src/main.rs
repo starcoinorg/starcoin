@@ -1,6 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use anyhow::{Error, Result};
+use anyhow::Result;
 use scmd::{CmdContext, Command};
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
