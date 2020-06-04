@@ -13,6 +13,12 @@ use structopt::StructOpt;
 pub struct LogLevelOpt {
     #[structopt(name = "level")]
     level: Level,
+
+    #[structopt(
+        name = "logger",
+        help = "set logger's level, if not present, set global level"
+    )]
+    logger_name: Option<String>,
 }
 
 pub struct LogLevelCommand;
@@ -26,7 +32,11 @@ impl CommandAction for LogLevelCommand {
     fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<String> {
         let opt = ctx.opt();
         let client = ctx.state().client();
-        client.debug_set_log_level(opt.level)?;
-        Ok(format!("set log level to {:?}", opt.level))
+        client.debug_set_log_level(opt.logger_name.clone(), opt.level)?;
+        Ok(format!(
+            "set {} log level to {:?}",
+            opt.logger_name.as_deref().unwrap_or("global"),
+            opt.level
+        ))
     }
 }

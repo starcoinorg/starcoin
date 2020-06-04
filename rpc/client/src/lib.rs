@@ -336,11 +336,15 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn debug_set_log_level(&self, level: Level) -> anyhow::Result<()> {
+    pub fn debug_set_log_level(
+        &self,
+        logger_name: Option<String>,
+        level: Level,
+    ) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .debug_client
-                .set_log_level(level.to_string())
+                .set_log_level(logger_name, level.to_string())
                 .compat()
                 .await
         })
