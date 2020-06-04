@@ -35,7 +35,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::Handle;
 use tx_relay::*;
-use types::peer_info::PeerInfo;
+use types::peer_info::{PeerInfo, RpcInfo};
 use types::system_events::NewHeadBlock;
 use types::transaction::SignedUserTransaction;
 use types::TXN_PROTOCOL_NAME;
@@ -85,6 +85,14 @@ impl PeerInfoNet {
             known_transactions: LruCache::new(LRU_CACHE_SIZE),
         }
     }
+
+    pub fn register_rpc_proto(&mut self, rpc_proto_name: Cow<'static, [u8]>, rpc_info: RpcInfo) {
+        self.peer_info.register_rpc_proto(rpc_proto_name, rpc_info)
+    }
+
+    pub fn get_peer_info(&self) -> &PeerInfo {
+        &self.peer_info
+    }
 }
 
 #[rtype(result = "()")]
@@ -131,11 +139,12 @@ impl NetworkService for NetworkAsyncService {
         &self,
         protocol_name: Cow<'static, [u8]>,
         peer_id: PeerId,
+        rpc_path: String,
         message: Vec<u8>,
         time_out: Duration,
     ) -> Result<Vec<u8>> {
         let request_id = get_unix_ts();
-        let peer_msg = PeerMessage::RawRPCRequest(request_id, message);
+        let peer_msg = PeerMessage::RawRPCRequest(request_id, rpc_path, message);
         let data = peer_msg.encode()?;
         self.network_service
             .send_message(peer_id.clone(), protocol_name, data)
@@ -224,6 +233,26 @@ impl NetworkService for NetworkAsyncService {
     async fn get_peer_set_size(&self) -> Result<usize> {
         let size = self.inner.peers.lock().await.len();
         Ok(size)
+    }
+
+    async fn register_rpc_proto(
+        &self,
+        proto_name: Cow<'static, [u8]>,
+        rpc_info: RpcInfo,
+    ) -> Result<()> {
+        if self
+            .network_service
+            .exist_notif_proto(proto_name.clone())
+            .await
+        {
+            if let Some(peer_info) = self.inner.peers.lock().await.get_mut(&self.peer_id) {
+                peer_info.register_rpc_proto(proto_name, rpc_info);
+                self.inner
+                    .network_service
+                    .update_self_info(peer_info.get_peer_info().clone());
+            }
+        }
+        Ok(())
     }
 }
 
@@ -459,7 +488,7 @@ impl Inner {
                     })
                     .await?;
             }
-            PeerMessage::RawRPCRequest(id, request) => {
+            PeerMessage::RawRPCRequest(id, _rpc_path, request) => {
                 debug!("do request {} from peer {}", id, peer_id);
                 let (tx, rx) = mpsc::channel(1);
                 self.rpc_tx.unbounded_send(RawRpcRequestMessage {
@@ -632,11 +661,6 @@ impl Handler<BlockMessage> for NetworkActor {
         let msg = PeerMessage::Block(block);
         let bytes = msg.encode().expect("should encode succ");
 
-        let self_info = PeerInfo::new(
-            self.peer_id.clone().into(),
-            total_difficulty,
-            block_header.clone(),
-        );
         let self_id = self.peer_id.clone();
         Arbiter::spawn(async move {
             if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
@@ -648,6 +672,15 @@ impl Handler<BlockMessage> for NetworkActor {
                     peer_info.peer_info.latest_header = block_header;
                     peer_info.peer_info.total_difficulty = total_difficulty;
                 }
+
+                // update self peer info
+                let self_info = PeerInfo::new_with_peer_info(
+                    self_id.clone().into(),
+                    peer_info.peer_info.total_difficulty,
+                    peer_info.peer_info.latest_header.clone(),
+                    peer_info.get_peer_info(),
+                );
+                network_service.update_self_info(self_info);
             }
 
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
@@ -663,8 +696,6 @@ impl Handler<BlockMessage> for NetworkActor {
                     .expect("send message failed ,check network service please");
             }
         });
-
-        self.network_service.update_self_info(self_info);
     }
 }
 
@@ -824,6 +855,7 @@ mod tests {
                 .send_request_bytes(
                     network_p2p::PROTOCOL_NAME.into(),
                     network2.identify().clone(),
+                    "test".to_string(),
                     request.encode().unwrap(),
                     Duration::from_secs(1),
                 )

@@ -172,10 +172,14 @@ where
         .self_peer_id
         .clone()
         .expect("Self peer_id must has been set.");
-    let self_info = PeerInfo::new(
+    let mut rpc_proto_info = Vec::new();
+    let sync_rpc_proto_info = starcoin_sync::helper::sync_rpc_info();
+    rpc_proto_info.push((sync_rpc_proto_info.0.into(), sync_rpc_proto_info.1));
+    let self_info = PeerInfo::new_with_proto(
         peer_id.clone(),
         head_block_info.get_total_difficulty(),
         head_block.header().clone(),
+        rpc_proto_info,
     );
     let network_config = config.clone();
     let network_bus = bus.clone();

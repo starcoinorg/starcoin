@@ -49,7 +49,7 @@ impl StartupInfo {
 
     pub fn insert_branch(&mut self, new_block_header: &BlockHeader) {
         self.branches
-            .retain(|head| head == &new_block_header.parent_hash());
+            .retain(|head| head != &new_block_header.parent_hash());
         self.branches.push(new_block_header.id())
     }
 

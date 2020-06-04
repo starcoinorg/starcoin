@@ -15,13 +15,33 @@ use starcoin_sync_api::sync_messages::{
 use std::borrow::Cow;
 use types::{
     block::{BlockHeader, BlockInfo},
-    peer_info::PeerId,
+    peer_info::{PeerId, RpcInfo},
     CHAIN_PROTOCOL_NAME,
 };
+
+const GET_TXNS_STR: &str = "GetTxns";
+const GET_BLOCK_HEADERS_STR: &str = "GetBlockHeaders";
+const GET_BLOCK_INFOS_STR: &str = "GetBlockInfos";
+const GET_BLOCK_BODIES_STR: &str = "GetBlockBodies";
+const GET_STATE_NODE_BY_NODE_HASH_STR: &str = "GetStateNodeByNodeHash";
+const GET_ACCUMULATOR_NODE_BY_NODE_HASH_STR: &str = "GetAccumulatorNodeByNodeHash";
+
+pub fn sync_rpc_info() -> (&'static [u8], RpcInfo) {
+    let mut paths = Vec::new();
+    paths.push(GET_TXNS_STR.to_string());
+    paths.push(GET_BLOCK_HEADERS_STR.to_string());
+    paths.push(GET_BLOCK_INFOS_STR.to_string());
+    paths.push(GET_BLOCK_BODIES_STR.to_string());
+    paths.push(GET_STATE_NODE_BY_NODE_HASH_STR.to_string());
+    paths.push(GET_ACCUMULATOR_NODE_BY_NODE_HASH_STR.to_string());
+    let rpc_info = RpcInfo::new(paths);
+    (CHAIN_PROTOCOL_NAME, rpc_info)
+}
 
 async fn do_request(
     network: &NetworkAsyncService,
     peer_id: PeerId,
+    path: &str,
     req: SyncRpcRequest,
 ) -> Result<SyncRpcResponse> {
     let request = req.encode()?;
@@ -29,6 +49,7 @@ async fn do_request(
         .send_request_bytes(
             CHAIN_PROTOCOL_NAME.into(),
             peer_id.into(),
+            path.to_string(),
             request,
             do_duration(DELAY_TIME),
         )
@@ -42,7 +63,9 @@ pub async fn get_txns(
     req: GetTxns,
 ) -> Result<TransactionsData> {
     let request = SyncRpcRequest::GetTxns(req);
-    if let SyncRpcResponse::GetTxns(txn_data) = do_request(&network, peer_id, request).await? {
+    if let SyncRpcResponse::GetTxns(txn_data) =
+        do_request(&network, peer_id, GET_TXNS_STR, request).await?
+    {
         Ok(txn_data)
     } else {
         Err(format_err!("{:?}", "error SyncRpcResponse type."))
@@ -55,8 +78,13 @@ pub async fn get_headers(
     req: GetBlockHeaders,
 ) -> Result<Vec<BlockHeader>> {
     let get_block_headers_req = SyncRpcRequest::GetBlockHeaders(req.clone());
-    if let SyncRpcResponse::BlockHeaders(headers) =
-        do_request(&network, peer_id, get_block_headers_req).await?
+    if let SyncRpcResponse::BlockHeaders(headers) = do_request(
+        &network,
+        peer_id,
+        GET_BLOCK_HEADERS_STR,
+        get_block_headers_req,
+    )
+    .await?
     {
         //todo: Verify response
         Ok(headers)
@@ -71,8 +99,13 @@ pub async fn get_body_by_hash(
     hashs: Vec<HashValue>,
 ) -> Result<Vec<BlockBody>> {
     let get_body_by_hash_req = SyncRpcRequest::GetBlockBodies(hashs);
-    if let SyncRpcResponse::BlockBodies(bodies) =
-        do_request(&network, peer_id, get_body_by_hash_req).await?
+    if let SyncRpcResponse::BlockBodies(bodies) = do_request(
+        &network,
+        peer_id,
+        GET_BLOCK_BODIES_STR,
+        get_body_by_hash_req,
+    )
+    .await?
     {
         Ok(bodies)
     } else {
@@ -87,7 +120,7 @@ pub async fn get_info_by_hash(
 ) -> Result<Vec<BlockInfo>> {
     let get_info_by_hash_req = SyncRpcRequest::GetBlockInfos(hashs);
     if let SyncRpcResponse::BlockInfos(infos) =
-        do_request(&network, peer_id, get_info_by_hash_req).await?
+        do_request(&network, peer_id, GET_BLOCK_INFOS_STR, get_info_by_hash_req).await?
     {
         Ok(infos)
     } else {
@@ -103,6 +136,7 @@ pub async fn get_state_node_by_node_hash(
     if let SyncRpcResponse::StateNode(state_node) = do_request(
         &network,
         peer_id,
+        GET_STATE_NODE_BY_NODE_HASH_STR,
         SyncRpcRequest::GetStateNodeByNodeHash(node_key),
     )
     .await?
@@ -122,6 +156,7 @@ pub async fn get_accumulator_node_by_node_hash(
     if let SyncRpcResponse::AccumulatorNode(accumulator_node) = do_request(
         &network,
         peer_id,
+        GET_ACCUMULATOR_NODE_BY_NODE_HASH_STR,
         SyncRpcRequest::GetAccumulatorNodeByNodeHash(node_key, accumulator_type),
     )
     .await?

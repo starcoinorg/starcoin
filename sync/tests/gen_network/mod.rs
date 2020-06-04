@@ -20,12 +20,15 @@ pub fn gen_network(
 ) {
     let key_pair = node_config.network.network_keypair();
     let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
+    let mut rpc_proto_info = Vec::new();
+    let sync_rpc_proto_info = starcoin_sync::helper::sync_rpc_info();
+    rpc_proto_info.push((sync_rpc_proto_info.0.into(), sync_rpc_proto_info.1));
     let (network, rpc_rx) = NetworkActor::launch(
         node_config,
         bus,
         handle,
         genesis_hash,
-        PeerInfo::new_for_test(addr.clone()),
+        PeerInfo::new_for_test(addr.clone(), rpc_proto_info),
     );
     (network, addr, rpc_rx)
 }

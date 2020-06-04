@@ -21,7 +21,7 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Message)]
 pub enum PeerMessage {
     Block(Arc<BlockDetail>),
-    RawRPCRequest(u128, Vec<u8>),
+    RawRPCRequest(u128, String, Vec<u8>),
     RawRPCResponse(u128, Vec<u8>),
 }
 

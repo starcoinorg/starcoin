@@ -31,7 +31,7 @@ pub enum ChainRequest {
     GetHeadChainInfo(),
     GetTransaction(HashValue),
     GetTransactionIdByBlock(HashValue),
-    GetBlocksByNumber(Option<BlockNumber>, BlockNumber),
+    GetBlocksByNumber(Option<BlockNumber>, u64),
     GetBlockStateByHash(HashValue),
 }
 
