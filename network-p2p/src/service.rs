@@ -119,6 +119,7 @@ impl NetworkWorker {
         let mut known_addresses = Vec::new();
         let mut bootnodes = Vec::new();
         let mut reserved_nodes = Vec::new();
+        // 这个 boot_node_ids 一直为空，确认是否有必要。
         let boot_node_ids = HashSet::new();
 
         // Process the bootnodes.

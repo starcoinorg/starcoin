@@ -36,6 +36,7 @@ pub struct SNetworkService {
 #[derive(Clone)]
 pub struct NetworkInner {
     service: Arc<NetworkService>,
+    //这个 acks 字段好像没有用，只有删除，没有写入，需要确认 ack 机制是否还需要。
     acks: Arc<Mutex<HashMap<u128, Sender<()>>>>,
 }
 
@@ -45,8 +46,6 @@ impl SNetworkService {
 
         let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
         let service = worker.service().clone();
-        let worker = worker;
-
         let acks = Arc::new(Mutex::new(HashMap::new()));
 
         handle.spawn(worker);
