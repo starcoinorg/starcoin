@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::NodeInfoView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_rpc_api::node::NodeInfo;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -18,7 +18,7 @@ impl CommandAction for InfoCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = InfoOpt;
-    type ReturnItem = NodeInfo;
+    type ReturnItem = NodeInfoView;
 
     fn run(
         &self,
@@ -26,6 +26,6 @@ impl CommandAction for InfoCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let node_info = client.node_info()?;
-        Ok(node_info)
+        Ok(node_info.into())
     }
 }

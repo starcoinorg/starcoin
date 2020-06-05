@@ -38,29 +38,29 @@ pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15 * 1000; // 15 Second;
 )]
 pub struct BlockHeader {
     /// Parent hash.
-    parent_hash: HashValue,
+    pub parent_hash: HashValue,
     /// Block timestamp.
-    timestamp: u64,
+    pub timestamp: u64,
     /// Block number.
-    number: BlockNumber,
+    pub number: BlockNumber,
     /// Block author.
-    author: AccountAddress,
+    pub author: AccountAddress,
     /// auth_key_prefix for create_account
-    auth_key_prefix: Option<Vec<u8>>,
+    pub auth_key_prefix: Option<Vec<u8>>,
     /// The transaction accumulator root hash after executing this block.
-    accumulator_root: HashValue,
+    pub accumulator_root: HashValue,
     /// The parent block accumulator root hash.
-    parent_block_accumulator_root: HashValue,
+    pub parent_block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
-    state_root: HashValue,
+    pub state_root: HashValue,
     /// Gas used for contracts execution.
-    gas_used: u64,
+    pub gas_used: u64,
     /// Block gas limit.
-    gas_limit: u64,
+    pub gas_limit: u64,
     /// Block difficulty
-    difficulty: U256,
+    pub difficulty: U256,
     /// Consensus extend header field.
-    consensus_header: Vec<u8>,
+    pub consensus_header: Vec<u8>,
 }
 
 impl BlockHeader {
@@ -258,9 +258,9 @@ impl Into<Vec<SignedUserTransaction>> for BlockBody {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Block {
     /// The header of this block.
-    header: BlockHeader,
+    pub header: BlockHeader,
     /// The body of this block.
-    body: BlockBody,
+    pub body: BlockBody,
 }
 
 impl Block {

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::PeerInfoView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_types::peer_info::PeerInfo;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -18,7 +18,7 @@ impl CommandAction for PeersCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = PeersOpt;
-    type ReturnItem = Vec<PeerInfo>;
+    type ReturnItem = Vec<PeerInfoView>;
 
     fn run(
         &self,
@@ -26,6 +26,6 @@ impl CommandAction for PeersCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let peers = client.node_peers()?;
-        Ok(peers)
+        Ok(peers.iter().map(|p| p.clone().into()).collect())
     }
 }
