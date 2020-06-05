@@ -12,13 +12,17 @@ use starcoin_accumulator::{
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, marker::PhantomData, sync::Arc};
 use storage::Store;
 use traits::{ChainReader, ChainWriter, Consensus, ExcludedTxns};
 use types::{
     account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    block::{
+        Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate,
+        ALLOWED_FUTURE_BLOCKTIME,
+    },
     error::BlockExecutorError,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U512,
@@ -309,8 +313,20 @@ where
 {
     fn apply(&mut self, block: Block) -> Result<bool> {
         let header = block.header();
-        //TODO custom verify macro
-        assert_eq!(self.head.header().id(), header.parent_hash());
+        let pre_hash = header.parent_hash();
+        assert_eq!(self.head.header().id(), pre_hash);
+        // do not check genesis block timestamp check
+        if let Some(pre_block) = self.get_block(pre_hash)? {
+            ensure!(
+                pre_block.header().timestamp() <= header.timestamp(),
+                "Invalid block: block timestamp too old"
+            );
+            let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+            ensure!(
+                header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,
+                "Invalid block: block timestamp too new"
+            );
+        }
 
         ensure!(
             block.header().gas_used() <= block.header().gas_limit(),
