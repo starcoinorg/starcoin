@@ -11,7 +11,6 @@ use std::{sync::Arc, time::Duration};
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use traits::{ChainReader, ChainWriter, Consensus};
 use txpool::TxPool;
-use types::U256;
 
 async fn gen_master_chain(
     times: u64,
@@ -112,7 +111,7 @@ async fn test_block_chain_forks() {
                 .await
                 .unwrap()
                 .unwrap()
-                .into_block(DummyHeader {}, U256::max_value());
+                .into_block(DummyHeader {}, 10000.into());
             info!(
                 "{}:{:?}:{:?}:{:?}",
                 i,

@@ -184,7 +184,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         base_block_reward: 5000 * 1_000_000,
         reward_halving_interval: 100,
         reward_delay: 1,
-        difficulty: U256::zero(),
+        difficulty: 1.into(),
         consensus_header: vec![],
         pre_mine_config: Some(PreMineConfig {
             public_key,

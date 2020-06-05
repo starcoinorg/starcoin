@@ -56,7 +56,7 @@ pub mod write_set {
     pub use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 }
 
-pub use ethereum_types::{H256, U256, U512};
+pub use ethereum_types::{H256, U256};
 
 pub const CHAIN_PROTOCOL_NAME: &[u8] = b"/starcoin/chain/1";
 pub const TXN_PROTOCOL_NAME: &[u8] = b"/starcoin/txn/1";

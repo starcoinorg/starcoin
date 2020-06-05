@@ -25,7 +25,7 @@ use types::{
     },
     error::BlockExecutorError,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
-    U512,
+    U256,
 };
 
 pub struct BlockChain<C, S>
@@ -291,9 +291,9 @@ where
         self.storage.get_block_info(id)
     }
 
-    fn get_total_difficulty(&self) -> Result<U512> {
+    fn get_total_difficulty(&self) -> Result<U256> {
         let block_info = self.storage.get_block_info(self.head.header().id())?;
-        Ok(block_info.map_or(U512::zero(), |info| info.total_difficulty))
+        Ok(block_info.map_or(U256::zero(), |info| info.total_difficulty))
     }
 
     fn exist_block(&self, block_id: HashValue) -> bool {
@@ -404,7 +404,7 @@ where
             let pre_total_difficulty = self
                 .get_block_info(block.header().parent_hash())?
                 .total_difficulty;
-            pre_total_difficulty + header.difficulty().into()
+            pre_total_difficulty + header.difficulty()
         };
 
         self.block_accumulator.append(&[block.id()])?;

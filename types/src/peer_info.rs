@@ -7,7 +7,7 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 
 use crate::block::BlockHeader;
-use crate::{block::BlockNumber, U512};
+use crate::{block::BlockNumber, U256};
 use starcoin_crypto::HashValue;
 use std::borrow::Cow;
 use std::convert::TryFrom;
@@ -145,7 +145,7 @@ impl fmt::Display for PeerId {
 pub struct PeerInfo {
     pub peer_id: PeerId,
     pub latest_header: BlockHeader,
-    pub total_difficulty: U512,
+    pub total_difficulty: U256,
     pub rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>,
 }
 
@@ -157,14 +157,14 @@ impl PeerInfo {
         PeerInfo {
             peer_id,
             latest_header: BlockHeader::default(),
-            total_difficulty: U512::zero(),
+            total_difficulty: U256::zero(),
             rpc_protocols,
         }
     }
 
     pub fn new_with_proto(
         peer_id: PeerId,
-        total_difficulty: U512,
+        total_difficulty: U256,
         latest_header: BlockHeader,
         rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>,
     ) -> Self {
@@ -184,7 +184,7 @@ impl PeerInfo {
 
     pub fn new_with_peer_info(
         peer_id: PeerId,
-        total_difficulty: U512,
+        total_difficulty: U256,
         latest_header: BlockHeader,
         old_peer_info: &PeerInfo,
     ) -> Self {
@@ -208,7 +208,7 @@ impl PeerInfo {
         self.latest_header.id()
     }
 
-    pub fn get_total_difficulty(&self) -> U512 {
+    pub fn get_total_difficulty(&self) -> U256 {
         self.total_difficulty
     }
 
@@ -236,7 +236,7 @@ impl PeerInfo {
     pub fn default() -> Self {
         Self {
             peer_id: PeerId::random(),
-            total_difficulty: U512::from(0),
+            total_difficulty: U256::from(0),
             latest_header: BlockHeader::default(),
             rpc_protocols: Vec::new(),
         }
