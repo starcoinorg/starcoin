@@ -65,7 +65,7 @@ impl Consensus for ArgonConsensus {
         ArgonConsensusHeader { nonce }
     }
 
-    fn verify_header(
+    fn verify(
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,
         header: &BlockHeader,
