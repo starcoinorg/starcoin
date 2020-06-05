@@ -13,7 +13,7 @@ use starcoin_rpc_server::RpcActor;
 use std::sync::Arc;
 use std::time::Duration;
 
-#[ignore]
+#[ignore]  //最好还是把这个case跑起来
 #[test]
 fn test_multi_client() -> Result<()> {
     starcoin_logger::init_for_test();

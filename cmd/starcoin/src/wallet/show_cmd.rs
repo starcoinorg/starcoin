@@ -58,7 +58,7 @@ impl CommandAction for ShowCommand {
             auth_key_prefix,
             account,
             sequence_number,
-            balances,
+            balances, //这里多个token显示有问题
         })
     }
 }
