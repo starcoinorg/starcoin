@@ -79,7 +79,8 @@ struct AccountStateObject {
 }
 
 impl AccountStateObject {
-    pub fn new(
+//这些pub可以去掉。另外，咱们现在是嵌套的树结构，可以评估一下跟libra这种非嵌套结构相比，存储空间会膨胀多少。如果size和性能不理想，可以看看非嵌套结构是否也能满足我们的需求。
+    fn new(
         address: AccountAddress,
         account_state: AccountState,
         store: Arc<dyn StateNodeStore>,
@@ -99,7 +100,7 @@ impl AccountStateObject {
         }
     }
 
-    pub fn new_account(address: AccountAddress, store: Arc<dyn StateNodeStore>) -> Self {
+    fn new_account(address: AccountAddress, store: Arc<dyn StateNodeStore>) -> Self {
         let mut trees = vec![None; DataType::LENGTH];
         trees[0] = Some(StateTree::new(store.clone(), None));
         Self {
@@ -109,7 +110,7 @@ impl AccountStateObject {
         }
     }
 
-    pub fn get(&self, data_type: DataType, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
+    fn get(&self, data_type: DataType, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
         let trees = self.trees.lock();
         match trees[data_type.storage_index()].as_ref() {
             Some(tree) => tree.get(key_hash),
@@ -119,7 +120,7 @@ impl AccountStateObject {
 
     /// return value with it proof.
     /// NOTICE: Any un-committed modification will not visible to the method.
-    pub fn get_with_proof(
+    fn get_with_proof(
         &self,
         data_type: DataType,
         key_hash: &HashValue,
@@ -131,7 +132,7 @@ impl AccountStateObject {
         }
     }
 
-    pub fn set(&self, data_type: DataType, key_hash: HashValue, value: Vec<u8>) {
+    fn set(&self, data_type: DataType, key_hash: HashValue, value: Vec<u8>) {
         let mut trees = self.trees.lock();
         if trees[data_type.storage_index()].as_ref().is_none() {
             trees[data_type.storage_index()] = Some(StateTree::new(self.store.clone(), None));
@@ -142,7 +143,7 @@ impl AccountStateObject {
         tree.put(key_hash, value);
     }
 
-    pub fn remove(&self, data_type: DataType, key_hash: &HashValue) -> Result<()> {
+    fn remove(&self, data_type: DataType, key_hash: &HashValue) -> Result<()> {
         if data_type.is_code() {
             bail!("Not supported remove code currently.");
         }
@@ -159,7 +160,7 @@ impl AccountStateObject {
         Ok(())
     }
 
-    pub fn is_dirty(&self) -> bool {
+    fn is_dirty(&self) -> bool {
         let trees = self.trees.lock();
         for tree in trees.iter() {
             if let Some(tree) = tree {
@@ -171,7 +172,7 @@ impl AccountStateObject {
         false
     }
 
-    pub fn commit(&self) -> Result<AccountState> {
+    fn commit(&self) -> Result<AccountState> {
         let trees = self.trees.lock();
         for tree in trees.iter() {
             if let Some(tree) = tree {
@@ -184,7 +185,7 @@ impl AccountStateObject {
         Ok(Self::build_state(trees))
     }
 
-    pub fn flush(&self) -> Result<()> {
+    fn flush(&self) -> Result<()> {
         let trees = self.trees.lock();
         for tree in trees.iter() {
             if let Some(tree) = tree {
