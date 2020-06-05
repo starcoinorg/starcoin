@@ -1,9 +1,11 @@
 use crate::random_txn;
-use actix::{Addr, System};
+use actix::clock::{delay_for, Duration};
+use actix::{Addr, Arbiter, System};
 use anyhow::Result;
 use criterion::{BatchSize, Bencher};
 use crypto::HashValue;
 use libp2p::multiaddr::Multiaddr;
+use logger::prelude::*;
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
 use starcoin_config::{get_available_port, NodeConfig};
@@ -38,19 +40,37 @@ impl SyncBencher {
         system.block_on(async move {
             let (_bus_1, addr_1, network_1, chain_1, tx_1, storage_1, rpc_rx) =
                 create_node(Some(num), None, handle.clone()).await.unwrap();
-            let _processor = ProcessActor::launch(chain_1.clone(), tx_1, storage_1, rpc_rx);
+            let chain_1_clone = chain_1.clone();
+            let _processor = Arbiter::new()
+                .exec(move || -> Addr<ProcessActor<DummyConsensus>> {
+                    ProcessActor::launch(chain_1_clone, tx_1, storage_1, rpc_rx).unwrap()
+                })
+                .await
+                .unwrap();
 
             let (_, _, network_2, chain_2, _, _, _) =
                 create_node(None, Some((addr_1, network_1)), handle.clone())
                     .await
                     .unwrap();
-            let downloader = Arc::new(Downloader::new(chain_2.clone()));
-            SyncBencher::sync_block_inner(downloader, network_2)
-                .await
-                .unwrap();
+            let chain_2_clone = chain_2.clone();
+            let downloader = Arc::new(Downloader::new(chain_2_clone));
+            for i in 0..3 {
+                SyncBencher::sync_block_inner(downloader.clone(), network_2.clone())
+                    .await
+                    .unwrap();
+                let first = chain_1.clone().master_head().await.unwrap();
+                let second = chain_2.clone().master_head().await.unwrap();
+                if first.get_head() != second.get_head() {
+                    info!("full sync failed: {}", i);
+                    delay_for(Duration::from_millis(1000)).await;
+                } else {
+                    break;
+                }
+            }
             let first = chain_1.clone().master_head().await.unwrap();
             let second = chain_2.clone().master_head().await.unwrap();
             assert_eq!(first.get_head(), second.get_head());
+            info!("full sync test ok.");
         });
     }
 
@@ -103,6 +123,11 @@ impl SyncBencher {
                                 .await?;
                         let infos =
                             get_info_by_hash(&network, best_peer.get_peer_id(), hashs).await?;
+                        info!(
+                            "sync block number : {:?} from peer {:?}",
+                            latest_number,
+                            best_peer.get_peer_id()
+                        );
                         Downloader::do_blocks(downloader.clone(), headers, bodies, infos).await;
                     }
                 }
@@ -167,31 +192,50 @@ async fn create_node(
     let mut rpc_proto_info = Vec::new();
     let sync_rpc_proto_info = starcoin_sync::helper::sync_rpc_info();
     rpc_proto_info.push((sync_rpc_proto_info.0.into(), sync_rpc_proto_info.1));
+    let node_config_clone = node_config.clone();
+    let bus_clone = bus.clone();
+    let handle_clone = handle.clone();
+    let addr_clone = addr.clone();
     let (network, rpc_rx) = NetworkActor::launch(
-        node_config.clone(),
-        bus.clone(),
-        handle.clone(),
+        node_config_clone,
+        bus_clone,
+        handle_clone,
         genesis_hash,
-        PeerInfo::new_for_test(addr.clone(), rpc_proto_info),
+        PeerInfo::new_for_test(addr_clone, rpc_proto_info),
     );
 
     let sync_metadata_actor = SyncMetadata::new(node_config.clone(), bus.clone());
     let _ = sync_metadata_actor.block_sync_done();
     // chain
-    let chain = ChainActor::launch(
-        node_config.clone(),
-        genesis_startup_info.clone(),
-        storage.clone(),
-        Some(network.clone()),
-        bus.clone(),
-        txpool_service.clone(),
-        sync_metadata_actor.clone(),
-    )
-    .unwrap();
+    let txpool_service_clone = txpool_service.clone();
+    let node_config_clone = node_config.clone();
+    let genesis_startup_info_clone = genesis_startup_info.clone();
+    let storage_clone = storage.clone();
+    let network_clone = network.clone();
+    let bus_clone = bus.clone();
+    let sync_metadata_actor_clone = sync_metadata_actor.clone();
+    let chain = Arbiter::new()
+        .exec(move || -> ChainActorRef<DummyConsensus> {
+            ChainActor::launch(
+                node_config_clone,
+                genesis_startup_info_clone,
+                storage_clone,
+                Some(network_clone),
+                bus_clone,
+                txpool_service_clone,
+                sync_metadata_actor_clone,
+            )
+            .unwrap()
+        })
+        .await?;
 
     if let Some(n) = num {
         let miner_account = WalletAccount::random();
         for i in 0..n {
+            info!(
+                "create block: {:?} : {:?}",
+                &node_config.network.self_peer_id, i
+            );
             let startup_info = chain.clone().master_startup_info().await?;
 
             let block_chain = BlockChain::<DummyConsensus, Storage>::new(

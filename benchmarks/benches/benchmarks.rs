@@ -16,6 +16,7 @@ use storage::Storage;
 // Storage benchmarks
 //
 fn storage_transaction(c: &mut Criterion) {
+    ::logger::init_for_test();
     c.bench_function("storage_transaction", |b| {
         let cache_storage = Arc::new(CacheStorage::new());
         let db_storage = Arc::new(DBStorage::new(starcoin_config::temp_path().as_ref()));
@@ -31,6 +32,7 @@ fn storage_transaction(c: &mut Criterion) {
 
 /// accumulator benchmarks
 fn accumulator_append(c: &mut Criterion) {
+    ::logger::init_for_test();
     c.bench_function("accumulator_append", |b| {
         let cache_storage = Arc::new(CacheStorage::new());
         let db_storage = Arc::new(DBStorage::new(starcoin_config::temp_path().as_ref()));

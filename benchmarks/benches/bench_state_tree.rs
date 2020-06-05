@@ -13,6 +13,7 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 
 fn bench_get_with_proof(c: &mut Criterion) {
+    ::logger::init_for_test();
     let tmp_dir = starcoin_config::temp_path();
     let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
 
@@ -46,6 +47,7 @@ fn bench_get_with_proof(c: &mut Criterion) {
 }
 
 fn bench_put_and_commit(c: &mut Criterion) {
+    ::logger::init_for_test();
     let mut group = c.benchmark_group("put_and_commit");
     group.sample_size(80);
     for i in vec![1u64, 5, 10, 50, 100].into_iter() {
