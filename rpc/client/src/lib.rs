@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+use crate::chain_watcher::{ChainWatcher, WatchBlock, WatchTxn};
+use crate::pubsub_client::PubSubClient;
 use actix::{Addr, System};
 use failure::Fail;
 use futures::channel::oneshot;
@@ -9,7 +11,11 @@ use futures01::future::Future as Future01;
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::ipc, transports::local, transports::ws, RpcChannel};
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::*;
+use starcoin_logger::{prelude::*, LogPattern};
+use starcoin_rpc_api::node::NodeInfo;
+use starcoin_rpc_api::types::event::Event;
+use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_rpc_api::types::pubsub::ThinBlock;
 use starcoin_rpc_api::{
     chain::ChainClient, debug::DebugClient, node::NodeClient, state::StateClient,
     txpool::TxPoolClient, wallet::WalletClient,
@@ -18,11 +24,16 @@ use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
+use starcoin_types::block::{Block, BlockNumber};
+use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction, TransactionInfo};
 use starcoin_wallet_api::WalletAccount;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 use thiserror::Error;
 use tokio01::reactor::Reactor;
@@ -32,19 +43,7 @@ use tokio_compat::runtime::Runtime;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
-
-use crate::chain_watcher::{ChainWatcher, WatchBlock, WatchTxn};
-use crate::pubsub_client::PubSubClient;
 pub use crate::remote_state_reader::RemoteStateReader;
-use starcoin_rpc_api::node::NodeInfo;
-use starcoin_rpc_api::types::event::Event;
-use starcoin_rpc_api::types::pubsub::EventFilter;
-use starcoin_rpc_api::types::pubsub::ThinBlock;
-use starcoin_types::block::{Block, BlockNumber};
-use starcoin_types::peer_info::PeerInfo;
-use starcoin_types::startup_info::ChainInfo;
-use std::collections::HashMap;
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 enum ConnSource {
@@ -347,6 +346,13 @@ impl RpcClient {
                 .set_log_level(logger_name, level.to_string())
                 .compat()
                 .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn debug_set_log_pattern(&self, pattern: LogPattern) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.debug_client.set_log_pattern(pattern).compat().await
         })
         .map_err(map_err)
     }

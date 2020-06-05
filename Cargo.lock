@@ -6556,6 +6556,7 @@ dependencies = [
  "lazy_static",
  "log 0.4.8",
  "log4rs",
+ "serde",
 ]
 
 [[package]]
@@ -6764,6 +6765,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-state-api",
  "starcoin-types",
  "starcoin-wallet-api",
