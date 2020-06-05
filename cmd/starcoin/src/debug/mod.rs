@@ -8,4 +8,3 @@ mod panic_cmd;
 pub use gen_txn_cmd::*;
 pub use log_cmd::*;
 pub use panic_cmd::*;
-pub use panic_cmd::*;

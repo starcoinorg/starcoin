@@ -5,7 +5,7 @@ use crate::module::to_invalid_param_err;
 use jsonrpc_core::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::LevelFilter;
-use starcoin_logger::LoggerHandle;
+use starcoin_logger::{LogPattern, LoggerHandle};
 use starcoin_rpc_api::debug::DebugApi;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -37,6 +37,11 @@ impl DebugApi for DebugRpcImpl {
             Some(n) => self.log_handle.set_log_level(n, level),
         }
 
+        Ok(())
+    }
+
+    fn set_log_pattern(&self, pattern: LogPattern) -> Result<()> {
+        self.log_handle.set_log_pattern(pattern);
         Ok(())
     }
 

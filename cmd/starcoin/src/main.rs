@@ -135,7 +135,11 @@ fn run() -> Result<()> {
         )
         .command(
             Command::with_name("debug")
-                .subcommand(debug::LogLevelCommand)
+                .subcommand(
+                    Command::with_name("log")
+                        .subcommand(debug::LogLevelCommand)
+                        .subcommand(debug::LogPatternCommand),
+                )
                 .subcommand(debug::GenTxnCommand)
                 .subcommand(debug::PanicCommand),
         )

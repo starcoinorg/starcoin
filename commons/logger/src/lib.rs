@@ -16,13 +16,65 @@ use log4rs::{
     encode::pattern::PatternEncoder,
     Handle,
 };
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Mutex;
 use std::sync::{Arc, Once};
 
 /// Logger prelude which includes all logging macros.
 pub mod prelude {
     pub use log::{debug, error, info, log_enabled, trace, warn, Level, LevelFilter};
+}
+
+const LOG_PATTERN_WITH_LINE: &str = "{d} {l} {M}::{f}::{L} - {m}{n}";
+const LOG_PATTERN_DEFAULT: &str = "{d} {l} - {m}{n}";
+
+#[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
+pub enum LogPattern {
+    Default,
+    WithLine,
+    Custom(String),
+}
+
+impl FromStr for LogPattern {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "default" => LogPattern::Default,
+            "withline" | "with_line" => LogPattern::WithLine,
+            _ => LogPattern::Custom(s.to_owned()),
+        })
+    }
+}
+
+impl LogPattern {
+    pub fn get_pattern(&self) -> String {
+        match self {
+            LogPattern::Default => LOG_PATTERN_DEFAULT.to_owned(),
+            LogPattern::WithLine => LOG_PATTERN_WITH_LINE.to_owned(),
+            LogPattern::Custom(pattern) => pattern.clone(),
+        }
+    }
+
+    pub fn by_level(level: LevelFilter) -> LogPattern {
+        match level {
+            LevelFilter::Trace | LevelFilter::Debug => LogPattern::WithLine,
+            _ => LogPattern::Default,
+        }
+    }
+}
+
+impl std::fmt::Display for LogPattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let display_str = match self {
+            LogPattern::Default => "default".to_owned(),
+            LogPattern::WithLine => "withline".to_owned(),
+            LogPattern::Custom(p) => format!("custom({})", p),
+        };
+        write!(f, "{}", display_str)
+    }
 }
 
 #[derive(Debug, Clone, PartialOrd, PartialEq, Ord, Eq)]
@@ -35,6 +87,7 @@ struct LoggerConfigArg {
     log_path: Option<PathBuf>,
     max_file_size: u64,
     max_backup: u32,
+    pattern: LogPattern,
 }
 
 impl LoggerConfigArg {
@@ -50,6 +103,7 @@ impl LoggerConfigArg {
             log_path: None,
             max_file_size: 0,
             max_backup: 0,
+            pattern: LogPattern::by_level(level),
         }
     }
 }
@@ -90,6 +144,7 @@ impl LoggerHandle {
     pub fn update_level(&self, level: LevelFilter) {
         let mut arg = self.arg.lock().unwrap().clone();
         arg.level = level;
+        arg.pattern = LogPattern::by_level(level);
         self.update_logger(arg);
     }
 
@@ -104,6 +159,12 @@ impl LoggerHandle {
         } else {
             arg.module_levels.push((logger_name, level));
         }
+        self.update_logger(arg);
+    }
+
+    pub fn set_log_pattern(&self, pattern: LogPattern) {
+        let mut arg = self.arg.lock().unwrap().clone();
+        arg.pattern = pattern;
         self.update_logger(arg);
     }
 
@@ -131,8 +192,6 @@ impl LoggerHandle {
     }
 }
 
-const LOG_PATTERN: &str = "{d} {l} {M}::{f}::{L} - {m}{n}";
-
 fn build_config(arg: LoggerConfigArg) -> Result<Config> {
     let LoggerConfigArg {
         enable_stderr,
@@ -141,6 +200,7 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         log_path,
         max_file_size,
         max_backup,
+        pattern,
     } = arg;
     if !enable_stderr && log_path.is_none() {
         println!("Logger is disabled.");
@@ -149,7 +209,9 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
     let mut root_builder = Root::builder();
     if enable_stderr {
         let stderr = ConsoleAppender::builder()
-            .encoder(Box::new(PatternEncoder::new(LOG_PATTERN)))
+            .encoder(Box::new(PatternEncoder::new(
+                pattern.get_pattern().as_str(),
+            )))
             .target(Target::Stderr)
             .build();
         builder = builder.appender(Appender::builder().build("stderr", Box::new(stderr)));
@@ -159,7 +221,9 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         let log_file_backup_pattern =
             format!("{}.{{}}.gz", log_path.to_str().expect("invalid log_path"));
         let file_appender = RollingFileAppender::builder()
-            .encoder(Box::new(PatternEncoder::new(LOG_PATTERN)))
+            .encoder(Box::new(PatternEncoder::new(
+                pattern.get_pattern().as_str(),
+            )))
             .build(
                 log_path,
                 Box::new(CompoundPolicy::new(
