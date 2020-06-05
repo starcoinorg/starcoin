@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::BlockView;
+use crate::view::BlockHeaderView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
@@ -25,7 +25,7 @@ impl CommandAction for ListBlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = Vec<BlockView>;
+    type ReturnItem = Vec<BlockHeaderView>;
 
     fn run(
         &self,
@@ -36,7 +36,7 @@ impl CommandAction for ListBlockCommand {
         let blocks = client.chain_get_blocks_by_number(opt.number, opt.count)?;
         let block_view = blocks
             .iter()
-            .map(|block| BlockView::from(block.clone()))
+            .map(|block| BlockHeaderView::from(block.clone()))
             .collect();
         Ok(block_view)
     }
