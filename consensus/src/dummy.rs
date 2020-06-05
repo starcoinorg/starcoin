@@ -33,7 +33,7 @@ impl Consensus for DummyConsensus {
         DummyHeader {}
     }
 
-    fn verify_header(
+    fn verify(
         _config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
         _header: &BlockHeader,

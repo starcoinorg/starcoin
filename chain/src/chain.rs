@@ -332,7 +332,7 @@ where
             block.header().gas_used() <= block.header().gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
         );
-        if let Err(e) = C::verify_header(self.config.clone(), self, header) {
+        if let Err(e) = C::verify(self.config.clone(), self, header) {
             error!("verify header failed : {:?}", e);
             return Ok(false);
         }
