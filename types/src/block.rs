@@ -10,7 +10,7 @@ use starcoin_crypto::{
 };
 
 use crate::accumulator_info::AccumulatorInfo;
-use crate::{U256, U512};
+use crate::U256;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
 use std::cmp::Ordering;
@@ -322,7 +322,7 @@ pub struct BlockInfo {
     /// The total number of nodes in this accumulator.
     pub num_nodes: u64,
     /// The total difficulty.
-    pub total_difficulty: U512,
+    pub total_difficulty: U256,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
 }
@@ -334,7 +334,7 @@ impl BlockInfo {
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: u64,
         num_nodes: u64,
-        total_difficulty: U512,
+        total_difficulty: U256,
         block_accumulator_info: AccumulatorInfo,
     ) -> Self {
         Self {
@@ -352,7 +352,7 @@ impl BlockInfo {
         block_id: HashValue,
         txn_accumulator_info: AccumulatorInfo,
         block_accumulator_info: AccumulatorInfo,
-        total_difficulty: U512,
+        total_difficulty: U256,
     ) -> Self {
         Self {
             block_id,
@@ -373,7 +373,7 @@ impl BlockInfo {
         Vec<HashValue>,
         u64,
         u64,
-        U512,
+        U256,
         AccumulatorInfo,
     ) {
         self.into()
@@ -383,7 +383,7 @@ impl BlockInfo {
         self.crypto_hash()
     }
 
-    pub fn get_total_difficulty(&self) -> U512 {
+    pub fn get_total_difficulty(&self) -> U256 {
         self.total_difficulty
     }
 
@@ -412,7 +412,7 @@ impl
         Vec<HashValue>,
         u64,
         u64,
-        U512,
+        U256,
         AccumulatorInfo,
     )> for BlockInfo
 {
@@ -424,7 +424,7 @@ impl
         Vec<HashValue>,
         u64,
         u64,
-        U512,
+        U256,
         AccumulatorInfo,
     ) {
         (
@@ -557,18 +557,18 @@ impl BlockTemplate {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockDetail {
     block: Block,
-    total_difficulty: U512,
+    total_difficulty: U256,
 }
 
 impl BlockDetail {
-    pub fn new(block: Block, total_difficulty: U512) -> Self {
+    pub fn new(block: Block, total_difficulty: U256) -> Self {
         BlockDetail {
             block,
             total_difficulty,
         }
     }
 
-    pub fn get_total_difficulty(&self) -> U512 {
+    pub fn get_total_difficulty(&self) -> U256 {
         self.total_difficulty
     }
 

@@ -21,7 +21,7 @@ use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::{ChangeSet, TransactionInfo};
 use starcoin_types::{
     accumulator_info::AccumulatorInfo, block::Block, transaction::Transaction,
-    vm_error::StatusCode, U512,
+    vm_error::StatusCode, U256,
 };
 use std::convert::TryInto;
 use std::fmt::Display;
@@ -195,7 +195,7 @@ impl Genesis {
             block.header().id(),
             txn_accumulator_info,
             Self::genesis_block_accumulator_info(block.header().id(), storage.clone())?,
-            U512::zero(),
+            U256::zero(),
         );
         debug!("Genesis block_info: {:?}", block_info);
         storage.save_block_info(block_info)?;

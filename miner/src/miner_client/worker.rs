@@ -119,7 +119,7 @@ impl Worker {
         Self {
             nonce_tx,
             worker_rx,
-            diff: U256::max_value(),
+            diff: 1.into(),
             pow_header: None,
             start: false,
             num_seal_found: 0,
