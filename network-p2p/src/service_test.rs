@@ -15,7 +15,6 @@ mod tests {
 
     const PROTOCOL_NAME: &[u8] = b"/starcoin/notify/1";
 
-    #[ignore]
     #[stest::test(timeout = 5)]
     #[allow(clippy::string_lit_as_bytes)]
     fn test_notify() {
