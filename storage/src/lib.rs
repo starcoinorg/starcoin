@@ -144,9 +144,29 @@ pub trait BlockStore {
 }
 
 pub trait TransactionInfoStore {
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
-    fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()>;
-    fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<()>;
+    // fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    // fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()>;
+
+    /// Save all txn infos for the block identified with `block_id`.
+    fn save_transaction_infos(
+        &self,
+        block_id: HashValue,
+        vec_txn_info: Vec<TransactionInfo>,
+    ) -> Result<()>;
+
+    /// TODO: once storage implements iterator api,
+    /// the api should be implemented, and `get_transaction_info` api should be deleted.
+    fn get_transaction_infos(&self, _block_id: HashValue) -> Result<Vec<TransactionInfo>> {
+        todo!()
+    }
+
+    /// Get txn info at the `idx` of block identified with `block_id`.
+    /// Return None, if the block id is not exists, or idx is out of range.
+    fn get_transaction_info(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>>;
 }
 
 pub trait BranchStore {
@@ -384,18 +404,24 @@ impl BlockInfoStore for Storage {
 }
 
 impl TransactionInfoStore for Storage {
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
-        self.transaction_info_storage.get(txn_hash)
+    fn save_transaction_infos(
+        &self,
+        block_id: HashValue,
+        vec_txn_info: Vec<TransactionInfo>,
+    ) -> Result<()> {
+        self.transaction_info_storage
+            .save_transaction_infos(block_id, vec_txn_info)
     }
 
-    fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()> {
+    /// Get txn info at the `idx` of block identified with `block_id`.
+    /// Return None, if the block id is not exists, or idx is out of range.
+    fn get_transaction_info(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>> {
         self.transaction_info_storage
-            .put(txn_info.transaction_hash(), txn_info)
-    }
-
-    fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
-        self.transaction_info_storage
-            .save_transaction_infos(vec_txn_info)
+            .get_transaction_info(block_id, idx)
     }
 }
 

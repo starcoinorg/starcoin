@@ -101,8 +101,9 @@ impl ChainNotifyHandlerActor {
         let txns = store.get_block_transactions(block_id)?;
         // in reverse order to do limit
         let mut all_events: Vec<ContractEvent> = vec![];
-        for (_i, txn_hash) in txns.into_iter().enumerate().rev() {
-            let txn_info = store.get_transaction_info(txn_hash)?;
+        // TODO: once storage support iterator, use get_transaction_infos api.
+        for (i, _txn_hash) in txns.into_iter().enumerate().rev() {
+            let txn_info = store.get_transaction_info(block_id, i as u64)?;
             if txn_info.is_none() {
                 continue;
             }

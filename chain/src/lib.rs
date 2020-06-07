@@ -171,10 +171,16 @@ where
             ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(ChainInfo::new(
                 *self.service.master_startup_info().get_master(),
             ))),
-            ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(
+            ChainRequest::GetTransactionInfo(block_id, idx) => Ok(ChainResponse::TransactionInfo(
                 self.service
-                    .get_transaction(hash)?
-                    .ok_or_else(|| format_err!("Can not find transaction by hash {:?}", hash))?,
+                    .get_transaction_info(block_id, idx)?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "Can not find transaction by block_id/idx {:?}/{}",
+                            block_id,
+                            idx
+                        )
+                    })?,
             )),
             ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
                 self.service.master_blocks_by_number(number, count)?,
@@ -406,13 +412,17 @@ where
         }
     }
 
-    async fn get_transaction(self, txn_id: HashValue) -> Result<TransactionInfo, Error> {
+    async fn get_transaction_info(
+        self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<TransactionInfo, Error> {
         let response = self
             .address
-            .send(ChainRequest::GetTransaction(txn_id))
+            .send(ChainRequest::GetTransactionInfo(block_id, idx))
             .await
             .map_err(Into::<Error>::into)??;
-        if let ChainResponse::Transaction(transaction_info) = response {
+        if let ChainResponse::TransactionInfo(transaction_info) = response {
             Ok(transaction_info)
         } else {
             bail!("get transaction error.")

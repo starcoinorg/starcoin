@@ -39,7 +39,11 @@ pub trait ChainService {
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>>;
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn get_transaction_info(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>>;
     fn get_block_txn_ids(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
 
     /// just for test
@@ -81,7 +85,7 @@ pub trait ChainAsyncService:
     async fn master_block_header_by_number(self, number: BlockNumber) -> Result<BlockHeader>;
     async fn master_startup_info(self) -> Result<StartupInfo>;
     async fn master_head(self) -> Result<ChainInfo>;
-    async fn get_transaction(self, txn_id: HashValue) -> Result<TransactionInfo>;
+    async fn get_transaction_info(self, block_id: HashValue, idx: u64) -> Result<TransactionInfo>;
     async fn get_block_txn(self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
 
     /// just for test

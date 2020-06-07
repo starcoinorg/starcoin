@@ -77,7 +77,11 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn get_transaction(self, _txn_id: HashValue) -> Result<TransactionInfo> {
+    async fn get_transaction_info(
+        self,
+        _block_id: HashValue,
+        _idx: u64,
+    ) -> Result<TransactionInfo> {
         unimplemented!()
     }
 

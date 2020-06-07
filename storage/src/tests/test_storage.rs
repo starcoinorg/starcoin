@@ -5,7 +5,8 @@ extern crate chrono;
 
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{InnerStore, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
+use crate::storage::{InnerStore, KeyCodec, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
+use crate::transaction_info::TxnInfoIndexKey;
 use crate::{Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
 use anyhow::Result;
 use crypto::{hash::PlainCryptoHash, HashValue};
@@ -70,7 +71,10 @@ fn test_storage() {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.crypto_hash();
+    let id = {
+        let hash = transaction_info1.crypto_hash();
+        TxnInfoIndexKey(hash, 0u64)
+    };
     storage
         .transaction_info_storage
         .put(id, transaction_info1.clone())
@@ -98,7 +102,11 @@ fn test_two_level_storage() {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.crypto_hash();
+    let id = {
+        let hash = transaction_info1.crypto_hash();
+        TxnInfoIndexKey(hash, 0u64)
+    };
+    let encoded_id = id.encode_key().unwrap();
     storage
         .transaction_info_storage
         .put(id, transaction_info1.clone())
@@ -108,14 +116,14 @@ fn test_two_level_storage() {
     assert_eq!(transaction_info1, transaction_info2.unwrap());
     //verfiy cache storage
     let value3 = cache_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME, encoded_id.clone())
         .unwrap()
         .unwrap();
     let transation_info3 = TransactionInfo::decode_value(&value3).unwrap();
     assert_eq!(transation_info3, transaction_info1);
     // // verify db storage
     let value4 = db_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME, encoded_id.clone())
         .unwrap()
         .unwrap();
     let transaction_info4 = TransactionInfo::decode_value(&value4).unwrap();
@@ -126,11 +134,11 @@ fn test_two_level_storage() {
     assert_eq!(transaction_info5, None);
     // verify cache storage is null
     let value6 = cache_storage
-        .get_obj(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
+        .get_obj(TRANSACTION_INFO_PREFIX_NAME, encoded_id.clone())
         .unwrap();
     assert_eq!(value6.unwrap(), CACHE_NONE_OBJECT.clone());
     let value7 = db_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME, encoded_id)
         .unwrap();
     assert_eq!(value7, None);
 }
@@ -149,7 +157,11 @@ fn test_two_level_storage_read_through() -> Result<()> {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.crypto_hash();
+    let id = {
+        let hash = transaction_info1.crypto_hash();
+        TxnInfoIndexKey(hash, 0u64)
+    };
+    let encoded_id = id.encode_key().unwrap();
     storage
         .transaction_info_storage
         .put(id, transaction_info1.clone())
@@ -166,7 +178,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
     assert_eq!(transaction_info1, transaction_info2.unwrap());
 
     //verfiy cache storage
-    let transaction_info_data = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
+    let transaction_info_data = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, encoded_id)?;
     let transaction_info3 = TransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
     assert_eq!(transaction_info3, transaction_info1);
     Ok(())
@@ -181,18 +193,19 @@ fn test_missing_key_handle() -> Result<()> {
         StorageInstance::new_cache_and_db_instance(cache_storage.clone(), db_storage.clone());
     let storage = Storage::new(instance.clone()).unwrap();
     let key = HashValue::random();
-    let result = storage.get_transaction_info(key)?;
+    let result = storage.get_transaction_info(key, 0u64)?;
     assert!(result.is_none());
-    let value2 = cache_storage.get_obj(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    let encoded_key = TxnInfoIndexKey(key, 0u64).encode_key().unwrap();
+    let value2 = cache_storage.get_obj(TRANSACTION_INFO_PREFIX_NAME, encoded_key.clone())?;
     assert_eq!(value2.unwrap(), CACHE_NONE_OBJECT.clone());
-    let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, encoded_key.clone())?;
     assert!(value3.is_none());
     // test remove
-    let result2 = instance.remove(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec());
+    let result2 = instance.remove(TRANSACTION_INFO_PREFIX_NAME, encoded_key.clone());
     assert!(result2.is_ok());
-    let value4 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    let value4 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, encoded_key.clone())?;
     assert!(value4.is_none());
-    let contains = instance.contains_key(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    let contains = instance.contains_key(TRANSACTION_INFO_PREFIX_NAME, encoded_key)?;
     assert_eq!(contains, false);
     Ok(())
 }

@@ -54,7 +54,7 @@ impl StorageBencher {
                 StatusCode::ABORTED,
             );
             self.storage
-                .save_transaction_info(transaction_info1)
+                .save_transaction_infos(HashValue::random(), vec![transaction_info1])
                 .unwrap();
         }
     }

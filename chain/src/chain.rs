@@ -245,8 +245,9 @@ where
     fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
         let mut txn_vec = vec![];
         let vec_hash = self.storage.get_block_transactions(block_id)?;
-        for hash in vec_hash {
-            if let Some(transaction_info) = self.get_transaction_info(hash)? {
+        // TODO: once storage support iterator, we can get all txn infos from storage using one storage api call.
+        for idx in 0..vec_hash.len() {
+            if let Some(transaction_info) = self.get_transaction_info(block_id, idx as u64)? {
                 txn_vec.push(transaction_info);
             }
         }
@@ -257,8 +258,12 @@ where
         self.storage.get_transaction(txn_hash)
     }
 
-    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>> {
-        self.storage.get_transaction_info(hash)
+    fn get_transaction_info(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>> {
+        self.storage.get_transaction_info(block_id, idx)
     }
 
     fn create_block_template(
@@ -418,8 +423,10 @@ where
             total_difficulty,
         );
         // save block's transaction relationship and save transaction
-        self.save(header.id(), txns)?;
-        self.storage.save_transaction_infos(vec_transaction_info)?;
+        let block_id = block.id();
+        self.save(block_id, txns)?;
+        self.storage
+            .save_transaction_infos(block_id, vec_transaction_info)?;
         self.commit(block.clone(), block_info, BlockState::Executed)?;
         Ok(true)
     }

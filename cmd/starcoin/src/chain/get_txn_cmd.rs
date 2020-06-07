@@ -10,10 +10,12 @@ use starcoin_types::transaction::TransactionInfo;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_txn")]
+#[structopt(name = "get_txn_info")]
 pub struct GetOpt {
-    #[structopt(name = "hash")]
-    hash: String,
+    #[structopt(name = "block_id")]
+    block_id: String,
+    #[structopt(name = "index of the txn in the block")]
+    idx: u64,
 }
 
 pub struct GetTransactionCommand;
@@ -30,8 +32,9 @@ impl CommandAction for GetTransactionCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let transaction_info =
-            client.chain_get_transaction(HashValue::from_hex(&opt.hash).unwrap())?;
+        let block_id = HashValue::from_hex(&opt.block_id).unwrap();
+        let idx = opt.idx;
+        let transaction_info = client.chain_get_transaction_info(block_id, idx)?;
 
         Ok(transaction_info)
     }

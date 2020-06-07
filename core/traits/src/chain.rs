@@ -29,8 +29,12 @@ pub trait ChainReader {
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
     fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
-    /// get transaction info by transaction info hash.
-    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
+    /// get transaction info of transaction at `idx` of block identified by `block_id`.
+    fn get_transaction_info(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>>;
     fn create_block_template(
         &self,
         author: AccountAddress,

@@ -422,8 +422,12 @@ where
         self.get_master().get_blocks_by_number(number, count)
     }
 
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        self.get_master().get_transaction_info(hash)
+    fn get_transaction_info(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>, Error> {
+        self.get_master().get_transaction_info(block_id, idx)
     }
 
     fn get_block_txn_ids(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {

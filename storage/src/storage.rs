@@ -21,6 +21,7 @@ pub enum WriteOp {
     Deletion,
 }
 
+/// TODO: support iterator with key prefix.
 pub trait KVStore: Send + Sync {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;

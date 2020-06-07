@@ -399,9 +399,17 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_transaction(&self, txn_id: HashValue) -> anyhow::Result<TransactionInfo> {
+    pub fn chain_get_transaction_info(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> anyhow::Result<TransactionInfo> {
         self.call_rpc_blocking(|inner| async move {
-            inner.chain_client.get_transaction(txn_id).compat().await
+            inner
+                .chain_client
+                .get_transaction_info(block_id, idx)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }

@@ -28,8 +28,8 @@ pub trait ChainApi {
         count: u64,
     ) -> FutureResult<Vec<Block>>;
     /// Get chain transactions
-    #[rpc(name = "chain.get_transaction")]
-    fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<TransactionInfo>;
+    #[rpc(name = "chain.get_transaction_info")]
+    fn get_transaction_info(&self, block_id: HashValue, idx: u64) -> FutureResult<TransactionInfo>;
 
     /// Get chain transactions by block id
     #[rpc(name = "chain.get_txn_by_block")]
