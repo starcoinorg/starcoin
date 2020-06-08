@@ -4,7 +4,7 @@
 use crate::error::CmdError;
 use crate::{print_action_result, Command, CommandAction, CommandExec, OutputFormat};
 use anyhow::Result;
-use clap::{crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_authors, crate_version, App, Arg, SubCommand};
 use git_version::git_version;
 use lazy_static::lazy_static;
 use rustyline::{config::CompletionType, error::ReadlineError, Config, Editor};
@@ -25,15 +25,16 @@ where
 {
     app: App<'static, 'static>,
     commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
-    default_action: Box<dyn Fn(App, GlobalOpt, State)>,
-    state_initializer: Box<dyn Fn(&GlobalOpt) -> Result<State>>,
-    console_start_action: Box<dyn Fn(&App, Arc<GlobalOpt>, Arc<State>)>,
-    console_quit_action: Box<dyn Fn(App, GlobalOpt, State)>,
+    default_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+    state_initializer: Box<dyn FnOnce(&GlobalOpt) -> Result<State>>,
+    console_start_action: Box<dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>)>,
+    console_quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
 }
 
 impl<State, GlobalOpt> CmdContext<State, GlobalOpt>
 where
-    GlobalOpt: StructOpt,
+    State: 'static,
+    GlobalOpt: StructOpt + 'static,
 {
     pub fn new<I>(state_initializer: I) -> Self
     where
@@ -62,10 +63,10 @@ where
         console_quit_action: Q,
     ) -> Self
     where
-        I: Fn(&GlobalOpt) -> Result<State> + 'static,
-        D: Fn(App, GlobalOpt, State) + 'static,
-        S: Fn(&App, Arc<GlobalOpt>, Arc<State>) + 'static,
-        Q: Fn(App, GlobalOpt, State) + 'static,
+        I: FnOnce(&GlobalOpt) -> Result<State> + 'static,
+        D: FnOnce(App, GlobalOpt, State) + 'static,
+        S: FnOnce(&App, Arc<GlobalOpt>, Arc<State>) + 'static,
+        Q: FnOnce(App, GlobalOpt, State) + 'static,
     {
         //insert console command
         let mut app = GlobalOpt::clap();
@@ -128,37 +129,45 @@ where
     }
 
     pub fn help_message(&mut self) -> String {
+        Self::app_help_message(&mut self.app)
+    }
+
+    fn app_help_message(app: &mut App) -> String {
         let mut help_message = vec![];
-        self.app
-            .write_long_help(&mut help_message)
+        app.write_long_help(&mut help_message)
             .expect("format help message fail.");
         String::from_utf8(help_message).expect("help message should utf8")
     }
 
-    pub fn exec(mut self) {
+    pub fn exec(self) {
         if let Err(e) = self.exec_inner() {
             println!("{}", e.to_string())
         }
     }
 
-    fn exec_inner(&mut self) -> Result<()> {
-        let matches = self
-            .app
-            .get_matches_from_safe_borrow(&mut std::env::args_os())?;
+    fn exec_inner(mut self) -> Result<()> {
+        let mut app = self.app;
+        let matches = app.get_matches_from_safe_borrow(&mut std::env::args_os())?;
         let output_format = matches
             .value_of(OUTPUT_FORMAT_ARG)
             .expect("output-format arg must exist")
             .parse()
             .expect("parse output-format must success.");
 
-        let (global_opt, state) = self.init_global_opt(&matches)?;
+        let global_opt = GlobalOpt::from_clap(&matches);
+        let state = (self.state_initializer)(&global_opt)?;
+
         let (cmd_name, arg_matches) = matches.subcommand();
+        let default_action = self.default_action;
         match cmd_name {
             "console" => {
-                self.console_inner(global_opt, state);
+                let start_action = self.console_start_action;
+                let quit_action = self.console_quit_action;
+                let commands = self.commands;
+                Self::console_inner(app, global_opt, state, commands, start_action, quit_action);
             }
             "" => {
-                self.default_action.as_ref()(self.app.clone(), global_opt, state);
+                default_action(app, global_opt, state);
             }
             cmd_name => {
                 let cmd = self.commands.get_mut(cmd_name);
@@ -169,7 +178,7 @@ where
                     }
                     _ => {
                         return Err(CmdError::NeedHelp {
-                            help: self.help_message(),
+                            help: Self::app_help_message(&mut app),
                         }
                         .into());
                     }
@@ -180,7 +189,14 @@ where
         Ok(())
     }
 
-    fn console_inner(&mut self, global_opt: GlobalOpt, state: State) {
+    fn console_inner(
+        app: App,
+        global_opt: GlobalOpt,
+        state: State,
+        mut commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
+        start_action: Box<dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>)>,
+        quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+    ) {
         //TODO support use custom config
         let config = Config::builder()
             .history_ignore_space(true)
@@ -188,9 +204,7 @@ where
             .auto_add_history(true)
             .build();
         //insert quit command
-        let mut app = self
-            .app
-            .clone()
+        let mut app = app
             .subcommand(
                 SubCommand::with_name("version")
                     .help("Print app version.")
@@ -205,7 +219,7 @@ where
         let app_name = app.get_name().to_string();
         let global_opt = Arc::new(global_opt);
         let state = Arc::new(state);
-        self.console_start_action.as_ref()(&app, global_opt.clone(), state.clone());
+        start_action(&app, global_opt.clone(), state.clone());
         let mut rl = Editor::<()>::with_config(config);
         let prompt = format!("{}% ", app_name);
         loop {
@@ -222,7 +236,7 @@ where
                             let state = Arc::try_unwrap(state)
                                 .ok()
                                 .expect("unwrap state must success when quit.");
-                            self.console_quit_action.as_ref()(app.clone(), global_opt, state);
+                            quit_action(app.clone(), global_opt, state);
                             break;
                         }
                         "help" => {
@@ -234,7 +248,7 @@ where
                         "console" => continue,
                         "" => continue,
                         cmd_name => {
-                            let cmd = self.commands.get_mut(cmd_name);
+                            let cmd = commands.get_mut(cmd_name);
                             match cmd {
                                 Some(cmd) => {
                                     let app = cmd.get_app();
@@ -279,22 +293,5 @@ where
                 }
             }
         }
-    }
-
-    fn init_global_opt(&self, matches: &ArgMatches) -> Result<(GlobalOpt, State)> {
-        let global_opt = GlobalOpt::from_clap(&matches);
-        let state = self.state_initializer.as_ref()(&global_opt)?;
-        Ok((global_opt, state))
-    }
-
-    pub fn console(mut self) {
-        let matches = self
-            .app
-            .get_matches_from_safe_borrow(&mut std::env::args_os())
-            .unwrap_or_else(|e| panic!("{}", e));
-        let (global_opt, state) = self
-            .init_global_opt(&matches)
-            .unwrap_or_else(|e| panic!("{}", e));
-        self.console_inner(global_opt, state);
     }
 }
