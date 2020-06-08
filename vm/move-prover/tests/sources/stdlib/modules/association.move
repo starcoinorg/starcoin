@@ -10,6 +10,7 @@ address 0x0 {
 
 module Association {
     use 0x0::Transaction;
+    use 0x0::Signer;
 
     // The root account privilege. This is created at genesis and has
     // special privileges (e.g. removing an account as an association
@@ -20,7 +21,7 @@ module Association {
     // privileged than other association operations. This resource with the
     // type representing that privilege is published under the privileged
     // account.
-    resource struct PrivilegedCapability<Privilege> { is_certified: bool }
+    resource struct PrivilegedCapability<Privilege> {}
 
     // A type tag to mark that this account is an association account.
     // It cannot be used for more specific/privileged operations.
@@ -29,86 +30,66 @@ module Association {
     // Initialization is called in genesis. It publishes the root resource
     // under the root_address() address, marks it as a normal
     // association account.
-    public fun initialize() {
-        let sender = Transaction::sender();
-        Transaction::assert(sender == root_address(), 1000);
-        move_to_sender(Root{ });
-        move_to_sender(PrivilegedCapability<T>{ is_certified: true });
+    public fun initialize(association: &signer) {
+        Transaction::assert(Signer::address_of(association) == root_address(), 1000);
+        move_to(association, Root{ });
+        move_to(association, PrivilegedCapability<T>{ });
     }
 
-    // Publish a specific privilege under the sending account.
-    public fun apply_for_privilege<Privilege>() {
-        if (::exists<PrivilegedCapability<Privilege>>(Transaction::sender())) return;
-        move_to_sender(PrivilegedCapability<Privilege>{ is_certified: false });
-    }
+   /// Certify the privileged capability published under `association`.
+   public fun grant_privilege<Privilege>(association: &signer, recipient: &signer) {
+         assert_is_root(association);
+         move_to(recipient, PrivilegedCapability<Privilege>{ });
+   }
 
-    // Certify the privileged capability published under for_addr.
-    public fun grant_privilege<Privilege>(for_addr: address)
-    acquires PrivilegedCapability {
-        assert_sender_is_root();
-        Transaction::assert(exists<PrivilegedCapability<Privilege>>(for_addr), 1003);
-        borrow_global_mut<PrivilegedCapability<Privilege>>(for_addr).is_certified = true;
-    }
+   /// Grant the association privilege to `association`
+       public fun grant_association_address(association: &signer, recipient: &signer) {
+           grant_privilege<T>(association, recipient)
+       }
 
-    // Return whether the `addr` has the specified `Privilege`.
-    public fun has_privilege<Privilege>(addr: address): bool
-    acquires PrivilegedCapability {
-        addr_is_association(addr) &&
-        exists<PrivilegedCapability<Privilege>>(addr) &&
-        borrow_global<PrivilegedCapability<Privilege>>(addr).is_certified
-    }
+       /// Return whether the `addr` has the specified `Privilege`.
+       public fun has_privilege<Privilege>(addr: address): bool {
+           // TODO: make genesis work with this check enabled
+           //addr_is_association(addr) &&
+           exists<PrivilegedCapability<Privilege>>(addr)
+       }
 
-    // Remove the `Privilege` from the address at `addr`. The sender must
-    // be the root association account. The `Privilege` need not be
-    // certified.
-    public fun remove_privilege<Privilege>(addr: address)
-    acquires PrivilegedCapability {
-        assert_sender_is_root();
-        Transaction::assert(exists<PrivilegedCapability<Privilege>>(addr), 1004);
-        PrivilegedCapability<Privilege>{ is_certified: _ } = move_from<PrivilegedCapability<Privilege>>(addr);
-    }
+       /// Remove the `Privilege` from the address at `addr`. The `sender` must be the root association
+       /// account.
+       /// Aborts if `addr` is the address of the root account
+       public fun remove_privilege<Privilege>(association: &signer, addr: address)
+       acquires PrivilegedCapability {
+           assert_is_root(association);
+           // root should not be able to remove its own privileges
+           Transaction::assert(Signer::address_of(association) != addr, 1005);
+           Transaction::assert(exists<PrivilegedCapability<Privilege>>(addr), 1004);
+           PrivilegedCapability<Privilege>{ } = move_from<PrivilegedCapability<Privilege>>(addr);
+       }
 
-    // Publishes an Association::PrivilegedCapability<T> under the sending
-    // account.
-    public fun apply_for_association() {
-        apply_for_privilege<T>()
-    }
+       /// Assert that the sender is an association account.
+       public fun assert_is_association(account: &signer) {
+           assert_addr_is_association(Signer::address_of(account))
+       }
 
-    // Certifies the Association::PrivilegedCapability<T> resource that is
-    // published under `addr`.
-    public fun grant_association_address(addr: address)
-    acquires PrivilegedCapability {
-        grant_privilege<T>(addr)
-    }
+       /// Assert that the sender is the root association account.
+       public fun assert_is_root(account: &signer) {
+           Transaction::assert(exists<Root>(Signer::address_of(account)), 1001);
+       }
 
-    // Assert that the sender is an association account.
-    public fun assert_sender_is_association()
-    acquires PrivilegedCapability {
-        assert_addr_is_association(Transaction::sender())
-    }
+       /// Return whether the account at `addr` is an association account.
+       public fun addr_is_association(addr: address): bool {
+           exists<PrivilegedCapability<T>>(addr)
+       }
 
-    // Assert that the sender is the root association account.
-    public fun assert_sender_is_root() {
-        Transaction::assert(exists<Root>(Transaction::sender()), 1001);
-    }
+       /// The address at which the root account will be published.
+       public fun root_address(): address {
+           0xA550C18
+       }
 
-    // Return whether the account at `addr` is an association account.
-    public fun addr_is_association(addr: address): bool
-    acquires PrivilegedCapability {
-        exists<PrivilegedCapability<T>>(addr) &&
-            borrow_global<PrivilegedCapability<T>>(addr).is_certified
-    }
-
-    // The address at which the root account will be published.
-    public fun root_address(): address {
-        0xA550C18
-    }
-
-    // Assert that `addr` is an association account.
-    fun assert_addr_is_association(addr: address)
-    acquires PrivilegedCapability {
-        Transaction::assert(addr_is_association(addr), 1002);
-    }
+       /// Assert that `addr` is an association account.
+       fun assert_addr_is_association(addr: address) {
+           Transaction::assert(addr_is_association(addr), 1002);
+       }
 }
 
 }

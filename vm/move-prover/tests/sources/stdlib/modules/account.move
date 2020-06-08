@@ -2,20 +2,17 @@ address 0x0 {
 
 // The module for the account resource that governs every account
 module Account {
-    use 0x0::AccountTrack;
-    use 0x0::AccountType;
     use 0x0::Association;
-    use 0x0::Empty;
     use 0x0::Event;
     use 0x0::Hash;
     use 0x0::LCS;
     use 0x0::Coin;
     use 0x0::TransactionTimeout;
-    use 0x0::Signature;
     use 0x0::Testnet;
     use 0x0::Transaction;
-    use 0x0::VASP;
     use 0x0::Vector;
+    use 0x0::Signer;
+    use 0x0::Timestamp;
 
     // Every account has a Account::T resource
     resource struct T {
@@ -34,8 +31,6 @@ module Account {
         // Incremented by one each time a transaction is submitted
         sequence_number: u64,
         is_frozen: bool,
-        // The currency code string for the balance held by this account.
-        balance_currency_code: vector<u8>,
     }
 
     // A resource that holds the coins stored in this account
@@ -84,43 +79,35 @@ module Account {
     // A privilege to allow the freezing of accounts.
     struct FreezingPrivilege { }
 
-    resource struct AccountOperationsCapability {
-        tracking_cap: AccountTrack::CallingCapability,
-        event_creation_cap: Event::EventHandleGeneratorCreationCapability,
-    }
 
-    public fun initialize() {
-        Transaction::assert(Transaction::sender() == 0xA550C18, 0);
-        move_to_sender(AccountOperationsCapability {
-            tracking_cap: AccountTrack::grant_calling_capability(),
-            event_creation_cap: Event::grant_event_handle_creation_operation(),
-        });
-    }
+     public fun initialize(association: &signer) {
+         Transaction::assert(Signer::address_of(association) == 0xA550C18, 0);
+     }
 
     // Deposits the `to_deposit` coin into the `payee`'s account balance
-    public fun deposit<Token>(payee: address, to_deposit: Coin::T<Token>)
-    acquires T, Balance, AccountOperationsCapability {
+    public fun deposit<Token>(account: &signer, payee: address, to_deposit: Coin::T<Token>)
+    acquires T, Balance {
         // Since we don't have vector<u8> literals in the source language at
         // the moment.
-        deposit_with_metadata(payee, to_deposit, x"", x"")
+        deposit_with_metadata(account, payee, to_deposit, x"", x"")
     }
 
     // Deposits the `to_deposit` coin into the sender's account balance
-    public fun deposit_to_sender<Token>(to_deposit: Coin::T<Token>)
-    acquires T, Balance, AccountOperationsCapability {
-        deposit(Transaction::sender(), to_deposit)
+    public fun deposit_to_sender<Token>(account: &signer, to_deposit: Coin::T<Token>)
+    acquires T, Balance {
+        deposit(account, Signer::address_of(account), to_deposit)
     }
 
     // Deposits the `to_deposit` coin into the `payee`'s account balance with the attached `metadata`
-    public fun deposit_with_metadata<Token>(
+    public fun deposit_with_metadata<Token>(account: &signer,
         payee: address,
         to_deposit: Coin::T<Token>,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         deposit_with_sender_and_metadata(
             payee,
-            Transaction::sender(),
+            Signer::address_of(account),
             to_deposit,
             metadata,
             metadata_signature
@@ -134,51 +121,23 @@ module Account {
         sender: address,
         to_deposit: Coin::T<Token>,
         metadata: vector<u8>,
-        metadata_signature: vector<u8>
-    ) acquires T, Balance, AccountOperationsCapability {
+        _metadata_signature: vector<u8>
+    ) acquires T, Balance {
         // Check that the `to_deposit` coin is non-zero
         let deposit_value = Coin::value(&to_deposit);
         Transaction::assert(deposit_value > 0, 7);
 
-        // TODO: on-chain config for travel rule limit instead of hardcoded value
-        let travel_rule_limit = 1000;
-        // travel rule only applies for payments over a threshold
-        let above_threshold =
-            Coin::approx_stc_for_value<Token>(deposit_value) >= travel_rule_limit;
-        // travel rule only applies if the sender and recipient are both VASPs
-        let both_vasps = VASP::is_vasp(sender) && VASP::is_vasp(payee);
-        // Don't check the travel rule if we're on testnet and sender
-        // doesn't specify a metadata signature
-        let is_testnet_transfer = Testnet::is_testnet() && Vector::is_empty(&metadata_signature);
-        if (!is_testnet_transfer &&
-            above_threshold &&
-            both_vasps &&
-            // travel rule does not apply for intra-VASP transactions
-            VASP::root_vasp_address(sender) != VASP::root_vasp_address(payee)
-        ) {
-            // sanity check of signature validity
-            Transaction::assert(Vector::length(&metadata_signature) == 64, 9001);
-            // cryptographic check of signature validity
-            Transaction::assert(
-                Signature::ed25519_verify(
-                    metadata_signature,
-                    VASP::travel_rule_public_key(payee),
-                    copy metadata
-                ),
-                9002, // TODO: proper error code
-            );
-        };
-
-        // Ensure that this deposit is compliant with the account limits on
-        // this account.
-        Transaction::assert(
-            AccountTrack::update_deposit_limits<Token>(
-                deposit_value,
-                payee,
-                &borrow_global<AccountOperationsCapability>(0xA550C18).tracking_cap
-            ),
-            9
-        );
+        //TODO check signature
+        //Transaction::assert(Vector::length(&metadata_signature) == 64, 9001);
+        // cryptographic check of signature validity
+        //Transaction::assert(
+        //    Signature::ed25519_verify(
+        //        metadata_signature,
+        //        VASP::travel_rule_public_key(payee),
+        //        copy metadata
+        //    ),
+        //    9002, // TODO: proper error code
+        //);
 
         // Get the code symbol for this currency
         let currency_code = Coin::currency_code<Token>();
@@ -218,40 +177,33 @@ module Account {
     // for the transaction cost they will fail minting.
     // However those account can also mint to themselves so that is a decent workaround
     public fun mint_to_address<Token>(
+        account: &signer,
         payee: address,
         amount: u64
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         // Mint and deposit the coin
-        deposit(payee, Coin::mint<Token>(amount));
+        deposit(account, payee, Coin::mint<Token>(account, amount));
     }
 
     // Cancel the oldest burn request from `preburn_address` and return the funds.
     // Fails if the sender does not have a published MintCapability.
     public fun cancel_burn<Token>(
+        account: &signer,
         preburn_address: address,
-    ) acquires T, Balance, AccountOperationsCapability {
-        let to_return = Coin::cancel_burn<Token>(preburn_address);
-        deposit(preburn_address, to_return)
+    ) acquires T, Balance {
+        let to_return = Coin::cancel_burn<Token>(account, preburn_address);
+        deposit(account, preburn_address, to_return)
     }
 
     // Helper to withdraw `amount` from the given account balance and return the withdrawn Coin::T<Token>
-    fun withdraw_from_balance<Token>(addr: address, balance: &mut Balance<Token>, amount: u64): Coin::T<Token>
-    acquires AccountOperationsCapability {
-        // Make sure that this withdrawal is compliant with the limits on
-        // the account.
-        let can_withdraw = AccountTrack::update_withdrawal_limits<Token>(
-            amount,
-            addr,
-            &borrow_global<AccountOperationsCapability>(0xA550C18).tracking_cap
-        );
-        Transaction::assert(can_withdraw, 11);
+    fun withdraw_from_balance<Token>(_addr: address, balance: &mut Balance<Token>, amount: u64): Coin::T<Token>{
         Coin::withdraw(&mut balance.coin, amount)
     }
 
     // Withdraw `amount` Coin::T<Token> from the transaction sender's account balance
-    public fun withdraw_from_sender<Token>(amount: u64): Coin::T<Token>
-    acquires T, Balance, AccountOperationsCapability {
-        let sender = Transaction::sender();
+    public fun withdraw_from_sender<Token>(account: &signer, amount: u64): Coin::T<Token>
+    acquires T, Balance {
+        let sender = Signer::address_of(account);
         let sender_account = borrow_global_mut<T>(sender);
         let sender_balance = borrow_global_mut<Balance<Token>>(sender);
         // The sender has delegated the privilege to withdraw from her account elsewhere--abort.
@@ -263,14 +215,14 @@ module Account {
     // Withdraw `amount` Coin::T<Token> from the account under cap.account_address
     public fun withdraw_with_capability<Token>(
         cap: &WithdrawalCapability, amount: u64
-    ): Coin::T<Token> acquires Balance, AccountOperationsCapability {
+    ): Coin::T<Token> acquires Balance {
         let balance = borrow_global_mut<Balance<Token>>(cap.account_address);
         withdraw_from_balance<Token>(cap.account_address, balance , amount)
     }
 
     // Return a unique capability granting permission to withdraw from the sender's account balance.
-    public fun extract_sender_withdrawal_capability(): WithdrawalCapability acquires T {
-        let sender = Transaction::sender();
+    public fun extract_sender_withdrawal_capability(account: &signer): WithdrawalCapability acquires T {
+        let sender = Signer::address_of(account);
         let sender_account = borrow_global_mut<T>(sender);
 
         // Abort if we already extracted the unique withdrawal capability for this account.
@@ -300,7 +252,7 @@ module Account {
         amount: u64,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         deposit_with_sender_and_metadata<Token>(
             payee,
             *&cap.account_address,
@@ -314,14 +266,16 @@ module Account {
     // account balance and send the coin to the `payee` address with the
     // attached `metadata` Creates the `payee` account if it does not exist
     public fun pay_from_sender_with_metadata<Token>(
+        account: &signer,
         payee: address,
         amount: u64,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         deposit_with_metadata<Token>(
+            account,
             payee,
-            withdraw_from_sender(amount),
+            withdraw_from_sender(account, amount),
             metadata,
             metadata_signature
         );
@@ -331,10 +285,11 @@ module Account {
     // account balance  and send the coin to the `payee` address
     // Creates the `payee` account if it does not exist
     public fun pay_from_sender<Token>(
+        account: &signer,
         payee: address,
         amount: u64
-    ) acquires T, Balance, AccountOperationsCapability {
-        pay_from_sender_with_metadata<Token>(payee, amount, x"", x"");
+    ) acquires T, Balance {
+        pay_from_sender_with_metadata<Token>(account, payee, amount, x"", x"");
     }
 
     fun rotate_authentication_key_for_account(account: &mut T, new_authentication_key: vector<u8>) {
@@ -345,8 +300,8 @@ module Account {
 
     // Rotate the transaction sender's authentication key
     // The new key will be used for signing future transactions
-    public fun rotate_authentication_key(new_authentication_key: vector<u8>) acquires T {
-        let sender_account = borrow_global_mut<T>(Transaction::sender());
+    public fun rotate_authentication_key(account: &signer, new_authentication_key: vector<u8>) acquires T {
+        let sender_account = borrow_global_mut<T>(Signer::address_of(account));
         // The sender has delegated the privilege to rotate her key elsewhere--abort
         Transaction::assert(!sender_account.delegated_key_rotation_capability, 11);
         // The sender has retained her key rotation privileges--proceed.
@@ -368,8 +323,8 @@ module Account {
     }
 
     // Return a unique capability granting permission to rotate the sender's authentication key
-    public fun extract_sender_key_rotation_capability(): KeyRotationCapability acquires T {
-        let sender = Transaction::sender();
+    public fun extract_sender_key_rotation_capability(account: &signer): KeyRotationCapability acquires T {
+        let sender = Signer::address_of(account);
         let sender_account = borrow_global_mut<T>(sender);
         // Abort if we already extracted the unique key rotation capability for this account.
         Transaction::assert(!sender_account.delegated_key_rotation_capability, 11);
@@ -388,76 +343,61 @@ module Account {
         account.delegated_key_rotation_capability = false;
     }
 
+    // Create an account with the Empty role at `new_account_address` with authentication key
+    /// `auth_key_prefix` | `new_account_address`
+    // TODO: can we get rid of this? the main thing this does is create an account without an
+    // EventGenerator resource (which is just needed to avoid circular dep issues in gensis)
+    public fun create_genesis_account<Token>(
+        new_account_address: address,
+        auth_key_prefix: vector<u8>
+    ) {
+        Transaction::assert(Timestamp::is_genesis(), 0);
+        let new_account = create_signer(new_account_address);
+        make_account<Token>(new_account, auth_key_prefix)
+    }
+
     // Creates a new testnet account at `fresh_address` with a balance of
     // zero `Token` type coins, and authentication key `auth_key_prefix` | `fresh_address`.
     // Trying to create an account at address 0x0 will cause runtime failure as it is a
     // reserved address for the MoveVM.
-    public fun create_testnet_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>)
-    acquires AccountOperationsCapability {
+    public fun create_testnet_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>){
         Transaction::assert(Testnet::is_testnet(), 10042);
-         let vasp_credential = VASP::create_root_vasp_credential(
-              // "testnet"
-              x"746573746E6574",
-              // "https://libra.org"
-              x"68747470733A2F2F6C696272612E6F72672F",
-              x"",
-              // An empty travel-rule key
-              x"00000000000000000000000000000000",
-         );
-         make_account<Token, VASP::RootVASP>(fresh_address, auth_key_prefix, vasp_credential);
+        create_account<Token>(fresh_address, auth_key_prefix);
     }
 
-    // Creates a new `Empty` account at `fresh_address` with a balance of zero and authentication
+    // Creates a new account at `fresh_address` with a balance of zero and authentication
     // key `auth_key_prefix` | `fresh_address`.
     // Creating an account at address 0x0 will cause runtime failure as it is a
     // reserved address for the MoveVM.
-    public fun create_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>)
-    acquires AccountOperationsCapability {
-        make_account<Token, Empty::T>(fresh_address, auth_key_prefix, Empty::create())
+    public fun create_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>){
+        let new_account = create_signer(fresh_address);
+        Event::publish_generator(&new_account);
+        make_account<Token>(new_account, auth_key_prefix)
     }
 
-    fun make_account<Token, AT: copyable>(
-        fresh_address: address,
+    fun make_account<Token>(
+        new_account: signer,
         auth_key_prefix: vector<u8>,
-        account_metadata: AT
-    ) acquires AccountOperationsCapability {
-        let generator = Event::new_event_generator(
-            fresh_address,
-            &borrow_global<AccountOperationsCapability>(0xA550C18).event_creation_cap
-        );
-
+    ){
         let authentication_key = auth_key_prefix;
+        let fresh_address = Signer::address_of(&new_account);
         Vector::append(&mut authentication_key, LCS::to_bytes(&fresh_address));
         Transaction::assert(Vector::length(&authentication_key) == 32, 12);
-
-        save_account<Token, AT>(
-            AccountType::create(fresh_address, account_metadata),
-            Balance<Token>{
-                coin: Coin::zero<Token>()
-            },
-            T {
-                authentication_key,
-                delegated_key_rotation_capability: false,
-                delegated_withdrawal_capability: false,
-                received_events: Event::new_event_handle_from_generator<ReceivedPaymentEvent>(&mut generator),
-                sent_events: Event::new_event_handle_from_generator<SentPaymentEvent>(&mut generator),
-                sequence_number: 0,
-                is_frozen: false,
-                balance_currency_code: Coin::currency_code<Token>(),
-            },
-            generator,
-            fresh_address,
-        );
+        move_to(&new_account, T {
+              authentication_key,
+              delegated_key_rotation_capability: false,
+              delegated_withdrawal_capability: false,
+              received_events: Event::new_event_handle<ReceivedPaymentEvent>(&new_account),
+              sent_events: Event::new_event_handle<SentPaymentEvent>(&new_account),
+              sequence_number: 0,
+              is_frozen: false,
+        });
+        move_to(&new_account, Balance<Token>{coin: Coin::zero<Token>()});
+        destroy_signer(new_account);
     }
 
-    // Save an account to a given address if the address does not have account resources yet
-    native fun save_account<Token, AT: copyable>(
-        account_type: AccountType::T<AT>,
-        balance: Balance<Token>,
-        account: Self::T,
-        event_generator: Event::EventHandleGenerator,
-        addr: address,
-    );
+    native fun create_signer(addr: address): signer;
+    native fun destroy_signer(sig: signer);
 
     // Helper to return the u64 value of the `balance` for `account`
     fun balance_for<Token>(balance: &Balance<Token>): u64 {
@@ -468,10 +408,10 @@ module Account {
     public fun balance<Token>(addr: address): u64 acquires Balance {
         balance_for(borrow_global<Balance<Token>>(addr))
     }
-
+    //TODO use a unify name https://github.com/starcoinorg/starcoin/issues/570
     // Add a balance of `Token` type to the sending account.
-    public fun add_currency<Token>() {
-        move_to_sender(Balance<Token>{ coin: Coin::zero<Token>() })
+    public fun add_currency<Token>(account: &signer) {
+        move_to(account, Balance<Token>{ coin: Coin::zero<Token>() })
     }
 
     // Return whether the account at `addr` accepts `Token` type coins
@@ -524,18 +464,18 @@ module Account {
     ///////////////////////////////////////////////////////////////////////////
 
     // Freeze the account at `addr`.
-    public fun freeze_account(addr: address)
+    public fun freeze_account(account: &signer, addr: address)
     acquires T {
-        assert_can_freeze(Transaction::sender());
+        assert_can_freeze(Signer::address_of(account));
         // The root association account cannot be frozen
         Transaction::assert(addr != Association::root_address(), 14);
         borrow_global_mut<T>(addr).is_frozen = true;
     }
 
     // Unfreeze the account at `addr`.
-    public fun unfreeze_account(addr: address)
+    public fun unfreeze_account(account: &signer, addr: address)
     acquires T {
-        assert_can_freeze(Transaction::sender());
+        assert_can_freeze(Signer::address_of(account));
         borrow_global_mut<T>(addr).is_frozen = false;
     }
 
@@ -555,13 +495,14 @@ module Account {
     // - That the account has enough balance to pay for all of the gas
     // - That the sequence number matches the transaction's sequence key
     fun prologue<Token>(
+        account: &signer,
         txn_sequence_number: u64,
         txn_public_key: vector<u8>,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         txn_expiration_time: u64,
     ) acquires T, Balance {
-        let transaction_sender = Transaction::sender();
+        let transaction_sender = Signer::address_of(account);
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists
@@ -592,14 +533,15 @@ module Account {
     // The epilogue is invoked at the end of transactions.
     // It collects gas and bumps the sequence number
     fun epilogue<Token>(
+        account: &signer,
         txn_sequence_number: u64,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64
-    ) acquires T, Balance, AccountOperationsCapability {
+    ) acquires T, Balance {
         // Load the transaction sender's account and balance resources
-        let sender_account = borrow_global_mut<T>(Transaction::sender());
-        let sender_balance = borrow_global_mut<Balance<Token>>(Transaction::sender());
+        let sender_account = borrow_global_mut<T>(Signer::address_of(account));
+        let sender_balance = borrow_global_mut<Balance<Token>>(Signer::address_of(account));
 
         // Charge for gas
         let transaction_fee_amount = txn_gas_price * (txn_max_gas_units - gas_units_remaining);
@@ -612,7 +554,7 @@ module Account {
 
         if (transaction_fee_amount > 0) {
             let transaction_fee = withdraw_from_balance(
-                    Transaction::sender(),
+                    Signer::address_of(account),
                     sender_balance,
                     transaction_fee_amount
             );
@@ -621,14 +563,6 @@ module Account {
             // sent/received payment event.
             let transaction_fee_balance = borrow_global_mut<Balance<Token>>(0xFEE);
             Coin::deposit(&mut transaction_fee_balance.coin, transaction_fee);
-            Transaction::assert(
-                AccountTrack::update_deposit_limits<Token>(
-                    transaction_fee_amount,
-                    0xFEE,
-                    &borrow_global<AccountOperationsCapability>(0xA550C18).tracking_cap
-                ),
-                9
-            );
         }
     }
 }

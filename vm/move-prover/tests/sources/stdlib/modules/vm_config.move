@@ -61,9 +61,10 @@ module VMConfig {
 
     // Initialize the table under the association account
     public fun initialize(
+        config_account: &signer,
         publishing_option: vector<u8>,
         instruction_schedule: vector<u8>,
-        native_schedule: vector<u8>
+        native_schedule: vector<u8>,
     ) {
         let gas_constants = GasConstants {
             global_memory_per_byte_cost: 8,
@@ -79,6 +80,7 @@ module VMConfig {
 
 
         Config::publish_new_config<Self::T>(
+            config_account,
             T {
                 publishing_option,
                 gas_schedule: GasSchedule {
@@ -86,14 +88,14 @@ module VMConfig {
                     native_schedule,
                     gas_constants,
                 }
-            }
+            },
         );
     }
 
-    public fun set_publishing_option(publishing_option: vector<u8>) {
+    public fun set_publishing_option(account: &signer, publishing_option: vector<u8>) {
         let current_config = Config::get<Self::T>();
         current_config.publishing_option = publishing_option;
-        Config::set<Self::T>(current_config);
+        Config::set<Self::T>(account, current_config);
     }
 }
 

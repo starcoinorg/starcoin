@@ -2,6 +2,7 @@ address 0x0 {
 
 module Timestamp {
     use 0x0::Transaction;
+    use 0x0::Signer;
 
     // A singleton resource holding the current Unix time in microseconds
     resource struct CurrentTimeMicroseconds {
@@ -9,26 +10,26 @@ module Timestamp {
     }
 
     // Initialize the global wall clock time resource.
-    public fun initialize() {
+    public fun initialize(account: &signer) {
         // Only callable by the Association address
-        Transaction::assert(Transaction::sender() == 0xA550C18, 1);
+        Transaction::assert(Signer::address_of(account) == 0xA550C18, 1);
 
         // TODO: Should the initialized value be passed in to genesis?
         let timer = CurrentTimeMicroseconds {microseconds: 0};
-        move_to_sender<CurrentTimeMicroseconds>(timer);
+        move_to<CurrentTimeMicroseconds>(account, timer);
     }
     spec fun initialize {
-        aborts_if sender() != 0xA550C18;
-        aborts_if exists<CurrentTimeMicroseconds>(sender());
-        ensures exists<CurrentTimeMicroseconds>(sender());
-        ensures global<CurrentTimeMicroseconds>(sender()).microseconds == 0;
+        aborts_if Signer::get_address(account) != 0xA550C18;
+        aborts_if exists<CurrentTimeMicroseconds>(Signer::get_address(account));
+        ensures exists<CurrentTimeMicroseconds>(Signer::get_address(account));
+        ensures global<CurrentTimeMicroseconds>(Signer::get_address(account)).microseconds == 0;
     }
 
     // Update the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
-    public fun update_global_time(proposer: address, timestamp: u64) acquires CurrentTimeMicroseconds {
+    public fun update_global_time(_account: &signer, proposer: address, timestamp: u64) acquires CurrentTimeMicroseconds {
         // Can only be invoked by LibraVM privilege.
         //TODO conform addr
-        //Transaction::assert(Transaction::sender() == 0x0, 33);
+        //Transaction::assert(Signer::address_of(account) == 0x0, 33);
 
         let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(0xA550C18);
         if (proposer == 0x0) {
