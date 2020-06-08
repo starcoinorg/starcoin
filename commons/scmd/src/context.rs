@@ -259,7 +259,7 @@ where
                     let params: Vec<&str> = line.trim().split(' ').map(str::trim).collect();
                     let cmd_name = params[0];
                     match cmd_name {
-                        "quit" => {
+                        "quit" | "exit" | "q!" => {
                             let global_opt = Arc::try_unwrap(global_opt)
                                 .ok()
                                 .expect("unwrap opt must success when quit.");
