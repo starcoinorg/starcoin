@@ -23,7 +23,7 @@ pub use rustyline::{
 
 pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
     ConsoleConfig::builder()
-        .max_history_size(1000)
+        .max_history_size(100)
         .history_ignore_space(true)
         .completion_type(CompletionType::List)
         .auto_add_history(true)
@@ -256,17 +256,23 @@ where
         >,
         quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
     ) {
-        //insert version and quit command
+        //insert version, quit, history command
         let mut app = app
             .subcommand(
                 SubCommand::with_name("version")
                     .help("Print app version.")
-                    .display_order(997),
+                    .display_order(996),
             )
             .subcommand(
                 SubCommand::with_name("quit")
                     .aliases(&["exit", "q!"])
                     .help("Quit from console.")
+                    .display_order(997),
+            )
+            .subcommand(
+                SubCommand::with_name("history")
+                    .arg(Arg::from_usage("-c, --clear 'Clear console history.'"))
+                    .help("Command to show or clear history")
                     .display_order(998),
             );
 
@@ -300,7 +306,7 @@ where
                             let state = Arc::try_unwrap(state)
                                 .ok()
                                 .expect("unwrap state must success when quit.");
-                            if let Some(history_file) = history_file {
+                            if let Some(history_file) = history_file.as_ref() {
                                 if let Err(e) = rl.save_history(history_file.as_path()) {
                                     println!(
                                         "Save history to file {:?} error: {:?}",
@@ -310,6 +316,31 @@ where
                             }
                             quit_action(app.clone(), global_opt, state);
                             break;
+                        }
+                        "history" => {
+                            if params.len() == 1 {
+                                let history = rl.history();
+                                for (idx, h_cmd) in history.iter().enumerate() {
+                                    println!("{}:{}", idx, h_cmd);
+                                }
+                            } else if params.len() == 2
+                                && (params[1] == "-c" || params[1] == "--clear")
+                            {
+                                let history = rl.history_mut();
+                                let len = history.len();
+                                history.clear();
+                                if let Some(history_file) = history_file.as_ref() {
+                                    if let Err(e) = rl.save_history(history_file.as_path()) {
+                                        println!(
+                                            "Save history to file {:?} error: {:?}",
+                                            history_file, e
+                                        );
+                                    }
+                                }
+                                println!("Clear {} history command", len);
+                            } else {
+                                println!("Unexpect params: {:?} for history command.", params);
+                            }
                         }
                         "help" => {
                             app.print_long_help().expect("print help should success.");
