@@ -8,7 +8,9 @@ use clap::{crate_authors, crate_version, App, Arg, SubCommand};
 use git_version::git_version;
 use lazy_static::lazy_static;
 use rustyline::{config::CompletionType, error::ReadlineError, Config, Editor};
+use serde_json::Value;
 use std::collections::HashMap;
+use std::ffi::OsString;
 use std::sync::Arc;
 use structopt::StructOpt;
 
@@ -36,9 +38,16 @@ where
     State: 'static,
     GlobalOpt: StructOpt + 'static,
 {
-    pub fn new<I>(state_initializer: I) -> Self
+    /// Init new CmdContext with State
+    pub fn with_state(state: State) -> Self {
+        Self::with_initializer(|_opts| Ok(state))
+    }
+
+    /// Init new CmdContext with state_initializer
+    /// default action is print help.
+    pub fn with_initializer<I>(state_initializer: I) -> Self
     where
-        I: Fn(&GlobalOpt) -> Result<State> + 'static,
+        I: FnOnce(&GlobalOpt) -> Result<State> + 'static,
     {
         Self::with_default_action(
             state_initializer,
@@ -52,6 +61,7 @@ where
         )
     }
 
+    /// Init new CmdContext with state_initializer, and default_action, console_start_action, console_quit_action
     /// default_action executed when no subcommand is provided.
     /// console_start_action executed when start a console.
     /// console_quit_action executed when input quit subcommand at console.
@@ -139,15 +149,36 @@ where
         String::from_utf8(help_message).expect("help message should utf8")
     }
 
+    /// Execute command by parse std::env::args_os() and print result.
     pub fn exec(self) {
-        if let Err(e) = self.exec_inner() {
-            println!("{}", e.to_string())
+        match self.exec_inner(&mut std::env::args_os()) {
+            Err(e) => println!("init command context error: {}", e.to_string()),
+            Ok((output_format, result)) => {
+                if let Err(e) = print_action_result(output_format, result) {
+                    println!("print result error: {}", e.to_string())
+                }
+            }
         }
     }
 
-    fn exec_inner(mut self) -> Result<()> {
+    /// Execute command by args and return Command execute ReturnItem
+    pub fn exec_with_args<ReturnItem>(self, args: Vec<&str>) -> Result<ReturnItem>
+    where
+        ReturnItem: for<'de> serde::Deserialize<'de> + serde::Serialize + 'static,
+    {
+        let (_output_format, result) = self.exec_inner(args)?;
+        let value = result?;
+        serde_json::from_value(value).map_err(|e| e.into())
+    }
+
+    /// Execute command by the args.
+    fn exec_inner<I, T>(mut self, iter: I) -> Result<(OutputFormat, Result<Value>)>
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<OsString> + Clone,
+    {
         let mut app = self.app;
-        let matches = app.get_matches_from_safe_borrow(&mut std::env::args_os())?;
+        let matches = app.get_matches_from_safe_borrow(iter)?;
         let output_format = matches
             .value_of(OUTPUT_FORMAT_ARG)
             .expect("output-format arg must exist")
@@ -159,34 +190,33 @@ where
 
         let (cmd_name, arg_matches) = matches.subcommand();
         let default_action = self.default_action;
-        match cmd_name {
+        let result = match cmd_name {
             "console" => {
                 let start_action = self.console_start_action;
                 let quit_action = self.console_quit_action;
                 let commands = self.commands;
                 Self::console_inner(app, global_opt, state, commands, start_action, quit_action);
+                Ok(Value::Null)
             }
             "" => {
                 default_action(app, global_opt, state);
+                Ok(Value::Null)
             }
             cmd_name => {
                 let cmd = self.commands.get_mut(cmd_name);
                 match (cmd, arg_matches) {
                     (Some(cmd), Some(arg_matches)) => {
-                        let value = cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)?;
-                        print_action_result(value, output_format)?;
+                        cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)
+                        //print_action_result(value, output_format)?;
                     }
-                    _ => {
-                        return Err(CmdError::NeedHelp {
-                            help: Self::app_help_message(&mut app),
-                        }
-                        .into());
+                    _ => Err(CmdError::NeedHelp {
+                        help: Self::app_help_message(&mut app),
                     }
-                };
+                    .into()),
+                }
             }
-        }
-
-        Ok(())
+        };
+        Ok((output_format, result))
     }
 
     fn console_inner(
@@ -197,7 +227,7 @@ where
         start_action: Box<dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>)>,
         quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
     ) {
-        //TODO support use custom config
+        //TODO support user custom config
         let config = Config::builder()
             .history_ignore_space(true)
             .completion_type(CompletionType::List)
@@ -254,17 +284,13 @@ where
                                     let app = cmd.get_app();
                                     match app.get_matches_from_safe_borrow(params) {
                                         Ok(arg_matches) => {
-                                            match cmd.exec(
+                                            let result = cmd.exec(
                                                 state.clone(),
                                                 global_opt.clone(),
                                                 &arg_matches,
-                                            ) {
-                                                Ok(v) => {
-                                                    print_action_result(v, OutputFormat::TABLE)
-                                                        .expect("Print result should success.")
-                                                }
-                                                Err(e) => println!("{}", e),
-                                            };
+                                            );
+                                            print_action_result(OutputFormat::TABLE, result)
+                                                .expect("Print result should success.")
                                         }
                                         Err(e) => {
                                             println!("{}", e);
