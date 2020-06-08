@@ -71,9 +71,12 @@ fn run() -> Result<()> {
                 }
             }
         },
-        move |_, _, _| {
+    );
+    let context = context.with_console_support(
+        move |_app, _opt, state| {
             info!("Start console, disable stderr output.");
             logger_handle.disable_stderr();
+            (*scmd::DEFAULT_CONSOLE_CONFIG, Some(state.history_file()))
         },
         |_, _, state| {
             let (_, _, handle) = state.into_inner();
