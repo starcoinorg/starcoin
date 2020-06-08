@@ -7,12 +7,30 @@ use anyhow::Result;
 use clap::{crate_authors, crate_version, App, Arg, SubCommand};
 use git_version::git_version;
 use lazy_static::lazy_static;
-use rustyline::{config::CompletionType, error::ReadlineError, Config, Editor};
+use once_cell::sync::Lazy;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::ffi::OsString;
+use std::fs::File;
+use std::path::PathBuf;
 use std::sync::Arc;
 use structopt::StructOpt;
+
+pub use rustyline::{
+    config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
+    Editor,
+};
+
+pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
+    ConsoleConfig::builder()
+        .max_history_size(1000)
+        .history_ignore_space(true)
+        .completion_type(CompletionType::List)
+        .auto_add_history(true)
+        .edit_mode(EditMode::Vi)
+        .color_mode(ColorMode::Enabled)
+        .build()
+});
 
 static OUTPUT_FORMAT_ARG: &str = "output-format";
 static VERSION: &str = crate_version!();
@@ -20,6 +38,7 @@ static GIT_VERSION: &str = git_version!();
 lazy_static! {
     static ref LONG_VERSION: String = format!("{} (build:{})", VERSION, GIT_VERSION);
 }
+
 pub struct CmdContext<State, GlobalOpt>
 where
     State: 'static,
@@ -29,8 +48,10 @@ where
     commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
     default_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
     state_initializer: Box<dyn FnOnce(&GlobalOpt) -> Result<State>>,
-    console_start_action: Box<dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>)>,
-    console_quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+    console_support: Option<(
+        Box<dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>)>,
+        Box<dyn FnOnce(App, GlobalOpt, State)>,
+    )>,
 }
 
 impl<State, GlobalOpt> CmdContext<State, GlobalOpt>
@@ -49,36 +70,20 @@ where
     where
         I: FnOnce(&GlobalOpt) -> Result<State> + 'static,
     {
-        Self::with_default_action(
-            state_initializer,
-            |mut app, _opt, _state| {
-                app.print_long_help().expect("print help should success.");
-            },
-            |_app, _opt, _state| {},
-            |_app, _opt, _state| {
-                println!("quit.");
-            },
-        )
+        Self::with_default_action(state_initializer, |mut app, _opt, _state| {
+            app.print_long_help().expect("print help should success.");
+        })
     }
 
     /// Init new CmdContext with state_initializer, and default_action, console_start_action, console_quit_action
     /// default_action executed when no subcommand is provided.
     /// console_start_action executed when start a console.
     /// console_quit_action executed when input quit subcommand at console.
-    // note: D and Q's fn signature is same but is different type.
-    pub fn with_default_action<I, D, S, Q>(
-        state_initializer: I,
-        default_action: D,
-        console_start_action: S,
-        console_quit_action: Q,
-    ) -> Self
+    pub fn with_default_action<I, D>(state_initializer: I, default_action: D) -> Self
     where
         I: FnOnce(&GlobalOpt) -> Result<State> + 'static,
         D: FnOnce(App, GlobalOpt, State) + 'static,
-        S: FnOnce(&App, Arc<GlobalOpt>, Arc<State>) + 'static,
-        Q: FnOnce(App, GlobalOpt, State) + 'static,
     {
-        //insert console command
         let mut app = GlobalOpt::clap();
         app = app
             .version(VERSION)
@@ -91,17 +96,32 @@ where
                     .default_value("table"),
             );
         app = Self::set_app_author(app);
-        app = app.subcommand(
-            SubCommand::with_name("console").help("Start an interactive command console"),
-        );
         Self {
             app,
             commands: HashMap::new(),
             default_action: Box::new(default_action),
             state_initializer: Box::new(state_initializer),
-            console_start_action: Box::new(console_start_action),
-            console_quit_action: Box::new(console_quit_action),
+            console_support: None,
         }
+    }
+
+    pub fn with_console_support_default(self) -> Self {
+        self.with_console_support(
+            |_, _, _| -> (ConsoleConfig, Option<PathBuf>) { (*DEFAULT_CONSOLE_CONFIG, None) },
+            |_, _, _| println!("Quit."),
+        )
+    }
+
+    pub fn with_console_support<I, Q>(mut self, init_action: I, quit_action: Q) -> Self
+    where
+        I: FnOnce(&App, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>) + 'static,
+        Q: FnOnce(App, GlobalOpt, State) + 'static,
+    {
+        self.app = self.app.subcommand(
+            SubCommand::with_name("console").help("Start an interactive command console"),
+        );
+        self.console_support = Some((Box::new(init_action), Box::new(quit_action)));
+        self
     }
 
     //remove this after clap upgrade
@@ -192,11 +212,18 @@ where
         let default_action = self.default_action;
         let result = match cmd_name {
             "console" => {
-                let start_action = self.console_start_action;
-                let quit_action = self.console_quit_action;
-                let commands = self.commands;
-                Self::console_inner(app, global_opt, state, commands, start_action, quit_action);
-                Ok(Value::Null)
+                if let Some((init_action, quit_action)) = self.console_support {
+                    let commands = self.commands;
+
+                    Self::console_inner(app, global_opt, state, commands, init_action, quit_action);
+                    Ok(Value::Null)
+                } else {
+                    return Err(CmdError::InvalidCommand {
+                        cmd: "console".to_string(),
+                        help: Self::app_help_message(&mut app),
+                    }
+                    .into());
+                }
             }
             "" => {
                 default_action(app, global_opt, state);
@@ -224,16 +251,12 @@ where
         global_opt: GlobalOpt,
         state: State,
         mut commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
-        start_action: Box<dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>)>,
+        init_action: Box<
+            dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>),
+        >,
         quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
     ) {
-        //TODO support user custom config
-        let config = Config::builder()
-            .history_ignore_space(true)
-            .completion_type(CompletionType::List)
-            .auto_add_history(true)
-            .build();
-        //insert quit command
+        //insert version and quit command
         let mut app = app
             .subcommand(
                 SubCommand::with_name("version")
@@ -246,11 +269,22 @@ where
                     .help("Quit from console.")
                     .display_order(998),
             );
+
         let app_name = app.get_name().to_string();
         let global_opt = Arc::new(global_opt);
         let state = Arc::new(state);
-        start_action(&app, global_opt.clone(), state.clone());
+        let (config, history_file) = init_action(&app, global_opt.clone(), state.clone());
         let mut rl = Editor::<()>::with_config(config);
+        if let Some(history_file) = history_file.as_ref() {
+            if !history_file.exists() {
+                if let Err(e) = File::create(history_file.as_path()) {
+                    println!("Create history file {:?} error: {:?}", history_file, e);
+                }
+            }
+            if let Err(e) = rl.load_history(history_file.as_path()) {
+                println!("Load history from file {:?} error: {:?}", history_file, e);
+            }
+        }
         let prompt = format!("{}% ", app_name);
         loop {
             let readline = rl.readline(prompt.as_str());
@@ -266,6 +300,14 @@ where
                             let state = Arc::try_unwrap(state)
                                 .ok()
                                 .expect("unwrap state must success when quit.");
+                            if let Some(history_file) = history_file {
+                                if let Err(e) = rl.save_history(history_file.as_path()) {
+                                    println!(
+                                        "Save history to file {:?} error: {:?}",
+                                        history_file, e
+                                    );
+                                }
+                            }
                             quit_action(app.clone(), global_opt, state);
                             break;
                         }
