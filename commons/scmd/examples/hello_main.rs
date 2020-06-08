@@ -11,7 +11,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hello_app")]
+#[structopt(name = "hello")]
 struct GlobalOpts {
     #[structopt(short = "c", default_value = "0")]
     counter: usize,
@@ -53,7 +53,7 @@ impl User {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "list")]
 struct ListOpts {
-    #[structopt(long, default_value = "5")]
+    #[structopt(long, short = "c", default_value = "5")]
     count: usize,
 }
 
@@ -191,7 +191,7 @@ struct TestOpts {
     debug: bool,
 }
 
-fn main() -> Result<()> {
+pub(crate) fn init_context() -> CmdContext<Counter, GlobalOpts> {
     let context = CmdContext::<Counter, GlobalOpts>::with_default_action(
         |global_opt| -> Result<Counter> { Ok(Counter::new(global_opt.counter)) },
         |_app, _opt, _state| {
@@ -236,6 +236,31 @@ fn main() -> Result<()> {
                 Ok(())
             },
         ))
-        .exec();
+}
+
+fn main() -> Result<()> {
+    let context = init_context();
+    context.exec();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_execute_command_with_args() -> Result<()> {
+        let context = init_context();
+        let count = 10;
+        let result = context.exec_with_args::<Vec<User>>(vec![
+            "hello",
+            "-r",
+            "test_required",
+            "list",
+            "-c",
+            format!("{}", count).as_str(),
+        ])?;
+        assert_eq!(result.len(), count);
+        Ok(())
+    }
 }

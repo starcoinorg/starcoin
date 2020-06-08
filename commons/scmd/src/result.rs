@@ -24,16 +24,27 @@ impl FromStr for OutputFormat {
     }
 }
 
-pub fn print_action_result(value: Value, format: OutputFormat) -> Result<()> {
+pub fn print_action_result(format: OutputFormat, result: Result<Value>) -> Result<()> {
     match format {
-        OutputFormat::JSON => print_json(value),
-        OutputFormat::TABLE => print_table(value),
+        OutputFormat::JSON => {
+            let value = match result {
+                Ok(value) => json!({ "ok": value }),
+                Err(err) => json!({"err": err.to_string()}),
+            };
+            print_json(value)
+        }
+        OutputFormat::TABLE => {
+            let value = match result {
+                Ok(value) => value,
+                Err(err) => json!({"err": err.to_string()}),
+            };
+            print_table(value)
+        }
     }
 }
 
 pub fn print_json(value: Value) -> Result<()> {
-    let result = json!({ "result": value });
-    let json = serde_json::to_string_pretty(&result)?;
+    let json = serde_json::to_string_pretty(&value)?;
     println!("{}", json);
     Ok(())
 }
