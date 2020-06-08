@@ -60,6 +60,7 @@ fn test_runner(path: &Path) -> datatest_stable::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn test_runner_stdlib(path: &Path) -> datatest_stable::Result<()> {
     // Gives the standard test runner a different name in test output, which is useful because
     // the datatest infrastructure drops `..` in test file paths.
@@ -110,7 +111,7 @@ datatest_stable::harness!(
     "tests/sources",
     r".*\.move",
     // Run tests for the content of the stdlib directory.
-//    test_runner_stdlib,
-//    "../stdlib",
-//    r".*\.move"
+    //    test_runner_stdlib,
+    //    "../stdlib",
+    //    r".*\.move"
 );

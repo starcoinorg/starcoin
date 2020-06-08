@@ -199,8 +199,8 @@ impl<'env> ModuleTranslator<'env> {
             "$StructType({}, {}, {})",
             struct_name, type_param_array, field_array
         );
-        if struct_name == "$LibraAccount_T" {
-            // Special treatment of well-known resource LibraAccount_T. The type_value
+        if struct_name == "$Account_T" {
+            // Special treatment of well-known resource Account_T. The type_value
             // function is forward-declared in the prelude, here we only add an axiom for it.
             emitln!(
                 self.writer,
@@ -208,8 +208,8 @@ impl<'env> ModuleTranslator<'env> {
                 struct_name,
                 type_value
             );
-        } else if struct_name == "$LibraAccount_Balance" {
-            // Special treatment of well-known resource LibraAccount_Balance. The type_value
+        } else if struct_name == "$Account_Balance" {
+            // Special treatment of well-known resource Account_Balance. The type_value
             // function is forward-declared in the prelude, here we only add an axiom for it.
             emitln!(
                 self.writer,

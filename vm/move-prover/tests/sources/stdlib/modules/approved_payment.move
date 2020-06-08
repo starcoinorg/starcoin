@@ -14,6 +14,10 @@ module ApprovedPayment {
     use 0x0::Transaction;
     use 0x0::Vector;
 
+    spec module {
+        pragma verify = false;
+    }
+
     // A resource to be published under the payee's account
     resource struct T {
         // 32 byte single Ed25519 public key whose counterpart must be used to sign the payment

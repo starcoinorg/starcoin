@@ -49,14 +49,7 @@ pub fn boogie_function_name(env: &FunctionEnv<'_>) -> String {
         boogie_module_name(&env.module_env),
         env.get_name().display(env.symbol_pool())
     );
-    // TODO: hack to deal with similar native functions in old/new library. We identify
-    // whether the old or new version of the function is referenced by the number of type
-    // parameters.
-    if name == "$LibraAccount_save_account" && env.get_type_parameters().len() == 1 {
-        name + "_OLD"
-    } else {
-        name
-    }
+    name
 }
 
 /// Return boogie name of given spec var.

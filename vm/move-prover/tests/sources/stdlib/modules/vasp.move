@@ -14,6 +14,10 @@ module VASP {
     use 0x0::Transaction;
     use 0x0::Vector;
 
+    spec module {
+        pragma verify = false;
+    }
+
     // A RootVASP is held only by the root VASP account and holds the
     // VASP-related metadata for the account. It is subject to a time
     // limitation, and needs to be re-certified by an association

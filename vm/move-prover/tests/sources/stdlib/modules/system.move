@@ -6,6 +6,10 @@ module System {
     use 0x0::ValidatorConfig;
     use 0x0::Vector;
 
+    spec module {
+        pragma verify = false;
+    }
+
     struct ValidatorInfo {
         addr: address,
         consensus_voting_power: u64,

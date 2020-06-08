@@ -433,8 +433,8 @@ impl<'env> BoogieWrapper<'env> {
     /// output.bpl(2964,1): Related location: This is the postcondition that might not hold.
     /// Execution trace:
     ///    output.bpl(3068,5): anon0
-    ///    output.bpl(2960,23): inline$LibraAccount_pay_from_sender_with_metadata$0$Entry
-    ///    output.bpl(2989,5): inline$LibraAccount_pay_from_sender_with_metadata$0$anon0
+    ///    output.bpl(2960,23): inline$Account_pay_from_sender_with_metadata$0$Entry
+    ///    output.bpl(2989,5): inline$Account_pay_from_sender_with_metadata$0$anon0
     ///    ...
     /// ```
     fn extract_verification_errors(&self, out: &str) -> Vec<BoogieError> {

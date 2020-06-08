@@ -11,6 +11,10 @@ module Block {
     use 0x0::Account;
     use 0x0::SubsidyConfig;
 
+    spec module {
+        pragma verify = false;
+    }
+
     resource struct BlockMetadata {
       // Height of the current block
       // TODO: should we keep the height?

@@ -460,18 +460,18 @@ function {:inline} $Dereference(ref: $Reference): $Value {
 
 // Check whether sender account exists.
 function {:inline} $ExistsTxnSenderAccount(m: $Memory, txn: $Transaction): bool {
-   domain#$Memory(m)[$Global($LibraAccount_T_type_value(), sender#$Transaction(txn))]
+   domain#$Memory(m)[$Global($Account_T_type_value(), sender#$Transaction(txn))]
 }
 
 function {:inline} $TxnSender(txn: $Transaction): $Value {
     $Address(sender#$Transaction(txn))
 }
 
-// Forward declaration of type Value of LibraAccount. This is declared so we can define
-// $ExistsTxnSenderAccount and $LibraAccount_save_account
-function $LibraAccount_T_type_value(): $TypeValue;
+// Forward declaration of type Value of Account. This is declared so we can define
+// $Account_save_account
+function $Account_T_type_value(): $TypeValue;
 
-function $LibraAccount_Balance_type_value(tv: $TypeValue): $TypeValue;
+function $Account_Balance_type_value(tv: $TypeValue): $TypeValue;
 
 // ============================================================================================
 // Instructions
@@ -1080,12 +1080,11 @@ ensures $IsValidU8Vector(res);    // result is a legal vector of U8s.
 ensures $vlen(res) == 32;               // result is 32 bytes.
 
 // ==================================================================================
-// Native libra_account
+// Native account
 
-// TODO: this function clashes with a similar version in older libraries. This is solved by a hack where the
-// translator appends _OLD to the name when encountering this. The hack shall be removed once old library
-// sources are not longer used.
-procedure {:inline 1} $LibraAccount_save_account_OLD(ta: $TypeValue, balance: $Value, account: $Value, addr: $Value) {
+procedure {:inline 1} $Account_save_account(
+       t_Token: $TypeValue, t_AT: $TypeValue, account_type: $Value, balance: $Value,
+       account: $Value, event_generator: $Value, addr: $Value) {
     var a: int;
     var t_T: $TypeValue;
     var l_T: $Location;
@@ -1093,13 +1092,13 @@ procedure {:inline 1} $LibraAccount_save_account_OLD(ta: $TypeValue, balance: $V
     var l_Balance: $Location;
 
     a := a#$Address(addr);
-    t_T := $LibraAccount_T_type_value();
+    t_T := $Account_T_type_value();
     if ($ResourceExistsRaw($m, t_T, a)) {
         $abort_flag := true;
         return;
     }
 
-    t_Balance := $LibraAccount_Balance_type_value(ta);
+    t_Balance := $Account_Balance_type_value(t_Token);
     if ($ResourceExistsRaw($m, t_Balance, a)) {
         $abort_flag := true;
         return;
@@ -1110,27 +1109,20 @@ procedure {:inline 1} $LibraAccount_save_account_OLD(ta: $TypeValue, balance: $V
     $m := $Memory(domain#$Memory($m)[l_T := true][l_Balance := true], contents#$Memory($m)[l_T := account][l_Balance := balance]);
 }
 
-procedure {:inline 1} $LibraAccount_save_account(
-       t_Token: $TypeValue, t_AT: $TypeValue, account_type: $Value, balance: $Value,
-       account: $Value, event_generator: $Value, addr: $Value) {
-    // TODO: implement this
-    assert false;
-}
-
-procedure {:inline 1} $LibraAccount_create_signer(
+procedure {:inline 1} $Account_create_signer(
   addr: $Value
 ) returns (signer: $Value) {
     // A signer is currently identical to an address.
     signer := addr;
 }
 
-procedure {:inline 1} $LibraAccount_destroy_signer(
+procedure {:inline 1} $Account_destroy_signer(
   signer: $Value
 ) {
   return;
 }
 
-procedure {:inline 1} $LibraAccount_write_to_event_store(ta: $TypeValue, guid: $Value, count: $Value, msg: $Value) {
+procedure {:inline 1} $Account_write_to_event_store(ta: $TypeValue, guid: $Value, count: $Value, msg: $Value) {
     // TODO: this is used in old library sources, remove it once those sources are not longer used in tests.
     // This function is modeled as a no-op because the actual side effect of this native function is not observable from the Move side.
 }
@@ -1204,3 +1196,9 @@ function $Signer_get_address($m: $Memory, $txn: $Transaction, signer: $Value): $
     // A signer is currently identical to an address.
     signer
 }
+
+procedure $Generic_type_of(t_E: $TypeValue) returns (res1: $Value, res2: $Value, res3: $Value);
+ensures $IsValidU8Vector(res2);
+ensures $IsValidU8Vector(res3);
+
+procedure $Debug_print(t_T: $TypeValue, x: $Value);
