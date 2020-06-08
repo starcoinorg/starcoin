@@ -1,0 +1,19 @@
+Move prover returns: exiting with boogie verification errors
+error: abort not covered by any of the `aborts_if` clauses
+
+   ┌── tests/sources/functional/script_incorrect.move:5:1 ───
+   │
+ 5 │ ╭ fun main<Token>() {
+ 6 │ │     ScriptProvider::register<Token>();
+ 7 │ │ }
+   │ ╰─^
+   │
+   =     at tests/sources/functional/script_incorrect.move:5:1: main (entry)
+   =     at tests/sources/functional/script_provider.move:14:5: register (entry)
+   =     at tests/sources/functional/script_provider.move:15:9: register (ABORTED)
+
+    ┌── tests/sources/functional/script_provider.move:15:9 ───
+    │
+ 15 │         Transaction::assert(Transaction::sender() == 0x1, 1);
+    │         ---------------------------------------------------- abort happened here
+    │
