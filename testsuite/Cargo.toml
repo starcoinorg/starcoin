@@ -38,7 +38,7 @@ starcoin-miner = {path = "../miner"}
 starcoin-node = {path = "../node"}
 starcoin-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-logger = {path = "../commons/logger"}
-starcoin-cmd = {pachage = "starcoin-cmd", path= "../cmd/starcoin"}
+starcoin-cmd = {package = "starcoin-cmd", path= "../cmd/starcoin"}
 scmd = {path = "../commons/scmd"}
 starcoin-types = {path = "../types"}
 starcoin-vm-runtime = {path = "../vm/vm-runtime"}

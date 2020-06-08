@@ -320,25 +320,4 @@ where
             }
         }
     }
-
-    pub fn init_global_opt(&self, matches: &ArgMatches) -> Result<(GlobalOpt, State)> {
-        let global_opt = GlobalOpt::from_clap(&matches);
-        let state = self.state_initializer.as_ref()(&global_opt)?;
-        Ok((global_opt, state))
-    }
-
-    pub fn matcher_and_opt(&mut self, vec: Vec<&str>) -> Result<(GlobalOpt, State)> {
-        let matcher = self.app.get_matches_from_safe_borrow(vec)?;
-        Self::init_global_opt(self, &matcher)
-    }
-    pub fn console(mut self) {
-        let matches = self
-            .app
-            .get_matches_from_safe_borrow(&mut std::env::args_os())
-            .unwrap_or_else(|e| panic!("{}", e));
-        let (global_opt, state) = self
-            .init_global_opt(&matches)
-            .unwrap_or_else(|e| panic!("{}", e));
-        self.console_inner(global_opt, state);
-    }
 }

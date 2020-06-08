@@ -1,11 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
 use cucumber::{after, before, cucumber, Steps, StepsBuilder};
-use scmd::CmdContext;
 use starcoin_cmd::*;
-use starcoin_config::{NodeConfig, StarcoinOpt};
+use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_client::RpcClient;
@@ -15,7 +13,6 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_wallet_api::WalletAccount;
-use std::borrow::Borrow;
 use std::sync::Arc;
 use std::time::Duration;
 use steps::{cmd as steps_cmd, node as steps_node, state as steps_state, sync, transaction};
@@ -31,7 +28,7 @@ pub struct MyWorld {
     default_account: Option<WalletAccount>,
     txn_account: Option<WalletAccount>,
     node_handle: Option<NodeHandle>,
-    context: Option<CmdContext<CliState, StarcoinOpt>>,
+    cli_state: Option<CliState>,
     default_address: Option<AccountAddress>,
 }
 impl MyWorld {
@@ -100,26 +97,12 @@ pub fn steps() -> Steps<MyWorld> {
             info!("a account create success!");
             world.txn_account = Some(account.clone())
         })
-        .given("cmd context", |world: &mut MyWorld, _step| {
-            let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
-                |_global_opt| -> Result<CliState> {
-                    let client = RpcClient::connect_websocket(env!("STARCOIN_WS")).unwrap();
-                    let node_info = client.borrow().node_info()?;
-                    let state = CliState::new(node_info.net, client, None);
-                    Ok(state)
-                },
-                |_, _, state| {
-                    let (_, _, handle) = state.into_inner();
-                    if let Some(handle) = handle {
-                        if let Err(e) = handle.join() {
-                            error!("{:?}", e);
-                        }
-                    }
-                },
-                |_app, _opt, _state| {},
-                |_app, _opt, _state| {},
-            );
-            world.context = Some(context);
+        .given("cli state", |world: &mut MyWorld, _step| {
+            // let client = RpcClient::connect_websocket(env!("STARCOIN_WS")).unwrap();
+            let client = world.rpc_client.take().unwrap();
+            let node_info = client.node_info().unwrap();
+            let state = CliState::new(node_info.net, client, None);
+            world.cli_state = Some(state);
         });
     builder.build()
 }
