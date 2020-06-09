@@ -12,8 +12,8 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_txn_info")]
 pub struct GetTransactionInfoOpt {
-    #[structopt(name = "block-hash")]
-    block_hash: String,
+    #[structopt(name = "block-hash", parse(try_from_str = HashValue::from_hex))]
+    block_hash: HashValue,
     #[structopt(name = "idx", help = "the index(start from 0) of the txn in the block")]
     idx: u64,
 }
@@ -32,10 +32,8 @@ impl CommandAction for GetTransactionInfoCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let transaction_info = client.chain_get_txn_info_by_block_and_index(
-            HashValue::from_hex(&opt.block_hash).unwrap(),
-            opt.idx,
-        )?;
+        let transaction_info =
+            client.chain_get_txn_info_by_block_and_index(opt.block_hash, opt.idx)?;
 
         Ok(transaction_info)
     }

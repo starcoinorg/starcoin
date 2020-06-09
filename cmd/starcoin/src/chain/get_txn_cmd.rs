@@ -12,8 +12,8 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_txn")]
 pub struct GetOpt {
-    #[structopt(name = "txn-hash")]
-    hash: String,
+    #[structopt(name = "txn-hash", parse(try_from_str = HashValue::from_hex))]
+    hash: HashValue,
 }
 
 pub struct GetTransactionCommand;
@@ -30,7 +30,7 @@ impl CommandAction for GetTransactionCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let transaction = client.chain_get_transaction(HashValue::from_hex(&opt.hash).unwrap())?;
+        let transaction = client.chain_get_transaction(opt.hash)?;
 
         Ok(transaction)
     }

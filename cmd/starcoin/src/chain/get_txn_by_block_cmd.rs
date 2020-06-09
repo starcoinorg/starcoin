@@ -12,8 +12,8 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_txn_by_block")]
 pub struct GetOpt {
-    #[structopt(name = "hash")]
-    hash: String,
+    #[structopt(name = "hash", parse(try_from_str = HashValue::from_hex))]
+    hash: HashValue,
 }
 
 pub struct GetTxnByBlockCommand;
@@ -30,8 +30,7 @@ impl CommandAction for GetTxnByBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let vec_transaction_info =
-            client.chain_get_txn_by_block(HashValue::from_hex(&opt.hash).unwrap())?;
+        let vec_transaction_info = client.chain_get_txn_by_block(opt.hash)?;
 
         Ok(vec_transaction_info)
     }
