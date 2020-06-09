@@ -29,18 +29,17 @@ impl ValueCodec for TransactionInfo {
 }
 
 impl TransactionInfoStore for TransactionInfoStorage {
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        self.store.get(txn_hash)
-    }
-
-    fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<(), Error> {
-        self.store.put(txn_info.transaction_hash(), txn_info)
+    fn get_transaction_info(
+        &self,
+        txn_info_hash: HashValue,
+    ) -> Result<Option<TransactionInfo>, Error> {
+        self.store.get(txn_info_hash)
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for txn_info in vec_txn_info {
-            batch.put(txn_info.transaction_hash(), txn_info)?;
+            batch.put(txn_info.id(), txn_info)?;
         }
         self.store.write_batch(batch)
     }

@@ -23,7 +23,7 @@ use types::{
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::StartupInfo,
     system_events::NewHeadBlock,
-    transaction::{SignedUserTransaction, TransactionInfo},
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     BLOCK_PROTOCOL_NAME,
 };
 
@@ -355,24 +355,8 @@ where
         }
     }
 
-    fn master_head_block(&self) -> Block {
-        self.get_master().head_block()
-    }
-
-    fn master_head_header(&self) -> BlockHeader {
-        self.get_master().current_header()
-    }
-
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
         self.storage.get_block_header_by_hash(hash)
-    }
-
-    fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        self.get_master().get_block_by_number(number)
-    }
-
-    fn master_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
-        self.get_master().get_header_by_number(number)
     }
 
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {
@@ -385,6 +369,49 @@ where
 
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>> {
         self.storage.get_block_info(hash)
+    }
+
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
+        self.storage.get_transaction(txn_hash)
+    }
+    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+        self.storage.get_block_transaction_infos(block_id)
+    }
+
+    fn get_txn_info_by_block_and_index(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>, Error> {
+        self.storage
+            .get_transaction_info_by_block_and_index(block_id, idx)
+    }
+
+    fn master_head_header(&self) -> BlockHeader {
+        self.get_master().current_header()
+    }
+
+    fn master_head_block(&self) -> Block {
+        self.get_master().head_block()
+    }
+
+    fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
+        self.get_master().get_block_by_number(number)
+    }
+
+    fn master_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
+        self.get_master().get_header_by_number(number)
+    }
+    fn master_startup_info(&self) -> StartupInfo {
+        self.startup_info.clone()
+    }
+
+    fn master_blocks_by_number(
+        &self,
+        number: Option<BlockNumber>,
+        count: u64,
+    ) -> Result<Vec<Block>> {
+        self.get_master().get_blocks_by_number(number, count)
     }
 
     fn create_block_template(
@@ -408,25 +435,5 @@ where
         } else {
             Err(format_err!("Block {:?} not exist.", block_id))
         }
-    }
-
-    fn master_startup_info(&self) -> StartupInfo {
-        self.startup_info.clone()
-    }
-
-    fn master_blocks_by_number(
-        &self,
-        number: Option<BlockNumber>,
-        count: u64,
-    ) -> Result<Vec<Block>> {
-        self.get_master().get_blocks_by_number(number, count)
-    }
-
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        self.get_master().get_transaction_info(hash)
-    }
-
-    fn get_block_txn_ids(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
-        self.get_master().get_block_transactions(block_id)
     }
 }

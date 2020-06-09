@@ -5,7 +5,7 @@ use crate::define_storage;
 use crate::storage::{CodecStorage, KeyCodec, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_SONS_PREFIX_NAME, BLOCK_TRANSACTIONS_PREFIX_NAME,
+    BLOCK_SONS_PREFIX_NAME, BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -79,6 +79,13 @@ define_storage!(
     BLOCK_TRANSACTIONS_PREFIX_NAME
 );
 
+define_storage!(
+    BlockTransactionInfosStorage,
+    HashValue,
+    Vec<HashValue>,
+    BLOCK_TRANSACTION_INFOS_PREFIX_NAME
+);
+
 pub struct BlockStorage {
     block_store: BlockInnerStorage,
     header_store: BlockHeaderStorage,
@@ -88,6 +95,7 @@ pub struct BlockStorage {
     number_store: BlockNumberStorage,
     branch_number_store: BranchNumberStorage,
     block_txns_store: BlockTransactionsStorage,
+    block_txn_infos_store: BlockTransactionInfosStorage,
 }
 
 impl ValueCodec for StorageBlock {
@@ -185,7 +193,8 @@ impl BlockStorage {
             body_store: BlockBodyStorage::new(instance.clone()),
             number_store: BlockNumberStorage::new(instance.clone()),
             branch_number_store: BranchNumberStorage::new(instance.clone()),
-            block_txns_store: BlockTransactionsStorage::new(instance),
+            block_txns_store: BlockTransactionsStorage::new(instance.clone()),
+            block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
         }
     }
     pub fn save(&self, block: Block, state: BlockState) -> Result<()> {
@@ -464,12 +473,27 @@ impl BlockStorage {
             _ => bail!("can't find block's transaction: {:?}", block_id),
         }
     }
+
+    /// get txn info ids for `block_id`.
+    /// return None, if block_id not exists.
+    pub fn get_transaction_info_ids(&self, block_id: HashValue) -> Result<Option<Vec<HashValue>>> {
+        self.block_txn_infos_store.get(block_id)
+    }
+
     pub fn put_transactions(
         &self,
         block_id: HashValue,
         transactions: Vec<HashValue>,
     ) -> Result<()> {
         self.block_txns_store.put(block_id, transactions)
+    }
+
+    pub fn put_transaction_infos(
+        &self,
+        block_id: HashValue,
+        txn_info_ids: Vec<HashValue>,
+    ) -> Result<()> {
+        self.block_txn_infos_store.put(block_id, txn_info_ids)
     }
 
     fn get_relationship(

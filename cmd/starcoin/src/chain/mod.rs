@@ -6,6 +6,7 @@ mod get_block_by_number_cmd;
 mod get_block_cmd;
 mod get_txn_by_block_cmd;
 mod get_txn_cmd;
+mod get_txn_info_cmd;
 mod list_block_cmd;
 mod show_cmd;
 
@@ -14,5 +15,6 @@ pub use get_block_by_number_cmd::*;
 pub use get_block_cmd::*;
 pub use get_txn_by_block_cmd::*;
 pub use get_txn_cmd::*;
+pub use get_txn_info_cmd::*;
 pub use list_block_cmd::*;
 pub use show_cmd::*;

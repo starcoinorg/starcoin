@@ -27,7 +27,9 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction, TransactionInfo};
+use starcoin_types::transaction::{
+    RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo,
+};
 use starcoin_wallet_api::WalletAccount;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -399,7 +401,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_transaction(&self, txn_id: HashValue) -> anyhow::Result<TransactionInfo> {
+    pub fn chain_get_transaction(&self, txn_id: HashValue) -> anyhow::Result<Transaction> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_transaction(txn_id).compat().await
         })
@@ -412,6 +414,21 @@ impl RpcClient {
     ) -> anyhow::Result<Vec<TransactionInfo>> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_txn_by_block(block_id).compat().await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn chain_get_txn_info_by_block_and_index(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> anyhow::Result<Option<TransactionInfo>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_txn_info_by_block_and_index(block_id, idx)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }
