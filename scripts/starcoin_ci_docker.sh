@@ -39,7 +39,7 @@ function start_txfactory() {
   local host_name=$1
   local starcoin_name=$2
   local name=$3
-  local net=$4 
+  local net=$4
   shift 4
   eval $(docker-machine env $host_name)
   docker_rebuild
@@ -60,7 +60,7 @@ function start_cluster(){
     seed_host=$(docker-machine ip $cluster_name-0)
     start_starcoin $cluster_name-0 starcoin-0 9840 9101 $net --node-key ${node_keys[0]} -s full
     sleep 5
-    seed_peer_id=$(docker-machine ssh $cluster_name-0 grep  'Local\ node\ identity\ is:\ ' /mnt/volume_01/starcoin_cfg/starcoin-0/$net/starcoin.log|awk '{print $8}'|tac|head -n 1)
+    seed_peer_id=$(docker-machine ssh $cluster_name-0 grep  'Local\ node\ identity\ is:\ ' $cfg_root/starcoin-0/$net/starcoin.log|awk '{print $8}'|tac|head -n 1)
     seed=/ip4/$seed_host/tcp/9840/p2p/$seed_peer_id
     for((c=1; c<$number;c++));do
 	start_starcoin $cluster_name-$c starcoin-$c 9840 9101 $net --seed $seed -s full --node-key ${node_keys[$c]}

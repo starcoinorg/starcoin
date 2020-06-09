@@ -43,6 +43,7 @@ pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 use starcoin_crypto::keygen::KeyGen;
+use std::net::SocketAddr;
 use std::str::FromStr;
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
@@ -149,6 +150,10 @@ pub struct StarcoinOpt {
     #[structopt(long = "disable-seed")]
     /// Disable seed for seed node.
     pub disable_seed: bool,
+
+    #[structopt(long = "rpc_address")]
+    /// Rpc address, default is 127.0.0.1
+    pub rpc_address: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
