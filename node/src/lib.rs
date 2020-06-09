@@ -138,10 +138,12 @@ where
     }
 
     // start metric server
-    starcoin_metrics::metric_server::start_server(
-        config.metrics.address.clone(),
-        config.metrics.metrics_server_port,
-    );
+    if config.metrics.enable_metrics {
+        starcoin_metrics::metric_server::start_server(
+            config.metrics.address.clone(),
+            config.metrics.metrics_server_port,
+        );
+    }
 
     let (start_sender, start_receiver) = oneshot::channel();
     let (stop_sender, stop_receiver) = oneshot::channel();

@@ -6,7 +6,7 @@ Feature: integration
 #  1. node：
   Scenario: DEV node start and execute transfer
     Given a dev node config
-    And node handle
+    And node dev handle
     And dev rpc client
     Then get node info
     Then get node status
