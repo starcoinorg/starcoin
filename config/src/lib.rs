@@ -155,6 +155,10 @@ pub struct StarcoinOpt {
     #[structopt(long = "disable-seed")]
     /// Disable seed for seed node.
     pub disable_seed: bool,
+
+    #[structopt(long = "rpc_address")]
+    /// Rpc address, default is 127.0.0.1
+    pub rpc_address: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
