@@ -60,6 +60,7 @@ jobs:
         with:
           command: test
       - name: integration test
+        if: github.ref == 'refs/heads/master'
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
