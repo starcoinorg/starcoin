@@ -4,7 +4,6 @@
 use anyhow::{ensure, format_err, Error, Result};
 use config::NodeConfig;
 use crypto::{hash::PlainCryptoHash, HashValue};
-use executor::block_executor::BlockExecutor;
 use logger::prelude::*;
 use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
@@ -346,7 +345,7 @@ where
             .collect::<Vec<Transaction>>();
         let block_metadata = header.clone().into_metadata();
 
-        let (state_root, vec_transaction_info) = BlockExecutor::block_execute(
+        let (state_root, vec_transaction_info) = executor::block_execute(
             chain_state,
             txns.clone(),
             block_metadata.clone(),

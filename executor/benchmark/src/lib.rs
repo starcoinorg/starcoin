@@ -5,9 +5,6 @@ use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     HashValue, PrivateKey, Uniform,
 };
-use executor::block_executor::BlockExecutor;
-use executor::executor::Executor;
-use executor::TransactionExecutor;
 use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
@@ -201,7 +198,7 @@ impl<'test> TxnExecutor<'test> {
                 Some(miner_account.auth_key_prefix()),
             );
             let (_state_root, _txn_infos) =
-                BlockExecutor::block_execute(self.chain_state, transactions, block_meta, u64::MAX)
+                executor::block_execute(self.chain_state, transactions, block_meta, u64::MAX)
                     .expect("Execute transactions fail.");
             self.chain_state.flush().expect("flush state should be ok");
 
@@ -229,7 +226,7 @@ pub fn run_benchmark(
     block_size: usize,
     num_transfer_blocks: usize,
 ) {
-    let change_set = Executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
+    let change_set = executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
     let (write_set, _events) = change_set.into_inner();
     let cache_storage = CacheStorage::new();
     let storage =

@@ -1,7 +1,6 @@
 use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
 use anyhow::Result;
 use parking_lot::RwLock;
-use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
@@ -145,7 +144,7 @@ impl crate::pool::Client for PoolClient {
             .clone()
             .check_signature()
             .map_err(|e| TransactionError::InvalidSignature(e.to_string()))?;
-        match Executor::validate_transaction(self.nonce_client.statedb.as_ref(), txn) {
+        match starcoin_executor::validate_transaction(self.nonce_client.statedb.as_ref(), txn) {
             None => Ok(checked_txn),
             Some(status) => {
                 // Ok(checked_txn)

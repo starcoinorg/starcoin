@@ -7,7 +7,6 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::{
@@ -70,7 +69,7 @@ impl CommandAction for GetCoinCommand {
             .get_balance(&pre_mine_address)?
             .unwrap_or_else(|| panic!("pre mine address {} balance must exist", pre_mine_address));
         let amount = opt.amount.unwrap_or(balance * 20 / 100);
-        let raw_txn = Executor::build_transfer_txn(
+        let raw_txn = starcoin_executor::build_transfer_txn(
             pre_mine_address,
             to.address,
             to_auth_key_prefix.to_vec(),

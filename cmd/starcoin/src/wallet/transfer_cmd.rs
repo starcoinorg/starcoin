@@ -8,7 +8,6 @@ use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
-use starcoin_executor::executor::Executor;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -127,7 +126,7 @@ impl CommandAction for TransferCommand {
                 )
             })?;
         let coin_type = opt.coin_type.clone().unwrap_or_else(stc_type_tag);
-        let raw_txn = Executor::build_transfer_txn_by_coin_type(
+        let raw_txn = starcoin_executor::build_transfer_txn_by_coin_type(
             sender.address,
             receiver,
             receiver_auth_key_prefix,

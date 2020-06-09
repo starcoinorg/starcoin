@@ -6,8 +6,6 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
-use starcoin_executor::executor::Executor;
-use starcoin_executor::TransactionExecutor;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -114,7 +112,7 @@ impl CommandAction for GenTxnCommand {
         for i in 0..opt.count {
             let (to, to_auth_key_prefix) = account_provider.as_ref()();
 
-            let raw_txn = Executor::build_transfer_txn(
+            let raw_txn = starcoin_executor::build_transfer_txn(
                 sender.address,
                 to,
                 to_auth_key_prefix,
