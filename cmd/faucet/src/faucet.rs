@@ -39,7 +39,7 @@ impl Faucet {
             })?;
 
         let raw_tx = starcoin_executor::build_transfer_txn(
-            (&self.faucet_account).address,
+            self.faucet_account.address,
             receiver,
             auth_key,
             account_resource.sequence_number(),
