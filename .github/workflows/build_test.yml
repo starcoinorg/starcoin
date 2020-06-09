@@ -63,7 +63,7 @@ jobs:
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
-          STARCOIN_WS: ws://halley1.seed.starcoin.org:9852
+          STARCOIN_WS: ws://10.130.83.209:9852
         uses: actions-rs/cargo@v1
         with:
           command: test
