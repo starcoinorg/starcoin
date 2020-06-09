@@ -22,8 +22,7 @@ mod steps;
 pub struct MyWorld {
     node_config: Option<NodeConfig>,
     storage: Option<Storage>,
-    rpc_client: Option<RpcClient>,
-    arpc_client: Option<Arc<RpcClient>>,
+    rpc_client: Option<Arc<RpcClient>>,
     local_rpc_client: Option<RpcClient>,
     default_account: Option<WalletAccount>,
     txn_account: Option<WalletAccount>,
@@ -58,13 +57,13 @@ pub fn steps() -> Steps<MyWorld> {
         .given("remote rpc client", |world: &mut MyWorld, _step| {
             let client = RpcClient::connect_websocket(env!("STARCOIN_WS")).unwrap();
             info!("rpc client created!");
-            world.rpc_client = Some(client)
+            world.rpc_client = Some(Arc::new(client))
         })
         .given("dev rpc client", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
             let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
             info!("dev node local rpc client created!");
-            world.arpc_client = Some(Arc::new(client))
+            world.rpc_client = Some(Arc::new(client))
         })
         .given("default account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();

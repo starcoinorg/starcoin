@@ -8,7 +8,7 @@ Feature: cmd integration test
     #  1. node info
   Scenario: [cmd] node info
     Then [cmd] node info
-    Then [cmd] node peers
+#    Then [cmd] node peers
 #    Then node handle stop
     #  2. wallet list
   Scenario: [cmd] wallet list

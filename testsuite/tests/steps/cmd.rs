@@ -16,7 +16,7 @@ pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
         .then("[cmd] node info", |world: &mut MyWorld, _step| {
-            let client = world.arpc_client.as_ref().take().unwrap();
+            let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
@@ -28,7 +28,7 @@ pub fn steps() -> Steps<MyWorld> {
             info!("result:{:?}", result);
         })
         .then("[cmd] node peers", |world: &mut MyWorld, _step| {
-            let client = world.arpc_client.as_ref().take().unwrap();
+            let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
@@ -40,7 +40,7 @@ pub fn steps() -> Steps<MyWorld> {
             info!("result:{:?}", result);
         })
         .then("[cmd] wallet list", |world: &mut MyWorld, _step| {
-            let client = world.arpc_client.as_ref().take().unwrap();
+            let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(node_info.net, client.clone(), None);
             // let state = world.cli_state.take().unwrap();
@@ -53,7 +53,7 @@ pub fn steps() -> Steps<MyWorld> {
             world.default_address = Some(list_result.pop().unwrap().address);
         })
         .then("[cmd] wallet show", |world: &mut MyWorld, _step| {
-            let client = world.arpc_client.as_ref().take().unwrap();
+            let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
@@ -67,7 +67,7 @@ pub fn steps() -> Steps<MyWorld> {
             r#"dev get_coin "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
                 let amount = args[1].as_str();
-                let client = world.arpc_client.as_ref().take().unwrap();
+                let client = world.rpc_client.as_ref().take().unwrap();
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
@@ -84,7 +84,7 @@ pub fn steps() -> Steps<MyWorld> {
             r#"wallet create "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
                 let password = args[1].as_str();
-                let client = world.arpc_client.as_ref().take().unwrap();
+                let client = world.rpc_client.as_ref().take().unwrap();
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
@@ -102,7 +102,7 @@ pub fn steps() -> Steps<MyWorld> {
             r#"wallet unlock password:"([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
                 let password = args[1].as_str();
-                let client = world.arpc_client.as_ref().take().unwrap();
+                let client = world.rpc_client.as_ref().take().unwrap();
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
@@ -123,7 +123,7 @@ pub fn steps() -> Steps<MyWorld> {
         .then_regex(
             r#"cmd cli: "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
-                let client = world.arpc_client.as_ref().take().unwrap();
+                let client = world.rpc_client.as_ref().take().unwrap();
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
