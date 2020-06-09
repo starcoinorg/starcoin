@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_vm_runtime::common_transactions::peer_to_peer_txn_sent_as_association;
+use starcoin_executor::peer_to_peer_txn_sent_as_association;
 use types::transaction::{authenticator::AuthenticationKey, SignedUserTransaction};
 
 pub mod chain;

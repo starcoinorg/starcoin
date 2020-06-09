@@ -10,6 +10,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
 use starcoin_state_api::{ChainState, ChainStateWriter};
 
+use executor::{encode_create_account_script, encode_transfer_script};
 use statedb::ChainStateDB;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -24,7 +25,6 @@ use types::{
     block_metadata::BlockMetadata,
     transaction::{authenticator::AuthenticationKey, RawUserTransaction, Script, Transaction},
 };
-use vm_runtime::common_transactions::{encode_create_account_script, encode_transfer_script};
 use vm_runtime::genesis::GENESIS_KEYPAIR;
 
 struct AccountData {
