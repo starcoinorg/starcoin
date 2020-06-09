@@ -194,7 +194,7 @@ impl BlockStorage {
             number_store: BlockNumberStorage::new(instance.clone()),
             branch_number_store: BranchNumberStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
-            block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
+            block_txn_infos_store: BlockTransactionInfosStorage::new(instance),
         }
     }
     pub fn save(&self, block: Block, state: BlockState) -> Result<()> {
