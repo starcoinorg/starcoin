@@ -1,0 +1,45 @@
+Move prover returns: exiting with boogie verification errors
+error:  This assertion might not hold.
+
+    ┌── tests/sources/functional/mut_ref_accross_modules.move:21:9 ───
+    │
+ 21 │         invariant value > 0;
+    │         ^^^^^^^^^^^^^^^^^^^^
+    │
+    =     at tests/sources/functional/mut_ref_accross_modules.move:64:5: decrement_invalid (entry)
+    =     at tests/sources/functional/mut_ref_accross_modules.move:65:27: decrement_invalid
+    =         x = <redacted>,
+    =         r = <redacted>
+
+error:  A postcondition might not hold on this return path.
+
+    ┌── tests/sources/functional/mut_ref_accross_modules.move:30:9 ───
+    │
+ 30 │         invariant global<TSum>(0x0).sum == spec_sum;
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    │
+    =     at tests/sources/functional/mut_ref_accross_modules.move:58:5: increment_invalid (entry)
+    =     at tests/sources/functional/mut_ref_accross_modules.move:59:27: increment_invalid
+    =         x = <redacted>
+    =     at tests/sources/functional/mut_ref_accross_modules.move:58:5: increment_invalid (exit)
+    =         result = <redacted>
+
+error:  A precondition for this call might not hold.
+
+    ┌── tests/sources/functional/mut_ref_accross_modules.move:30:9 ───
+    │
+ 30 │         invariant global<TSum>(0x0).sum == spec_sum;
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    │
+    =     at tests/sources/functional/mut_ref_accross_modules.move:94:5: private_to_public_caller (entry)
+    =     at tests/sources/functional/mut_ref_accross_modules.move:51:5: increment (entry)
+
+error:  A precondition for this call might not hold.
+
+    ┌── tests/sources/functional/mut_ref_accross_modules.move:30:9 ───
+    │
+ 30 │         invariant global<TSum>(0x0).sum == spec_sum;
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    │
+    =     at tests/sources/functional/mut_ref_accross_modules.move:110:6: private_to_public_caller_invalid_precondition (entry)
+    =     at tests/sources/functional/mut_ref_accross_modules.move:51:5: increment (entry)

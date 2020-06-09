@@ -1,7 +1,7 @@
 script{
 use {{sender}}::MyToken;
 
-fun main(amount: u64) {
-    MyToken::mint(amount);
+fun main(account: &signer, amount: u64) {
+    MyToken::mint(account, amount);
 }
 }

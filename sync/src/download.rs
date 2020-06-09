@@ -93,8 +93,10 @@ where
     fn sync_task(&mut self) {
         if (!self.sync_metadata.fast_sync_mode()
             || (self.sync_metadata.fast_sync_mode() && self.sync_metadata.is_sync_done())
+            // || (self.sync_metadata.state_syncing()
+            //     && (self.sync_metadata.get_address().is_some() || self.sync_metadata.state_done())))
             || (self.sync_metadata.state_syncing()
-                && (self.sync_metadata.get_address().is_some() || self.sync_metadata.state_done())))
+            && self.sync_metadata.state_done()))
             && !self.syncing.load(Ordering::Relaxed)
             && self.ready.load(Ordering::Relaxed)
         {
