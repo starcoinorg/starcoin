@@ -6,7 +6,7 @@ use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockState;
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -18,15 +18,23 @@ use starcoin_types::{
 pub trait ChainService {
     /// chain service
     fn try_connect(&mut self, block: Block, pivot_sync: bool) -> Result<ConnectResult<()>>;
-    fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
-    fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
-    fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn try_connect_with_block_info(
         &mut self,
         block: Block,
         block_info: BlockInfo,
     ) -> Result<ConnectResult<()>>;
+
+    fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
+    fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
+    fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
+    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
+    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
+    fn get_txn_info_by_block_and_index(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>>;
 
     /// for master
     fn master_head_header(&self) -> BlockHeader;
@@ -39,8 +47,6 @@ pub trait ChainService {
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>>;
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
-    fn get_block_txn_ids(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
 
     /// just for test
     fn create_block_template(
@@ -59,15 +65,22 @@ pub trait ChainAsyncService:
 {
     /// chain service
     async fn try_connect(self, block: Block) -> Result<ConnectResult<()>>;
-    async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>>;
-    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block>;
-    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn try_connect_with_block_info(
         &mut self,
         block: Block,
         block_info: BlockInfo,
     ) -> Result<ConnectResult<()>>;
+    async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>>;
+    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block>;
+    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn get_block_info_by_hash(self, hash: &HashValue) -> Result<Option<BlockInfo>>;
+    async fn get_transaction(self, txn_hash: HashValue) -> Result<Transaction>;
+    async fn get_block_txn_infos(self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
+    async fn get_txn_info_by_block_and_index(
+        self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>>;
 
     /// for master
     async fn master_head_header(self) -> Result<Option<BlockHeader>>;
@@ -81,8 +94,6 @@ pub trait ChainAsyncService:
     async fn master_block_header_by_number(self, number: BlockNumber) -> Result<BlockHeader>;
     async fn master_startup_info(self) -> Result<StartupInfo>;
     async fn master_head(self) -> Result<ChainInfo>;
-    async fn get_transaction(self, txn_id: HashValue) -> Result<TransactionInfo>;
-    async fn get_block_txn(self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
 
     /// just for test
     async fn create_block_template(

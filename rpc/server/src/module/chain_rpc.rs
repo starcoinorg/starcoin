@@ -9,7 +9,7 @@ use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::transaction::{Transaction, TransactionInfo};
 
 pub struct ChainRpcImpl<S>
 where
@@ -67,7 +67,7 @@ where
         Box::new(fut.compat())
     }
 
-    fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<TransactionInfo> {
+    fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<Transaction> {
         let fut = self
             .service
             .clone()
@@ -80,7 +80,19 @@ where
         let fut = self
             .service
             .clone()
-            .get_block_txn(block_id)
+            .get_block_txn_infos(block_id)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
+    fn get_txn_info_by_block_and_index(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> FutureResult<Option<TransactionInfo>> {
+        let fut = self
+            .service
+            .clone()
+            .get_txn_info_by_block_and_index(block_id, idx)
             .map_err(map_err);
         Box::new(fut.compat())
     }

@@ -9,7 +9,7 @@ use crate::state_node::StateStorage;
 use crate::storage::{ColumnFamilyName, InnerStorage, KVStore, StorageInstance};
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::TransactionInfoStorage;
-use anyhow::{ensure, Error, Result};
+use anyhow::{bail, ensure, format_err, Error, Result};
 use crypto::HashValue;
 use once_cell::sync::Lazy;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -54,6 +54,7 @@ pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
+pub const BLOCK_TRANSACTION_INFOS_PREFIX_NAME: ColumnFamilyName = "block_txn_infos";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "startup_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
@@ -71,6 +72,7 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         BLOCK_NUM_PREFIX_NAME,
         BLOCK_INFO_PREFIX_NAME,
         BLOCK_TRANSACTIONS_PREFIX_NAME,
+        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
         STATE_NODE_PREFIX_NAME,
         STARTUP_INFO_PREFIX_NAME,
         TRANSACTION_PREFIX_NAME,
@@ -135,17 +137,29 @@ pub trait BlockStore {
         block_id1: HashValue,
         block_id2: HashValue,
     ) -> Result<Option<HashValue>>;
-    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
+
     fn save_block_transactions(
         &self,
         block_id: HashValue,
         transactions: Vec<HashValue>,
     ) -> Result<()>;
+
+    /// get txn info id list for block `block_id`.
+    /// If block_id doesn't exists, return error.
+    fn get_block_txn_info_ids(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
+
+    fn save_block_txn_info_ids(
+        &self,
+        block_id: HashValue,
+        txn_info_ids: Vec<HashValue>,
+    ) -> Result<()>;
 }
 
 pub trait TransactionInfoStore {
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
-    fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()>;
+    fn get_transaction_info(&self, txn_info_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()> {
+        self.save_transaction_infos(vec![txn_info])
+    }
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<()>;
 }
 
@@ -316,15 +330,29 @@ impl BlockStore for Storage {
         self.block_storage.get_common_ancestor(block_id1, block_id2)
     }
 
-    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>, Error> {
-        self.block_storage.get_transactions(block_id)
-    }
     fn save_block_transactions(
         &self,
         block_id: HashValue,
         transactions: Vec<HashValue>,
     ) -> Result<()> {
         self.block_storage.put_transactions(block_id, transactions)
+    }
+
+    fn get_block_txn_info_ids(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
+        self.block_storage
+            .get_transaction_info_ids(block_id)
+            .and_then(|d| {
+                d.ok_or_else(|| format_err!("can't find txn info id list for block {}", block_id))
+            })
+    }
+
+    fn save_block_txn_info_ids(
+        &self,
+        block_id: HashValue,
+        txn_info_ids: Vec<HashValue>,
+    ) -> Result<()> {
+        self.block_storage
+            .put_transaction_infos(block_id, txn_info_ids)
     }
 }
 
@@ -388,11 +416,6 @@ impl TransactionInfoStore for Storage {
         self.transaction_info_storage.get(txn_hash)
     }
 
-    fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()> {
-        self.transaction_info_storage
-            .put(txn_info.transaction_hash(), txn_info)
-    }
-
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
         self.transaction_info_storage
             .save_transaction_infos(vec_txn_info)
@@ -435,6 +458,36 @@ pub trait Store:
     + IntoSuper<dyn StateNodeStore>
     + IntoSuper<dyn AccumulatorTreeStore>
 {
+    fn get_transaction_info_by_block_and_index(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>> {
+        let txn_infos = self.get_block_txn_info_ids(block_id)?;
+        match txn_infos.get(idx as usize) {
+            None => Ok(None),
+            Some(info_hash) => self.get_transaction_info(*info_hash),
+        }
+    }
+
+    fn get_block_transaction_infos(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Vec<TransactionInfo>, Error> {
+        let txn_info_ids = self.get_block_txn_info_ids(block_id)?;
+        let mut txn_infos = vec![];
+        for hash in txn_info_ids {
+            match self.get_transaction_info(hash)? {
+                Some(info) => txn_infos.push(info),
+                None => bail!(
+                    "invalid state: txn info {} of block {} should exist",
+                    hash,
+                    block_id
+                ),
+            }
+        }
+        Ok(txn_infos)
+    }
 }
 
 pub trait IntoSuper<Super: ?Sized> {

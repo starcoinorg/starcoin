@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, format_err, Error, Result};
+use anyhow::{ensure, format_err, Result};
 use config::NodeConfig;
 use crypto::{hash::PlainCryptoHash, HashValue};
 use executor::block_executor::BlockExecutor;
@@ -242,23 +242,15 @@ where
         Ok(None)
     }
 
-    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
-        let mut txn_vec = vec![];
-        let vec_hash = self.storage.get_block_transactions(block_id)?;
-        for hash in vec_hash {
-            if let Some(transaction_info) = self.get_transaction_info(hash)? {
-                txn_vec.push(transaction_info);
-            }
-        }
-        Ok(txn_vec)
-    }
-
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
         self.storage.get_transaction(txn_hash)
     }
 
-    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>> {
-        self.storage.get_transaction_info(hash)
+    fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<TransactionInfo>> {
+        match self.txn_accumulator.get_leaf(version)? {
+            None => Ok(None),
+            Some(hash) => self.storage.get_transaction_info(hash),
+        }
     }
 
     fn create_block_template(
@@ -303,6 +295,39 @@ where
             }
         }
         false
+    }
+}
+
+impl<C, S> BlockChain<C, S>
+where
+    C: Consensus,
+    S: Store,
+{
+    fn save(
+        &mut self,
+        block_id: HashValue,
+        transactions: Vec<Transaction>,
+        txn_infos: Vec<TransactionInfo>,
+    ) -> Result<()> {
+        ensure!(
+            transactions.len() == txn_infos.len(),
+            "block txns' length should be equal to txn infos' length"
+        );
+        let txn_id_vec = transactions
+            .iter()
+            .cloned()
+            .map(|user_txn| user_txn.id())
+            .collect::<Vec<HashValue>>();
+        // save block's transactions
+        self.storage.save_block_transactions(block_id, txn_id_vec)?;
+        // save transactions
+        self.storage.save_transaction_batch(transactions)?;
+
+        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.crypto_hash()).collect();
+        self.storage
+            .save_block_txn_info_ids(block_id, txn_info_ids)?;
+        self.storage.save_transaction_infos(txn_infos)?;
+        Ok(())
     }
 }
 
@@ -418,8 +443,7 @@ where
             total_difficulty,
         );
         // save block's transaction relationship and save transaction
-        self.save(header.id(), txns)?;
-        self.storage.save_transaction_infos(vec_transaction_info)?;
+        self.save(header.id(), txns, vec_transaction_info)?;
         self.commit(block.clone(), block_info, BlockState::Executed)?;
         Ok(true)
     }
@@ -437,19 +461,6 @@ where
         self.chain_state =
             ChainStateDB::new(self.storage.clone(), Some(self.head.header().state_root()));
         debug!("save block {:?} succ.", block_id);
-        Ok(())
-    }
-
-    fn save(&mut self, block_id: HashValue, transactions: Vec<Transaction>) -> Result<()> {
-        let txn_id_vec = transactions
-            .iter()
-            .cloned()
-            .map(|user_txn| user_txn.id())
-            .collect::<Vec<HashValue>>();
-        // save block's transactions
-        self.storage.save_block_transactions(block_id, txn_id_vec)?;
-        // save transactions
-        self.storage.save_transaction_batch(transactions)?;
         Ok(())
     }
 

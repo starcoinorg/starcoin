@@ -98,11 +98,11 @@ impl ChainNotifyHandlerActor {
 
         let block_number = block.header().number();
         let block_id = block.id();
-        let txns = store.get_block_transactions(block_id)?;
+        let txn_info_ids = store.get_block_txn_info_ids(block_id)?;
         // in reverse order to do limit
         let mut all_events: Vec<ContractEvent> = vec![];
-        for (_i, txn_hash) in txns.into_iter().enumerate().rev() {
-            let txn_info = store.get_transaction_info(txn_hash)?;
+        for (_i, txn_info_id) in txn_info_ids.into_iter().enumerate().rev() {
+            let txn_info = store.get_transaction_info(txn_info_id)?;
             if txn_info.is_none() {
                 continue;
             }
