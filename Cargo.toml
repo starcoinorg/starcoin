@@ -57,5 +57,6 @@ members = [
     "vm/functional-tests",
     "vm/vm-runtime",
     "vm/stdlib",
-    "vm/compiler"
+    "vm/compiler",
+    "vm/move-prover"
 ]

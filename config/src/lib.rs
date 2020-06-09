@@ -7,6 +7,7 @@ use anyhow::{ensure, Result};
 use libp2p::core::Multiaddr;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
@@ -18,6 +19,7 @@ use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
 use structopt::StructOpt;
 
@@ -42,15 +44,12 @@ pub use metrics_config::MetricsConfig;
 pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
-use starcoin_crypto::keygen::KeyGen;
-use std::net::SocketAddr;
-use std::str::FromStr;
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;
 
 /// Default data dir
-static DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
+pub static DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
     dirs::home_dir()
         .expect("read home dir should ok")
         .join(".starcoin")
@@ -63,6 +62,12 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
 
 pub fn temp_path() -> DataDirPath {
     let temp_path = TempPath::new();
+    temp_path.create_as_dir().expect("Create temp dir fail.");
+    DataDirPath::TempPath(Arc::from(temp_path))
+}
+
+pub fn temp_path_with_dir(dir: PathBuf) -> DataDirPath {
+    let temp_path = TempPath::new_with_temp_dir(dir);
     temp_path.create_as_dir().expect("Create temp dir fail.");
     DataDirPath::TempPath(Arc::from(temp_path))
 }
