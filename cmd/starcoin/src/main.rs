@@ -7,6 +7,7 @@ use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::Connect;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
+use std::sync::Arc;
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
@@ -49,7 +50,7 @@ fn run() -> Result<()> {
             };
 
             let node_info = client.node_info()?;
-            let state = CliState::new(node_info.net, client, node_handle);
+            let state = CliState::new(node_info.net, Arc::new(client), node_handle);
             Ok(state)
         },
         |_, _, state| {
