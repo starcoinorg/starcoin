@@ -7,6 +7,10 @@ module Config {
     use 0x0::Association;
     use 0x0::Offer;
 
+    spec module {
+        pragma verify = false;
+    }
+
     // A generic singleton resource that holds a value of a specific type.
     resource struct T<Config: copyable> { payload: Config }
 

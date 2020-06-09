@@ -4,6 +4,11 @@ address 0x0 {
 module Offer {
   use 0x0::Signer;
   use 0x0::Transaction;
+
+  spec module {
+    pragma verify = false;
+  }
+
   // A wrapper around value `offered` that can be claimed by the address stored in `for`.
   resource struct T<Offered> { offered: Offered, for: address }
 

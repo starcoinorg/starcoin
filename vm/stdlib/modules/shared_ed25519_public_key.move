@@ -10,6 +10,10 @@ module SharedEd25519PublicKey {
     use 0x0::Signer;
     use 0x0::Transaction;
 
+    spec module {
+        pragma verify = false;
+    }
+
     // A resource that forces the account associated with `rotation_cap` to use a ed25519
     // authentication key derived from `key`
     resource struct T {

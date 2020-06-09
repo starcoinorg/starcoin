@@ -18,6 +18,12 @@ module Timestamp {
         let timer = CurrentTimeMicroseconds {microseconds: 0};
         move_to<CurrentTimeMicroseconds>(account, timer);
     }
+    spec fun initialize {
+        aborts_if Signer::get_address(account) != 0xA550C18;
+        aborts_if exists<CurrentTimeMicroseconds>(Signer::get_address(account));
+        ensures exists<CurrentTimeMicroseconds>(Signer::get_address(account));
+        ensures global<CurrentTimeMicroseconds>(Signer::get_address(account)).microseconds == 0;
+    }
 
     // Update the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
     public fun update_global_time(_account: &signer, proposer: address, timestamp: u64) acquires CurrentTimeMicroseconds {
@@ -37,16 +43,27 @@ module Timestamp {
         };
         global_timer.microseconds = timestamp;
     }
+    spec fun update_global_time {
+        aborts_if !exists<CurrentTimeMicroseconds>(0xA550C18);
+        ensures global<CurrentTimeMicroseconds>(0xA550C18).microseconds == timestamp;
+    }
 
     // Get the timestamp representing `now` in microseconds.
     public fun now_microseconds(): u64 acquires CurrentTimeMicroseconds {
         borrow_global<CurrentTimeMicroseconds>(0xA550C18).microseconds
+    }
+    spec fun now_microseconds {
+        aborts_if !exists<CurrentTimeMicroseconds>(0xA550C18);
+        ensures result == global<CurrentTimeMicroseconds>(0xA550C18).microseconds;
     }
 
     // Helper function to determine if the blockchain is at genesis state.
     public fun is_genesis(): bool {
         !::exists<Self::CurrentTimeMicroseconds>(0xA550C18)
     }
+    spec fun is_genesis {
+        aborts_if false;
+        ensures result == !exists<CurrentTimeMicroseconds>(0xA550C18);
+    }
 }
-
 }

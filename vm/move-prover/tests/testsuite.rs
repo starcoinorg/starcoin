@@ -111,7 +111,7 @@ datatest_stable::harness!(
     "tests/sources",
     r".*\.move",
     // Run tests for the content of the stdlib directory.
-    //    test_runner_stdlib,
-    //    "../stdlib",
-    //    r".*\.move"
+    test_runner_stdlib,
+    "../stdlib",
+    r".*\.move"
 );

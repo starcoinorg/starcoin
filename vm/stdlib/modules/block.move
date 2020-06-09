@@ -12,6 +12,10 @@ module Block {
     use 0x0::SubsidyConfig;
     use 0x0::Signer;
 
+    spec module {
+        pragma verify = false;
+    }
+
     resource struct BlockMetadata {
       // Height of the current block
       // TODO: should we keep the height?
