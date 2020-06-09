@@ -205,9 +205,8 @@ pub(crate) fn init_context() -> CmdContext<Counter, GlobalOpts> {
             while running.load(Ordering::SeqCst) {}
             println!("Got it! Exiting...");
         },
-        |_app, _opt, _state| println!("Start a console:"),
-        |_app, _opt, _state| println!("good bye."),
     );
+    let context = context.with_console_support_default();
     context
         .command(ListCommand)
         .command(ShowCommand)

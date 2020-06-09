@@ -1,7 +1,7 @@
 script{
 use {{sender}}::MyToken;
 
-fun main() {
-    MyToken::init();
+fun main(account: &signer) {
+    MyToken::init(account);
 }
 }

@@ -7,30 +7,49 @@ use starcoin_node::NodeHandle;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_wallet_api::WalletAccount;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
+
+static HISTORY_FILE_NAME: &str = "history";
 
 pub struct CliState {
     net: ChainNetwork,
     client: Arc<RpcClient>,
     join_handle: Option<NodeHandle>,
+    /// Cli data dir, different with Node data dir.
+    data_dir: PathBuf,
     temp_dir: DataDirPath,
 }
 
 impl CliState {
     pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
-
     pub fn new(
         net: ChainNetwork,
         client: Arc<RpcClient>,
         join_handle: Option<NodeHandle>,
     ) -> CliState {
+        let data_dir = starcoin_config::DEFAULT_BASE_DATA_DIR
+            .clone()
+            .join("cli")
+            .join(net.to_string());
+        if !data_dir.exists() {
+            std::fs::create_dir_all(data_dir.as_path())
+                .unwrap_or_else(|e| panic!("Create cli data dir {:?} fail, err:{:?}", data_dir, e))
+        }
+        let temp_dir = data_dir.join("tmp");
+        if !temp_dir.exists() {
+            std::fs::create_dir_all(temp_dir.as_path())
+                .unwrap_or_else(|e| panic!("Create cli temp dir {:?} fail, err:{:?}", temp_dir, e))
+        }
+        let temp_dir = starcoin_config::temp_path_with_dir(temp_dir);
+
         Self {
             net,
             client,
             join_handle,
-            temp_dir: starcoin_config::temp_path(),
+            data_dir,
+            temp_dir,
         }
     }
 
@@ -44,6 +63,15 @@ impl CliState {
 
     pub fn temp_dir(&self) -> &Path {
         self.temp_dir.path()
+    }
+
+    /// Cli data_dir , ~/.starcoin/cli/$network
+    pub fn data_dir(&self) -> &Path {
+        self.data_dir.as_path()
+    }
+
+    pub fn history_file(&self) -> PathBuf {
+        self.data_dir().join(HISTORY_FILE_NAME)
     }
 
     pub fn default_account(&self) -> Result<WalletAccount> {

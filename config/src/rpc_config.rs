@@ -108,11 +108,28 @@ impl ConfigModule for RpcConfig {
         self.ipc_file_path = Some(Self::get_ipc_file_by_base(base))
     }
 
-    fn load(&mut self, base: &BaseConfig, _opt: &StarcoinOpt) -> Result<()> {
+    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
         let ipc_file_path = Self::get_ipc_file_by_base(base);
         info!("Ipc file path: {:?}", ipc_file_path);
         info!("Http rpc address: {}", self.http_address.unwrap());
         self.ipc_file_path = Some(ipc_file_path);
+        if let Some(rpc_address) = &opt.rpc_address {
+            self.ws_address = Some(
+                format!("{}:{}", rpc_address, DEFAULT_WEB_SOCKET_PORT)
+                    .parse::<SocketAddr>()
+                    .unwrap(),
+            );
+            self.http_address = Some(
+                format!("{}:{}", rpc_address, DEFAULT_HTTP_PORT)
+                    .parse::<SocketAddr>()
+                    .unwrap(),
+            );
+            self.tcp_address = Some(
+                format!("{}:{}", rpc_address, DEFAULT_TCP_PORT)
+                    .parse::<SocketAddr>()
+                    .unwrap(),
+            );
+        }
         Ok(())
     }
 }
