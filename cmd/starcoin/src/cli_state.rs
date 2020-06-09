@@ -8,11 +8,12 @@ use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_wallet_api::WalletAccount;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 pub struct CliState {
     net: ChainNetwork,
-    client: RpcClient,
+    client: Arc<RpcClient>,
     join_handle: Option<NodeHandle>,
     temp_dir: DataDirPath,
 }
@@ -20,7 +21,11 @@ pub struct CliState {
 impl CliState {
     pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
 
-    pub fn new(net: ChainNetwork, client: RpcClient, join_handle: Option<NodeHandle>) -> CliState {
+    pub fn new(
+        net: ChainNetwork,
+        client: Arc<RpcClient>,
+        join_handle: Option<NodeHandle>,
+    ) -> CliState {
         Self {
             net,
             client,
@@ -72,7 +77,7 @@ impl CliState {
         Ok(())
     }
 
-    pub fn into_inner(self) -> (ChainNetwork, RpcClient, Option<NodeHandle>) {
+    pub fn into_inner(self) -> (ChainNetwork, Arc<RpcClient>, Option<NodeHandle>) {
         (self.net, self.client, self.join_handle)
     }
 }

@@ -5,8 +5,8 @@ use cucumber::{Steps, StepsBuilder};
 use scmd::{CmdContext, Command};
 use serde_json::Value;
 use starcoin_cmd::dev::GetCoinCommand;
-use starcoin_cmd::node::InfoCommand;
-use starcoin_cmd::view::{AccountWithStateView, NodeInfoView, TransactionView};
+use starcoin_cmd::node::{InfoCommand, PeersCommand};
+use starcoin_cmd::view::{AccountWithStateView, NodeInfoView, PeerInfoView, TransactionView};
 use starcoin_cmd::wallet::{CreateCommand, ListCommand, ShowCommand, UnlockCommand};
 use starcoin_cmd::{wallet, CliState, StarcoinOpt};
 use starcoin_logger::prelude::*;
@@ -16,7 +16,9 @@ pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
         .then("[cmd] node info", |world: &mut MyWorld, _step| {
-            let state = world.cli_state.take().unwrap();
+            let client = world.arpc_client.as_ref().take().unwrap();
+            let node_info = client.clone().node_info().unwrap();
+            let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // let context = world.context.as_mut().take().unwrap( );
             let result = context
@@ -25,18 +27,23 @@ pub fn steps() -> Steps<MyWorld> {
                 .unwrap();
             info!("result:{:?}", result);
         })
-        .then("[cmd] node peer", |world: &mut MyWorld, _step| {
-            let state = world.cli_state.take().unwrap();
+        .then("[cmd] node peers", |world: &mut MyWorld, _step| {
+            let client = world.arpc_client.as_ref().take().unwrap();
+            let node_info = client.clone().node_info().unwrap();
+            let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // let context = world.context.as_mut().take().unwrap( );
             let result = context
-                .command(Command::with_name("node").subcommand(InfoCommand))
-                .exec_with_args::<NodeInfoView>(vec!["starcoin", "node", "peers"])
+                .command(Command::with_name("node").subcommand(PeersCommand))
+                .exec_with_args::<PeerInfoView>(vec!["starcoin", "node", "peers"])
                 .unwrap();
             info!("result:{:?}", result);
         })
         .then("[cmd] wallet list", |world: &mut MyWorld, _step| {
-            let state = world.cli_state.take().unwrap();
+            let client = world.arpc_client.as_ref().take().unwrap();
+            let node_info = client.clone().node_info().unwrap();
+            let state = CliState::new(node_info.net, client.clone(), None);
+            // let state = world.cli_state.take().unwrap();
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             let mut list_result = context
                 .command(Command::with_name("wallet").subcommand(ListCommand))
@@ -46,8 +53,9 @@ pub fn steps() -> Steps<MyWorld> {
             world.default_address = Some(list_result.pop().unwrap().address);
         })
         .then("[cmd] wallet show", |world: &mut MyWorld, _step| {
-            // let address = world.default_address.as_ref().take().unwrap();
-            let state = world.cli_state.take().unwrap();
+            let client = world.arpc_client.as_ref().take().unwrap();
+            let node_info = client.clone().node_info().unwrap();
+            let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             let show_result = context
                 .command(Command::with_name("wallet").subcommand(ShowCommand))
@@ -59,7 +67,9 @@ pub fn steps() -> Steps<MyWorld> {
             r#"dev get_coin "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
                 let amount = args[1].as_str();
-                let state = world.cli_state.take().unwrap();
+                let client = world.arpc_client.as_ref().take().unwrap();
+                let node_info = client.clone().node_info().unwrap();
+                let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 let get_result = context
                     .command(Command::with_name("dev").subcommand(GetCoinCommand))
@@ -74,7 +84,9 @@ pub fn steps() -> Steps<MyWorld> {
             r#"wallet create "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
                 let password = args[1].as_str();
-                let state = world.cli_state.take().unwrap();
+                let client = world.arpc_client.as_ref().take().unwrap();
+                let node_info = client.clone().node_info().unwrap();
+                let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 let create_result = context
                     .command(Command::with_name("wallet").subcommand(CreateCommand))
@@ -90,8 +102,9 @@ pub fn steps() -> Steps<MyWorld> {
             r#"wallet unlock password:"([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
                 let password = args[1].as_str();
-                println!("p: {:?}", password);
-                let state = world.cli_state.take().unwrap();
+                let client = world.arpc_client.as_ref().take().unwrap();
+                let node_info = client.clone().node_info().unwrap();
+                let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 let unlock_result = context
                     .command(Command::with_name("wallet").subcommand(UnlockCommand))
@@ -110,7 +123,9 @@ pub fn steps() -> Steps<MyWorld> {
         .then_regex(
             r#"cmd cli: "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
-                let state = world.cli_state.take().unwrap();
+                let client = world.arpc_client.as_ref().take().unwrap();
+                let node_info = client.clone().node_info().unwrap();
+                let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 // world.context = Some(context);
                 let mut vec = vec![];
@@ -126,6 +141,7 @@ pub fn steps() -> Steps<MyWorld> {
                     )
                     .exec_with_args::<Value>(vec)
                     .unwrap();
+                println!("cmd cli: {:?}", result);
                 info!("cmd cli: {:?}", result);
             },
         );
