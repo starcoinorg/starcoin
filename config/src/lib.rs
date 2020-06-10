@@ -144,6 +144,10 @@ pub struct StarcoinOpt {
     /// Disable std error log output.
     pub disable_file_log: bool,
 
+    #[structopt(long = "disable-metrics")]
+    /// Disable metrics.
+    pub disable_metrics: bool,
+
     #[structopt(long = "mine", short = "m", parse(try_from_str))]
     /// Start a miner client in node, default is true
     pub enable_mine: Option<bool>,
@@ -155,6 +159,10 @@ pub struct StarcoinOpt {
     #[structopt(long = "disable-seed")]
     /// Disable seed for seed node.
     pub disable_seed: bool,
+
+    #[structopt(long = "rpc_address")]
+    /// Rpc address, default is 127.0.0.1
+    pub rpc_address: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -305,6 +313,9 @@ impl NodeConfig {
         } else {
             NodeConfig::default_with_net(base.net)
         };
+        if opt.disable_metrics {
+            config.metrics.enable_metrics = false;
+        }
         config.load(&base, opt)?;
         save_config(&config, &config_file_path)?;
         Ok(config)

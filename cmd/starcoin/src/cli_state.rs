@@ -8,13 +8,14 @@ use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_wallet_api::WalletAccount;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 
 static HISTORY_FILE_NAME: &str = "history";
 
 pub struct CliState {
     net: ChainNetwork,
-    client: RpcClient,
+    client: Arc<RpcClient>,
     join_handle: Option<NodeHandle>,
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
@@ -23,8 +24,11 @@ pub struct CliState {
 
 impl CliState {
     pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
-
-    pub fn new(net: ChainNetwork, client: RpcClient, join_handle: Option<NodeHandle>) -> CliState {
+    pub fn new(
+        net: ChainNetwork,
+        client: Arc<RpcClient>,
+        join_handle: Option<NodeHandle>,
+    ) -> CliState {
         let data_dir = starcoin_config::DEFAULT_BASE_DATA_DIR
             .clone()
             .join("cli")
@@ -39,6 +43,7 @@ impl CliState {
                 .unwrap_or_else(|e| panic!("Create cli temp dir {:?} fail, err:{:?}", temp_dir, e))
         }
         let temp_dir = starcoin_config::temp_path_with_dir(temp_dir);
+
         Self {
             net,
             client,
@@ -100,7 +105,7 @@ impl CliState {
         Ok(())
     }
 
-    pub fn into_inner(self) -> (ChainNetwork, RpcClient, Option<NodeHandle>) {
+    pub fn into_inner(self) -> (ChainNetwork, Arc<RpcClient>, Option<NodeHandle>) {
         (self.net, self.client, self.join_handle)
     }
 }

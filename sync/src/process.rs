@@ -1,7 +1,7 @@
-use crate::get_txns_handler::GetTxnsHandler;
 use crate::helper::{
     do_accumulator_node, do_get_body_by_hash, do_get_headers, do_get_info_by_hash, do_state_node,
 };
+use crate::txn_sync::GetTxnsHandler;
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, StreamHandler};
 use anyhow::Result;

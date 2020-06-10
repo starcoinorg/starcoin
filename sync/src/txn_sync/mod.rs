@@ -1,3 +1,6 @@
+mod txn_handler;
+pub use txn_handler::GetTxnsHandler;
+
 use crate::helper;
 use actix::prelude::*;
 use anyhow::{bail, Result};
