@@ -1,23 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::cli_state::CliState;
 use anyhow::Result;
 use scmd::{CmdContext, Command};
+use starcoin_cmd::*;
+use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::Connect;
-pub use starcoin_config::StarcoinOpt;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
-
-mod chain;
-mod cli_state;
-mod crash_handler;
-mod debug;
-mod dev;
-mod helper;
-mod node;
-mod state;
-mod view;
-mod wallet;
+use std::sync::Arc;
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
@@ -60,7 +50,7 @@ fn run() -> Result<()> {
             };
 
             let node_info = client.node_info()?;
-            let state = CliState::new(node_info.net, client, node_handle);
+            let state = CliState::new(node_info.net, Arc::new(client), node_handle);
             Ok(state)
         },
         |_, _, state| {

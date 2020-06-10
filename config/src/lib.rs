@@ -144,6 +144,10 @@ pub struct StarcoinOpt {
     /// Disable std error log output.
     pub disable_file_log: bool,
 
+    #[structopt(long = "disable-metrics")]
+    /// Disable metrics.
+    pub disable_metrics: bool,
+
     #[structopt(long = "mine", short = "m", parse(try_from_str))]
     /// Start a miner client in node, default is true
     pub enable_mine: Option<bool>,
@@ -309,6 +313,9 @@ impl NodeConfig {
         } else {
             NodeConfig::default_with_net(base.net)
         };
+        if opt.disable_metrics {
+            config.metrics.enable_metrics = false;
+        }
         config.load(&base, opt)?;
         save_config(&config, &config_file_path)?;
         Ok(config)

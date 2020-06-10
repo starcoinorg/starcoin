@@ -10,17 +10,24 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
+use std::time::Duration;
+use steps::{cmd as steps_cmd, node as steps_node, state as steps_state, sync, transaction};
+
+mod steps;
 
 #[derive(Default)]
 pub struct MyWorld {
     node_config: Option<NodeConfig>,
     storage: Option<Storage>,
-    rpc_client: Option<RpcClient>,
+    rpc_client: Option<Arc<RpcClient>>,
     local_rpc_client: Option<RpcClient>,
     default_account: Option<WalletAccount>,
     txn_account: Option<WalletAccount>,
     node_handle: Option<NodeHandle>,
+    default_address: Option<AccountAddress>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {
@@ -50,13 +57,13 @@ pub fn steps() -> Steps<MyWorld> {
         .given("remote rpc client", |world: &mut MyWorld, _step| {
             let client = RpcClient::connect_websocket(env!("STARCOIN_WS")).unwrap();
             info!("rpc client created!");
-            world.rpc_client = Some(client)
+            world.rpc_client = Some(Arc::new(client))
         })
         .given("dev rpc client", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
             let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
             info!("dev node local rpc client created!");
-            world.rpc_client = Some(client)
+            world.rpc_client = Some(Arc::new(client))
         })
         .given("default account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
@@ -102,20 +109,16 @@ after!(an_after_fn => |_scenario| {
 // A setup function to be called before everything else
 fn setup() {}
 
-mod steps;
-use starcoin_wallet_api::WalletAccount;
-use std::time::Duration;
-use steps::*;
-
 cucumber! {
     features: "./features", // Path to our feature files
     world: MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
         crate::steps, // the `steps!` macro creates a `steps` function in a module
         transaction::steps,
-        node::steps,
+        steps_node::steps,
         sync::steps,
-        state::steps,
+        steps_state::steps,
+        steps_cmd::steps,
     ],
     setup: setup, // Optional; called once before everything
     before: &[

@@ -8,7 +8,7 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 #[structopt(name = "info")]
 pub struct InfoOpt {}
 

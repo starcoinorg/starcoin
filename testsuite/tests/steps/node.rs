@@ -12,6 +12,7 @@ pub fn steps() -> Steps<MyWorld> {
         .given("a dev node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetwork::Dev);
+            opt.disable_metrics = true;
             opt.data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
             let config = NodeConfig::load_with_opt(&opt).unwrap();
             world.node_config = Some(config)
@@ -19,14 +20,25 @@ pub fn steps() -> Steps<MyWorld> {
         .given("halley node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetwork::Halley);
+            opt.disable_metrics = true;
             opt.data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
             let config = NodeConfig::load_with_opt(&opt).unwrap();
             world.node_config = Some(config)
         })
-        .given("node handle", |world: &mut MyWorld, _step| {
+        .given("node dev handle", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
             let handle = starcoin_node::run_dev_node(Arc::new(node_config.clone()));
             world.node_handle = Some(handle)
+        })
+        .given("node handle", |world: &mut MyWorld, _step| {
+            let node_config = world.node_config.as_ref().take().unwrap();
+            let handle = starcoin_node::run_normal_node(Arc::new(node_config.clone()));
+            world.node_handle = Some(handle)
+        })
+        .then("node handle stop", |world: &mut MyWorld, _step| {
+            let node_handle = world.node_handle.take().unwrap();
+            let result = node_handle.stop();
+            assert!(result.is_ok());
         })
         .then("get node info", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();

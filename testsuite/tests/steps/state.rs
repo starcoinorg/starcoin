@@ -10,8 +10,11 @@ pub fn steps() -> Steps<MyWorld> {
         let client = world.rpc_client.as_ref().take().unwrap();
         let account = world.default_account.as_ref().take().unwrap();
         let access_path = AccessPath::new_for_account(account.clone().address);
-        let proof = client.state_get_with_proof(access_path.clone()).unwrap();
-        let state_root = client.state_get_state_root().unwrap();
+        let proof = client
+            .clone()
+            .state_get_with_proof(access_path.clone())
+            .unwrap();
+        let state_root = client.clone().state_get_state_root().unwrap();
         proof
             .proof
             .verify(state_root, access_path, proof.state.as_deref())

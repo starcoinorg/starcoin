@@ -12,7 +12,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 #[structopt(name = "show")]
 pub struct ShowOpt {
     #[structopt(name = "account_address")]
