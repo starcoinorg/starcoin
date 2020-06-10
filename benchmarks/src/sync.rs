@@ -111,18 +111,14 @@ impl SyncBencher {
                             Downloader::<DummyConsensus>::get_headers_msg_for_common(
                                 latest_block_id,
                             );
-                        let headers =
-                            get_headers(&network, best_peer.get_peer_id(), get_headers_req).await?;
+                        let headers = get_headers(&network, get_headers_req).await?;
                         let latest_header = headers.last().expect("headers is empty.");
                         latest_block_id = latest_header.id();
                         latest_number = latest_header.number();
                         let hashs: Vec<HashValue> =
                             headers.iter().map(|header| header.id()).collect();
-                        let bodies =
-                            get_body_by_hash(&network, best_peer.get_peer_id(), hashs.clone())
-                                .await?;
-                        let infos =
-                            get_info_by_hash(&network, best_peer.get_peer_id(), hashs).await?;
+                        let bodies = get_body_by_hash(&network, hashs.clone()).await?;
+                        let infos = get_info_by_hash(&network, hashs).await?;
                         info!(
                             "sync block number : {:?} from peer {:?}",
                             latest_number,

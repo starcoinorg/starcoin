@@ -105,6 +105,12 @@ pub struct BlockBody {
     pub transactions: Vec<SignedUserTransaction>,
 }
 
+impl Into<(HashValue, Vec<SignedUserTransaction>)> for BlockBody {
+    fn into(self) -> (HashValue, Vec<SignedUserTransaction>) {
+        (self.hash, self.transactions)
+    }
+}
+
 impl PartialOrd for BlockBody {
     fn partial_cmp(&self, other: &BlockBody) -> Option<Ordering> {
         Some(self.cmp(other))

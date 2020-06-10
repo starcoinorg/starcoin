@@ -1,3 +1,4 @@
+pub mod block_sync;
 mod download;
 mod get_txns_handler;
 pub mod helper;

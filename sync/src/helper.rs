@@ -74,57 +74,89 @@ pub async fn get_txns(
 
 pub async fn get_headers(
     network: &NetworkAsyncService,
-    peer_id: PeerId,
     req: GetBlockHeaders,
 ) -> Result<Vec<BlockHeader>> {
-    let get_block_headers_req = SyncRpcRequest::GetBlockHeaders(req.clone());
-    if let SyncRpcResponse::BlockHeaders(headers) = do_request(
-        &network,
-        peer_id,
-        GET_BLOCK_HEADERS_STR,
-        get_block_headers_req,
-    )
-    .await?
-    {
-        //todo: Verify response
-        Ok(headers)
+    if let Some(peer_info) = network.best_peer().await? {
+        let get_block_headers_req = SyncRpcRequest::GetBlockHeaders(req.clone());
+        if let SyncRpcResponse::BlockHeaders(headers) = do_request(
+            &network,
+            peer_info.get_peer_id(),
+            GET_BLOCK_HEADERS_STR,
+            get_block_headers_req,
+        )
+        .await?
+        {
+            //todo: Verify response
+            Ok(headers)
+        } else {
+            Err(format_err!(
+                "{:?}",
+                "error SyncRpcResponse type when sync block header."
+            ))
+        }
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!(
+            "{:?}",
+            "Can not get peer when sync block header."
+        ))
     }
 }
 
 pub async fn get_body_by_hash(
     network: &NetworkAsyncService,
-    peer_id: PeerId,
     hashs: Vec<HashValue>,
 ) -> Result<Vec<BlockBody>> {
-    let get_body_by_hash_req = SyncRpcRequest::GetBlockBodies(hashs);
-    if let SyncRpcResponse::BlockBodies(bodies) = do_request(
-        &network,
-        peer_id,
-        GET_BLOCK_BODIES_STR,
-        get_body_by_hash_req,
-    )
-    .await?
-    {
-        Ok(bodies)
+    if let Some(peer_info) = network.best_peer().await? {
+        let get_body_by_hash_req = SyncRpcRequest::GetBlockBodies(hashs);
+        if let SyncRpcResponse::BlockBodies(bodies) = do_request(
+            &network,
+            peer_info.get_peer_id(),
+            GET_BLOCK_BODIES_STR,
+            get_body_by_hash_req,
+        )
+        .await?
+        {
+            Ok(bodies)
+        } else {
+            Err(format_err!(
+                "{:?}",
+                "error SyncRpcResponse type when sync block body."
+            ))
+        }
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!(
+            "{:?}",
+            "Can not get peer when sync block body."
+        ))
     }
 }
 
 pub async fn get_info_by_hash(
     network: &NetworkAsyncService,
-    peer_id: PeerId,
     hashs: Vec<HashValue>,
 ) -> Result<Vec<BlockInfo>> {
-    let get_info_by_hash_req = SyncRpcRequest::GetBlockInfos(hashs);
-    if let SyncRpcResponse::BlockInfos(infos) =
-        do_request(&network, peer_id, GET_BLOCK_INFOS_STR, get_info_by_hash_req).await?
-    {
-        Ok(infos)
+    if let Some(peer_info) = network.best_peer().await? {
+        let get_info_by_hash_req = SyncRpcRequest::GetBlockInfos(hashs);
+        if let SyncRpcResponse::BlockInfos(infos) = do_request(
+            &network,
+            peer_info.get_peer_id(),
+            GET_BLOCK_INFOS_STR,
+            get_info_by_hash_req,
+        )
+        .await?
+        {
+            Ok(infos)
+        } else {
+            Err(format_err!(
+                "{:?}",
+                "error SyncRpcResponse type when sync block info."
+            ))
+        }
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!(
+            "{:?}",
+            "Can not get peer when sync block info."
+        ))
     }
 }
 
