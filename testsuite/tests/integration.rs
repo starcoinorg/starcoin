@@ -12,6 +12,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_wallet_api::WalletAccount;
+use std::env;
 use std::sync::Arc;
 use std::time::Duration;
 use steps::{cmd as steps_cmd, node as steps_node, state as steps_state, sync, transaction};
@@ -55,7 +56,8 @@ pub fn steps() -> Steps<MyWorld> {
             world.storage = Some(storage)
         })
         .given("remote rpc client", |world: &mut MyWorld, _step| {
-            let client = RpcClient::connect_websocket(env!("STARCOIN_WS")).unwrap();
+            let rpc_addr = env::var("STARCOIN_WS").unwrap_or_else(|_| "".to_string());
+            let client = RpcClient::connect_websocket(rpc_addr.as_ref()).unwrap();
             info!("rpc client created!");
             world.rpc_client = Some(Arc::new(client))
         })
