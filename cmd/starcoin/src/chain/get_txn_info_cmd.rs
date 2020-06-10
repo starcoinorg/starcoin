@@ -12,7 +12,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_txn_info")]
 pub struct GetTransactionInfoOpt {
-    #[structopt(name = "block-hash", parse(try_from_str = HashValue::from_hex))]
+    #[structopt(name = "block-hash")]
     block_hash: HashValue,
     #[structopt(name = "idx", help = "the index(start from 0) of the txn in the block")]
     idx: u64,
