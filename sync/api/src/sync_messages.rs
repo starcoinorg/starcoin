@@ -5,6 +5,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::StateNode;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo},
@@ -40,6 +41,7 @@ impl PeerNewBlock {
 #[derive(Message, Clone, Serialize, Deserialize, Debug)]
 #[rtype(result = "Result<()>")]
 pub enum SyncRpcRequest {
+    GetBlockHeadersByNumber(GetBlockHeadersByNumber),
     GetBlockHeaders(GetBlockHeaders),
     GetBlockInfos(Vec<HashValue>),
     GetBlockBodies(Vec<HashValue>),
@@ -76,6 +78,23 @@ pub struct TransactionsData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetBlockHeadersByNumber {
+    pub number: BlockNumber,
+    pub max_size: usize,
+    pub step: usize,
+}
+
+impl GetBlockHeadersByNumber {
+    pub fn new(number: BlockNumber, step: usize, max_size: usize) -> Self {
+        GetBlockHeadersByNumber {
+            number,
+            max_size,
+            step,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeaders {
     pub block_id: HashValue,
     pub max_size: usize,
@@ -84,12 +103,7 @@ pub struct GetBlockHeaders {
 }
 
 impl GetBlockHeaders {
-    pub fn new(
-        block_id: HashValue,
-        step: usize,
-        reverse: bool,
-        max_size: usize,
-    ) -> GetBlockHeaders {
+    pub fn new(block_id: HashValue, step: usize, reverse: bool, max_size: usize) -> Self {
         GetBlockHeaders {
             block_id,
             max_size,
@@ -103,6 +117,12 @@ impl GetBlockHeaders {
 pub struct BlockBody {
     pub hash: HashValue,
     pub transactions: Vec<SignedUserTransaction>,
+}
+
+impl Into<(HashValue, Vec<SignedUserTransaction>)> for BlockBody {
+    fn into(self) -> (HashValue, Vec<SignedUserTransaction>) {
+        (self.hash, self.transactions)
+    }
 }
 
 impl PartialOrd for BlockBody {

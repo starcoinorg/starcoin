@@ -20,6 +20,7 @@ starcoin-consensus = { path = "../consensus" }
 starcoin-txpool = { path = "../txpool"}
 starcoin-genesis = {path = "../core/genesis"}
 starcoin-sync-api = {path = "../sync/api"}
+starcoin-executor = {path = "../executor", package="starcoin-executor" }
 starcoin-bus = {path = "../bus"}
 traits = {path = "../core/traits", package="starcoin-traits"}
 starcoin-wallet-api = { path = "../wallet/api"}

@@ -3,7 +3,6 @@ use crate::pool::AccountSeqNumberClient;
 use anyhow::Result;
 use common_crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use parking_lot::RwLock;
-use starcoin_executor::{block_executor::BlockExecutor, executor::Executor, TransactionExecutor};
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -50,7 +49,7 @@ async fn test_tx_pool() -> Result<()> {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-    let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+    let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.crypto_hash();
     let mut result = txpool_service.add_txns(vec![txn]);
@@ -78,7 +77,7 @@ async fn test_rollback() -> Result<()> {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+        let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
         txn.as_signed_user_txn()?.clone()
     };
     let _ = pool.get_service().add_txns(vec![retracted_txn.clone()]);
@@ -87,7 +86,7 @@ async fn test_rollback() -> Result<()> {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 20000);
+        let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 20000);
         txn.as_signed_user_txn()?.clone()
     };
 
@@ -128,7 +127,7 @@ async fn test_rollback() -> Result<()> {
             .iter()
             .map(|t| Transaction::UserTransaction(t.clone()))
             .collect();
-        let (root, _txn_infos) = BlockExecutor::block_execute(
+        let (root, _txn_infos) = starcoin_executor::block_execute(
             &chain_state,
             txns,
             enacted_block.header().clone().into_metadata(),

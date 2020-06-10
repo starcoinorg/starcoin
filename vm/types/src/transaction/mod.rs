@@ -540,6 +540,10 @@ impl TransactionInfo {
         }
     }
 
+    pub fn id(&self) -> HashValue {
+        self.crypto_hash()
+    }
+
     /// Returns the hash of this transaction.
     pub fn transaction_hash(&self) -> HashValue {
         self.transaction_hash

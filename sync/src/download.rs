@@ -1,7 +1,9 @@
-use crate::helper::{get_body_by_hash, get_headers, get_info_by_hash};
+use crate::block_connector::BlockConnector;
 /// Sync message which outbound
+use crate::block_sync::do_block_sync_task;
+use crate::helper::{get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer};
 use crate::state_sync::StateSyncTaskActor;
-use crate::sync_metrics::{LABEL_BLOCK, LABEL_HASH, LABEL_STATE, SYNC_METRICS};
+use crate::sync_metrics::{LABEL_BLOCK, LABEL_STATE, SYNC_METRICS};
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::{format_err, Result};
@@ -14,16 +16,14 @@ use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
-use parking_lot::RwLock;
 use starcoin_storage::Store;
 use starcoin_sync_api::sync_messages::{BlockBody, GetBlockHeaders, SyncNotify};
 use starcoin_sync_api::SyncMetadata;
-use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
-use traits::{is_ok, ConnectBlockError, Consensus};
+use traits::Consensus;
 use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
@@ -35,11 +35,11 @@ use types::{
 pub enum SyncEvent {
     DoSync,
     DoPivot(Box<Block>, Box<BlockInfo>),
+    BlockSyncDone,
 }
 
 const MIN_PEER_SIZE: usize = 5;
 
-#[derive(Clone)]
 pub struct DownloadActor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
@@ -90,7 +90,7 @@ where
         Ok(download_actor)
     }
 
-    fn sync_task(&mut self) {
+    fn sync_task(&mut self, download_address: Addr<DownloadActor<C>>) {
         if (!self.sync_metadata.fast_sync_mode()
             || (self.sync_metadata.fast_sync_mode() && self.sync_metadata.is_sync_done())
             // || (self.sync_metadata.state_syncing()
@@ -100,13 +100,12 @@ where
             && !self.syncing.load(Ordering::Relaxed)
             && self.ready.load(Ordering::Relaxed)
         {
-            self.syncing.store(true, Ordering::Relaxed);
             Self::sync_block_from_best_peer(
                 self.sync_metadata.clone(),
                 self.syncing.clone(),
-                self.self_peer_id.as_ref().clone(),
                 self.downloader.clone(),
                 self.network.clone(),
+                download_address,
             );
         }
     }
@@ -170,11 +169,19 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = Result<()>;
-    fn handle(&mut self, item: SyncEvent, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, item: SyncEvent, ctx: &mut Self::Context) -> Self::Result {
         match item {
-            SyncEvent::DoSync => self.sync_task(),
+            SyncEvent::DoSync => self.sync_task(ctx.address()),
             SyncEvent::DoPivot(block, block_info) => {
                 self.do_block_and_child(*block, Some(*block_info))
+            }
+            SyncEvent::BlockSyncDone => {
+                self.syncing.store(false, Ordering::Relaxed);
+                let _ = self.sync_metadata.block_sync_done();
+                SYNC_METRICS
+                    .sync_done_count
+                    .with_label_values(&[LABEL_BLOCK])
+                    .inc();
             }
         }
 
@@ -247,7 +254,7 @@ where
             )
             .await
             {
-                debug!("error : {:?}", e);
+                debug!("state sync error : {:?}", e);
                 Self::sync_state(
                     self_peer_id,
                     main_network,
@@ -300,15 +307,14 @@ where
                 .ok_or_else(|| format_err!("Master head is none."))?
                 .number();
 
-            if let Some(ancestor_header) = Downloader::<C>::find_ancestor_header(
-                downloader.clone(),
-                best_peer.get_peer_id(),
-                network.clone(),
-                begin_number,
-                false,
-                true,
-            )
-            .await?
+            if let Some(ancestor_header) = downloader
+                .find_ancestor_header(
+                    best_peer.get_peer_id(),
+                    network.clone(),
+                    begin_number,
+                    false,
+                )
+                .await?
             {
                 let ancestor = ancestor_header.number();
 
@@ -333,7 +339,7 @@ where
                 }
 
                 // 3. StateSyncActor
-                let root = Self::get_pivot(
+                let root = Downloader::<C>::get_pivot(
                     &network,
                     best_peer.get_peer_id(),
                     (latest_block_id, latest_number),
@@ -366,7 +372,7 @@ where
                         sync_metadata.clone(),
                         address,
                     );
-                    sync_metadata.update_address(&state_sync_task_address)?
+                    sync_metadata.update_address(&state_sync_task_address)?;
                 } else if let Some(_tmp) = sync_pivot {
                     // if tmp < pivot {
                     //     if let Some(address) = sync_metadata.get_address() {
@@ -399,230 +405,88 @@ where
         Ok(())
     }
 
-    async fn get_pivot(
-        network: &NetworkAsyncService,
-        peer_id: PeerId,
-        latest_block: (HashValue, BlockNumber),
-        step: usize,
-    ) -> Result<BlockHeader> {
-        let get_headers_req = GetBlockHeaders::new(latest_block.0, step, true, 1);
-        let mut headers = get_headers(&network, peer_id.clone(), get_headers_req).await?;
-        if let Some(pivot) = headers.pop() {
-            let number = latest_block.1 - step as u64;
-            if pivot.number() == number {
-                Ok(pivot)
-            } else {
-                Err(format_err!(
-                    "pivot number miss match : {:?} , {:?}",
-                    pivot.number(),
-                    number
-                ))
-            }
-        } else {
-            Err(format_err!("{:?}", "pivot header is none."))
-        }
-    }
-
     fn sync_block_from_best_peer(
         sync_metadata: SyncMetadata,
         syncing: Arc<AtomicBool>,
-        _self_peer_id: PeerId,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
+        download_address: Addr<DownloadActor<C>>,
     ) {
         Arbiter::spawn(async move {
             SYNC_METRICS
                 .sync_count
                 .with_label_values(&[LABEL_BLOCK])
                 .inc();
-            let full_mode = sync_metadata.state_syncing();
-            if let Err(e) =
-                Self::sync_block_from_best_peer_inner(downloader, network, full_mode).await
+            let is_full_mode = sync_metadata.state_syncing();
+            if let Err(e) = Self::sync_block_from_best_peer_inner(
+                downloader,
+                network,
+                is_full_mode,
+                download_address,
+                syncing.clone(),
+            )
+            .await
             {
                 error!("sync block from best peer failed : {:?}", e);
-            } else {
+                syncing.store(false, Ordering::Relaxed);
                 let _ = sync_metadata.block_sync_done();
-                SYNC_METRICS
-                    .sync_done_count
-                    .with_label_values(&[LABEL_BLOCK])
-                    .inc();
-            };
-
-            syncing.store(false, Ordering::Relaxed);
+            }
         });
     }
 
     async fn sync_block_from_best_peer_inner(
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
-        full_mode: bool,
+        is_full_mode: bool,
+        download_address: Addr<DownloadActor<C>>,
+        syncing: Arc<AtomicBool>,
     ) -> Result<()> {
+        syncing.store(true, Ordering::Relaxed);
         if let Some(best_peer) = network.best_peer().await? {
             if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
-                let head_executed = if let Some(head_state) = downloader
-                    .chain_reader
-                    .clone()
-                    .get_block_state_by_hash(&header.id())
+                let end_number = best_peer.get_block_number();
+                if let Some(ancestor_header) = downloader
+                    .find_ancestor_header(
+                        best_peer.get_peer_id(),
+                        network.clone(),
+                        header.number(),
+                        is_full_mode,
+                    )
                     .await?
                 {
-                    head_state == BlockState::Executed
+                    do_block_sync_task(
+                        &ancestor_header,
+                        end_number,
+                        downloader.clone(),
+                        network.clone(),
+                        download_address,
+                    );
+                    Ok(())
                 } else {
-                    false
-                };
-
-                let end_number = best_peer.get_block_number();
-                if let Some(ancestor_header) = Downloader::<C>::find_ancestor_header(
-                    downloader.clone(),
-                    best_peer.get_peer_id(),
-                    network.clone(),
-                    header.number(),
-                    full_mode,
-                    head_executed,
-                )
-                .await?
-                {
-                    let mut latest_block_id = ancestor_header.id();
-                    let mut latest_number = ancestor_header.number();
-                    //1. sync hash
-                    loop {
-                        if end_number <= latest_number {
-                            break;
-                        }
-                        let get_headers_req =
-                            Downloader::<C>::get_headers_msg_for_common(latest_block_id);
-                        let hash_timer = SYNC_METRICS
-                            .sync_done_time
-                            .with_label_values(&[LABEL_HASH])
-                            .start_timer();
-                        let headers =
-                            get_headers(&network, best_peer.get_peer_id(), get_headers_req).await?;
-                        hash_timer.observe_duration();
-                        SYNC_METRICS
-                            .sync_total_count
-                            .with_label_values(&[LABEL_HASH])
-                            .inc_by(headers.len() as i64);
-
-                        let block_timer = SYNC_METRICS
-                            .sync_done_time
-                            .with_label_values(&[LABEL_BLOCK])
-                            .start_timer();
-                        if headers.is_empty() {
-                            break;
-                        } else {
-                            let latest_header = headers.last().expect("headers is empty.");
-                            latest_block_id = latest_header.id();
-                            latest_number = latest_header.number();
-                            let hashs: Vec<HashValue> =
-                                headers.iter().map(|header| header.id()).collect();
-                            let bodies =
-                                get_body_by_hash(&network, best_peer.get_peer_id(), hashs.clone())
-                                    .await?;
-                            SYNC_METRICS
-                                .sync_total_count
-                                .with_label_values(&[LABEL_BLOCK])
-                                .inc_by(bodies.len() as i64);
-
-                            let infos =
-                                get_info_by_hash(&network, best_peer.get_peer_id(), hashs).await?;
-                            block_timer.observe_duration();
-                            SYNC_METRICS
-                                .sync_succ_count
-                                .with_label_values(&[LABEL_BLOCK])
-                                .inc_by(infos.len() as i64);
-                            Downloader::do_blocks(downloader.clone(), headers, bodies, infos).await;
-                        }
-                    }
+                    Err(format_err!(
+                        "{:?}",
+                        "Find ancestor_header failed when create sync task."
+                    ))
                 }
             } else {
-                return Err(format_err!("{:?}", "block header is none."));
+                Err(format_err!(
+                    "{:?}",
+                    "block header is none when create sync task."
+                ))
             }
         } else {
-            //return Err(format_err!("{:?}", "best peer is none."));
-            debug!("{:?}", "best peer is none when sync block.");
+            Err(format_err!(
+                "{:?}",
+                "best peer is none when create sync task."
+            ))
         }
-
-        Ok(())
     }
 
     pub fn do_block_and_child(&self, block: Block, block_info: Option<BlockInfo>) {
         let downloader = self.downloader.clone();
         Arbiter::spawn(async move {
-            Downloader::do_block_and_child(downloader, block, block_info).await;
+            downloader.connect_block_and_child(block, block_info).await;
         });
-    }
-}
-
-struct FutureBlockPool {
-    child: Arc<RwLock<HashMap<HashValue, HashSet<HashValue>>>>,
-    blocks: Arc<RwLock<HashMap<HashValue, (Block, Option<BlockInfo>)>>>,
-}
-
-impl FutureBlockPool {
-    pub fn new() -> Self {
-        FutureBlockPool {
-            child: Arc::new(RwLock::new(HashMap::new())),
-            blocks: Arc::new(RwLock::new(HashMap::new())),
-        }
-    }
-
-    pub fn add_future_block(&self, block: Block, block_info: Option<BlockInfo>) {
-        let block_id = block.header().id();
-        let parent_id = block.header().parent_hash();
-        if !self.blocks.read().contains_key(&block_id) {
-            self.blocks.write().insert(block_id, (block, block_info));
-        }
-        let mut lock = self.child.write();
-        if lock.contains_key(&parent_id) {
-            lock.get_mut(&parent_id)
-                .expect("parent not exist.")
-                .insert(block_id);
-        } else {
-            let mut child = HashSet::new();
-            child.insert(block_id);
-            lock.insert(parent_id, child);
-        }
-    }
-
-    fn descendants(&self, parent_id: &HashValue) -> Vec<HashValue> {
-        let mut child = Vec::new();
-        let lock = self.child.read();
-        if lock.contains_key(parent_id) {
-            lock.get(parent_id)
-                .expect("parent not exist.")
-                .iter()
-                .for_each(|id| {
-                    child.push(*id);
-                });
-
-            if !child.is_empty() {
-                child.clone().iter().for_each(|new_parent_id| {
-                    let mut new_child = self.descendants(new_parent_id);
-                    if !new_child.is_empty() {
-                        child.append(&mut new_child);
-                    }
-                })
-            }
-        };
-
-        child
-    }
-
-    pub fn take_child(&self, parent_id: &HashValue) -> Option<Vec<(Block, Option<BlockInfo>)>> {
-        let descendants = self.descendants(parent_id);
-        if !descendants.is_empty() {
-            let mut child = Vec::new();
-            let mut child_lock = self.child.write();
-            let mut block_lock = self.blocks.write();
-            descendants.iter().for_each(|id| {
-                let _ = child_lock.remove(id);
-                if let Some((block, block_info)) = block_lock.remove(id) {
-                    child.push((block, block_info));
-                }
-            });
-            Some(child)
-        } else {
-            None
-        }
     }
 }
 
@@ -632,10 +496,9 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     chain_reader: ChainActorRef<C>,
-    future_blocks: FutureBlockPool,
+    block_connector: BlockConnector<C>,
 }
 
-const HEAD_CT: usize = 10;
 const MIN_BLOCKS_BEHIND: u64 = 10;
 const MAIN_MIN_BLOCKS_BEHIND: u64 = 100;
 
@@ -645,8 +508,8 @@ where
 {
     pub fn new(chain_reader: ChainActorRef<C>) -> Self {
         Downloader {
+            block_connector: BlockConnector::new(chain_reader.clone()),
             chain_reader,
-            future_blocks: FutureBlockPool::new(),
         }
     }
 
@@ -654,24 +517,12 @@ where
         self.chain_reader.clone()
     }
 
-    /// for ancestor
-    pub fn get_headers_msg_for_ancestor(block_id: HashValue, step: usize) -> GetBlockHeaders {
-        //todo：binary search
-        GetBlockHeaders::new(block_id, step, true, HEAD_CT)
-    }
-
-    /// for common
-    pub fn get_headers_msg_for_common(block_id: HashValue) -> GetBlockHeaders {
-        GetBlockHeaders::new(block_id, 1, false, HEAD_CT)
-    }
-
     pub async fn find_ancestor_header(
-        downloader: Arc<Downloader<C>>,
+        &self,
         peer_id: PeerId,
         network: NetworkAsyncService,
         block_number: BlockNumber,
-        full_mode: bool,
-        head_executed: bool,
+        is_full_mode: bool,
     ) -> Result<Option<BlockHeader>> {
         let mut ancestor_header = None;
         let peer_info = network
@@ -681,19 +532,21 @@ where
         if peer_info.latest_header.number() <= block_number {
             return Ok(ancestor_header);
         }
-        let mut need_executed = if head_executed { false } else { full_mode };
-        let mut latest_block_id = peer_info.latest_header.id();
+        let mut need_executed = is_full_mode;
+        let mut latest_block_number = block_number;
         let mut continue_none = false;
         loop {
-            let get_block_headers_req =
-                Downloader::<C>::get_headers_msg_for_ancestor(latest_block_id, 1);
-            let get_headers = get_headers(&network, peer_id.clone(), get_block_headers_req).await?;
-            if !get_headers.is_empty() {
-                latest_block_id = get_headers
+            let get_block_headers_by_number_req =
+                get_headers_msg_for_ancestor(latest_block_number, 1);
+            let headers =
+                get_headers_by_number(&network, peer_id.clone(), get_block_headers_by_number_req)
+                    .await?;
+            if !headers.is_empty() {
+                latest_block_number = headers
                     .last()
-                    .expect("get_headers is empty.")
+                    .expect("get_headers_by_number is empty.")
                     .clone()
-                    .id();
+                    .number();
                 continue_none = false;
             } else {
                 if continue_none {
@@ -702,8 +555,7 @@ where
                 continue_none = true;
             }
 
-            let (need_executed_new, ancestor) =
-                Downloader::do_ancestor(downloader.clone(), get_headers, need_executed).await?;
+            let (need_executed_new, ancestor) = self.do_ancestor(headers, need_executed).await?;
 
             need_executed = need_executed_new;
 
@@ -720,14 +572,14 @@ where
     }
 
     pub async fn do_ancestor(
-        downloader: Arc<Downloader<C>>,
+        &self,
         block_headers: Vec<BlockHeader>,
         need_executed: bool,
     ) -> Result<(bool, Option<BlockHeader>)> {
         let mut ancestor = None;
         let mut need_executed = need_executed;
         for header in block_headers {
-            if let Some(block_state) = downloader
+            if let Some(block_state) = self
                 .chain_reader
                 .clone()
                 .get_block_state_by_hash(&header.id())
@@ -746,8 +598,32 @@ where
         Ok((need_executed, ancestor))
     }
 
+    async fn get_pivot(
+        network: &NetworkAsyncService,
+        peer_id: PeerId,
+        latest_block: (HashValue, BlockNumber),
+        step: usize,
+    ) -> Result<BlockHeader> {
+        let get_headers_req = GetBlockHeaders::new(latest_block.0, step, true, 1);
+        let mut headers = get_headers_with_peer(&network, peer_id, get_headers_req).await?;
+        if let Some(pivot) = headers.pop() {
+            let number = latest_block.1 - step as u64;
+            if pivot.number() == number {
+                Ok(pivot)
+            } else {
+                Err(format_err!(
+                    "pivot number miss match : {:?} , {:?}",
+                    pivot.number(),
+                    number
+                ))
+            }
+        } else {
+            Err(format_err!("{:?}", "pivot header is none."))
+        }
+    }
+
     pub async fn do_blocks(
-        downloader: Arc<Downloader<C>>,
+        &self,
         headers: Vec<BlockHeader>,
         bodies: Vec<BlockBody>,
         infos: Vec<BlockInfo>,
@@ -759,7 +635,7 @@ where
                 if let Some(body) = bodies.get(i) {
                     if let Some(info) = infos.get(i) {
                         let block = Block::new(header.clone(), body.clone().transactions);
-                        Self::do_block_and_child(downloader.clone(), block, Some(info.clone()))
+                        self.connect_block_and_child(block, Some(info.clone()))
                             .await;
                     }
                 }
@@ -767,60 +643,9 @@ where
         }
     }
 
-    pub async fn do_block_and_child(
-        downloader: Arc<Downloader<C>>,
-        block: Block,
-        block_info: Option<BlockInfo>,
-    ) {
-        let block_id = block.header().id();
-        if Self::do_block(downloader.clone(), block, block_info).await {
-            if let Some(child) = downloader.future_blocks.take_child(&block_id) {
-                for (son_block, son_block_info) in child {
-                    let _ = Self::do_block(downloader.clone(), son_block, son_block_info).await;
-                }
-            }
-        }
-    }
-
-    async fn do_block(
-        downloader: Arc<Downloader<C>>,
-        block: Block,
-        block_info: Option<BlockInfo>,
-    ) -> bool {
-        let connect_result = if block_info.is_some() {
-            downloader
-                .chain_reader
-                .clone()
-                .try_connect_with_block_info(
-                    block.clone(),
-                    block_info.clone().expect("block info can not be none."),
-                )
-                .await
-        } else {
-            downloader
-                .chain_reader
-                .clone()
-                .try_connect(block.clone())
-                .await
-        };
-
-        let block_id = block.id();
-        match connect_result {
-            Ok(connect) => {
-                if is_ok(&connect) {
-                    return true;
-                } else if let Err(err) = connect {
-                    match err {
-                        ConnectBlockError::FutureBlock => {
-                            downloader.future_blocks.add_future_block(block, block_info)
-                        }
-                        _ => debug!("Connect block {:?} failed, because : {:?}", block_id, err),
-                    }
-                }
-            }
-            Err(e) => error!("Connect block {:?} failed : {:?}", block_id, e),
-        }
-
-        false
+    pub async fn connect_block_and_child(&self, block: Block, block_info: Option<BlockInfo>) {
+        self.block_connector
+            .do_block_and_child(block, block_info)
+            .await;
     }
 }

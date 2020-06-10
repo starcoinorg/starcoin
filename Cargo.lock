@@ -285,6 +285,12 @@ dependencies = [
 
 [[package]]
 name = "ansi_term"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23ac7c30002a5accbf7e8987d0632fa6de155b7c3d39d0067317a391e00a2ef6"
+
+[[package]]
+name = "ansi_term"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b"
@@ -549,6 +555,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-executor",
  "starcoin-executor-benchmark",
  "starcoin-genesis",
  "starcoin-logger",
@@ -896,7 +903,7 @@ version = "2.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdfa80d47f954d53a35a64987ca1422f495b8d6483c0fe9f7117b36c2a792129"
 dependencies = [
- "ansi_term",
+ "ansi_term 0.11.0",
  "atty",
  "bitflags",
  "strsim 0.8.0",
@@ -969,7 +976,7 @@ dependencies = [
  "move-ir-types",
  "serde_json",
  "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=627e66029eb748c1e3e05d6c8fd6db11935f80b4)",
- "structopt",
+ "structopt 0.3.14",
  "vm",
 ]
 
@@ -1432,7 +1439,7 @@ source = "git+https://github.com/starcoinorg/libra?rev=627e66029eb748c1e3e05d6c8
 dependencies = [
  "libra-workspace-hack",
  "regex",
- "structopt",
+ "structopt 0.3.14",
  "termcolor",
  "walkdir",
 ]
@@ -3950,7 +3957,7 @@ dependencies = [
  "move-ir-types",
  "petgraph",
  "regex",
- "structopt",
+ "structopt 0.3.14",
  "vm",
  "walkdir",
 ]
@@ -3982,6 +3989,38 @@ dependencies = [
  "simplelog",
  "spec-lang",
  "stackless-bytecode-generator",
+ "toml",
+ "vm",
+]
+
+[[package]]
+name = "move-prover"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytecode-source-map",
+ "clap",
+ "codespan",
+ "codespan-reporting",
+ "datatest-stable",
+ "docgen",
+ "handlebars",
+ "itertools 0.9.0",
+ "libra-temppath",
+ "libra-types",
+ "libra-workspace-hack",
+ "log 0.4.8",
+ "move-ir-types",
+ "move-lang",
+ "num",
+ "once_cell",
+ "pretty",
+ "regex",
+ "serde",
+ "simplelog",
+ "spec-lang",
+ "stackless-bytecode-generator",
+ "test-utils",
  "toml",
  "vm",
 ]
@@ -4863,6 +4902,31 @@ checksum = "ad9940b913ee56ddd94aec2d3cd179dd47068236f42a1a6415ccf9d880ce2a61"
 dependencies = [
  "arrayvec 0.5.1",
  "typed-arena",
+]
+
+[[package]]
+name = "prettydiff"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5240be0c9ea1bc7887819a36264cb9475eb71c58749808e5b989c8c1fdc67acf"
+dependencies = [
+ "ansi_term 0.9.0",
+ "prettytable-rs",
+ "structopt 0.2.18",
+]
+
+[[package]]
+name = "prettytable-rs"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fd04b170004fa2daccf418a7f8253aaf033c27760b5f225889024cf66d7ac2e"
+dependencies = [
+ "atty",
+ "csv",
+ "encode_unicode",
+ "lazy_static",
+ "term",
+ "unicode-width",
 ]
 
 [[package]]
@@ -5796,7 +5860,7 @@ dependencies = [
  "rustyline",
  "serde",
  "serde_json",
- "structopt",
+ "structopt 0.3.14",
  "thiserror",
 ]
 
@@ -6338,7 +6402,7 @@ dependencies = [
  "starcoin-vm-types",
  "starcoin-wallet-api",
  "stdlib 0.1.0",
- "structopt",
+ "structopt 0.3.14",
  "tokio 0.2.21",
 ]
 
@@ -6359,7 +6423,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-types",
- "structopt",
+ "structopt 0.3.14",
  "thiserror",
  "toml",
 ]
@@ -6369,7 +6433,7 @@ name = "starcoin-config-generator"
 version = "0.1.0"
 dependencies = [
  "starcoin-config",
- "structopt",
+ "structopt 0.3.14",
 ]
 
 [[package]]
@@ -6473,7 +6537,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-types",
  "starcoin-vm-runtime",
- "structopt",
+ "structopt 0.3.14",
  "tokio 0.2.21",
 ]
 
@@ -6494,7 +6558,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-types",
  "starcoin-wallet-api",
- "structopt",
+ "structopt 0.3.14",
  "tiny_http",
  "tokio 0.2.21",
  "tokio-executor 0.2.0-alpha.6",
@@ -6514,6 +6578,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-executor",
  "starcoin-logger",
  "starcoin-move-compiler",
  "starcoin-statedb",
@@ -6624,7 +6689,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-wallet-api",
  "stest",
- "structopt",
+ "structopt 0.3.14",
  "thiserror",
  "tokio 0.2.21",
 ]
@@ -7086,7 +7151,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-types",
  "starcoin-wallet-api",
- "structopt",
+ "structopt 0.3.14",
  "tokio 0.2.21",
 ]
 
@@ -7325,7 +7390,7 @@ dependencies = [
  "libra-workspace-hack",
  "log 0.4.8",
  "move-lang",
- "move-prover",
+ "move-prover 0.1.0 (git+https://github.com/starcoinorg/libra?rev=627e66029eb748c1e3e05d6c8fd6db11935f80b4)",
  "once_cell",
  "vm",
 ]
@@ -7409,13 +7474,35 @@ checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
 
 [[package]]
 name = "structopt"
+version = "0.2.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16c2cdbf9cc375f15d1b4141bc48aeef444806655cd0e904207edc8d68d86ed7"
+dependencies = [
+ "clap",
+ "structopt-derive 0.2.18",
+]
+
+[[package]]
+name = "structopt"
 version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "863246aaf5ddd0d6928dfeb1a9ca65f505599e4e1b399935ef7e75107516b4ef"
 dependencies = [
  "clap",
  "lazy_static",
- "structopt-derive",
+ "structopt-derive 0.4.7",
+]
+
+[[package]]
+name = "structopt-derive"
+version = "0.2.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53010261a84b37689f9ed7d395165029f9cc7abb9f56bbfe86bee2597ed25107"
+dependencies = [
+ "heck",
+ "proc-macro2 0.4.30",
+ "quote 0.6.13",
+ "syn 0.15.44",
 ]
 
 [[package]]
@@ -7503,6 +7590,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "term"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edd106a334b7657c10b7c540a0106114feadeb4dc314513e97df481d5d966f42"
+dependencies = [
+ "byteorder 1.3.4",
+ "dirs 1.0.5",
+ "winapi 0.3.8",
+]
+
+[[package]]
 name = "term_size"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7541,12 +7639,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-utils"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/libra?rev=627e66029eb748c1e3e05d6c8fd6db11935f80b4#627e66029eb748c1e3e05d6c8fd6db11935f80b4"
+dependencies = [
+ "anyhow",
+ "libra-workspace-hack",
+ "prettydiff",
+ "regex",
+]
+
+[[package]]
 name = "testsuite"
 version = "0.1.0"
 dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "clap",
  "cucumber_rust",
  "data-encoding",
  "gherkin_rust 0.8.0",
@@ -7557,11 +7667,13 @@ dependencies = [
  "ring",
  "rmp",
  "rmp-serde",
+ "scmd",
  "serde",
  "serde_bytes",
  "serde_json",
  "sha2",
  "starcoin-chain",
+ "starcoin-cmd",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7579,6 +7691,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-wallet-api",
  "static_assertions 0.3.4",
+ "structopt 0.3.14",
 ]
 
 [[package]]

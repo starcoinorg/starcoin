@@ -10,19 +10,21 @@ use starcoin_types::transaction::TransactionInfo;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_txn_by_block")]
-pub struct GetOpt {
-    #[structopt(name = "hash")]
-    hash: HashValue,
+#[structopt(name = "get_txn_info")]
+pub struct GetTransactionInfoOpt {
+    #[structopt(name = "block-hash")]
+    block_hash: HashValue,
+    #[structopt(name = "idx", help = "the index(start from 0) of the txn in the block")]
+    idx: u64,
 }
 
-pub struct GetTxnByBlockCommand;
+pub struct GetTransactionInfoCommand;
 
-impl CommandAction for GetTxnByBlockCommand {
+impl CommandAction for GetTransactionInfoCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetOpt;
-    type ReturnItem = Vec<TransactionInfo>;
+    type Opt = GetTransactionInfoOpt;
+    type ReturnItem = Option<TransactionInfo>;
 
     fn run(
         &self,
@@ -30,8 +32,9 @@ impl CommandAction for GetTxnByBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let vec_transaction_info = client.chain_get_txn_by_block(opt.hash)?;
+        let transaction_info =
+            client.chain_get_txn_info_by_block_and_index(opt.block_hash, opt.idx)?;
 
-        Ok(vec_transaction_info)
+        Ok(transaction_info)
     }
 }

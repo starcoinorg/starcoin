@@ -3,7 +3,6 @@ use anyhow::Result;
 use config::NodeConfig;
 use consensus::dev::DevConsensus;
 use crypto::keygen::KeyGen;
-use executor::{executor::Executor, TransactionExecutor};
 use logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
@@ -34,7 +33,7 @@ pub fn test_open_block() -> Result<()> {
 
     let (sender_prikey, sender_pubkey) = KeyGen::from_os_rng().generate_keypair();
     let sender = account_address::from_public_key(&sender_pubkey);
-    let txn1 = Executor::build_mint_txn(
+    let txn1 = executor::build_mint_txn(
         sender,
         AuthenticationKey::ed25519(&sender_pubkey).prefix().to_vec(),
         1,
@@ -62,7 +61,7 @@ pub fn test_open_block() -> Result<()> {
     let build_transfer_txn = |seq_number: u64| {
         let (_prikey, pubkey) = KeyGen::from_os_rng().generate_keypair();
         let address = account_address::from_public_key(&pubkey);
-        Executor::build_transfer_txn(
+        executor::build_transfer_txn(
             sender,
             address,
             AuthenticationKey::ed25519(&pubkey).prefix().to_vec(),

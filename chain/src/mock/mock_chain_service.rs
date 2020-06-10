@@ -8,7 +8,7 @@ use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
-    transaction::{SignedUserTransaction, TransactionInfo},
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
 //TODO implement Mock service
@@ -18,6 +18,14 @@ pub struct MockChainService;
 #[async_trait::async_trait]
 impl ChainAsyncService for MockChainService {
     async fn try_connect(self, _block: Block) -> Result<ConnectResult<()>> {
+        unimplemented!()
+    }
+
+    async fn try_connect_with_block_info(
+        &mut self,
+        _block: Block,
+        _block_info: BlockInfo,
+    ) -> Result<ConnectResult<()>, Error> {
         unimplemented!()
     }
 
@@ -33,19 +41,23 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn master_block_header_by_number(self, _number: BlockNumber) -> Result<BlockHeader> {
-        unimplemented!()
-    }
-
-    async fn try_connect_with_block_info(
-        &mut self,
-        _block: Block,
-        _block_info: BlockInfo,
-    ) -> Result<ConnectResult<()>, Error> {
-        unimplemented!()
-    }
-
     async fn get_block_info_by_hash(self, _hash: &HashValue) -> Result<Option<BlockInfo>> {
+        unimplemented!()
+    }
+
+    async fn get_transaction(self, _txn_id: HashValue) -> Result<Transaction> {
+        unimplemented!()
+    }
+
+    async fn get_block_txn_infos(self, _block_id: HashValue) -> Result<Vec<TransactionInfo>> {
+        unimplemented!()
+    }
+
+    async fn get_txn_info_by_block_and_index(
+        self,
+        _block_id: HashValue,
+        _idx: u64,
+    ) -> Result<Option<TransactionInfo>, Error> {
         unimplemented!()
     }
 
@@ -69,19 +81,15 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
+    async fn master_block_header_by_number(self, _number: BlockNumber) -> Result<BlockHeader> {
+        unimplemented!()
+    }
+
     async fn master_startup_info(self) -> Result<StartupInfo> {
         unimplemented!()
     }
 
     async fn master_head(self) -> Result<ChainInfo> {
-        unimplemented!()
-    }
-
-    async fn get_transaction(self, _txn_id: HashValue) -> Result<TransactionInfo> {
-        unimplemented!()
-    }
-
-    async fn get_block_txn(self, _block_id: HashValue) -> Result<Vec<TransactionInfo>> {
         unimplemented!()
     }
 

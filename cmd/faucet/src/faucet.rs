@@ -1,16 +1,17 @@
 use anyhow::{format_err, Result};
 
-use starcoin_executor::executor::Executor;
-use starcoin_executor::TransactionExecutor;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::{account_address::AccountAddress, transaction::RawUserTransaction};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_wallet_api::WalletAccount;
 
 pub struct Faucet {
     client: RpcClient,
     faucet_account: WalletAccount,
 }
+
+const DEFAULT_GAS_PRICE: u64 = 1;
+const MAX_GAS: u64 = 50_000_000;
 
 impl Faucet {
     pub fn new(client: RpcClient, faucet_account: WalletAccount) -> Self {
@@ -37,33 +38,17 @@ impl Faucet {
                 )
             })?;
 
-        let raw_tx = transfer_tx(
-            &self.faucet_account,
-            amount,
+        let raw_tx = starcoin_executor::build_transfer_txn(
+            self.faucet_account.address,
             receiver,
-            account_resource.sequence_number(),
             auth_key,
+            account_resource.sequence_number(),
+            amount,
+            DEFAULT_GAS_PRICE,
+            MAX_GAS,
         );
         let signed_tx = self.client.wallet_sign_txn(raw_tx)?;
         let ret = self.client.submit_transaction(signed_tx)?;
         Ok(ret)
     }
-}
-
-fn transfer_tx(
-    sender: &WalletAccount,
-    amount: u64,
-    receiver: AccountAddress,
-    seq_num: u64,
-    receiver_auth_key_prefix: Vec<u8>,
-) -> RawUserTransaction {
-    Executor::build_transfer_txn(
-        sender.address,
-        receiver,
-        receiver_auth_key_prefix,
-        seq_num,
-        amount,
-        1,
-        50_000_000,
-    )
 }

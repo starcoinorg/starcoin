@@ -13,7 +13,7 @@ use structopt::StructOpt;
 #[structopt(name = "get_block")]
 pub struct GetOpt {
     #[structopt(name = "hash")]
-    hash: String,
+    hash: HashValue,
 }
 
 pub struct GetBlockCommand;
@@ -30,7 +30,7 @@ impl CommandAction for GetBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let block = client.chain_get_block_by_hash(HashValue::from_hex(&opt.hash).unwrap())?;
+        let block = client.chain_get_block_by_hash(opt.hash)?;
 
         Ok(block.into())
     }

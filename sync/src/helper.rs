@@ -10,16 +10,20 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
 use starcoin_sync_api::sync_messages::{
-    BlockBody, GetBlockHeaders, GetTxns, SyncRpcRequest, SyncRpcResponse, TransactionsData,
+    BlockBody, GetBlockHeaders, GetBlockHeadersByNumber, GetTxns, SyncRpcRequest, SyncRpcResponse,
+    TransactionsData,
 };
 use std::borrow::Cow;
 use types::{
-    block::{BlockHeader, BlockInfo},
+    block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::{PeerId, RpcInfo},
     CHAIN_PROTOCOL_NAME,
 };
 
+const HEAD_CT: usize = 10;
+
 const GET_TXNS_STR: &str = "GetTxns";
+const GET_BLOCK_HEADERS_BY_NUM_STR: &str = "GetBlockHeadersByNumber";
 const GET_BLOCK_HEADERS_STR: &str = "GetBlockHeaders";
 const GET_BLOCK_INFOS_STR: &str = "GetBlockInfos";
 const GET_BLOCK_BODIES_STR: &str = "GetBlockBodies";
@@ -29,6 +33,7 @@ const GET_ACCUMULATOR_NODE_BY_NODE_HASH_STR: &str = "GetAccumulatorNodeByNodeHas
 pub fn sync_rpc_info() -> (&'static [u8], RpcInfo) {
     let mut paths = Vec::new();
     paths.push(GET_TXNS_STR.to_string());
+    paths.push(GET_BLOCK_HEADERS_BY_NUM_STR.to_string());
     paths.push(GET_BLOCK_HEADERS_STR.to_string());
     paths.push(GET_BLOCK_INFOS_STR.to_string());
     paths.push(GET_BLOCK_BODIES_STR.to_string());
@@ -72,7 +77,31 @@ pub async fn get_txns(
     }
 }
 
-pub async fn get_headers(
+pub async fn get_headers_by_number(
+    network: &NetworkAsyncService,
+    peer_id: PeerId,
+    req: GetBlockHeadersByNumber,
+) -> Result<Vec<BlockHeader>> {
+    let get_block_headers_by_num_req = SyncRpcRequest::GetBlockHeadersByNumber(req.clone());
+    if let SyncRpcResponse::BlockHeaders(headers) = do_request(
+        &network,
+        peer_id,
+        GET_BLOCK_HEADERS_BY_NUM_STR,
+        get_block_headers_by_num_req,
+    )
+    .await?
+    {
+        //todo: Verify response
+        Ok(headers)
+    } else {
+        Err(format_err!(
+            "{:?}",
+            "error SyncRpcResponse type when sync block header."
+        ))
+    }
+}
+
+pub async fn get_headers_with_peer(
     network: &NetworkAsyncService,
     peer_id: PeerId,
     req: GetBlockHeaders,
@@ -89,42 +118,82 @@ pub async fn get_headers(
         //todo: Verify response
         Ok(headers)
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!(
+            "{:?}",
+            "error SyncRpcResponse type when sync block header."
+        ))
+    }
+}
+
+pub async fn get_headers(
+    network: &NetworkAsyncService,
+    req: GetBlockHeaders,
+) -> Result<Vec<BlockHeader>> {
+    if let Some(peer_info) = network.best_peer().await? {
+        get_headers_with_peer(network, peer_info.get_peer_id(), req).await
+    } else {
+        Err(format_err!(
+            "{:?}",
+            "Can not get peer when sync block header."
+        ))
     }
 }
 
 pub async fn get_body_by_hash(
     network: &NetworkAsyncService,
-    peer_id: PeerId,
     hashs: Vec<HashValue>,
 ) -> Result<Vec<BlockBody>> {
-    let get_body_by_hash_req = SyncRpcRequest::GetBlockBodies(hashs);
-    if let SyncRpcResponse::BlockBodies(bodies) = do_request(
-        &network,
-        peer_id,
-        GET_BLOCK_BODIES_STR,
-        get_body_by_hash_req,
-    )
-    .await?
-    {
-        Ok(bodies)
+    if let Some(peer_info) = network.best_peer().await? {
+        let get_body_by_hash_req = SyncRpcRequest::GetBlockBodies(hashs);
+        if let SyncRpcResponse::BlockBodies(bodies) = do_request(
+            &network,
+            peer_info.get_peer_id(),
+            GET_BLOCK_BODIES_STR,
+            get_body_by_hash_req,
+        )
+        .await?
+        {
+            Ok(bodies)
+        } else {
+            Err(format_err!(
+                "{:?}",
+                "error SyncRpcResponse type when sync block body."
+            ))
+        }
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!(
+            "{:?}",
+            "Can not get peer when sync block body."
+        ))
     }
 }
 
 pub async fn get_info_by_hash(
     network: &NetworkAsyncService,
-    peer_id: PeerId,
     hashs: Vec<HashValue>,
 ) -> Result<Vec<BlockInfo>> {
-    let get_info_by_hash_req = SyncRpcRequest::GetBlockInfos(hashs);
-    if let SyncRpcResponse::BlockInfos(infos) =
-        do_request(&network, peer_id, GET_BLOCK_INFOS_STR, get_info_by_hash_req).await?
-    {
-        Ok(infos)
+    if let Some(peer_info) = network.best_peer().await? {
+        let get_info_by_hash_req = SyncRpcRequest::GetBlockInfos(hashs);
+        if let SyncRpcResponse::BlockInfos(infos) = do_request(
+            &network,
+            peer_info.get_peer_id(),
+            GET_BLOCK_INFOS_STR,
+            get_info_by_hash_req,
+        )
+        .await?
+        {
+            Ok(infos)
+        } else {
+            Err(format_err!(
+                "{:?}",
+                "error SyncRpcResponse type when sync block info."
+            ))
+        }
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!(
+            "{:?}",
+            "Can not get peer when sync block info."
+        ))
     }
 }
 
@@ -230,4 +299,17 @@ pub async fn do_response_get_txns(
 ) -> Result<()> {
     let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetTxns(txns_data))?;
     do_response(responder, resp).await
+}
+
+/// for common
+pub fn get_headers_msg_for_common(block_id: HashValue) -> GetBlockHeaders {
+    GetBlockHeaders::new(block_id, 1, false, HEAD_CT)
+}
+
+pub fn get_headers_msg_for_ancestor(
+    block_number: BlockNumber,
+    step: usize,
+) -> GetBlockHeadersByNumber {
+    //todo：binary search
+    GetBlockHeadersByNumber::new(block_number, step, HEAD_CT)
 }

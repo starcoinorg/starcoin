@@ -1,42 +1,84 @@
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
-//! Support for encoding transactions for common situations.
-
-use crate::genesis::GENESIS_KEYPAIR;
-use crate::transaction_scripts::{ACCEPT_COIN_TXN, CREATE_ACCOUNT_TXN, PEER_TO_PEER_TXN};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::stc_type_tag;
+use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::{
-    RawUserTransaction, Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
+    RawUserTransaction, Script, SignedUserTransaction, Transaction, TransactionArgument,
+    TransactionPayload,
 };
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::account_config::stc_type_tag;
 use std::time::Duration;
+use vm_runtime::genesis::GENESIS_KEYPAIR;
+use vm_runtime::transaction_scripts::{ACCEPT_COIN_TXN, CREATE_ACCOUNT_TXN, PEER_TO_PEER_TXN};
 
 //TODO move to transaction_builder crate.
-pub const TXN_RESERVED: u64 = 2_000_000;
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
+pub const TXN_RESERVED: u64 = 2_000_000;
 
-pub fn peer_to_peer_txn_sent_as_association(
+pub fn build_mint_txn(
     addr: AccountAddress,
     auth_key_prefix: Vec<u8>,
     seq_num: u64,
     amount: u64,
-) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(addr));
-    args.push(TransactionArgument::U8Vector(auth_key_prefix));
-    args.push(TransactionArgument::U64(amount));
-
-    create_signed_txn_with_association_account(
-        PEER_TO_PEER_TXN.clone(),
-        vec![stc_type_tag()],
-        args,
+) -> Transaction {
+    Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
+        addr,
+        auth_key_prefix,
         seq_num,
-        TXN_RESERVED,
-        1,
+        amount,
+    ))
+}
+
+pub fn build_transfer_txn(
+    sender: AccountAddress,
+    receiver: AccountAddress,
+    receiver_auth_key_prefix: Vec<u8>,
+    seq_num: u64,
+    amount: u64,
+    gas_price: u64,
+    max_gas: u64,
+) -> RawUserTransaction {
+    build_transfer_txn_by_coin_type(
+        sender,
+        receiver,
+        receiver_auth_key_prefix,
+        seq_num,
+        amount,
+        gas_price,
+        max_gas,
+        stc_type_tag(),
     )
+}
+
+pub fn build_transfer_txn_by_coin_type(
+    sender: AccountAddress,
+    receiver: AccountAddress,
+    receiver_auth_key_prefix: Vec<u8>,
+    seq_num: u64,
+    amount: u64,
+    gas_price: u64,
+    max_gas: u64,
+    coin_type: TypeTag,
+) -> RawUserTransaction {
+    raw_peer_to_peer_txn(
+        sender,
+        receiver,
+        receiver_auth_key_prefix,
+        amount,
+        seq_num,
+        gas_price,
+        max_gas,
+        coin_type,
+    )
+}
+
+pub fn build_accept_coin_txn(
+    sender: AccountAddress,
+    seq_num: u64,
+    gas_price: u64,
+    max_gas: u64,
+    coin_type: TypeTag,
+) -> RawUserTransaction {
+    raw_accept_coin_txn(sender, seq_num, gas_price, max_gas, coin_type)
 }
 
 pub fn raw_peer_to_peer_txn(
@@ -114,6 +156,27 @@ pub fn encode_transfer_script(
             TransactionArgument::U8Vector(auth_key_prefix),
             TransactionArgument::U64(amount),
         ],
+    )
+}
+
+pub fn peer_to_peer_txn_sent_as_association(
+    addr: AccountAddress,
+    auth_key_prefix: Vec<u8>,
+    seq_num: u64,
+    amount: u64,
+) -> SignedUserTransaction {
+    let mut args: Vec<TransactionArgument> = Vec::new();
+    args.push(TransactionArgument::Address(addr));
+    args.push(TransactionArgument::U8Vector(auth_key_prefix));
+    args.push(TransactionArgument::U64(amount));
+
+    crate::create_signed_txn_with_association_account(
+        PEER_TO_PEER_TXN.clone(),
+        vec![stc_type_tag()],
+        args,
+        seq_num,
+        TXN_RESERVED,
+        1,
     )
 }
 

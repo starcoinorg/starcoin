@@ -32,7 +32,7 @@ use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::{ChainInfo, StartupInfo},
     system_events::MinedBlock,
-    transaction::{SignedUserTransaction, TransactionInfo},
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
 /// actor for block chain.
@@ -171,17 +171,23 @@ where
             ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(ChainInfo::new(
                 *self.service.master_startup_info().get_master(),
             ))),
-            ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(
+            ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(Box::new(
                 self.service
                     .get_transaction(hash)?
                     .ok_or_else(|| format_err!("Can not find transaction by hash {:?}", hash))?,
-            )),
+            ))),
             ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
                 self.service.master_blocks_by_number(number, count)?,
             )),
-            ChainRequest::GetTransactionIdByBlock(block_id) => Ok(
-                ChainResponse::VecTransactionInfo(self.service.get_block_txn_ids(block_id)?),
+            ChainRequest::GetBlockTransactionInfos(block_id) => Ok(
+                ChainResponse::BlockTransactionInfos(self.service.get_block_txn_infos(block_id)?),
             ),
+            ChainRequest::GetTransactionInfoByBlockAndIndex { block_id, txn_idx } => {
+                Ok(ChainResponse::TransactionInfo(
+                    self.service
+                        .get_txn_info_by_block_and_index(block_id, txn_idx)?,
+                ))
+            }
         }
     }
 }
@@ -248,45 +254,6 @@ where
         }
     }
 
-    async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>> {
-        if let ChainResponse::BlockHeader(header) = self
-            .address
-            .send(ChainRequest::GetHeaderByHash(*hash))
-            .await??
-        {
-            if let Some(h) = *header {
-                return Ok(Some(h));
-            }
-        }
-        Ok(None)
-    }
-
-    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>> {
-        if let ChainResponse::BlockState(Some(block_state)) = self
-            .address
-            .send(ChainRequest::GetBlockStateByHash(*hash))
-            .await??
-        {
-            return Ok(Some(*block_state));
-        }
-        Ok(None)
-    }
-
-    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block> {
-        if let ChainResponse::OptionBlock(block) = self
-            .address
-            .send(ChainRequest::GetBlockByHash(hash))
-            .await??
-        {
-            match block {
-                Some(b) => Ok(*b),
-                None => bail!("get block by hash is none: {:?}", hash),
-            }
-        } else {
-            bail!("get block by hash error.")
-        }
-    }
-
     async fn try_connect_with_block_info(
         &mut self,
         block: Block,
@@ -307,6 +274,45 @@ where
         }
     }
 
+    async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>> {
+        if let ChainResponse::BlockHeader(header) = self
+            .address
+            .send(ChainRequest::GetHeaderByHash(*hash))
+            .await??
+        {
+            if let Some(h) = *header {
+                return Ok(Some(h));
+            }
+        }
+        Ok(None)
+    }
+
+    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block> {
+        if let ChainResponse::OptionBlock(block) = self
+            .address
+            .send(ChainRequest::GetBlockByHash(hash))
+            .await??
+        {
+            match block {
+                Some(b) => Ok(*b),
+                None => bail!("get block by hash is none: {:?}", hash),
+            }
+        } else {
+            bail!("get block by hash error.")
+        }
+    }
+
+    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>> {
+        if let ChainResponse::BlockState(Some(block_state)) = self
+            .address
+            .send(ChainRequest::GetBlockStateByHash(*hash))
+            .await??
+        {
+            return Ok(Some(*block_state));
+        }
+        Ok(None)
+    }
+
     async fn get_block_info_by_hash(self, hash: &HashValue) -> Result<Option<BlockInfo>> {
         debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlockInfo(block_info) = self
@@ -317,6 +323,51 @@ where
             return Ok(*block_info);
         }
         Ok(None)
+    }
+
+    async fn get_transaction(self, txn_hash: HashValue) -> Result<Transaction, Error> {
+        let response = self
+            .address
+            .send(ChainRequest::GetTransaction(txn_hash))
+            .await
+            .map_err(Into::<Error>::into)??;
+        if let ChainResponse::Transaction(txn) = response {
+            Ok(*txn)
+        } else {
+            bail!("get transaction error.")
+        }
+    }
+
+    async fn get_block_txn_infos(self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+        let response = self
+            .address
+            .send(ChainRequest::GetBlockTransactionInfos(block_id))
+            .await
+            .map_err(Into::<Error>::into)??;
+        if let ChainResponse::BlockTransactionInfos(vec_txn_id) = response {
+            Ok(vec_txn_id)
+        } else {
+            bail!("get block's transaction ids error.")
+        }
+    }
+    async fn get_txn_info_by_block_and_index(
+        self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> Result<Option<TransactionInfo>> {
+        let response = self
+            .address
+            .send(ChainRequest::GetTransactionInfoByBlockAndIndex {
+                block_id,
+                txn_idx: idx,
+            })
+            .await
+            .map_err(Into::<Error>::into)??;
+        if let ChainResponse::TransactionInfo(info) = response {
+            Ok(info)
+        } else {
+            bail!("get txn info by block and idx error.")
+        }
     }
 
     async fn master_head_header(self) -> Result<Option<BlockHeader>> {
@@ -349,20 +400,6 @@ where
         }
     }
 
-    async fn master_block_header_by_number(self, number: BlockNumber) -> Result<BlockHeader> {
-        if let ChainResponse::BlockHeader(header) = self
-            .address
-            .send(ChainRequest::GetBlockHeaderByNumber(number))
-            .await
-            .map_err(Into::<Error>::into)??
-        {
-            if let Some(h) = *header {
-                return Ok(h);
-            }
-        }
-        bail!("Get chain block header by number response error.")
-    }
-
     async fn master_blocks_by_number(
         self,
         number: Option<BlockNumber>,
@@ -378,6 +415,20 @@ where
         } else {
             bail!("Get chain blocks by number response error.")
         }
+    }
+
+    async fn master_block_header_by_number(self, number: BlockNumber) -> Result<BlockHeader> {
+        if let ChainResponse::BlockHeader(header) = self
+            .address
+            .send(ChainRequest::GetBlockHeaderByNumber(number))
+            .await
+            .map_err(Into::<Error>::into)??
+        {
+            if let Some(h) = *header {
+                return Ok(h);
+            }
+        }
+        bail!("Get chain block header by number response error.")
     }
 
     async fn master_startup_info(self) -> Result<StartupInfo> {
@@ -403,32 +454,6 @@ where
             Ok(chain_info)
         } else {
             bail!("get head chain info error.")
-        }
-    }
-
-    async fn get_transaction(self, txn_id: HashValue) -> Result<TransactionInfo, Error> {
-        let response = self
-            .address
-            .send(ChainRequest::GetTransaction(txn_id))
-            .await
-            .map_err(Into::<Error>::into)??;
-        if let ChainResponse::Transaction(transaction_info) = response {
-            Ok(transaction_info)
-        } else {
-            bail!("get transaction error.")
-        }
-    }
-
-    async fn get_block_txn(self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
-        let response = self
-            .address
-            .send(ChainRequest::GetTransactionIdByBlock(block_id))
-            .await
-            .map_err(Into::<Error>::into)??;
-        if let ChainResponse::VecTransactionInfo(vec_txn_id) = response {
-            Ok(vec_txn_id)
-        } else {
-            bail!("get block's transaction ids error.")
         }
     }
 

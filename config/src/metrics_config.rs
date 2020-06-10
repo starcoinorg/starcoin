@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MetricsConfig {
+    pub enable_metrics: bool,
     pub metrics_server_port: u16,
     pub address: String,
 }
@@ -15,6 +16,7 @@ pub struct MetricsConfig {
 impl Default for MetricsConfig {
     fn default() -> Self {
         Self {
+            enable_metrics: true,
             address: "0.0.0.0".to_string(),
             metrics_server_port: 9101,
         }

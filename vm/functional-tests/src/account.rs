@@ -3,6 +3,7 @@
 
 //! Test infrastructure for modeling Libra accounts.
 
+use executor::{create_signed_txn_with_association_account, TXN_RESERVED};
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::{
@@ -14,9 +15,6 @@ use starcoin_types::{
         TransactionArgument, TransactionPayload,
     },
     write_set::{WriteOp, WriteSet, WriteSetMut},
-};
-use starcoin_vm_runtime::common_transactions::{
-    create_signed_txn_with_association_account, TXN_RESERVED,
 };
 use starcoin_vm_runtime::{
     genesis::GENESIS_KEYPAIR,

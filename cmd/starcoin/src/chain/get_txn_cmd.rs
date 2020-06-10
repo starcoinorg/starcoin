@@ -6,14 +6,14 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::transaction::Transaction;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_txn")]
 pub struct GetOpt {
-    #[structopt(name = "hash")]
-    hash: String,
+    #[structopt(name = "txn-hash")]
+    hash: HashValue,
 }
 
 pub struct GetTransactionCommand;
@@ -22,7 +22,7 @@ impl CommandAction for GetTransactionCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = TransactionInfo;
+    type ReturnItem = Transaction;
 
     fn run(
         &self,
@@ -30,9 +30,8 @@ impl CommandAction for GetTransactionCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let transaction_info =
-            client.chain_get_transaction(HashValue::from_hex(&opt.hash).unwrap())?;
+        let transaction = client.chain_get_transaction(opt.hash)?;
 
-        Ok(transaction_info)
+        Ok(transaction)
     }
 }

@@ -27,10 +27,11 @@ pub trait ChainReader {
     /// Get latest `count` blocks before `number`. if `number` is absent, use head block number.
     fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>>;
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
-    fn get_block_transactions(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
-    /// get transaction info by transaction info hash.
-    fn get_transaction_info(&self, hash: HashValue) -> Result<Option<TransactionInfo>>;
+
+    /// get txn info at version in main chain.
+    fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<TransactionInfo>>;
+
     fn create_block_template(
         &self,
         author: AccountAddress,
@@ -54,7 +55,6 @@ pub trait ChainWriter {
         block_info: BlockInfo,
         block_state: BlockState,
     ) -> Result<()>;
-    fn save(&mut self, block_id: HashValue, transactions: Vec<Transaction>) -> Result<()>;
     fn chain_state(&mut self) -> &dyn ChainState;
 }
 

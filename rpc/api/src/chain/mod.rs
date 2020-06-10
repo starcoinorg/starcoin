@@ -7,7 +7,7 @@ use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::transaction::{Transaction, TransactionInfo};
 
 #[rpc]
 pub trait ChainApi {
@@ -29,11 +29,19 @@ pub trait ChainApi {
     ) -> FutureResult<Vec<Block>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
-    fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<TransactionInfo>;
+    fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<Transaction>;
 
-    /// Get chain transactions by block id
-    #[rpc(name = "chain.get_txn_by_block")]
+    /// Get chain transactions infos by block id
+    #[rpc(name = "chain.get_block_txn_infos")]
     fn get_txn_by_block(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>>;
+
+    /// Get txn info of a txn at `idx` of block `block_id`
+    #[rpc(name = "chain.get_txn_info_by_block_and_index")]
+    fn get_txn_info_by_block_and_index(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> FutureResult<Option<TransactionInfo>>;
 
     /// Get branches of current chain, first is master.
     #[rpc(name = "chain.branches")]
