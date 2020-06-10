@@ -15,7 +15,9 @@ use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
 /// Sync message which inbound
-use starcoin_sync_api::sync_messages::{BlockBody, GetBlockHeaders, SyncRpcRequest};
+use starcoin_sync_api::sync_messages::{
+    BlockBody, GetBlockHeaders, GetBlockHeadersByNumber, SyncRpcRequest,
+};
 use std::sync::Arc;
 use traits::ChainAsyncService;
 use traits::Consensus;
@@ -71,6 +73,16 @@ where
                         let headers = Processor::handle_get_block_headers_msg(
                             processor.clone(),
                             get_block_headers,
+                        )
+                        .await;
+                        if let Err(e) = do_get_headers(responder, headers).await {
+                            error!("do_get_headers request failed : {:?}", e);
+                        }
+                    }
+                    SyncRpcRequest::GetBlockHeadersByNumber(get_block_headers_by_number) => {
+                        let headers = Processor::handle_get_block_headers_by_number_msg(
+                            processor.clone(),
+                            get_block_headers_by_number,
                         )
                         .await;
                         if let Err(e) = do_get_headers(responder, headers).await {
@@ -172,6 +184,36 @@ where
             txpool,
             storage,
         }
+    }
+
+    pub async fn handle_get_block_headers_by_number_msg(
+        processor: Arc<Processor<C>>,
+        get_block_headers_by_number: GetBlockHeadersByNumber,
+    ) -> Vec<BlockHeader> {
+        let mut headers = Vec::new();
+        let mut last_number = get_block_headers_by_number.number;
+        while headers.len() < get_block_headers_by_number.max_size {
+            if let Ok(header) = processor
+                .chain_reader
+                .clone()
+                .master_block_header_by_number(last_number)
+                .await
+            {
+                headers.push(header);
+            } else {
+                break;
+            }
+
+            if last_number == 0 {
+                break;
+            }
+            last_number = if last_number > get_block_headers_by_number.step as u64 {
+                last_number - get_block_headers_by_number.step as u64
+            } else {
+                0
+            }
+        }
+        headers
     }
 
     pub async fn handle_get_block_headers_msg(

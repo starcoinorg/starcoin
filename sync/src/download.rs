@@ -1,7 +1,7 @@
 use crate::block_connector::BlockConnector;
 /// Sync message which outbound
 use crate::block_sync::do_block_sync_task;
-use crate::helper::{get_headers, get_headers_msg_for_ancestor};
+use crate::helper::{get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer};
 use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_STATE, SYNC_METRICS};
 use actix::prelude::*;
@@ -254,7 +254,7 @@ where
             )
             .await
             {
-                debug!("error : {:?}", e);
+                debug!("state sync error : {:?}", e);
                 Self::sync_state(
                     self_peer_id,
                     main_network,
@@ -313,7 +313,6 @@ where
                     network.clone(),
                     begin_number,
                     false,
-                    true,
                 )
                 .await?
             {
@@ -342,6 +341,7 @@ where
                 // 3. StateSyncActor
                 let root = Downloader::<C>::get_pivot(
                     &network,
+                    best_peer.get_peer_id(),
                     (latest_block_id, latest_number),
                     min_behind as usize,
                 )
@@ -372,7 +372,7 @@ where
                         sync_metadata.clone(),
                         address,
                     );
-                    sync_metadata.update_address(&state_sync_task_address)?
+                    sync_metadata.update_address(&state_sync_task_address)?;
                 } else if let Some(_tmp) = sync_pivot {
                     // if tmp < pivot {
                     //     if let Some(address) = sync_metadata.get_address() {
@@ -417,11 +417,11 @@ where
                 .sync_count
                 .with_label_values(&[LABEL_BLOCK])
                 .inc();
-            let full_mode = sync_metadata.state_syncing();
+            let is_full_mode = sync_metadata.state_syncing();
             if let Err(e) = Self::sync_block_from_best_peer_inner(
                 downloader,
                 network,
-                full_mode,
+                is_full_mode,
                 download_address,
                 syncing.clone(),
             )
@@ -437,32 +437,20 @@ where
     async fn sync_block_from_best_peer_inner(
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
-        full_mode: bool,
+        is_full_mode: bool,
         download_address: Addr<DownloadActor<C>>,
         syncing: Arc<AtomicBool>,
     ) -> Result<()> {
         syncing.store(true, Ordering::Relaxed);
         if let Some(best_peer) = network.best_peer().await? {
             if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
-                let head_executed = if let Some(head_state) = downloader
-                    .chain_reader
-                    .clone()
-                    .get_block_state_by_hash(&header.id())
-                    .await?
-                {
-                    head_state == BlockState::Executed
-                } else {
-                    false
-                };
-
                 let end_number = best_peer.get_block_number();
                 if let Some(ancestor_header) = downloader
                     .find_ancestor_header(
                         best_peer.get_peer_id(),
                         network.clone(),
                         header.number(),
-                        full_mode,
-                        head_executed,
+                        is_full_mode,
                     )
                     .await?
                 {
@@ -534,8 +522,7 @@ where
         peer_id: PeerId,
         network: NetworkAsyncService,
         block_number: BlockNumber,
-        full_mode: bool,
-        head_executed: bool,
+        is_full_mode: bool,
     ) -> Result<Option<BlockHeader>> {
         let mut ancestor_header = None;
         let peer_info = network
@@ -545,18 +532,24 @@ where
         if peer_info.latest_header.number() <= block_number {
             return Ok(ancestor_header);
         }
-        let mut need_executed = if head_executed { false } else { full_mode };
-        let mut latest_block_id = peer_info.latest_header.id();
+        let mut need_executed = is_full_mode;
+        let mut latest_block_number = block_number;
         let mut continue_none = false;
         loop {
-            let get_block_headers_req = get_headers_msg_for_ancestor(latest_block_id, 1);
-            let get_headers = get_headers(&network, get_block_headers_req).await?;
-            if !get_headers.is_empty() {
-                latest_block_id = get_headers
+            let get_block_headers_by_number_req =
+                get_headers_msg_for_ancestor(latest_block_number, 1);
+            let headers = get_headers_by_number(
+                &network,
+                peer_id.clone(),
+                get_block_headers_by_number_req,
+            )
+            .await?;
+            if !headers.is_empty() {
+                latest_block_number = headers
                     .last()
-                    .expect("get_headers is empty.")
+                    .expect("get_headers_by_number is empty.")
                     .clone()
-                    .id();
+                    .number();
                 continue_none = false;
             } else {
                 if continue_none {
@@ -565,8 +558,7 @@ where
                 continue_none = true;
             }
 
-            let (need_executed_new, ancestor) =
-                self.do_ancestor(get_headers, need_executed).await?;
+            let (need_executed_new, ancestor) = self.do_ancestor(headers, need_executed).await?;
 
             need_executed = need_executed_new;
 
@@ -611,11 +603,12 @@ where
 
     async fn get_pivot(
         network: &NetworkAsyncService,
+        peer_id: PeerId,
         latest_block: (HashValue, BlockNumber),
         step: usize,
     ) -> Result<BlockHeader> {
         let get_headers_req = GetBlockHeaders::new(latest_block.0, step, true, 1);
-        let mut headers = get_headers(&network, get_headers_req).await?;
+        let mut headers = get_headers_with_peer(&network, peer_id, get_headers_req).await?;
         if let Some(pivot) = headers.pop() {
             let number = latest_block.1 - step as u64;
             if pivot.number() == number {
