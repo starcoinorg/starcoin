@@ -538,12 +538,9 @@ where
         loop {
             let get_block_headers_by_number_req =
                 get_headers_msg_for_ancestor(latest_block_number, 1);
-            let headers = get_headers_by_number(
-                &network,
-                peer_id.clone(),
-                get_block_headers_by_number_req,
-            )
-            .await?;
+            let headers =
+                get_headers_by_number(&network, peer_id.clone(), get_block_headers_by_number_req)
+                    .await?;
             if !headers.is_empty() {
                 latest_block_number = headers
                     .last()
