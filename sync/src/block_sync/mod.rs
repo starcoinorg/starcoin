@@ -1,6 +1,6 @@
 use crate::download::DownloadActor;
 use crate::download::SyncEvent;
-use crate::helper::{get_body_by_hash, get_headers, get_info_by_hash};
+use crate::helper::{get_body_by_hash, get_headers, get_headers_msg_for_common, get_info_by_hash};
 use crate::sync_metrics::{LABEL_BLOCK_BODY, LABEL_BLOCK_INFO, LABEL_HASH, SYNC_METRICS};
 use crate::Downloader;
 use actix::{Addr, Arbiter};
@@ -118,7 +118,7 @@ where
             return;
         }
 
-        let get_headers_req = Downloader::<C>::get_headers_msg_for_common(self.next.0);
+        let get_headers_req = get_headers_msg_for_common(self.next.0);
         let hash_timer = SYNC_METRICS
             .sync_done_time
             .with_label_values(&[LABEL_HASH])
@@ -193,12 +193,12 @@ where
                                 block_header.expect("block_header is none."),
                                 transactions,
                             );
-                            Downloader::do_block_and_child(
-                                self.downloader.clone(),
-                                block,
-                                Some(block_info.expect("block_info is none.")),
-                            )
-                            .await;
+                            self.downloader
+                                .connect_block_and_child(
+                                    block,
+                                    Some(block_info.expect("block_info is none.")),
+                                )
+                                .await;
                         }
                     }
 

@@ -19,6 +19,8 @@ use types::{
     CHAIN_PROTOCOL_NAME,
 };
 
+const HEAD_CT: usize = 10;
+
 const GET_TXNS_STR: &str = "GetTxns";
 const GET_BLOCK_HEADERS_STR: &str = "GetBlockHeaders";
 const GET_BLOCK_INFOS_STR: &str = "GetBlockInfos";
@@ -262,4 +264,15 @@ pub async fn do_response_get_txns(
 ) -> Result<()> {
     let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetTxns(txns_data))?;
     do_response(responder, resp).await
+}
+
+/// for common
+pub fn get_headers_msg_for_common(block_id: HashValue) -> GetBlockHeaders {
+    GetBlockHeaders::new(block_id, 1, false, HEAD_CT)
+}
+
+/// for ancestor
+pub fn get_headers_msg_for_ancestor(block_id: HashValue, step: usize) -> GetBlockHeaders {
+    //todo：binary search
+    GetBlockHeaders::new(block_id, step, true, HEAD_CT)
 }

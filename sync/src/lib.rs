@@ -1,6 +1,6 @@
+mod block_connector;
 pub mod block_sync;
 mod download;
-mod get_txns_handler;
 pub mod helper;
 mod process;
 pub mod state_sync;
