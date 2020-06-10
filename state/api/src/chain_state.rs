@@ -123,19 +123,7 @@ pub trait ChainStateWriter {
     fn apply(&self, state_set: ChainStateSet) -> Result<()>;
 
     //TODO support batch write.
-    fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
-        for (access_path, write_op) in write_set {
-            match write_op {
-                WriteOp::Value(blob) => {
-                    self.set(&access_path, blob)?;
-                }
-                WriteOp::Deletion => {
-                    self.remove(&access_path)?;
-                }
-            }
-        }
-        Ok(())
-    }
+    fn apply_write_set(&self, write_set: WriteSet) -> Result<()>;
 
     fn commit(&self) -> Result<HashValue>;
 

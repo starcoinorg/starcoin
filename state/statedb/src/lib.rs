@@ -5,7 +5,7 @@ use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, Result};
 use lru::LruCache;
 use merkle_tree::proof::SparseMerkleProof;
-use parking_lot::{Mutex, MutexGuard};
+use parking_lot::{Mutex, MutexGuard, RwLock};
 use scs::SCSCodec;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_logger::prelude::*;
@@ -25,6 +25,8 @@ use thiserror::Error;
 pub use starcoin_state_api::{
     ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
 };
+use starcoin_types::write_set::{WriteOp, WriteSet};
+use std::collections::BTreeMap;
 
 #[derive(Error, Debug)]
 pub enum StateError {
@@ -217,6 +219,7 @@ pub struct ChainStateDB {
     ///global state tree.
     state_tree: StateTree,
     cache: Mutex<LruCache<HashValue, CacheItem>>,
+    updates: RwLock<BTreeMap<AccessPath, WriteOp>>,
 }
 
 static DEFAULT_CACHE_SIZE: usize = 10240;
@@ -231,6 +234,7 @@ impl ChainStateDB {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
             cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
+            updates: RwLock::new(BTreeMap::new()),
         }
     }
 
@@ -240,6 +244,7 @@ impl ChainStateDB {
             store: self.store.clone(),
             state_tree: StateTree::new(self.store.clone(), Some(root_hash)),
             cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
+            updates: RwLock::new(BTreeMap::new()),
         }
     }
 
@@ -424,6 +429,9 @@ impl ChainStateWriter for ChainStateDB {
         let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
         let account_state_object = self.get_account_state_object(&account_address, false)?;
         account_state_object.remove(data_type, &hash)?;
+        self.updates
+            .write()
+            .insert(access_path.clone(), WriteOp::Deletion);
         Ok(())
     }
 
@@ -465,25 +473,44 @@ impl ChainStateWriter for ChainStateDB {
         self.state_tree.flush()?;
         Ok(())
     }
+
+    fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
+        let mut locks = self.updates.write();
+        for (access_path, write_op) in write_set {
+            locks.insert(access_path.clone(), write_op.clone());
+            match write_op {
+                WriteOp::Value(blob) => {
+                    self.set(&access_path, blob)?;
+                }
+                WriteOp::Deletion => {
+                    self.remove(&access_path)?;
+                }
+            }
+        }
+        Ok(())
+    }
     /// Commit
     fn commit(&self) -> Result<HashValue> {
-        //TODO optimize
-        for (address_hash, state_object) in self.cache.lock().iter() {
-            if state_object.is_dirty() {
-                let account_state = state_object.commit()?;
-                self.state_tree
-                    .put(*address_hash, account_state.try_into()?);
-            }
+        // cache commit
+        for (access_path, _write_op) in self.updates.read().iter() {
+            let address = access_path.address;
+            let address_hash = address.crypto_hash();
+            let account_state_object = self.get_account_state_object(&address, false)?;
+            let state = account_state_object.commit()?;
+            self.state_tree.put(address_hash, state.try_into()?)
         }
         self.state_tree.commit()
     }
 
     /// flush data to db.
     fn flush(&self) -> Result<()> {
-        //TODO optimize
-        for (_address_hash, state_object) in self.cache.lock().iter() {
-            state_object.flush()?;
+        //cache flush
+        for access_path in self.updates.read().keys() {
+            let account_state_object =
+                self.get_account_state_object(&access_path.address, false)?;
+            account_state_object.flush()?;
         }
+        // self tree flush
         self.state_tree.flush()
     }
 }
