@@ -14,6 +14,7 @@ jobs:
   build-and-test:
     name: build and test
     runs-on: self-hosted
+    timeout-minutes: 60
     steps:
       - name: checkout
         uses: actions/checkout@v1
