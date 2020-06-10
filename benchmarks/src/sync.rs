@@ -15,7 +15,7 @@ use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
 use starcoin_network_api::NetworkService;
 use starcoin_sync::Downloader;
 use starcoin_sync::{
-    helper::{get_body_by_hash, get_headers, get_info_by_hash},
+    helper::{get_body_by_hash, get_headers, get_headers_msg_for_common, get_info_by_hash},
     ProcessActor,
 };
 use starcoin_sync_api::SyncMetadata;
@@ -91,15 +91,15 @@ impl SyncBencher {
                 let begin_number = header.number();
                 let end_number = best_peer.get_block_number();
 
-                if let Some(ancestor_header) = Downloader::find_ancestor_header(
-                    downloader.clone(),
-                    best_peer.get_peer_id(),
-                    network.clone(),
-                    begin_number,
-                    true,
-                    true,
-                )
-                .await?
+                if let Some(ancestor_header) = downloader
+                    .find_ancestor_header(
+                        best_peer.get_peer_id(),
+                        network.clone(),
+                        begin_number,
+                        true,
+                        true,
+                    )
+                    .await?
                 {
                     let mut latest_block_id = ancestor_header.id();
                     let mut latest_number = ancestor_header.number();
@@ -107,10 +107,7 @@ impl SyncBencher {
                         if end_number <= latest_number {
                             break;
                         }
-                        let get_headers_req =
-                            Downloader::<DummyConsensus>::get_headers_msg_for_common(
-                                latest_block_id,
-                            );
+                        let get_headers_req = get_headers_msg_for_common(latest_block_id);
                         let headers = get_headers(&network, get_headers_req).await?;
                         let latest_header = headers.last().expect("headers is empty.");
                         latest_block_id = latest_header.id();
@@ -124,7 +121,7 @@ impl SyncBencher {
                             latest_number,
                             best_peer.get_peer_id()
                         );
-                        Downloader::do_blocks(downloader.clone(), headers, bodies, infos).await;
+                        downloader.do_blocks(headers, bodies, infos).await;
                     }
                 }
             }
