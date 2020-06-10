@@ -34,11 +34,12 @@ pub fn print_action_result(format: OutputFormat, result: Result<Value>) -> Resul
             print_json(value)
         }
         OutputFormat::TABLE => {
-            let value = match result {
-                Ok(value) => value,
-                Err(err) => json!({"err": err.to_string()}),
+            match result {
+                Ok(value) => print_table(value)?,
+                // err may contains help message, so directly print err.
+                Err(err) => println!("{}", err.to_string()),
             };
-            print_table(value)
+            Ok(())
         }
     }
 }
