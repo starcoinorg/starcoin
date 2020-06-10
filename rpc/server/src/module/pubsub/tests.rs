@@ -18,7 +18,6 @@ use starcoin_chain::test_helper as chain_test_helper;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::dev::DevConsensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
-use starcoin_executor::{executor::Executor, TransactionExecutor};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter, Consensus};
@@ -40,7 +39,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let account_address = account_address::from_public_key(&public_key);
     let txn = {
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+        let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
         txn.as_signed_user_txn()?.clone()
     };
     let (block_template, _) = block_chain.create_block_template(
@@ -154,7 +153,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         let public_key = pri_key.public_key();
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+        let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
         txn.as_signed_user_txn()?.clone()
     };
     let txn_id = txn.crypto_hash();

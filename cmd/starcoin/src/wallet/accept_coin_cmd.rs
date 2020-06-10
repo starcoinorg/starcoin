@@ -6,7 +6,6 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
-use starcoin_executor::executor::Executor;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -81,7 +80,7 @@ impl CommandAction for AcceptCoinCommand {
 
         let account_resource = account_resource.unwrap();
 
-        let accept_coin_txn = Executor::build_accept_coin_txn(
+        let accept_coin_txn = starcoin_executor::build_accept_coin_txn(
             sender.address,
             account_resource.sequence_number(),
             opt.gas_price,

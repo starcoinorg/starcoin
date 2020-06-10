@@ -6,7 +6,6 @@ use chain::ChainActor;
 use config::{get_available_port, NodeConfig};
 use consensus::dev::DevConsensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
-use executor::{executor::Executor, TransactionExecutor};
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
@@ -200,6 +199,6 @@ fn gen_user_txn() -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-    let txn = Executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+    let txn = executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
     txn.as_signed_user_txn().unwrap().clone()
 }

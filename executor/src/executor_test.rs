@@ -1,8 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block_executor::BlockExecutor;
-use crate::{executor::Executor, TransactionExecutor};
 use anyhow::Result;
 use compiler::Compiler;
 use logger::prelude::*;
@@ -27,7 +25,6 @@ use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use vm_runtime::common_transactions::TXN_RESERVED;
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
     Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
@@ -44,7 +41,7 @@ fn prepare_genesis() -> ChainStateDB {
 }
 
 fn prepare_genesis_with_chain_config(chain_config: &ChainConfig) -> ChainStateDB {
-    let change_set = Executor::init_genesis(chain_config).unwrap();
+    let change_set = crate::init_genesis(chain_config).unwrap();
     let (write_set, _event) = change_set.into_inner();
 
     let storage = MockStateNodeStore::new();
@@ -57,7 +54,7 @@ fn prepare_genesis_with_chain_config(chain_config: &ChainConfig) -> ChainStateDB
 }
 
 fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
-    let output = Executor::execute_transactions(chain_state, vec![txn])
+    let output = crate::execute_transactions(chain_state, vec![txn])
         .unwrap()
         .pop()
         .expect("Output must exist.");
@@ -99,7 +96,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
     let transfer_txn_gas = {
         let txn =
             Transaction::UserTransaction(peer_to_peer_txn(&account1, &Account::new(), 0, 10_000));
-        Executor::execute_transactions(&chain_state, vec![txn])
+        crate::execute_transactions(&chain_state, vec![txn])
             .unwrap()
             .pop()
             .expect("Output must exist.")
@@ -122,12 +119,8 @@ fn test_block_execute_gas_limit() -> Result<()> {
 
         assert_eq!(max_include_txn_num, user_txns.len() as u64);
 
-        let (_, txn_infos) = BlockExecutor::block_execute(
-            &chain_state,
-            user_txns,
-            block_meta.clone(),
-            block_gas_limit,
-        )?;
+        let (_, txn_infos) =
+            crate::block_execute(&chain_state, user_txns, block_meta.clone(), block_gas_limit)?;
 
         // all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
@@ -154,7 +147,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
             .collect();
 
         let (_, txn_infos) =
-            BlockExecutor::block_execute(&chain_state, user_txns, block_meta, block_gas_limit)?;
+            crate::block_execute(&chain_state, user_txns, block_meta, block_gas_limit)?;
 
         // not all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
@@ -182,17 +175,17 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
 
     let account2 = Account::new();
 
-    let raw_txn = Executor::build_transfer_txn(
+    let raw_txn = crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
         account2.auth_key_prefix(),
         0,
         1000,
         1,
-        TXN_RESERVED,
+        crate::TXN_RESERVED,
     );
     let txn2 = account1.sign_txn(raw_txn);
-    let output = Executor::validate_transaction(&chain_state, txn2);
+    let output = crate::validate_transaction(&chain_state, txn2);
     assert_eq!(output, None);
     Ok(())
 }
@@ -239,8 +232,8 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
     let chain_state = prepare_genesis();
 
     let account = Account::new();
-    let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
-    let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
+    let txn = crate::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
+    let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output[0].status());
 
     Ok(())
@@ -260,18 +253,18 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
     let account2 = Account::new();
 
-    let raw_txn = Executor::build_transfer_txn(
+    let raw_txn = crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
         account2.auth_key_prefix(),
         0,
         1000,
         1,
-        TXN_RESERVED,
+        crate::TXN_RESERVED,
     );
 
     let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
-    let output = Executor::execute_transactions(&chain_state, vec![txn2]).unwrap();
+    let output = crate::execute_transactions(&chain_state, vec![txn2]).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output[0].status());
 
     Ok(())
@@ -291,27 +284,27 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
 
     let account2 = Account::new();
 
-    let txn2 = Transaction::UserTransaction(account1.sign_txn(Executor::build_transfer_txn(
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
         account2.auth_key_prefix(),
         0,
         1000,
         1,
-        TXN_RESERVED,
+        crate::TXN_RESERVED,
     )));
 
-    let txn3 = Transaction::UserTransaction(account1.sign_txn(Executor::build_transfer_txn(
+    let txn3 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
         account2.auth_key_prefix(),
         1,
         1000,
         1,
-        TXN_RESERVED,
+        crate::TXN_RESERVED,
     )));
 
-    let output = Executor::execute_transactions(&chain_state, vec![txn2, txn3]).unwrap();
+    let output = crate::execute_transactions(&chain_state, vec![txn2, txn3]).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output[0].status());
     assert_eq!(KEEP_STATUS.clone(), *output[1].status());
 
@@ -328,7 +321,7 @@ fn test_sequence_number() -> Result<()> {
         get_sequence_number(account_config::association_address(), &chain_state);
 
     let account = Account::new();
-    let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
+    let txn = crate::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
@@ -345,7 +338,7 @@ fn test_gas_used() -> Result<()> {
     let chain_state = prepare_genesis();
 
     let account = Account::new();
-    let txn = Executor::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
+    let txn = crate::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KEEP_STATUS.clone(), *output.status());
     assert!(output.gas_used() > 0);
@@ -414,7 +407,7 @@ fn test_publish_module() -> Result<()> {
         1,
     ));
 
-    let output = Executor::execute_transactions(&chain_state, vec![txn]).unwrap();
+    let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output[0].status());
 
     Ok(())

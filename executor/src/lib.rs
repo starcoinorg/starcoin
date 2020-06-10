@@ -1,61 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
-use starcoin_config::ChainConfig;
-use starcoin_types::{
-    account_address::AccountAddress,
-    transaction::{RawUserTransaction, SignedUserTransaction, Transaction, TransactionOutput},
-    vm_error::VMStatus,
+pub use block_executor::block_execute;
+pub use executor::*;
+pub use transaction_builder::{
+    build_accept_coin_txn, build_mint_txn, build_transfer_txn, build_transfer_txn_by_coin_type,
+    create_signed_txn_with_association_account, encode_create_account_script,
+    encode_transfer_script, peer_to_peer_txn_sent_as_association, TXN_RESERVED,
 };
-use starcoin_vm_types::state_view::StateView;
-use starcoin_vm_types::transaction::ChangeSet;
 
-pub mod block_executor;
-pub mod executor;
+mod block_executor;
+mod executor;
 #[cfg(test)]
 pub mod executor_test;
-
-pub trait TransactionExecutor: std::marker::Unpin + Clone {
-    /// Create genesis state, return state root and state set.
-    fn init_genesis(config: &ChainConfig) -> Result<ChangeSet>;
-
-    /// Execute transactions, update state to state_store, and return State roots and TransactionOutputs.
-    /// TODO: should mark deprecated.
-    fn execute_transactions(
-        state_view: &dyn StateView,
-        txns: Vec<Transaction>,
-    ) -> Result<Vec<TransactionOutput>>;
-
-    /// Execute a block transactions with gas_limit,
-    /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
-    /// Meant to replace `execute_transactions`.
-    fn execute_block_transactions(
-        state_view: &dyn StateView,
-        transactions: Vec<Transaction>,
-        block_gas_limit: u64,
-    ) -> Result<Vec<TransactionOutput>>;
-
-    /// Executes the prologue and verifies that the transaction is valid.
-    fn validate_transaction(
-        state_view: &dyn StateView,
-        txn: SignedUserTransaction,
-    ) -> Option<VMStatus>;
-
-    fn build_mint_txn(
-        addr: AccountAddress,
-        auth_key_prefix: Vec<u8>,
-        seq_num: u64,
-        amount: u64,
-    ) -> Transaction;
-
-    fn build_transfer_txn(
-        sender: AccountAddress,
-        receiver: AccountAddress,
-        receiver_auth_key_prefix: Vec<u8>,
-        seq_num: u64,
-        amount: u64,
-        gas_price: u64,
-        max_gas: u64,
-    ) -> RawUserTransaction;
-}
+mod transaction_builder;

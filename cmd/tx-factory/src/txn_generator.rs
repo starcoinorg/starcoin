@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_executor::executor::Executor;
-use starcoin_executor::TransactionExecutor;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_wallet_api::WalletAccount;
@@ -30,7 +28,7 @@ impl MockTxnGenerator {
     pub fn generate_mock_txn(&self, sequence_number: u64) -> Result<RawUserTransaction> {
         let amount_to_transfer = 1000;
 
-        let transfer_txn = Executor::build_transfer_txn(
+        let transfer_txn = starcoin_executor::build_transfer_txn(
             self.account.address,
             self.receiver_address,
             self.receiver_auth_key_prefix.clone(),

@@ -8,8 +8,6 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
-use starcoin_executor::executor::Executor;
-use starcoin_executor::TransactionExecutor;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
@@ -63,7 +61,7 @@ impl Genesis {
     {
         debug!("Init genesis");
         let chain_config = net.get_config();
-        let change_set = Executor::init_genesis(&chain_config)?;
+        let change_set = starcoin_executor::init_genesis(&chain_config)?;
 
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
@@ -107,7 +105,7 @@ impl Genesis {
         let txn = Transaction::ChangeSet(change_set);
         let txn_hash = txn.crypto_hash();
 
-        let output = Executor::execute_transactions(chain_state.as_super(), vec![txn])?
+        let output = starcoin_executor::execute_transactions(chain_state.as_super(), vec![txn])?
             .pop()
             .expect("Execute output must exist.");
         let (write_set, events, gas_used, status) = output.into_inner();
