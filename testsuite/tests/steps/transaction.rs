@@ -4,8 +4,6 @@
 use crate::MyWorld;
 use anyhow::Error;
 use cucumber::{Steps, StepsBuilder};
-use starcoin_executor::executor::Executor;
-use starcoin_executor::TransactionExecutor;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
@@ -63,7 +61,7 @@ fn transfer_txn(
         .unwrap();
     let balance = account_state_reader.get_balance(&from).unwrap().unwrap();
     let amount = amount.unwrap_or(balance * 20 / 100);
-    let raw_txn = Executor::build_transfer_txn(
+    let raw_txn = starcoin_executor::build_transfer_txn(
         from,
         to.address,
         to_auth_key_prefix.to_vec(),
