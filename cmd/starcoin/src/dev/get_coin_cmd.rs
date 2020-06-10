@@ -7,13 +7,13 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_executor::TXN_RESERVED;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::{
     account_config,
     transaction::{authenticator::AuthenticationKey, helpers::TransactionSigner},
 };
-use starcoin_vm_runtime::common_transactions::TXN_RESERVED;
 use structopt::StructOpt;
 
 /// Get coin to default account.

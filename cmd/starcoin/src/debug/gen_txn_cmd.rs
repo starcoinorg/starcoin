@@ -6,11 +6,11 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
+use starcoin_executor::TXN_RESERVED;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_runtime::common_transactions::TXN_RESERVED;
 use std::time::Duration;
 use structopt::StructOpt;
 

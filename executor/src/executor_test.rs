@@ -25,7 +25,6 @@ use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use vm_runtime::common_transactions::TXN_RESERVED;
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
     Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
@@ -183,7 +182,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
         0,
         1000,
         1,
-        TXN_RESERVED,
+        crate::TXN_RESERVED,
     );
     let txn2 = account1.sign_txn(raw_txn);
     let output = crate::validate_transaction(&chain_state, txn2);
@@ -261,7 +260,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         0,
         1000,
         1,
-        TXN_RESERVED,
+        crate::TXN_RESERVED,
     );
 
     let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
@@ -292,7 +291,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         0,
         1000,
         1,
-        TXN_RESERVED,
+        crate::TXN_RESERVED,
     )));
 
     let txn3 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
@@ -302,7 +301,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         1,
         1000,
         1,
-        TXN_RESERVED,
+        crate::TXN_RESERVED,
     )));
 
     let output = crate::execute_transactions(&chain_state, vec![txn2, txn3]).unwrap();
