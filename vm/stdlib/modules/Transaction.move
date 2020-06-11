@@ -4,7 +4,6 @@ module Transaction {
     native public fun gas_unit_price(): u64;
     native public fun max_gas_units(): u64;
     native public fun gas_remaining(): u64;
-    native public fun sender(): address;
     native public fun sequence_number(): u64;
     native public fun public_key(): vector<u8>;
 

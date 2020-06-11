@@ -55,6 +55,7 @@ module Token {
 
 module ToddNickles {
     use {{alice}}::Token;
+    use 0x0::Signer;
     use 0x0::Transaction;
 
     struct T {}
@@ -63,13 +64,13 @@ module ToddNickles {
         nickles: Token::Coin<T>,
     }
 
-    public fun init() {
-        Transaction::assert(Transaction::sender() == {{bob}}, 42);
+    public fun init(account: &signer) {
+        Transaction::assert(Signer::address_of(account) == {{bob}}, 42);
         move_to_sender(Wallet { nickles: Token::create(T{}, 0) })
     }
 
-    public fun mint(): Token::Coin<T> {
-        Transaction::assert(Transaction::sender() == {{bob}}, 42);
+    public fun mint(account: &signer): Token::Coin<T> {
+        Transaction::assert(Signer::address_of(account) == {{bob}}, 42);
         Token::create(T{}, 5)
     }
 
