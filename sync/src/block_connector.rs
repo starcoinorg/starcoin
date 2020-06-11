@@ -134,6 +134,9 @@ where
                         ConnectBlockError::FutureBlock => {
                             self.future_blocks.add_future_block(block, block_info)
                         }
+                        ConnectBlockError::VerifyFailed => {
+                            error!("Connect block {:?} verify failed.", block_id)
+                        }
                         _ => debug!("Connect block {:?} failed, because : {:?}", block_id, err),
                     }
                 }

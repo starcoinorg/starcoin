@@ -306,15 +306,12 @@ where
                         CHAIN_METRICS.duplicate_conn_count.inc();
                         Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
                     } else if let Some(mut branch) = fork {
-                        info!("current_header: {:?} : {:?}; verify block : {:?}", branch.current_header().id(), branch.current_header(), block.header());
                         if C::verify(self.config.clone(), &branch, block.header()).is_ok() {
                             // 2. commit block
-                            if pivot_flag {
-                                branch.append_pivot(
-                                    block.id(),
-                                    block_info.get_block_accumulator_info().clone(),
-                                )?
-                            }
+                            branch.append(
+                                block.id(),
+                                block_info.get_block_accumulator_info().clone(),
+                            )?;
                             branch.commit(block, block_info, BlockState::Verified)?;
                             self.select_head(branch)?;
                             if pivot_flag {

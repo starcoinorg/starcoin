@@ -124,10 +124,17 @@ where
     }
 
     fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
-        info!("find_block_by_number : {:?} : {:?}", self.block_accumulator.num_nodes(), self.block_accumulator.num_leaves());
+        // let head_num = self.head.header().number();
+        // let head_id = self.head.header().id();
+        // if number == head_num {
+        //     Ok(head_id)
+        // } else if number > head_num {
+        //     Err(format_err!("number {} > head_num {}", number, head_num))
+        // } else {
         self.block_accumulator
             .get_leaf(number)?
             .ok_or_else(|| format_err!("Can not find block by number {}", number))
+        // }
     }
 
     pub fn block_exist_by_number(
@@ -150,7 +157,7 @@ where
         Ok(false)
     }
 
-    pub fn append_pivot(
+    pub fn append(
         &mut self,
         block_id: HashValue,
         block_accumulator_info: AccumulatorInfo,

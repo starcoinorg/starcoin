@@ -581,9 +581,6 @@ where
             }
             let _ = lock.remove(&task_event.peer_id);
             if let Some(accumulator_node) = task_event.accumulator_node {
-                if task_event.task_type == TaskType::BlockAccumulator {
-                    info!("accumulator_node {} : {:?}", accumulator_node.index().to_inorder_index(), accumulator_node);
-                }
                 if let Err(e) = storage.save_node(
                     match task_event.task_type {
                         TaskType::TxnAccumulator => AccumulatorStoreType::Transaction,
