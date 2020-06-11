@@ -26,6 +26,7 @@ pub use starcoin_state_api::{
     ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
 };
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+use std::collections::HashSet;
 
 #[derive(Error, Debug)]
 pub enum StateError {
@@ -200,7 +201,7 @@ pub struct ChainStateDB {
     ///global state tree.
     state_tree: StateTree,
     cache: Mutex<LruCache<HashValue, CacheItem>>,
-    updates: RwLock<Vec<AccessPath>>,
+    updates: RwLock<HashSet<AccountAddress>>,
 }
 
 static DEFAULT_CACHE_SIZE: usize = 10240;
@@ -215,7 +216,7 @@ impl ChainStateDB {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
             cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
-            updates: RwLock::new(vec![]),
+            updates: RwLock::new(HashSet::new()),
         }
     }
 
@@ -225,7 +226,7 @@ impl ChainStateDB {
             store: self.store.clone(),
             state_tree: StateTree::new(self.store.clone(), Some(root_hash)),
             cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
-            updates: RwLock::new(vec![]),
+            updates: RwLock::new(HashSet::new()),
         }
     }
 
@@ -458,7 +459,7 @@ impl ChainStateWriter for ChainStateDB {
         let mut locks = self.updates.write();
         for (access_path, write_op) in write_set {
             //update self updates record
-            locks.push(access_path.clone());
+            locks.insert(access_path.address);
             let (account_address, data_type, key_hash) =
                 access_path::into_inner(access_path.clone())?;
             match write_op {
@@ -479,12 +480,11 @@ impl ChainStateWriter for ChainStateDB {
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         // cache commit
-        for access_path in self.updates.read().to_vec() {
-            let address = access_path.address;
+        for address in self.updates.read().iter() {
             let address_hash = address.crypto_hash();
-            let account_state_object = self.get_account_state_object(&address, false)?;
+            let account_state_object = self.get_account_state_object(address, false)?;
             let state = account_state_object.commit()?;
-            self.state_tree.put(address_hash, state.try_into()?)
+            self.state_tree.put(address_hash, state.try_into()?);
         }
         self.state_tree.commit()
     }
@@ -492,13 +492,12 @@ impl ChainStateWriter for ChainStateDB {
     /// flush data to db.
     fn flush(&self) -> Result<()> {
         //cache flush
-        let locks = self.updates.write();
-        for access_path in locks.to_vec() {
-            let account_state_object =
-                self.get_account_state_object(&access_path.address, false)?;
+        let mut locks = self.updates.write();
+        for address in locks.iter() {
+            let account_state_object = self.get_account_state_object(address, false)?;
             account_state_object.flush()?;
         }
-        locks.to_vec().clear();
+        locks.clear();
         // self tree flush
         self.state_tree.flush()
     }
