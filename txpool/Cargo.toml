@@ -27,6 +27,7 @@ parking_lot = "0.9"
 linked-hash-map = "0.5"
 trace-time = "0.1"
 starcoin-logger = {path = "../commons/logger"}
+stest = {path = "../commons/stest"}
 types = { package = "starcoin-types", path = "../types"}
 starcoin-txpool-api = {package = "starcoin-txpool-api", path ="api"}
 starcoin-state-api = {path = "../state/api"}

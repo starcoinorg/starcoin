@@ -78,7 +78,7 @@ async fn gen_master_chain(
     (chain, node_config)
 }
 
-#[actix_rt::test]
+#[stest::test]
 async fn test_block_chain_head() {
     ::logger::init_for_test();
     let times = 10;
@@ -89,7 +89,7 @@ async fn test_block_chain_head() {
     );
 }
 
-#[actix_rt::test]
+#[stest::test]
 async fn test_block_chain_forks() {
     ::logger::init_for_test();
     let times = 5;

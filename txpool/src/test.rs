@@ -42,7 +42,7 @@ impl AccountSeqNumberClient for MockNonceClient {
     }
 }
 
-#[actix_rt::test]
+#[stest::test]
 async fn test_tx_pool() -> Result<()> {
     let (pool, _storage) = test_helper::start_txpool();
     let txpool_service = pool.get_service();
@@ -63,14 +63,14 @@ async fn test_tx_pool() -> Result<()> {
     Ok(())
 }
 
-#[actix_rt::test]
+#[stest::test]
 async fn test_subscribe_txns() {
     let (pool, _storage) = test_helper::start_txpool();
     let _ = pool.get_service().subscribe_txns();
 }
 
 // TODO: ignore test for now. will fire another PR to make this happen
-#[actix_rt::test]
+#[stest::test]
 async fn test_rollback() -> Result<()> {
     let (pool, storage) = test_helper::start_txpool();
     let retracted_txn = {
