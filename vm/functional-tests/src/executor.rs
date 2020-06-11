@@ -6,6 +6,7 @@ use crate::account::{Account, AccountData};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
+use starcoin_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_types::{
     access_path::AccessPath,
     block_metadata::BlockMetadata,
@@ -83,7 +84,11 @@ impl FakeExecutor {
             .serialize(&mut blob)
             .expect("serializing this module should work");
         self.data_store
-            .set(&access_path, blob)
+            .apply_write_set(
+                WriteSetMut::new(vec![(access_path, WriteOp::Value(blob))])
+                    .freeze()
+                    .expect("freeze write_set must success."),
+            )
             .expect("statedb set should success");
     }
 

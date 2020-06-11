@@ -5,7 +5,7 @@ use anyhow::{ensure, Result};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
-use starcoin_types::write_set::{WriteOp, WriteSet};
+use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
     access_path::{self, AccessPath},
     account_address::AccountAddress,
@@ -114,10 +114,10 @@ impl ConfigStorage for &dyn ChainStateReader {
 
 pub trait ChainStateWriter {
     /// Sets state at access_path.
-    fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()>;
+    // fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()>;
 
     /// Remove state at access_path
-    fn remove(&self, access_path: &AccessPath) -> Result<()>;
+    // fn remove(&self, access_path: &AccessPath) -> Result<()>;
 
     /// Apply dump result to ChainState
     fn apply(&self, state_set: ChainStateSet) -> Result<()>;

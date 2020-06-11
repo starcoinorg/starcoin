@@ -50,24 +50,24 @@ impl CacheItem {
             CacheItem::AccountNotExist() => None,
         }
     }
-    fn flush(&self) -> Result<()> {
-        match self {
-            CacheItem::AccountObject(obj) => obj.flush(),
-            CacheItem::AccountNotExist() => Ok(()),
-        }
-    }
-    fn is_dirty(&self) -> bool {
-        match self {
-            CacheItem::AccountObject(obj) => obj.is_dirty(),
-            CacheItem::AccountNotExist() => false,
-        }
-    }
-    fn commit(&self) -> Result<AccountState> {
-        match self {
-            CacheItem::AccountObject(obj) => obj.commit(),
-            CacheItem::AccountNotExist() => unreachable!(),
-        }
-    }
+    // fn flush(&self) -> Result<()> {
+    //     match self {
+    //         CacheItem::AccountObject(obj) => obj.flush(),
+    //         CacheItem::AccountNotExist() => Ok(()),
+    //     }
+    // }
+    // fn is_dirty(&self) -> bool {
+    //     match self {
+    //         CacheItem::AccountObject(obj) => obj.is_dirty(),
+    //         CacheItem::AccountNotExist() => false,
+    //     }
+    // }
+    // fn _commit(&self) -> Result<AccountState> {
+    //     match self {
+    //         CacheItem::AccountObject(obj) => obj.commit(),
+    //         CacheItem::AccountNotExist() => unreachable!(),
+    //     }
+    // }
 }
 
 /// represent AccountState in runtime memory.
@@ -418,23 +418,6 @@ impl ChainStateReader for ChainStateDB {
 }
 
 impl ChainStateWriter for ChainStateDB {
-    fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
-        let (account_address, data_type, key_hash) = access_path::into_inner(access_path.clone())?;
-        let account_state_object = self.get_account_state_object(&account_address, true)?;
-        account_state_object.set(data_type, key_hash, value);
-        Ok(())
-    }
-
-    fn remove(&self, access_path: &AccessPath) -> Result<()> {
-        let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
-        let account_state_object = self.get_account_state_object(&account_address, false)?;
-        account_state_object.remove(data_type, &hash)?;
-        self.updates
-            .write()
-            .insert(access_path.clone(), WriteOp::Deletion);
-        Ok(())
-    }
-
     fn apply(&self, chain_state_set: ChainStateSet) -> Result<()> {
         for (address_hash, account_state_set) in chain_state_set.state_sets() {
             let account_state = self
@@ -477,13 +460,17 @@ impl ChainStateWriter for ChainStateDB {
     fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
         let mut locks = self.updates.write();
         for (access_path, write_op) in write_set {
+            //update self updates record
             locks.insert(access_path.clone(), write_op.clone());
+            let (account_address, data_type, key_hash) =
+                access_path::into_inner(access_path.clone())?;
+            let account_state_object = self.get_account_state_object(&account_address, true)?;
             match write_op {
-                WriteOp::Value(blob) => {
-                    self.set(&access_path, blob)?;
+                WriteOp::Value(value) => {
+                    account_state_object.set(data_type, key_hash, value.clone());
                 }
                 WriteOp::Deletion => {
-                    self.remove(&access_path)?;
+                    account_state_object.remove(data_type, &key_hash)?;
                 }
             }
         }
@@ -519,18 +506,23 @@ impl ChainStateWriter for ChainStateDB {
 mod tests {
     use super::*;
     use starcoin_state_tree::mock::MockStateNodeStore;
+    use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 
     fn random_bytes() -> Vec<u8> {
         HashValue::random().to_vec()
     }
-
+    fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
+        WriteSetMut::new(vec![(access_path, WriteOp::Value(value))])
+            .freeze()
+            .expect("freeze write_set must success.")
+    }
     #[test]
     fn test_state_proof() -> Result<()> {
         let storage = MockStateNodeStore::new();
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
         let access_path = access_path::random_resource();
         let state0 = random_bytes();
-        chain_state_db.set(&access_path, state0.clone())?;
+        chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0.clone()))?;
 
         let state_root = chain_state_db.commit()?;
         let state1 = chain_state_db.get(&access_path)?;
@@ -552,12 +544,11 @@ mod tests {
         let access_path = access_path::random_resource();
 
         let state0 = random_bytes();
-        chain_state_db.set(&access_path, state0)?;
+        chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0))?;
         let state_root = chain_state_db.commit()?;
 
         let state1 = random_bytes();
-        chain_state_db.set(&access_path, state1)?;
-
+        chain_state_db.apply_write_set(to_write_set(access_path.clone(), state1))?;
         let new_state_root = chain_state_db.commit()?;
         assert_ne!(state_root, new_state_root);
         Ok(())
@@ -569,7 +560,7 @@ mod tests {
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
         let access_path = access_path::random_resource();
         let state0 = random_bytes();
-        chain_state_db.set(&access_path, state0)?;
+        chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0))?;
         chain_state_db.commit()?;
         chain_state_db.flush()?;
 
@@ -597,14 +588,13 @@ mod tests {
         let account_address = AccountAddress::random();
         let access_path = AccessPath::new_for_account(account_address);
         let old_state = random_bytes();
-        chain_state_db.set(&access_path, old_state.clone())?;
-
+        chain_state_db.apply_write_set(to_write_set(access_path.clone(), old_state.clone()))?;
         chain_state_db.commit()?;
         chain_state_db.flush()?;
         let old_root = chain_state_db.state_root();
 
         let new_state = random_bytes();
-        chain_state_db.set(&access_path, new_state)?;
+        chain_state_db.apply_write_set(to_write_set(access_path.clone(), new_state))?;
 
         let chain_state_db_ori = ChainStateDB::new(storage, Some(old_root));
         let old_state2 = chain_state_db_ori.get(&access_path)?.unwrap();
