@@ -833,6 +833,7 @@ mod tests {
         local.block_on(&mut rt, future).unwrap();
     }
 
+    #[ignore]
     #[stest::test]
     fn test_network_with_mock() {
         use std::time::Duration;
