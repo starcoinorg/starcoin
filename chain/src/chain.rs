@@ -124,6 +124,7 @@ where
     }
 
     fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
+        info!("find_block_by_number : {:?} : {:?}", self.block_accumulator.num_nodes(), self.block_accumulator.num_leaves());
         self.block_accumulator
             .get_leaf(number)?
             .ok_or_else(|| format_err!("Can not find block by number {}", number))

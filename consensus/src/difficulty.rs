@@ -24,13 +24,21 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
         let mut blocks: Vec<BlockInfo> = vec![];
         let mut count = 0;
         let current_block = chain.head_block();
-        let mut current_number = current_block.header().number() + 1;
+        info!("mint current_block : {:?} : {:?}", current_block.id(), current_block.header());
+        let mut current_number = current_block.header().number();
+        let current_block_info = BlockInfo {
+            timestamp: current_block.header().timestamp(),
+            target: difficult_to_target(current_block.header().difficulty()),
+        };
+        blocks.push(current_block_info);
         loop {
             if count == BLOCK_WINDOW || current_number == 0 {
                 break;
             }
             current_number -= 1;
+            info!("mint current_number : {}", current_number);
             let block = chain.get_block_by_number(current_number).unwrap().unwrap();
+            info!("mint block : {:?} : {:?}", block.id(), block.header());
             if block.header().timestamp() == 0 {
                 continue;
             }
