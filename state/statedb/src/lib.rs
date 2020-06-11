@@ -50,24 +50,6 @@ impl CacheItem {
             CacheItem::AccountNotExist() => None,
         }
     }
-    // fn flush(&self) -> Result<()> {
-    //     match self {
-    //         CacheItem::AccountObject(obj) => obj.flush(),
-    //         CacheItem::AccountNotExist() => Ok(()),
-    //     }
-    // }
-    // fn is_dirty(&self) -> bool {
-    //     match self {
-    //         CacheItem::AccountObject(obj) => obj.is_dirty(),
-    //         CacheItem::AccountNotExist() => false,
-    //     }
-    // }
-    // fn _commit(&self) -> Result<AccountState> {
-    //     match self {
-    //         CacheItem::AccountObject(obj) => obj.commit(),
-    //         CacheItem::AccountNotExist() => unreachable!(),
-    //     }
-    // }
 }
 
 /// represent AccountState in runtime memory.
