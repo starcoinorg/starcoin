@@ -433,7 +433,7 @@ impl ProtocolsHandler for NotifsHandler {
             }
             NotifsHandlerIn::SendNotification {
                 message,
-                encoded_fallback_message,
+                encoded_fallback_message: _encoded_fallback_message,
                 protocol_name,
             } => {
                 for (handler, _) in &mut self.out_handlers {
@@ -448,9 +448,7 @@ impl ProtocolsHandler for NotifsHandler {
                 }
 
                 self.legacy
-                    .inject_event(LegacyProtoHandlerIn::SendCustomMessage {
-                        message: encoded_fallback_message,
-                    });
+                    .inject_event(LegacyProtoHandlerIn::SendCustomMessage { message });
             }
         }
     }

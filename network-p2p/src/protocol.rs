@@ -5,7 +5,7 @@ pub mod message;
 use crate::config::ProtocolId;
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
 use crate::utils::interval;
-use crate::{DiscoveryNetBehaviour, Multiaddr};
+use crate::{DiscoveryNetBehaviour, Multiaddr, PROTOCOL_NAME};
 
 use crate::network_state::Peer;
 
@@ -20,7 +20,7 @@ use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
 
-use crate::protocol::message::generic::{Message, Status};
+use crate::protocol::message::generic::{GenericMessage, Message, Status};
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::borrow::Cow;
@@ -217,15 +217,7 @@ impl NetworkBehaviour for Protocol {
                 peer_id,
                 protocol_name,
                 message,
-            } => {
-                trace!("receive notification message from {} ", peer_id);
-
-                CustomMessageOutcome::NotificationsReceived {
-                    remote: peer_id,
-                    protocol_name,
-                    messages: vec![Bytes::from(message)],
-                }
-            }
+            } => self.on_notify(peer_id, protocol_name, message),
             GenericProtoOut::Clogged {
                 peer_id,
                 messages: _,
@@ -346,6 +338,17 @@ impl Protocol {
     }
 
     pub fn on_legacy_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
+        trace!("receive custom legacy message from {} ", who);
+
+        self.on_notify(who, PROTOCOL_NAME.into(), data)
+    }
+
+    pub fn on_notify(
+        &mut self,
+        who: PeerId,
+        protocol_name: Cow<'static, [u8]>,
+        data: BytesMut,
+    ) -> CustomMessageOutcome {
         trace!("receive custom message from {} ", who);
         let message = match Message::decode(&data[..]) {
             Ok(message) => message,
@@ -358,6 +361,11 @@ impl Protocol {
 
         match message {
             Message::Status(status) => self.on_status_message(who, *status),
+            Message::ConsensusMessage(data) => CustomMessageOutcome::NotificationsReceived {
+                remote: who,
+                protocol_name,
+                messages: vec![Bytes::from(data.data)],
+            },
         }
     }
 
@@ -516,8 +524,11 @@ impl Protocol {
         &mut self,
         target: PeerId,
         protocol_name: Cow<'static, [u8]>,
-        message: impl Into<Vec<u8>>,
+        data: impl Into<Vec<u8>>,
     ) {
+        let message = Message::ConsensusMessage(Box::new(GenericMessage { data: data.into() }))
+            .encode()
+            .expect("should encode right");
         self.behaviour
             .write_notification(&target, protocol_name, message, vec![]);
     }
@@ -559,6 +570,6 @@ fn send_message(
     message: Message,
 ) -> anyhow::Result<()> {
     let encoded = message.encode()?;
-    behaviour.send_packet(who, encoded);
+    behaviour.write_notification(who, PROTOCOL_NAME.into(), encoded, vec![]);
     Ok(())
 }
