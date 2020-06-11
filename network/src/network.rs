@@ -523,6 +523,7 @@ impl Inner {
                 network_service
                     .send_message(peer_id, protocol_name, data)
                     .await?;
+                debug!("send response by id {} succ.", id);
                 Ok(())
             }
             None => {
