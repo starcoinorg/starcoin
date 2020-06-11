@@ -104,9 +104,9 @@ where
     fn finish(&self) -> bool {
         info!("Block sync task info : {:?}", &self);
         self.next.1 >= self.target_number
-            && self.headers.lock().len() == 0
+            && self.headers.lock().is_empty()
             && self.info_task.lock().is_empty()
-            && self.infos.lock().len() == 0
+            && self.infos.lock().is_empty()
             && self.body_task.lock().is_empty()
     }
 
