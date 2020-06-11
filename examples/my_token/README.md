@@ -1,4 +1,4 @@
 # Move contract examples
 
-1. [my_counter](./my_counter) a simple Move module example.
-2. [my_token](./my_token) a simple User defined Coin example.
+1. [MyCounter](./my_counter) a simple Move module example.
+2. [MyToken](./my_token) a simple User defined Coin example.
