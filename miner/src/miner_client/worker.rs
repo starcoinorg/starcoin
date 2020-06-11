@@ -172,7 +172,6 @@ impl Worker {
         }
     }
 
-
     fn refresh_new_work(&mut self) {
         if let Ok(msg) = self.worker_rx.try_next() {
             if let Some(msg) = msg {
