@@ -163,14 +163,15 @@ impl Worker {
                             }
                         }
                     }
-                } else {
-                    // Wait next work
-                    hash_counter = 0;
-                    thread::sleep(Duration::from_millis(500));
                 }
+            } else {
+                // Wait next work
+                hash_counter = 0;
+                thread::sleep(Duration::from_millis(500));
             }
         }
     }
+
 
     fn refresh_new_work(&mut self) {
         if let Ok(msg) = self.worker_rx.try_next() {
