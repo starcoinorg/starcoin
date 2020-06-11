@@ -308,12 +308,10 @@ where
                     } else if let Some(mut branch) = fork {
                         if C::verify(self.config.clone(), &branch, block.header()).is_ok() {
                             // 2. commit block
-                            if pivot_flag {
-                                branch.append_pivot(
-                                    block.id(),
-                                    block_info.get_block_accumulator_info().clone(),
-                                )?
-                            }
+                            branch.append(
+                                block.id(),
+                                block_info.get_block_accumulator_info().clone(),
+                            )?;
                             branch.commit(block, block_info, BlockState::Verified)?;
                             self.select_head(branch)?;
                             if pivot_flag {
