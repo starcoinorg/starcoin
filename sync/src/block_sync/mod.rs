@@ -102,11 +102,11 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     fn finish(&self) -> bool {
-        info!("Block sync info : {:?}", &self);
+        info!("Block sync task info : {:?}", &self);
         self.next.1 >= self.target_number
-            && self.headers.lock().len() == 0
+            && self.headers.lock().is_empty()
             && self.info_task.lock().is_empty()
-            && self.infos.lock().len() == 0
+            && self.infos.lock().is_empty()
             && self.body_task.lock().is_empty()
     }
 
@@ -146,7 +146,8 @@ where
     }
 
     async fn sync_infos(&self) {
-        if let Some(hashs) = self.info_task.lock().take_hashs() {
+        let mut info_lock = self.info_task.lock();
+        if let Some(hashs) = info_lock.take_hashs() {
             let block_info_timer = SYNC_METRICS
                 .sync_done_time
                 .with_label_values(&[LABEL_BLOCK_INFO])
@@ -167,7 +168,7 @@ where
                 }
                 Err(e) => {
                     error!("Sync infos err: {:?}", e);
-                    self.info_task.lock().push_hashs(hashs);
+                    info_lock.push_hashs(hashs);
                 }
             }
             block_info_timer.observe_duration();
@@ -175,7 +176,8 @@ where
     }
 
     async fn sync_bodies(&self) {
-        if let Some(hashs) = self.body_task.lock().take_hashs() {
+        let mut body_lock = self.body_task.lock();
+        if let Some(hashs) = body_lock.take_hashs() {
             let block_body_timer = SYNC_METRICS
                 .sync_done_time
                 .with_label_values(&[LABEL_BLOCK_BODY])
@@ -209,7 +211,7 @@ where
                 }
                 Err(e) => {
                     error!("Sync bodies err: {:?}", e);
-                    self.body_task.lock().push_hashs(hashs);
+                    body_lock.push_hashs(hashs);
                 }
             }
 
