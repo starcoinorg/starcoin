@@ -14,6 +14,7 @@ use anyhow::*;
 use futures::lock::Mutex;
 
 use std::cmp::Eq;
+use std::fmt::Debug;
 use std::hash::Hash;
 use std::pin::Pin;
 
@@ -60,7 +61,7 @@ pub struct MessageProcessor<K, T> {
 
 impl<K, T> MessageProcessor<K, T>
 where
-    K: Send + Sync + Hash + Eq + 'static,
+    K: Send + Sync + Hash + Eq + Debug + 'static,
     T: Send + Sync + 'static,
 {
     pub fn new() -> Self {
@@ -83,13 +84,13 @@ where
             Some(tx) => {
                 match tx.clone().send(Ok(value)).await {
                     Ok(_new_tx) => {
-                        debug!("send message succ");
+                        debug!("send message {:?} succ", id);
                         tx_map.remove(&id);
                     }
-                    Err(_) => debug!("send message error"),
+                    Err(_) => debug!("send message {:?} error", id),
                 };
             }
-            _ => debug!("tx id  not in map"),
+            _ => debug!("tx id {:?} not in map", id),
         }
         Ok(())
     }
@@ -98,7 +99,7 @@ where
         let mut tx_map = self.tx_map.lock().await;
         if let Some(tx) = tx_map.get(&id) {
             tx.clone()
-                .send(Err(anyhow!("future time out")))
+                .send(Err(anyhow!("request {:?} future time out", id)))
                 .await
                 .unwrap();
             tx_map.remove(&id);
