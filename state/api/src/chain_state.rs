@@ -113,6 +113,11 @@ impl ConfigStorage for &dyn ChainStateReader {
 }
 
 pub trait ChainStateWriter {
+    /// Sets state at access_path.
+    fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()>;
+
+    /// Remove state at access_path
+    fn remove(&self, access_path: &AccessPath) -> Result<()>;
     /// Apply dump result to ChainState
     fn apply(&self, state_set: ChainStateSet) -> Result<()>;
 

@@ -25,8 +25,7 @@ use thiserror::Error;
 pub use starcoin_state_api::{
     ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
 };
-use starcoin_types::write_set::{WriteOp, WriteSet};
-use std::collections::BTreeMap;
+use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 
 #[derive(Error, Debug)]
 pub enum StateError {
@@ -201,7 +200,7 @@ pub struct ChainStateDB {
     ///global state tree.
     state_tree: StateTree,
     cache: Mutex<LruCache<HashValue, CacheItem>>,
-    updates: RwLock<BTreeMap<AccessPath, WriteOp>>,
+    updates: RwLock<Vec<AccessPath>>,
 }
 
 static DEFAULT_CACHE_SIZE: usize = 10240;
@@ -216,7 +215,7 @@ impl ChainStateDB {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
             cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
-            updates: RwLock::new(BTreeMap::new()),
+            updates: RwLock::new(vec![]),
         }
     }
 
@@ -226,7 +225,7 @@ impl ChainStateDB {
             store: self.store.clone(),
             state_tree: StateTree::new(self.store.clone(), Some(root_hash)),
             cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
-            updates: RwLock::new(BTreeMap::new()),
+            updates: RwLock::new(vec![]),
         }
     }
 
@@ -400,6 +399,22 @@ impl ChainStateReader for ChainStateDB {
 }
 
 impl ChainStateWriter for ChainStateDB {
+    fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
+        self.apply_write_set(
+            WriteSetMut::new(vec![(access_path.clone(), WriteOp::Value(value))])
+                .freeze()
+                .expect("freeze write_set must success."),
+        )
+    }
+
+    fn remove(&self, access_path: &AccessPath) -> Result<()> {
+        self.apply_write_set(
+            WriteSetMut::new(vec![(access_path.clone(), WriteOp::Deletion)])
+                .freeze()
+                .expect("freeze write_set must success."),
+        )
+    }
+
     fn apply(&self, chain_state_set: ChainStateSet) -> Result<()> {
         for (address_hash, account_state_set) in chain_state_set.state_sets() {
             let account_state = self
@@ -443,15 +458,18 @@ impl ChainStateWriter for ChainStateDB {
         let mut locks = self.updates.write();
         for (access_path, write_op) in write_set {
             //update self updates record
-            locks.insert(access_path.clone(), write_op.clone());
+            locks.push(access_path.clone());
             let (account_address, data_type, key_hash) =
                 access_path::into_inner(access_path.clone())?;
-            let account_state_object = self.get_account_state_object(&account_address, true)?;
             match write_op {
                 WriteOp::Value(value) => {
+                    let account_state_object =
+                        self.get_account_state_object(&account_address, true)?;
                     account_state_object.set(data_type, key_hash, value.clone());
                 }
                 WriteOp::Deletion => {
+                    let account_state_object =
+                        self.get_account_state_object(&account_address, false)?;
                     account_state_object.remove(data_type, &key_hash)?;
                 }
             }
@@ -461,7 +479,7 @@ impl ChainStateWriter for ChainStateDB {
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         // cache commit
-        for (access_path, _write_op) in self.updates.read().iter() {
+        for access_path in self.updates.read().to_vec() {
             let address = access_path.address;
             let address_hash = address.crypto_hash();
             let account_state_object = self.get_account_state_object(&address, false)?;
@@ -474,11 +492,13 @@ impl ChainStateWriter for ChainStateDB {
     /// flush data to db.
     fn flush(&self) -> Result<()> {
         //cache flush
-        for access_path in self.updates.read().keys() {
+        let locks = self.updates.write();
+        for access_path in locks.to_vec() {
             let account_state_object =
                 self.get_account_state_object(&access_path.address, false)?;
             account_state_object.flush()?;
         }
+        locks.to_vec().clear();
         // self tree flush
         self.state_tree.flush()
     }
