@@ -148,9 +148,9 @@ pub struct StarcoinOpt {
     /// Disable metrics.
     pub disable_metrics: bool,
 
-    #[structopt(long = "mine", short = "m", parse(try_from_str))]
-    /// Start a miner client in node, default is true
-    pub enable_mine: Option<bool>,
+    #[structopt(long = "disable-mine")]
+    /// Don't start a miner client in node.
+    pub disable_mine: bool,
 
     #[structopt(long = "miner_thread")]
     /// Miner thread number, not work for dev network, default is 1

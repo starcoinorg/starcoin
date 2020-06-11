@@ -94,8 +94,9 @@ impl ConfigModule for MinerConfig {
             self.pacemaker_strategy = PacemakerStrategy::HeadBlock;
             self.consensus_strategy = ConsensusStrategy::Argon(self.thread_num);
         }
-        if let Some(enable) = opt.enable_mine {
-            self.enable = enable;
+
+        if opt.disable_mine {
+            self.enable = false;
         }
         Ok(())
     }
