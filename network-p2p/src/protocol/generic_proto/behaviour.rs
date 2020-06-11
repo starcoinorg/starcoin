@@ -575,7 +575,7 @@ impl GenericProto {
     ///
     /// Also note that even we have a valid open substream, it may in fact be already closed
     /// without us knowing, in which case the packet will not be received.
-    pub fn send_packet(&mut self, target: &PeerId, message: Vec<u8>) {
+    pub fn _send_packet(&mut self, target: &PeerId, message: Vec<u8>) {
         let conn = match self.peers.get(target).and_then(|p| p.get_open()) {
             None => {
                 debug!(target: "sub-libp2p",

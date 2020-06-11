@@ -773,6 +773,66 @@ mod tests {
         assert_eq!(peer_info, peer_info_decode);
     }
 
+    #[stest::test]
+    fn test_network_first_rpc() {
+        use std::time::Duration;
+
+        let mut rt = Runtime::new().unwrap();
+        let handle = rt.handle().clone();
+
+        let local = task::LocalSet::new();
+        let future = System::run_in_tokio("test", &local);
+
+        let mut node_config1 = NodeConfig::random_for_test();
+        node_config1.network.listen =
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+                .parse()
+                .unwrap();
+        let node_config1 = Arc::new(node_config1);
+
+        let (network1, _bus1, rpc_rx_1) = build_network(node_config1.clone(), handle.clone());
+
+        let mut node_config2 = NodeConfig::random_for_test();
+        let addr1_hex = network1.peer_id.to_base58();
+        let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex)
+            .parse()
+            .unwrap();
+        node_config2.network.listen =
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+                .parse()
+                .unwrap();
+        node_config2.network.seeds = vec![seed];
+        let node_config2 = Arc::new(node_config2);
+
+        let (network2, _bus2, _rpc_rx_2) = build_network(node_config2, handle);
+
+        Arbiter::spawn(async move {
+            let (tx, _rx) = mpsc::unbounded();
+            let _response_actor = TestResponseActor::launch(network1.clone(), tx, rpc_rx_1);
+
+            let request = TestRequest {
+                data: HashValue::random(),
+            };
+            let request = request.encode().unwrap();
+            info!("req :{:?}", request);
+            let resp = network2
+                .send_request_bytes(
+                    network_p2p::PROTOCOL_NAME.into(),
+                    network1.identify().clone(),
+                    "test".to_string(),
+                    request.clone(),
+                    Duration::from_secs(1),
+                )
+                .await;
+            assert_eq!(request, resp.unwrap());
+            _delay(Duration::from_millis(100)).await;
+
+            System::current().stop();
+        });
+
+        local.block_on(&mut rt, future).unwrap();
+    }
+
     #[ignore]
     #[stest::test]
     fn test_network_with_mock() {
@@ -791,7 +851,7 @@ mod tests {
                 .unwrap();
         let node_config1 = Arc::new(node_config1);
 
-        let (network1, _bus1) = build_network(node_config1.clone(), handle.clone());
+        let (network1, _bus1, _rpc_rx_1) = build_network(node_config1.clone(), handle.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
@@ -805,24 +865,21 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, bus2) = build_network(node_config2, handle);
+        let (network2, bus2, rpc_rx_2) = build_network(node_config2, handle);
 
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();
 
             let (tx, mut rx) = mpsc::unbounded();
-            let response_actor = TestResponseActor::create(network_clone2, tx);
-            let addr = response_actor.start();
+            let response_actor = TestResponseActor::launch(network_clone2, tx, rpc_rx_2);
+            //let addr = response_actor.start();
 
-            let recipient = addr.clone().recipient::<RawRpcRequestMessage>();
-            bus2.send(Subscription { recipient }).await.unwrap();
-
-            let recipient = addr.clone().recipient::<PeerEvent>();
+            let recipient = response_actor.clone().recipient::<PeerEvent>();
             bus2.send(Subscription { recipient }).await.unwrap();
 
             // subscribe peer txns for network2
             bus2.send(Subscription {
-                recipient: addr.clone().recipient::<PeerTransactions>(),
+                recipient: response_actor.clone().recipient::<PeerTransactions>(),
             })
             .await
             .unwrap();
@@ -844,7 +901,7 @@ mod tests {
                 .unwrap();
 
             let _ = rx.next().await;
-            let txns = addr.send(GetPeerTransactions).await.unwrap();
+            let txns = response_actor.send(GetPeerTransactions).await.unwrap();
             assert_eq!(1, txns.len());
 
             let request = TestRequest {
@@ -877,16 +934,20 @@ mod tests {
     fn build_network(
         node_config: Arc<NodeConfig>,
         handle: Handle,
-    ) -> (NetworkAsyncService, Addr<BusActor>) {
+    ) -> (
+        NetworkAsyncService,
+        Addr<BusActor>,
+        mpsc::UnboundedReceiver<RawRpcRequestMessage>,
+    ) {
         let bus = BusActor::launch();
-        let (network, _) = NetworkActor::launch(
+        let (network, rpc_rx) = NetworkActor::launch(
             node_config,
             bus.clone(),
             handle,
             HashValue::default(),
             PeerInfo::default(),
         );
-        (network, bus)
+        (network, bus, rpc_rx)
     }
 
     struct TestResponseActor {
@@ -896,15 +957,19 @@ mod tests {
     }
 
     impl TestResponseActor {
-        fn create(
+        fn launch(
             network_service: NetworkAsyncService,
             event_tx: mpsc::UnboundedSender<()>,
-        ) -> TestResponseActor {
-            Self {
-                _network_service: network_service,
-                peer_txns: vec![],
-                event_tx,
-            }
+            rpc_rx: mpsc::UnboundedReceiver<RawRpcRequestMessage>,
+        ) -> Addr<TestResponseActor> {
+            TestResponseActor::create(move |ctx: &mut Context<TestResponseActor>| {
+                ctx.add_stream(rpc_rx);
+                TestResponseActor {
+                    _network_service: network_service,
+                    peer_txns: vec![],
+                    event_tx,
+                }
+            })
         }
     }
 
@@ -939,10 +1004,8 @@ mod tests {
         }
     }
 
-    impl Handler<RawRpcRequestMessage> for TestResponseActor {
-        type Result = Result<()>;
-
-        fn handle(&mut self, msg: RawRpcRequestMessage, ctx: &mut Self::Context) -> Self::Result {
+    impl StreamHandler<RawRpcRequestMessage> for TestResponseActor {
+        fn handle(&mut self, msg: RawRpcRequestMessage, ctx: &mut Self::Context) {
             let mut responder = msg.responder.clone();
             let f = async move {
                 responder
@@ -952,7 +1015,6 @@ mod tests {
             };
             let f = actix::fut::wrap_future(f);
             ctx.spawn(Box::new(f));
-            Ok(())
         }
     }
 

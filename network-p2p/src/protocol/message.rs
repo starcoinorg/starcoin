@@ -6,7 +6,7 @@ pub mod generic {
 
     /// Consensus is mostly opaque to us
     #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-    pub struct ConsensusMessage {
+    pub struct GenericMessage {
         /// Message payload.
         pub data: Vec<u8>,
     }
@@ -28,5 +28,6 @@ pub mod generic {
     pub enum Message {
         /// Status message for handshake
         Status(Box<Status>),
+        ConsensusMessage(Box<GenericMessage>),
     }
 }

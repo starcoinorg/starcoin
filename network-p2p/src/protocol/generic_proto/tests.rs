@@ -253,7 +253,7 @@ fn two_nodes_transfer_lots_of_packets() {
             match ready!(service1.poll_next_unpin(cx)) {
                 Some(GenericProtoOut::CustomProtocolOpen { peer_id, .. }) => {
                     for _n in 0..NUM_PACKETS {
-                        service1.send_packet(&peer_id, vec![]);
+                        service1._send_packet(&peer_id, vec![]);
                     }
                 }
                 _ => panic!(),
@@ -315,7 +315,7 @@ fn basic_two_nodes_requests_in_parallel() {
             match ready!(service1.poll_next_unpin(cx)) {
                 Some(GenericProtoOut::CustomProtocolOpen { peer_id, .. }) => {
                     for msg in to_send.drain(..) {
-                        service1.send_packet(&peer_id, msg.encode());
+                        service1._send_packet(&peer_id, msg.encode());
                     }
                 }
                 _ => panic!(),
