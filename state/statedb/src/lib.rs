@@ -530,7 +530,7 @@ mod tests {
         let state_root = chain_state_db.commit()?;
 
         let state1 = random_bytes();
-        chain_state_db.apply_write_set(to_write_set(access_path.clone(), state1))?;
+        chain_state_db.apply_write_set(to_write_set(access_path, state1))?;
         let new_state_root = chain_state_db.commit()?;
         assert_ne!(state_root, new_state_root);
         Ok(())
@@ -542,7 +542,7 @@ mod tests {
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
         let access_path = access_path::random_resource();
         let state0 = random_bytes();
-        chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0))?;
+        chain_state_db.apply_write_set(to_write_set(access_path, state0))?;
         chain_state_db.commit()?;
         chain_state_db.flush()?;
 
