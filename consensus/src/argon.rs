@@ -132,3 +132,20 @@ pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
 pub fn vec_to_u64(v: Vec<u8>) -> u64 {
     LittleEndian::read_u64(&v)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::argon::calculate_hash;
+    use crypto::hash::HashValue;
+    use std::time::Instant;
+
+    #[test]
+    fn test_argon_hash_speed() {
+        let header =
+            HashValue::from_hex("c243b3cf75af262ecd568b51e2a05890f2a26f085ff005d56629debc5334cb7a")
+                .unwrap();
+        let start = Instant::now();
+        let h = calculate_hash(header.as_ref());
+        println!("hash: {:?}, speed: {}ms", h, start.elapsed().as_millis());
+    }
+}

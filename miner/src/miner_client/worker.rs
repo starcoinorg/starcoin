@@ -40,6 +40,8 @@ pub fn start_worker(
                         .name(worker_name.clone())
                         .spawn(move || {
                             let mut worker = Worker::new(worker_rx, nonce_tx_clone);
+                            // TODO: 这里 Rng 会在区间里随机一个数出来。
+                            // 多次调用有可能随机出重复的 nonce，导致重复计算，浪费 CPU。
                             let rng = nonce_generator(nonce_range);
                             worker.run(rng, argon_solver, pb);
                         })
