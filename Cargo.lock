@@ -7198,6 +7198,7 @@ dependencies = [
  "starcoin-tx-relay",
  "starcoin-txpool-api",
  "starcoin-types",
+ "stest",
  "tempfile",
  "trace-time",
  "transaction-pool",
@@ -7225,6 +7226,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-txpool-api",
  "starcoin-types",
+ "stest",
 ]
 
 [[package]]

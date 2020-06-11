@@ -88,7 +88,7 @@ impl TxPoolSyncService for MockTxPoolService {
 mod tests {
     use super::*;
 
-    #[actix_rt::test]
+    #[stest::test]
     async fn test_txpool() {
         let pool = MockTxPoolService::new();
 
