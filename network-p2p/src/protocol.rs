@@ -20,7 +20,7 @@ use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
 
-use crate::protocol::message::generic::{GenericMessage, Message, Status};
+use crate::protocol::message::generic::{FallbackMessage, GenericMessage, Message, Status};
 use crypto::HashValue;
 use scs::SCSCodec;
 use std::borrow::Cow;
@@ -338,9 +338,16 @@ impl Protocol {
     }
 
     pub fn on_legacy_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
-        trace!("receive custom legacy message from {} ", who);
+        info!("receive custom legacy message from {} ", who);
 
-        self.on_notify(who, PROTOCOL_NAME.into(), data)
+        match FallbackMessage::decode(&data[..]) {
+            Ok(msg) => self.on_notify(who, msg.protocol_name, BytesMut::from(&msg.data[..])),
+            Err(err) => {
+                info!(target: "sync", "Couldn't decode packet sent by {}: {:?}: {}", who, data, err);
+                self.peerset_handle.report_peer(who, rep::BAD_MESSAGE);
+                return CustomMessageOutcome::None;
+            }
+        }
     }
 
     pub fn on_notify(
@@ -349,7 +356,7 @@ impl Protocol {
         protocol_name: Cow<'static, [u8]>,
         data: BytesMut,
     ) -> CustomMessageOutcome {
-        trace!("receive custom message from {} ", who);
+        info!("receive custom message from {} ", who);
         let message = match Message::decode(&data[..]) {
             Ok(message) => message,
             Err(err) => {
@@ -529,8 +536,16 @@ impl Protocol {
         let message = Message::ConsensusMessage(Box::new(GenericMessage { data: data.into() }))
             .encode()
             .expect("should encode right");
+
+        let fallback = FallbackMessage {
+            protocol_name: PROTOCOL_NAME.clone().into(),
+            data: message.clone(),
+        }
+        .encode()
+        .expect("should encode right");
+
         self.behaviour
-            .write_notification(&target, protocol_name, message, vec![]);
+            .write_notification(&target, protocol_name, message, fallback);
     }
 
     pub fn register_notifications_protocol(
@@ -570,6 +585,12 @@ fn send_message(
     message: Message,
 ) -> anyhow::Result<()> {
     let encoded = message.encode()?;
-    behaviour.write_notification(who, PROTOCOL_NAME.into(), encoded, vec![]);
+    let fallback = FallbackMessage {
+        protocol_name: PROTOCOL_NAME.clone().into(),
+        data: encoded.clone(),
+    }
+    .encode()?;
+
+    behaviour.write_notification(who, PROTOCOL_NAME.into(), encoded, fallback);
     Ok(())
 }
