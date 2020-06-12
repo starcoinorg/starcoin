@@ -345,7 +345,7 @@ impl Protocol {
             Err(err) => {
                 info!(target: "sync", "Couldn't decode packet sent by {}: {:?}: {}", who, data, err);
                 self.peerset_handle.report_peer(who, rep::BAD_MESSAGE);
-                return CustomMessageOutcome::None;
+                CustomMessageOutcome::None
             }
         }
     }
@@ -538,7 +538,7 @@ impl Protocol {
             .expect("should encode right");
 
         let fallback = FallbackMessage {
-            protocol_name: PROTOCOL_NAME.clone().into(),
+            protocol_name: PROTOCOL_NAME.into(),
             data: message.clone(),
         }
         .encode()
@@ -586,7 +586,7 @@ fn send_message(
 ) -> anyhow::Result<()> {
     let encoded = message.encode()?;
     let fallback = FallbackMessage {
-        protocol_name: PROTOCOL_NAME.clone().into(),
+        protocol_name: PROTOCOL_NAME.into(),
         data: encoded.clone(),
     }
     .encode()?;
