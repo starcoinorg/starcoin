@@ -48,9 +48,12 @@ pub struct ArgonConsensus {}
 impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
-    fn calculate_next_difficulty(_config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256 {
-        let target = difficulty::get_next_work_required(reader);
-        target_to_difficulty(target)
+    fn calculate_next_difficulty(
+        _config: Arc<NodeConfig>,
+        reader: &dyn ChainReader,
+    ) -> Result<U256> {
+        let target = difficulty::get_next_work_required(reader)?;
+        Ok(target_to_difficulty(target))
     }
     fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
         let mut nonce = generate_nonce();
@@ -70,7 +73,7 @@ impl Consensus for ArgonConsensus {
         reader: &dyn ChainReader,
         header: &BlockHeader,
     ) -> Result<()> {
-        let difficulty = ArgonConsensus::calculate_next_difficulty(config, reader);
+        let difficulty = ArgonConsensus::calculate_next_difficulty(config, reader)?;
         if header.difficulty() != difficulty {
             return Err(anyhow::Error::msg("Invalid difficulty"));
         }

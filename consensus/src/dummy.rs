@@ -17,7 +17,10 @@ pub struct DummyConsensus {}
 impl Consensus for DummyConsensus {
     type ConsensusHeader = DummyHeader;
 
-    fn calculate_next_difficulty(config: Arc<NodeConfig>, _reader: &dyn ChainReader) -> U256 {
+    fn calculate_next_difficulty(
+        config: Arc<NodeConfig>,
+        _reader: &dyn ChainReader,
+    ) -> Result<U256> {
         let mut rng = rand::thread_rng();
         // if produce block on demand, use a default wait time.
         let high: u64 = if config.miner.dev_period == 0 {
@@ -26,7 +29,7 @@ impl Consensus for DummyConsensus {
             config.miner.dev_period * 1000
         };
         let time: u64 = rng.gen_range(1, high);
-        time.into()
+        Ok(time.into())
     }
 
     fn solve_consensus_header(_header_hash: &[u8], _difficulty: U256) -> Self::ConsensusHeader {

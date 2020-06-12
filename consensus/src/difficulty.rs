@@ -6,6 +6,7 @@ use types::U256;
 pub const BLOCK_TIME_SEC: u32 = 20;
 pub const BLOCK_WINDOW: u32 = 24;
 
+use anyhow::Result;
 use logger::prelude::*;
 use traits::ChainReader;
 
@@ -19,7 +20,7 @@ pub fn current_hash_rate(target: &[u8]) -> u64 {
     (difficult_1_target() / target_u256).low_u64() / (BLOCK_TIME_SEC as u64)
 }
 
-pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
+pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let blocks = {
         let mut blocks: Vec<BlockInfo> = vec![];
         let mut count = 0;
@@ -30,16 +31,20 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
                 break;
             }
             current_number -= 1;
-            let block = chain.get_block_by_number(current_number).unwrap().unwrap();
-            if block.header().timestamp() == 0 {
-                continue;
+            let pre_hash = current_block.header.parent_hash;
+            if let Some(header) = chain.get_header(pre_hash)? {
+                if header.timestamp() == 0 {
+                    continue;
+                }
+                let block_info = BlockInfo {
+                    timestamp: header.timestamp,
+                    target: difficult_to_target(header.difficulty),
+                };
+                blocks.push(block_info);
+                count += 1;
+            } else {
+                anyhow::bail!("Invalid block, header not exist");
             }
-            let block_info = BlockInfo {
-                timestamp: block.header().timestamp(),
-                target: difficult_to_target(block.header().difficulty()),
-            };
-            blocks.push(block_info);
-            count += 1;
         }
         blocks
     };
@@ -48,7 +53,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
             "Block length less than 1, set target to 1 difficulty:{:?}",
             difficult_1_target() / 100.into()
         );
-        return difficult_1_target() / 100.into();
+        return Ok(difficult_1_target() / 100.into());
     }
     let mut avg_time: u64 = 0;
     let mut avg_target = U256::zero();
@@ -91,7 +96,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
         "avg_time:{:?}s, time_plan:{:?}s, target: {:?}",
         avg_time, time_plan, new_target
     );
-    new_target
+    Ok(new_target)
 }
 
 pub fn target_to_difficulty(target: U256) -> U256 {
