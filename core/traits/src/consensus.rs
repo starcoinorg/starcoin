@@ -20,7 +20,8 @@ pub trait ConsensusHeader:
 pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
     type ConsensusHeader: ConsensusHeader;
 
-    fn calculate_next_difficulty(config: Arc<NodeConfig>, reader: &dyn ChainReader) -> U256;
+    fn calculate_next_difficulty(config: Arc<NodeConfig>, reader: &dyn ChainReader)
+        -> Result<U256>;
 
     /// Calculate new block consensus header
     // TODO use &HashValue to replace &[u8] for parent_hash
@@ -38,7 +39,7 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
         reader: &dyn ChainReader,
         block_template: BlockTemplate,
     ) -> Result<Block> {
-        let difficulty = Self::calculate_next_difficulty(config, reader);
+        let difficulty = Self::calculate_next_difficulty(config, reader)?;
         let consensus_header = Self::solve_consensus_header(
             block_template.parent_hash.to_vec().as_slice(),
             difficulty,

@@ -4,8 +4,9 @@
 use types::U256;
 
 pub const BLOCK_TIME_SEC: u32 = 20;
-pub const BLOCK_WINDOW: u32 = 24;
+pub const BLOCK_WINDOW: u64 = 24;
 
+use anyhow::Result;
 use logger::prelude::*;
 use traits::ChainReader;
 
@@ -19,37 +20,44 @@ pub fn current_hash_rate(target: &[u8]) -> u64 {
     (difficult_1_target() / target_u256).low_u64() / (BLOCK_TIME_SEC as u64)
 }
 
-pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
+/// Get the target of next pow work
+pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
+    let mut current_header = chain.current_header();
+    if current_header.number <= 1 {
+        return Ok(difficult_to_target(current_header.difficulty));
+    }
     let blocks = {
         let mut blocks: Vec<BlockInfo> = vec![];
-        let mut count = 0;
-        let current_block = chain.head_block();
-        let mut current_number = current_block.header().number() + 1;
-        loop {
-            if count == BLOCK_WINDOW || current_number == 0 {
-                break;
+        let calculate_window = if current_header.number < BLOCK_WINDOW {
+            current_header.number
+        } else {
+            BLOCK_WINDOW
+        };
+        blocks.push(BlockInfo {
+            timestamp: current_header.timestamp,
+            target: difficult_to_target(current_header.difficulty),
+        });
+        for _ in 1..calculate_window {
+            match chain.get_header(current_header.parent_hash)? {
+                Some(header) => {
+                    // Skip genesis
+                    if header.number == 0 {
+                        break;
+                    }
+                    blocks.push(BlockInfo {
+                        timestamp: header.timestamp,
+                        target: difficult_to_target(header.difficulty),
+                    });
+                    current_header = header;
+                }
+                None => {
+                    anyhow::bail!("Invalid block, header not exist");
+                }
             }
-            current_number -= 1;
-            let block = chain.get_block_by_number(current_number).unwrap().unwrap();
-            if block.header().timestamp() == 0 {
-                continue;
-            }
-            let block_info = BlockInfo {
-                timestamp: block.header().timestamp(),
-                target: difficult_to_target(block.header().difficulty()),
-            };
-            blocks.push(block_info);
-            count += 1;
         }
         blocks
     };
-    if blocks.len() <= 1 {
-        debug!(
-            "Block length less than 1, set target to 1 difficulty:{:?}",
-            difficult_1_target() / 100.into()
-        );
-        return difficult_1_target() / 100.into();
-    }
+
     let mut avg_time: u64 = 0;
     let mut avg_target = U256::zero();
     let mut latest_block_index = 0;
@@ -91,7 +99,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> U256 {
         "avg_time:{:?}s, time_plan:{:?}s, target: {:?}",
         avg_time, time_plan, new_target
     );
-    new_target
+    Ok(new_target)
 }
 
 pub fn target_to_difficulty(target: U256) -> U256 {

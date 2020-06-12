@@ -201,7 +201,7 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 1000,
     reward_delay: 3,
-    difficulty: U256::max_value(),
+    difficulty: 10.into(),
     consensus_header: vec![],
     pre_mine_config: Some(PreMineConfig {
         public_key: Ed25519PublicKey::from_encoded_string(
@@ -223,7 +223,7 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 10000,
     reward_delay: 7,
-    difficulty: U256::max_value(),
+    difficulty: 10.into(),
     consensus_header: vec![],
     pre_mine_config: None,
     boot_nodes: vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
@@ -237,7 +237,7 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 52500,
     reward_delay: 7,
-    difficulty: U256::max_value(),
+    difficulty: 10.into(),
     consensus_header: vec![],
     pre_mine_config: None,
     boot_nodes: vec![],
