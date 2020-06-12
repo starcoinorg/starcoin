@@ -40,7 +40,10 @@ pub struct DevConsensus {}
 impl Consensus for DevConsensus {
     type ConsensusHeader = DummyHeader;
 
-    fn calculate_next_difficulty(config: Arc<NodeConfig>, _reader: &dyn ChainReader) -> U256 {
+    fn calculate_next_difficulty(
+        config: Arc<NodeConfig>,
+        _reader: &dyn ChainReader,
+    ) -> Result<U256> {
         let mut rng = rand::thread_rng();
         // if produce block on demand, use a default wait time.
         match &config.miner.consensus_strategy {
@@ -51,7 +54,7 @@ impl Consensus for DevConsensus {
                     *dev_period * 1000
                 };
                 let time: u64 = rng.gen_range(1, high);
-                time.into()
+                Ok(time.into())
             }
             ConsensusStrategy::Argon(_) => panic!("Incompatible consensus strategy"),
         }

@@ -45,7 +45,7 @@ pub fn mint<C>(
 where
     C: Consensus,
 {
-    let difficulty = C::calculate_next_difficulty(config, chain);
+    let difficulty = C::calculate_next_difficulty(config, chain)?;
     miner.set_mint_job(MineCtx::new(block_template, difficulty));
     let job = miner.get_mint_job();
     debug!("Push job to worker {}", job);

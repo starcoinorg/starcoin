@@ -390,9 +390,9 @@ impl Protocol {
                 return CustomMessageOutcome::None;
             }
             if status.genesis_hash != self.chain_info.genesis_hash {
-                info!(
-                    "Peer is on different chain (our genesis: {} theirs: {})",
-                    self.chain_info.genesis_hash, status.genesis_hash
+                error!(
+                    "Peer with id `{}` is on different chain (our genesis: {} theirs: {})",
+                    who, self.chain_info.genesis_hash, status.genesis_hash,
                 );
                 self.peerset_handle
                     .report_peer(who.clone(), rep::GENESIS_MISMATCH);
