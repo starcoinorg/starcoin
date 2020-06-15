@@ -42,6 +42,7 @@ starcoin-cmd = {package = "starcoin-cmd", path= "../cmd/starcoin"}
 scmd = {path = "../commons/scmd"}
 starcoin-types = {path = "../types"}
 starcoin-vm-runtime = {path = "../vm/vm-runtime"}
+starcoin-vm-types = {path = "../vm/types"}
 starcoin-wallet-api= {path ="../wallet/api"}
 starcoin-state-api = {path = "../state/api"}
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }

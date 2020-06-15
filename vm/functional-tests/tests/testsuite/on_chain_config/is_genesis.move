@@ -1,8 +1,7 @@
 script {
-use 0x0::Timestamp;
-use 0x0::Transaction;
+use 0x1::Timestamp;
 
 fun main() {
-    Transaction::assert(!Timestamp::is_genesis(), 10)
+    assert(!Timestamp::is_genesis(), 10)
 }
 }

@@ -1,8 +1,8 @@
-address 0x0 {
+address 0x1 {
 
 module Timestamp {
-    use 0x0::Transaction;
-    use 0x0::Signer;
+
+    use 0x1::Signer;
 
     // A singleton resource holding the current Unix time in microseconds
     resource struct CurrentTimeMicroseconds {
@@ -12,7 +12,7 @@ module Timestamp {
     // Initialize the global wall clock time resource.
     public fun initialize(account: &signer) {
         // Only callable by the Association address
-        Transaction::assert(Signer::address_of(account) == 0xA550C18, 1);
+        assert(Signer::address_of(account) == 0xA550C18, 1);
 
         // TODO: Should the initialized value be passed in to genesis?
         let timer = CurrentTimeMicroseconds {microseconds: 0};
@@ -29,17 +29,17 @@ module Timestamp {
     public fun update_global_time(_account: &signer, proposer: address, timestamp: u64) acquires CurrentTimeMicroseconds {
         // Can only be invoked by LibraVM privilege.
         //TODO conform addr
-        //Transaction::assert(Signer::address_of(account) == 0x0, 33);
+        //assert(Signer::address_of(account) == 0x0, 33);
 
         let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(0xA550C18);
         if (proposer == 0x0) {
             // NIL block with null address as proposer. Timestamp must be equal.
             //TODO
-            //Transaction::assert(timestamp == global_timer.microseconds, 5001);
+            //assert(timestamp == global_timer.microseconds, 5001);
         } else {
             // Normal block. Time must advance
             //TODO
-            //Transaction::assert(global_timer.microseconds < timestamp, 5001);
+            //assert(global_timer.microseconds < timestamp, 5001);
         };
         global_timer.microseconds = timestamp;
     }
@@ -59,7 +59,7 @@ module Timestamp {
 
     // Helper function to determine if the blockchain is at genesis state.
     public fun is_genesis(): bool {
-        !::exists<Self::CurrentTimeMicroseconds>(0xA550C18)
+        !exists<Self::CurrentTimeMicroseconds>(0xA550C18)
     }
     spec fun is_genesis {
         aborts_if false;

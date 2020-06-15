@@ -3,6 +3,7 @@
 
 use anyhow::{ensure, Result};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::write_set::WriteSet;
@@ -14,9 +15,12 @@ use starcoin_types::{
     language_storage::TypeTag,
     state_set::ChainStateSet,
 };
-use starcoin_vm_types::account_config::{stc_type_tag, type_tag_for_currency_code};
-use starcoin_vm_types::on_chain_config::{ConfigStorage, OnChainConfig, RegisteredCurrencies};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::{
+    account_config::{stc_type_tag, type_tag_for_currency_code},
+    move_resource::MoveResource,
+    on_chain_config::{ConfigStorage, OnChainConfig, RegisteredCurrencies},
+    state_view::StateView,
+};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -206,17 +210,29 @@ impl<'a> AccountStateReader<'a> {
         Self { reader }
     }
 
+    //TODO change to pass Address copy not ref.
     /// Get AccountResource by address
     pub fn get_account_resource(
         &self,
         address: &AccountAddress,
     ) -> Result<Option<AccountResource>> {
-        self.reader
-            .get(&AccessPath::new_for_account(*address))
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(scs::from_bytes::<AccountResource>(bytes.as_slice())?)),
+        self.get_resource::<AccountResource>(*address)
+    }
+
+    /// Get Resource by type
+    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    where
+        R: MoveResource + DeserializeOwned,
+    {
+        let access_path = AccessPath::new(address, R::resource_path());
+        let r = self
+            .reader
+            .get(&access_path)
+            .and_then(|state| match state {
+                Some(state) => Ok(Some(scs::from_bytes::<R>(state.as_slice())?)),
                 None => Ok(None),
-            })
+            })?;
+        Ok(r)
     }
 
     pub fn get_on_chain_config<C>(&self) -> Option<C>

@@ -508,15 +508,19 @@ mod tests {
     use super::*;
     use starcoin_state_tree::mock::MockStateNodeStore;
     use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+    use starcoin_vm_types::account_config::AccountResource;
+    use starcoin_vm_types::move_resource::MoveResource;
 
     fn random_bytes() -> Vec<u8> {
         HashValue::random().to_vec()
     }
+
     fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
         WriteSetMut::new(vec![(access_path, WriteOp::Value(value))])
             .freeze()
             .expect("freeze write_set must success.")
     }
+
     #[test]
     fn test_state_proof() -> Result<()> {
         let storage = MockStateNodeStore::new();
@@ -587,7 +591,7 @@ mod tests {
         let storage = Arc::new(MockStateNodeStore::new());
         let chain_state_db = ChainStateDB::new(storage.clone(), None);
         let account_address = AccountAddress::random();
-        let access_path = AccessPath::new_for_account(account_address);
+        let access_path = AccessPath::new(account_address, AccountResource::resource_path());
         let old_state = random_bytes();
         chain_state_db.apply_write_set(to_write_set(access_path.clone(), old_state.clone()))?;
         chain_state_db.commit()?;

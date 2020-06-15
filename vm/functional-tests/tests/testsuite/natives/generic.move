@@ -15,17 +15,16 @@ module M {
 //! sender: bob
 script {
 use {{alice}}::M;
-use 0x0::Generic;
-use 0x0::Transaction;
+use 0x1::Generic;
 
 fun main() {
 
     let (address, module_name, struct_name) = Generic::type_of<M::T>();
-    Transaction::assert(address == {{alice}}, 8001);
+    assert(address == {{alice}}, 8001);
     // M
-    Transaction::assert(module_name == x"4d", 8002);
+    assert(module_name == x"4d", 8002);
     // T
-    Transaction::assert(struct_name == x"54", 8003);
+    assert(struct_name == x"54", 8003);
 
 }
 }

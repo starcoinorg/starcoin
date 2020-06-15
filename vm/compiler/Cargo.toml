@@ -11,6 +11,6 @@ anyhow = "1.0"
 once_cell = "1.4.0"
 tempfile = "3.1.0"
 regex = { version = "1.3.7", default-features = false, features = ["std", "perf"] }
-move-lang = { package="move-lang", git = "https://github.com/starcoinorg/libra", rev="627e66029eb748c1e3e05d6c8fd6db11935f80b4" }
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-vm-types = { path = "../types"}

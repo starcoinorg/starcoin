@@ -31,6 +31,7 @@ futures = { version = "0.3", features = ["compat"] }
 futures01 = "0.1.29"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}
+starcoin-vm-types = { path = "../../vm/types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-rpc-api = {path = "../api"}
 starcoin-logger = { path = "../../commons/logger"}

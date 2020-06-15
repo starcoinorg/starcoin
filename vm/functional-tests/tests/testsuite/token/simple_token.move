@@ -5,7 +5,6 @@
 //! sender: alice
 
 module Token {
-    use 0x0::Transaction;
 
     resource struct Coin<AssetType: copyable> {
         type: AssetType,
@@ -27,7 +26,7 @@ module Token {
     }
 
     public fun withdraw<ATy: copyable>(coin: &mut Coin<ATy>, amount: u64): Coin<ATy> {
-        Transaction::assert(coin.value >= amount, 10);
+        assert(coin.value >= amount, 10);
         coin.value = coin.value - amount;
         Coin { type: *&coin.type, value: amount }
     }
@@ -39,13 +38,13 @@ module Token {
 
     public fun deposit<ATy: copyable>(coin: &mut Coin<ATy>, check: Coin<ATy>) {
         let Coin { value, type } = check;
-        Transaction::assert(&coin.type == &type, 42);
+        assert(&coin.type == &type, 42);
         coin.value = coin.value + value;
     }
 
     public fun destroy_zero<ATy: copyable>(coin: Coin<ATy>) {
         let Coin { value, type: _ } = coin;
-        Transaction::assert(value == 0, 11)
+        assert(value == 0, 11)
     }
 
 }
@@ -55,8 +54,7 @@ module Token {
 
 module ToddNickles {
     use {{alice}}::Token;
-    use 0x0::Signer;
-    use 0x0::Transaction;
+    use 0x1::Signer;
 
     struct T {}
 
@@ -65,12 +63,12 @@ module ToddNickles {
     }
 
     public fun init(account: &signer) {
-        Transaction::assert(Signer::address_of(account) == {{bob}}, 42);
-        move_to_sender(Wallet { nickles: Token::create(T{}, 0) })
+        assert(Signer::address_of(account) == {{bob}}, 42);
+        move_to(account, Wallet { nickles: Token::create(T{}, 0) })
     }
 
     public fun mint(account: &signer): Token::Coin<T> {
-        Transaction::assert(Signer::address_of(account) == {{bob}}, 42);
+        assert(Signer::address_of(account) == {{bob}}, 42);
         Token::create(T{}, 5)
     }
 

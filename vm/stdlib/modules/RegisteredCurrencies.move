@@ -1,10 +1,10 @@
-address 0x0 {
+address 0x1 {
 //TODO Consider a more appropriate name.
 module RegisteredCurrencies {
-    use 0x0::Vector;
-    use 0x0::Transaction;
-    use 0x0::Config;
-    use 0x0::Signer;
+    use 0x1::Vector;
+
+    use 0x1::Config;
+    use 0x1::Signer;
 
     struct CurrencyRecord{
         // Currency module address.
@@ -25,7 +25,7 @@ module RegisteredCurrencies {
 
     public fun initialize(account: &signer): RegistrationCapability {
         // enforce that this is only going to one specific address,
-        Transaction::assert(Signer::address_of(account) == singleton_address(), 0);
+        assert(Signer::address_of(account) == singleton_address(), 0);
         let cap = Config::publish_new_config_with_capability(account, empty());
 
         RegistrationCapability{ cap }

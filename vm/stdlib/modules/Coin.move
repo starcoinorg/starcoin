@@ -1,15 +1,15 @@
-address 0x0 {
+address 0x1 {
 
 module Coin {
-    use 0x0::Event;
-    use 0x0::FixedPoint32;
-    use 0x0::Config;
-    use 0x0::RegisteredCurrencies;
-    use 0x0::Transaction;
-    use 0x0::Vector;
-    use 0x0::Generic;
-    use 0x0::Debug;
-    use 0x0::Signer;
+    use 0x1::Event;
+    use 0x1::FixedPoint32::{Self, FixedPoint32};
+    use 0x1::Config;
+    use 0x1::RegisteredCurrencies;
+
+    use 0x1::Vector;
+    use 0x1::Generic;
+    use 0x1::Debug;
+    use 0x1::Signer;
 
     // The currency has a `CoinType` color that tells us what currency the
     // `value` inside represents.
@@ -72,7 +72,7 @@ module Coin {
         preburn_value: u64,
         // The (rough) exchange rate from `CoinType` to STC.
         // For support pay custom Token as gas.
-        to_stc_exchange_rate: FixedPoint32::T,
+        to_stc_exchange_rate: FixedPoint32,
         //TODO remove this.
         is_synthetic: bool,
         // The scaling factor for the coin (i.e. the amount to multiply by
@@ -126,7 +126,7 @@ module Coin {
     // This can only be invoked by the Association address, and only a single time.
     // Currently, it is invoked in the genesis transaction
     public fun initialize(account: &signer) {
-        Transaction::assert(Signer::address_of(account) == Config::default_config_address(), 0);
+        assert(Signer::address_of(account) == Config::default_config_address(), 0);
         let cap = RegisteredCurrencies::initialize(account);
         move_to(account,CurrencyRegistrationCapability{ cap })
     }
@@ -146,7 +146,7 @@ module Coin {
     }
 
     public fun grant_burn_capability_for_sender<CoinType>(account: &signer) {
-        //Transaction::assert(Signer::address_of(account) == 0xD1E, 0);
+        //assert(Signer::address_of(account) == 0xD1E, 0);
         move_to(account,grant_burn_capability<CoinType>(account));
     }
 
@@ -197,11 +197,11 @@ module Coin {
         // minting. This will not be a problem in the production Libra system because coins will
         // be backed with real-world assets, and thus minting will be correspondingly rarer.
         // * 1000000 here because the unit is microlibra
-        // Transaction::assert(value <= 1000000000 * 1000000, 11);
+        // assert(value <= 1000000000 * 1000000, 11);
         let currency_code = currency_code<Token>();
         // update market cap resource to reflect minting
         let info = borrow_global_mut<CurrencyInfo<Token>>(issuer_addr<Token>());
-        Transaction::assert(info.can_mint, 4);
+        assert(info.can_mint, 4);
         info.total_value = info.total_value + (value as u128);
         // don't emit mint events for synthetic currenices
         if (!info.is_synthetic) {
@@ -403,7 +403,7 @@ module Coin {
     // Fails if the coins value is less than `amount`
     public fun withdraw<CoinType>(coin: &mut T<CoinType>, amount: u64): T<CoinType> {
         // Check that `amount` is less than the coin's value
-        Transaction::assert(coin.value >= amount, 10);
+        assert(coin.value >= amount, 10);
         coin.value = coin.value - amount;
         T { value: amount }
     }
@@ -429,7 +429,7 @@ module Coin {
     // so you cannot "burn" any non-zero amount of Coin.T
     public fun destroy_zero<CoinType>(coin: T<CoinType>) {
         let T { value } = coin;
-        Transaction::assert(value == 0, 5)
+        assert(value == 0, 5)
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -439,16 +439,16 @@ module Coin {
     // Register the type `CoinType` as a currency. Without this, a type
     // cannot be used as a coin/currency unit n Libra.
     public fun register_currency<CoinType>(account: &signer,
-        to_stc_exchange_rate: FixedPoint32::T,
+        to_stc_exchange_rate: FixedPoint32,
         scaling_factor: u64,
         fractional_part: u64,
     ) acquires CurrencyRegistrationCapability {
         // And only callable by the designated currency address.
-        //Transaction::assert(Association::has_privilege<AddCurrency>(Signer::address_of(account)), 8);
+        //assert(Association::has_privilege<AddCurrency>(Signer::address_of(account)), 8);
         assert_issuer<CoinType>(account);
         let (coin_module_address,coin_module_name,struct_name) = Generic::type_of<CoinType>();
         // CoinType's struct name must be T. TODO consider a more graceful approach.
-        Transaction::assert(struct_name == x"54", 8);
+        assert(struct_name == x"54", 8);
         move_to(account,MintCapability<CoinType>{});
         move_to(account,BurnCapability<CoinType>{});
         move_to(account,CurrencyInfo<CoinType> {
@@ -528,7 +528,7 @@ module Coin {
     }
 
     // Updates the exchange rate for `FromCoinType` to STC exchange rate held on chain.
-    public fun update_stc_exchange_rate<FromCoinType>(account: &signer, stc_exchange_rate: FixedPoint32::T)
+    public fun update_stc_exchange_rate<FromCoinType>(account: &signer, stc_exchange_rate: FixedPoint32)
     acquires CurrencyInfo {
         assert_issuer_and_currency<FromCoinType>(account);
         let currency_info = borrow_global_mut<CurrencyInfo<FromCoinType>>(issuer_addr<FromCoinType>());
@@ -536,7 +536,7 @@ module Coin {
     }
 
     // Return the (rough) exchange rate between `CoinType` and STC
-    public fun stc_exchange_rate<CoinType>(): FixedPoint32::T
+    public fun stc_exchange_rate<CoinType>(): FixedPoint32
     acquires CurrencyInfo {
         *&borrow_global<CurrencyInfo<CoinType>>(issuer_addr<CoinType>()).to_stc_exchange_rate
     }
@@ -561,7 +561,7 @@ module Coin {
     fun issuer_addr<CoinType>(): address {
         let (coin_type_addr, _,_) = Generic::type_of<CoinType>();
         Debug::print(&coin_type_addr);
-        if (coin_type_addr == 0x0) {
+        if (coin_type_addr == 0x1) {
             0xA550C18
         }else{
             coin_type_addr
@@ -570,7 +570,7 @@ module Coin {
 
     fun assert_issuer<CoinType>(account: &signer){
         let issuer_addr = issuer_addr<CoinType>();
-        Transaction::assert(issuer_addr == Signer::address_of(account), 8);
+        assert(issuer_addr == Signer::address_of(account), 8);
     }
 
     public fun assert_issuer_and_currency<CoinType>(account: &signer){
@@ -580,7 +580,7 @@ module Coin {
 
     // Assert that `CoinType` is a registered currency
     fun assert_is_coin<CoinType>() {
-        Transaction::assert(is_currency<CoinType>(), 1);
+        assert(is_currency<CoinType>(), 1);
     }
 }
 

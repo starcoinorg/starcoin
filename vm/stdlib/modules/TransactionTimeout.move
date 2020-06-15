@@ -1,9 +1,9 @@
-address 0x0 {
+address 0x1 {
 
 module TransactionTimeout {
-  use 0x0::Signer;
-  use 0x0::Transaction;
-  use 0x0::Timestamp;
+  use 0x1::Signer;
+
+  use 0x1::Timestamp;
 
   resource struct TTL {
     // Only transactions with timestamp in between block time and block time + duration would be accepted.
@@ -12,7 +12,7 @@ module TransactionTimeout {
 
   public fun initialize(association: &signer) {
     // Only callable by the Association address
-    Transaction::assert(Signer::address_of(association) == 0xA550C18, 1);
+    assert(Signer::address_of(association) == 0xA550C18, 1);
     // Currently set to 1day.
     move_to(association, TTL {duration_microseconds: 86400000000});
   }
@@ -24,7 +24,7 @@ module TransactionTimeout {
 
   public fun set_timeout(association: &signer, new_duration: u64) acquires TTL {
     // Only callable by the Association address
-    Transaction::assert(Signer::address_of(association) == 0xA550C18, 1);
+    assert(Signer::address_of(association) == 0xA550C18, 1);
 
     let timeout = borrow_global_mut<TTL>(0xA550C18);
     timeout.duration_microseconds = new_duration;

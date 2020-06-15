@@ -104,8 +104,8 @@ mod tests {
         fun main() {
             let counter = {{counter}};
             MyModule::init();
-            Transaction::assert({{counter}} > 0, 1000)
-            Transaction::assert({{sender}}!=0x0, 1000);
+            assert({{counter}} > 0, 1000)
+            assert({{sender}}!=0x0, 1000);
         }
         }
         "#;

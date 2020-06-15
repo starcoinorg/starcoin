@@ -91,14 +91,19 @@ pub fn random_resource() -> AccessPath {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::account_config::AccountResource;
     use crate::language_storage::ModuleId;
+    use crate::move_resource::MoveResource;
     use libra_types::access_path::AccessPath;
     use move_core_types::identifier::Identifier;
 
     #[test]
     fn test_data_type() {
-        let (_address, data_type, _hash) =
-            into_inner(AccessPath::new_for_account(AccountAddress::random())).unwrap();
+        let (_address, data_type, _hash) = into_inner(AccessPath::new(
+            AccountAddress::random(),
+            AccountResource::resource_path(),
+        ))
+        .unwrap();
         assert_eq!(data_type, DataType::RESOURCE);
 
         let (_address, data_type, _hash) = into_inner(AccessPath::code_access_path(

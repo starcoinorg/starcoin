@@ -2,20 +2,20 @@
 // are executed, and the order in which they are executed in genesis. Note
 // however, that there are certain calls that remain in Rust code in
 // genesis (for now).
-address 0x0 {
+address 0x1 {
 module Genesis {
-    use 0x0::Association;
-    use 0x0::Event;
-    use 0x0::STC;
-    use 0x0::Coin;
-    use 0x0::Account;
-    use 0x0::Block;
-    use 0x0::Config;
-    use 0x0::TransactionTimeout;
-    use 0x0::Testnet;
-    use 0x0::Timestamp;
-    use 0x0::Version;
-    use 0x0::Signer;
+    use 0x1::Association;
+    use 0x1::Event;
+    use 0x1::STC;
+    use 0x1::Coin;
+    use 0x1::Account;
+    use 0x1::Block;
+    use 0x1::Config;
+    use 0x1::TransactionTimeout;
+    use 0x1::Testnet;
+    use 0x1::Timestamp;
+    use 0x1::Version;
+    use 0x1::Signer;
 
     
     fun initialize(
@@ -74,7 +74,10 @@ module Genesis {
 
         Block::initialize_block_metadata(association);
         Timestamp::initialize(association);
-        Account::rotate_authentication_key(association, copy genesis_auth_key);
+
+        let assoc_rotate_key_cap = Account::extract_key_rotation_capability(association);
+        Account::rotate_authentication_key(&assoc_rotate_key_cap, copy genesis_auth_key);
+        Account::restore_key_rotation_capability(assoc_rotate_key_cap);
     }
 
 }

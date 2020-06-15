@@ -587,7 +587,7 @@ impl AccountData {
         }
     }
 
-    /// Returns the (Move value) layout of the LibraAccount::T struct
+    /// Returns the (Move value) layout of the LibraAccount::Account struct
     pub fn type_() -> FatStructType {
         FatStructType {
             address: account_config::CORE_CODE_ADDRESS,

@@ -1,7 +1,12 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{account_config::constants::ACCOUNT_MODULE_NAME, event::EventHandle};
+use crate::{
+    account_config::{
+        constants::ACCOUNT_MODULE_NAME, KeyRotationCapabilityResource, WithdrawCapabilityResource,
+    },
+    event::EventHandle,
+};
 use move_core_types::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
@@ -10,8 +15,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountResource {
     authentication_key: Vec<u8>,
-    delegated_key_rotation_capability: bool,
-    delegated_withdrawal_capability: bool,
+    withdrawal_capability: Option<WithdrawCapabilityResource>,
+    key_rotation_capability: Option<KeyRotationCapabilityResource>,
     received_events: EventHandle,
     sent_events: EventHandle,
     sequence_number: u64,
@@ -23,17 +28,17 @@ impl AccountResource {
     pub fn new(
         sequence_number: u64,
         authentication_key: Vec<u8>,
-        delegated_key_rotation_capability: bool,
-        delegated_withdrawal_capability: bool,
+        withdrawal_capability: Option<WithdrawCapabilityResource>,
+        key_rotation_capability: Option<KeyRotationCapabilityResource>,
         sent_events: EventHandle,
         received_events: EventHandle,
         is_frozen: bool,
     ) -> Self {
         AccountResource {
             sequence_number,
+            withdrawal_capability,
+            key_rotation_capability,
             authentication_key,
-            delegated_key_rotation_capability,
-            delegated_withdrawal_capability,
             sent_events,
             received_events,
             is_frozen,
@@ -43,6 +48,16 @@ impl AccountResource {
     /// Return the sequence_number field for the given AccountResource
     pub fn sequence_number(&self) -> u64 {
         self.sequence_number
+    }
+
+    /// Returns if this account has delegated its withdrawal capability
+    pub fn has_delegated_withdrawal_capability(&self) -> bool {
+        self.withdrawal_capability.is_none()
+    }
+
+    /// Returns if this account has delegated its key rotation capability
+    pub fn has_delegated_key_rotation_capability(&self) -> bool {
+        self.key_rotation_capability.is_none()
     }
 
     /// Return the authentication_key field for the given AccountResource
@@ -60,16 +75,6 @@ impl AccountResource {
         &self.received_events
     }
 
-    /// Return the delegated_key_rotation_capability field for the given AccountResource
-    pub fn delegated_key_rotation_capability(&self) -> bool {
-        self.delegated_key_rotation_capability
-    }
-
-    /// Return the delegated_withdrawal_capability field for the given AccountResource
-    pub fn delegated_withdrawal_capability(&self) -> bool {
-        self.delegated_withdrawal_capability
-    }
-
     /// Return the the is_frozen flag for the given AccountResource
     pub fn is_frozen(&self) -> bool {
         self.is_frozen
@@ -78,5 +83,5 @@ impl AccountResource {
 
 impl MoveResource for AccountResource {
     const MODULE_NAME: &'static str = ACCOUNT_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "T";
+    const STRUCT_NAME: &'static str = "Account";
 }
