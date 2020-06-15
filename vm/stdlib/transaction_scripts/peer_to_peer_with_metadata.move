@@ -1,5 +1,5 @@
 script {
-use 0x0::Account;
+use 0x1::Account;
 
 fun main<Token>(
     account: &signer,
@@ -9,7 +9,7 @@ fun main<Token>(
     metadata: vector<u8>,
     metadata_signature: vector<u8>
 ) {
-  if (!Account::exists(payee)) {
+  if (!Account::exists_at(payee)) {
       Account::create_account<Token>(payee, auth_key_prefix);
   };
   Account::pay_from_sender_with_metadata<Token>(account,payee, amount, metadata, metadata_signature)

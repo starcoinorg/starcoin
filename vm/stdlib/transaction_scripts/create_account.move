@@ -1,5 +1,5 @@
 script {
-use 0x0::Account;
+use 0x1::Account;
 
 // TODO: remove initial_amount?
 fun main<Token>(account: &signer, fresh_address: address, auth_key_prefix: vector<u8>, initial_amount: u64) {

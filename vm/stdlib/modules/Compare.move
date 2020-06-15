@@ -5,9 +5,9 @@
 // const LESS_THAN = 1u8
 // const GREATER_THAN = 2u8
 
-address 0x0 {
+address 0x1 {
 module Compare {
-    use 0x0::Vector;
+    use 0x1::Vector;
 
     // Compare `v1` and `v2` using
     // (1) byte-by-byte comparison from right to left until we reach the end of the shorter vector,
@@ -30,7 +30,7 @@ module Compare {
     //
     // For all other types, the order is whatever the LCS encoding of the type and the comparison
     // strategy above gives you. One case where the order might be surprising is the `address` type.
-    // Addresses are 16 byte hex values that LCS encodes with the identity function. The right to
+    // CoreAddresses are 16 byte hex values that LCS encodes with the identity function. The right to
     // left, byte-by-byte comparison means that (for example)
     // `compare_lcs_bytes(lcs(0x01), lcs(0x10)) == LESS_THAN` (as you'd expect), but
     // `compare_lcs_bytes(lcs(0x100), lcs(0x001)) == LESS_THAN` (as you probably wouldn't expect).

@@ -1,16 +1,16 @@
-address 0x0 {
+address 0x1 {
 
 module Version {
-    use 0x0::Config;
-    use 0x0::Signer;
-    use 0x0::Transaction;
+    use 0x1::Config;
+    use 0x1::Signer;
+
 
     struct T {
         major: u64,
     }
 
     public fun initialize(account: &signer) {
-        Transaction::assert(Signer::address_of(account) == Config::default_config_address(), 1);
+        assert(Signer::address_of(account) == Config::default_config_address(), 1);
 
         Config::publish_new_config<Self::T>(
             account,
@@ -21,7 +21,7 @@ module Version {
     public fun set(account: &signer, major: u64) {
         let old_config = Config::get<Self::T>();
 
-        Transaction::assert(
+        assert(
             old_config.major < major,
             25
         );

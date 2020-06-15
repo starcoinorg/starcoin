@@ -7,8 +7,11 @@ use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config::AccountResource;
+use starcoin_vm_types::move_resource::MoveResource;
 use structopt::StructOpt;
 
+//TODO support custom access_path.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get")]
 pub struct GetOpt {
@@ -31,7 +34,10 @@ impl CommandAction for GetCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let state = client
-            .state_get(AccessPath::new_for_account(opt.account_address))?
+            .state_get(AccessPath::new(
+                opt.account_address,
+                AccountResource::resource_path(),
+            ))?
             .ok_or_else(|| {
                 format_err!(
                     "Account with address {} state not exist.",

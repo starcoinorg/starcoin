@@ -1,7 +1,7 @@
-address 0x0{
+address 0x1{
 module SubsidyConfig {
-    use 0x0::Transaction;
-    use 0x0::Signer;
+
+    use 0x1::Signer;
 
     resource struct T {
         subsidy_halving_interval: u64,
@@ -11,8 +11,8 @@ module SubsidyConfig {
     }
 
     public fun initialize(account: &signer) {
-        Transaction::assert(Signer::address_of(account) == 0x6d696e74, 6101);
-        Transaction::assert(!exists<T>(Signer::address_of(account)), 6102);
+        assert(Signer::address_of(account) == 0x6d696e74, 6101);
+        assert(!exists<T>(Signer::address_of(account)), 6102);
 
         move_to<T>(account, T {
             subsidy_halving_interval: 0,
@@ -23,16 +23,16 @@ module SubsidyConfig {
     }
 
     public fun subsidy(account: &signer, halving: u64, subsidy: u64, delay: u64) acquires T {
-        Transaction::assert(Signer::address_of(account) == 0x6d696e74, 6103);
-        Transaction::assert(exists<T>(Signer::address_of(account)), 6104);
+        assert(Signer::address_of(account) == 0x6d696e74, 6103);
+        assert(exists<T>(Signer::address_of(account)), 6104);
 
         let consensus_account = borrow_global_mut<T>(Signer::address_of(account));
 
-        Transaction::assert(!(consensus_account.set), 6105);
+        assert(!(consensus_account.set), 6105);
 
-        Transaction::assert(halving > 0, 6106);
-        Transaction::assert(subsidy > 0, 6107);
-        Transaction::assert(delay > 0, 6108);
+        assert(halving > 0, 6106);
+        assert(subsidy > 0, 6107);
+        assert(delay > 0, 6108);
 
         consensus_account.subsidy_halving_interval = halving;
         consensus_account.subsidy_base = subsidy;
@@ -42,7 +42,7 @@ module SubsidyConfig {
     }
 
     public fun subsidy_coin(height:u64): u64 acquires T {
-        Transaction::assert(right_conf(), 6109);
+        assert(right_conf(), 6109);
 
         let halving = subsidy_halving();
         let subsidy = subsidy_base();

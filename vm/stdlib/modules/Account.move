@@ -1,28 +1,37 @@
-address 0x0 {
+address 0x1 {
 
 // The module for the account resource that governs every account
 module Account {
-    use 0x0::Association;
-    use 0x0::Event;
-    use 0x0::Hash;
-    use 0x0::LCS;
-    use 0x0::Coin;
-    use 0x0::TransactionTimeout;
-    use 0x0::Testnet;
-    use 0x0::Transaction;
-    use 0x0::Vector;
-    use 0x0::Signer;
-    use 0x0::Timestamp;
+    use 0x1::Association;
+    use 0x1::Event;
+    use 0x1::Hash;
+    use 0x1::LCS;
+    use 0x1::Coin;
+    use 0x1::TransactionTimeout;
+    use 0x1::Testnet;
+    use 0x1::Vector;
+    use 0x1::Signer;
+    use 0x1::Timestamp;
+    use 0x1::Option::{Self, Option};
 
-    // Every account has a Account::T resource
-    resource struct T {
+    // Every account has a Account::Account resource
+    resource struct Account {
         // The current authentication key.
         // This can be different than the key used to create the account
         authentication_key: vector<u8>,
-        // If true, the authority to rotate the authentication key of this account resides elsewhere
-        delegated_key_rotation_capability: bool,
-        // If true, the authority to withdraw funds from this account resides elsewhere
-        delegated_withdrawal_capability: bool,
+        // A `withdrawal_capability` allows whoever holds this capability
+        // to withdraw from the account. At the time of account creation
+        // this capability is stored in this option. It can later be
+        // "extracted" from this field via `extract_withdraw_capability`,
+        // and can also be restored via `restore_withdraw_capability`.
+        withdrawal_capability: Option<WithdrawCapability>,
+        // A `key_rotation_capability` allows whoever holds this capability
+        // the ability to rotate the authentication key for the account. At
+        // the time of account creation this capability is stored in this
+        // option. It can later be "extracted" from this field via
+        // `extract_key_rotation_capability`, and can also be restored via
+        // `restore_key_rotation_capability`.
+        key_rotation_capability: Option<KeyRotationCapability>,
         // Event handle for received event
         received_events: Event::EventHandle<ReceivedPaymentEvent>,
         // Event handle for sent event
@@ -38,15 +47,15 @@ module Account {
         coin: Coin::T<Token>,
     }
 
-    // The holder of WithdrawalCapability for account_address can withdraw Libra from
-    // account_address/Account::T/balance.
-    // There is at most one WithdrawalCapability in existence for a given address.
-    resource struct WithdrawalCapability {
+    // The holder of WithdrawCapability for account_address can withdraw Libra from
+    // account_address/Account::Account/balance.
+    // There is at most one WithdrawCapability in existence for a given address.
+    resource struct WithdrawCapability {
         account_address: address,
     }
 
     // The holder of KeyRotationCapability for account_address can rotate the authentication key for
-    // account_address (i.e., write to account_address/Account::T/authentication_key).
+    // account_address (i.e., write to account_address/Account::Account/authentication_key).
     // There is at most one KeyRotationCapability in existence for a given address.
     resource struct KeyRotationCapability {
         account_address: address,
@@ -81,12 +90,12 @@ module Account {
 
 
      public fun initialize(association: &signer) {
-         Transaction::assert(Signer::address_of(association) == 0xA550C18, 0);
+         assert(Signer::address_of(association) == 0xA550C18, 0);
      }
 
     // Deposits the `to_deposit` coin into the `payee`'s account balance
     public fun deposit<Token>(account: &signer, payee: address, to_deposit: Coin::T<Token>)
-    acquires T, Balance {
+    acquires Account, Balance {
         // Since we don't have vector<u8> literals in the source language at
         // the moment.
         deposit_with_metadata(account, payee, to_deposit, x"", x"")
@@ -94,7 +103,7 @@ module Account {
 
     // Deposits the `to_deposit` coin into the sender's account balance
     public fun deposit_to_sender<Token>(account: &signer, to_deposit: Coin::T<Token>)
-    acquires T, Balance {
+    acquires Account, Balance {
         deposit(account, Signer::address_of(account), to_deposit)
     }
 
@@ -104,7 +113,7 @@ module Account {
         to_deposit: Coin::T<Token>,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         deposit_with_sender_and_metadata(
             payee,
             Signer::address_of(account),
@@ -122,15 +131,15 @@ module Account {
         to_deposit: Coin::T<Token>,
         metadata: vector<u8>,
         _metadata_signature: vector<u8>
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         // Check that the `to_deposit` coin is non-zero
         let deposit_value = Coin::value(&to_deposit);
-        Transaction::assert(deposit_value > 0, 7);
+        assert(deposit_value > 0, 7);
 
         //TODO check signature
-        //Transaction::assert(Vector::length(&metadata_signature) == 64, 9001);
+        //assert(Vector::length(&metadata_signature) == 64, 9001);
         // cryptographic check of signature validity
-        //Transaction::assert(
+        //assert(
         //    Signature::ed25519_verify(
         //        metadata_signature,
         //        VASP::travel_rule_public_key(payee),
@@ -143,7 +152,7 @@ module Account {
         let currency_code = Coin::currency_code<Token>();
 
         // Load the sender's account
-        let sender_account_ref = borrow_global_mut<T>(sender);
+        let sender_account_ref = borrow_global_mut<Account>(sender);
         // Log a sent event
         Event::emit_event<SentPaymentEvent>(
             &mut sender_account_ref.sent_events,
@@ -156,7 +165,7 @@ module Account {
         );
 
         // Load the payee's account
-        let payee_account_ref = borrow_global_mut<T>(payee);
+        let payee_account_ref = borrow_global_mut<Account>(payee);
         let payee_balance = borrow_global_mut<Balance<Token>>(payee);
         // Deposit the `to_deposit` coin
         Coin::deposit(&mut payee_balance.coin, to_deposit);
@@ -180,7 +189,7 @@ module Account {
         account: &signer,
         payee: address,
         amount: u64
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         // Mint and deposit the coin
         deposit(account, payee, Coin::mint<Token>(account, amount));
     }
@@ -190,7 +199,7 @@ module Account {
     public fun cancel_burn<Token>(
         account: &signer,
         preburn_address: address,
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         let to_return = Coin::cancel_burn<Token>(account, preburn_address);
         deposit(account, preburn_address, to_return)
     }
@@ -202,57 +211,50 @@ module Account {
 
     // Withdraw `amount` Coin::T<Token> from the transaction sender's account balance
     public fun withdraw_from_sender<Token>(account: &signer, amount: u64): Coin::T<Token>
-    acquires T, Balance {
-        let sender = Signer::address_of(account);
-        let sender_account = borrow_global_mut<T>(sender);
-        let sender_balance = borrow_global_mut<Balance<Token>>(sender);
-        // The sender has delegated the privilege to withdraw from her account elsewhere--abort.
-        Transaction::assert(!sender_account.delegated_withdrawal_capability, 11);
-        // The sender has retained her withdrawal privileges--proceed.
-        withdraw_from_balance<Token>(sender, sender_balance, amount)
+    acquires Account, Balance {
+        let sender_addr = Signer::address_of(account);
+        let sender_balance = borrow_global_mut<Balance<Token>>(sender_addr);
+        // The sender_addr has delegated the privilege to withdraw from her account elsewhere--abort.
+        assert(!delegated_withdraw_capability(sender_addr), 11);
+        // The sender_addr has retained her withdrawal privileges--proceed.
+        withdraw_from_balance<Token>(sender_addr, sender_balance, amount)
     }
 
     // Withdraw `amount` Coin::T<Token> from the account under cap.account_address
     public fun withdraw_with_capability<Token>(
-        cap: &WithdrawalCapability, amount: u64
+        cap: &WithdrawCapability, amount: u64
     ): Coin::T<Token> acquires Balance {
         let balance = borrow_global_mut<Balance<Token>>(cap.account_address);
         withdraw_from_balance<Token>(cap.account_address, balance , amount)
     }
 
     // Return a unique capability granting permission to withdraw from the sender's account balance.
-    public fun extract_sender_withdrawal_capability(account: &signer): WithdrawalCapability acquires T {
-        let sender = Signer::address_of(account);
-        let sender_account = borrow_global_mut<T>(sender);
-
-        // Abort if we already extracted the unique withdrawal capability for this account.
-        Transaction::assert(!sender_account.delegated_withdrawal_capability, 11);
-
-        // Ensure the uniqueness of the capability
-        sender_account.delegated_withdrawal_capability = true;
-        WithdrawalCapability { account_address: sender }
+    public fun extract_withdraw_capability(
+        sender: &signer
+    ): WithdrawCapability acquires Account {
+        let sender_addr = Signer::address_of(sender);
+        // Abort if we already extracted the unique withdraw capability for this account.
+        assert(!delegated_withdraw_capability(sender_addr), 11);
+        let account = borrow_global_mut<Account>(sender_addr);
+        Option::extract(&mut account.withdrawal_capability)
     }
 
-    // Return the withdrawal capability to the account it originally came from
-    public fun restore_withdrawal_capability(cap: WithdrawalCapability) acquires T {
-        // Destroy the capability
-        let WithdrawalCapability { account_address } = cap;
-        let account = borrow_global_mut<T>(account_address);
-        // Update the flag for `account_address` to indicate that the capability has been restored.
-        // The account owner will now be able to call pay_from_sender, withdraw_from_sender, and
-        // extract_sender_withdrawal_capability again.
-        account.delegated_withdrawal_capability = false;
-    }
+     // Return the withdraw capability to the account it originally came from
+     public fun restore_withdraw_capability(cap: WithdrawCapability)
+        acquires Account {
+            let account = borrow_global_mut<Account>(cap.account_address);
+            Option::fill(&mut account.withdrawal_capability, cap)
+     }
 
-    // Withdraws `amount` Coin::T<Token> using the passed in WithdrawalCapability, and deposits it
+    // Withdraws `amount` Coin::T<Token> using the passed in WithdrawCapability, and deposits it
     // into the `payee`'s account balance. Creates the `payee` account if it doesn't exist.
     public fun pay_from_capability<Token>(
         payee: address,
-        cap: &WithdrawalCapability,
+        cap: &WithdrawCapability,
         amount: u64,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         deposit_with_sender_and_metadata<Token>(
             payee,
             *&cap.account_address,
@@ -271,7 +273,7 @@ module Account {
         amount: u64,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         deposit_with_metadata<Token>(
             account,
             payee,
@@ -288,59 +290,42 @@ module Account {
         account: &signer,
         payee: address,
         amount: u64
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         pay_from_sender_with_metadata<Token>(account, payee, amount, x"", x"");
     }
 
-    fun rotate_authentication_key_for_account(account: &mut T, new_authentication_key: vector<u8>) {
+    fun rotate_authentication_key_for_account(account: &mut Account, new_authentication_key: vector<u8>) {
       // Don't allow rotating to clearly invalid key
-      Transaction::assert(Vector::length(&new_authentication_key) == 32, 12);
+      assert(Vector::length(&new_authentication_key) == 32, 12);
       account.authentication_key = new_authentication_key;
     }
 
-    // Rotate the transaction sender's authentication key
-    // The new key will be used for signing future transactions
-    public fun rotate_authentication_key(account: &signer, new_authentication_key: vector<u8>) acquires T {
-        let sender_account = borrow_global_mut<T>(Signer::address_of(account));
-        // The sender has delegated the privilege to rotate her key elsewhere--abort
-        Transaction::assert(!sender_account.delegated_key_rotation_capability, 11);
-        // The sender has retained her key rotation privileges--proceed.
-        rotate_authentication_key_for_account(
-            sender_account,
-            new_authentication_key
-        );
-    }
-
     // Rotate the authentication key for the account under cap.account_address
-    public fun rotate_authentication_key_with_capability(
+    public fun rotate_authentication_key(
         cap: &KeyRotationCapability,
         new_authentication_key: vector<u8>,
-    ) acquires T  {
-        rotate_authentication_key_for_account(
-            borrow_global_mut<T>(*&cap.account_address),
-            new_authentication_key
-        );
+    ) acquires Account  {
+        let sender_account_resource = borrow_global_mut<Account>(cap.account_address);
+        // Don't allow rotating to clearly invalid key
+        assert(Vector::length(&new_authentication_key) == 32, 12);
+        sender_account_resource.authentication_key = new_authentication_key;
     }
 
     // Return a unique capability granting permission to rotate the sender's authentication key
-    public fun extract_sender_key_rotation_capability(account: &signer): KeyRotationCapability acquires T {
-        let sender = Signer::address_of(account);
-        let sender_account = borrow_global_mut<T>(sender);
+    public fun extract_key_rotation_capability(account: &signer): KeyRotationCapability
+    acquires Account {
+        let account_address = Signer::address_of(account);
         // Abort if we already extracted the unique key rotation capability for this account.
-        Transaction::assert(!sender_account.delegated_key_rotation_capability, 11);
-        sender_account.delegated_key_rotation_capability = true; // Ensure uniqueness of the capability
-        KeyRotationCapability { account_address: sender }
+        assert(!delegated_key_rotation_capability(account_address), 11);
+        let account = borrow_global_mut<Account>(account_address);
+        Option::extract(&mut account.key_rotation_capability)
     }
 
     // Return the key rotation capability to the account it originally came from
-    public fun restore_key_rotation_capability(cap: KeyRotationCapability) acquires T {
-        // Destroy the capability
-        let KeyRotationCapability { account_address } = cap;
-        let account = borrow_global_mut<T>(account_address);
-        // Update the flag for `account_address` to indicate that the capability has been restored.
-        // The account owner will now be able to call rotate_authentication_key and
-        // extract_sender_key_rotation_capability again
-        account.delegated_key_rotation_capability = false;
+    public fun restore_key_rotation_capability(cap: KeyRotationCapability)
+    acquires Account {
+        let account = borrow_global_mut<Account>(cap.account_address);
+        Option::fill(&mut account.key_rotation_capability, cap)
     }
 
     // Create an account with the Empty role at `new_account_address` with authentication key
@@ -351,23 +336,23 @@ module Account {
         new_account_address: address,
         auth_key_prefix: vector<u8>
     ) {
-        Transaction::assert(Timestamp::is_genesis(), 0);
+        assert(Timestamp::is_genesis(), 0);
         let new_account = create_signer(new_account_address);
         make_account<Token>(new_account, auth_key_prefix)
     }
 
     // Creates a new testnet account at `fresh_address` with a balance of
     // zero `Token` type coins, and authentication key `auth_key_prefix` | `fresh_address`.
-    // Trying to create an account at address 0x0 will cause runtime failure as it is a
+    // Trying to create an account at address 0x1 will cause runtime failure as it is a
     // reserved address for the MoveVM.
     public fun create_testnet_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>){
-        Transaction::assert(Testnet::is_testnet(), 10042);
+        assert(Testnet::is_testnet(), 10042);
         create_account<Token>(fresh_address, auth_key_prefix);
     }
 
     // Creates a new account at `fresh_address` with a balance of zero and authentication
     // key `auth_key_prefix` | `fresh_address`.
-    // Creating an account at address 0x0 will cause runtime failure as it is a
+    // Creating an account at address 0x1 will cause runtime failure as it is a
     // reserved address for the MoveVM.
     public fun create_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>){
         let new_account = create_signer(fresh_address);
@@ -380,13 +365,19 @@ module Account {
         auth_key_prefix: vector<u8>,
     ){
         let authentication_key = auth_key_prefix;
-        let fresh_address = Signer::address_of(&new_account);
-        Vector::append(&mut authentication_key, LCS::to_bytes(&fresh_address));
-        Transaction::assert(Vector::length(&authentication_key) == 32, 12);
-        move_to(&new_account, T {
+        let new_account_addr = Signer::address_of(&new_account);
+        Vector::append(&mut authentication_key, LCS::to_bytes(&new_account_addr));
+        assert(Vector::length(&authentication_key) == 32, 12);
+        move_to(&new_account, Account {
               authentication_key,
-              delegated_key_rotation_capability: false,
-              delegated_withdrawal_capability: false,
+              withdrawal_capability: Option::some(
+                  WithdrawCapability {
+                      account_address: new_account_addr
+              }),
+              key_rotation_capability: Option::some(
+                  KeyRotationCapability {
+                      account_address: new_account_addr
+              }),
               received_events: Event::new_event_handle<ReceivedPaymentEvent>(&new_account),
               sent_events: Event::new_event_handle<SentPaymentEvent>(&new_account),
               sequence_number: 0,
@@ -416,36 +407,38 @@ module Account {
 
     // Return whether the account at `addr` accepts `Token` type coins
     public fun accepts_currency<Token>(addr: address): bool {
-        ::exists<Balance<Token>>(addr)
+        exists<Balance<Token>>(addr)
     }
 
     // Helper to return the sequence number field for given `account`
-    fun sequence_number_for_account(account: &T): u64 {
+    fun sequence_number_for_account(account: &Account): u64 {
         account.sequence_number
     }
 
     // Return the current sequence number at `addr`
-    public fun sequence_number(addr: address): u64 acquires T {
-        sequence_number_for_account(borrow_global<T>(addr))
+    public fun sequence_number(addr: address): u64 acquires Account {
+        sequence_number_for_account(borrow_global<Account>(addr))
     }
 
     // Return the authentication key for this account
-    public fun authentication_key(addr: address): vector<u8> acquires T {
-        *&borrow_global<T>(addr).authentication_key
+    public fun authentication_key(addr: address): vector<u8> acquires Account {
+        *&borrow_global<Account>(addr).authentication_key
     }
 
     // Return true if the account at `addr` has delegated its key rotation capability
-    public fun delegated_key_rotation_capability(addr: address): bool acquires T {
-        borrow_global<T>(addr).delegated_key_rotation_capability
+    public fun delegated_key_rotation_capability(addr: address): bool
+    acquires Account {
+        Option::is_none(&borrow_global<Account>(addr).key_rotation_capability)
     }
 
-    // Return true if the account at `addr` has delegated its withdrawal capability
-    public fun delegated_withdrawal_capability(addr: address): bool acquires T {
-        borrow_global<T>(addr).delegated_withdrawal_capability
+    // Return true if the account at `addr` has delegated its withdraw capability
+    public fun delegated_withdraw_capability(addr: address): bool
+    acquires Account {
+        Option::is_none(&borrow_global<Account>(addr).withdrawal_capability)
     }
 
-    // Return a reference to the address associated with the given withdrawal capability
-    public fun withdrawal_capability_address(cap: &WithdrawalCapability): &address {
+    // Return a reference to the address associated with the given withdraw capability
+    public fun withdraw_capability_address(cap: &WithdrawCapability): &address {
         &cap.account_address
     }
 
@@ -455,8 +448,8 @@ module Account {
     }
 
     // Checks if an account exists at `check_addr`
-    public fun exists(check_addr: address): bool {
-        ::exists<T>(check_addr)
+    public fun exists_at(check_addr: address): bool {
+        exists<Account>(check_addr)
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -465,28 +458,28 @@ module Account {
 
     // Freeze the account at `addr`.
     public fun freeze_account(account: &signer, addr: address)
-    acquires T {
+    acquires Account {
         assert_can_freeze(Signer::address_of(account));
         // The root association account cannot be frozen
-        Transaction::assert(addr != Association::root_address(), 14);
-        borrow_global_mut<T>(addr).is_frozen = true;
+        assert(addr != Association::root_address(), 14);
+        borrow_global_mut<Account>(addr).is_frozen = true;
     }
 
     // Unfreeze the account at `addr`.
     public fun unfreeze_account(account: &signer, addr: address)
-    acquires T {
+    acquires Account {
         assert_can_freeze(Signer::address_of(account));
-        borrow_global_mut<T>(addr).is_frozen = false;
+        borrow_global_mut<Account>(addr).is_frozen = false;
     }
 
     // Returns if the account at `addr` is frozen.
     public fun account_is_frozen(addr: address): bool
-    acquires T {
-        borrow_global<T>(addr).is_frozen
+    acquires Account {
+        borrow_global<Account>(addr).is_frozen
      }
 
     fun assert_can_freeze(addr: address) {
-        Transaction::assert(Association::has_privilege<FreezingPrivilege>(addr), 13);
+        assert(Association::has_privilege<FreezingPrivilege>(addr), 13);
     }
 
     // The prologue is invoked at the beginning of every transaction
@@ -501,20 +494,20 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         txn_expiration_time: u64,
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         let transaction_sender = Signer::address_of(account);
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists
-        Transaction::assert(exists(transaction_sender), 5);
+        assert(exists_at(transaction_sender), 5);
 
-        Transaction::assert(!account_is_frozen(transaction_sender), 0);
+        assert(!account_is_frozen(transaction_sender), 0);
 
         // Load the transaction sender's account
-        let sender_account = borrow_global_mut<T>(transaction_sender);
+        let sender_account = borrow_global_mut<Account>(transaction_sender);
 
         // Check that the hash of the transaction's public key matches the account's auth key
-        Transaction::assert(
+        assert(
             Hash::sha3_256(txn_public_key) == *&sender_account.authentication_key,
             2
         );
@@ -522,12 +515,12 @@ module Account {
         // Check that the account has enough balance for all of the gas
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;
         let balance_amount = balance<Token>(transaction_sender);
-        Transaction::assert(balance_amount >= max_transaction_fee, 6);
+        assert(balance_amount >= max_transaction_fee, 6);
 
         // Check that the transaction sequence number matches the sequence number of the account
-        Transaction::assert(txn_sequence_number >= sender_account.sequence_number, 3);
-        Transaction::assert(txn_sequence_number == sender_account.sequence_number, 4);
-        Transaction::assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), 7);
+        assert(txn_sequence_number >= sender_account.sequence_number, 3);
+        assert(txn_sequence_number == sender_account.sequence_number, 4);
+        assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), 7);
     }
 
     // The epilogue is invoked at the end of transactions.
@@ -538,14 +531,14 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64
-    ) acquires T, Balance {
+    ) acquires Account, Balance {
         // Load the transaction sender's account and balance resources
-        let sender_account = borrow_global_mut<T>(Signer::address_of(account));
+        let sender_account = borrow_global_mut<Account>(Signer::address_of(account));
         let sender_balance = borrow_global_mut<Balance<Token>>(Signer::address_of(account));
 
         // Charge for gas
         let transaction_fee_amount = txn_gas_price * (txn_max_gas_units - gas_units_remaining);
-        Transaction::assert(
+        assert(
             balance_for(sender_balance) >= transaction_fee_amount,
             6
         );

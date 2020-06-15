@@ -1,16 +1,15 @@
-address 0x0 {
+address 0x1 {
 
 module Block {
-    use 0x0::Event;
-    //use 0x0::System;
-    use 0x0::Timestamp;
-    use 0x0::Transaction;
-    //use 0x0::TransactionFee;
-    use 0x0::STC;
-    use 0x0::Vector;
-    use 0x0::Account;
-    use 0x0::SubsidyConfig;
-    use 0x0::Signer;
+    use 0x1::Event;
+    //use 0x1::System;
+    use 0x1::Timestamp;
+    //use 0x1::TransactionFee;
+    use 0x1::STC;
+    use 0x1::Vector;
+    use 0x1::Account;
+    use 0x1::SubsidyConfig;
+    use 0x1::Signer;
 
     spec module {
         pragma verify = false;
@@ -42,7 +41,7 @@ module Block {
     // Currently, it is invoked in the genesis transaction
     public fun initialize_block_metadata(account: &signer) {
       // Only callable by the Association address
-      Transaction::assert(Signer::address_of(account) == 0xA550C18, 1);
+      assert(Signer::address_of(account) == 0xA550C18, 1);
 
       move_to<BlockMetadata>(
           account,
@@ -70,9 +69,9 @@ module Block {
         auth_key_prefix: vector<u8>
     ) acquires BlockMetadata,SubsidyInfo {
         // Can only be invoked by LibraVM privilege.
-        //Transaction::assert(Signer::address_of(account) == 0x0, 33);
+        //assert(Signer::address_of(account) == 0x0, 33);
         //TODO conform this address.
-        Transaction::assert(Signer::address_of(account) == 0x6d696e74, 33);
+        assert(Signer::address_of(account) == 0x6d696e74, 33);
 
         process_block_prologue(account, round, timestamp, id, previous_block_votes, proposer, auth_key_prefix);
 
@@ -98,7 +97,7 @@ module Block {
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(0xA550C18);
 
         // TODO: Figure out a story for errors in the system transactions.
-        //if(proposer != 0x0) Transaction::assert(System::is_validator(proposer), 5002);
+        //if(proposer != 0x0) assert(System::is_validator(proposer), 5002);
         Timestamp::update_global_time(account, proposer, timestamp);
 
         let new_height = block_metadata_ref.height + 1;
@@ -134,17 +133,17 @@ module Block {
     }
 
     resource struct SubsidyInfo {
-            withdrawal_capability: Account::WithdrawalCapability,
+            withdrawal_capability: Account::WithdrawCapability,
             subsidy_height: u64,
             heights: vector<u64>,
             miners: vector<address>,
     }
 
     public fun initialize_subsidy_info(account: &signer) {
-        Transaction::assert(Signer::address_of(account) == 0x6d696e74, 1);
+        assert(Signer::address_of(account) == 0x6d696e74, 1);
 
         move_to<SubsidyInfo>(account, SubsidyInfo {
-            withdrawal_capability: Account::extract_sender_withdrawal_capability(account),
+            withdrawal_capability: Account::extract_withdraw_capability(account),
             subsidy_height: 0,
             heights: Vector::empty(),
             miners: Vector::empty(),
@@ -154,24 +153,24 @@ module Block {
     fun do_subsidy(account: &signer, current_height: u64, current_miner: address, auth_key_prefix: vector<u8>) acquires SubsidyInfo {
 
         if (current_height > 0) {
-            Transaction::assert(SubsidyConfig::right_conf(), 6001);
+            assert(SubsidyConfig::right_conf(), 6001);
             let subsidy_info = borrow_global_mut<SubsidyInfo>(0x6d696e74);
             let len = Vector::length(&subsidy_info.heights);
             let miner_len = Vector::length(&subsidy_info.miners);
-            Transaction::assert((current_height == (subsidy_info.subsidy_height + len + 1)), 6002);
-            Transaction::assert((len <= SubsidyConfig::subsidy_delay()), 6003);
-            Transaction::assert((len == miner_len), 6004);
+            assert((current_height == (subsidy_info.subsidy_height + len + 1)), 6002);
+            assert((len <= SubsidyConfig::subsidy_delay()), 6003);
+            assert((len == miner_len), 6004);
 
             if (len == SubsidyConfig::subsidy_delay()) {//pay and remove
                 let subsidy_height = *&subsidy_info.subsidy_height + 1;
                 let first_height = *Vector::borrow(&subsidy_info.heights, 0);
-                Transaction::assert((subsidy_height == first_height), 6005);
+                assert((subsidy_height == first_height), 6005);
 
                 let subsidy_coin = SubsidyConfig::subsidy_coin(subsidy_height);
                 let subsidy_miner = *Vector::borrow(&subsidy_info.miners, 0);
                 subsidy_info.subsidy_height = subsidy_height;
                 if (subsidy_coin > 0) {
-                    Transaction::assert(Account::exists(subsidy_miner), 6006);
+                    assert(Account::exists_at(subsidy_miner), 6006);
                     let libra_coin = Account::withdraw_with_capability<STC::T>(&subsidy_info.withdrawal_capability, subsidy_coin);
                     Account::deposit<STC::T>(account, subsidy_miner, libra_coin);
                 };
@@ -180,8 +179,8 @@ module Block {
             };
 
             Vector::push_back(&mut subsidy_info.heights, current_height);
-            if (!Account::exists(current_miner)) {
-                Transaction::assert(!Vector::is_empty(&auth_key_prefix), 6007);
+            if (!Account::exists_at(current_miner)) {
+                assert(!Vector::is_empty(&auth_key_prefix), 6007);
                 Account::create_account<STC::T>(current_miner, auth_key_prefix);
             };
             Vector::push_back(&mut subsidy_info.miners, current_miner);

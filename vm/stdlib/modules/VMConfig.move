@@ -1,7 +1,7 @@
-address 0x0 {
+address 0x1 {
 
 module VMConfig {
-    use 0x0::Config;
+    use 0x1::Config;
 
     // The struct to hold all config data needed to operate the LibraVM.
     // * publishing_option: Defines Scripts/Modules that are allowed to execute in the current configruation.

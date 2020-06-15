@@ -40,7 +40,11 @@ pub struct Genesis {
 impl Display for Genesis {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Genesis {{")?;
-        write!(f, "state: {{ len={} }}, ", self.state.write_set().len())?;
+        write!(
+            f,
+            "state: {{ len={} }}, ",
+            self.state.write_set().iter().len()
+        )?;
         write!(f, "block: {:?}", self.block)?;
         write!(f, "}}")?;
         Ok(())

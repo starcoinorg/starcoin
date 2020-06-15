@@ -6,11 +6,11 @@
 // 1002 -> NOT_AN_ASSOCIATION_ACCOUNT
 // 1003 -> ACCOUNT_DOES_NOT_HAVE_PRIVILEGE
 // 1004 -> ACCOUNT_DOES_NOT_HAVE_PRIVILEGE_RESOURCE
-address 0x0 {
+address 0x1 {
 
 module Association {
-    use 0x0::Transaction;
-    use 0x0::Signer;
+
+    use 0x1::Signer;
 
     // The root account privilege. This is created at genesis and has
     // special privileges (e.g. removing an account as an association
@@ -31,7 +31,7 @@ module Association {
     // under the root_address() address, marks it as a normal
     // association account.
     public fun initialize(association: &signer) {
-        Transaction::assert(Signer::address_of(association) == root_address(), 1000);
+        assert(Signer::address_of(association) == root_address(), 1000);
         move_to(association, Root{ });
         move_to(association, PrivilegedCapability<T>{ });
     }
@@ -61,8 +61,8 @@ module Association {
        acquires PrivilegedCapability {
            assert_is_root(association);
            // root should not be able to remove its own privileges
-           Transaction::assert(Signer::address_of(association) != addr, 1005);
-           Transaction::assert(exists<PrivilegedCapability<Privilege>>(addr), 1004);
+           assert(Signer::address_of(association) != addr, 1005);
+           assert(exists<PrivilegedCapability<Privilege>>(addr), 1004);
            PrivilegedCapability<Privilege>{ } = move_from<PrivilegedCapability<Privilege>>(addr);
        }
 
@@ -73,7 +73,7 @@ module Association {
 
        /// Assert that the sender is the root association account.
        public fun assert_is_root(account: &signer) {
-           Transaction::assert(exists<Root>(Signer::address_of(account)), 1001);
+           assert(exists<Root>(Signer::address_of(account)), 1001);
        }
 
        /// Return whether the account at `addr` is an association account.
@@ -88,7 +88,7 @@ module Association {
 
        /// Assert that `addr` is an association account.
        fun assert_addr_is_association(addr: address) {
-           Transaction::assert(addr_is_association(addr), 1002);
+           assert(addr_is_association(addr), 1002);
        }
 }
 

@@ -1,11 +1,11 @@
-address 0x0 {
+address 0x1 {
 module Config {
-    use 0x0::Transaction;
-    use 0x0::Event;
-    //use 0x0::Timestamp;
-    use 0x0::Signer;
-    use 0x0::Association;
-    use 0x0::Offer;
+
+    use 0x1::Event;
+    //use 0x1::Timestamp;
+    use 0x1::Signer;
+    use 0x1::Association;
+    use 0x1::Offer;
 
     spec module {
         pragma verify = false;
@@ -33,7 +33,7 @@ module Config {
     // This can only be invoked by the config address, and only a single time.
     // Currently, it is invoked in the genesis transaction
     public fun initialize(config_account: &signer, association_account: &signer) {
-        Transaction::assert(Signer::address_of(config_account) == default_config_address(), 1);
+        assert(Signer::address_of(config_account) == default_config_address(), 1);
         Association::grant_privilege<CreateConfigCapability>(association_account, config_account);
         Association::grant_privilege<CreateConfigCapability>(association_account, association_account);
 
@@ -51,7 +51,7 @@ module Config {
     // Get a copy of `Config` value stored under `addr`.
     public fun get<Config: copyable>(): Config acquires T {
         let addr = default_config_address();
-        Transaction::assert(::exists<T<Config>>(addr), 24);
+        assert(exists<T<Config>>(addr), 24);
         *&borrow_global<T<Config>>(addr).payload
     }
 
@@ -59,10 +59,10 @@ module Config {
     // reconfiguration.
     public fun set<Config: copyable>(account: &signer, payload: Config) acquires T, Configuration {
         let addr = default_config_address();
-        Transaction::assert(::exists<T<Config>>(addr), 24);
+        assert(exists<T<Config>>(addr), 24);
         let signer_address = Signer::address_of(account);
-        Transaction::assert(
-            ::exists<ModifyConfigCapability<Config>>(signer_address)
+        assert(
+            exists<ModifyConfigCapability<Config>>(signer_address)
              || signer_address == Association::root_address(),
             24
         );
@@ -79,7 +79,7 @@ module Config {
         payload: Config
     ) acquires T, Configuration {
         let addr = default_config_address();
-        Transaction::assert(::exists<T<Config>>(addr), 24);
+        assert(exists<T<Config>>(addr), 24);
         let config = borrow_global_mut<T<Config>>(addr);
         config.payload = payload;
 
@@ -92,7 +92,7 @@ module Config {
         config_account: &signer,
         payload: Config,
     ): ModifyConfigCapability<Config> {
-        Transaction::assert(
+        assert(
             Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
             1
         );
@@ -107,7 +107,7 @@ module Config {
 
     // Publish a new config item. Only the config address can modify such config.
     public fun publish_new_config<Config: copyable>(config_account: &signer, payload: Config) {
-        Transaction::assert(
+        assert(
             Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
             1
         );
@@ -125,7 +125,7 @@ module Config {
         payload: Config,
         delegate: address,
     ) {
-        Transaction::assert(
+        assert(
             Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
             1
         );
@@ -144,7 +144,7 @@ module Config {
 
     public fun reconfigure(account: &signer) acquires Configuration {
         // Only callable by association address or by the VM internally.
-        Transaction::assert(
+        assert(
             Association::has_privilege<Self::CreateConfigCapability>(Signer::address_of(account)),
             1
         );
@@ -164,7 +164,7 @@ module Config {
        // correspondence between system reconfigurations and emitted ReconfigurationEvents.
 
        //let current_block_time = Timestamp::now_microseconds();
-       //Transaction::assert(current_block_time > config_ref.last_reconfiguration_time, 23);
+       //assert(current_block_time > config_ref.last_reconfiguration_time, 23);
        //config_ref.last_reconfiguration_time = current_block_time;
 
        emit_reconfiguration_event();
