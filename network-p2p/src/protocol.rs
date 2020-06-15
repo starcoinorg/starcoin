@@ -338,7 +338,7 @@ impl Protocol {
     }
 
     pub fn on_legacy_message(&mut self, who: PeerId, data: BytesMut) -> CustomMessageOutcome {
-        info!("receive custom legacy message from {} ", who);
+        debug!("receive custom legacy message from {} ", who);
 
         match FallbackMessage::decode(&data[..]) {
             Ok(msg) => self.on_notify(who, msg.protocol_name, BytesMut::from(&msg.data[..])),
@@ -356,7 +356,7 @@ impl Protocol {
         protocol_name: Cow<'static, [u8]>,
         data: BytesMut,
     ) -> CustomMessageOutcome {
-        info!("receive custom message from {} ", who);
+        debug!("receive custom message from {} ", who);
         let message = match Message::decode(&data[..]) {
             Ok(message) => message,
             Err(err) => {
