@@ -1,7 +1,7 @@
 module MyToken {
-     use 0x0::Coin;
-     use 0x0::FixedPoint32;
-     use 0x0::Account;
+     use 0x1::Coin;
+     use 0x1::FixedPoint32;
+     use 0x1::Account;
 
      struct T { }
 
