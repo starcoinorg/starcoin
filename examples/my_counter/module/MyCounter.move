@@ -1,5 +1,5 @@
 module MyCounter {
-     use 0x0::Signer;
+     use 0x1::Signer;
 
      resource struct T {
         value:u64,
