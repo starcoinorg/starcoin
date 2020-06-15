@@ -454,6 +454,9 @@ pub struct TransactionOutput {
     /// The amount of gas used during execution.
     gas_used: u64,
 
+    /// The resource increment size
+    increment_size: u64,
+
     /// The execution status.
     status: TransactionStatus,
 }
@@ -463,12 +466,14 @@ impl TransactionOutput {
         write_set: WriteSet,
         events: Vec<ContractEvent>,
         gas_used: u64,
+        increment_size: u64,
         status: TransactionStatus,
     ) -> Self {
         TransactionOutput {
             write_set,
             events,
             gas_used,
+            increment_size,
             status,
         }
     }
@@ -487,6 +492,10 @@ impl TransactionOutput {
 
     pub fn status(&self) -> &TransactionStatus {
         &self.status
+    }
+
+    pub fn increment_size(&self) -> u64 {
+        self.increment_size
     }
 
     pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, TransactionStatus) {
@@ -708,6 +717,7 @@ impl From<libra_types::transaction::TransactionOutput> for TransactionOutput {
             output.write_set().clone(),
             output.events().to_vec(),
             output.gas_used(),
+            0, //TODO
             TransactionStatus::from(output.status().clone()),
         )
     }

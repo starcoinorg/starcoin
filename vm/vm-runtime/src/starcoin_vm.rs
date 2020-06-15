@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::data_cache::{RemoteStorage, StateViewCache};
+use crate::data_cache::{RemoteStorage, StarcoinDataCache, StateViewCache};
 use crate::metrics::TXN_EXECUTION_GAS_USAGE;
 use anyhow::Result;
-use move_vm_runtime::data_cache::TransactionDataCache;
 use move_vm_runtime::{data_cache::RemoteCache, move_vm::MoveVM};
 use once_cell::sync::Lazy;
 use starcoin_logger::prelude::*;
@@ -211,7 +210,7 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
     ) -> VMResult<VerifiedTransactionPayload> {
         let mut cost_strategy = CostStrategy::system(self.get_gas_schedule()?, GasUnits::new(0));
-        let mut data_store = TransactionDataCache::new(remote_cache);
+        let mut data_store = StarcoinDataCache::new(remote_cache);
         if !self
             .vm_config()?
             .publishing_option
@@ -235,7 +234,7 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
     ) -> VMResult<VerifiedTransactionPayload> {
         let mut cost_strategy = CostStrategy::system(self.get_gas_schedule()?, GasUnits::new(0));
-        let mut data_store = TransactionDataCache::new(remote_cache);
+        let mut data_store = StarcoinDataCache::new(remote_cache);
         if !&self.vm_config()?.publishing_option.is_open() {
             warn!("[VM] Custom modules not allowed");
             return Err(VMStatus::new(StatusCode::UNKNOWN_MODULE));
@@ -296,7 +295,7 @@ impl StarcoinVM {
             Err(e) => return discard_error_output(e),
         };
         let mut cost_strategy = CostStrategy::transaction(gas_schedule, txn_data.max_gas_amount());
-        let mut data_store = TransactionDataCache::new(remote_cache);
+        let mut data_store = StarcoinDataCache::new(remote_cache);
         // TODO: The logic for handling falied transaction fee is pretty ugly right now. Fix it later.
         let mut failed_gas_left = GasUnits::new(0);
         match payload {
@@ -353,7 +352,7 @@ impl StarcoinVM {
     /// in the `ACCOUNT_MODULE` on chain.
     fn run_prologue(
         &self,
-        data_store: &mut TransactionDataCache,
+        data_store: &mut StarcoinDataCache,
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
     ) -> VMResult<()> {
@@ -387,7 +386,7 @@ impl StarcoinVM {
     /// in the `ACCOUNT_MODULE` on chain.
     fn run_epilogue(
         &self,
-        data_store: &mut TransactionDataCache,
+        data_store: &mut StarcoinDataCache,
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
     ) -> VMResult<()> {
@@ -425,7 +424,7 @@ impl StarcoinVM {
 
         let gas_schedule = zero_cost_schedule();
         let mut cost_strategy = CostStrategy::transaction(&gas_schedule, txn_data.max_gas_amount());
-        let mut data_store = TransactionDataCache::new(remote_cache);
+        let mut data_store = StarcoinDataCache::new(remote_cache);
 
         let (parent_id, timestamp, author, auth) = block_metadata.into_inner();
         let vote_maps = vec![];
@@ -546,6 +545,7 @@ impl StarcoinVM {
                         write_set,
                         events,
                         0,
+                        0,
                         KEEP_STATUS.clone(),
                     ));
                 }
@@ -573,7 +573,7 @@ impl StarcoinVM {
         remote_cache: &mut StateViewCache<'_>,
     ) -> TransactionOutput {
         let mut cost_strategy = CostStrategy::system(gas_schedule, gas_left);
-        let mut data_store = TransactionDataCache::new(remote_cache);
+        let mut data_store = StarcoinDataCache::new(remote_cache);
         match TransactionStatus::from(error_code) {
             TransactionStatus::Keep(status) => self
                 .run_epilogue(&mut data_store, &mut cost_strategy, txn_data)
@@ -629,6 +629,7 @@ pub(crate) fn discard_error_output(err: VMStatus) -> TransactionOutput {
         WriteSet::default(),
         vec![],
         0,
+        0,
         TransactionStatus::Discard(err),
     )
 }
@@ -647,7 +648,7 @@ fn convert_txn_args(args: &[TransactionArgument]) -> Vec<Value> {
 }
 
 fn get_transaction_output(
-    data_store: &mut TransactionDataCache,
+    data_store: &mut StarcoinDataCache,
     cost_strategy: &CostStrategy,
     txn_data: &TransactionMetadata,
     status: VMStatus,
@@ -657,11 +658,13 @@ fn get_transaction_output(
         .sub(cost_strategy.remaining_gas())
         .get();
     let write_set = data_store.make_write_set()?;
+    let increment_size = data_store.get_size(txn_data.sender);
     //TODO add gas usage metrics.
     Ok(TransactionOutput::new(
         write_set,
         data_store.event_data().to_vec(),
         gas_used,
+        increment_size,
         TransactionStatus::Keep(status),
     ))
 }

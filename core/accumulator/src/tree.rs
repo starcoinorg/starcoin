@@ -309,13 +309,13 @@ impl AccumulatorTree {
         }
 
         let parent_hash = parent_hash.unwrap_or(self.root_hash);
-        // println!(
-        //     "id:{:?}, leaves:{:?},index {:?} ,parent {:?}",
-        //     self.id.short_str(),
-        //     self.num_leaves,
-        //     index,
-        //     parent_hash.short_str()
-        // );
+        info!(
+            "id:{:?}, leaves:{:?},index {:?} ,parent {:?}",
+            self.id.short_str(),
+            self.num_leaves,
+            index,
+            parent_hash.short_str()
+        );
         // get node by hash
         let mut hash_vec = vec![parent_hash];
         for _i in 0..level {

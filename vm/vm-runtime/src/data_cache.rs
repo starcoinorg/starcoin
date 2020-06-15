@@ -2,9 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
-use move_vm_runtime::data_cache::RemoteCache;
+use move_vm_runtime::data_cache::{RemoteCache, TransactionDataCache};
 use starcoin_logger::prelude::*;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::data_store::DataStore;
+use starcoin_vm_types::gas_schedule::GasAlgebra;
+use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::loaded_data::types::FatStructType;
 use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::values::GlobalValue;
 use starcoin_vm_types::{
     access_path::AccessPath,
     vm_error::{StatusCode, VMStatus},
@@ -94,5 +101,86 @@ impl<'a> RemoteCache for RemoteStorage<'a> {
         self.0
             .get(access_path)
             .map_err(|_| VMStatus::new(StatusCode::STORAGE_ERROR))
+    }
+}
+
+pub struct StarcoinDataCache<'txn>(TransactionDataCache<'txn>, BTreeMap<AccountAddress, u64>);
+impl<'txn> StarcoinDataCache<'txn> {
+    pub fn new(data_cache: &'txn dyn RemoteCache) -> Self {
+        Self(TransactionDataCache::new(data_cache), BTreeMap::new())
+    }
+    /// override make_write_set method
+    pub fn make_write_set(&mut self) -> VMResult<WriteSet> {
+        self.0.make_write_set()
+    }
+
+    pub fn event_data(&self) -> &[ContractEvent] {
+        self.0.event_data()
+    }
+
+    /// Get size by account address
+    pub fn get_size(&self, address: AccountAddress) -> u64 {
+        match self.1.get(&address) {
+            Some(size) => *size,
+            _ => 0,
+        }
+    }
+}
+// `DataStore` implementation for the `StarcoinDataCache`
+impl<'a> DataStore for StarcoinDataCache<'a> {
+    fn publish_resource(
+        &mut self,
+        ap: &AccessPath,
+        g: (FatStructType, GlobalValue),
+    ) -> VMResult<()> {
+        let new_size = g.1.size().get();
+        self.0.publish_resource(ap, g)?;
+
+        self.1
+            .entry(ap.clone().address)
+            .and_modify(|v| *v += new_size as u64);
+        Ok(())
+    }
+
+    fn borrow_resource(
+        &mut self,
+        ap: &AccessPath,
+        ty: &FatStructType,
+    ) -> VMResult<Option<&GlobalValue>> {
+        self.0.borrow_resource(ap, ty)
+    }
+
+    fn move_resource_from(
+        &mut self,
+        ap: &AccessPath,
+        ty: &FatStructType,
+    ) -> VMResult<Option<GlobalValue>> {
+        let global_value = self.0.move_resource_from(ap, ty)?;
+        match global_value {
+            Some(g) => {
+                let new_size = g.size().get();
+                self.1
+                    .entry(ap.clone().address)
+                    .and_modify(|v| *v -= new_size as u64);
+                Ok(Some(g))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    fn load_module(&self, module: &ModuleId) -> VMResult<Vec<u8>> {
+        self.0.load_module(module)
+    }
+
+    fn publish_module(&mut self, m: ModuleId, bytes: Vec<u8>) -> VMResult<()> {
+        self.0.publish_module(m, bytes)
+    }
+
+    fn exists_module(&self, m: &ModuleId) -> bool {
+        self.0.exists_module(m)
+    }
+
+    fn emit_event(&mut self, event: ContractEvent) {
+        self.0.emit_event(event)
     }
 }
