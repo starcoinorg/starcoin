@@ -148,9 +148,6 @@ impl ConfigModule for NetworkConfig {
         self.set_peer_id();
 
         self.disable_seed = opt.disable_seed;
-        self.protocols.push(CHAIN_PROTOCOL_NAME.into());
-        self.protocols.push(TXN_PROTOCOL_NAME.into());
-        self.protocols.push(BLOCK_PROTOCOL_NAME.into());
 
         Ok(())
     }
