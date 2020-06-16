@@ -26,7 +26,7 @@ mod tests {
 
         let worker1 = NetworkWorker::new(Params::new(config1.clone(), protocol.clone())).unwrap();
         let service1 = worker1.service().clone();
-        let mut stream = service1.event_stream();
+        let mut stream1 = service1.event_stream();
 
         handle.spawn(worker1);
 
@@ -42,17 +42,15 @@ mod tests {
 
         let worker2 = NetworkWorker::new(Params::new(config2.clone(), protocol)).unwrap();
         let service2 = worker2.service().clone();
+        let mut stream2 = service2.event_stream();
 
         handle.spawn(worker2);
 
         thread::sleep(Duration::from_secs(1));
 
         let data = vec![1, 2, 3, 4];
-        service2.write_notification(
-            service1.peer_id().clone(),
-            PROTOCOL_NAME.into(),
-            data.clone(),
-        );
+        let data_clone = data.clone();
+        let addr1 = service1.peer_id().clone();
 
         info!(
             "first peer address is {:?} id is {:?},second peer address is {:?} id is {:?}",
@@ -61,8 +59,31 @@ mod tests {
             config2.listen_addresses,
             service2.local_peer_id()
         );
+
         let fut = async move {
-            while let Some(event) = stream.next().await {
+            while let Some(event) = stream2.next().await {
+                match event {
+                    Event::NotificationStreamOpened { remote, info } => {
+                        info!("open stream from {},info is {:?}", remote, info);
+                        let result = service2.get_address(remote.clone()).await;
+                        info!("remote {} address is {:?}", remote, result);
+                        service2.write_notification(
+                            addr1.clone(),
+                            PROTOCOL_NAME.into(),
+                            data_clone.clone(),
+                        );
+                    }
+                    _ => {
+                        info!("event is {:?}", event);
+                    }
+                }
+            }
+        };
+
+        handle.spawn(fut);
+
+        let fut = async move {
+            while let Some(event) = stream1.next().await {
                 match event {
                     Event::NotificationsReceived {
                         remote,
