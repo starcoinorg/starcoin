@@ -1,6 +1,4 @@
-use crate::miner::{MineCtx, Miner};
-use crate::miner_client::miner::MinerClientActor;
-use crate::stratum::StratumManager;
+use crate::miner::MinerClientActor;
 use actix::Actor;
 use actix_rt::System;
 use bus::BusActor;
@@ -10,6 +8,10 @@ use consensus::argon::ArgonConsensus;
 use futures_timer::Delay;
 use logger::prelude::*;
 use sc_stratum::{PushWorkHandler, Stratum};
+use starcoin_miner::{
+    miner::{MineCtx, Miner},
+    stratum::StratumManager,
+};
 use std::sync::Arc;
 use std::time::Duration;
 use types::block::{Block, BlockBody, BlockHeader, BlockTemplate};

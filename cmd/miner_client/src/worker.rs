@@ -1,7 +1,6 @@
-use crate::miner_client::{nonce_generator, partition_nonce, set_header_nonce};
-use anyhow::Result;
+use crate::{nonce_generator, partition_nonce, set_header_nonce};
 use config::{ConsensusStrategy, MinerConfig};
-use consensus::difficulty::difficult_to_target;
+use consensus::{argon, difficulty::difficult_to_target};
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
@@ -9,7 +8,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use std::thread;
 use std::time::{Duration, Instant};
-use types::{H256, U256};
+use types::U256;
 
 const HASH_RATE_UPDATE_DURATION_MILLIS: u128 = 300;
 
@@ -190,14 +189,6 @@ impl Worker {
     }
 }
 
-fn argon2_hash(input: &[u8]) -> Result<H256> {
-    let mut config = argon2::Config::default();
-    config.mem_cost = 1024;
-    let output = argon2::hash_raw(input, input, &config)?;
-    let h_256: H256 = output.as_slice().into();
-    Ok(h_256)
-}
-
 fn argon_solver(
     pow_header: &[u8],
     nonce: u64,
@@ -205,7 +196,7 @@ fn argon_solver(
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
     let input = set_header_nonce(pow_header, nonce);
-    if let Ok(pow_hash) = argon2_hash(&input) {
+    if let Ok(pow_hash) = argon::calculate_hash(&input) {
         let pow_hash_u256: U256 = pow_hash.into();
         let target = difficult_to_target(diff);
         if pow_hash_u256 <= target {

@@ -13,8 +13,8 @@ use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
 use crypto::hash::{HashValue, PlainCryptoHash};
 use futures::{channel::mpsc, prelude::*};
 use logger::prelude::*;
-pub use miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use sc_stratum::Stratum;
+pub use starcoin_miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::{marker::PhantomData, sync::Arc, time::Duration};
@@ -24,11 +24,10 @@ use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
 mod metrics;
-mod miner;
-mod miner_client;
+pub mod miner;
 mod ondemand_pacemaker;
 mod schedule_pacemaker;
-mod stratum;
+pub mod stratum;
 pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 
 #[derive(Default, Debug, Message)]

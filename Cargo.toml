@@ -53,6 +53,7 @@ members = [
     "cmd/starcoin",
     "cmd/faucet",
     "cmd/tx-factory",
+    "cmd/miner_client",
     "vm/types",
     "vm/functional-tests",
     "vm/vm-runtime",
