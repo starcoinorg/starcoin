@@ -5,7 +5,7 @@ module Block {
     //use 0x1::System;
     use 0x1::Timestamp;
     //use 0x1::TransactionFee;
-    use 0x1::STC;
+    use 0x1::STC::{STC};
     use 0x1::Vector;
     use 0x1::Account;
     use 0x1::SubsidyConfig;
@@ -171,8 +171,8 @@ module Block {
                 subsidy_info.subsidy_height = subsidy_height;
                 if (subsidy_coin > 0) {
                     assert(Account::exists_at(subsidy_miner), 6006);
-                    let libra_coin = Account::withdraw_with_capability<STC::T>(&subsidy_info.withdrawal_capability, subsidy_coin);
-                    Account::deposit<STC::T>(account, subsidy_miner, libra_coin);
+                    let libra_coin = Account::withdraw_with_capability<STC>(&subsidy_info.withdrawal_capability, subsidy_coin);
+                    Account::deposit<STC>(account, subsidy_miner, libra_coin);
                 };
                 Vector::remove(&mut subsidy_info.heights, 0);
                 Vector::remove(&mut subsidy_info.miners, 0);
@@ -181,7 +181,7 @@ module Block {
             Vector::push_back(&mut subsidy_info.heights, current_height);
             if (!Account::exists_at(current_miner)) {
                 assert(!Vector::is_empty(&auth_key_prefix), 6007);
-                Account::create_account<STC::T>(current_miner, auth_key_prefix);
+                Account::create_account<STC>(current_miner, auth_key_prefix);
             };
             Vector::push_back(&mut subsidy_info.miners, current_miner);
         };

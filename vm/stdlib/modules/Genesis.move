@@ -6,7 +6,7 @@ address 0x1 {
 module Genesis {
     use 0x1::Association;
     use 0x1::Event;
-    use 0x1::STC;
+    use 0x1::STC::{Self, STC};
     use 0x1::Coin;
     use 0x1::Account;
     use 0x1::Block;
@@ -47,24 +47,24 @@ module Genesis {
         //Account::initialize(association);
         STC::initialize(association);
 
-        Account::create_genesis_account<STC::T>(
+        Account::create_genesis_account<STC>(
             Signer::address_of(association),
             copy dummy_auth_key_prefix,
         );
 
 
         // Create the config account
-        Account::create_genesis_account<STC::T>(
+        Account::create_genesis_account<STC>(
             Config::default_config_address(),
             copy dummy_auth_key_prefix
         );
 
-        Account::create_account<STC::T>(
+        Account::create_account<STC>(
             Signer::address_of(mint_account),
             copy dummy_auth_key_prefix
         );
 
-        Account::create_account<STC::T>(
+        Account::create_account<STC>(
             Signer::address_of(fee_account),
             dummy_auth_key_prefix
         );
