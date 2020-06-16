@@ -455,7 +455,7 @@ pub struct TransactionOutput {
     gas_used: u64,
 
     /// The resource increment size
-    increment_size: u64,
+    increment_size: i64,
 
     /// The execution status.
     status: TransactionStatus,
@@ -466,7 +466,7 @@ impl TransactionOutput {
         write_set: WriteSet,
         events: Vec<ContractEvent>,
         gas_used: u64,
-        increment_size: u64,
+        increment_size: i64,
         status: TransactionStatus,
     ) -> Self {
         TransactionOutput {
@@ -494,7 +494,7 @@ impl TransactionOutput {
         &self.status
     }
 
-    pub fn increment_size(&self) -> u64 {
+    pub fn increment_size(&self) -> i64 {
         self.increment_size
     }
 

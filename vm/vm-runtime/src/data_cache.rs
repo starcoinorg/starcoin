@@ -104,7 +104,7 @@ impl<'a> RemoteCache for RemoteStorage<'a> {
     }
 }
 
-pub struct StarcoinDataCache<'txn>(TransactionDataCache<'txn>, BTreeMap<AccountAddress, u64>);
+pub struct StarcoinDataCache<'txn>(TransactionDataCache<'txn>, BTreeMap<AccountAddress, i64>);
 impl<'txn> StarcoinDataCache<'txn> {
     pub fn new(data_cache: &'txn dyn RemoteCache) -> Self {
         Self(TransactionDataCache::new(data_cache), BTreeMap::new())
@@ -119,7 +119,7 @@ impl<'txn> StarcoinDataCache<'txn> {
     }
 
     /// Get size by account address
-    pub fn get_size(&self, address: AccountAddress) -> u64 {
+    pub fn get_size(&self, address: AccountAddress) -> i64 {
         match self.1.get(&address) {
             Some(size) => *size,
             _ => 0,
@@ -135,10 +135,10 @@ impl<'a> DataStore for StarcoinDataCache<'a> {
     ) -> VMResult<()> {
         let new_size = g.1.size().get();
         self.0.publish_resource(ap, g)?;
-
         self.1
             .entry(ap.clone().address)
-            .and_modify(|v| *v += new_size as u64);
+            .and_modify(|v| *v += new_size as i64)
+            .or_insert(new_size as i64);
         Ok(())
     }
 
@@ -159,9 +159,11 @@ impl<'a> DataStore for StarcoinDataCache<'a> {
         match global_value {
             Some(g) => {
                 let new_size = g.size().get();
+                println!("from new size: {:?} {:?}", g, new_size);
                 self.1
                     .entry(ap.clone().address)
-                    .and_modify(|v| *v -= new_size as u64);
+                    .and_modify(|v| *v -= new_size as i64)
+                    .or_insert(new_size as i64);
                 Ok(Some(g))
             }
             _ => Ok(None),
