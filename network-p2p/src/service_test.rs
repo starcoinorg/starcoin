@@ -46,6 +46,8 @@ mod tests {
 
         handle.spawn(worker2);
 
+        thread::sleep(Duration::from_secs(1));
+
         let data = vec![1, 2, 3, 4];
         let data_clone = data.clone();
         let addr1 = service1.peer_id().clone();
