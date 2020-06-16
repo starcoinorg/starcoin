@@ -534,7 +534,7 @@ impl Inner {
     }
 
     async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) -> Result<()> {
-        debug!("event is {:?}", event);
+        info!("event is {:?}", event);
         match event.clone() {
             PeerEvent::Open(peer_id, peer_info) => {
                 inner.on_peer_connected(peer_id.into(), *peer_info).await?;
@@ -791,7 +791,8 @@ mod tests {
                 .unwrap();
         let node_config1 = Arc::new(node_config1);
 
-        let (network1, _bus1, rpc_rx_1) = build_network(node_config1.clone(), handle.clone());
+        let bus = BusActor::launch();
+        let (network1, rpc_rx_1) = build_network(node_config1.clone(), bus.clone(), handle.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
@@ -805,7 +806,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, _bus2, _rpc_rx_2) = build_network(node_config2, handle);
+        let (network2, _rpc_rx_2) = build_network(node_config2, bus.clone(), handle);
 
         Arbiter::spawn(async move {
             let (tx, _rx) = mpsc::unbounded();
@@ -852,7 +853,9 @@ mod tests {
                 .unwrap();
         let node_config1 = Arc::new(node_config1);
 
-        let (network1, _bus1, _rpc_rx_1) = build_network(node_config1.clone(), handle.clone());
+        let bus = BusActor::launch();
+        let (network1, _rpc_rx_1) =
+            build_network(node_config1.clone(), bus.clone(), handle.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
@@ -866,7 +869,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, bus2, rpc_rx_2) = build_network(node_config2, handle);
+        let (network2, rpc_rx_2) = build_network(node_config2, bus.clone(), handle);
 
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();
@@ -876,21 +879,11 @@ mod tests {
             //let addr = response_actor.start();
 
             // subscribe peer txns for network2
-            bus2.send(Subscription {
+            bus.send(Subscription {
                 recipient: response_actor2.clone().recipient::<PeerTransactions>(),
             })
             .await
             .unwrap();
-
-            let (tx1, _rx1) = mpsc::unbounded();
-            let (tx_peer, mut rx_peer) = mpsc::unbounded();
-            let response_actor1 =
-                TestResponseActor::launch(network1.clone(), tx1, _rpc_rx_1, Some(tx_peer));
-
-            let recipient = response_actor1.clone().recipient::<PeerEvent>();
-            _bus1.send(Subscription { recipient }).await.unwrap();
-
-            let _ = rx_peer.next().await;
 
             network1
                 .network_actor_addr()
@@ -941,21 +934,20 @@ mod tests {
 
     fn build_network(
         node_config: Arc<NodeConfig>,
+        bus: Addr<BusActor>,
         handle: Handle,
     ) -> (
         NetworkAsyncService,
-        Addr<BusActor>,
         mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) {
-        let bus = BusActor::launch();
         let (network, rpc_rx) = NetworkActor::launch(
             node_config,
-            bus.clone(),
+            bus,
             handle,
             HashValue::default(),
             PeerInfo::default(),
         );
-        (network, bus, rpc_rx)
+        (network, rpc_rx)
     }
 
     struct TestResponseActor {
@@ -1033,10 +1025,10 @@ mod tests {
         type Result = Result<()>;
 
         fn handle(&mut self, msg: PeerEvent, _ctx: &mut Self::Context) -> Self::Result {
-            info!("Event is {:?}", msg);
+            info!("PeerEvent is {:?}", msg);
             match &self.peer_event_tx {
                 Some(tx) => {
-                    let _ = tx.unbounded_send(msg);
+                    tx.unbounded_send(msg).unwrap();
                 }
                 None => {}
             };
