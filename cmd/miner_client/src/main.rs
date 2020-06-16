@@ -1,7 +1,7 @@
 use config::{ConsensusStrategy, MinerConfig};
 use futures::executor;
 use logger::{self, prelude::*};
-use starcoin_miner::MinerClient;
+use starcoin_miner_client::miner::Miner;
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt, Default)]
@@ -27,7 +27,7 @@ fn main() {
         cfg
     };
     executor::block_on(async move {
-        match MinerClient::new(config).await {
+        match Miner::new(config).await {
             Err(e) => error!("Start miner client failed:{:?}", e),
             Ok(mut miner_client) => miner_client.start().await,
         }

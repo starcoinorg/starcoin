@@ -1,5 +1,5 @@
-use crate::miner_client::stratum::StratumClient;
-use crate::miner_client::worker::{start_worker, WorkerController, WorkerMessage};
+use crate::stratum::StratumClient;
+use crate::worker::{start_worker, WorkerController, WorkerMessage};
 use actix::{Actor, Arbiter, Context, System};
 use anyhow::Result;
 use config::MinerConfig;
