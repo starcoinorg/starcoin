@@ -534,7 +534,7 @@ impl Inner {
     }
 
     async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) -> Result<()> {
-        info!("event is {:?}", event);
+        debug!("event is {:?}", event);
         match event.clone() {
             PeerEvent::Open(peer_id, peer_info) => {
                 inner.on_peer_connected(peer_id.into(), *peer_info).await?;
