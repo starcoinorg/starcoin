@@ -126,11 +126,11 @@ pub fn access_path_for_config(address: AccountAddress, config_name: Identifier) 
         AccessPath::resource_access_vec(&StructTag {
             address: CORE_CODE_ADDRESS,
             module: Identifier::new("Config").unwrap(),
-            name: Identifier::new("T").unwrap(),
+            name: Identifier::new("Config").unwrap(),
             type_params: vec![TypeTag::Struct(StructTag {
                 address: CORE_CODE_ADDRESS,
-                module: config_name,
-                name: Identifier::new("T").unwrap(),
+                module: config_name.clone(),
+                name: config_name,
                 type_params: vec![],
             })],
         }),

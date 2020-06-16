@@ -34,11 +34,6 @@ pub static BLOCK_MODULE: Lazy<ModuleId> = Lazy::new(|| {
         Identifier::new(BLOCK_MODULE_NAME).unwrap(),
     )
 });
-/// The ModuleId for the gas schedule module
-pub static GAS_SCHEDULE_MODULE: Lazy<ModuleId> =
-    Lazy::new(|| ModuleId::new(CORE_CODE_ADDRESS, Identifier::new("GasSchedule").unwrap()));
-
-pub static GAS_SCHEDULE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
 
 // Names for special functions and structs
 pub static CREATE_ACCOUNT_NAME: Lazy<Identifier> =

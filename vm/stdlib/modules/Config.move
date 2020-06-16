@@ -12,7 +12,7 @@ module Config {
     }
 
     // A generic singleton resource that holds a value of a specific type.
-    resource struct T<Config: copyable> { payload: Config }
+    resource struct Config<ConfigValue: copyable> { payload: ConfigValue }
 
     struct NewEpochEvent {
         epoch: u64,
@@ -48,39 +48,39 @@ module Config {
         );
     }
 
-    // Get a copy of `Config` value stored under `addr`.
-    public fun get<Config: copyable>(): Config acquires T {
+    // Get a copy of `ConfigValue` value stored under `addr`.
+    public fun get<ConfigValue: copyable>(): ConfigValue acquires Config {
         let addr = default_config_address();
-        assert(exists<T<Config>>(addr), 24);
-        *&borrow_global<T<Config>>(addr).payload
+        assert(exists<Config<ConfigValue>>(addr), 24);
+        *&borrow_global<Config<ConfigValue>>(addr).payload
     }
 
     // Set a config item to a new value with the default capability stored under config address and trigger a
     // reconfiguration.
-    public fun set<Config: copyable>(account: &signer, payload: Config) acquires T, Configuration {
+    public fun set<ConfigValue: copyable>(account: &signer, payload: ConfigValue) acquires Config, Configuration {
         let addr = default_config_address();
-        assert(exists<T<Config>>(addr), 24);
+        assert(exists<Config<ConfigValue>>(addr), 24);
         let signer_address = Signer::address_of(account);
         assert(
-            exists<ModifyConfigCapability<Config>>(signer_address)
+            exists<ModifyConfigCapability<ConfigValue>>(signer_address)
              || signer_address == Association::root_address(),
             24
         );
 
-        let config = borrow_global_mut<T<Config>>(addr);
+        let config = borrow_global_mut<Config<ConfigValue>>(addr);
         config.payload = payload;
 
         reconfigure_();
     }
 
     // Set a config item to a new value and trigger a reconfiguration.
-    public fun set_with_capability<Config: copyable>(
-        _cap: &ModifyConfigCapability<Config>,
-        payload: Config
-    ) acquires T, Configuration {
+    public fun set_with_capability<ConfigValue: copyable>(
+        _cap: &ModifyConfigCapability<ConfigValue>,
+        payload: ConfigValue
+    ) acquires Config, Configuration {
         let addr = default_config_address();
-        assert(exists<T<Config>>(addr), 24);
-        let config = borrow_global_mut<T<Config>>(addr);
+        assert(exists<Config<ConfigValue>>(addr), 24);
+        let config = borrow_global_mut<Config<ConfigValue>>(addr);
         config.payload = payload;
 
         reconfigure_();
@@ -88,41 +88,41 @@ module Config {
 
     // Publish a new config item. The caller will use the returned ModifyConfigCapability to specify the access control
     // policy for who can modify the config.
-    public fun publish_new_config_with_capability<Config: copyable>(
+    public fun publish_new_config_with_capability<ConfigValue: copyable>(
         config_account: &signer,
-        payload: Config,
-    ): ModifyConfigCapability<Config> {
+        payload: ConfigValue,
+    ): ModifyConfigCapability<ConfigValue> {
         assert(
             Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
             1
         );
 
-        move_to(config_account, T { payload });
+        move_to(config_account, Config { payload });
         // We don't trigger reconfiguration here, instead we'll wait for all validators update the binary
         // to register this config into ON_CHAIN_CONFIG_REGISTRY then send another transaction to change
         // the value which triggers the reconfiguration.
 
-        return ModifyConfigCapability<Config> {}
+        return ModifyConfigCapability<ConfigValue> {}
     }
 
     // Publish a new config item. Only the config address can modify such config.
-    public fun publish_new_config<Config: copyable>(config_account: &signer, payload: Config) {
+    public fun publish_new_config<ConfigValue: copyable>(config_account: &signer, payload: ConfigValue) {
         assert(
             Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
             1
         );
 
-        move_to(config_account, ModifyConfigCapability<Config> {});
-        move_to(config_account, T{ payload });
+        move_to(config_account, ModifyConfigCapability<ConfigValue> {});
+        move_to(config_account, Config{ payload });
         // We don't trigger reconfiguration here, instead we'll wait for all validators update the binary
         // to register this config into ON_CHAIN_CONFIG_REGISTRY then send another transaction to change
         // the value which triggers the reconfiguration.
     }
 
     // Publish a new config item. Only the delegated address can modify such config after redeeming the capability.
-    public fun publish_new_config_with_delegate<Config: copyable>(
+    public fun publish_new_config_with_delegate<ConfigValue: copyable>(
         config_account: &signer,
-        payload: Config,
+        payload: ConfigValue,
         delegate: address,
     ) {
         assert(
@@ -130,16 +130,16 @@ module Config {
             1
         );
 
-        Offer::create(config_account, ModifyConfigCapability<Config>{}, delegate);
-        move_to(config_account, T { payload });
+        Offer::create(config_account, ModifyConfigCapability<ConfigValue>{}, delegate);
+        move_to(config_account, Config { payload });
         // We don't trigger reconfiguration here, instead we'll wait for all validators update the
         // binary to register this config into ON_CHAIN_CONFIG_REGISTRY then send another
         // transaction to change the value which triggers the reconfiguration.
     }
 
     // Claim a delegated modify config capability granted by publish_new_config_with_delegate.
-    public fun claim_delegated_modify_config<Config>(account: &signer, offer_address: address) {
-        move_to(account, Offer::redeem<ModifyConfigCapability<Config>>(account, offer_address))
+    public fun claim_delegated_modify_config<ConfigValue>(account: &signer, offer_address: address) {
+        move_to(account, Offer::redeem<ModifyConfigCapability<ConfigValue>>(account, offer_address))
     }
 
     public fun reconfigure(account: &signer) acquires Configuration {

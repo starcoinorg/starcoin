@@ -25,7 +25,7 @@ module Association {
 
     // A type tag to mark that this account is an association account.
     // It cannot be used for more specific/privileged operations.
-    struct T { }
+    struct Association { }
 
     // Initialization is called in genesis. It publishes the root resource
     // under the root_address() address, marks it as a normal
@@ -33,7 +33,7 @@ module Association {
     public fun initialize(association: &signer) {
         assert(Signer::address_of(association) == root_address(), 1000);
         move_to(association, Root{ });
-        move_to(association, PrivilegedCapability<T>{ });
+        move_to(association, PrivilegedCapability<Association>{ });
     }
 
    /// Certify the privileged capability published under `association`.
@@ -44,7 +44,7 @@ module Association {
 
    /// Grant the association privilege to `association`
        public fun grant_association_address(association: &signer, recipient: &signer) {
-           grant_privilege<T>(association, recipient)
+           grant_privilege<Association>(association, recipient)
        }
 
        /// Return whether the `addr` has the specified `Privilege`.
@@ -78,7 +78,7 @@ module Association {
 
        /// Return whether the account at `addr` is an association account.
        public fun addr_is_association(addr: address): bool {
-           exists<PrivilegedCapability<T>>(addr)
+           exists<PrivilegedCapability<Association>>(addr)
        }
 
        /// The address at which the root account will be published.

@@ -79,7 +79,7 @@ module Block {
         // TODO: Once we have a better on-chain representation of epochs we will make this per-epoch.
         // TODO: Need to update this to allow per-currency transaction fee
         // distribution
-        //TransactionFee::distribute_transaction_fees<LBR::T>();
+        //TransactionFee::distribute_transaction_fees();
 
         // TODO(valerini): call regular reconfiguration here System2::update_all_validator_info()
     }

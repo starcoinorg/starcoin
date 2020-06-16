@@ -5,30 +5,30 @@ module Version {
     use 0x1::Signer;
 
 
-    struct T {
+    struct Version {
         major: u64,
     }
 
     public fun initialize(account: &signer) {
         assert(Signer::address_of(account) == Config::default_config_address(), 1);
 
-        Config::publish_new_config<Self::T>(
+        Config::publish_new_config<Self::Version>(
             account,
-            T { major: 1 },
+            Version { major: 1 },
         );
     }
 
     public fun set(account: &signer, major: u64) {
-        let old_config = Config::get<Self::T>();
+        let old_config = Config::get<Self::Version>();
 
         assert(
             old_config.major < major,
             25
         );
 
-        Config::set<Self::T>(
+        Config::set<Self::Version>(
             account,
-            T { major }
+            Version { major }
         );
     }
 }
