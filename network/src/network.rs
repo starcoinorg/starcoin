@@ -809,7 +809,7 @@ mod tests {
 
         Arbiter::spawn(async move {
             let (tx, _rx) = mpsc::unbounded();
-            let _response_actor = TestResponseActor::launch(network1.clone(), tx, rpc_rx_1);
+            let _response_actor = TestResponseActor::launch(network1.clone(), tx, rpc_rx_1, None);
 
             let request = TestRequest {
                 data: HashValue::random(),
@@ -871,19 +871,26 @@ mod tests {
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();
 
-            let (tx, mut rx) = mpsc::unbounded();
-            let response_actor = TestResponseActor::launch(network_clone2, tx, rpc_rx_2);
+            let (tx2, mut rx2) = mpsc::unbounded();
+            let response_actor2 = TestResponseActor::launch(network_clone2, tx2, rpc_rx_2, None);
             //let addr = response_actor.start();
-
-            let recipient = response_actor.clone().recipient::<PeerEvent>();
-            bus2.send(Subscription { recipient }).await.unwrap();
 
             // subscribe peer txns for network2
             bus2.send(Subscription {
-                recipient: response_actor.clone().recipient::<PeerTransactions>(),
+                recipient: response_actor2.clone().recipient::<PeerTransactions>(),
             })
             .await
             .unwrap();
+
+            let (tx1, _rx1) = mpsc::unbounded();
+            let (tx_peer, mut rx_peer) = mpsc::unbounded();
+            let response_actor1 =
+                TestResponseActor::launch(network1.clone(), tx1, _rpc_rx_1, Some(tx_peer));
+
+            let recipient = response_actor1.clone().recipient::<PeerEvent>();
+            _bus1.send(Subscription { recipient }).await.unwrap();
+
+            let _ = rx_peer.next().await;
 
             network1
                 .network_actor_addr()
@@ -901,8 +908,8 @@ mod tests {
                 .await
                 .unwrap();
 
-            let _ = rx.next().await;
-            let txns = response_actor.send(GetPeerTransactions).await.unwrap();
+            let _ = rx2.next().await;
+            let txns = response_actor2.send(GetPeerTransactions).await.unwrap();
             assert_eq!(1, txns.len());
 
             let request = TestRequest {
@@ -955,6 +962,7 @@ mod tests {
         _network_service: NetworkAsyncService,
         peer_txns: Vec<PeerTransactions>,
         event_tx: mpsc::UnboundedSender<()>,
+        peer_event_tx: Option<mpsc::UnboundedSender<PeerEvent>>,
     }
 
     impl TestResponseActor {
@@ -962,6 +970,7 @@ mod tests {
             network_service: NetworkAsyncService,
             event_tx: mpsc::UnboundedSender<()>,
             rpc_rx: mpsc::UnboundedReceiver<RawRpcRequestMessage>,
+            peer_event_tx: Option<mpsc::UnboundedSender<PeerEvent>>,
         ) -> Addr<TestResponseActor> {
             TestResponseActor::create(move |ctx: &mut Context<TestResponseActor>| {
                 ctx.add_stream(rpc_rx);
@@ -969,6 +978,7 @@ mod tests {
                     _network_service: network_service,
                     peer_txns: vec![],
                     event_tx,
+                    peer_event_tx,
                 }
             })
         }
@@ -1024,6 +1034,12 @@ mod tests {
 
         fn handle(&mut self, msg: PeerEvent, _ctx: &mut Self::Context) -> Self::Result {
             info!("Event is {:?}", msg);
+            match &self.peer_event_tx {
+                Some(tx) => {
+                    let _ = tx.unbounded_send(msg);
+                }
+                None => {}
+            };
             Ok(())
         }
     }

@@ -18,11 +18,7 @@ mod tests {
     #[stest::test(timeout = 5)]
     #[allow(clippy::string_lit_as_bytes)]
     fn test_notify() {
-        let mut rt = tokio::runtime::Builder::new()
-            .threaded_scheduler()
-            .enable_all()
-            .build()
-            .unwrap();
+        let mut rt = Runtime::new().unwrap();
         let handle = rt.handle().clone();
 
         let protocol = ProtocolId::from(b"stargate".as_ref());
