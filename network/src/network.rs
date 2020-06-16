@@ -806,7 +806,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, _rpc_rx_2) = build_network(node_config2, bus.clone(), handle);
+        let (network2, _rpc_rx_2) = build_network(node_config2, bus, handle);
 
         Arbiter::spawn(async move {
             let (tx, _rx) = mpsc::unbounded();
