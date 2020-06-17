@@ -13,7 +13,7 @@ use once_cell::sync::Lazy;
 pub const COIN_MODULE_NAME: &str = "Coin";
 static COIN_MODULE_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(COIN_MODULE_NAME).unwrap());
-static COIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("T").unwrap());
+static COIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Coin").unwrap());
 pub static COIN_MODULE: Lazy<ModuleId> =
     Lazy::new(|| ModuleId::new(CORE_CODE_ADDRESS, COIN_MODULE_IDENTIFIER.clone()));
 
@@ -26,7 +26,7 @@ pub fn coin_struct_name() -> &'static IdentStr {
 }
 
 // TODO: This imposes a few implied restrictions:
-//   1) The struct name must be "T"
+//   1) The struct name must be same as module name and same as currency_code.
 // We need to consider whether we want to switch to a more or fully qualified name.
 pub fn type_tag_for_currency_code(
     module_address: Option<AccountAddress>,
@@ -34,8 +34,8 @@ pub fn type_tag_for_currency_code(
 ) -> TypeTag {
     TypeTag::Struct(StructTag {
         address: module_address.unwrap_or(CORE_CODE_ADDRESS),
-        module: currency_code,
-        name: coin_struct_name().to_owned(),
+        module: currency_code.clone(),
+        name: currency_code,
         type_params: vec![],
     })
 }

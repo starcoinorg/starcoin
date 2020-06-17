@@ -1,4 +1,5 @@
 address 0x1{
+//TODO refactor this by 0x1::Config.
 module SubsidyConfig {
 
     use 0x1::Signer;

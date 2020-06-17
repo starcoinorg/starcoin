@@ -6,9 +6,9 @@ module VMConfig {
     // The struct to hold all config data needed to operate the LibraVM.
     // * publishing_option: Defines Scripts/Modules that are allowed to execute in the current configruation.
     // * gas_schedule: Cost of running the VM.
-    struct T {
+    struct VMConfig {
         publishing_option: vector<u8>,
-        gas_schedule: Self::GasSchedule,
+        gas_schedule: GasSchedule,
     }
 
     // The gas schedule keeps two separate schedules for the gas:
@@ -25,7 +25,7 @@ module VMConfig {
     struct GasSchedule {
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
-        gas_constants: Self::GasConstants,
+        gas_constants: GasConstants,
     }
 
     struct GasConstants {
@@ -79,9 +79,9 @@ module VMConfig {
         };
 
 
-        Config::publish_new_config<Self::T>(
+        Config::publish_new_config<VMConfig>(
             config_account,
-            T {
+            VMConfig {
                 publishing_option,
                 gas_schedule: GasSchedule {
                     instruction_schedule,
@@ -93,9 +93,9 @@ module VMConfig {
     }
 
     public fun set_publishing_option(account: &signer, publishing_option: vector<u8>) {
-        let current_config = Config::get<Self::T>();
+        let current_config = Config::get<VMConfig>();
         current_config.publishing_option = publishing_option;
-        Config::set<Self::T>(account, current_config);
+        Config::set<VMConfig>(account, current_config);
     }
 }
 

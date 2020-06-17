@@ -440,7 +440,7 @@ fn test_block_metadata() -> Result<()> {
 
     assert!(balance > 0);
 
-    let token = String::from("0x1::STC::T");
+    let token = String::from("0x1::STC::STC");
     let token_balance = get_token_balance(*account1.address(), &chain_state, token)?.unwrap();
     assert_eq!(balance, token_balance);
 

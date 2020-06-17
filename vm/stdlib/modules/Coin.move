@@ -13,7 +13,7 @@ module Coin {
 
     // The currency has a `CoinType` color that tells us what currency the
     // `value` inside represents.
-    resource struct T<CoinType> { value: u64 }
+    resource struct Coin<CoinType> { value: u64 }
 
     // A minting capability allows coins of type `CoinType` to be minted
     resource struct MintCapability<CoinType> { }
@@ -109,7 +109,7 @@ module Coin {
     // resolved in FIFO order.
     resource struct Preburn<Token> {
         // Queue of pending burn requests
-        requests: vector<T<Token>>,
+        requests: vector<Coin<Token>>,
         // Boolean that is true if the holder of the BurnCapability has approved this account as a
         // preburner
         is_approved: bool,
@@ -152,7 +152,7 @@ module Coin {
 
     // Return `amount` coins.
     // Fails if the sender does not have a published MintCapability.
-    public fun mint<Token>(account: &signer, amount: u64): T<Token> acquires CurrencyInfo, MintCapability {
+    public fun mint<Token>(account: &signer, amount: u64): Coin<Token> acquires CurrencyInfo, MintCapability {
         mint_with_capability(amount, borrow_global<MintCapability<Token>>(Signer::address_of(account)))
     }
 
@@ -172,7 +172,7 @@ module Coin {
     public fun cancel_burn<Token>(
         account: &signer,
         preburn_address: address
-    ): T<Token> acquires BurnCapability, CurrencyInfo, Preburn {
+    ): Coin<Token> acquires BurnCapability, CurrencyInfo, Preburn {
         cancel_burn_with_capability(
             preburn_address,
             borrow_global<BurnCapability<Token>>(Signer::address_of(account))
@@ -184,13 +184,13 @@ module Coin {
         Preburn<Token> { requests: Vector::empty(), is_approved: false, }
     }
 
-    // Mint a new Coin::T worth `value`. The caller must have a reference to a MintCapability.
+    // Mint a new Coin::Coin worth `value`. The caller must have a reference to a MintCapability.
     // Only the Association account can acquire such a reference, and it can do so only via
     // `borrow_sender_mint_capability`
     public fun mint_with_capability<Token>(
         value: u64,
         _capability: &MintCapability<Token>
-    ): T<Token> acquires CurrencyInfo {
+    ): Coin<Token> acquires CurrencyInfo {
         assert_is_coin<Token>();
         // TODO: temporary measure for testnet only: limit minting to 1B Libra at a time.
         // this is to prevent the market cap's total value from hitting u64_max due to excessive
@@ -214,7 +214,7 @@ module Coin {
             );
         };
 
-        T<Token> { value }
+        Coin<Token> { value }
     }
 
     // Create a new Preburn resource.
@@ -228,7 +228,7 @@ module Coin {
 
     // Send a coin to the preburn holding area `preburn` that is passed in.
     public fun preburn_with_resource<Token>(
-        coin: T<Token>,
+        coin: Coin<Token>,
         preburn: &mut Preburn<Token>,
         preburn_address: address,
     ) acquires CurrencyInfo {
@@ -255,7 +255,7 @@ module Coin {
 
     // Send coin to the preburn holding area, where it will wait to be burned.
     // Fails if the sender does not have a published Preburn resource
-    public fun preburn_to_sender<Token>(account: &signer, coin: T<Token>) acquires CurrencyInfo, Preburn {
+    public fun preburn_to_sender<Token>(account: &signer, coin: Coin<Token>) acquires CurrencyInfo, Preburn {
         let sender = Signer::address_of(account);
         preburn_with_resource(coin, borrow_global_mut<Preburn<Token>>(sender), sender);
     }
@@ -288,7 +288,7 @@ module Coin {
         _capability: &BurnCapability<Token>
     ) acquires CurrencyInfo {
         // destroy the coin at the head of the preburn queue
-        let T { value } = Vector::remove(&mut preburn.requests, 0);
+        let Coin { value } = Vector::remove(&mut preburn.requests, 0);
         // update the market cap
         let currency_code = currency_code<Token>();
         let info = borrow_global_mut<CurrencyInfo<Token>>(0xA550C18);
@@ -315,7 +315,7 @@ module Coin {
     public fun cancel_burn_with_capability<Token>(
         preburn_address: address,
         _capability: &BurnCapability<Token>
-    ): T<Token> acquires CurrencyInfo, Preburn {
+    ): Coin<Token> acquires CurrencyInfo, Preburn {
         // destroy the coin at the head of the preburn queue
         let preburn = borrow_global_mut<Preburn<Token>>(preburn_address);
         let coin = Vector::remove(&mut preburn.requests, 0);
@@ -379,20 +379,20 @@ module Coin {
         borrow_global<CurrencyInfo<Token>>(0xA550C18).preburn_value
     }
 
-    // Create a new Coin::T<CoinType> with a value of 0
-    public fun zero<CoinType>(): T<CoinType> {
+    // Create a new Coin::Coin<CoinType> with a value of 0
+    public fun zero<CoinType>(): Coin<CoinType> {
         assert_is_coin<CoinType>();
-        T<CoinType> { value: 0 }
+        Coin<CoinType> { value: 0 }
     }
 
     // Public accessor for the value of a coin
-    public fun value<CoinType>(coin: &T<CoinType>): u64 {
+    public fun value<CoinType>(coin: &Coin<CoinType>): u64 {
         coin.value
     }
 
     // Splits the given coin into two and returns them both
     // It leverages `Self::withdraw` for any verifications of the values
-    public fun split<CoinType>(coin: T<CoinType>, amount: u64): (T<CoinType>, T<CoinType>) {
+    public fun split<CoinType>(coin: Coin<CoinType>, amount: u64): (Coin<CoinType>, Coin<CoinType>) {
         let other = withdraw(&mut coin, amount);
         (coin, other)
     }
@@ -401,16 +401,16 @@ module Coin {
     // The original coin will have value = original value - `amount`
     // The new coin will have a value = `amount`
     // Fails if the coins value is less than `amount`
-    public fun withdraw<CoinType>(coin: &mut T<CoinType>, amount: u64): T<CoinType> {
+    public fun withdraw<CoinType>(coin: &mut Coin<CoinType>, amount: u64): Coin<CoinType> {
         // Check that `amount` is less than the coin's value
         assert(coin.value >= amount, 10);
         coin.value = coin.value - amount;
-        T { value: amount }
+        Coin { value: amount }
     }
 
     // Merges two coins of the same currency and returns a new coin whose
     // value is equal to the sum of the two inputs
-    public fun join<CoinType>(coin1: T<CoinType>, coin2: T<CoinType>): T<CoinType>  {
+    public fun join<CoinType>(coin1: Coin<CoinType>, coin2: Coin<CoinType>): Coin<CoinType>  {
         deposit(&mut coin1, coin2);
         coin1
     }
@@ -418,17 +418,17 @@ module Coin {
     // "Merges" the two coins
     // The coin passed in by reference will have a value equal to the sum of the two coins
     // The `check` coin is consumed in the process
-    public fun deposit<CoinType>(coin: &mut T<CoinType>, check: T<CoinType>) {
-        let T { value } = check;
+    public fun deposit<CoinType>(coin: &mut Coin<CoinType>, check: Coin<CoinType>) {
+        let Coin { value } = check;
         coin.value = coin.value + value;
     }
 
     // Destroy a coin
     // Fails if the value is non-zero
-    // The amount of Coin.T in the system is a tightly controlled property,
-    // so you cannot "burn" any non-zero amount of Coin.T
-    public fun destroy_zero<CoinType>(coin: T<CoinType>) {
-        let T { value } = coin;
+    // The amount of Coin in the system is a tightly controlled property,
+    // so you cannot "burn" any non-zero amount of Coin
+    public fun destroy_zero<CoinType>(coin: Coin<CoinType>) {
+        let Coin { value } = coin;
         assert(value == 0, 5)
     }
 
@@ -447,8 +447,8 @@ module Coin {
         //assert(Association::has_privilege<AddCurrency>(Signer::address_of(account)), 8);
         assert_issuer<CoinType>(account);
         let (coin_module_address,coin_module_name,struct_name) = Generic::type_of<CoinType>();
-        // CoinType's struct name must be T. TODO consider a more graceful approach.
-        assert(struct_name == x"54", 8);
+        // CoinType's struct name must be same as Coin Name. TODO consider a more graceful approach.
+        assert(struct_name == copy coin_module_name, 8);
         move_to(account,MintCapability<CoinType>{});
         move_to(account,BurnCapability<CoinType>{});
         move_to(account,CurrencyInfo<CoinType> {
@@ -490,7 +490,7 @@ module Coin {
     // Returns the value of the coin in the `FromCoinType` currency in STC.
     // This should only be used where a rough approximation of the exchange
     // rate is needed.
-    public fun approx_stc_for_coin<FromCoinType>(coin: &T<FromCoinType>): u64
+    public fun approx_stc_for_coin<FromCoinType>(coin: &Coin<FromCoinType>): u64
     acquires CurrencyInfo {
         let from_value = value(coin);
         approx_stc_for_value<FromCoinType>(from_value)
