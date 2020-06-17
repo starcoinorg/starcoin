@@ -172,15 +172,15 @@ impl Account {
     /// Max gas amount and gas unit price are ignored for WriteSet transactions.
     pub fn create_user_txn(
         &self,
-        payload: TransactionPayload,
         sequence_number: u64,
+        payload: TransactionPayload,
         max_gas_amount: u64,
         gas_unit_price: u64,
     ) -> SignedUserTransaction {
         Self::create_raw_user_txn(
             *self.address(),
-            payload,
             sequence_number,
+            payload,
             max_gas_amount,
             gas_unit_price,
         )
@@ -190,30 +190,20 @@ impl Account {
     }
 
     pub fn create_raw_user_txn(
-        address: AccountAddress,
-        payload: TransactionPayload,
+        sender: AccountAddress,
         sequence_number: u64,
+        payload: TransactionPayload,
         max_gas_amount: u64,
         gas_unit_price: u64,
     ) -> RawUserTransaction {
-        match payload {
-            TransactionPayload::Module(module) => RawUserTransaction::new_module(
-                address,
-                sequence_number,
-                module,
-                max_gas_amount,
-                gas_unit_price,
-                Duration::from_secs(DEFAULT_EXPIRATION_TIME),
-            ),
-            TransactionPayload::Script(script) => RawUserTransaction::new_script(
-                address,
-                sequence_number,
-                script,
-                max_gas_amount,
-                gas_unit_price,
-                Duration::from_secs(DEFAULT_EXPIRATION_TIME),
-            ),
-        }
+        RawUserTransaction::new(
+            sender,
+            sequence_number,
+            payload,
+            max_gas_amount,
+            gas_unit_price,
+            Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+        )
     }
 
     /// Returns a [`SignedUserTransaction`] with the arguments defined in `args` and this account as
