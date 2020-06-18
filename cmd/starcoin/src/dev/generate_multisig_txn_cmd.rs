@@ -8,7 +8,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_crypto::hash::{PlainCryptoHash};
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::RemoteStateReader;
@@ -18,7 +18,7 @@ use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::transaction::SignedUserTransaction;
+
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
 use std::fs::{File, OpenOptions};

@@ -3,19 +3,15 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use serde::Deserialize;
 use serde::Serialize;
-use starcoin_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
-use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
-use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
+use starcoin_crypto::ed25519::Ed25519PublicKey;
+use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
-use starcoin_rpc_client::RemoteStateReader;
-use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction;
-use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -43,7 +39,7 @@ impl CommandAction for DeriveAddressCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().client();
+        let _client = ctx.state().client();
         anyhow::ensure!(
             opt.public_key.len() > 0,
             "at least one public key is provided"

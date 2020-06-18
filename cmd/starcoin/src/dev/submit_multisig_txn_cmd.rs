@@ -7,18 +7,10 @@ use crate::StarcoinOpt;
 use anyhow::{bail, ensure, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
-use starcoin_rpc_client::RemoteStateReader;
-use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::{
-    parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
-};
 use starcoin_vm_types::transaction::SignedUserTransaction;
-use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
-use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]

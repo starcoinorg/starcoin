@@ -1,28 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::buildin_script::BuildinScript;
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
-use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
-
-use starcoin_vm_runtime::transaction_scripts::{
-    ACCEPT_COIN_TXN, CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN,
-};
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-
-use crate::buildin_script::BuildinScript;
-use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
 

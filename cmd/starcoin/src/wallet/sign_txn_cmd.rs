@@ -10,7 +10,6 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::transaction;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::transaction::RawUserTransaction;
 use std::env::current_dir;
 use std::fs::File;
 use std::io::Read;
