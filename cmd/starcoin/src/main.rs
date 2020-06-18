@@ -88,7 +88,8 @@ fn run() -> Result<()> {
                 .subcommand(wallet::SignTxnCommand)
                 .subcommand(wallet::UnlockCommand)
                 .subcommand(wallet::ExportCommand)
-                .subcommand(wallet::ImportCommand),
+                .subcommand(wallet::ImportCommand)
+                .subcommand(wallet::ExecuteBuildInCommand),
         )
         .command(
             Command::with_name("state")
@@ -120,6 +121,9 @@ fn run() -> Result<()> {
                 .subcommand(dev::CompileCommand)
                 .subcommand(dev::DeployCommand)
                 .subcommand(dev::ExecuteCommand)
+                .subcommand(dev::DeriveAddressCommand)
+                .subcommand(dev::GenerateMultisigTxnCommand)
+                .subcommand(dev::ExecuteMultiSignedTxnCommand)
                 .subcommand(
                     Command::with_name("subscribe")
                         .subcommand(dev::SubscribeBlockCommand)

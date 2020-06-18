@@ -10,6 +10,10 @@ pub mod ed25519 {
     pub use libra_crypto::ed25519::*;
 }
 
+pub mod multi_ed25519 {
+    pub use libra_crypto::multi_ed25519::*;
+}
+
 pub mod hash;
 pub mod keygen;
 
