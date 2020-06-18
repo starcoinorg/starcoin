@@ -87,12 +87,12 @@ impl CommandAction for SignTxnCommand {
             let mut output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
             // use txn id's short str and signer as the file name
             let file_name = format!(
-                "{}-{}",
+                "{}.{}",
                 txn.raw_txn().crypto_hash().short_str(),
                 signer_address.short_str()
             );
             output_dir.push(file_name);
-            output_dir.set_extension("signed_txn");
+            output_dir.set_extension("multisig-txn.partial");
             output_dir
         };
         let mut file = File::create(output_file_path.clone())?;

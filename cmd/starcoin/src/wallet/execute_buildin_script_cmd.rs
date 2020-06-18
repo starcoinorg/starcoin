@@ -89,7 +89,7 @@ impl CommandAction for ExecuteBuildInCommand {
         let opt = ctx.opt();
         let client = ctx.state().client();
 
-        let sender = ctx.state().wallet_account_or_default(opt.sender.clone())?;
+        let sender = ctx.state().wallet_account_or_default(opt.sender)?;
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender.address)?;

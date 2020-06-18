@@ -16,7 +16,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "submit-multisig-txn")]
 pub struct SubmitMultisigTxnOpt {
-    #[structopt(name = "partial-signed-txn", parse(from_os_str))]
+    #[structopt(name = "partial-signed-txn", required = true, parse(from_os_str))]
     /// partial signed txn
     partial_signed_txns: Vec<PathBuf>,
     #[structopt(
@@ -58,8 +58,8 @@ impl CommandAction for ExecuteMultiSignedTxnCommand {
 }
 fn assemble_multisig_txn(partial: Vec<PathBuf>) -> Result<SignedUserTransaction> {
     anyhow::ensure!(
-        partial.len() > 1,
-        "multisig txn should contain at least 2 signers"
+        !partial.is_empty(),
+        "multisig txn should contain at least 1 signers"
     );
 
     let mut txns = vec![];

@@ -32,11 +32,11 @@ use structopt::StructOpt;
 /// Generate multisig txn running stdlib script or custom script.
 /// And output the txn to file, waiting for other signers to sign the txn.
 pub struct GenerateMultisigTxnOpt {
-    #[structopt(name = "sender", short = "s", long = "sender")]
+    #[structopt(name = "sender", short = "s")]
     /// account address of the multisig account.
     sender: Option<AccountAddress>,
 
-    #[structopt(short = "p", name = "pubkey", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(short = "p", name = "pubkey", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
     /// public keys of the mutli-sig account.
     public_key: Vec<Ed25519PublicKey>,
 
@@ -112,7 +112,14 @@ impl CommandAction for GenerateMultisigTxnCommand {
         let opt = ctx.opt();
 
         let threshold = opt.threshold.unwrap_or(opt.public_key.len() as u8);
-        let multi_public_key = MultiEd25519PublicKey::new(opt.public_key.clone(), threshold)?;
+
+        let multi_public_key = {
+            // sort the public key to make account address derivation stable.
+            let mut pubkeys = opt.public_key.clone();
+            pubkeys.sort_by_key(|k| k.to_bytes());
+
+            MultiEd25519PublicKey::new(pubkeys, threshold)?
+        };
 
         let sender = if let Some(sender) = ctx.opt().sender {
             sender

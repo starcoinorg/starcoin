@@ -15,9 +15,9 @@ use starcoin_types::transaction;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "derive_address")]
+#[structopt(name = "derive-address")]
 pub struct DeriveAddressOpt {
-    #[structopt(short = "p", name = "pubkey", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(short = "p", name = "pubkey", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
     /// public key used to derive address.If multi public keys is provided, a mutli-sig account address is derived.
     public_key: Vec<Ed25519PublicKey>,
 
@@ -41,14 +41,21 @@ impl CommandAction for DeriveAddressCommand {
         let opt = ctx.opt();
         let _client = ctx.state().client();
         anyhow::ensure!(
-            opt.public_key.len() > 0,
+            !opt.public_key.is_empty(),
             "at least one public key is provided"
         );
         let auth_key = if opt.public_key.len() == 1 {
             transaction::authenticator::AuthenticationKey::ed25519(opt.public_key.first().unwrap())
         } else {
             let threshold = opt.threshold.unwrap_or(opt.public_key.len() as u8);
-            let multi_public_key = MultiEd25519PublicKey::new(opt.public_key.clone(), threshold)?;
+
+            let multi_public_key = {
+                // sort the public key to make account address derivation stable.
+                let mut pubkeys = opt.public_key.clone();
+                pubkeys.sort_by_key(|k| k.to_bytes());
+
+                MultiEd25519PublicKey::new(pubkeys, threshold)?
+            };
             transaction::authenticator::AuthenticationKey::multi_ed25519(&multi_public_key)
         };
 
