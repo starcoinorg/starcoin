@@ -66,16 +66,17 @@ impl MultisigTransaction {
 
     pub fn into_signed_txn(self) -> Result<SignedUserTransaction> {
         let mut sigs = vec![];
-        for (key, signature) in self.signatures {
+        for (key, signature) in self.signatures.iter() {
             let pos = self
-                .signer_position(&key)
+                .signer_position(key)
                 .expect("should included in signers");
-            sigs.push((signature, pos));
+            sigs.push((signature.clone(), pos));
         }
         let multi_sig = MultiEd25519Signature::new(sigs)?;
+        let multi_key = self.multi_public_key();
         Ok(SignedUserTransaction::multi_ed25519(
             self.raw_txn,
-            self.multi_public_key(),
+            multi_key,
             multi_sig,
         ))
     }

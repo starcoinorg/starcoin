@@ -78,7 +78,7 @@ fn assemble_multisig_txn(partial: Vec<PathBuf>) -> Result<SignedUserTransaction>
         let txn: MultisigTransaction = scs::from_bytes(data.as_slice())?;
         txns.push(txn);
     }
-    let mut first_txn = &txns[0];
+    let mut first_txn = txns.swap_remove(0);
 
     for txn in &txns[1..] {
         // ensure we are in the same channel

@@ -173,7 +173,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             expiration_time,
         );
         let txn = MultisigTransaction::new(
-            script_txn,
+            script_txn.clone(),
             multi_public_key.public_keys().clone(),
             *multi_public_key.threshold(),
         );

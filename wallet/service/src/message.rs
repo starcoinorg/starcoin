@@ -13,7 +13,10 @@ pub enum WalletRequest {
     GetDefaultAccount(),
     GetAccounts(),
     GetAccount(AccountAddress),
-    SignTxn(Box<RawUserTransaction>),
+    SignTxn {
+        txn: Box<RawUserTransaction>,
+        signer: AccountAddress,
+    },
     UnlockAccount(AccountAddress, String, Duration),
     ImportAccount {
         address: AccountAddress,

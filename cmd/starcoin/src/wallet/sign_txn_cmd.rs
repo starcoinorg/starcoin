@@ -72,7 +72,7 @@ impl CommandAction for SignTxnCommand {
         let signed_txn = ctx
             .state()
             .client()
-            .wallet_sign_txn(txn.raw_txn.clone(), signer_address)?;
+            .wallet_sign_multisig_txn(txn.raw_txn().clone(), signer_address)?;
         let (signer_public_key, signer_signature) = match signed_txn.authenticator() {
             transaction::authenticator::TransactionAuthenticator::Ed25519 {
                 public_key,
@@ -89,7 +89,7 @@ impl CommandAction for SignTxnCommand {
             // use txn id's short str and signer as the file name
             let file_name = format!(
                 "{}-{}",
-                txn.raw_txn.crypto_hash().short_str(),
+                txn.raw_txn().crypto_hash().short_str(),
                 signer_address.short_str()
             );
             output_dir.push(file_name);

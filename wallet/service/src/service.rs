@@ -67,8 +67,12 @@ where
         self.wallet.lock_account(address)
     }
 
-    fn sign_txn(&self, raw_txn: RawUserTransaction) -> WalletResult<SignedUserTransaction> {
-        self.wallet.sign_txn(raw_txn)
+    fn sign_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+        signer_address: AccountAddress,
+    ) -> WalletResult<SignedUserTransaction> {
+        self.wallet.sign_txn(raw_txn, signer_address)
     }
 
     fn get_default_account(&self) -> WalletResult<Option<WalletAccount>> {
