@@ -32,10 +32,10 @@ module Config {
 
     // This can only be invoked by the config address, and only a single time.
     // Currently, it is invoked in the genesis transaction
-    public fun initialize(config_account: &signer, association_account: &signer) {
+    public fun initialize(config_account: &signer) {
         assert(Signer::address_of(config_account) == default_config_address(), 1);
-        Association::grant_privilege<CreateConfigCapability>(association_account, config_account);
-        Association::grant_privilege<CreateConfigCapability>(association_account, association_account);
+        //Association::grant_privilege<CreateConfigCapability>(association_account, config_account);
+        //Association::grant_privilege<CreateConfigCapability>(association_account, association_account);
 
 
         move_to<Configuration>(
@@ -92,10 +92,10 @@ module Config {
         config_account: &signer,
         payload: ConfigValue,
     ): ModifyConfigCapability<ConfigValue> {
-        assert(
-            Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
-            1
-        );
+        //assert(
+        //    Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
+        //    1
+        //);
 
         move_to(config_account, Config { payload });
         // We don't trigger reconfiguration here, instead we'll wait for all validators update the binary
@@ -107,10 +107,10 @@ module Config {
 
     // Publish a new config item. Only the config address can modify such config.
     public fun publish_new_config<ConfigValue: copyable>(config_account: &signer, payload: ConfigValue) {
-        assert(
-            Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
-            1
-        );
+        //assert(
+        //    Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
+        //    1
+        //);
 
         move_to(config_account, ModifyConfigCapability<ConfigValue> {});
         move_to(config_account, Config{ payload });
@@ -125,10 +125,10 @@ module Config {
         payload: ConfigValue,
         delegate: address,
     ) {
-        assert(
-            Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
-            1
-        );
+        //assert(
+        //    Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
+        //    1
+        //);
 
         Offer::create(config_account, ModifyConfigCapability<ConfigValue>{}, delegate);
         move_to(config_account, Config { payload });
@@ -142,12 +142,12 @@ module Config {
         move_to(account, Offer::redeem<ModifyConfigCapability<ConfigValue>>(account, offer_address))
     }
 
-    public fun reconfigure(account: &signer) acquires Configuration {
+    public fun reconfigure(_account: &signer) acquires Configuration {
         // Only callable by association address or by the VM internally.
-        assert(
-            Association::has_privilege<Self::CreateConfigCapability>(Signer::address_of(account)),
-            1
-        );
+        //assert(
+        //    Association::has_privilege<Self::CreateConfigCapability>(Signer::address_of(account)),
+        //    1
+        //);
         reconfigure_();
     }
 

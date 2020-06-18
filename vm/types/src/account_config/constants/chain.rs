@@ -15,13 +15,13 @@ pub static TRANSACTION_TIMEOUT_MODULE: Lazy<ModuleId> = Lazy::new(|| {
     )
 });
 
-pub static SUBSIDY_CONF_MODULE_NAME: &str = "SubsidyConfig";
+pub static REWARD_CONF_MODULE_NAME: &str = "RewardConfig";
 
-/// The ModuleId for the subsidy config module
-pub static SUBSIDY_CONF_MODULE: Lazy<ModuleId> = Lazy::new(|| {
+/// The ModuleId for the reward config module
+pub static REWARD_CONF_MODULE: Lazy<ModuleId> = Lazy::new(|| {
     ModuleId::new(
         CORE_CODE_ADDRESS,
-        Identifier::new(SUBSIDY_CONF_MODULE_NAME).unwrap(),
+        Identifier::new(REWARD_CONF_MODULE_NAME).unwrap(),
     )
 });
 
