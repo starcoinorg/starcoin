@@ -25,7 +25,7 @@ use lru::LruCache;
 use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
 use scs::SCSCodec;
-use starcoin_sync_api::sync_messages::PeerNewBlock;
+use starcoin_sync_api::PeerNewBlock;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;

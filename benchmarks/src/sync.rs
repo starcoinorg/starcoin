@@ -18,7 +18,6 @@ use starcoin_sync::{
     helper::{get_body_by_hash, get_headers, get_headers_msg_for_common, get_info_by_hash},
     ProcessActor,
 };
-use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
@@ -196,8 +195,6 @@ async fn create_node(
         PeerInfo::new_for_test(addr_clone, rpc_proto_info),
     );
 
-    let sync_metadata_actor = SyncMetadata::new(node_config.clone(), bus.clone());
-    let _ = sync_metadata_actor.block_sync_done();
     // chain
     let txpool_service_clone = txpool_service.clone();
     let node_config_clone = node_config.clone();
@@ -205,7 +202,6 @@ async fn create_node(
     let storage_clone = storage.clone();
     let network_clone = network.clone();
     let bus_clone = bus.clone();
-    let sync_metadata_actor_clone = sync_metadata_actor.clone();
     let chain = Arbiter::new()
         .exec(move || -> ChainActorRef<DummyConsensus> {
             ChainActor::launch(
@@ -215,7 +211,6 @@ async fn create_node(
                 Some(network_clone),
                 bus_clone,
                 txpool_service_clone,
-                sync_metadata_actor_clone,
             )
             .unwrap()
         })

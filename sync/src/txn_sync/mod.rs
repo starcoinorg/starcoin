@@ -8,7 +8,7 @@ use bus::{Bus, BusActor};
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
-use starcoin_sync_api::sync_messages::{GetTxns, StartSyncTxnEvent};
+use starcoin_sync_api::{GetTxns, StartSyncTxnEvent};
 use starcoin_txpool_api::TxPoolSyncService;
 use txpool::TxPoolService;
 use types::peer_info::PeerId;

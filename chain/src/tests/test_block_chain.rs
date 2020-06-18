@@ -1,4 +1,4 @@
-use crate::{test_helper, BlockChain, ChainActor, ChainActorRef, ChainAsyncService, SyncMetadata};
+use crate::{test_helper, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
@@ -33,7 +33,6 @@ async fn gen_master_chain(
         )
         .get_service()
     };
-    let sync_metadata = SyncMetadata::new(node_config.clone(), bus.clone());
     let chain = ChainActor::<DevConsensus>::launch(
         node_config.clone(),
         startup_info.clone(),
@@ -41,7 +40,6 @@ async fn gen_master_chain(
         None,
         bus.clone(),
         txpool_service,
-        sync_metadata,
     )
     .unwrap();
     let miner_account = WalletAccount::random();
