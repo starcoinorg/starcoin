@@ -382,7 +382,7 @@ where
                         .with_label_values(&[LABEL_BLOCK])
                         .inc();
                     syncing.store(true, Ordering::Relaxed);
-                    if let Err(e) = Self::sync_block_from_best_peer_inner(
+                    match Self::sync_block_from_best_peer_inner(
                         downloader,
                         network,
                         sync_task,
@@ -390,8 +390,15 @@ where
                     )
                     .await
                     {
-                        error!("sync block from best peer failed : {:?}", e);
-                        syncing.store(false, Ordering::Relaxed);
+                        Err(e) => {
+                            error!("sync block from best peer failed : {:?}", e);
+                            syncing.store(false, Ordering::Relaxed);
+                        }
+                        Ok(flag) => {
+                            if flag {
+                                syncing.store(false, Ordering::Relaxed);
+                            }
+                        }
                     }
                 }
             });
@@ -403,7 +410,7 @@ where
         network: NetworkAsyncService,
         sync_task: SyncTask,
         download_address: Addr<DownloadActor<C>>,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
                 let end_number = best_peer.get_block_number();
@@ -430,7 +437,7 @@ where
                             sync_task.push_task(SyncTaskType::BLOCK, Box::new(block_sync_task));
                         }
 
-                        Ok(())
+                        Ok(false)
                     }
                     Err(e) => Err(e),
                 }
@@ -441,10 +448,11 @@ where
                 ))
             }
         } else {
-            Err(format_err!(
-                "{:?}",
-                "best peer is none when create sync task."
-            ))
+            // Err(format_err!(
+            //     "{:?}",
+            //     "best peer is none when create sync task."
+            // ))
+            Ok(true)
         }
     }
 
