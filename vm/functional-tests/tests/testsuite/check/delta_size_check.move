@@ -57,11 +57,11 @@ fun main(account: &signer) {
 
 // check: EXECUTED
 // check: delta_size
-// check: 0
-
-
+// check: 16
 
 //! new-transaction
+//! sender: alice
+
 script {
 use {{alice}}::A;
 
@@ -76,3 +76,5 @@ fun main() {
 }
 
 // check: EXECUTED
+// check: delta_size
+// check: 0

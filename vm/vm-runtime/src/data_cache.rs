@@ -244,13 +244,22 @@ impl<'a> DataStore for TransactionDataCache<'a> {
         ap: &AccessPath,
         g: (FatStructType, GlobalValue),
     ) -> VMResult<()> {
-        let g_wrap = (g.0, g.1, 0);
-        self.data_map.insert(ap.clone(), Some(g_wrap));
-        // let new_size = g.1.size().get();
-        // self.size_map
-        //     .entry(ap.clone().address)
-        //     .and_modify(|v| *v += new_size as i64)
-        //     .or_insert(new_size as i64);
+        //TODO modify to GlobalValue.size() in future
+        let data = g.1.into_owned_struct()?;
+        match data.simple_serialize(&g.0) {
+            Some(blob) => {
+                let len = blob.len();
+                let gr = GlobalValue::new(Value::struct_(data))?;
+                let g_wrap = (g.0.clone(), gr, len);
+                self.data_map.insert(ap.clone(), Some(g_wrap));
+                self.size_map
+                    .entry(ap.clone().address)
+                    .and_modify(|v| *v += len as i64)
+                    .or_insert(len as i64);
+                // println!("to size: {:?}  {:?} {:?}", len, ap.address, g.0.clone());
+            }
+            None => {}
+        };
         Ok(())
     }
 
@@ -271,7 +280,8 @@ impl<'a> DataStore for TransactionDataCache<'a> {
         let map_entry = self.load_data(ap, ty)?;
         // .take() means that the entry is removed from the data map -- this marks the
         // access path for deletion.
-        let (_, global_value, size) = map_entry.take().unwrap();
+        let (_ty, global_value, size) = map_entry.take().unwrap();
+        // println!("from size: {:?}  {:?} {:?}", size, ap.address, ty);
         self.size_map
             .entry(ap.clone().address)
             .and_modify(|v| *v -= size as i64)
