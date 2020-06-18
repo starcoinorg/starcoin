@@ -271,7 +271,7 @@ where
         } else if let Some(mut branch) = fork {
             if C::verify(self.config.clone(), &branch, block.header()).is_ok() {
                 // 2. commit block
-                branch.append(block.id(), block_info.get_block_accumulator_info().clone())?;
+                branch.append_block(block.id(), block_info.get_block_accumulator_info().clone())?;
                 branch.commit(block, block_info, BlockState::Verified)?;
                 self.select_head(branch)?;
                 Ok(ConnectResult::Ok(()))

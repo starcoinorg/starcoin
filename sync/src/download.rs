@@ -138,6 +138,7 @@ where
             self.bus.do_send(Broadcast { msg: SyncDone });
             self.need_sync_state.store(false, Ordering::Relaxed);
             self.syncing.store(false, Ordering::Relaxed);
+            self.downloader.set_pivot(None);
         }
         Ok(())
     }
@@ -425,7 +426,6 @@ where
                 {
                     Ok(ancestor) => {
                         if let Some(ancestor_header) = ancestor {
-                            downloader.set_pivot(None);
                             let block_sync_task = BlockSyncTaskActor::launch(
                                 &ancestor_header,
                                 end_number,

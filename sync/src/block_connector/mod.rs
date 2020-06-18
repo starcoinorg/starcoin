@@ -131,7 +131,7 @@ where
             self.chain_reader.clone().try_connect(block.clone()).await
         } else {
             let pivot_number = pivot.expect("pivot is none.");
-            if pivot_number <= block.header().number() {
+            if pivot_number >= block.header().number() {
                 self.chain_reader
                     .clone()
                     .try_connect_with_block_info(

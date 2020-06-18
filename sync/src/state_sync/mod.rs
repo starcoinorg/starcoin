@@ -382,6 +382,7 @@ where
                 self.block_accumulator_sync_task.task_info(),
             );
             if self.state_sync_task.is_empty() && self.accumulator_sync_finish() {
+                info!("State sync task finish.");
                 self.state = SyncTaskState::Finish;
             }
         }
@@ -698,7 +699,7 @@ where
                 }
             }
         } else {
-            self.download_address.do_send(SyncTaskType::BLOCK);
+            self.download_address.do_send(SyncTaskType::STATE);
             ctx.stop();
         }
         Ok(())

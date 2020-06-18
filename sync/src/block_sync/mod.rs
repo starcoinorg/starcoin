@@ -152,7 +152,7 @@ where
                 && self.infos.is_empty()
                 && self.body_task.is_empty()
             {
-                info!("Block sync task info finish.");
+                info!("Block sync task finish.");
                 self.state = SyncTaskState::Finish;
             }
         }
@@ -358,8 +358,9 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn start(&self) {
-        block_on(async {
-            let _ = self.address.send(BlockSyncBeginEvent {}).await;
+        let address = self.address.clone();
+        Arbiter::spawn(async move {
+            let _ = address.send(BlockSyncBeginEvent {}).await;
         })
     }
 }

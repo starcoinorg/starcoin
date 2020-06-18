@@ -157,7 +157,7 @@ where
         Ok(false)
     }
 
-    pub fn append(
+    pub fn append_block(
         &mut self,
         block_id: HashValue,
         block_accumulator_info: AccumulatorInfo,
@@ -171,6 +171,21 @@ where
 
         Ok(())
     }
+
+    // pub fn append_txn(
+    //     &mut self,
+    //     block_id: HashValue,
+    //     txn_accumulator_info: AccumulatorInfo,
+    // ) -> Result<()> {
+    //     self.txn_accumulator.append(&[block_id])?;
+    //     self.block_accumulator.flush()?;
+    //
+    //     let pivot_block_accumulator_info: AccumulatorInfo = (&self.block_accumulator).try_into()?;
+    //     assert_eq!(block_accumulator_info, pivot_block_accumulator_info);
+    //     debug!("save pivot {:?} succ.", block_id);
+    //
+    //     Ok(())
+    // }
 
     pub fn get_storage(&self) -> Arc<S> {
         self.storage.clone()
