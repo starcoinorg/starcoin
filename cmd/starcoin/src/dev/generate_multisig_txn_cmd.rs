@@ -8,7 +8,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::hash::{PlainCryptoHash};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::RemoteStateReader;
@@ -28,7 +28,7 @@ use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "gen-mutlisig-txn")]
+#[structopt(name = "gen-multisig-txn")]
 /// Generate multisig txn running stdlib script or custom script.
 /// And output the txn to file, waiting for other signers to sign the txn.
 pub struct GenerateMultisigTxnOpt {
@@ -40,7 +40,7 @@ pub struct GenerateMultisigTxnOpt {
     /// public keys of the mutli-sig account.
     public_key: Vec<Ed25519PublicKey>,
 
-    #[structopt(short = "t", name = "threshold")]
+    #[structopt(long = "threshold", name = "threshold")]
     /// the threshold of the mulisig account.
     threshold: Option<u8>,
 
@@ -86,7 +86,6 @@ pub struct GenerateMultisigTxnOpt {
     )]
     max_gas_amount: u64,
     #[structopt(
-        short = "p",
         long = "gas-price",
         name = "price of gas",
         default_value = "1",

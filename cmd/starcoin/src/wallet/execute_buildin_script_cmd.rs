@@ -24,7 +24,7 @@ pub struct ExecuteBuildInScriptOpt {
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
 
-    #[structopt(long = "script")]
+    #[structopt(long = "script", name = "script-name")]
     /// buildin script name to execute
     script_name: BuildinScript,
 

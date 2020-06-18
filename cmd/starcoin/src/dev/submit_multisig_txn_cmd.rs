@@ -72,7 +72,7 @@ fn assemble_multisig_txn(partial: Vec<PathBuf>) -> Result<SignedUserTransaction>
     }
     let mut first_txn = txns.swap_remove(0);
 
-    for txn in &txns[1..] {
+    for txn in &txns {
         // ensure we are in the same channel
         ensure!(txn.raw_txn() == first_txn.raw_txn(), "raw txn mismatch");
         ensure!(
