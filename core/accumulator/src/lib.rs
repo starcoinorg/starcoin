@@ -126,9 +126,13 @@ impl MerkleAccumulator {
     pub fn get_node_from_storage(&self, hash: HashValue) -> AccumulatorNode {
         self.node_store
             .get_node(self.store_type.clone(), hash)
-            .unwrap()
+            .unwrap() //这里需要捕获异常
             .unwrap()
     }
+
+    //MerkleAccumulator中node_store: Arc<dyn AccumulatorTreeStore>是不是有些冗余?
+    // MerkleAccumulator依赖AccumulatorTree，AccumulatorTree依赖AccumulatorTreeStore
+    // 同时MerkleAccumulator也依赖AccumulatorTreeStore，可以考虑将MerkleAccumulator对AccumulatorTree的依赖去掉。
 }
 
 impl Accumulator for MerkleAccumulator {

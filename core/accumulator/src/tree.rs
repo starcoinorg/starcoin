@@ -175,7 +175,7 @@ impl AccumulatorTree {
         self.root_hash = hash;
         self.num_leaves = last_new_leaf_count;
         self.frozen_subtree_roots = FrozenSubTreeIterator::new(last_new_leaf_count)
-            .map(|p| self.get_node_hash(p).unwrap())
+            .map(|p| self.get_node_hash(p).unwrap())  //这里需要捕获异常
             .collect::<Vec<_>>();
         self.num_nodes = new_num_nodes;
         trace!("acc {} append_leaves ok: {:?}", self.id, new_leaves);
@@ -230,7 +230,7 @@ impl AccumulatorTree {
 
     pub(crate) fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>> {
         let result = FrozenSubTreeIterator::new(self.num_leaves)
-            .map(|p| self.get_node_hash(p).unwrap())
+            .map(|p| self.get_node_hash(p).unwrap())  //这里需要捕获异常
             .collect::<Vec<_>>();
         Ok(result)
     }
@@ -284,7 +284,6 @@ impl AccumulatorTree {
             .lock()
             .get(&key)
             .copied()
-            .map(|value| value)
     }
 
     /// Get node hash always.
