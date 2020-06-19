@@ -82,8 +82,8 @@ impl FutureBlockPool {
 }
 
 pub struct BlockConnector<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
+    where
+        C: Consensus + Sync + Send + 'static + Clone,
 {
     chain_reader: ChainActorRef<C>,
     future_blocks: FutureBlockPool,
@@ -91,8 +91,8 @@ where
 }
 
 impl<C> BlockConnector<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
+    where
+        C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn new(chain_reader: ChainActorRef<C>) -> Self {
         let pivot: Option<BlockNumber> = None;
@@ -132,6 +132,9 @@ where
         } else {
             let pivot_number = pivot.expect("pivot is none.");
             if pivot_number >= block.header().number() {
+                if block_info.is_none() {
+                    return false;
+                }
                 self.chain_reader
                     .clone()
                     .try_connect_with_block_info(
