@@ -9,6 +9,7 @@ use move_vm_runtime::data_cache::TransactionDataCache;
 use move_vm_runtime::{data_cache::RemoteCache, move_vm::MoveVM};
 use once_cell::sync::Lazy;
 use starcoin_logger::prelude::*;
+use starcoin_types::language_storage::CORE_CODE_ADDRESS;
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
@@ -49,6 +50,8 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
     )
 });
 
+pub static ZERO_COST_TABLE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
+
 // The value should be tuned carefully
 pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
     Lazy::new(|| GasUnits::new(100_000_000));
@@ -75,6 +78,9 @@ impl StarcoinVM {
     }
 
     pub fn load_configs(&mut self, state: &dyn StateView) {
+        if state.is_genesis() {
+            return;
+        }
         self.load_configs_impl(&RemoteStorage::new(state))
     }
 
@@ -85,8 +91,12 @@ impl StarcoinVM {
     }
 
     fn load_configs_impl(&mut self, data_cache: &dyn RemoteCache) {
-        self.vm_config = VMConfig::fetch_config(data_cache);
-        self.version = Version::fetch_config(data_cache);
+        if let Some(vm_config) = VMConfig::fetch_config(data_cache) {
+            self.vm_config = Some(vm_config);
+        }
+        if let Some(version) = Version::fetch_config(data_cache) {
+            self.version = Some(version);
+        }
     }
 
     pub fn get_gas_schedule(&self) -> VMResult<&CostTable> {
@@ -107,6 +117,10 @@ impl StarcoinVM {
     }
 
     fn check_gas(&self, txn: &SignedUserTransaction) -> Result<(), VMStatus> {
+        if let TransactionPayload::Package(_) = txn.payload() {
+            //TODO PackageUpgrade txn gas verify.
+            return Ok(());
+        }
         let gas_constants = &self.get_gas_schedule()?.gas_constants;
         let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as GasCarrier);
         // The transaction is too large.
@@ -293,7 +307,7 @@ impl StarcoinVM {
             Ok(t) => t,
             Err(_) => return Some(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
         };
-        self.load_configs_impl(&data_cache);
+        self.load_configs(state_view);
         match self.verify_transaction_impl(&signature_verified_txn, &data_cache, &txn_data) {
             Ok(_) => None,
             Err(err) => {
@@ -312,9 +326,14 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
         payload: VerifiedTransactionPayload,
     ) -> TransactionOutput {
-        let gas_schedule = match self.get_gas_schedule() {
-            Ok(s) => s,
-            Err(e) => return discard_error_output(e),
+        //TODO handle genesis transaction space case.
+        let gas_schedule = if remote_cache.is_genesis() {
+            &ZERO_COST_TABLE
+        } else {
+            match self.get_gas_schedule() {
+                Ok(s) => s,
+                Err(e) => return discard_error_output(e),
+            }
         };
         let mut cost_strategy = CostStrategy::transaction(gas_schedule, txn_data.max_gas_amount());
         let mut data_store = TransactionDataCache::new(remote_cache);
@@ -358,6 +377,7 @@ impl StarcoinVM {
                             let ty_args = init_script.script().ty_args().to_vec();
                             let args = convert_txn_args(init_script.script().args());
                             let s = init_script.script().code().to_vec();
+                            debug!("execute init script by account {:?}", sender);
                             self.move_vm.execute_script(
                                 s,
                                 ty_args,
@@ -374,20 +394,31 @@ impl StarcoinVM {
         }
         .map_err(|err| {
             failed_gas_left = cost_strategy.remaining_gas();
+            debug!("execute payload error: {:?}", err);
             err
         })
         .and_then(|_| {
             failed_gas_left = cost_strategy.remaining_gas();
             let mut cost_strategy = CostStrategy::system(gas_schedule, failed_gas_left);
-            self.run_epilogue(&mut data_store, &mut cost_strategy, txn_data)
-                .and_then(|_| {
-                    get_transaction_output(
-                        &mut data_store,
-                        &cost_strategy,
-                        txn_data,
-                        VMStatus::new(StatusCode::EXECUTED),
-                    )
-                })
+            //TODO handle genesis txn's epilogue.
+            if txn_data.sender != CORE_CODE_ADDRESS {
+                self.run_epilogue(&mut data_store, &mut cost_strategy, txn_data)
+                    .and_then(|_| {
+                        get_transaction_output(
+                            &mut data_store,
+                            &cost_strategy,
+                            txn_data,
+                            VMStatus::new(StatusCode::EXECUTED),
+                        )
+                    })
+            } else {
+                get_transaction_output(
+                    &mut data_store,
+                    &cost_strategy,
+                    txn_data,
+                    VMStatus::new(StatusCode::EXECUTED),
+                )
+            }
         })
         .unwrap_or_else(|err| {
             self.failed_transaction_cleanup(

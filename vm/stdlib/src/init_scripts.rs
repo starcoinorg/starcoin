@@ -18,6 +18,7 @@ pub enum InitScript {
     MintInit,
     PreMineInit,
     STCInit,
+    FeeInit,
     // ...add new scripts here
 }
 
@@ -31,6 +32,7 @@ impl InitScript {
             MintInit,
             PreMineInit,
             STCInit,
+            FeeInit,
             // ...add new scripts here
         ]
     }
@@ -102,6 +104,7 @@ impl fmt::Display for InitScript {
                 MintInit => "mint_init",
                 PreMineInit => "pre_mine_init",
                 STCInit => "stc_init",
+                FeeInit => "fee_init",
             }
         )
     }

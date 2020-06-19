@@ -320,8 +320,7 @@ impl StateView for ChainStateDB {
     }
 
     fn is_genesis(&self) -> bool {
-        //TODO
-        false
+        self.state_tree.is_genesis()
     }
 }
 

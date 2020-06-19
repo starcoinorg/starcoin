@@ -27,5 +27,6 @@ storage = { package="starcoin-storage", path = "../../storage"}
 starcoin-config = { path = "../../config"}
 statedb = {path = "../../state/statedb", package="starcoin-statedb" }
 starcoin-state-api = {path="../../state/api"}
+starcoin-genesis = { path = "../../core/genesis"}
 
 [features]

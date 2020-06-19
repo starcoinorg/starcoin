@@ -2,25 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_config::ChainConfig;
 use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     vm_error::VMStatus,
 };
-use starcoin_vm_types::{state_view::StateView, transaction::ChangeSet};
-use vm_runtime::genesis::generate_genesis_state_set;
+use starcoin_vm_types::state_view::StateView;
 use vm_runtime::{metrics::TXN_EXECUTION_HISTOGRAM, starcoin_vm::StarcoinVM};
-
-pub fn init_genesis(chain_config: &ChainConfig) -> Result<ChangeSet> {
-    let timer = TXN_EXECUTION_HISTOGRAM
-        .with_label_values(&["init_genesis"])
-        .start_timer();
-
-    let change_set = generate_genesis_state_set(&chain_config)?;
-
-    timer.observe_duration();
-    Ok(change_set)
-}
 
 pub fn execute_transactions(
     chain_state: &dyn StateView,

@@ -4,7 +4,9 @@
 //! Support for running the VM to execute and verify transactions.
 use crate::account::{Account, AccountData};
 use anyhow::Result;
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
+use starcoin_genesis::Genesis;
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_types::{
@@ -30,7 +32,23 @@ pub struct FakeExecutor {
     block_time: u64,
 }
 
+impl Default for FakeExecutor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FakeExecutor {
+    pub fn new() -> Self {
+        let genesis_txn = Genesis::build_genesis_transaction(ChainNetwork::Dev).unwrap();
+        let data_store = ChainStateDB::mock();
+        Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
+        Self {
+            data_store,
+            block_time: 0,
+        }
+    }
+
     /// Creates an executor from a genesis [`WriteSet`].
     pub fn from_genesis(write_set: &WriteSet) -> Self {
         let mut executor = FakeExecutor {

@@ -28,3 +28,4 @@ compiler = { package="compiler",  git = "https://github.com/starcoinorg/libra", 
 
 [dev-dependencies]
 starcoin-functional-tests = { path = "../vm/functional-tests"}
+starcoin-genesis = { path = "../core/genesis"}

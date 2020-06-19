@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, format_err, Result};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -233,6 +233,12 @@ impl<'a> AccountStateReader<'a> {
                 None => Ok(None),
             })?;
         Ok(r)
+    }
+
+    pub fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
+        self.get_account_resource(&address)?
+            .map(|resource| resource.sequence_number())
+            .ok_or_else(|| format_err!("Can not find account by address:{}", address))
     }
 
     pub fn get_on_chain_config<C>(&self) -> Option<C>

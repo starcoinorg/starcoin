@@ -11,7 +11,6 @@ use bytecode_verifier::verifier::{
     verify_module_dependencies, verify_script_dependencies, VerifiedModule, VerifiedScript,
 };
 use mirai_annotations::checked_verify;
-use starcoin_config::ChainNetwork;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
 use starcoin_types::{
@@ -37,7 +36,6 @@ use starcoin_vm_types::{
 use std::fmt;
 use std::str::FromStr;
 use std::time::Duration;
-use stdlib::{stdlib_modules, StdLibOptions};
 
 pub type TransactionId = usize;
 
@@ -573,12 +571,8 @@ pub fn eval<TComp: Compiler>(
 ) -> Result<EvaluationLog> {
     let mut log = EvaluationLog { outputs: vec![] };
 
-    let (genesis_write_set, _, _) = starcoin_vm_runtime::genesis::encode_genesis_write_set(
-        ChainNetwork::Dev.get_config(),
-        stdlib_modules(StdLibOptions::Staged),
-    );
     // Set up a fake executor with the genesis block and create the accounts.
-    let mut exec = FakeExecutor::from_genesis(&genesis_write_set);
+    let mut exec = FakeExecutor::new();
     for data in config.accounts.values() {
         exec.add_account_data(&data);
     }

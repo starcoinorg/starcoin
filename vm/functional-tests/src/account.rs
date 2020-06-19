@@ -4,6 +4,7 @@
 //! Test infrastructure for modeling Libra accounts.
 
 use executor::{create_signed_txn_with_association_account, TXN_RESERVED};
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::{
@@ -17,7 +18,6 @@ use starcoin_types::{
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use starcoin_vm_runtime::{
-    genesis::GENESIS_KEYPAIR,
     starcoin_vm::DEFAULT_CURRENCY_TY,
     transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN},
 };
@@ -85,12 +85,13 @@ impl Account {
     /// Creates a new account in memory representing an account created in the genesis transaction.
     ///
     /// The address will be [`address`], which should be an address for a genesis account and
-    /// the account will use [`GENESIS_KEYPAIR`][struct@GENESIS_KEYPAIR] as its keypair.
+    /// the account will use ChainNetwork::genesis_key_pair() as its keypair.
     pub fn new_genesis_account(address: AccountAddress) -> Self {
+        let (privkey, pubkey) = ChainNetwork::genesis_key_pair();
         Account {
             addr: address,
-            pubkey: GENESIS_KEYPAIR.1.clone(),
-            privkey: GENESIS_KEYPAIR.0.clone(),
+            pubkey,
+            privkey,
         }
     }
 
@@ -827,9 +828,11 @@ pub fn create_account_txn_sent_as_association(
     args.push(TransactionArgument::U64(initial_amount));
 
     create_signed_txn_with_association_account(
-        CREATE_ACCOUNT_TXN.clone(),
-        vec![DEFAULT_CURRENCY_TY.clone()],
-        args,
+        Script::new(
+            CREATE_ACCOUNT_TXN.clone(),
+            vec![DEFAULT_CURRENCY_TY.clone()],
+            args,
+        ),
         seq_num,
         TXN_RESERVED,
         1,

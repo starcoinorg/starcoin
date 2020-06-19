@@ -5,10 +5,11 @@ use anyhow::Result;
 use compiler::Compiler;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
-use starcoin_config::{ChainConfig, ChainNetwork};
+use starcoin_config::ChainNetwork;
 use starcoin_functional_tests::account::{
     create_account_txn_sent_as_association, peer_to_peer_txn, Account,
 };
+use starcoin_genesis::Genesis;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_types::transaction::TransactionOutput;
 use starcoin_types::{
@@ -21,9 +22,7 @@ use starcoin_types::{
     vm_error::{StatusCode, VMStatus},
 };
 use starcoin_vm_types::parser;
-use state_tree::mock::MockStateNodeStore;
 use statedb::ChainStateDB;
-use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
@@ -37,19 +36,13 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
 });
 
 fn prepare_genesis() -> ChainStateDB {
-    prepare_genesis_with_chain_config(ChainNetwork::Dev.get_config())
+    prepare_genesis_with_chain_net(ChainNetwork::Dev)
 }
 
-fn prepare_genesis_with_chain_config(chain_config: &ChainConfig) -> ChainStateDB {
-    let change_set = crate::init_genesis(chain_config).unwrap();
-    let (write_set, _event) = change_set.into_inner();
-
-    let storage = MockStateNodeStore::new();
-    let chain_state = ChainStateDB::new(Arc::new(storage), None);
-
-    chain_state
-        .apply_write_set(write_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
+fn prepare_genesis_with_chain_net(net: ChainNetwork) -> ChainStateDB {
+    let chain_state = ChainStateDB::mock();
+    let genesis_txn = Genesis::build_genesis_transaction(net).unwrap();
+    Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
     chain_state
 }
 
@@ -167,8 +160,7 @@ fn test_validate_txn_with_starcoin_vm() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 1, // fix me
-        50_000_000,
+        &account1, 0, 50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
@@ -232,7 +224,12 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
     let chain_state = prepare_genesis();
 
     let account = Account::new();
-    let txn = crate::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
+    let txn = crate::build_transfer_from_association(
+        *account.address(),
+        account.auth_key_prefix(),
+        0,
+        1000,
+    );
     let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
     assert_eq!(KEEP_STATUS.clone(), *output[0].status());
 
@@ -245,8 +242,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 1, // fix me
-        50_000_000,
+        &account1, 0, 50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
@@ -276,8 +272,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 1, // fix me
-        50_000_000,
+        &account1, 0, 50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
@@ -321,7 +316,12 @@ fn test_sequence_number() -> Result<()> {
         get_sequence_number(account_config::association_address(), &chain_state);
 
     let account = Account::new();
-    let txn = crate::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
+    let txn = crate::build_transfer_from_association(
+        *account.address(),
+        account.auth_key_prefix(),
+        old_sequence_number,
+        1000,
+    );
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KEEP_STATUS.clone(), *output.status());
 
@@ -338,7 +338,12 @@ fn test_gas_used() -> Result<()> {
     let chain_state = prepare_genesis();
 
     let account = Account::new();
-    let txn = crate::build_mint_txn(*account.address(), account.auth_key_prefix(), 1, 1000);
+    let txn = crate::build_transfer_from_association(
+        *account.address(),
+        account.auth_key_prefix(),
+        0,
+        1000,
+    );
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KEEP_STATUS.clone(), *output.status());
     assert!(output.gas_used() > 0);
@@ -383,8 +388,7 @@ fn test_publish_module() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 1, // fix me
-        50_000_000,
+        &account1, 0, 50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
@@ -416,7 +420,7 @@ fn test_publish_module() -> Result<()> {
 #[stest::test]
 fn test_block_metadata() -> Result<()> {
     let chain_config = ChainNetwork::Dev.get_config();
-    let chain_state = prepare_genesis_with_chain_config(chain_config);
+    let chain_state = prepare_genesis_with_chain_net(ChainNetwork::Dev);
 
     let account1 = Account::new();
 
