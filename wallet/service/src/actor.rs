@@ -51,9 +51,10 @@ impl Handler<WalletRequest> for WalletActor {
             WalletRequest::GetAccount(address) => {
                 WalletResponse::WalletAccountOption(Box::new(self.service.get_account(&address)?))
             }
-            WalletRequest::SignTxn(raw_txn) => {
-                WalletResponse::SignedTxn(Box::new(self.service.sign_txn(*raw_txn)?))
-            }
+            WalletRequest::SignTxn {
+                txn: raw_txn,
+                signer,
+            } => WalletResponse::SignedTxn(Box::new(self.service.sign_txn(*raw_txn, signer)?)),
             WalletRequest::UnlockAccount(address, password, duration) => {
                 self.service
                     .unlock_account(address, password.as_str(), duration)?;
@@ -147,10 +148,17 @@ impl WalletAsyncService for WalletActorRef {
         }
     }
 
-    async fn sign_txn(self, raw_txn: RawUserTransaction) -> ServiceResult<SignedUserTransaction> {
+    async fn sign_txn(
+        self,
+        raw_txn: RawUserTransaction,
+        signer_address: AccountAddress,
+    ) -> ServiceResult<SignedUserTransaction> {
         let response = self
             .0
-            .send(WalletRequest::SignTxn(Box::new(raw_txn)))
+            .send(WalletRequest::SignTxn {
+                txn: Box::new(raw_txn),
+                signer: signer_address,
+            })
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::SignedTxn(txn) = response {

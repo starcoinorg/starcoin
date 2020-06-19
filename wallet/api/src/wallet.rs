@@ -36,8 +36,12 @@ pub trait Wallet {
     fn lock_account(&self, address: AccountAddress) -> WalletResult<()>;
 
     /// Sign transaction by txn sender's Account.
-    /// If the wallet is protected by password, should unlock the sender's account first.
-    fn sign_txn(&self, raw_txn: RawUserTransaction) -> WalletResult<SignedUserTransaction>;
+    /// If the wallet is protected by password, should unlock the signer's account first.
+    fn sign_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+        signer_address: AccountAddress,
+    ) -> WalletResult<SignedUserTransaction>;
 
     /// Return the default account
     fn get_default_account(&self) -> WalletResult<Option<WalletAccount>>;

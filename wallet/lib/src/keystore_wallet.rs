@@ -128,13 +128,16 @@ where
         Ok(())
     }
 
-    fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        let address = raw_txn.sender();
-        if !self.contains(&address)? {
-            return Err(WalletError::AccountNotExist(address));
+    fn sign_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+        signer_address: AccountAddress,
+    ) -> Result<SignedUserTransaction> {
+        if !self.contains(&signer_address)? {
+            return Err(WalletError::AccountNotExist(signer_address));
         }
-        match self.key_cache.write().unwrap().get_key(&address) {
-            None => Err(WalletError::AccountLocked(address)),
+        match self.key_cache.write().unwrap().get_key(&signer_address) {
+            None => Err(WalletError::AccountLocked(signer_address)),
             Some(k) => k
                 .sign_txn(raw_txn)
                 .map_err(WalletError::TransactionSignError),
@@ -293,7 +296,8 @@ mod tests {
         assert!(account.is_default);
         wallet.unlock_account(account.address, "pass", Duration::from_secs(5))?;
         let raw_txn = RawUserTransaction::mock_by_sender(account.address);
-        let _txn = wallet.sign_txn(raw_txn)?;
+        let signer_address = raw_txn.sender();
+        let _txn = wallet.sign_txn(raw_txn, signer_address)?;
         wallet.lock_account(account.address)?;
 
         let account2 = wallet.create_account("pass2")?;
@@ -320,7 +324,8 @@ mod tests {
             .clone()
             .sign(&keypair.private_key, keypair.public_key.clone())?
             .into_inner();
-        let txn = wallet.sign_txn(raw_txn)?;
+        let signer_address = raw_txn.sender();
+        let txn = wallet.sign_txn(raw_txn, signer_address)?;
         assert_eq!(signed_txn, txn);
         Ok(())
     }

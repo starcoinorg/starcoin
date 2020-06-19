@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::buildin_script::BuildinScript;
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
@@ -9,15 +10,44 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::{
+    parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
+};
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "accept_coin")]
-pub struct AcceptCoinOpt {
-    #[structopt(short = "s")]
+#[structopt(name = "execute-buildin")]
+pub struct ExecuteBuildInScriptOpt {
+    #[structopt(short = "s", long = "sender")]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
+
+    #[structopt(long = "script", name = "script-name")]
+    /// buildin script name to execute
+    script_name: BuildinScript,
+
+    #[structopt(
+    short = "t",
+    long = "type_tag",
+    name = "type-tag",
+    parse(try_from_str = parse_type_tag)
+    )]
+    /// type tags for the script
+    type_tags: Vec<TypeTag>,
+
+    #[structopt(name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    /// args for the script.
+    args: Vec<TransactionArgument>,
+
+    #[structopt(
+        name = "expiration_time",
+        long = "timeout",
+        default_value = "3000",
+        help = "how long(in seconds) the txn stay alive"
+    )]
+    expiration_time: u64,
 
     #[structopt(
         short = "g",
@@ -36,13 +66,6 @@ pub struct AcceptCoinOpt {
     gas_price: u64,
 
     #[structopt(
-    name = "coin_type",
-    help = "coin's type tag, for example: 0x0::STC::T, default is STC",
-    parse(try_from_str = parse_type_tag)
-    )]
-    coin_type: TypeTag,
-
-    #[structopt(
         short = "b",
         name = "blocking-mode",
         long = "blocking",
@@ -51,12 +74,12 @@ pub struct AcceptCoinOpt {
     blocking: bool,
 }
 
-pub struct AcceptCoinCommand;
+pub struct ExecuteBuildInCommand;
 
-impl CommandAction for AcceptCoinCommand {
+impl CommandAction for ExecuteBuildInCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = AcceptCoinOpt;
+    type Opt = ExecuteBuildInScriptOpt;
     type ReturnItem = HashValue;
 
     fn run(
@@ -79,16 +102,22 @@ impl CommandAction for AcceptCoinCommand {
         }
 
         let account_resource = account_resource.unwrap();
+        let expiration_time = Duration::from_secs(opt.expiration_time);
 
-        let accept_coin_txn = starcoin_executor::build_accept_coin_txn(
+        let bytecode = opt.script_name.script_code();
+        let type_tags = opt.type_tags.clone();
+        let args = opt.args.clone();
+
+        let script_txn = RawUserTransaction::new_script(
             sender.address,
             account_resource.sequence_number(),
-            opt.gas_price,
+            Script::new(bytecode, type_tags, args),
             opt.max_gas_amount,
-            opt.coin_type.clone(),
+            opt.gas_price,
+            expiration_time,
         );
 
-        let signed_txn = client.wallet_sign_txn(accept_coin_txn)?;
+        let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
         if let Err(e) = succ {

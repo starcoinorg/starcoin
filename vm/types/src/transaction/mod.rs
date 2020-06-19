@@ -37,6 +37,7 @@ pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use libra_types::transaction::{ChangeSet, Module, Script};
 pub use pending_transaction::{Condition, PendingTransaction};
+use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
@@ -324,6 +325,18 @@ impl SignedUserTransaction {
         signature: Ed25519Signature,
     ) -> SignedUserTransaction {
         let authenticator = TransactionAuthenticator::ed25519(public_key, signature);
+        SignedUserTransaction {
+            raw_txn,
+            authenticator,
+        }
+    }
+
+    pub fn multi_ed25519(
+        raw_txn: RawUserTransaction,
+        public_key: MultiEd25519PublicKey,
+        signature: MultiEd25519Signature,
+    ) -> SignedUserTransaction {
+        let authenticator = TransactionAuthenticator::multi_ed25519(public_key, signature);
         SignedUserTransaction {
             raw_txn,
             authenticator,

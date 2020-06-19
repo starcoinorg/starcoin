@@ -135,12 +135,15 @@ where
         Ok(())
     }
 
-    fn sign_txn(&self, raw_txn: RawUserTransaction) -> WalletResult<SignedUserTransaction> {
-        let address = raw_txn.sender();
-        if !self.contains(&address)? {
-            return Err(WalletError::AccountNotExist(address));
+    fn sign_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+        signer_address: AccountAddress,
+    ) -> WalletResult<SignedUserTransaction> {
+        if !self.contains(&signer_address)? {
+            return Err(WalletError::AccountNotExist(signer_address));
         }
-        let key_pair = self.get_key_pair(&address)?;
+        let key_pair = self.get_key_pair(&signer_address)?;
         key_pair
             .sign_txn(raw_txn)
             .map_err(WalletError::TransactionSignError)
@@ -202,7 +205,8 @@ mod tests {
         assert!(account.is_some());
         let account = account.unwrap();
         let raw_txn = RawUserTransaction::mock_by_sender(account.address);
-        let _txn = wallet.sign_txn(raw_txn)?;
+        let signer = raw_txn.sender();
+        let _txn = wallet.sign_txn(raw_txn, signer)?;
         Ok(())
     }
 }

@@ -40,8 +40,12 @@ impl WalletAsyncService for MockWalletService {
         Ok(self.wallet.get_account(&address)?)
     }
 
-    async fn sign_txn(self, raw_txn: RawUserTransaction) -> ServiceResult<SignedUserTransaction> {
-        Ok(self.wallet.sign_txn(raw_txn)?)
+    async fn sign_txn(
+        self,
+        raw_txn: RawUserTransaction,
+        signer_address: AccountAddress,
+    ) -> ServiceResult<SignedUserTransaction> {
+        Ok(self.wallet.sign_txn(raw_txn, signer_address)?)
     }
 
     async fn unlock_account(
