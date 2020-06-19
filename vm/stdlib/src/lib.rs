@@ -17,6 +17,8 @@ pub const MOVE_EXTENSION: &str = "move";
 pub const NO_USE_STAGED: &str = "MOVE_NO_USE_STAGED";
 
 pub const TRANSACTION_SCRIPTS: &str = "transaction_scripts";
+
+pub const INIT_SCRIPTS: &str = "init_scripts";
 /// The output path under which staged files will be put
 pub const STAGED_OUTPUT_PATH: &str = "staged";
 /// The file name for the staged stdlib

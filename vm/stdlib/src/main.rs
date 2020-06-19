@@ -9,18 +9,36 @@ use std::{
     path::{Path, PathBuf},
 };
 use stdlib::{
-    build_stdlib, compile_script, filter_move_files, STAGED_EXTENSION, STAGED_OUTPUT_PATH,
-    STAGED_STDLIB_NAME, TRANSACTION_SCRIPTS,
+    build_stdlib, compile_script, filter_move_files, INIT_SCRIPTS, STAGED_EXTENSION,
+    STAGED_OUTPUT_PATH, STAGED_STDLIB_NAME, TRANSACTION_SCRIPTS,
 };
+
+fn compile_scripts(script_dir: &Path) {
+    let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
+    let script_files = filter_move_files(script_source_files);
+    for script_file in script_files {
+        let compiled_script = compile_script(script_file.clone());
+        let mut output_path = PathBuf::from(STAGED_OUTPUT_PATH);
+        output_path.push(script_file.clone());
+        output_path.set_extension(STAGED_EXTENSION);
+        File::create(output_path)
+            .unwrap()
+            .write_all(&compiled_script)
+            .unwrap();
+    }
+}
 
 // Generates the staged stdlib and transaction scripts. Until this is run changes to the source
 // modules/scripts, and changes in the Move compiler will not be reflected in the stdlib used for
 // genesis, and everywhere else across the code-base unless otherwise specified.
 fn main() {
-    let mut scripts_path = PathBuf::from(STAGED_OUTPUT_PATH);
-    scripts_path.push(TRANSACTION_SCRIPTS);
+    let mut txn_scripts_path = PathBuf::from(STAGED_OUTPUT_PATH);
+    txn_scripts_path.push(TRANSACTION_SCRIPTS);
+    std::fs::create_dir_all(&txn_scripts_path).unwrap();
 
-    std::fs::create_dir_all(&scripts_path).unwrap();
+    let mut init_scripts_path = PathBuf::from(STAGED_OUTPUT_PATH);
+    init_scripts_path.push(INIT_SCRIPTS);
+    std::fs::create_dir_all(&init_scripts_path).unwrap();
 
     // Write the stdlib blob
     let mut module_path = PathBuf::from(STAGED_OUTPUT_PATH);
@@ -37,18 +55,6 @@ fn main() {
     let bytes = scs::to_bytes(&modules).unwrap();
     let mut module_file = File::create(module_path).unwrap();
     module_file.write_all(&bytes).unwrap();
-
-    let txn_source_files =
-        datatest_stable::utils::iterate_directory(Path::new(TRANSACTION_SCRIPTS));
-    let transaction_files = filter_move_files(txn_source_files);
-    for txn_file in transaction_files {
-        let compiled_script = compile_script(txn_file.clone());
-        let mut txn_path = PathBuf::from(STAGED_OUTPUT_PATH);
-        txn_path.push(txn_file.clone());
-        txn_path.set_extension(STAGED_EXTENSION);
-        File::create(txn_path)
-            .unwrap()
-            .write_all(&compiled_script)
-            .unwrap();
-    }
+    compile_scripts(Path::new(INIT_SCRIPTS));
+    compile_scripts(Path::new(TRANSACTION_SCRIPTS));
 }

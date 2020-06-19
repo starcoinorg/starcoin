@@ -5,11 +5,11 @@ module Coin {
     use 0x1::FixedPoint32::{Self, FixedPoint32};
     use 0x1::Config;
     use 0x1::RegisteredCurrencies;
-
     use 0x1::Vector;
     use 0x1::Generic;
     use 0x1::Debug;
     use 0x1::Signer;
+    use 0x1::CoreAddresses;
 
     // The currency has a `CoinType` color that tells us what currency the
     // `value` inside represents.
@@ -238,7 +238,7 @@ module Coin {
             coin
         );
         let currency_code = currency_code<Token>();
-        let info = borrow_global_mut<CurrencyInfo<Token>>(0xA550C18);
+        let info = borrow_global_mut<CurrencyInfo<Token>>(CoreAddresses::CURRENCY_INFO_ADDRESS());
         info.preburn_value = info.preburn_value + coin_value;
         // don't emit preburn events for synthetic currencies
         if (!info.is_synthetic) {
@@ -291,7 +291,7 @@ module Coin {
         let Coin { value } = Vector::remove(&mut preburn.requests, 0);
         // update the market cap
         let currency_code = currency_code<Token>();
-        let info = borrow_global_mut<CurrencyInfo<Token>>(0xA550C18);
+        let info = borrow_global_mut<CurrencyInfo<Token>>(CoreAddresses::CURRENCY_INFO_ADDRESS());
         info.total_value = info.total_value - (value as u128);
         info.preburn_value = info.preburn_value - value;
         // don't emit burn events for synthetic currencies
@@ -321,7 +321,7 @@ module Coin {
         let coin = Vector::remove(&mut preburn.requests, 0);
         // update the market cap
         let currency_code = currency_code<Token>();
-        let info = borrow_global_mut<CurrencyInfo<Token>>(0xA550C18);
+        let info = borrow_global_mut<CurrencyInfo<Token>>(CoreAddresses::CURRENCY_INFO_ADDRESS());
         let amount = value(&coin);
         info.preburn_value = info.preburn_value - amount;
         // Don't emit cancel burn events for synthetic currencies. cancel burn shouldn't be be used
@@ -376,7 +376,7 @@ module Coin {
 
     // Return the total value of Libra to be burned
     public fun preburn_value<Token>(): u64 acquires CurrencyInfo {
-        borrow_global<CurrencyInfo<Token>>(0xA550C18).preburn_value
+        borrow_global<CurrencyInfo<Token>>(CoreAddresses::CURRENCY_INFO_ADDRESS()).preburn_value
     }
 
     // Create a new Coin::Coin<CoinType> with a value of 0
@@ -562,7 +562,7 @@ module Coin {
         let (coin_type_addr, _,_) = Generic::type_of<CoinType>();
         Debug::print(&coin_type_addr);
         if (coin_type_addr == 0x1) {
-            0xA550C18
+            CoreAddresses::CURRENCY_INFO_ADDRESS()
         }else{
             coin_type_addr
         }
