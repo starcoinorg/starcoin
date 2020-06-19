@@ -119,19 +119,19 @@ impl NetworkWorker {
         let mut known_addresses = Vec::new();
         let mut bootnodes = Vec::new();
         let mut reserved_nodes = Vec::new();
-        let boot_node_ids = HashSet::new();
+        let mut boot_node_ids = HashSet::new();
 
         // Process the bootnodes.
         for bootnode in params.network_config.boot_nodes.iter() {
             match parse_addr(bootnode.clone()) {
                 Ok((peer_id, addr)) => {
                     bootnodes.push(peer_id.clone());
+                    boot_node_ids.insert(peer_id.clone());
                     known_addresses.push((peer_id, addr));
                 }
                 Err(_) => warn!(target: "sub-libp2p", "Not a valid bootnode address: {}", bootnode),
             }
         }
-
         let boot_node_ids = Arc::new(boot_node_ids);
 
         // Check for duplicate bootnodes.

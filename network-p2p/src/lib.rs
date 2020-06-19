@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//TODO fixme
 #[macro_use]
 extern crate log;
 extern crate prometheus;

@@ -7,19 +7,15 @@ use anyhow::*;
 use bytes::Bytes;
 use config::NetworkConfig;
 use crypto::hash::HashValue;
-use futures::{
-    channel::{mpsc, oneshot::Sender},
-    prelude::*,
-};
+use futures::{channel::mpsc, prelude::*};
 use libp2p::PeerId;
 use network_p2p::{
     identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
     Params, Secret, PROTOCOL_NAME,
 };
 use parity_codec::alloc::collections::HashSet;
-use parking_lot::Mutex;
 use std::borrow::Cow;
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 use tokio::runtime::Handle;
 use types::peer_info::PeerInfo;
 
@@ -36,7 +32,6 @@ pub struct SNetworkService {
 #[derive(Clone)]
 pub struct NetworkInner {
     service: Arc<NetworkService>,
-    acks: Arc<Mutex<HashMap<u128, Sender<()>>>>,
 }
 
 impl SNetworkService {
@@ -47,13 +42,10 @@ impl SNetworkService {
         let service = worker.service().clone();
         let worker = worker;
 
-        let acks = Arc::new(Mutex::new(HashMap::new()));
-
         handle.spawn(worker);
 
         let inner = NetworkInner {
             service: service.clone(),
-            acks,
         };
 
         Self {
@@ -105,6 +97,7 @@ impl SNetworkService {
                     inner.handle_network_receive(event,net_tx.clone(),event_tx.clone()).await.unwrap();
                 },
                 _ = close_rx.select_next_some() => {
+                    //TODO
                     debug!("To shutdown command ");
                     break;
                 }
@@ -130,22 +123,18 @@ impl SNetworkService {
         protocol_name: Cow<'static, [u8]>,
         message: Vec<u8>,
     ) -> Result<()> {
-        //let (tx, rx) = oneshot::channel::<()>();
-        let (protocol_msg, _message_id) = Message::new_payload(message);
+        let protocol_msg = Message::new_payload(message);
 
         debug!("Send message to {} with ack", peer_id);
         self.service
             .write_notification(peer_id, protocol_name, protocol_msg.into_bytes());
-        //self.waker.wake();
-        //self.inner.acks.lock().insert(message_id, tx);
-        //rx.await?;
 
         Ok(())
     }
 
     pub async fn broadcast_message(&mut self, protocol_name: Cow<'static, [u8]>, message: Vec<u8>) {
-        debug!("broadcast message");
-        let (protocol_msg, _message_id) = Message::new_payload(message);
+        debug!("broadcast message, protocol: {:?}", protocol_name);
+        let protocol_msg = Message::new_payload(message);
 
         let message_bytes = protocol_msg.into_bytes();
 
@@ -232,29 +221,17 @@ impl NetworkInner {
                     };
                     net_tx.unbounded_send(user_msg)?;
                 }
-                Message::ACK(message_id) => {
-                    debug!("Receive message ack");
-                    if let Some(tx) = self.acks.lock().remove(&message_id) {
-                        let _ = tx.send(());
-                    } else {
-                        debug!(
-                            "Receive a invalid ack, message id:{}, peer id:{}",
-                            message_id, peer_id
-                        );
-                    }
-                }
             }
         }
         Ok(())
     }
 
-    // TODO: can be unfied with `send_message` method?
     async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
         let account_addr = message.peer_id.clone();
         self.service.write_notification(
             account_addr,
             PROTOCOL_NAME.into(),
-            Message::new_payload(message.data).0.into_bytes(),
+            Message::new_payload(message.data).into_bytes(),
         );
         Ok(())
     }
