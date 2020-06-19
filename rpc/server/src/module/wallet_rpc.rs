@@ -64,11 +64,15 @@ where
         Box::new(fut.compat())
     }
 
-    fn sign_txn(&self, raw_txn: RawUserTransaction) -> FutureResult<SignedUserTransaction> {
+    fn sign_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+        signer: AccountAddress,
+    ) -> FutureResult<SignedUserTransaction> {
         let fut = self
             .service
             .clone()
-            .sign_txn(raw_txn)
+            .sign_txn(raw_txn, signer)
             .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }

@@ -251,12 +251,29 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    /// partial sign a multisig account's txn
+    pub fn wallet_sign_multisig_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+        signer_address: AccountAddress,
+    ) -> anyhow::Result<SignedUserTransaction> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .wallet_client
+                .sign_txn(raw_txn, signer_address)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn wallet_sign_txn(
         &self,
         raw_txn: RawUserTransaction,
     ) -> anyhow::Result<SignedUserTransaction> {
+        let signer = raw_txn.sender();
         self.call_rpc_blocking(|inner| async move {
-            inner.wallet_client.sign_txn(raw_txn).compat().await
+            inner.wallet_client.sign_txn(raw_txn, signer).compat().await
         })
         .map_err(map_err)
     }

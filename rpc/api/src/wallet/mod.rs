@@ -21,7 +21,11 @@ pub trait WalletApi {
     #[rpc(name = "wallet.get")]
     fn get(&self, address: AccountAddress) -> FutureResult<Option<WalletAccount>>;
     #[rpc(name = "wallet.sign_txn")]
-    fn sign_txn(&self, raw_txn: RawUserTransaction) -> FutureResult<SignedUserTransaction>;
+    fn sign_txn(
+        &self,
+        raw_txn: RawUserTransaction,
+        signer: AccountAddress,
+    ) -> FutureResult<SignedUserTransaction>;
     #[rpc(name = "wallet.unlock")]
     fn unlock(
         &self,
