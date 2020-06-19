@@ -382,7 +382,11 @@ where
         }
     }
 
-    fn handle_bodies(&mut self, bodies: Vec<BlockBody>, hashs: Vec<HashValue>) {
+    fn handle_bodies(
+        &mut self,
+        bodies: Vec<BlockBody>,
+        hashs: Vec<HashValue>,
+    ) -> Option<Box<impl Future<Output = ()>>> {
         if !bodies.is_empty() {
             let len = bodies.len();
             let mut blocks: Vec<(Block, Option<BlockInfo>)> = Vec::new();
@@ -399,20 +403,24 @@ where
                 }
             }
 
-            self.connect_blocks(blocks);
-
             SYNC_METRICS
                 .sync_total_count
                 .with_label_values(&[LABEL_BLOCK_BODY])
                 .inc_by(len as i64);
+
+            Some(self.connect_blocks(blocks))
         } else {
             self.body_task.push_hashs(hashs);
+            None
         }
     }
 
-    pub fn connect_blocks(&self, blocks: Vec<(Block, Option<BlockInfo>)>) {
+    fn connect_blocks(
+        &self,
+        blocks: Vec<(Block, Option<BlockInfo>)>,
+    ) -> Box<impl Future<Output = ()>> {
         let downloader = self.downloader.clone();
-        Arbiter::spawn(async move {
+        let fut = async move {
             for i in 0..blocks.len() {
                 if let Some((block, info)) = blocks.get(i) {
                     downloader
@@ -420,7 +428,8 @@ where
                         .await;
                 }
             }
-        });
+        };
+        Box::new(fut)
     }
 
     fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
@@ -465,7 +474,12 @@ where
                 self.handle_infos(data.infos, data.hashs);
             }
             DataType::Body => {
-                self.handle_bodies(data.bodies, data.hashs);
+                if let Some(fut) = self.handle_bodies(data.bodies, data.hashs) {
+                    (*fut)
+                        .into_actor(self)
+                        .then(|_result, act, _ctx| async {}.into_actor(act))
+                        .wait(ctx);
+                }
             }
         }
 

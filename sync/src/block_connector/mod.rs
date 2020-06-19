@@ -132,13 +132,15 @@ where
         } else {
             let pivot_number = pivot.expect("pivot is none.");
             if pivot_number >= block.header().number() {
-                self.chain_reader
-                    .clone()
-                    .try_connect_with_block_info(
-                        block.clone(),
-                        block_info.clone().expect("block info can not be none."),
-                    )
-                    .await
+                match block_info.clone() {
+                    Some(info) => {
+                        self.chain_reader
+                            .clone()
+                            .try_connect_with_block_info(block.clone(), info)
+                            .await
+                    }
+                    None => return false,
+                }
             } else {
                 self.chain_reader.clone().try_connect(block.clone()).await
             }
