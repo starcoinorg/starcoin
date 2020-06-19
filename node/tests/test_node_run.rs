@@ -9,8 +9,10 @@ use std::thread;
 
 #[stest::test]
 fn test_run_node() {
-    let config = Arc::new(NodeConfig::random_for_test());
+    let mut node_config = NodeConfig::random_for_test();
+    node_config.network.disable_seed = true;
+    let config = Arc::new(node_config);
     let handle = run_dev_node(config);
-    thread::sleep(Duration::from_secs(10));
+    thread::sleep(Duration::from_secs(5));
     handle.stop().unwrap()
 }

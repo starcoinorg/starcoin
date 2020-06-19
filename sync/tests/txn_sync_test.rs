@@ -16,8 +16,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_sync::SyncActor;
-use starcoin_sync_api::sync_messages::StartSyncTxnEvent;
-use starcoin_sync_api::SyncMetadata;
+use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::{sync::Arc, time::Duration};
 use txpool::TxPool;
@@ -70,8 +69,6 @@ fn test_txn_sync_actor() {
             genesis_hash,
         );
         debug!("addr_1 : {:?}", addr_1);
-
-        let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone(), bus_1.clone());
         // chain
         let first_chain = ChainActor::<DevConsensus>::launch(
             node_config_1.clone(),
@@ -80,7 +77,6 @@ fn test_txn_sync_actor() {
             Some(network_1.clone()),
             bus_1.clone(),
             txpool_1.get_service(),
-            sync_metadata_actor_1.clone(),
         )
         .unwrap();
         // sync
@@ -93,7 +89,6 @@ fn test_txn_sync_actor() {
             txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
-            sync_metadata_actor_1.clone(),
             rpc_rx,
         )
         .unwrap();
@@ -149,8 +144,6 @@ fn test_txn_sync_actor() {
         );
         debug!("addr_2 : {:?}", addr_2);
 
-        let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone(), bus_2.clone());
-
         // chain
         let second_chain = ChainActor::<DevConsensus>::launch(
             node_config_2.clone(),
@@ -159,7 +152,6 @@ fn test_txn_sync_actor() {
             Some(network_2.clone()),
             bus_2.clone(),
             txpool_2.get_service(),
-            sync_metadata_actor_2.clone(),
         )
         .unwrap();
         // sync
@@ -172,7 +164,6 @@ fn test_txn_sync_actor() {
             txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
-            sync_metadata_actor_2.clone(),
             rpc_rx_2,
         )
         .unwrap();

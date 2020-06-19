@@ -17,7 +17,6 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_sync::SyncActor;
-use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use traits::ChainAsyncService;
@@ -71,7 +70,6 @@ fn test_state_sync() {
         );
         debug!("addr_1 : {:?}", addr_1);
 
-        let sync_metadata_actor_1 = SyncMetadata::new(node_config_1.clone(), bus_1.clone());
         // chain
         let first_chain = ChainActor::launch(
             node_config_1.clone(),
@@ -80,7 +78,6 @@ fn test_state_sync() {
             Some(network_1.clone()),
             bus_1.clone(),
             txpool_1.get_service(),
-            sync_metadata_actor_1.clone(),
         )
         .unwrap();
         // sync
@@ -93,7 +90,6 @@ fn test_state_sync() {
             txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
-            sync_metadata_actor_1.clone(),
             rx_1,
         )
         .unwrap();
@@ -181,12 +177,6 @@ fn test_state_sync() {
         );
         debug!("addr_2 : {:?}", addr_2);
 
-        let sync_metadata_actor_2 = SyncMetadata::new(node_config_2.clone(), bus_2.clone());
-        assert!(
-            sync_metadata_actor_2.state_syncing(),
-            "state_syncing is false."
-        );
-
         // chain
         let second_chain = ChainActor::<DevConsensus>::launch(
             node_config_2.clone(),
@@ -195,7 +185,6 @@ fn test_state_sync() {
             Some(network_2.clone()),
             bus_2.clone(),
             txpool_2.get_service(),
-            sync_metadata_actor_2.clone(),
         )
         .unwrap();
         // sync
@@ -208,7 +197,6 @@ fn test_state_sync() {
             txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
-            sync_metadata_actor_2.clone(),
             rx_2,
         )
         .unwrap();
@@ -216,11 +204,7 @@ fn test_state_sync() {
         let _ = bus_2.clone().send(Broadcast { msg: SyncBegin }).await;
 
         Delay::new(Duration::from_secs(30)).await;
-
-        assert!(
-            !sync_metadata_actor_2.state_syncing(),
-            "state_syncing is true."
-        );
+        //TODO:
     };
 
     system.block_on(fut);

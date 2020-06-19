@@ -1,207 +1,138 @@
-pub mod sync_messages;
-
-use actix::Addr;
-use anyhow::{format_err, Result};
-use dyn_clone::{clone_box, DynClone};
-use parking_lot::RwLock;
-use starcoin_bus::{Broadcast, BusActor};
-use starcoin_config::NodeConfig;
+use actix::prelude::*;
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockInfo, BlockNumber};
-use starcoin_types::system_events::SyncDone;
-use std::fmt::{Debug, Formatter, Result as FmtResult};
-use std::sync::Arc;
+use starcoin_state_tree::StateNode;
+use starcoin_types::block::BlockNumber;
+use starcoin_types::peer_info::PeerId;
+use starcoin_types::{
+    block::{Block, BlockHeader, BlockInfo},
+    transaction::SignedUserTransaction,
+};
+use std::cmp::Ordering;
 
-#[async_trait::async_trait]
-pub trait StateSyncReset: DynClone + Send + Sync {
-    async fn reset(
-        &self,
-        state_root: HashValue,
-        txn_accumulator_root: HashValue,
-        block_accumulator_root: HashValue,
-    );
-    async fn act(&self);
+#[derive(Message, Clone, Debug)]
+#[rtype(result = "()")]
+pub struct StartSyncTxnEvent;
+
+#[derive(Message, Clone, Debug)]
+#[rtype(result = "()")]
+pub struct PeerNewBlock {
+    peer_id: PeerId,
+    new_block: Block,
 }
 
-#[derive(Clone, Debug)]
-pub struct SyncMetadata(Arc<RwLock<SyncMetadataInner>>);
+impl PeerNewBlock {
+    pub fn new(peer_id: PeerId, new_block: Block) -> Self {
+        PeerNewBlock { peer_id, new_block }
+    }
 
-pub struct SyncMetadataInner {
-    is_state_sync: bool,
-    pivot_behind: Option<(BlockNumber, u64)>,
-    pivot_connected: (bool, Option<(Block, BlockInfo)>),
-    state_sync_address: Option<Box<dyn StateSyncReset>>,
-    state_sync_done: bool,
-    block_sync_done: bool,
-    bus: Addr<BusActor>,
-    state_sync_failed: Option<bool>,
-}
+    pub fn get_peer_id(&self) -> PeerId {
+        self.peer_id.clone()
+    }
 
-impl Debug for SyncMetadataInner {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_tuple("SyncMetadata")
-            .field(&self.is_state_sync)
-            .field(&self.pivot_behind)
-            .field(&self.pivot_connected)
-            .field(&self.state_sync_done)
-            .field(&self.block_sync_done)
-            .field(&self.state_sync_failed)
-            .finish()
+    pub fn get_block(&self) -> Block {
+        self.new_block.clone()
     }
 }
 
-impl SyncMetadata {
-    pub fn new(config: Arc<NodeConfig>, bus: Addr<BusActor>) -> SyncMetadata {
-        debug!("is state sync : {}", config.sync.is_state_sync());
-        let inner = SyncMetadataInner {
-            is_state_sync: config.sync.is_state_sync(),
-            pivot_behind: None,
-            pivot_connected: (false, None),
-            state_sync_address: None,
-            state_sync_done: false,
-            block_sync_done: false,
-            bus,
-            state_sync_failed: Some(false),
-        };
-        SyncMetadata(Arc::new(RwLock::new(inner)))
-    }
+#[derive(Message, Clone, Serialize, Deserialize, Debug)]
+#[rtype(result = "Result<()>")]
+pub enum SyncRpcRequest {
+    GetBlockHeadersByNumber(GetBlockHeadersByNumber),
+    GetBlockHeaders(GetBlockHeaders),
+    GetBlockInfos(Vec<HashValue>),
+    GetBlockBodies(Vec<HashValue>),
+    GetStateNodeByNodeHash(HashValue),
+    GetAccumulatorNodeByNodeHash(HashValue, AccumulatorStoreType),
+    GetTxns(GetTxns),
+}
 
-    pub fn state_syncing(&self) -> bool {
-        self.fast_sync_mode() && (!self.0.read().state_sync_done || !self.0.read().block_sync_done)
-    }
+#[derive(Message, Clone, Serialize, Deserialize)]
+#[rtype(result = "Result<()>")]
+pub enum SyncRpcResponse {
+    BlockHeaders(Vec<BlockHeader>),
+    BlockBodies(Vec<BlockBody>),
+    BlockInfos(Vec<BlockInfo>),
+    StateNode(StateNode),
+    AccumulatorNode(AccumulatorNode),
+    GetTxns(TransactionsData),
+}
 
-    pub fn update_pivot(&self, pivot: BlockNumber, behind: u64) -> Result<()> {
-        assert!(self.state_syncing(), "cat not update pivot.");
-        assert!(pivot > 0, "pivot must be positive integer.");
-        assert!(behind > 0, "behind must be positive integer.");
-        debug!("update pivot : {}, {}", pivot, behind);
-        let mut lock = self.0.write();
-        lock.pivot_behind = Some((pivot, behind));
-        lock.pivot_connected = (false, None);
-        Ok(())
-    }
+#[derive(Debug, Message, Clone, Serialize, Deserialize)]
+#[rtype(result = "()")]
+pub enum SyncNotify {
+    ClosePeerMsg(PeerId),
+    NewHeadBlock(PeerId, Box<Block>),
+    NewPeerMsg(PeerId),
+}
 
-    pub fn update_failed(&self, failed: bool) {
-        if !self.is_sync_done() {
-            self.0.write().state_sync_failed = Some(failed);
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetTxns;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransactionsData {
+    pub txns: Vec<SignedUserTransaction>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetBlockHeadersByNumber {
+    pub number: BlockNumber,
+    pub max_size: usize,
+    pub step: usize,
+}
+
+impl GetBlockHeadersByNumber {
+    pub fn new(number: BlockNumber, step: usize, max_size: usize) -> Self {
+        GetBlockHeadersByNumber {
+            number,
+            max_size,
+            step,
         }
     }
+}
 
-    pub fn is_failed(&self) -> bool {
-        if let Some(failed) = self.0.read().state_sync_failed {
-            return failed;
-        }
-        false
-    }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetBlockHeaders {
+    pub block_id: HashValue,
+    pub max_size: usize,
+    pub step: usize,
+    pub reverse: bool,
+}
 
-    pub fn state_sync_done(&self) -> Result<()> {
-        assert!(self.fast_sync_mode(), "chain is not in fast sync mode.");
-        assert!(!self.0.read().state_sync_done, "state sync already done.");
-        {
-            let mut lock = self.0.write();
-            lock.state_sync_done = true;
-        }
-        self.sync_done()?;
-        Ok(())
-    }
-
-    pub fn set_pivot_block(&self, pivot_block: Block, block_info: BlockInfo) -> Result<()> {
-        assert_eq!(pivot_block.id(), *block_info.block_id());
-        assert!(!self.pivot_connected(), "pivot block connected");
-        assert!(self.state_syncing(), "not in syncing state.");
-        let pivot_number = self.get_pivot()?.ok_or_else(|| {
-            format_err!(
-                "Pivot number is none when set pivot block {} : {:?}.",
-                pivot_block.id(),
-                pivot_block.header().parent_hash()
-            )
-        })?;
-        assert_eq!(pivot_number, pivot_block.header().number());
-        let mut lock = self.0.write();
-        lock.pivot_connected = (false, Some((pivot_block, block_info)));
-        Ok(())
-    }
-
-    pub fn get_pivot_block(&self) -> Option<(Block, BlockInfo)> {
-        self.0.read().pivot_connected.1.clone()
-    }
-
-    pub fn pivot_connected_succ(&self) -> Result<()> {
-        let mut lock = self.0.write();
-        lock.pivot_connected = (true, None);
-        Ok(())
-    }
-
-    pub fn pivot_connected(&self) -> bool {
-        self.0.read().pivot_connected.0
-    }
-
-    pub fn block_sync_done(&self) -> Result<()> {
-        let read_lock = self.0.read();
-        if !read_lock.block_sync_done && (self.pivot_connected() || !self.fast_sync_mode()) {
-            drop(read_lock);
-            {
-                let mut lock = self.0.write();
-                lock.block_sync_done = true;
-            }
-            self.sync_done()?;
-        }
-        Ok(())
-    }
-
-    pub fn is_sync_done(&self) -> bool {
-        (self.fast_sync_mode() && self.0.read().state_sync_done && self.0.read().block_sync_done)
-            || (!self.fast_sync_mode() && self.0.read().block_sync_done)
-    }
-
-    fn sync_done(&self) -> Result<()> {
-        if self.is_sync_done() {
-            let mut lock = self.0.write();
-            lock.pivot_behind = None;
-            lock.state_sync_address = None;
-            lock.state_sync_failed = None;
-            lock.bus.do_send(Broadcast { msg: SyncDone });
-            info!("state and block both sync done.");
-        }
-        Ok(())
-    }
-
-    pub fn state_done(&self) -> bool {
-        self.0.read().state_sync_done
-    }
-
-    pub fn fast_sync_mode(&self) -> bool {
-        self.0.read().is_state_sync
-    }
-
-    pub fn get_pivot(&self) -> Result<Option<BlockNumber>> {
-        Ok(match self.0.read().pivot_behind {
-            None => None,
-            Some((pivot, _behind)) => Some(pivot),
-        })
-    }
-
-    pub fn get_latest(&self) -> Option<BlockNumber> {
-        match self.0.read().pivot_behind {
-            None => None,
-            Some((pivot, behind)) => Some(pivot + behind),
+impl GetBlockHeaders {
+    pub fn new(block_id: HashValue, step: usize, reverse: bool, max_size: usize) -> Self {
+        GetBlockHeaders {
+            block_id,
+            max_size,
+            step,
+            reverse,
         }
     }
+}
 
-    pub fn update_address(&self, address: &(dyn StateSyncReset + 'static)) -> Result<()> {
-        assert!(self.state_syncing(), "cat not update address.");
-        self.0.write().state_sync_address = Some(clone_box(address));
-        Ok(())
+#[derive(Eq, Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct BlockBody {
+    pub hash: HashValue,
+    pub transactions: Vec<SignedUserTransaction>,
+}
+
+impl Into<(HashValue, Vec<SignedUserTransaction>)> for BlockBody {
+    fn into(self) -> (HashValue, Vec<SignedUserTransaction>) {
+        (self.hash, self.transactions)
     }
+}
 
-    pub fn get_address(&self) -> Option<Box<dyn StateSyncReset>> {
-        let lock = self.0.read();
-        if let Some(ssr_ref) = lock.state_sync_address.as_deref() {
-            let ssr_box = clone_box(ssr_ref);
-            Some(ssr_box)
-        } else {
-            None
-        }
+impl PartialOrd for BlockBody {
+    fn partial_cmp(&self, other: &BlockBody) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for BlockBody {
+    fn cmp(&self, other: &BlockBody) -> Ordering {
+        self.hash.cmp(&other.hash)
     }
 }

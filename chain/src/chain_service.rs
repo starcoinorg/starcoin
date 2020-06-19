@@ -11,13 +11,10 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_statedb::ChainStateDB;
-use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
 use storage::Store;
-use traits::{
-    is_ok, ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult, Consensus,
-};
+use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult, Consensus};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -40,7 +37,6 @@ where
     network: Option<NetworkAsyncService>,
     txpool: P,
     bus: Addr<BusActor>,
-    sync_metadata: SyncMetadata,
 }
 
 impl<C, S, P> ChainServiceImpl<C, S, P>
@@ -56,7 +52,6 @@ where
         network: Option<NetworkAsyncService>,
         txpool: P,
         bus: Addr<BusActor>,
-        sync_metadata: SyncMetadata,
     ) -> Result<Self> {
         let master = BlockChain::new(config.clone(), startup_info.master, storage.clone())?;
         Ok(Self {
@@ -67,7 +62,6 @@ where
             network,
             txpool,
             bus,
-            sync_metadata,
         })
     }
 
@@ -129,12 +123,10 @@ where
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
 
-            if self.sync_metadata.is_sync_done() {
-                CHAIN_METRICS.broadcast_head_count.inc();
-                let block_detail = BlockDetail::new(block, total_difficulty);
-                self.broadcast_2_bus(block_detail.clone());
-                self.broadcast_2_network(block_detail);
-            }
+            CHAIN_METRICS.broadcast_head_count.inc();
+            let block_detail = BlockDetail::new(block, total_difficulty);
+            self.broadcast_2_bus(block_detail.clone());
+            self.broadcast_2_network(block_detail);
         } else {
             self.insert_branch(block_header);
         }
@@ -242,43 +234,28 @@ where
     S: Store,
 {
     //TODO define connect result.
-    fn try_connect(&mut self, block: Block, pivot_sync: bool) -> Result<ConnectResult<()>> {
-        if !self.sync_metadata.state_syncing() || pivot_sync {
-            if !self.sync_metadata.state_syncing()
-                || (pivot_sync && self.sync_metadata.state_done())
-            {
-                let (block_exist, fork) = self.find_or_fork(block.header())?;
-                if block_exist {
-                    CHAIN_METRICS.duplicate_conn_count.inc();
-                    Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
-                } else if let Some(mut branch) = fork {
-                    let timer = CHAIN_METRICS
-                        .exe_block_time
-                        .with_label_values(&["time"])
-                        .start_timer();
-                    let connected = branch.apply(block.clone())?;
-                    timer.observe_duration();
-                    if !connected {
-                        debug!("connected failed {:?}", block.header().id());
-                        CHAIN_METRICS.verify_fail_count.inc();
-                        Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
-                    } else {
-                        self.select_head(branch)?;
-                        Ok(ConnectResult::Ok(()))
-                    }
-                } else {
-                    Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
-                }
+    fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {
+        let (block_exist, fork) = self.find_or_fork(block.header())?;
+        if block_exist {
+            CHAIN_METRICS.duplicate_conn_count.inc();
+            Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
+        } else if let Some(mut branch) = fork {
+            let timer = CHAIN_METRICS
+                .exe_block_time
+                .with_label_values(&["time"])
+                .start_timer();
+            let connected = branch.apply(block.clone())?;
+            timer.observe_duration();
+            if !connected {
+                debug!("connected failed {:?}", block.header().id());
+                CHAIN_METRICS.verify_fail_count.inc();
+                Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
             } else {
-                Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
+                self.select_head(branch)?;
+                Ok(ConnectResult::Ok(()))
             }
         } else {
-            Ok(ConnectResult::Err(ConnectBlockError::Other(format!(
-                "error connect type. pivot_sync : {}, block header : {:?}, sync metadata : {:?}.",
-                pivot_sync,
-                block.header(),
-                self.sync_metadata
-            ))))
+            Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
         }
     }
 
@@ -287,69 +264,22 @@ where
         block: Block,
         block_info: BlockInfo,
     ) -> Result<ConnectResult<()>> {
-        if self.sync_metadata.state_syncing() {
-            let pivot = self.sync_metadata.get_pivot()?;
-            let latest_sync_number = self.sync_metadata.get_latest();
-            if let (Some(pivot_number), Some(latest_number)) = (pivot, latest_sync_number) {
-                let current_block_number = block.header().number();
-                if pivot_number >= current_block_number {
-                    let pivot_flag = pivot_number == current_block_number;
-                    if pivot_flag && !self.sync_metadata.state_done() {
-                        self.sync_metadata.set_pivot_block(block, block_info)?;
-                        return Ok(ConnectResult::Err(ConnectBlockError::Other(
-                            "pivot block wait state.".to_string(),
-                        )));
-                    }
-                    //todo:1. verify block header / verify accumulator / total difficulty
-                    let (block_exist, fork) = self.find_or_fork(block.header())?;
-                    if block_exist {
-                        CHAIN_METRICS.duplicate_conn_count.inc();
-                        Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
-                    } else if let Some(mut branch) = fork {
-                        if C::verify(self.config.clone(), &branch, block.header()).is_ok() {
-                            // 2. commit block
-                            branch.append(
-                                block.id(),
-                                block_info.get_block_accumulator_info().clone(),
-                            )?;
-                            branch.commit(block, block_info, BlockState::Verified)?;
-                            self.select_head(branch)?;
-                            if pivot_flag {
-                                self.sync_metadata.pivot_connected_succ()?;
-                            }
-                            Ok(ConnectResult::Ok(()))
-                        } else {
-                            Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
-                        }
-                    } else {
-                        Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
-                    }
-                } else if latest_number >= current_block_number {
-                    if self.sync_metadata.state_done() {
-                        let connect_result = self.try_connect(block, true)?;
-                        // 3. update sync metadata
-                        if latest_number == current_block_number && is_ok(&connect_result) {
-                            if let Err(err) = self.sync_metadata.block_sync_done() {
-                                error!(
-                                    "update block_sync_done in sync_metadata failed : {:?}",
-                                    err
-                                );
-                            }
-                        }
-                        Ok(connect_result)
-                    } else {
-                        Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
-                    }
-                } else {
-                    Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
-                }
+        let (block_exist, fork) = self.find_or_fork(block.header())?;
+        if block_exist {
+            CHAIN_METRICS.duplicate_conn_count.inc();
+            Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
+        } else if let Some(mut branch) = fork {
+            if C::verify(self.config.clone(), &branch, block.header()).is_ok() {
+                // 2. commit block
+                branch.append_block(block.id(), block_info.get_block_accumulator_info().clone())?;
+                branch.commit(block, block_info, BlockState::Verified)?;
+                self.select_head(branch)?;
+                Ok(ConnectResult::Ok(()))
             } else {
-                Ok(ConnectResult::Err(ConnectBlockError::Other(
-                    "pivot is none.".to_string(),
-                )))
+                Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
             }
         } else {
-            self.try_connect(block, false)
+            Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
         }
     }
 

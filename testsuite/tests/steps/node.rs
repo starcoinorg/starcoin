@@ -14,7 +14,8 @@ pub fn steps() -> Steps<MyWorld> {
             opt.net = Some(ChainNetwork::Dev);
             opt.disable_metrics = true;
             opt.data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
-            let config = NodeConfig::load_with_opt(&opt).unwrap();
+            let mut config = NodeConfig::load_with_opt(&opt).unwrap();
+            config.network.disable_seed = true;
             world.node_config = Some(config)
         })
         .given("halley node config", |world: &mut MyWorld, _step| {

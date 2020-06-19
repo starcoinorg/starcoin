@@ -157,7 +157,7 @@ where
         Ok(false)
     }
 
-    pub fn append(
+    pub fn append_block(
         &mut self,
         block_id: HashValue,
         block_accumulator_info: AccumulatorInfo,

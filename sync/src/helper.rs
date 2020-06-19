@@ -9,7 +9,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
-use starcoin_sync_api::sync_messages::{
+use starcoin_sync_api::{
     BlockBody, GetBlockHeaders, GetBlockHeadersByNumber, GetTxns, SyncRpcRequest, SyncRpcResponse,
     TransactionsData,
 };

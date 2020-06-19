@@ -12,7 +12,6 @@ use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
-use starcoin_sync_api::SyncMetadata;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -71,7 +70,6 @@ fn test_miner_with_schedule_pacemaker() {
             genesis_hash,
             PeerInfo::new_only_proto(rpc_proto_info),
         );
-        let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),
@@ -79,7 +77,6 @@ fn test_miner_with_schedule_pacemaker() {
             Some(network.clone()),
             bus.clone(),
             txpool.get_service(),
-            sync_metadata.clone(),
         )
         .unwrap();
         let miner_account = WalletAccount::random();
@@ -101,7 +98,6 @@ fn test_miner_with_schedule_pacemaker() {
             txpool.get_service(),
             network.clone(),
             storage.clone(),
-            sync_metadata.clone(),
             rx,
         )
         .unwrap();
@@ -171,7 +167,6 @@ fn test_miner_with_ondemand_pacemaker() {
             genesis_hash,
             PeerInfo::new_only_proto(rpc_proto_info),
         );
-        let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),
@@ -179,7 +174,6 @@ fn test_miner_with_ondemand_pacemaker() {
             Some(network.clone()),
             bus.clone(),
             txpool_service.clone(),
-            sync_metadata.clone(),
         )
         .unwrap();
         let miner_account = WalletAccount::random();
@@ -201,7 +195,6 @@ fn test_miner_with_ondemand_pacemaker() {
             txpool.get_service(),
             network.clone(),
             storage.clone(),
-            sync_metadata.clone(),
             rx,
         )
         .unwrap();
