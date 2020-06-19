@@ -259,7 +259,13 @@ impl<'a> DataStore for TransactionDataCache<'a> {
         match data.simple_serialize(&g.0) {
             Some(blob) => {
                 let len = blob.len();
-                let gr = GlobalValue::new(Value::struct_(data)).unwrap();
+                let struct_data = lcs::from_bytes_seed(&g.0, blob.as_ref())
+                    .map_err(|e| {
+                        VMStatus::new(StatusCode::INVALID_DATA).with_message(e.to_string())
+                    })
+                    .unwrap();
+
+                let gr = GlobalValue::new(Value::struct_(struct_data)).unwrap();
                 // println!("publish_resource :{:?}", gr);
                 println!("gr.is_clean(): {:?}", gr.is_clean());
                 let g_wrap = (g.0.clone(), gr, len);

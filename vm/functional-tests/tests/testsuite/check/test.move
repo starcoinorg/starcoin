@@ -22,8 +22,9 @@ module M {
       move_to(account, cup);
     }
 
-    public fun t5(account: &signer) {
-        move_to(account, Cup { a: fail(0) });
+    public fun get_cup(account: &signer): Cup acquires Cup {
+        let cup = borrow_global<Cup>(Signer::address_of(account));
+        Cup { a: cup.a }
     }
 
     public fun destroy(sender: &signer): u64 acquires Cup {
@@ -31,8 +32,8 @@ module M {
         a
     }
 
-    fun fail(code: u64): u64 {
-        abort code
+    public fun destroy_x(x: Cup) {
+        Cup { a: _ } = x;
     }
 }
 
@@ -44,7 +45,7 @@ script {
 use {{alice}}::M;
 fun main(account: &signer) {
   let cup = M::new();
-  M::publish(cup, account)
+  M::publish(cup, account);
 }
 }
 
@@ -69,3 +70,24 @@ fun main(account: &signer) {
 // check: EXECUTED
 // check: delta_size
 // check: 0
+
+
+//! new-transaction
+//! sender: bob
+
+script {
+use {{alice}}::M;
+fun main(account: &signer) {
+  //let old_cup = M::new();
+  //M::publish(old_cup, account);
+  let cup = M::get_cup(account);
+  M::destroy_x(cup);
+  let y = M::destroy(account);
+  assert(y == 1, 41)
+}
+}
+
+// check: EXECUTED
+// check: delta_size
+// check: 0
+
