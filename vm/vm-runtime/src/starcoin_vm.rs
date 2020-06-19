@@ -657,6 +657,7 @@ fn get_transaction_output(
         .max_gas_amount()
         .sub(cost_strategy.remaining_gas())
         .get();
+    println!("Transaction make WS; {:?}", txn_data.sender());
     let write_set = data_store.make_write_set()?;
     let delta_size = data_store.get_size(txn_data.sender);
     //TODO add gas usage metrics.
