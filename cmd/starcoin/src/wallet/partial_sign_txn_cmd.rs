@@ -17,10 +17,10 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "sign_txn")]
-/// Sign a transaction, output the signed transaction to file.
-pub struct SignTxnOpt {
-    #[structopt(short = "i", name = "input", parse(from_os_str))]
+#[structopt(name = "partial-sign-txn")]
+/// Partial sign a multisig transaction, output the partial-signed transaction to file.
+pub struct PartialSignTxnOpt {
+    #[structopt(short = "i", long, parse(from_os_str))]
     /// txn input file
     input: PathBuf,
 
@@ -33,17 +33,17 @@ pub struct SignTxnOpt {
     /// txn output dir
     output_dir: Option<PathBuf>,
 
-    #[structopt(short = "s", long = "signer", name = "signer")]
+    #[structopt(short = "s", long)]
     /// if empty, use default account
     signer: Option<AccountAddress>,
 }
 
-pub struct SignTxnCommand;
+pub struct PartialSignTxnCommand;
 
-impl CommandAction for SignTxnCommand {
+impl CommandAction for PartialSignTxnCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = SignTxnOpt;
+    type Opt = PartialSignTxnOpt;
     type ReturnItem = PathBuf;
 
     fn run(

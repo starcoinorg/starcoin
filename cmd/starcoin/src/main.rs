@@ -85,7 +85,7 @@ fn run() -> Result<()> {
                 .subcommand(wallet::TransferCommand)
                 .subcommand(wallet::AcceptCoinCommand)
                 .subcommand(wallet::ListCommand)
-                .subcommand(wallet::SignTxnCommand)
+                .subcommand(wallet::PartialSignTxnCommand)
                 .subcommand(wallet::UnlockCommand)
                 .subcommand(wallet::ExportCommand)
                 .subcommand(wallet::ImportCommand)
