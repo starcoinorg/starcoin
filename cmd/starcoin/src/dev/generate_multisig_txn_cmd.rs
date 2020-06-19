@@ -36,11 +36,11 @@ pub struct GenerateMultisigTxnOpt {
     /// account address of the multisig account.
     sender: Option<AccountAddress>,
 
-    #[structopt(short = "p", name = "pubkey", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(short = "p", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
     /// public keys of the mutli-sig account.
     public_key: Vec<Ed25519PublicKey>,
 
-    #[structopt(long = "threshold", name = "threshold")]
+    #[structopt(long)]
     /// the threshold of the mulisig account.
     threshold: Option<u8>,
 

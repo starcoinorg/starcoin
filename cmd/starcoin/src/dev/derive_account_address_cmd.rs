@@ -17,7 +17,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "derive-address")]
 pub struct DeriveAddressOpt {
-    #[structopt(short = "p", name = "pubkey", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(short = "p", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
     /// public key used to derive address.If multi public keys is provided, a mutli-sig account address is derived.
     public_key: Vec<Ed25519PublicKey>,
 
