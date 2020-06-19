@@ -5,7 +5,7 @@ use parking_lot::RwLock;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use traits::{is_ok, ChainAsyncService, ConnectBlockError, Consensus};
-use types::block::{Block, BlockInfo};
+use types::block::{Block, BlockInfo, BlockNumber};
 
 struct FutureBlockPool {
     child: Arc<RwLock<HashMap<HashValue, HashSet<HashValue>>>>,
@@ -87,6 +87,7 @@ where
 {
     chain_reader: ChainActorRef<C>,
     future_blocks: FutureBlockPool,
+    pivot: Arc<RwLock<Option<BlockNumber>>>,
 }
 
 impl<C> BlockConnector<C>
@@ -94,10 +95,23 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn new(chain_reader: ChainActorRef<C>) -> Self {
+        let pivot: Option<BlockNumber> = None;
         BlockConnector {
             chain_reader,
             future_blocks: FutureBlockPool::new(),
+            pivot: Arc::new(RwLock::new(pivot)),
         }
+    }
+
+    pub fn update_pivot(&self, pivot: Option<BlockNumber>) {
+        match pivot {
+            Some(p) => self.pivot.write().replace(p),
+            None => self.pivot.write().take(),
+        };
+    }
+
+    fn get_pivot(&self) -> Option<BlockNumber> {
+        *self.pivot.read()
     }
 
     pub async fn do_block_and_child(&self, block: Block, block_info: Option<BlockInfo>) {
@@ -112,16 +126,22 @@ where
     }
 
     async fn do_block_connect(&self, block: Block, block_info: Option<BlockInfo>) -> bool {
-        let connect_result = if block_info.is_some() {
-            self.chain_reader
-                .clone()
-                .try_connect_with_block_info(
-                    block.clone(),
-                    block_info.clone().expect("block info can not be none."),
-                )
-                .await
-        } else {
+        let pivot = self.get_pivot();
+        let connect_result = if pivot.is_none() {
             self.chain_reader.clone().try_connect(block.clone()).await
+        } else {
+            let pivot_number = pivot.expect("pivot is none.");
+            if pivot_number >= block.header().number() {
+                self.chain_reader
+                    .clone()
+                    .try_connect_with_block_info(
+                        block.clone(),
+                        block_info.clone().expect("block info can not be none."),
+                    )
+                    .await
+            } else {
+                self.chain_reader.clone().try_connect(block.clone()).await
+            }
         };
 
         let block_id = block.id();

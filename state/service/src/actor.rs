@@ -84,7 +84,7 @@ impl actix::Handler<NewHeadBlock> for ChainStateActor {
         let NewHeadBlock(block) = msg;
 
         let state_root = block.header().state_root();
-        info!("ChainStateActor change StateRoot to : {:?}", state_root);
+        debug!("ChainStateActor change StateRoot to : {:?}", state_root);
         self.service.change_root(state_root);
     }
 }

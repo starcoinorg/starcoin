@@ -1,7 +1,7 @@
 use crate::helper::do_response_get_txns;
 use anyhow::Result;
 use futures::channel::mpsc;
-use starcoin_sync_api::sync_messages::{GetTxns, TransactionsData};
+use starcoin_sync_api::{GetTxns, TransactionsData};
 use starcoin_txpool_api::TxPoolSyncService;
 use std::borrow::Cow;
 use txpool::TxPoolService;

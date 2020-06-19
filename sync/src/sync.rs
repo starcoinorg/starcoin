@@ -11,8 +11,7 @@ use network::NetworkAsyncService;
 use network::PeerEvent;
 use network_api::messages::RawRpcRequestMessage;
 use starcoin_storage::Store;
-use starcoin_sync_api::sync_messages::{PeerNewBlock, SyncNotify};
-use starcoin_sync_api::SyncMetadata;
+use starcoin_sync_api::{PeerNewBlock, SyncNotify};
 use std::sync::Arc;
 use traits::Consensus;
 use txpool::TxPoolService;
@@ -41,7 +40,6 @@ where
         txpool: TxPoolService,
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
-        sync_metadata: SyncMetadata,
         rpc_rx: futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) -> Result<Addr<SyncActor<C>>> {
         let txn_sync_addr = TxnSyncActor::launch(txpool.clone(), network.clone(), bus.clone());
@@ -53,7 +51,6 @@ where
             network,
             bus.clone(),
             storage.clone(),
-            sync_metadata,
         )?;
 
         let actor = SyncActor {

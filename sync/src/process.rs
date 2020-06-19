@@ -15,9 +15,7 @@ use starcoin_canonical_serialization::SCSCodec;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
 /// Sync message which inbound
-use starcoin_sync_api::sync_messages::{
-    BlockBody, GetBlockHeaders, GetBlockHeadersByNumber, SyncRpcRequest,
-};
+use starcoin_sync_api::{BlockBody, GetBlockHeaders, GetBlockHeadersByNumber, SyncRpcRequest};
 use std::sync::Arc;
 use traits::ChainAsyncService;
 use traits::Consensus;

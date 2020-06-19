@@ -9,7 +9,6 @@ use starcoin_chain::{BlockChain, ChainServiceImpl};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
-use starcoin_sync_api::SyncMetadata;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_wallet_api::WalletAccount;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -48,7 +47,6 @@ impl ChainBencher {
                 bus.clone(),
             )
         };
-        let sync_metadata = SyncMetadata::new(node_config.clone(), bus.clone());
         let chain = ChainServiceImpl::<DummyConsensus, Storage, TxPoolService>::new(
             node_config.clone(),
             startup_info,
@@ -56,7 +54,6 @@ impl ChainBencher {
             None,
             txpool.get_service(),
             bus,
-            sync_metadata,
         )
         .unwrap();
         let miner_account = WalletAccount::random();
@@ -114,11 +111,7 @@ impl ChainBencher {
                 DummyConsensus::create_block(self.config.clone(), &block_chain, block_template)
                     .unwrap();
             latest_id = Some(block.header().parent_hash());
-            self.chain
-                .write()
-                .try_connect(block, false)
-                .unwrap()
-                .unwrap();
+            self.chain.write().try_connect(block).unwrap().unwrap();
         }
     }
 

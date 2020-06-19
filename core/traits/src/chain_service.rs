@@ -17,7 +17,7 @@ use starcoin_types::{
 /// implement ChainService
 pub trait ChainService {
     /// chain service
-    fn try_connect(&mut self, block: Block, pivot_sync: bool) -> Result<ConnectResult<()>>;
+    fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>>;
     fn try_connect_with_block_info(
         &mut self,
         block: Block,

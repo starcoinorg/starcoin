@@ -21,7 +21,6 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::SyncActor;
-use starcoin_sync_api::SyncMetadata;
 use starcoin_traits::Consensus;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
@@ -207,14 +206,11 @@ where
         Some(head_block.header().state_root()),
     )?;
 
-    let sync_metadata = SyncMetadata::new(config.clone(), bus.clone());
-
     let chain_config = config.clone();
     let chain_storage = storage.clone();
     let chain_network = network.clone();
     let chain_bus = bus.clone();
     let chain_txpool_service = txpool_service.clone();
-    let chain_sync_metadata = sync_metadata.clone();
 
     let chain = Arbiter::new()
         .exec(move || -> Result<ChainActorRef<C>> {
@@ -225,7 +221,6 @@ where
                 Some(chain_network),
                 chain_bus,
                 chain_txpool_service,
-                chain_sync_metadata,
             )
         })
         .await??;
@@ -265,7 +260,6 @@ where
     let sync_txpool = txpool_service.clone();
     let sync_network = network.clone();
     let sync_storage = storage.clone();
-    let sync_sync_metadata = sync_metadata.clone();
     let sync = Arbiter::new()
         .exec(move || -> Result<Addr<SyncActor<C>>> {
             SyncActor::launch(
@@ -276,21 +270,24 @@ where
                 sync_txpool,
                 sync_network,
                 sync_storage,
-                sync_sync_metadata,
                 rpc_rx,
             )
         })
         .await??;
 
     delay_for(Duration::from_secs(1)).await;
-    bus.clone().broadcast(SyncBegin).await?;
+    if !config.clone().network.disable_seed {
+        bus.clone().broadcast(SyncBegin).await?;
 
-    info!("Waiting sync ......");
-    let mut sync_event_receiver = sync_event_receiver_future
-        .await
-        .expect("Subscribe system event error.");
-    let _ = sync_event_receiver.next().await;
-    info!("Waiting sync finished.");
+        info!("Waiting sync ......");
+        let mut sync_event_receiver = sync_event_receiver_future
+            .await
+            .expect("Subscribe system event error.");
+
+        let _ = sync_event_receiver.next().await;
+        info!("Waiting sync finished.");
+    }
+
     let miner = MinerActor::<C, TxPoolService, ChainActorRef<C>, Storage>::launch(
         config.clone(),
         bus,

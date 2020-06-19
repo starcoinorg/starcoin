@@ -1,13 +1,14 @@
 use crate::block_connector::BlockConnector;
 /// Sync message which outbound
-use crate::block_sync::do_block_sync_task;
+use crate::block_sync::BlockSyncTaskActor;
 use crate::helper::{get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer};
 use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_STATE, SYNC_METRICS};
+use crate::sync_task::{SyncTask, SyncTaskType};
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::{format_err, Result};
-use bus::{BusActor, Subscription};
+use bus::{Broadcast, BusActor, Subscription};
 use chain::ChainActorRef;
 use config::NodeConfig;
 use crypto::HashValue;
@@ -17,8 +18,7 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_storage::Store;
-use starcoin_sync_api::sync_messages::{BlockBody, GetBlockHeaders, SyncNotify};
-use starcoin_sync_api::SyncMetadata;
+use starcoin_sync_api::{BlockBody, GetBlockHeaders, SyncNotify};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -27,18 +27,16 @@ use traits::Consensus;
 use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
-    system_events::SyncBegin,
+    system_events::{SyncBegin, SyncDone},
 };
 
 #[derive(Debug, Message)]
 #[rtype(result = "Result<()>")]
 pub enum SyncEvent {
     DoSync,
-    DoPivot(Box<Block>, Box<BlockInfo>),
-    BlockSyncDone,
 }
 
-const MIN_PEER_SIZE: usize = 5;
+const _MIN_PEER_SIZE: usize = 5;
 
 pub struct DownloadActor<C>
 where
@@ -50,11 +48,12 @@ where
     bus: Addr<BusActor>,
     sync_event_sender: mpsc::Sender<SyncEvent>,
     sync_duration: Duration,
-    syncing: Arc<AtomicBool>,
     ready: Arc<AtomicBool>,
+    syncing: Arc<AtomicBool>,
     storage: Arc<dyn Store>,
-    sync_metadata: SyncMetadata,
-    main_network: bool,
+    sync_task: SyncTask,
+    need_sync_state: Arc<AtomicBool>,
+    node_config: Arc<NodeConfig>,
 }
 
 impl<C> DownloadActor<C>
@@ -68,7 +67,6 @@ where
         network: NetworkAsyncService,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
-        sync_metadata: SyncMetadata,
     ) -> Result<Addr<DownloadActor<C>>> {
         let download_actor = DownloadActor::create(move |ctx| {
             let (sync_event_sender, sync_event_receiver) = mpsc::channel(100);
@@ -83,31 +81,19 @@ where
                 syncing: Arc::new(AtomicBool::new(false)),
                 ready: Arc::new(AtomicBool::new(false)),
                 storage,
-                sync_metadata,
-                main_network: node_config.base.net().is_main(),
+                sync_task: SyncTask::new_empty(),
+                need_sync_state: Arc::new(AtomicBool::new(
+                    if node_config.clone().network.disable_seed {
+                        false
+                    } else {
+                        node_config.clone().sync.is_state_sync()
+                    },
+                )),
+                node_config,
             }
         });
-        Ok(download_actor)
-    }
 
-    fn sync_task(&mut self, download_address: Addr<DownloadActor<C>>) {
-        if (!self.sync_metadata.fast_sync_mode()
-            || (self.sync_metadata.fast_sync_mode() && self.sync_metadata.is_sync_done())
-            // || (self.sync_metadata.state_syncing()
-            //     && (self.sync_metadata.get_address().is_some() || self.sync_metadata.state_done())))
-            || (self.sync_metadata.state_syncing()
-            && self.sync_metadata.state_done()))
-            && !self.syncing.load(Ordering::Relaxed)
-            && self.ready.load(Ordering::Relaxed)
-        {
-            Self::sync_block_from_best_peer(
-                self.sync_metadata.clone(),
-                self.syncing.clone(),
-                self.downloader.clone(),
-                self.network.clone(),
-                download_address,
-            );
-        }
+        Ok(download_actor)
     }
 }
 
@@ -127,13 +113,34 @@ where
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
 
-        ctx.run_interval(self.sync_duration, move |act, _ctx| {
-            if !act.syncing.load(Ordering::Relaxed) {
-                if let Err(e) = act.sync_event_sender.try_send(SyncEvent::DoSync) {
+        ctx.run_interval(self.sync_duration, move |download, _ctx| {
+            if !download.ready.load(Ordering::Relaxed) {
+                return;
+            }
+            if download.sync_task.is_finish() {
+                if let Err(e) = download.sync_event_sender.try_send(SyncEvent::DoSync) {
                     error!("{:?}", e);
                 }
             }
         });
+    }
+}
+
+impl<C> Handler<SyncTaskType> for DownloadActor<C>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    type Result = Result<()>;
+
+    fn handle(&mut self, task_type: SyncTaskType, _ctx: &mut Self::Context) -> Self::Result {
+        self.sync_task.drop_task(&task_type);
+        if self.sync_task.is_finish() {
+            self.bus.do_send(Broadcast { msg: SyncDone });
+            self.need_sync_state.store(false, Ordering::Relaxed);
+            self.syncing.store(false, Ordering::Relaxed);
+            self.downloader.set_pivot(None);
+        }
+        Ok(())
     }
 }
 
@@ -143,24 +150,8 @@ where
 {
     type Result = ();
 
-    fn handle(&mut self, _msg: SyncBegin, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: SyncBegin, _ctx: &mut Self::Context) -> Self::Result {
         self.ready.store(true, Ordering::Relaxed);
-
-        let downloader = self.downloader.clone();
-        let network = self.network.clone();
-        let storage = self.storage.clone();
-        let sync_metadata = self.sync_metadata.clone();
-        let is_main = self.main_network;
-        let self_peer_id = self.self_peer_id.as_ref().clone();
-        Self::sync_state(
-            self_peer_id,
-            is_main,
-            downloader,
-            network,
-            storage,
-            sync_metadata,
-            ctx.address(),
-        );
     }
 }
 
@@ -171,17 +162,32 @@ where
     type Result = Result<()>;
     fn handle(&mut self, item: SyncEvent, ctx: &mut Self::Context) -> Self::Result {
         match item {
-            SyncEvent::DoSync => self.sync_task(ctx.address()),
-            SyncEvent::DoPivot(block, block_info) => {
-                self.do_block_and_child(*block, Some(*block_info))
-            }
-            SyncEvent::BlockSyncDone => {
-                self.syncing.store(false, Ordering::Relaxed);
-                let _ = self.sync_metadata.block_sync_done();
-                SYNC_METRICS
-                    .sync_done_count
-                    .with_label_values(&[LABEL_BLOCK])
-                    .inc();
+            SyncEvent::DoSync => {
+                if !self.sync_task.is_finish() {
+                    return Ok(());
+                }
+
+                let sync_task = self.sync_task.clone();
+                if self.need_sync_state.load(Ordering::Relaxed) {
+                    Self::sync_state_and_block(
+                        self.self_peer_id.as_ref().clone(),
+                        self.node_config.clone().base.net().is_main(),
+                        self.downloader.clone(),
+                        self.network.clone(),
+                        self.storage.clone(),
+                        sync_task,
+                        self.syncing.clone(),
+                        ctx.address(),
+                    );
+                } else {
+                    Self::sync_block_from_best_peer(
+                        self.downloader.clone(),
+                        self.network.clone(),
+                        sync_task,
+                        self.syncing.clone(),
+                        ctx.address(),
+                    );
+                }
             }
         }
 
@@ -195,27 +201,11 @@ where
 {
     type Result = ();
 
-    fn handle(&mut self, msg: SyncNotify, ctx: &mut Self::Context) -> Self::Result {
-        let downloader = self.downloader.clone();
-        let network = self.network.clone();
-        let storage = self.storage.clone();
-        let sync_metadata = self.sync_metadata.clone();
-        let is_main = self.main_network;
-        let self_peer_id = self.self_peer_id.as_ref().clone();
-        let ready = self.ready.load(Ordering::Relaxed);
+    fn handle(&mut self, msg: SyncNotify, _ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            SyncNotify::NewPeerMsg(_peer_id) => {
-                if ready {
-                    Self::sync_state(
-                        self_peer_id,
-                        is_main,
-                        downloader,
-                        network,
-                        storage,
-                        sync_metadata,
-                        ctx.address(),
-                    );
-                }
+            SyncNotify::NewPeerMsg(peer_id) => {
+                self.sync_task.activate_tasks();
+                debug!("new peer: {:?}", peer_id);
             }
             SyncNotify::NewHeadBlock(_peer_id, block) => self.do_block_and_child(*block, None),
             SyncNotify::ClosePeerMsg(peer_id) => {
@@ -229,74 +219,66 @@ impl<C> DownloadActor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    fn sync_state(
+    fn sync_state_and_block(
         self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
-        sync_metadata: SyncMetadata,
-        address: Addr<DownloadActor<C>>,
+        sync_task: SyncTask,
+        syncing: Arc<AtomicBool>,
+        download_address: Addr<DownloadActor<C>>,
     ) {
         Arbiter::spawn(async move {
             SYNC_METRICS
                 .sync_count
                 .with_label_values(&[LABEL_STATE])
                 .inc();
-            if let Err(e) = Self::sync_state_inner(
+            syncing.store(true, Ordering::Relaxed);
+            match Self::sync_state_and_block_inner(
                 self_peer_id.clone(),
                 main_network,
                 downloader.clone(),
                 network.clone(),
                 storage.clone(),
-                sync_metadata.clone(),
-                address.clone(),
+                sync_task.clone(),
+                download_address.clone(),
             )
             .await
             {
-                debug!("state sync error : {:?}", e);
-                Self::sync_state(
-                    self_peer_id,
-                    main_network,
-                    downloader,
-                    network,
-                    storage,
-                    sync_metadata,
-                    address,
-                );
-            } else {
-                SYNC_METRICS
-                    .sync_done_count
-                    .with_label_values(&[LABEL_STATE])
-                    .inc();
+                Err(e) => {
+                    debug!("state sync error : {:?}", e);
+                    syncing.store(false, Ordering::Relaxed);
+                    Self::sync_state_and_block(
+                        self_peer_id.clone(),
+                        main_network,
+                        downloader.clone(),
+                        network.clone(),
+                        storage.clone(),
+                        sync_task,
+                        syncing.clone(),
+                        download_address,
+                    );
+                }
+                Ok(_) => {
+                    SYNC_METRICS
+                        .sync_done_count
+                        .with_label_values(&[LABEL_STATE])
+                        .inc();
+                }
             }
         });
     }
 
-    async fn sync_state_inner(
+    async fn sync_state_and_block_inner(
         self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
-        sync_metadata: SyncMetadata,
-        address: Addr<DownloadActor<C>>,
+        sync_task: SyncTask,
+        download_address: Addr<DownloadActor<C>>,
     ) -> Result<()> {
-        if !sync_metadata.state_syncing() {
-            debug!("not fast sync mode.");
-            return Ok(());
-        }
-
-        if sync_metadata.state_done() {
-            debug!("state sync already done.");
-            return Ok(());
-        }
-
-        if main_network && network.get_peer_set_size().await? < MIN_PEER_SIZE {
-            debug!("condition is not satisfied when sync state.");
-            return Ok(());
-        }
-
         if let Some(best_peer) = network.best_peer().await? {
             //1. ancestor
             let begin_number = downloader
@@ -331,14 +313,10 @@ where
                         "do not need sync state : {:?}, {:?}, {:?}",
                         ancestor, min_behind, latest_number
                     );
-                    if sync_metadata.get_address().is_none() {
-                        let _ = sync_metadata.state_sync_done();
-                        let _ = sync_metadata.pivot_connected_succ();
-                    }
                     return Ok(());
                 }
 
-                // 3. StateSyncActor
+                // 3. sync task
                 let root = Downloader::<C>::get_pivot(
                     &network,
                     best_peer.get_peer_id(),
@@ -346,48 +324,39 @@ where
                     min_behind as usize,
                 )
                 .await?;
-                let sync_pivot = sync_metadata.get_pivot()?;
-                let pivot = root.number();
-                if !(sync_pivot.is_none() || sync_pivot.expect("sync pivot is none.") < pivot) {
-                    debug!("pivot {:?} : {}", sync_pivot, pivot);
-                    return Ok(());
-                }
 
-                if sync_metadata.state_done() {
-                    debug!("state sync already done during find_ancestor.");
-                    return Ok(());
-                }
+                let block_sync_task = BlockSyncTaskActor::launch(
+                    &ancestor_header,
+                    latest_number,
+                    downloader.clone(),
+                    network.clone(),
+                    false,
+                    download_address.clone(),
+                );
+                sync_task.push_task(SyncTaskType::BLOCK, Box::new(block_sync_task.clone()));
 
-                if sync_pivot.is_none() {
-                    sync_metadata.clone().update_pivot(pivot, min_behind)?;
-                    let state_sync_task_address = StateSyncTaskActor::launch(
-                        self_peer_id,
-                        (
-                            root.state_root(),
-                            root.accumulator_root(),
-                            root.parent_block_accumulator_root(),
-                        ),
-                        storage,
-                        network.clone(),
-                        sync_metadata.clone(),
-                        address,
-                    );
-                    sync_metadata.update_address(&state_sync_task_address)?;
-                } else if let Some(_tmp) = sync_pivot {
-                    // if tmp < pivot {
-                    //     if let Some(address) = sync_metadata.get_address() {
-                    //         address
-                    //             .reset(
-                    //                 root.state_root(),
-                    //                 root.accumulator_root(),
-                    //                 root.parent_block_accumulator_root(),
-                    //             )
-                    //             .await;
-                    //     } else {
-                    //         debug!("state sync reset address is none.");
-                    //     }
-                    // }
-                }
+                let state_sync_task_address = StateSyncTaskActor::launch(
+                    self_peer_id,
+                    (
+                        root.state_root(),
+                        root.accumulator_root(),
+                        root.parent_block_accumulator_root(),
+                    ),
+                    storage,
+                    network.clone(),
+                    block_sync_task,
+                    download_address,
+                );
+                sync_task.push_task(SyncTaskType::STATE, Box::new(state_sync_task_address));
+                downloader.set_pivot(Some(root.number()));
+
+            // address
+            //     .reset(
+            //         root.state_root(),
+            //         root.accumulator_root(),
+            //         root.parent_block_accumulator_root(),
+            //     )
+            //     .await;
             } else {
                 return Err(format_err!("find_ancestor return none."));
             }
@@ -396,77 +365,81 @@ where
             return Err(format_err!("best peer is none."));
         }
 
-        if sync_metadata.is_failed() {
-            if let Some(address) = sync_metadata.get_address() {
-                address.act().await;
-            }
-        }
-
         Ok(())
     }
 
     fn sync_block_from_best_peer(
-        sync_metadata: SyncMetadata,
-        syncing: Arc<AtomicBool>,
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
+        sync_task: SyncTask,
+        syncing: Arc<AtomicBool>,
         download_address: Addr<DownloadActor<C>>,
     ) {
-        Arbiter::spawn(async move {
-            SYNC_METRICS
-                .sync_count
-                .with_label_values(&[LABEL_BLOCK])
-                .inc();
-            let is_full_mode = sync_metadata.state_syncing();
-            if let Err(e) = Self::sync_block_from_best_peer_inner(
-                downloader,
-                network,
-                is_full_mode,
-                download_address,
-                syncing.clone(),
-            )
-            .await
-            {
-                error!("sync block from best peer failed : {:?}", e);
-                syncing.store(false, Ordering::Relaxed);
-                let _ = sync_metadata.block_sync_done();
-            }
-        });
+        if !syncing.load(Ordering::Relaxed) {
+            Arbiter::spawn(async move {
+                if !syncing.load(Ordering::Relaxed) {
+                    SYNC_METRICS
+                        .sync_count
+                        .with_label_values(&[LABEL_BLOCK])
+                        .inc();
+                    syncing.store(true, Ordering::Relaxed);
+                    match Self::sync_block_from_best_peer_inner(
+                        downloader,
+                        network,
+                        sync_task,
+                        download_address,
+                    )
+                    .await
+                    {
+                        Err(e) => {
+                            error!("sync block from best peer failed : {:?}", e);
+                            syncing.store(false, Ordering::Relaxed);
+                        }
+                        Ok(flag) => {
+                            if flag {
+                                syncing.store(false, Ordering::Relaxed);
+                            }
+                        }
+                    }
+                }
+            });
+        }
     }
 
     async fn sync_block_from_best_peer_inner(
         downloader: Arc<Downloader<C>>,
         network: NetworkAsyncService,
-        is_full_mode: bool,
+        sync_task: SyncTask,
         download_address: Addr<DownloadActor<C>>,
-        syncing: Arc<AtomicBool>,
-    ) -> Result<()> {
-        syncing.store(true, Ordering::Relaxed);
+    ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
                 let end_number = best_peer.get_block_number();
-                if let Some(ancestor_header) = downloader
+                match downloader
                     .find_ancestor_header(
                         best_peer.get_peer_id(),
                         network.clone(),
                         header.number(),
-                        is_full_mode,
+                        true,
                     )
-                    .await?
+                    .await
                 {
-                    do_block_sync_task(
-                        &ancestor_header,
-                        end_number,
-                        downloader.clone(),
-                        network.clone(),
-                        download_address,
-                    );
-                    Ok(())
-                } else {
-                    Err(format_err!(
-                        "{:?}",
-                        "Find ancestor_header failed when create sync task."
-                    ))
+                    Ok(ancestor) => {
+                        if let Some(ancestor_header) = ancestor {
+                            let block_sync_task = BlockSyncTaskActor::launch(
+                                &ancestor_header,
+                                end_number,
+                                downloader.clone(),
+                                network.clone(),
+                                true,
+                                download_address,
+                            );
+                            sync_task.push_task(SyncTaskType::BLOCK, Box::new(block_sync_task));
+                        }
+
+                        Ok(false)
+                    }
+                    Err(e) => Err(e),
                 }
             } else {
                 Err(format_err!(
@@ -475,10 +448,11 @@ where
                 ))
             }
         } else {
-            Err(format_err!(
-                "{:?}",
-                "best peer is none when create sync task."
-            ))
+            // Err(format_err!(
+            //     "{:?}",
+            //     "best peer is none when create sync task."
+            // ))
+            Ok(true)
         }
     }
 
@@ -647,5 +621,9 @@ where
         self.block_connector
             .do_block_and_child(block, block_info)
             .await;
+    }
+
+    fn set_pivot(&self, pivot: Option<BlockNumber>) {
+        self.block_connector.update_pivot(pivot);
     }
 }

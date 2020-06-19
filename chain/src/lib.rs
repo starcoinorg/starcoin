@@ -22,7 +22,6 @@ use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
 use network::NetworkAsyncService;
-use starcoin_sync_api::SyncMetadata;
 use std::sync::Arc;
 use storage::Storage;
 use traits::{ChainAsyncService, ChainService, ConnectResult, Consensus};
@@ -55,7 +54,6 @@ where
         network: Option<NetworkAsyncService>,
         bus: Addr<BusActor>,
         txpool: TxPoolService,
-        sync_metadata: SyncMetadata,
     ) -> Result<ChainActorRef<C>> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(
@@ -65,7 +63,6 @@ where
                 network,
                 txpool,
                 bus.clone(),
-                sync_metadata,
             )?,
             bus,
         }
@@ -154,7 +151,7 @@ where
             ))),
             ChainRequest::ConnectBlock(block, mut block_info) => {
                 let conn_state = if block_info.is_none() {
-                    self.service.try_connect(*block, false)?
+                    self.service.try_connect(*block)?
                 } else {
                     self.service.try_connect_with_block_info(
                         *block,
@@ -201,7 +198,7 @@ where
     fn handle(&mut self, msg: MinedBlock, _ctx: &mut Self::Context) -> Self::Result {
         debug!("try connect mined block.");
         let MinedBlock(new_block) = msg;
-        match self.service.try_connect(new_block.as_ref().clone(), false) {
+        match self.service.try_connect(new_block.as_ref().clone()) {
             Ok(_) => debug!("Process mined block success."),
             Err(e) => {
                 warn!("Process mined block fail, error: {:?}", e);

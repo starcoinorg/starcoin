@@ -4,14 +4,14 @@ use super::EventSubscribers;
 use super::NewHeaderSubscribers;
 use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
 use anyhow::Result;
-use starcoin_bus::{Bus, BusActor};
+use starcoin_bus::{Bus, BusActor, Subscription};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::event::Event;
 use starcoin_storage::Store;
 use starcoin_types::block::Block;
 use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::system_events::{NewHeadBlock, SyncBegin, SyncDone};
 use std::sync::Arc;
 
 pub struct ChainNotifyHandlerActor {
@@ -19,7 +19,9 @@ pub struct ChainNotifyHandlerActor {
     new_header_subscribers: NewHeaderSubscribers,
     bus: actix::Addr<BusActor>,
     store: Arc<dyn Store>,
+    broadcast_txn: bool,
 }
+
 impl ChainNotifyHandlerActor {
     pub fn new(
         subscribers: EventSubscribers,
@@ -32,6 +34,7 @@ impl ChainNotifyHandlerActor {
             new_header_subscribers,
             bus,
             store,
+            broadcast_txn: true,
         }
     }
 }
@@ -39,6 +42,24 @@ impl ChainNotifyHandlerActor {
 impl actix::Actor for ChainNotifyHandlerActor {
     type Context = actix::Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
+        let sync_begin_recipient = ctx.address().recipient::<SyncBegin>();
+        self.bus
+            .send(Subscription {
+                recipient: sync_begin_recipient,
+            })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+
+        let sync_done_recipient = ctx.address().recipient::<SyncDone>();
+        self.bus
+            .send(Subscription {
+                recipient: sync_done_recipient,
+            })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+
         self.bus
             .clone()
             .channel::<NewHeadBlock>()
@@ -58,15 +79,33 @@ impl actix::Actor for ChainNotifyHandlerActor {
             .wait(ctx);
     }
 }
+
+impl actix::Handler<SyncBegin> for ChainNotifyHandlerActor {
+    type Result = ();
+
+    fn handle(&mut self, _begin: SyncBegin, _ctx: &mut Self::Context) -> Self::Result {
+        self.broadcast_txn = false;
+    }
+}
+
+impl actix::Handler<SyncDone> for ChainNotifyHandlerActor {
+    type Result = ();
+    fn handle(&mut self, _done: SyncDone, _ctx: &mut Self::Context) -> Self::Result {
+        self.broadcast_txn = true;
+    }
+}
+
 impl actix::StreamHandler<NewHeadBlock> for ChainNotifyHandlerActor {
     fn handle(&mut self, item: NewHeadBlock, _ctx: &mut Self::Context) {
-        let NewHeadBlock(block_detail) = item;
-        let block = block_detail.get_block();
-        // notify header.
-        self.notify_new_block(block);
-        // notify events
-        if let Err(e) = self.notify_events(block, self.store.clone()) {
-            error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
+        if self.broadcast_txn {
+            let NewHeadBlock(block_detail) = item;
+            let block = block_detail.get_block();
+            // notify header.
+            self.notify_new_block(block);
+            // notify events
+            if let Err(e) = self.notify_events(block, self.store.clone()) {
+                error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
+            }
         }
     }
 }
