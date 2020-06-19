@@ -5,14 +5,12 @@
 address 0x1 {
 module Genesis {
     use 0x1::Association;
-    use 0x1::Event;
     use 0x1::STC::{Self, STC};
     use 0x1::Coin;
     use 0x1::Account;
     use 0x1::Block;
     use 0x1::Config;
     use 0x1::TransactionTimeout;
-    use 0x1::Testnet;
     use 0x1::Timestamp;
     use 0x1::Version;
     use 0x1::Signer;
@@ -31,33 +29,27 @@ module Genesis {
         Association::initialize(association);
         Association::grant_privilege<Coin::AddCurrency>(association, association);
 
-        // On-chain config setup
-        Event::publish_generator(config_account);
-        Config::initialize(config_account, association);
+        // Create the config account
+        Account::create_genesis_account(
+            Config::default_config_address(),
+            copy dummy_auth_key_prefix
+        );
+
+        Config::initialize(config_account);
 
         // Currency setup
         Coin::initialize(config_account);
 
-        // Set that this is testnet
-        Testnet::initialize(association);
-
-        // Event and currency setup
-        Event::publish_generator(association);
-
-        //Account::initialize(association);
-        STC::initialize(association);
-
-        Account::create_genesis_account<STC>(
+        Account::create_genesis_account(
             Signer::address_of(association),
             copy dummy_auth_key_prefix,
         );
 
+        //Account::initialize(association);
+        STC::initialize(association);
 
-        // Create the config account
-        Account::create_genesis_account<STC>(
-            Config::default_config_address(),
-            copy dummy_auth_key_prefix
-        );
+        Account::add_currency<STC>(association);
+        Account::add_currency<STC>(config_account);
 
         Account::create_account<STC>(
             Signer::address_of(mint_account),

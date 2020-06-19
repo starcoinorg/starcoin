@@ -16,6 +16,7 @@ use starcoin_config::ChainConfig;
 use starcoin_types::{
     contract_event::ContractEvent, transaction::authenticator::AuthenticationKey,
 };
+use starcoin_vm_types::account_config::config_address;
 use starcoin_vm_types::{
     account_config,
     data_store::DataStore,
@@ -44,16 +45,9 @@ pub static GENESIS_KEYPAIR: Lazy<(Ed25519PrivateKey, Ed25519PublicKey)> = Lazy::
 });
 
 static INITIALIZE_NAME: &str = "initialize";
-// static INITIALIZE: Lazy<Identifier> = Lazy::new(|| Identifier::new("INITIALIZE_NAME").unwrap());
-// static INITIALIZE_BLOCK: Lazy<Identifier> =
-//     Lazy::new(|| Identifier::new("initialize_block_metadata").unwrap());
 static MINT_TO_ADDRESS: &str = "mint_to_address";
-// static EPILOGUE: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unwrap());
-// static ROTATE_AUTHENTICATION_KEY: Lazy<Identifier> =
-//     Lazy::new(|| Identifier::new("rotate_authentication_key").unwrap());
 
-static SUBSIDY_CONF: &str = "subsidy";
-static SUBSIDY_INIT: &str = "initialize_subsidy_info";
+static REWARD_INIT: &str = "initialize_reward_info";
 
 const GENESIS_MODULE_NAME: &str = "Genesis";
 
@@ -138,32 +132,25 @@ fn create_and_initialize_main_accounts(
             Value::vector_u8(genesis_auth_key.to_vec()),
         ],
     );
-    //TODO refactor subsidy config
 
-    // init subsidy config
-    context.set_sender(mint_address);
+    // init reward config
+    context.set_sender(config_address());
     context.exec(
-        account_config::SUBSIDY_CONF_MODULE_NAME,
+        account_config::REWARD_CONF_MODULE_NAME,
         INITIALIZE_NAME,
         vec![],
-        vec![Value::transaction_argument_signer_reference(mint_address)],
-    );
-
-    context.exec(
-        account_config::SUBSIDY_CONF_MODULE_NAME,
-        SUBSIDY_CONF,
-        vec![],
         vec![
-            Value::transaction_argument_signer_reference(mint_address),
+            Value::transaction_argument_signer_reference(config_address()),
             Value::u64(chain_config.reward_halving_interval),
             Value::u64(chain_config.base_block_reward),
             Value::u64(chain_config.reward_delay),
         ],
     );
 
+    context.set_sender(mint_address);
     context.exec(
         account_config::BLOCK_MODULE_NAME,
-        SUBSIDY_INIT,
+        REWARD_INIT,
         vec![],
         vec![Value::transaction_argument_signer_reference(mint_address)],
     );

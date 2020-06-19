@@ -8,7 +8,6 @@ module Account {
     use 0x1::LCS;
     use 0x1::Coin::{Self, Coin};
     use 0x1::TransactionTimeout;
-    use 0x1::Testnet;
     use 0x1::Vector;
     use 0x1::Signer;
     use 0x1::Timestamp;
@@ -88,10 +87,6 @@ module Account {
     // A privilege to allow the freezing of accounts.
     struct FreezingPrivilege { }
 
-
-     public fun initialize(association: &signer) {
-         assert(Signer::address_of(association) == 0xA550C18, 0);
-     }
 
     // Deposits the `to_deposit` coin into the `payee`'s account balance
     public fun deposit<Token>(account: &signer, payee: address, to_deposit: Coin<Token>)
@@ -328,26 +323,19 @@ module Account {
         Option::fill(&mut account.key_rotation_capability, cap)
     }
 
-    // Create an account with the Empty role at `new_account_address` with authentication key
+    // Create an account at `new_account_address` with authentication key
     /// `auth_key_prefix` | `new_account_address`
     // TODO: can we get rid of this? the main thing this does is create an account without an
-    // EventGenerator resource (which is just needed to avoid circular dep issues in gensis)
-    public fun create_genesis_account<Token>(
+    // Token (which is just needed to avoid circular dep issues in gensis)
+    public fun create_genesis_account(
         new_account_address: address,
         auth_key_prefix: vector<u8>
     ) {
         assert(Timestamp::is_genesis(), 0);
         let new_account = create_signer(new_account_address);
-        make_account<Token>(new_account, auth_key_prefix)
-    }
-
-    // Creates a new testnet account at `fresh_address` with a balance of
-    // zero `Token` type coins, and authentication key `auth_key_prefix` | `fresh_address`.
-    // Trying to create an account at address 0x1 will cause runtime failure as it is a
-    // reserved address for the MoveVM.
-    public fun create_testnet_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>){
-        assert(Testnet::is_testnet(), 10042);
-        create_account<Token>(fresh_address, auth_key_prefix);
+        Event::publish_generator(&new_account);
+        make_account(&new_account, auth_key_prefix);
+        destroy_signer(new_account);
     }
 
     // Creates a new account at `fresh_address` with a balance of zero and authentication
@@ -357,18 +345,20 @@ module Account {
     public fun create_account<Token>(fresh_address: address, auth_key_prefix: vector<u8>){
         let new_account = create_signer(fresh_address);
         Event::publish_generator(&new_account);
-        make_account<Token>(new_account, auth_key_prefix)
+        make_account(&new_account, auth_key_prefix);
+        Self::add_currency<Token>(&new_account);
+        destroy_signer(new_account);
     }
 
-    fun make_account<Token>(
-        new_account: signer,
+    fun make_account(
+        new_account: &signer,
         auth_key_prefix: vector<u8>,
-    ){
+    ) {
         let authentication_key = auth_key_prefix;
-        let new_account_addr = Signer::address_of(&new_account);
+        let new_account_addr = Signer::address_of(new_account);
         Vector::append(&mut authentication_key, LCS::to_bytes(&new_account_addr));
         assert(Vector::length(&authentication_key) == 32, 12);
-        move_to(&new_account, Account {
+        move_to(new_account, Account {
               authentication_key,
               withdrawal_capability: Option::some(
                   WithdrawCapability {
@@ -378,13 +368,11 @@ module Account {
                   KeyRotationCapability {
                       account_address: new_account_addr
               }),
-              received_events: Event::new_event_handle<ReceivedPaymentEvent>(&new_account),
-              sent_events: Event::new_event_handle<SentPaymentEvent>(&new_account),
+              received_events: Event::new_event_handle<ReceivedPaymentEvent>(new_account),
+              sent_events: Event::new_event_handle<SentPaymentEvent>(new_account),
               sequence_number: 0,
               is_frozen: false,
         });
-        move_to(&new_account, Balance<Token>{coin: Coin::zero<Token>()});
-        destroy_signer(new_account);
     }
 
     native fun create_signer(addr: address): signer;
