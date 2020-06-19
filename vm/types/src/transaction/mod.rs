@@ -45,7 +45,7 @@ use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signatur
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
-pub use upgrade::{InitScript, ModuleUpgradeOp, UpgradePackage};
+pub use upgrade::{InitScript, UpgradePackage};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 

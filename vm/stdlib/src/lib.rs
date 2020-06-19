@@ -3,13 +3,14 @@
 
 #![forbid(unsafe_code)]
 
-pub mod transaction_scripts;
-
 use bytecode_verifier::{batch_verify_modules, VerifiedModule};
 use once_cell::sync::Lazy;
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
 use starcoin_vm_types::file_format::CompiledModule;
 use std::path::PathBuf;
+
+pub mod init_scripts;
+pub mod transaction_scripts;
 
 pub const STD_LIB_DIR: &str = "modules";
 pub const MOVE_EXTENSION: &str = "move";

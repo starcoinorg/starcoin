@@ -8,16 +8,6 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub enum ModuleUpgradeOp {
-    /// Publish a new Module
-    Publish(Module),
-    /// Update a exist module
-    Update(Module),
-    //TODO need support remove or deprecate module?
-    //Deprecate(ModuleId),
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct InitScript {
     /// Execute the script by this account, if this is None, use the txn's sender.
     su_account: Option<AccountAddress>,
@@ -40,12 +30,29 @@ impl InitScript {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct UpgradePackage {
-    modules: Vec<ModuleUpgradeOp>,
+    modules: Vec<Module>,
     scripts: Vec<InitScript>,
 }
 
 impl UpgradePackage {
-    pub fn modules(&self) -> &[ModuleUpgradeOp] {
+    pub fn new(modules: Vec<Module>, scripts: Vec<InitScript>) -> Self {
+        Self { modules, scripts }
+    }
+
+    pub fn new_with_modules(modules: Vec<Module>) -> Self {
+        Self {
+            modules,
+            scripts: vec![],
+        }
+    }
+
+    pub fn add_scripts(&mut self, su_account: Option<AccountAddress>, script: Script) {
+        self.scripts.push(InitScript { su_account, script });
+    }
+}
+
+impl UpgradePackage {
+    pub fn modules(&self) -> &[Module] {
         &self.modules
     }
 
@@ -53,7 +60,7 @@ impl UpgradePackage {
         &self.scripts
     }
 
-    pub fn into_inner(self) -> (Vec<ModuleUpgradeOp>, Vec<InitScript>) {
+    pub fn into_inner(self) -> (Vec<Module>, Vec<InitScript>) {
         (self.modules, self.scripts)
     }
 }

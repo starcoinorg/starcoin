@@ -25,7 +25,7 @@ use starcoin_vm_types::account_config::{stc_type_tag, EPILOGUE_NAME, PROLOGUE_NA
 use starcoin_vm_types::data_store::DataStore;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
-use starcoin_vm_types::transaction::{Module, ModuleUpgradeOp, Script, UpgradePackage};
+use starcoin_vm_types::transaction::{Module, Script, UpgradePackage};
 use starcoin_vm_types::{
     errors,
     errors::{convert_prologue_runtime_error, VMResult},
@@ -346,16 +346,7 @@ impl StarcoinVM {
                 let (modules, scripts) = package.into_inner();
                 let mut ret: VMResult<Vec<_>> = modules
                     .iter()
-                    .map(|module_op| match module_op {
-                        ModuleUpgradeOp::Publish(module) => self.move_vm.publish_module(
-                            module.code().to_vec(),
-                            txn_data.sender,
-                            &mut data_store,
-                        ),
-                        ModuleUpgradeOp::Update(module) => {
-                            Self::update_module(txn_data.sender, module, &mut data_store)
-                        }
-                    })
+                    .map(|module| Self::update_module(txn_data.sender, module, &mut data_store))
                     .collect();
                 if ret.is_ok() {
                     ret = scripts
@@ -435,14 +426,8 @@ impl StarcoinVM {
             ));
         }
 
-        // Make sure that there is already a module with this name for update
-        // under the transaction sender's account.
         let module_id = compiled_module.self_id();
-        if !data_store.exists_module(&module_id) {
-            return Err(VMStatus::new(StatusCode::LINKER_ERROR)
-                .with_message(format!("Cannot find {:?} in data cache", module_id)));
-        }
-
+        //TODO verify module compatibility
         let _verified_module = VerifiedModule::new(compiled_module).map_err(|(_, e)| e)?;
         //TODO check native implement.
         //Loader::check_natives(&verified_module)?;
