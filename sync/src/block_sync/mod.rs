@@ -9,12 +9,14 @@ use actix::prelude::*;
 use actix::{Actor, ActorContext, Addr, Context, Handler};
 use anyhow::Result;
 use crypto::hash::HashValue;
+use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use starcoin_sync_api::BlockBody;
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::Arc;
+use std::time::Duration;
 use traits::Consensus;
 use types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 
@@ -209,7 +211,7 @@ where
         self.state.is_finish()
     }
 
-    fn _sync_blocks(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn sync_blocks(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
         let sync_header_flag = !(self.info_task.len() > MAX_LEN
             || self.body_task.len() > MAX_LEN
             || self.next.1 >= self.target_number);
@@ -232,6 +234,7 @@ where
                     Ok(headers) => SyncDataEvent::new_header_event(headers),
                     Err(e) => {
                         error!("Sync headers err: {:?}", e);
+                        Delay::new(Duration::from_secs(1)).await;
                         SyncDataEvent::new_header_event(Vec::new())
                     }
                 };
@@ -250,6 +253,7 @@ where
                     Ok(infos) => SyncDataEvent::new_info_event(infos, Vec::new()),
                     Err(e) => {
                         error!("Sync infos err: {:?}", e);
+                        Delay::new(Duration::from_secs(1)).await;
                         SyncDataEvent::new_info_event(Vec::new(), hashs)
                     }
                 };
@@ -267,17 +271,22 @@ where
                     Ok(bodies) => SyncDataEvent::new_body_event(bodies, Vec::new()),
                     Err(e) => {
                         error!("Sync bodies err: {:?}", e);
+                        Delay::new(Duration::from_secs(1)).await;
                         SyncDataEvent::new_body_event(Vec::new(), hashs)
                     }
                 };
 
-                address.do_send(event);
+                address.clone().do_send(event);
                 block_body_timer.observe_duration();
             }
+
+            if let Err(err) = address.try_send(NextTimeEvent {}) {
+                error!("Send NextTimeEvent failed when sync : {:?}", err);
+            };
         });
     }
 
-    fn sync_headers(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn _sync_headers(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
         if self.info_task.len() > MAX_LEN
             || self.body_task.len() > MAX_LEN
             || self.next.1 >= self.target_number
@@ -297,6 +306,7 @@ where
                 Ok(headers) => SyncDataEvent::new_header_event(headers),
                 Err(e) => {
                     error!("Sync headers err: {:?}", e);
+                    Delay::new(Duration::from_secs(1)).await;
                     SyncDataEvent::new_header_event(Vec::new())
                 }
             };
@@ -321,7 +331,7 @@ where
         }
     }
 
-    fn sync_infos(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn _sync_infos(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
         if let Some(hashs) = self.info_task.take_hashs() {
             let network = self.network.clone();
             Arbiter::spawn(async move {
@@ -333,6 +343,7 @@ where
                     Ok(infos) => SyncDataEvent::new_info_event(infos, Vec::new()),
                     Err(e) => {
                         error!("Sync infos err: {:?}", e);
+                        Delay::new(Duration::from_secs(1)).await;
                         SyncDataEvent::new_info_event(Vec::new(), hashs)
                     }
                 };
@@ -360,7 +371,7 @@ where
         }
     }
 
-    fn sync_bodies(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn _sync_bodies(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
         if let Some(hashs) = self.body_task.take_hashs() {
             let network = self.network.clone();
             Arbiter::spawn(async move {
@@ -372,6 +383,7 @@ where
                     Ok(bodies) => SyncDataEvent::new_body_event(bodies, Vec::new()),
                     Err(e) => {
                         error!("Sync bodies err: {:?}", e);
+                        Delay::new(Duration::from_secs(1)).await;
                         SyncDataEvent::new_body_event(Vec::new(), hashs)
                     }
                 };
@@ -433,9 +445,10 @@ where
     }
 
     fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
-        self.sync_headers(address.clone());
-        self.sync_infos(address.clone());
-        self.sync_bodies(address);
+        // self.sync_headers(address.clone());
+        // self.sync_infos(address.clone());
+        // self.sync_bodies(address);
+        self.sync_blocks(address);
     }
 
     fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
@@ -482,10 +495,6 @@ where
                 }
             }
         }
-
-        if let Err(err) = ctx.address().try_send(NextTimeEvent {}) {
-            error!("Send NextTimeEvent failed when sync : {:?}", err);
-        };
     }
 }
 
