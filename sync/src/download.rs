@@ -260,11 +260,14 @@ where
                         download_address,
                     );
                 }
-                Ok(_) => {
+                Ok(flag) => {
                     SYNC_METRICS
                         .sync_done_count
                         .with_label_values(&[LABEL_STATE])
                         .inc();
+                    if flag {
+                        syncing.store(false, Ordering::Relaxed);
+                    }
                 }
             }
         });
@@ -278,7 +281,7 @@ where
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
         download_address: Addr<DownloadActor<C>>,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             //1. ancestor
             let begin_number = downloader
@@ -313,7 +316,8 @@ where
                         "do not need sync state : {:?}, {:?}, {:?}",
                         ancestor, min_behind, latest_number
                     );
-                    return Ok(());
+
+                    return Ok(true);
                 }
 
                 // 3. sync task
@@ -365,7 +369,7 @@ where
             return Err(format_err!("best peer is none."));
         }
 
-        Ok(())
+        Ok(false)
     }
 
     fn sync_block_from_best_peer(
@@ -376,29 +380,27 @@ where
         download_address: Addr<DownloadActor<C>>,
     ) {
         if !syncing.load(Ordering::Relaxed) {
+            syncing.store(true, Ordering::Relaxed);
             Arbiter::spawn(async move {
-                if !syncing.load(Ordering::Relaxed) {
-                    SYNC_METRICS
-                        .sync_count
-                        .with_label_values(&[LABEL_BLOCK])
-                        .inc();
-                    syncing.store(true, Ordering::Relaxed);
-                    match Self::sync_block_from_best_peer_inner(
-                        downloader,
-                        network,
-                        sync_task,
-                        download_address,
-                    )
-                    .await
-                    {
-                        Err(e) => {
-                            error!("sync block from best peer failed : {:?}", e);
+                SYNC_METRICS
+                    .sync_count
+                    .with_label_values(&[LABEL_BLOCK])
+                    .inc();
+                match Self::sync_block_from_best_peer_inner(
+                    downloader,
+                    network,
+                    sync_task,
+                    download_address,
+                )
+                .await
+                {
+                    Err(e) => {
+                        error!("sync block from best peer failed : {:?}", e);
+                        syncing.store(false, Ordering::Relaxed);
+                    }
+                    Ok(flag) => {
+                        if flag {
                             syncing.store(false, Ordering::Relaxed);
-                        }
-                        Ok(flag) => {
-                            if flag {
-                                syncing.store(false, Ordering::Relaxed);
-                            }
                         }
                     }
                 }
@@ -435,9 +437,10 @@ where
                                 download_address,
                             );
                             sync_task.push_task(SyncTaskType::BLOCK, Box::new(block_sync_task));
+                            Ok(false)
+                        } else {
+                            Ok(true)
                         }
-
-                        Ok(false)
                     }
                     Err(e) => Err(e),
                 }
