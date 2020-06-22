@@ -50,8 +50,7 @@ fun main(account: &signer) {
 }
 
 // check: EXECUTED
-// check: delta_size
-// check: 8
+// check: delta_size 8
 
 
 //! new-transaction
@@ -60,32 +59,44 @@ fun main(account: &signer) {
 script {
 use {{alice}}::M;
 fun main(account: &signer) {
-  let y = M::destroy(account);
-  assert(y == 1, 41);
-  let cup = M::new();
-  M::publish(cup, account)
-}
-}
-
-// check: EXECUTED
-// check: delta_size
-// check: 16
-
-
-//! new-transaction
-//! sender: bob
-
-script {
-use {{alice}}::M;
-fun main(account: &signer) {
-  let cup = M::get_cup(account);
-  M::destroy_x(cup);
   let y = M::destroy(account);
   assert(y == 1, 41)
 }
 }
 
 // check: EXECUTED
-// check: delta_size
-// check: 8
+// check: delta_size -8
+
+
+//! new-transaction
+//! sender: bob
+
+script {
+use {{alice}}::M;
+fun main(account: &signer) {
+    let cup = M::new();
+    M::publish(cup, account);
+    let y = M::destroy(account);
+    assert(y == 1, 41);
+}
+}
+
+// check: EXECUTED
+// check: delta_size 0
+
+//! new-transaction
+//! sender: bob
+
+script {
+use {{alice}}::M;
+fun main(account: &signer) {
+    let cup = M::new();
+    M::publish(cup, account);
+    let cup = M::get_cup(account);
+    M::destroy_x(cup)
+}
+}
+
+// check: EXECUTED
+// check: delta_size 8
 

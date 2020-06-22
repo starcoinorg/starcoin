@@ -28,19 +28,11 @@ module A {
 
 module Tester {
     use {{alice}}::A;
-    use 0x1::Signer;
 
     resource struct Pair { x: A::Coin, y: A::Coin }
 
-    public fun test_eq(addr1: address, addr2: address): bool acquires Pair {
-        let p1 = borrow_global<Pair>(addr1);
-        let p2 = borrow_global<Pair>(addr2);
-        p1 == p2
-    }
-
-    public fun test(account: &signer) acquires Pair {
+    public fun test(account: &signer) {
         move_to<Pair>(account, Pair { x: A::new(), y: A::new() });
-        assert(test_eq(Signer::address_of(account), Signer::address_of(account)), 42);
     }
 
 }
@@ -70,8 +62,8 @@ fun main() {
     let x_ref = &x;
     let y = A::value(x_ref);
     assert(y == 1, 42);
-    let z = A::destroy(x);
-    assert(z == 1, 43);
+   let z = A::destroy(x);
+   assert(z == 1, 43);
 }
 }
 

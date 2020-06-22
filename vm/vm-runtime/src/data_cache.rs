@@ -295,7 +295,7 @@ impl<'a> DataStore for TransactionDataCache<'a> {
             self.size_map
                 .entry(ap.clone().address)
                 .and_modify(|v| *v -= size as i64)
-                .or_insert(size as i64);
+                .or_insert(-(size as i64));
             global_value
         });
         Ok(global_value)
