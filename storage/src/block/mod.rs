@@ -8,12 +8,12 @@ use crate::{
     BLOCK_SONS_PREFIX_NAME, BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, Error, Result};
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState, BranchNumber};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState};
 use std::io::Write;
 use std::mem::size_of;
 use std::sync::{Arc, RwLock};
@@ -67,12 +67,6 @@ define_storage!(
     BLOCK_NUM_PREFIX_NAME
 );
 define_storage!(
-    BranchNumberStorage,
-    BranchNumber,
-    HashValue,
-    BLOCK_NUM_PREFIX_NAME
-);
-define_storage!(
     BlockTransactionsStorage,
     HashValue,
     Vec<HashValue>,
@@ -93,7 +87,6 @@ pub struct BlockStorage {
     sons_store: RwLock<BlockSonsStorage>,
     body_store: BlockBodyStorage,
     number_store: BlockNumberStorage,
-    branch_number_store: BranchNumberStorage,
     block_txns_store: BlockTransactionsStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
 }
@@ -167,23 +160,6 @@ impl KeyCodec for BlockNumber {
     }
 }
 
-impl KeyCodec for BranchNumber {
-    fn encode_key(&self) -> Result<Vec<u8>> {
-        let (branch_id, number) = *self;
-
-        let mut encoded_key = Vec::with_capacity(size_of::<BranchNumber>());
-        encoded_key.write_all(&branch_id.to_vec())?;
-        encoded_key.write_u64::<BigEndian>(number)?;
-        Ok(encoded_key)
-    }
-
-    fn decode_key(data: &[u8]) -> Result<Self, Error> {
-        let branch_id = HashValue::from_slice(&data[..HashValue::LENGTH])?;
-        let number = (&data[HashValue::LENGTH..]).read_u64::<BigEndian>()?;
-        Ok((branch_id, number))
-    }
-}
-
 impl BlockStorage {
     pub fn new(instance: StorageInstance) -> Self {
         BlockStorage {
@@ -192,7 +168,6 @@ impl BlockStorage {
             sons_store: RwLock::new(BlockSonsStorage::new(instance.clone())),
             body_store: BlockBodyStorage::new(instance.clone()),
             number_store: BlockNumberStorage::new(instance.clone()),
-            branch_number_store: BranchNumberStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
             block_txn_infos_store: BlockTransactionInfosStorage::new(instance),
         }
@@ -229,15 +204,6 @@ impl BlockStorage {
     pub fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()> {
         self.number_store.put(number, block_id)
     }
-    pub fn save_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-        block_id: HashValue,
-    ) -> Result<()> {
-        let key = (branch_id, number);
-        self.branch_number_store.put(key, block_id)
-    }
 
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
         Ok(
@@ -258,15 +224,6 @@ impl BlockStorage {
         self.number_store.get(number)
     }
 
-    pub fn get_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-    ) -> Result<Option<HashValue>> {
-        let key = (branch_id, number);
-        self.branch_number_store.get(key)
-    }
-
     pub fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
         let (header, body) = block.clone().into_inner();
         //save header
@@ -274,25 +231,6 @@ impl BlockStorage {
         self.save_header(header.clone())?;
         //save number
         self.save_number(header.number(), block_id)?;
-        //save body
-        self.save_body(block_id, body)?;
-        //save block cache
-        self.save(block, state)
-    }
-
-    pub fn commit_branch_block(
-        &self,
-        branch_id: HashValue,
-        block: Block,
-        state: BlockState,
-    ) -> Result<()> {
-        debug!("commit block: {:?}, block: {:?}", branch_id, block);
-        let (header, body) = block.clone().into_inner();
-        //save header
-        let block_id = header.id();
-        self.save_header(header.clone())?;
-        //save number
-        self.save_branch_number(branch_id, header.number(), block_id)?;
         //save body
         self.save_body(block_id, body)?;
         //save block cache
@@ -346,7 +284,7 @@ impl BlockStorage {
             match self.get_block_header_by_hash(parent_id1)? {
                 Some(header) => {
                     parent_id1 = header.parent_hash();
-                    ensure!(parent_id1 != HashValue::zero(), "invaild block id is zero.");
+                    ensure!(parent_id1 != HashValue::zero(), "invalid block id is zero.");
                     match self.get_sons(parent_id1) {
                         Ok(sons1) => {
                             debug!("parent: {:?}, sons1 : {:?}", parent_id1, sons1);
@@ -355,7 +293,7 @@ impl BlockStorage {
                                 loop {
                                     ensure!(
                                         parent_id2 != HashValue::zero(),
-                                        "invaild block id is zero."
+                                        "invalid block id is zero."
                                     );
                                     if sons1.contains(&parent_id2) {
                                         found = true;
@@ -432,38 +370,6 @@ impl BlockStorage {
         match self.number_store.get(number)? {
             Some(block_id) => self.get(block_id),
             None => Ok(None),
-        }
-    }
-
-    pub fn get_header_by_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-    ) -> Result<Option<BlockHeader>> {
-        let key = (branch_id, number);
-        match self.branch_number_store.get(key)? {
-            Some(block_id) => self.get_block_header_by_hash(block_id),
-            None => bail!(
-                "can't find header by branch number:{:?}, {}",
-                branch_id,
-                number
-            ),
-        }
-    }
-
-    pub fn get_block_by_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-    ) -> Result<Option<Block>> {
-        let key = (branch_id, number);
-        match self.branch_number_store.get(key)? {
-            Some(block_id) => self.get(block_id),
-            None => bail!(
-                "can't find block by branch number:{:?}, {}",
-                branch_id,
-                number
-            ),
         }
     }
 

@@ -77,7 +77,7 @@
 	    type: "GET",
 	    url:  url,
 	    error: function(response) {
-	    noty({layout: 'bottomCenter', text: "Faild to fund, reason: "+response.responseText+" status code: "+response.status, type: 'error', timeout: 5000, progressBar: true});
+	    noty({layout: 'bottomCenter', text: "Failed to fund, reason: "+response.responseText+" status code: "+response.status, type: 'error', timeout: 5000, progressBar: true});
             },
 	    success: function() {
             noty({layout: 'bottomCenter', text: "Fund success", type: 'success', timeout: 5000, progressBar: true});
