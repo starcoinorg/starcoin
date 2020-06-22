@@ -11,7 +11,7 @@ pub fn start_txpool() -> (TxPool, Arc<Storage>) {
         Arc::new(Storage::new(StorageInstance::new_cache_instance(cache_storage)).unwrap());
     let node_config = NodeConfig::random_for_test();
 
-    let genesis = Genesis::build(node_config.net()).unwrap();
+    let genesis = Genesis::load(node_config.net()).unwrap();
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
 

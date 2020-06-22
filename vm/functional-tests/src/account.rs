@@ -21,6 +21,9 @@ use starcoin_vm_runtime::{
     starcoin_vm::DEFAULT_CURRENCY_TY,
     transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN},
 };
+use starcoin_vm_types::account_config::{
+    KeyRotationCapabilityResource, WithdrawCapabilityResource,
+};
 use starcoin_vm_types::{
     account_config::stc_type_tag,
     account_config::{
@@ -437,8 +440,8 @@ impl EventHandleGenerator {
 pub struct AccountData {
     account: Account,
     sequence_number: u64,
-    delegated_key_rotation_capability: bool,
-    delegated_withdrawal_capability: bool,
+    key_rotation_capability: Option<KeyRotationCapability>,
+    withdrawal_capability: Option<WithdrawCapability>,
     sent_events: EventHandle,
     received_events: EventHandle,
     is_frozen: bool,
@@ -514,14 +517,25 @@ impl AccountData {
     ) -> Self {
         let mut balances = BTreeMap::new();
         balances.insert(balance_currency_code, Balance::new(balance));
+
+        let key_rotation_capability = if delegated_key_rotation_capability {
+            None
+        } else {
+            Some(KeyRotationCapability::new(account.addr))
+        };
+        let withdrawal_capability = if delegated_withdrawal_capability {
+            None
+        } else {
+            Some(WithdrawCapability::new(account.addr))
+        };
         Self {
             event_generator: EventHandleGenerator::new_with_event_count(*account.address(), 2),
             account,
             balances,
             sequence_number,
             is_frozen,
-            delegated_key_rotation_capability,
-            delegated_withdrawal_capability,
+            key_rotation_capability,
+            withdrawal_capability,
             sent_events: new_event_handle(sent_events_count),
             received_events: new_event_handle(received_events_count),
         }
@@ -578,7 +592,7 @@ impl AccountData {
         }
     }
 
-    /// Returns the (Move value) layout of the LibraAccount::Account struct
+    /// Returns the (Move value) layout of the Account::Account struct
     pub fn type_() -> FatStructType {
         FatStructType {
             address: account_config::CORE_CODE_ADDRESS,
@@ -588,8 +602,12 @@ impl AccountData {
             ty_args: vec![],
             layout: vec![
                 FatType::Vector(Box::new(FatType::U8)),
-                FatType::Bool,
-                FatType::Bool,
+                FatType::Vector(Box::new(FatType::Struct(Box::new(
+                    WithdrawCapability::type_(),
+                )))),
+                FatType::Vector(Box::new(FatType::Struct(Box::new(
+                    KeyRotationCapability::type_(),
+                )))),
                 FatType::Struct(Box::new(Self::event_handle_type(FatType::Struct(
                     Box::new(Self::sent_payment_event_type()),
                 )))),
@@ -611,12 +629,19 @@ impl AccountData {
             .map(|(code, balance)| (code.clone(), balance.to_value()))
             .collect();
         let event_generator = self.event_generator.to_value();
+
         let account = Value::struct_(Struct::pack(
             vec![
                 // TODO: this needs to compute the auth key instead
                 Value::vector_u8(AuthenticationKey::ed25519(&self.account.pubkey).to_vec()),
-                Value::bool(self.delegated_key_rotation_capability),
-                Value::bool(self.delegated_withdrawal_capability),
+                self.withdrawal_capability
+                    .as_ref()
+                    .map(|t| t.value())
+                    .unwrap_or_else(|| Value::vector_general(vec![])),
+                self.key_rotation_capability
+                    .as_ref()
+                    .map(|t| t.value())
+                    .unwrap_or_else(|| Value::vector_general(vec![])),
                 Value::struct_(Struct::pack(
                     vec![
                         Value::u64(self.received_events.count()),
@@ -744,6 +769,61 @@ impl AccountData {
     /// Returns the initial received events count.
     pub fn received_events_count(&self) -> u64 {
         self.received_events.count()
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WithdrawCapability {
+    account_address: AccountAddress,
+}
+impl WithdrawCapability {
+    pub fn new(account_address: AccountAddress) -> Self {
+        Self { account_address }
+    }
+
+    pub fn type_() -> FatStructType {
+        FatStructType {
+            address: account_config::CORE_CODE_ADDRESS,
+            module: WithdrawCapabilityResource::module_identifier(),
+            name: WithdrawCapabilityResource::struct_identifier(),
+            is_resource: true,
+            ty_args: vec![],
+            layout: vec![FatType::Address],
+        }
+    }
+
+    pub fn value(&self) -> Value {
+        Value::vector_general(vec![Value::struct_(Struct::pack(
+            vec![Value::address(self.account_address)],
+            true,
+        ))])
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct KeyRotationCapability {
+    account_address: AccountAddress,
+}
+impl KeyRotationCapability {
+    pub fn new(account_address: AccountAddress) -> Self {
+        Self { account_address }
+    }
+
+    pub fn type_() -> FatStructType {
+        FatStructType {
+            address: account_config::CORE_CODE_ADDRESS,
+            module: KeyRotationCapabilityResource::module_identifier(),
+            name: KeyRotationCapabilityResource::struct_identifier(),
+            is_resource: true,
+            ty_args: vec![],
+            layout: vec![FatType::Address],
+        }
+    }
+
+    pub fn value(&self) -> Value {
+        Value::vector_general(vec![Value::struct_(Struct::pack(
+            vec![Value::address(self.account_address)],
+            true,
+        ))])
     }
 }
 
