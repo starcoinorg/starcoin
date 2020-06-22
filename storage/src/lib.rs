@@ -4,7 +4,6 @@
 use crate::accumulator::AccumulatorStorage;
 use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
-use crate::branch::BranchStorage;
 use crate::state_node::StateStorage;
 use crate::storage::{ColumnFamilyName, InnerStorage, KVStore, StorageInstance};
 use crate::transaction::TransactionStorage;
@@ -32,7 +31,6 @@ pub mod accumulator;
 pub mod batch;
 pub mod block;
 pub mod block_info;
-pub mod branch;
 pub mod cache_storage;
 pub mod db_storage;
 mod metrics;
@@ -163,11 +161,6 @@ pub trait TransactionInfoStore {
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<()>;
 }
 
-pub trait BranchStore {
-    fn get_branch(&self, block_id: HashValue) -> Result<Option<HashValue>>;
-    fn save_branch(&self, block_id: HashValue, branch_id: HashValue) -> Result<()>;
-}
-
 pub trait TransactionStore {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
     fn save_transaction(&self, txn_info: Transaction) -> Result<()>;
@@ -182,7 +175,6 @@ pub struct Storage {
     accumulator_storage: AccumulatorStorage,
     block_info_storage: BlockInfoStorage,
     startup_info_storage: Arc<dyn KVStore>,
-    branch_storage: BranchStorage,
 }
 
 impl Storage {
@@ -198,7 +190,6 @@ impl Storage {
                 instance.clone(),
                 STARTUP_INFO_PREFIX_NAME,
             )),
-            branch_storage: BranchStorage::new(instance),
         })
     }
 }
@@ -436,16 +427,6 @@ impl TransactionStore for Storage {
     }
 }
 
-impl BranchStore for Storage {
-    fn get_branch(&self, block_id: HashValue) -> Result<Option<HashValue>, Error> {
-        self.branch_storage.get(block_id)
-    }
-
-    fn save_branch(&self, block_id: HashValue, branch_id: HashValue) -> Result<(), Error> {
-        self.branch_storage.put(block_id, branch_id)
-    }
-}
-
 /// Chain storage define
 pub trait Store:
     StateNodeStore
@@ -454,7 +435,6 @@ pub trait Store:
     + BlockInfoStore
     + TransactionStore
     + TransactionInfoStore
-    + BranchStore
     + IntoSuper<dyn StateNodeStore>
     + IntoSuper<dyn AccumulatorTreeStore>
 {
