@@ -19,8 +19,13 @@ fun association_init(association: &signer,
     Association::grant_privilege<Coin::AddCurrency>(association, association);
 
     Account::create_genesis_account(
-                Signer::address_of(association),
-                copy dummy_auth_key_prefix,
+          0x1,
+          copy dummy_auth_key_prefix,
+     );
+
+    Account::create_genesis_account(
+        Signer::address_of(association),
+        copy dummy_auth_key_prefix,
     );
 
     Account::create_genesis_account(
@@ -35,11 +40,6 @@ fun association_init(association: &signer,
 
     Account::create_genesis_account(
         CoreAddresses::TRANSACTION_FEE_ADDRESS(),
-        copy dummy_auth_key_prefix
-    );
-
-    Account::create_genesis_account(
-        CoreAddresses::MINT_ADDRESS(),
         copy dummy_auth_key_prefix
     );
 

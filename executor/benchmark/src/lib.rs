@@ -5,12 +5,12 @@ use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     HashValue, PrivateKey, Uniform,
 };
+use executor::{encode_create_account_script, encode_transfer_script};
 use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
-use starcoin_state_api::{ChainState, ChainStateWriter};
-
-use executor::{encode_create_account_script, encode_transfer_script};
+use starcoin_genesis::Genesis;
+use starcoin_state_api::ChainState;
 use statedb::ChainStateDB;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -21,11 +21,9 @@ use storage::Storage;
 use types::{
     account_address,
     account_address::AccountAddress,
-    account_config::association_address,
     block_metadata::BlockMetadata,
-    transaction::{authenticator::AuthenticationKey, RawUserTransaction, Script, Transaction},
+    transaction::{authenticator::AuthenticationKey, Script, Transaction},
 };
-use vm_runtime::genesis::GENESIS_KEYPAIR;
 
 struct AccountData {
     public_key: Ed25519PublicKey,
@@ -87,7 +85,7 @@ impl TransactionGenerator {
             accounts,
             rng,
             block_sender: Some(block_sender),
-            sequence: 1,
+            sequence: 0,
         }
     }
 
@@ -98,13 +96,10 @@ impl TransactionGenerator {
 
     /// Generates transactions that allocate `init_account_balance` to every account.
     fn gen_mint_transactions(&mut self, init_account_balance: u64, block_size: usize) {
-        let genesis_account = association_address();
-
         for (_i, block) in self.accounts.chunks(block_size).enumerate() {
             let mut transactions = Vec::with_capacity(block_size);
             for (_j, account) in block.iter().enumerate() {
                 let txn = create_transaction(
-                    genesis_account,
                     self.sequence,
                     encode_create_account_script(
                         &account.address,
@@ -126,7 +121,6 @@ impl TransactionGenerator {
 
     /// Generates transactions for random pairs of accounts.
     fn gen_transfer_transactions(&mut self, block_size: usize, num_blocks: usize) {
-        let genesis_account = association_address();
         for _i in 0..num_blocks {
             let mut transactions = Vec::with_capacity(block_size);
             for _j in 0..block_size {
@@ -137,7 +131,6 @@ impl TransactionGenerator {
                 //                let sender = &self.accounts[sender_idx];
                 let receiver = &self.accounts[receiver_idx];
                 let txn = create_transaction(
-                    genesis_account,
                     self.sequence,
                     encode_transfer_script(
                         &receiver.address,
@@ -226,18 +219,14 @@ pub fn run_benchmark(
     block_size: usize,
     num_transfer_blocks: usize,
 ) {
-    let change_set = executor::init_genesis(ChainNetwork::Dev.get_config()).unwrap();
-    let (write_set, _events) = change_set.into_inner();
     let cache_storage = CacheStorage::new();
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(cache_storage)).unwrap());
 
     let chain_state = ChainStateDB::new(storage, None);
-    chain_state
-        .apply_write_set(write_set)
-        .unwrap_or_else(|e| panic!("Failure to apply state set: {}", e));
-    chain_state.commit().unwrap();
-    chain_state.flush().unwrap();
+
+    let genesis_txn = Genesis::build_genesis_transaction(ChainNetwork::Dev).unwrap();
+    let _txn_info = Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
 
     let (block_sender, block_receiver) = mpsc::sync_channel(50 /* bound */);
 
@@ -266,29 +255,9 @@ pub fn run_benchmark(
     exe_thread.join().unwrap();
 }
 
-fn create_transaction(
-    sender: AccountAddress,
-    sequence_number: u64,
-    program: Script,
-) -> Transaction {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap();
-    let expiration_time = std::time::Duration::from_secs(now.as_secs() + 3600);
-
-    let raw_txn = RawUserTransaction::new_script(
-        sender,
-        sequence_number,
-        program,
-        400_000, /* max_gas_amount */
-        1,       /* gas_unit_price */
-        expiration_time,
-    );
-
-    let signed_txn = raw_txn
-        .sign(&GENESIS_KEYPAIR.0, GENESIS_KEYPAIR.1.clone())
-        .unwrap()
-        .into_inner();
+fn create_transaction(sequence_number: u64, program: Script) -> Transaction {
+    let signed_txn =
+        executor::create_signed_txn_with_association_account(program, sequence_number, 400_000, 1);
     Transaction::UserTransaction(signed_txn)
 }
 

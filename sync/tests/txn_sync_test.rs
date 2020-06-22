@@ -190,6 +190,6 @@ fn gen_user_txn() -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-    let txn = executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+    let txn = executor::build_transfer_from_association(account_address, auth_prefix, 0, 10000);
     txn.as_signed_user_txn().unwrap().clone()
 }

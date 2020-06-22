@@ -4,10 +4,12 @@
 use crate::data_cache::{RemoteStorage, StateViewCache};
 use crate::metrics::TXN_EXECUTION_GAS_USAGE;
 use anyhow::Result;
+use bytecode_verifier::VerifiedModule;
 use move_vm_runtime::data_cache::TransactionDataCache;
 use move_vm_runtime::{data_cache::RemoteCache, move_vm::MoveVM};
 use once_cell::sync::Lazy;
 use starcoin_logger::prelude::*;
+use starcoin_types::language_storage::CORE_CODE_ADDRESS;
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
@@ -18,10 +20,15 @@ use starcoin_types::{
     vm_error::{sub_status, StatusCode, VMStatus},
     write_set::WriteSet,
 };
+use starcoin_vm_types::access::ModuleAccess;
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::{stc_type_tag, EPILOGUE_NAME, PROLOGUE_NAME};
+use starcoin_vm_types::data_store::DataStore;
+use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
-use starcoin_vm_types::transaction::{Module, Script};
+use starcoin_vm_types::transaction::{Module, Script, UpgradePackage};
 use starcoin_vm_types::{
+    errors,
     errors::{convert_prologue_runtime_error, VMResult},
     gas_schedule::{self, AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasUnits},
     language_storage::TypeTag,
@@ -31,6 +38,7 @@ use starcoin_vm_types::{
     values::Value,
 };
 use std::sync::Arc;
+use vm::IndexKind;
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
     Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
@@ -41,6 +49,8 @@ pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
         VMStatus::new(StatusCode::ABORTED).with_sub_status(StatusCode::REJECTED_WRITE_SET.into()),
     )
 });
+
+pub static ZERO_COST_TABLE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
 // The value should be tuned carefully
 pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
@@ -68,6 +78,9 @@ impl StarcoinVM {
     }
 
     pub fn load_configs(&mut self, state: &dyn StateView) {
+        if state.is_genesis() {
+            return;
+        }
         self.load_configs_impl(&RemoteStorage::new(state))
     }
 
@@ -78,8 +91,12 @@ impl StarcoinVM {
     }
 
     fn load_configs_impl(&mut self, data_cache: &dyn RemoteCache) {
-        self.vm_config = VMConfig::fetch_config(data_cache);
-        self.version = Version::fetch_config(data_cache);
+        if let Some(vm_config) = VMConfig::fetch_config(data_cache) {
+            self.vm_config = Some(vm_config);
+        }
+        if let Some(version) = Version::fetch_config(data_cache) {
+            self.version = Some(version);
+        }
     }
 
     pub fn get_gas_schedule(&self) -> VMResult<&CostTable> {
@@ -100,6 +117,10 @@ impl StarcoinVM {
     }
 
     fn check_gas(&self, txn: &SignedUserTransaction) -> Result<(), VMStatus> {
+        if let TransactionPayload::Package(_) = txn.payload() {
+            //TODO PackageUpgrade txn gas verify.
+            return Ok(());
+        }
         let gas_constants = &self.get_gas_schedule()?.gas_constants;
         let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as GasCarrier);
         // The transaction is too large.
@@ -244,6 +265,17 @@ impl StarcoinVM {
         Ok(VerifiedTransactionPayload::Module(module.code().to_vec()))
     }
 
+    fn verify_upgrade(
+        &self,
+        _remote_cache: &dyn RemoteCache,
+        upgrade: &UpgradePackage,
+        _txn_data: &TransactionMetadata,
+    ) -> VMResult<VerifiedTransactionPayload> {
+        //TODO custom prologue, check sender in prologue
+        //self.run_prologue(&mut data_store, &mut cost_strategy, &txn_data)?;
+        Ok(VerifiedTransactionPayload::Package(upgrade.clone()))
+    }
+
     fn verify_transaction_impl(
         &mut self,
         transaction: &SignatureCheckedTransaction,
@@ -257,6 +289,9 @@ impl StarcoinVM {
             }
             TransactionPayload::Module(module) => {
                 self.verify_module(remote_cache, module, txn_data)
+            }
+            TransactionPayload::Package(upgrade) => {
+                self.verify_upgrade(remote_cache, upgrade, txn_data)
             }
         }
     }
@@ -272,7 +307,7 @@ impl StarcoinVM {
             Ok(t) => t,
             Err(_) => return Some(VMStatus::new(StatusCode::INVALID_SIGNATURE)),
         };
-        self.load_configs_impl(&data_cache);
+        self.load_configs(state_view);
         match self.verify_transaction_impl(&signature_verified_txn, &data_cache, &txn_data) {
             Ok(_) => None,
             Err(err) => {
@@ -291,9 +326,14 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
         payload: VerifiedTransactionPayload,
     ) -> TransactionOutput {
-        let gas_schedule = match self.get_gas_schedule() {
-            Ok(s) => s,
-            Err(e) => return discard_error_output(e),
+        //TODO handle genesis transaction space case.
+        let gas_schedule = if remote_cache.is_genesis() {
+            &ZERO_COST_TABLE
+        } else {
+            match self.get_gas_schedule() {
+                Ok(s) => s,
+                Err(e) => return discard_error_output(e),
+            }
         };
         let mut cost_strategy = CostStrategy::transaction(gas_schedule, txn_data.max_gas_amount());
         let mut data_store = TransactionDataCache::new(remote_cache);
@@ -320,23 +360,65 @@ impl StarcoinVM {
                 TXN_EXECUTION_GAS_USAGE.observe(gas_usage as f64);
                 ret
             }
+            VerifiedTransactionPayload::Package(package) => {
+                cost_strategy = CostStrategy::system(gas_schedule, GasUnits::new(0));
+                let (modules, scripts) = package.into_inner();
+                let mut ret: VMResult<Vec<_>> = modules
+                    .iter()
+                    .map(|module| Self::update_module(txn_data.sender, module, &mut data_store))
+                    .collect();
+                if ret.is_ok() {
+                    ret = scripts
+                        .iter()
+                        .map(|init_script| {
+                            let sender = init_script
+                                .su_account()
+                                .unwrap_or_else(|| txn_data.sender());
+                            let ty_args = init_script.script().ty_args().to_vec();
+                            let args = convert_txn_args(init_script.script().args());
+                            let s = init_script.script().code().to_vec();
+                            debug!("execute init script by account {:?}", sender);
+                            self.move_vm.execute_script(
+                                s,
+                                ty_args,
+                                args,
+                                sender,
+                                &mut data_store,
+                                &mut cost_strategy,
+                            )
+                        })
+                        .collect();
+                }
+                ret.map(|_| ())
+            }
         }
         .map_err(|err| {
             failed_gas_left = cost_strategy.remaining_gas();
+            debug!("execute payload error: {:?}", err);
             err
         })
         .and_then(|_| {
             failed_gas_left = cost_strategy.remaining_gas();
             let mut cost_strategy = CostStrategy::system(gas_schedule, failed_gas_left);
-            self.run_epilogue(&mut data_store, &mut cost_strategy, txn_data)
-                .and_then(|_| {
-                    get_transaction_output(
-                        &mut data_store,
-                        &cost_strategy,
-                        txn_data,
-                        VMStatus::new(StatusCode::EXECUTED),
-                    )
-                })
+            //TODO handle genesis txn's epilogue.
+            if txn_data.sender != CORE_CODE_ADDRESS {
+                self.run_epilogue(&mut data_store, &mut cost_strategy, txn_data)
+                    .and_then(|_| {
+                        get_transaction_output(
+                            &mut data_store,
+                            &cost_strategy,
+                            txn_data,
+                            VMStatus::new(StatusCode::EXECUTED),
+                        )
+                    })
+            } else {
+                get_transaction_output(
+                    &mut data_store,
+                    &cost_strategy,
+                    txn_data,
+                    VMStatus::new(StatusCode::EXECUTED),
+                )
+            }
         })
         .unwrap_or_else(|err| {
             self.failed_transaction_cleanup(
@@ -347,6 +429,40 @@ impl StarcoinVM {
                 remote_cache,
             )
         })
+    }
+
+    fn update_module(
+        sender: AccountAddress,
+        module: &Module,
+        data_store: &mut dyn DataStore,
+    ) -> VMResult<()> {
+        //TODO move_vm should support method verify and update a module.
+        let code = module.code().to_vec();
+        let compiled_module = match CompiledModule::deserialize(code.as_slice()) {
+            Ok(module) => module,
+            Err(err) => {
+                warn!("[VM] module deserialization failed {:?}", err);
+                return Err(err);
+            }
+        };
+        //TODO supported authorize to deploy other address for genesis.
+        // Make sure the module's self address matches the transaction sender. The self address is
+        // where the module will actually be published. If we did not check this, the sender could
+        // publish a module under anyone's account.
+        if compiled_module.address() != &sender {
+            return Err(errors::verification_error(
+                IndexKind::AddressIdentifier,
+                compiled_module.self_handle_idx().0 as usize,
+                StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
+            ));
+        }
+
+        let module_id = compiled_module.self_id();
+        //TODO verify module compatibility
+        let _verified_module = VerifiedModule::new(compiled_module).map_err(|(_, e)| e)?;
+        //TODO check native implement.
+        //Loader::check_natives(&verified_module)?;
+        data_store.publish_module(module_id, code)
     }
 
     /// Run the prologue of a transaction by calling into `PROLOGUE_NAME` function stored
@@ -669,4 +785,5 @@ fn get_transaction_output(
 pub enum VerifiedTransactionPayload {
     Script(Vec<u8>, Vec<TypeTag>, Vec<Value>),
     Module(Vec<u8>),
+    Package(UpgradePackage),
 }

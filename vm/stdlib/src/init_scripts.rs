@@ -1,50 +1,38 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! Rust representation of a Move transaction script that can be executed on the Libra blockchain.
-//! Libra does not allow arbitrary transaction scripts; only scripts whose hashes are present in
-//! the on-chain script whitelist. The genesis whitelist is derived from this file, and the
-//! `Stdlib` script enum will be modified to reflect changes in the on-chain whitelist as time goes
-//! on.
-
+use crate::transaction_scripts::CompiledBytes;
 use anyhow::{anyhow, Error, Result};
 use include_dir::{include_dir, Dir};
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::on_chain_config::SCRIPT_HASH_LENGTH;
 use std::{convert::TryFrom, fmt, path::PathBuf};
 
-// This includes the compiled transaction scripts as binaries. We must use this hack to work around
-// a problem with Docker, which does not copy over the Move source files that would be be used to
-// produce these binaries at runtime.
 #[allow(dead_code)]
-const STAGED_TXN_SCRIPTS_DIR: Dir = include_dir!("staged/transaction_scripts");
+const STAGED_INIT_SCRIPTS_DIR: Dir = include_dir!("staged/init_scripts");
 
-/// All of the Move transaction scripts that can be executed on the Libra blockchain
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub enum StdlibScript {
-    AcceptCoin,
-    CreateAccount,
-    EmptyScript,
-    Mint,
-    PeerToPeer,
-    PeerToPeerWithMetadata,
-    PublishSharedEd2551PublicKey,
+pub enum InitScript {
+    AssociationInit,
+    ConfigInit,
+    MintInit,
+    PreMineInit,
+    STCInit,
+    FeeInit,
     // ...add new scripts here
 }
 
-impl StdlibScript {
-    /// Return a vector containing all of the standard library scripts (i.e., all inhabitants of the
-    /// StdlibScript enum)
+impl InitScript {
+    /// Return a vector containing all of the init scripts
     pub fn all() -> Vec<Self> {
-        use StdlibScript::*;
+        use InitScript::*;
         vec![
-            AcceptCoin,
-            CreateAccount,
-            EmptyScript,
-            Mint,
-            PeerToPeer,
-            PeerToPeerWithMetadata,
-            PublishSharedEd2551PublicKey,
+            AssociationInit,
+            ConfigInit,
+            MintInit,
+            PreMineInit,
+            STCInit,
+            FeeInit,
             // ...add new scripts here
         ]
     }
@@ -52,7 +40,7 @@ impl StdlibScript {
     /// Construct the whitelist of script hashes used to determine whether a transaction script can
     /// be executed on the Libra blockchain
     pub fn whitelist() -> Vec<[u8; SCRIPT_HASH_LENGTH]> {
-        StdlibScript::all()
+        InitScript::all()
             .iter()
             .map(|script| *script.compiled_bytes().hash().as_ref())
             .collect()
@@ -75,7 +63,7 @@ impl StdlibScript {
         let mut path = PathBuf::from(self.name());
         path.set_extension("mv");
         CompiledBytes(
-            STAGED_TXN_SCRIPTS_DIR
+            STAGED_INIT_SCRIPTS_DIR
                 .get_file(path)
                 .unwrap()
                 .contents()
@@ -89,28 +77,7 @@ impl StdlibScript {
     }
 }
 
-/// Bytes produced by compiling a Move source language script into Move bytecode
-#[derive(Clone)]
-pub struct CompiledBytes(pub(crate) Vec<u8>);
-
-impl CompiledBytes {
-    /// Return the sha3-256 hash of the script bytes
-    pub fn hash(&self) -> HashValue {
-        Self::hash_bytes(&self.0)
-    }
-
-    /// Return the sha3-256 hash of the script bytes
-    pub(crate) fn hash_bytes(bytes: &[u8]) -> HashValue {
-        HashValue::sha3_256_of(bytes)
-    }
-
-    /// Convert this newtype wrapper into a vector of bytes
-    pub fn into_vec(self) -> Vec<u8> {
-        self.0
-    }
-}
-
-impl TryFrom<&[u8]> for StdlibScript {
+impl TryFrom<&[u8]> for InitScript {
     type Error = Error;
 
     /// Return `Some(<script_name>)` if  `code_bytes` is the bytecode of one of the standard library
@@ -125,20 +92,19 @@ impl TryFrom<&[u8]> for StdlibScript {
     }
 }
 
-impl fmt::Display for StdlibScript {
+impl fmt::Display for InitScript {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use StdlibScript::*;
+        use InitScript::*;
         write!(
             f,
             "{}",
             match self {
-                AcceptCoin => "accept_coin",
-                CreateAccount => "create_account",
-                EmptyScript => "empty_script",
-                Mint => "mint",
-                PeerToPeer => "peer_to_peer",
-                PeerToPeerWithMetadata => "peer_to_peer_with_metadata",
-                PublishSharedEd2551PublicKey => "publish_shared_ed25519_public_key",
+                AssociationInit => "association_init",
+                ConfigInit => "config_init",
+                MintInit => "mint_init",
+                PreMineInit => "pre_mine_init",
+                STCInit => "stc_init",
+                FeeInit => "fee_init",
             }
         )
     }
@@ -150,13 +116,11 @@ mod test {
 
     #[test]
     fn test_file_correspondence() {
-        // make sure that every file under transaction_scripts/ is represented in
-        // StdlibScript::all() (and vice versa)
-        let files = STAGED_TXN_SCRIPTS_DIR.files();
-        let scripts = StdlibScript::all();
+        let files = STAGED_INIT_SCRIPTS_DIR.files();
+        let scripts = InitScript::all();
         for file in files {
             assert!(
-                StdlibScript::is(file.contents()),
+                InitScript::is(file.contents()),
                 "File {} missing from StdlibScript enum",
                 file.path().display()
             )
@@ -164,9 +128,9 @@ mod test {
         assert_eq!(
             files.len(),
             scripts.len(),
-            "Mismatch between stdlib script files and StdlibScript enum. {}",
+            "Mismatch between stdlib script files and InitScript enum. {}",
             if files.len() > scripts.len() {
-                "Did you forget to extend the StdlibScript enum?"
+                "Did you forget to extend the InitScript enum?"
             } else {
                 "Did you forget to rebuild the standard library?"
             }
