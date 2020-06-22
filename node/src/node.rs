@@ -48,9 +48,9 @@ where
 
 //TODO this method should in Genesis.
 fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
-    let genesis = match Genesis::load(config.data_dir()) {
+    let genesis = match Genesis::load_from_dir(config.data_dir()) {
         Ok(Some(genesis)) => {
-            let expect_genesis = Genesis::build(config.net())?;
+            let expect_genesis = Genesis::load(config.net())?;
             if genesis.block().header().id() != expect_genesis.block().header().id() {
                 error!("Genesis version mismatch, please clean you data_dir.");
                 std::process::exit(EXIT_CODE_NEED_HELP);
@@ -63,7 +63,7 @@ fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
         }
         Ok(None) => {
             if init {
-                let genesis = Genesis::build(config.net())?;
+                let genesis = Genesis::load(config.net())?;
                 genesis.save(config.data_dir())?;
                 info!("Build and save new genesis: {}", genesis);
                 genesis
