@@ -1,11 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::data_cache::{RemoteStorage, StateViewCache};
+use crate::data_cache::{RemoteStorage, StateViewCache, TransactionDataCache};
 use crate::metrics::TXN_EXECUTION_GAS_USAGE;
 use anyhow::Result;
 use bytecode_verifier::VerifiedModule;
-use move_vm_runtime::data_cache::TransactionDataCache;
 use move_vm_runtime::{data_cache::RemoteCache, move_vm::MoveVM};
 use once_cell::sync::Lazy;
 use starcoin_logger::prelude::*;
@@ -662,6 +661,7 @@ impl StarcoinVM {
                         write_set,
                         events,
                         0,
+                        0,
                         KEEP_STATUS.clone(),
                     ));
                 }
@@ -745,6 +745,7 @@ pub(crate) fn discard_error_output(err: VMStatus) -> TransactionOutput {
         WriteSet::default(),
         vec![],
         0,
+        0,
         TransactionStatus::Discard(err),
     )
 }
@@ -773,11 +774,13 @@ fn get_transaction_output(
         .sub(cost_strategy.remaining_gas())
         .get();
     let write_set = data_store.make_write_set()?;
+    let delta_size = data_store.get_size(txn_data.sender);
     //TODO add gas usage metrics.
     Ok(TransactionOutput::new(
         write_set,
         data_store.event_data().to_vec(),
         gas_used,
+        delta_size,
         TransactionStatus::Keep(status),
     ))
 }
