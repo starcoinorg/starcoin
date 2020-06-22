@@ -25,7 +25,7 @@ use lru::LruCache;
 use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
 use scs::SCSCodec;
-use starcoin_sync_api::PeerNewBlock;
+use starcoin_sync_api::{PeerNewBlock, PeerNewCmpctBlock};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
@@ -37,8 +37,8 @@ use tokio::runtime::Handle;
 use tx_relay::*;
 use types::peer_info::{PeerInfo, RpcInfo};
 use types::system_events::NewHeadBlock;
-use types::transaction::SignedUserTransaction;
-use types::TXN_PROTOCOL_NAME;
+use types::{block::BlockDetail, transaction::SignedUserTransaction};
+use types::{BLOCK_PROTOCOL_NAME, TXN_PROTOCOL_NAME};
 
 const LRU_CACHE_SIZE: usize = 1024;
 const PEERS_FILE_NAME: &str = "peers.json";
@@ -417,22 +417,26 @@ impl Inner {
         debug!("receive network_message ");
         // decode msg based on protocol name.
         // when protocol upgrade, we can decoded data based on the new protocol.
-        if network_msg.protocol_name.as_ref() == TXN_PROTOCOL_NAME {
-            let txns: Vec<SignedUserTransaction> = scs::from_bytes(network_msg.data.as_slice())?;
-            inner.handle_txn_message(network_msg.peer_id, txns).await?;
-        } else {
-            // Other peer message can be refactored in the similar way.
-            let message = PeerMessage::decode(&network_msg.data);
-            match message {
-                Ok(msg) => {
-                    inner
-                        .handle_network_message(network_msg.peer_id, msg)
-                        .await?
-                }
-                Err(e) => {
-                    debug!("get error {:?}", e);
+        match network_msg.protocol_name.as_ref() {
+            TXN_PROTOCOL_NAME => {
+                let txns: Vec<SignedUserTransaction> =
+                    scs::from_bytes(network_msg.data.as_slice())?;
+                inner.handle_txn_message(network_msg.peer_id, txns).await?;
+            }
+            BLOCK_PROTOCOL_NAME => {
+                let message = PeerMessage::decode(&network_msg.data);
+                match message {
+                    Ok(msg) => {
+                        inner
+                            .handle_network_message(network_msg.peer_id, msg)
+                            .await?
+                    }
+                    Err(e) => {
+                        debug!("get error {:?}", e);
+                    }
                 }
             }
+            _ => unreachable!(),
         }
         Ok(())
     }
@@ -470,7 +474,6 @@ impl Inner {
                 );
                 let block_header = block.header().clone();
                 let total_difficulty = block.get_total_difficulty();
-
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
                     debug!(
                         "total_difficulty is {},peer_info is {:?}",
@@ -481,12 +484,25 @@ impl Inner {
                         peer_info.peer_info.total_difficulty = total_difficulty;
                     }
                 }
-
-                self.bus
-                    .send(Broadcast {
-                        msg: PeerNewBlock::new(peer_id.into(), block.get_block().clone()),
-                    })
-                    .await?;
+                match block.as_ref() {
+                    BlockDetail::Block(block, _) => {
+                        self.bus
+                            .send(Broadcast {
+                                msg: PeerNewBlock::new(peer_id.into(), block.clone()),
+                            })
+                            .await?;
+                    }
+                    BlockDetail::CompactBlock(compact_block, _) => {
+                        self.bus
+                            .send(Broadcast {
+                                msg: PeerNewCmpctBlock {
+                                    peer_id: peer_id.into(),
+                                    compact_block: compact_block.clone(),
+                                },
+                            })
+                            .await?;
+                    }
+                }
             }
             PeerMessage::RawRPCRequest(id, _rpc_path, request) => {
                 debug!("do request {} from peer {}", id, peer_id);

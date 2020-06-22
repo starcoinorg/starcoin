@@ -6,6 +6,7 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::cmpact_block::CompactBlock;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo},
@@ -137,4 +138,11 @@ impl Ord for BlockBody {
     fn cmp(&self, other: &BlockBody) -> Ordering {
         self.hash.cmp(&other.hash)
     }
+}
+
+#[derive(Message, Clone, Debug)]
+#[rtype(result = "()")]
+pub struct PeerNewCmpctBlock {
+    pub peer_id: PeerId,
+    pub compact_block: CompactBlock,
 }

@@ -3,12 +3,12 @@ pub mod block_sync;
 mod download;
 pub mod helper;
 mod process;
+pub mod relay;
 pub mod state_sync;
 mod sync;
 mod sync_metrics;
 mod sync_task;
 mod txn_sync;
-
 pub use download::Downloader;
 pub use process::ProcessActor;
 use std::time::Duration;

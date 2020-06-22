@@ -11,6 +11,7 @@ use starcoin_crypto::{
 
 use crate::accumulator_info::AccumulatorInfo;
 use crate::language_storage::CORE_CODE_ADDRESS;
+use crate::cmpact_block::CompactBlock;
 use crate::U256;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
@@ -19,6 +20,9 @@ use std::cmp::PartialOrd;
 
 /// Type for block number.
 pub type BlockNumber = u64;
+/// Type for branch number.
+pub type BranchNumber = (HashValue, u64);
+
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15 * 1000; // 15 Second;
 
@@ -575,29 +579,35 @@ impl BlockTemplate {
 }
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-pub struct BlockDetail {
-    block: Block,
-    total_difficulty: U256,
+pub enum BlockDetail {
+    Block(Block, U256),
+    CompactBlock(CompactBlock, U256),
 }
 
 impl BlockDetail {
     pub fn new(block: Block, total_difficulty: U256) -> Self {
-        BlockDetail {
-            block,
-            total_difficulty,
-        }
+        BlockDetail::Block(block, total_difficulty)
     }
 
     pub fn get_total_difficulty(&self) -> U256 {
-        self.total_difficulty
+        match self {
+            BlockDetail::Block(_, total_diff) => total_diff.clone(),
+            BlockDetail::CompactBlock(_, total_diff) => total_diff.clone(),
+        }
     }
 
     pub fn get_block(&self) -> &Block {
-        &self.block
+        match self {
+            BlockDetail::Block(block, _) => block,
+            BlockDetail::CompactBlock(_, _) => unreachable!(),
+        }
     }
 
     pub fn header(&self) -> &BlockHeader {
-        self.block.header()
+        match self {
+            BlockDetail::Block(block, _) => &block.header,
+            BlockDetail::CompactBlock(block, _) => &block.header,
+        }
     }
 }
 

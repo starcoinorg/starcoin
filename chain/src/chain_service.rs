@@ -12,6 +12,7 @@ use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
+use std::borrow::Cow;
 use std::sync::Arc;
 use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult, Consensus};
@@ -124,9 +125,9 @@ where
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
 
             CHAIN_METRICS.broadcast_head_count.inc();
-            let block_detail = BlockDetail::new(block, total_difficulty);
-            self.broadcast_2_bus(block_detail.clone());
-            self.broadcast_2_network(block_detail);
+            let block_detail = Arc::new(BlockDetail::new(block, total_difficulty));
+            self.broadcast_newblock_to_bus(block_detail.clone());
+            self.broadcast_newblock_to_network(block_detail);
         } else {
             self.insert_branch(block_header);
         }
@@ -202,21 +203,21 @@ where
         Ok(blocks)
     }
 
-    pub fn broadcast_2_bus(&self, block: BlockDetail) {
+    pub fn broadcast_newblock_to_bus(&self, block: Arc<BlockDetail>) {
         let bus = self.bus.clone();
         bus.do_send(Broadcast {
-            msg: NewHeadBlock(Arc::new(block)),
+            msg: NewHeadBlock(block),
         });
     }
 
-    pub fn broadcast_2_network(&self, block: BlockDetail) {
+    pub fn broadcast_newblock_to_network(&self, block_detail: Arc<BlockDetail>) {
         if let Some(network) = self.network.clone() {
             Arbiter::spawn(async move {
-                let block_id = block.header().id();
+                let block_id = block_detail.header().id();
                 if let Err(e) = network
                     .broadcast_new_head_block(
-                        BLOCK_PROTOCOL_NAME.into(),
-                        NewHeadBlock(Arc::new(block)),
+                        Cow::from(BLOCK_PROTOCOL_NAME),
+                        NewHeadBlock(block_detail),
                     )
                     .await
                 {
