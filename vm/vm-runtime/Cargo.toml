@@ -14,7 +14,6 @@ starcoin-types = { path = "../../types"}
 move-vm-runtime = { features = ["debug_module"], git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
 vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
 bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
-lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005"}
 starcoin-state-api = {path="../../state/api"}
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}

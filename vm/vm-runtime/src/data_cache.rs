@@ -154,8 +154,7 @@ impl<'txn> TransactionDataCache<'txn> {
         for (key, global_val) in data_map {
             match global_val {
                 Some((layout, global_val, _)) => {
-                    println!("write set: {:?} ------ {:?}", layout.module, key);
-                    if !global_val.is_clean()? {
+                    if global_val.is_dirty()? {
                         // into_owned_struct will check if all references are properly released
                         // at the end of a transaction
                         let data = global_val.into_owned_struct()?;
@@ -199,10 +198,7 @@ impl<'txn> TransactionDataCache<'txn> {
     /// Get size by account address
     pub fn get_size(&self, address: AccountAddress) -> i64 {
         match self.size_map.get(&address) {
-            Some(size) => {
-                println!("get size: {:?} {:?}", address, size);
-                *size
-            }
+            Some(size) => *size,
             _ => 0,
         }
     }
@@ -215,18 +211,16 @@ impl<'txn> TransactionDataCache<'txn> {
         ap: &AccessPath,
         ty: &FatStructType,
     ) -> VMResult<&mut Option<(FatStructType, GlobalValue, usize)>> {
-        println!("load data : {:?}", ap);
         if !self.data_map.contains_key(ap) {
             match self.data_cache.get(ap)? {
                 Some(bytes) => {
                     let size = bytes.len();
                     let res = Struct::simple_deserialize(&bytes, ty)?;
-                    let gr = GlobalValue::new(Value::struct_(res))?;
+                    let global_val = GlobalValue::new(Value::struct_(res))?;
                     self.data_map
-                        .insert(ap.clone(), Some((ty.clone(), gr, size)));
+                        .insert(ap.clone(), Some((ty.clone(), global_val, size)));
                 }
                 None => {
-                    println!("load data Cache is None:{:?}", ap);
                     return Err(
                         VMStatus::new(StatusCode::MISSING_DATA).with_message(format!(
                             "Cannot find {:?}::{}::{} for Access Path: {:?}",
@@ -238,8 +232,6 @@ impl<'txn> TransactionDataCache<'txn> {
                     );
                 }
             };
-        } else {
-            println!("contains {:?}", ap);
         }
         Ok(self.data_map.get_mut(ap).expect("data must exist"))
     }
@@ -252,42 +244,29 @@ impl<'a> DataStore for TransactionDataCache<'a> {
         ap: &AccessPath,
         g: (FatStructType, GlobalValue),
     ) -> VMResult<()> {
-        println!("publish_resource: {:?}", ap.clone());
         //TODO modify to GlobalValue.size() in future
-        // let new_gv = g.1.borrow_global().unwrap().copy_value().unwrap();
+
         let data = g.1.into_owned_struct().unwrap();
         match data.simple_serialize(&g.0) {
             Some(blob) => {
                 let len = blob.len();
-                let struct_data = lcs::from_bytes_seed(&g.0, blob.as_ref())
-                    .map_err(|e| {
-                        VMStatus::new(StatusCode::INVALID_DATA).with_message(e.to_string())
-                    })
-                    .unwrap();
-
-                let gr = GlobalValue::new(Value::struct_(struct_data)).unwrap();
-                // println!("publish_resource :{:?}", gr);
-                println!("gr.is_clean(): {:?}", gr.is_clean());
-                let g_wrap = (g.0.clone(), gr, len);
-                // assert_eq!(g.1, gr);
+                let global_val = GlobalValue::new(Value::struct_(data)).unwrap();
+                global_val.mark_dirty()?;
+                let g_wrap = (g.0.clone(), global_val, len);
                 self.data_map.insert(ap.clone(), Some(g_wrap));
-                // println!("insert result: {:?}", self.data_map.get(&ap.clone()));
+
                 self.size_map
                     .entry(ap.clone().address)
                     .and_modify(|v| *v += len as i64)
                     .or_insert(len as i64);
-                println!("to size: {:?}  {:?} {:?}", len, ap.address, g.0.clone());
             }
             None => {
                 return Err(vm_error(
                     Location::new(),
                     StatusCode::VALUE_SERIALIZATION_ERROR,
-                ))
+                ));
             }
         };
-
-        // let g_wrap = (g.0, g.1, 0);
-        // self.data_map.insert(ap.clone(), Some(g_wrap));
         Ok(())
     }
 
@@ -296,7 +275,6 @@ impl<'a> DataStore for TransactionDataCache<'a> {
         ap: &AccessPath,
         ty: &FatStructType,
     ) -> VMResult<Option<&GlobalValue>> {
-        println!("borrow_resource :{:?}", ap);
         let map_entry = self.load_data(ap, ty)?;
         Ok(map_entry.as_ref().map(|(_, g, _)| g))
     }
@@ -306,12 +284,10 @@ impl<'a> DataStore for TransactionDataCache<'a> {
         ap: &AccessPath,
         ty: &FatStructType,
     ) -> VMResult<Option<GlobalValue>> {
-        println!("move_resource_from {:?} {:?}", ap, ty);
         let map_entry = self.load_data(ap, ty)?;
         // .take() means that the entry is removed from the data map -- this marks the
         // access path for deletion.
-        let (_ty, global_value, size) = map_entry.take().unwrap();
-        // println!("from size: {:?}  {:?} {:?}", size, ap.address, ty);
+        let (_, global_value, size) = map_entry.take().unwrap();
         self.size_map
             .entry(ap.clone().address)
             .and_modify(|v| *v -= size as i64)

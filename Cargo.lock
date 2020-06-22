@@ -7519,7 +7519,6 @@ dependencies = [
  "anyhow",
  "bytecode-verifier",
  "include_dir 0.5.0",
- "libra-canonical-serialization",
  "move-vm-runtime",
  "num_enum",
  "once_cell",

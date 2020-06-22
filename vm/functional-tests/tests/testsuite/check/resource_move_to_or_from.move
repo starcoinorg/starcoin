@@ -60,16 +60,16 @@ fun main(account: &signer) {
 script {
 use {{alice}}::M;
 fun main(account: &signer) {
-  let cup = M::new();
-  M::publish(cup, account);
   let y = M::destroy(account);
-  assert(y == 1, 41)
+  assert(y == 1, 41);
+  let cup = M::new();
+  M::publish(cup, account)
 }
 }
 
 // check: EXECUTED
 // check: delta_size
-// check: 0
+// check: 16
 
 
 //! new-transaction
@@ -78,8 +78,6 @@ fun main(account: &signer) {
 script {
 use {{alice}}::M;
 fun main(account: &signer) {
-  //let old_cup = M::new();
-  //M::publish(old_cup, account);
   let cup = M::get_cup(account);
   M::destroy_x(cup);
   let y = M::destroy(account);
@@ -89,5 +87,5 @@ fun main(account: &signer) {
 
 // check: EXECUTED
 // check: delta_size
-// check: 0
+// check: 8
 
