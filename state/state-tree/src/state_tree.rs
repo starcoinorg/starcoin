@@ -294,6 +294,10 @@ impl StateTree {
     // {
     //     todo!()
     // }
+
+    pub fn is_genesis(&self) -> bool {
+        self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
+    }
 }
 
 struct CachedTreeReader<'a> {

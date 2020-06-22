@@ -49,7 +49,8 @@ async fn test_tx_pool() -> Result<()> {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-    let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+    let txn =
+        starcoin_executor::build_transfer_from_association(account_address, auth_prefix, 0, 10000);
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.crypto_hash();
     let mut result = txpool_service.add_txns(vec![txn]);
@@ -59,7 +60,7 @@ async fn test_tx_pool() -> Result<()> {
 
     let next_sequence_number =
         txpool_service.next_sequence_number(account_config::association_address());
-    assert_eq!(next_sequence_number, Some(2));
+    assert_eq!(next_sequence_number, Some(1));
     Ok(())
 }
 
@@ -77,7 +78,12 @@ async fn test_rollback() -> Result<()> {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+        let txn = starcoin_executor::build_transfer_from_association(
+            account_address,
+            auth_prefix,
+            0,
+            10000,
+        );
         txn.as_signed_user_txn()?.clone()
     };
     let _ = pool.get_service().add_txns(vec![retracted_txn.clone()]);
@@ -86,7 +92,12 @@ async fn test_rollback() -> Result<()> {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 20000);
+        let txn = starcoin_executor::build_transfer_from_association(
+            account_address,
+            auth_prefix,
+            0,
+            20000,
+        );
         txn.as_signed_user_txn()?.clone()
     };
 

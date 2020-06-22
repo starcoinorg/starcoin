@@ -752,7 +752,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use tokio::runtime::{Handle, Runtime};
     use tokio::task;
-    use types::{block::BlockHeader, transaction::SignedUserTransaction, U256};
+    use types::{block::BlockHeader, transaction::SignedUserTransaction};
 
     #[rtype(result = "Result<()>")]
     #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
@@ -763,12 +763,7 @@ mod tests {
     #[test]
     fn test_peer_info() {
         let mut peer_info = PeerInfo::default();
-        peer_info.latest_header = BlockHeader::genesis_block_header(
-            HashValue::random(),
-            HashValue::random(),
-            U256::zero(),
-            Vec::new(),
-        );
+        peer_info.latest_header = BlockHeader::random();
         let data = peer_info.encode().unwrap();
         let peer_info_decode = PeerInfo::decode(&data).unwrap();
         assert_eq!(peer_info, peer_info_decode);

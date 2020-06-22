@@ -9,9 +9,9 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_wallet_api::WalletAccount;
 use std::{convert::TryInto, sync::Arc};
 use traits::ChainReader;
-use types::{account_address, transaction::authenticator::AuthenticationKey};
+use types::{account_address, account_config, transaction::authenticator::AuthenticationKey};
 
-#[test]
+#[stest::test]
 pub fn test_open_block() -> Result<()> {
     // uncomment this to see debug message.
     // let _ = logger::init_for_test();
@@ -31,12 +31,15 @@ pub fn test_open_block() -> Result<()> {
         )?
     };
 
+    let account_reader = AccountStateReader::new(chain.chain_state_reader());
+    let association_sequence_num =
+        account_reader.get_sequence_number(account_config::association_address())?;
     let (sender_prikey, sender_pubkey) = KeyGen::from_os_rng().generate_keypair();
     let sender = account_address::from_public_key(&sender_pubkey);
-    let txn1 = executor::build_mint_txn(
+    let txn1 = executor::build_transfer_from_association(
         sender,
         AuthenticationKey::ed25519(&sender_pubkey).prefix().to_vec(),
-        1,
+        association_sequence_num,
         50_000_000,
     )
     .try_into()?;
@@ -46,8 +49,7 @@ pub fn test_open_block() -> Result<()> {
 
     // check state changed
     {
-        let reader = opened_block.state_reader();
-        let account_reader = AccountStateReader::new(reader);
+        let account_reader = AccountStateReader::new(opened_block.state_reader());
         let account_balance = account_reader.get_balance(&sender)?;
         assert_eq!(account_balance, Some(50_000_000));
 

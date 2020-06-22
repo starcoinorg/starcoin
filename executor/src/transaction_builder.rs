@@ -1,3 +1,4 @@
+use starcoin_config::ChainNetwork;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::{
@@ -6,24 +7,24 @@ use starcoin_types::transaction::{
 };
 use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::transaction::helpers::TransactionSigner;
 use std::time::Duration;
-use vm_runtime::genesis::GENESIS_KEYPAIR;
 use vm_runtime::transaction_scripts::{ACCEPT_COIN_TXN, CREATE_ACCOUNT_TXN, PEER_TO_PEER_TXN};
 
 //TODO move to transaction_builder crate.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const TXN_RESERVED: u64 = 2_000_000;
 
-pub fn build_mint_txn(
+pub fn build_transfer_from_association(
     addr: AccountAddress,
     auth_key_prefix: Vec<u8>,
-    seq_num: u64,
+    association_sequence_num: u64,
     amount: u64,
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
         auth_key_prefix,
-        seq_num,
+        association_sequence_num,
         amount,
     ))
 }
@@ -171,33 +172,34 @@ pub fn peer_to_peer_txn_sent_as_association(
     args.push(TransactionArgument::U64(amount));
 
     crate::create_signed_txn_with_association_account(
-        PEER_TO_PEER_TXN.clone(),
-        vec![stc_type_tag()],
-        args,
+        Script::new(PEER_TO_PEER_TXN.clone(), vec![stc_type_tag()], args),
         seq_num,
         TXN_RESERVED,
         1,
     )
 }
 
+//this only work for DEV,
+//TODO move to ChainNetwork::DEV ?
 pub fn create_signed_txn_with_association_account(
-    program: Vec<u8>,
-    ty_args: Vec<TypeTag>,
-    args: Vec<TransactionArgument>,
+    script: Script,
     sequence_number: u64,
     max_gas_amount: u64,
     gas_unit_price: u64,
 ) -> SignedUserTransaction {
-    RawUserTransaction::new(
-        account_config::association_address(),
-        sequence_number,
-        TransactionPayload::Script(Script::new(program, ty_args, args)),
-        max_gas_amount,
-        gas_unit_price,
-        // TTL is 86400s. Initial time was set to 0.
-        Duration::from_secs(DEFAULT_EXPIRATION_TIME),
-    )
-    .sign(&GENESIS_KEYPAIR.0, GENESIS_KEYPAIR.1.clone())
-    .unwrap()
-    .into_inner()
+    ChainNetwork::Dev
+        .get_config()
+        .pre_mine_config
+        .as_ref()
+        .expect("Dev network pre mine config should exist")
+        .sign_txn(RawUserTransaction::new(
+            account_config::association_address(),
+            sequence_number,
+            TransactionPayload::Script(script),
+            max_gas_amount,
+            gas_unit_price,
+            // TTL is 86400s. Initial time was set to 0.
+            Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+        ))
+        .expect("Sign txn should work.")
 }

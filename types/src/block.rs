@@ -10,6 +10,7 @@ use starcoin_crypto::{
 };
 
 use crate::accumulator_info::AccumulatorInfo;
+use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::U256;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
@@ -186,27 +187,43 @@ impl BlockHeader {
     }
 
     pub fn genesis_block_header(
+        parent_hash: HashValue,
+        timestamp: u64,
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
         consensus_header: Vec<u8>,
     ) -> Self {
         Self {
-            //TODO should use a placeholder hash?
-            parent_hash: HashValue::zero(),
+            parent_hash,
             parent_block_accumulator_root: *ACCUMULATOR_PLACEHOLDER_HASH,
-            //TODO hard code a genesis block time.
-            timestamp: 0,
+            timestamp,
             number: 0,
-            author: AccountAddress::default(),
+            author: CORE_CODE_ADDRESS,
             auth_key_prefix: None,
             accumulator_root,
             state_root,
             gas_used: 0,
-            //TODO
             gas_limit: 0,
             difficulty,
             consensus_header,
+        }
+    }
+
+    pub fn random() -> Self {
+        Self {
+            parent_hash: HashValue::random(),
+            parent_block_accumulator_root: HashValue::random(),
+            timestamp: rand::random(),
+            number: rand::random(),
+            author: AccountAddress::random(),
+            auth_key_prefix: None,
+            accumulator_root: HashValue::random(),
+            state_root: HashValue::random(),
+            gas_used: rand::random(),
+            gas_limit: rand::random(),
+            difficulty: U256::max_value(),
+            consensus_header: vec![],
         }
     }
 }
@@ -288,12 +305,17 @@ impl Block {
     }
 
     pub fn genesis_block(
+        parent_hash: HashValue,
+        timestamp: u64,
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
         consensus_header: Vec<u8>,
+        genesis_txn: SignedUserTransaction,
     ) -> Self {
         let header = BlockHeader::genesis_block_header(
+            parent_hash,
+            timestamp,
             accumulator_root,
             state_root,
             difficulty,
@@ -301,7 +323,7 @@ impl Block {
         );
         Self {
             header,
-            body: BlockBody::default(),
+            body: BlockBody::new(vec![genesis_txn]),
         }
     }
 }

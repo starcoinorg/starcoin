@@ -5,10 +5,9 @@ use anyhow::{format_err, Result};
 use libp2p::Multiaddr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
-use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
-    ed25519::*, hash::PlainCryptoHash, PrivateKey, SigningKey, Uniform,
+    ed25519::*, hash::PlainCryptoHash, Genesis, HashValue, PrivateKey, SigningKey,
     ValidCryptoMaterialStringExt,
 };
 use starcoin_types::{
@@ -17,6 +16,9 @@ use starcoin_types::{
         {RawUserTransaction, SignedUserTransaction},
     },
     U256,
+};
+use starcoin_vm_types::on_chain_config::{
+    VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
 };
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -119,6 +121,12 @@ impl ChainNetwork {
             ChainNetwork::Main,
         ]
     }
+    /// A key pair to sign genesis txn, and as Dev network pre mine config key.
+    pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
+        let private_key = Ed25519PrivateKey::genesis();
+        let public_key = private_key.public_key();
+        (private_key, public_key)
+    }
 }
 
 impl Default for ChainNetwork {
@@ -153,6 +161,12 @@ impl TransactionSigner for PreMineConfig {
 /// ChainConfig is a static hard code config.
 #[derive(Debug)]
 pub struct ChainConfig {
+    /// Starcoin system major version for genesis.
+    pub version: Version,
+    /// Genesis block parent hash
+    pub parent_hash: HashValue,
+    /// Genesis timestamp
+    pub timestamp: u64,
     /// Starcoin total supply.
     pub total_supply: u64,
     /// Base reward for every Block miner.
@@ -167,19 +181,21 @@ pub struct ChainConfig {
     pub consensus_header: Vec<u8>,
     /// Pre mine to Association account config, if not preset, Not do pre mine, and association account only can be used in genesis.
     pub pre_mine_config: Option<PreMineConfig>,
+    /// VM config for publishing_option and gas_schedule
+    pub vm_config: VMConfig,
     /// List of initial node addresses
     pub boot_nodes: Vec<Multiaddr>,
 }
 
 pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
 
-const STATIC_SEED: [u8; 32] = [42; 32];
 pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
-    let mut rng = StdRng::from_seed(STATIC_SEED);
-    let private_key = Ed25519PrivateKey::generate(&mut rng);
-    let public_key = private_key.public_key();
+    let (private_key, public_key) = ChainNetwork::genesis_key_pair();
 
     ChainConfig {
+        version: Version { major: 1 },
+        parent_hash: HashValue::zero(),
+        timestamp: 0,
         total_supply: STARCOIN_TOTAL_SUPPLY,
         base_block_reward: 5000 * 1_000_000,
         reward_halving_interval: 100,
@@ -191,48 +207,69 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
             private_key: Some(private_key),
             pre_mine_percent: 20,
         }),
+        vm_config: VMConfig {
+            publishing_option: VMPublishingOption::Open,
+            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+        },
         boot_nodes: vec![],
     }
 });
 
 pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     ChainConfig {
-    total_supply: STARCOIN_TOTAL_SUPPLY,
-    base_block_reward: 5000 * 1_000_000,
-    reward_halving_interval: 1000,
-    reward_delay: 3,
-    difficulty: 10.into(),
-    consensus_header: vec![],
-    pre_mine_config: Some(PreMineConfig {
-        public_key: Ed25519PublicKey::from_encoded_string(
-            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
-        )
-        .expect("decode public key must success."),
-        private_key: None,
-        pre_mine_percent: 20,
-    }),
-    boot_nodes: vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
-                     "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
-                     "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),],
-}
+        version: Version { major: 1 },
+        parent_hash: HashValue::zero(),
+        timestamp: 0,
+        total_supply: STARCOIN_TOTAL_SUPPLY,
+        base_block_reward: 5000 * 1_000_000,
+        reward_halving_interval: 1000,
+        reward_delay: 3,
+        difficulty: 10.into(),
+        consensus_header: vec![],
+        pre_mine_config: Some(PreMineConfig {
+            public_key: Ed25519PublicKey::from_encoded_string(
+                "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+            )
+                .expect("decode public key must success."),
+            private_key: None,
+            pre_mine_percent: 20,
+        }),
+        vm_config: VMConfig {
+            publishing_option: VMPublishingOption::Open,
+            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+        },
+        boot_nodes: vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
+                         "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
+                         "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"), ],
+    }
 });
 
 pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     ChainConfig {
-    total_supply: STARCOIN_TOTAL_SUPPLY,
-    base_block_reward: 5000 * 1_000_000,
-    reward_halving_interval: 10000,
-    reward_delay: 7,
-    difficulty: 10.into(),
-    consensus_header: vec![],
-    pre_mine_config: None,
-    boot_nodes: vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
-                     "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
-                     "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),],
-}
+        version: Version { major: 1 },
+        parent_hash: HashValue::zero(),
+        timestamp: 0,
+        total_supply: STARCOIN_TOTAL_SUPPLY,
+        base_block_reward: 5000 * 1_000_000,
+        reward_halving_interval: 10000,
+        reward_delay: 7,
+        difficulty: 10.into(),
+        consensus_header: vec![],
+        pre_mine_config: None,
+        vm_config: VMConfig {
+            publishing_option: VMPublishingOption::Open,
+            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+        },
+        boot_nodes: vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
+                         "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
+                         "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"), ],
+    }
 });
 
 pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
+    version: Version { major: 1 },
+    parent_hash: HashValue::zero(),
+    timestamp: 0,
     total_supply: STARCOIN_TOTAL_SUPPLY,
     base_block_reward: 5000 * 1_000_000,
     reward_halving_interval: 52500,
@@ -240,5 +277,9 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     difficulty: 10.into(),
     consensus_header: vec![],
     pre_mine_config: None,
+    vm_config: VMConfig {
+        publishing_option: VMPublishingOption::Open,
+        gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+    },
     boot_nodes: vec![],
 });

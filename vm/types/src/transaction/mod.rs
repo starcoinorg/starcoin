@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -31,6 +34,7 @@ mod error;
 pub mod helpers;
 mod pending_transaction;
 mod transaction_argument;
+mod upgrade;
 
 use crate::transaction::authenticator::TransactionAuthenticator;
 pub use error::CallError;
@@ -41,6 +45,7 @@ use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signatur
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
+pub use upgrade::{InitScript, UpgradePackage};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
@@ -188,40 +193,6 @@ impl RawUserTransaction {
         self.payload
     }
 
-    pub fn format_for_client(&self, get_transaction_name: impl Fn(&[u8]) -> String) -> String {
-        let empty_vec = vec![];
-        let (code, args) = match &self.payload {
-            TransactionPayload::Script(script) => {
-                (get_transaction_name(script.code()), script.args())
-            }
-            TransactionPayload::Module(_) => ("module publishing".to_string(), &empty_vec[..]),
-        };
-        let mut f_args: String = "".to_string();
-        for arg in args {
-            f_args = format!("{}\n\t\t\t{:#?},", f_args, arg);
-        }
-        format!(
-            "RawUserTransaction {{ \n\
-             \tsender: {}, \n\
-             \tsequence_number: {}, \n\
-             \tpayload: {{, \n\
-             \t\ttransaction: {}, \n\
-             \t\targs: [ {} \n\
-             \t\t]\n\
-             \t}}, \n\
-             \tmax_gas_amount: {}, \n\
-             \tgas_unit_price: {}, \n\
-             \texpiration_time: {:#?}, \n\
-             }}",
-            self.sender,
-            self.sequence_number,
-            code,
-            f_args,
-            self.max_gas_amount,
-            self.gas_unit_price,
-            self.expiration_time,
-        )
-    }
     /// Return the sender of this transaction.
     pub fn sender(&self) -> AccountAddress {
         self.sender
@@ -260,6 +231,8 @@ pub enum TransactionPayload {
     Script(Script),
     /// A transaction that publishes code.
     Module(Module),
+    /// A transaction that publish or update module code by a package.
+    Package(UpgradePackage),
 }
 
 /// A transaction that has been signed.
@@ -671,67 +644,5 @@ impl std::fmt::Display for TxStatus {
             TxStatus::Culled => "culled",
         };
         write!(f, "{}", s)
-    }
-}
-
-//======================= libra type converter ============================
-
-impl Into<libra_types::transaction::TransactionPayload> for TransactionPayload {
-    fn into(self) -> libra_types::transaction::TransactionPayload {
-        match self {
-            TransactionPayload::Script(s) => {
-                libra_types::transaction::TransactionPayload::Script(s)
-            }
-            TransactionPayload::Module(m) => {
-                libra_types::transaction::TransactionPayload::Module(m)
-            }
-        }
-    }
-}
-
-// impl Into<libra_types::transaction::SignedTransaction> for SignedUserTransaction {
-//     fn into(self) -> libra_types::transaction::SignedTransaction {
-//         let raw_txn = libra_types::transaction::RawTransaction::new(
-//             self.sender(),
-//             self.sequence_number(),
-//             self.payload().clone().into(),
-//             self.max_gas_amount(),
-//             self.gas_unit_price(),
-//             STC_NAME.to_owned(),
-//             self.expiration_time(),
-//         );
-//         libra_types::transaction::SignedTransaction::new(
-//             raw_txn,
-//             self.public_key(),
-//             self.signature(),
-//         )
-//     }
-// }
-
-impl From<libra_types::transaction::TransactionStatus> for TransactionStatus {
-    fn from(status: libra_types::transaction::TransactionStatus) -> Self {
-        match status {
-            libra_types::transaction::TransactionStatus::Discard(vm_status) => {
-                TransactionStatus::Discard(vm_status)
-            }
-            libra_types::transaction::TransactionStatus::Keep(vm_status) => {
-                TransactionStatus::Keep(vm_status)
-            }
-            libra_types::transaction::TransactionStatus::Retry => {
-                TransactionStatus::Discard(VMStatus::new(StatusCode::UNKNOWN_VALIDATION_STATUS))
-            }
-        }
-    }
-}
-
-impl From<libra_types::transaction::TransactionOutput> for TransactionOutput {
-    fn from(output: libra_types::transaction::TransactionOutput) -> Self {
-        TransactionOutput::new(
-            output.write_set().clone(),
-            output.events().to_vec(),
-            output.gas_used(),
-            0, //TODO
-            TransactionStatus::from(output.status().clone()),
-        )
     }
 }

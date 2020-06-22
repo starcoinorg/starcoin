@@ -80,6 +80,10 @@ impl<'a> StateViewCache<'a> {
             }
         }
     }
+
+    pub fn is_genesis(&self) -> bool {
+        self.data_view.is_genesis()
+    }
 }
 
 impl<'block> RemoteCache for StateViewCache<'block> {

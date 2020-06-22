@@ -4,6 +4,7 @@
 //! This crates includes the compiled transactions scripts to mitigate issues around binary /
 //! transaction script versions and to simplify deployment.
 
+//TODO move this to transaction builder.
 use include_dir::{include_dir, Dir};
 use once_cell::sync::Lazy;
 use std::path::PathBuf;

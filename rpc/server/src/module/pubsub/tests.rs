@@ -39,7 +39,12 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let account_address = account_address::from_public_key(&public_key);
     let txn = {
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+        let txn = starcoin_executor::build_transfer_from_association(
+            account_address,
+            auth_prefix,
+            0,
+            10000,
+        );
         txn.as_signed_user_txn()?.clone()
     };
     let (block_template, _) = block_chain.create_block_template(
@@ -153,7 +158,12 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         let public_key = pri_key.public_key();
         let account_address = account_address::from_public_key(&public_key);
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = starcoin_executor::build_mint_txn(account_address, auth_prefix, 1, 10000);
+        let txn = starcoin_executor::build_transfer_from_association(
+            account_address,
+            auth_prefix,
+            1,
+            10000,
+        );
         txn.as_signed_user_txn()?.clone()
     };
     let txn_id = txn.crypto_hash();

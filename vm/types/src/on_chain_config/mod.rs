@@ -14,11 +14,13 @@ use anyhow::{format_err, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
+mod genesis_gas_schedule;
 mod registered_currencies;
 mod version;
 mod vm_config;
 
 pub use self::{
+    genesis_gas_schedule::INITIAL_GAS_SCHEDULE,
     registered_currencies::RegisteredCurrencies,
     version::Version,
     vm_config::{VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
