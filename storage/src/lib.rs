@@ -4,7 +4,6 @@
 use crate::accumulator::AccumulatorStorage;
 use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
-use crate::branch::BranchStorage;
 use crate::state_node::StateStorage;
 use crate::storage::{ColumnFamilyName, InnerStorage, KVStore, StorageInstance};
 use crate::transaction::TransactionStorage;
@@ -32,7 +31,6 @@ pub mod accumulator;
 pub mod batch;
 pub mod block;
 pub mod block_info;
-pub mod branch;
 pub mod cache_storage;
 pub mod db_storage;
 mod metrics;
@@ -59,7 +57,6 @@ pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "startup_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
-pub const BRANCH_PREFIX_NAME: ColumnFamilyName = "branch";
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
 pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
@@ -77,7 +74,6 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         STARTUP_INFO_PREFIX_NAME,
         TRANSACTION_PREFIX_NAME,
         TRANSACTION_INFO_PREFIX_NAME,
-        BRANCH_PREFIX_NAME,
     ]
 });
 
@@ -87,20 +83,11 @@ pub trait BlockStore {
 
     fn get_headers(&self) -> Result<Vec<HashValue>>;
 
-    fn save_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-        block_id: HashValue,
-    ) -> Result<()>;
-
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
     fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>>;
 
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
-
-    fn get_branch_number(&self, branch_id: HashValue, number: u64) -> Result<Option<HashValue>>;
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>>;
 
@@ -118,19 +105,7 @@ pub trait BlockStore {
 
     fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>>;
 
-    fn get_header_by_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-    ) -> Result<Option<BlockHeader>>;
-
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>>;
-
-    fn get_block_by_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-    ) -> Result<Option<Block>>;
 
     fn get_common_ancestor(
         &self,
@@ -163,11 +138,6 @@ pub trait TransactionInfoStore {
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<()>;
 }
 
-pub trait BranchStore {
-    fn get_branch(&self, block_id: HashValue) -> Result<Option<HashValue>>;
-    fn save_branch(&self, block_id: HashValue, branch_id: HashValue) -> Result<()>;
-}
-
 pub trait TransactionStore {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
     fn save_transaction(&self, txn_info: Transaction) -> Result<()>;
@@ -182,7 +152,6 @@ pub struct Storage {
     accumulator_storage: AccumulatorStorage,
     block_info_storage: BlockInfoStorage,
     startup_info_storage: Arc<dyn KVStore>,
-    branch_storage: BranchStorage,
 }
 
 impl Storage {
@@ -194,11 +163,7 @@ impl Storage {
             state_node_storage: StateStorage::new(instance.clone()),
             accumulator_storage: AccumulatorStorage::new(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
-            startup_info_storage: Arc::new(InnerStorage::new(
-                instance.clone(),
-                STARTUP_INFO_PREFIX_NAME,
-            )),
-            branch_storage: BranchStorage::new(instance),
+            startup_info_storage: Arc::new(InnerStorage::new(instance, STARTUP_INFO_PREFIX_NAME)),
         })
     }
 }
@@ -238,16 +203,6 @@ impl BlockStore for Storage {
         self.block_storage.get_headers()
     }
 
-    fn save_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-        block_id: HashValue,
-    ) -> Result<(), Error> {
-        self.block_storage
-            .save_branch_number(branch_id, number, block_id)
-    }
-
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_storage.get(block_id)
     }
@@ -258,14 +213,6 @@ impl BlockStore for Storage {
 
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
         self.block_storage.get_body(block_id)
-    }
-
-    fn get_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-    ) -> Result<Option<HashValue>, Error> {
-        self.block_storage.get_branch_number(branch_id, number)
     }
 
     fn get_number(&self, number: u64) -> Result<Option<HashValue>> {
@@ -300,26 +247,8 @@ impl BlockStore for Storage {
         self.block_storage.get_block_header_by_number(number)
     }
 
-    fn get_header_by_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-    ) -> Result<Option<BlockHeader>, Error> {
-        self.block_storage
-            .get_header_by_branch_number(branch_id, number)
-    }
-
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.block_storage.get_block_by_number(number)
-    }
-
-    fn get_block_by_branch_number(
-        &self,
-        branch_id: HashValue,
-        number: u64,
-    ) -> Result<Option<Block>, Error> {
-        self.block_storage
-            .get_block_by_branch_number(branch_id, number)
     }
 
     fn get_common_ancestor(
@@ -436,16 +365,6 @@ impl TransactionStore for Storage {
     }
 }
 
-impl BranchStore for Storage {
-    fn get_branch(&self, block_id: HashValue) -> Result<Option<HashValue>, Error> {
-        self.branch_storage.get(block_id)
-    }
-
-    fn save_branch(&self, block_id: HashValue, branch_id: HashValue) -> Result<(), Error> {
-        self.branch_storage.put(block_id, branch_id)
-    }
-}
-
 /// Chain storage define
 pub trait Store:
     StateNodeStore
@@ -454,7 +373,6 @@ pub trait Store:
     + BlockInfoStore
     + TransactionStore
     + TransactionInfoStore
-    + BranchStore
     + IntoSuper<dyn StateNodeStore>
     + IntoSuper<dyn AccumulatorTreeStore>
 {
