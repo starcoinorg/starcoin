@@ -6824,6 +6824,7 @@ name = "starcoin-genesis"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "once_cell",
  "serde",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
@@ -6841,6 +6842,7 @@ dependencies = [
  "starcoin-vm-types",
  "stdlib 0.1.0",
  "stest",
+ "structopt 0.3.14",
 ]
 
 [[package]]

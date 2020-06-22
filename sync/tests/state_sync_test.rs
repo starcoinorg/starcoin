@@ -47,7 +47,7 @@ fn test_state_sync() {
         let node_config_1 = Arc::new(config_1);
 
         // genesis
-        let genesis_1 = Genesis::build(node_config_1.net()).unwrap();
+        let genesis_1 = Genesis::load(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
         let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
 
@@ -155,7 +155,7 @@ fn test_state_sync() {
         debug!("second peer : {:?}", config_2.network.self_peer_id);
         let node_config_2 = Arc::new(config_2);
 
-        let genesis_2 = Genesis::build(node_config_2.net()).unwrap();
+        let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
         let genesis_hash = genesis_2.block().header().id();
         let startup_info_2 = genesis_2.execute(storage_2.clone()).unwrap();
         // txpool

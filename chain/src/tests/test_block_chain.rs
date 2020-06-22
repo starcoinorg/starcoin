@@ -20,7 +20,7 @@ async fn gen_master_chain(
     let node_config = Arc::new(node_config);
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
-    let genesis = Genesis::build(node_config.net()).unwrap();
+    let genesis = Genesis::load(node_config.net()).unwrap();
     let startup_info = genesis.execute(storage.clone()).unwrap();
     let bus = BusActor::launch();
     let txpool_service = {

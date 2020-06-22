@@ -161,7 +161,7 @@ async fn create_node(
     let node_config = Arc::new(config);
 
     // genesis
-    let genesis = Genesis::build(node_config.net()).unwrap();
+    let genesis = Genesis::load(node_config.net()).unwrap();
     let genesis_hash = genesis.block().header().id();
 
     let genesis_startup_info = genesis.execute(storage.clone()).unwrap();

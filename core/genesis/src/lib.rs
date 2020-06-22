@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, Result};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
@@ -28,17 +29,51 @@ use starcoin_vm_types::transaction::{
     Module, RawUserTransaction, Script, SignedUserTransaction, TransactionPayload, UpgradePackage,
 };
 use starcoin_vm_types::transaction_argument::TransactionArgument;
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use stdlib::init_scripts::InitScript;
 use stdlib::{stdlib_modules, StdLibOptions};
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
+pub static GENESIS_GENERATED_DIR: &str = "generated";
+
+pub static GENERATED_GENESIS: Lazy<HashMap<ChainNetwork, Genesis>> = Lazy::new(|| {
+    let mut genesis = HashMap::new();
+    for net in ChainNetwork::networks() {
+        genesis.insert(
+            net,
+            Genesis::do_load_generated(net)
+                .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", net, e))
+                .unwrap_or_else(|| panic!("Can not find genesis by network: {}", net)),
+        );
+    }
+    genesis
+});
+
+pub static FRESH_GENESIS: Lazy<HashMap<ChainNetwork, Genesis>> = Lazy::new(|| {
+    let mut genesis = HashMap::new();
+    for net in ChainNetwork::networks() {
+        genesis.insert(
+            net,
+            Genesis::build(net)
+                .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", net, e)),
+        );
+    }
+    genesis
+});
+
+pub enum GenesisOpt {
+    /// Load generated genesis
+    Generated,
+    /// Regenerate genesis
+    Fresh,
+}
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
@@ -55,7 +90,23 @@ impl Display for Genesis {
 }
 
 impl Genesis {
-    pub fn build(net: ChainNetwork) -> Result<Self> {
+    pub fn load_by_opt(option: GenesisOpt, net: ChainNetwork) -> Result<Self> {
+        let genesis = match option {
+            GenesisOpt::Generated => (&GENERATED_GENESIS).get(&net),
+            GenesisOpt::Fresh => (&FRESH_GENESIS).get(&net),
+        };
+        Ok(genesis
+            .unwrap_or_else(|| panic!("Genesis for {} must exist.", net))
+            .clone())
+    }
+
+    /// Load pre generated genesis.
+    pub fn load(net: ChainNetwork) -> Result<Self> {
+        Self::load_by_opt(GenesisOpt::Generated, net)
+    }
+
+    /// Build fresh genesis
+    pub(crate) fn build(net: ChainNetwork) -> Result<Self> {
         debug!("Init genesis");
         let block = Self::build_genesis_block(net)?;
         assert_eq!(block.header().number(), 0);
@@ -247,7 +298,7 @@ impl Genesis {
         &self.block
     }
 
-    pub fn load<P>(data_dir: P) -> Result<Option<Self>>
+    pub fn load_from_dir<P>(data_dir: P) -> Result<Option<Self>>
     where
         P: AsRef<Path>,
     {
@@ -260,6 +311,14 @@ impl Genesis {
         genesis_file.read_to_end(&mut content)?;
         let genesis = scs::from_bytes(&content)?;
         Ok(Some(genesis))
+    }
+
+    /// This function only work for compile time.
+    fn do_load_generated(net: ChainNetwork) -> Result<Option<Self>> {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push(GENESIS_GENERATED_DIR);
+        path.push(net.to_string());
+        Self::load_from_dir(path)
     }
 
     pub fn execute(self, storage: Arc<dyn Store>) -> Result<StartupInfo> {
@@ -360,6 +419,14 @@ mod tests {
     use starcoin_vm_types::on_chain_config::{RegisteredCurrencies, VMConfig, Version};
 
     #[stest::test]
+    pub fn test_genesis_load() -> Result<()> {
+        for net in ChainNetwork::networks() {
+            Genesis::load(net)?;
+        }
+        Ok(())
+    }
+
+    #[stest::test]
     pub fn test_genesis() -> Result<()> {
         for net in ChainNetwork::networks() {
             do_test_genesis(net)?;
@@ -372,7 +439,7 @@ mod tests {
         let genesis = Genesis::build(net)?;
         debug!("build genesis {} for {:?}", genesis, net);
         genesis.save(temp_dir.as_ref())?;
-        let genesis2 = Genesis::load(temp_dir.as_ref())?;
+        let genesis2 = Genesis::load_from_dir(temp_dir.as_ref())?;
         assert!(genesis2.is_some(), "load genesis fail.");
         let genesis2 = genesis2.unwrap();
         assert_eq!(genesis, genesis2, "genesis save and load different.");
