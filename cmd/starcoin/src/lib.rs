@@ -1,6 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-pub mod buildin_script;
+
 pub mod chain;
 pub mod cli_state;
 pub mod crash_handler;

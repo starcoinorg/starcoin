@@ -6621,8 +6621,8 @@ dependencies = [
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-state-api",
+ "starcoin-transaction-builder",
  "starcoin-types",
- "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-wallet-api",
  "stdlib 0.1.0",
@@ -6738,6 +6738,7 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
+ "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
@@ -7390,6 +7391,17 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-types",
  "thiserror",
+]
+
+[[package]]
+name = "starcoin-transaction-builder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "starcoin-config",
+ "starcoin-vm-types",
+ "stdlib 0.1.0",
+ "stest",
 ]
 
 [[package]]

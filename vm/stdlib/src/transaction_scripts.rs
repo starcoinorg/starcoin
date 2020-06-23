@@ -7,10 +7,11 @@
 //! `Stdlib` script enum will be modified to reflect changes in the on-chain whitelist as time goes
 //! on.
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, bail, Error, Result};
 use include_dir::{include_dir, Dir};
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::on_chain_config::SCRIPT_HASH_LENGTH;
+use std::str::FromStr;
 use std::{convert::TryFrom, fmt, path::PathBuf};
 
 // This includes the compiled transaction scripts as binaries. We must use this hack to work around
@@ -20,7 +21,7 @@ use std::{convert::TryFrom, fmt, path::PathBuf};
 const STAGED_TXN_SCRIPTS_DIR: Dir = include_dir!("staged/transaction_scripts");
 
 /// All of the Move transaction scripts that can be executed on the Libra blockchain
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum StdlibScript {
     AcceptCoin,
     CreateAccount,
@@ -141,6 +142,19 @@ impl fmt::Display for StdlibScript {
                 PublishSharedEd2551PublicKey => "publish_shared_ed25519_public_key",
             }
         )
+    }
+}
+
+impl FromStr for StdlibScript {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {
+        for script in Self::all() {
+            if script.name().as_str() == s {
+                return Ok(script);
+            }
+        }
+        bail!("unknown script name {}", s)
     }
 }
 

@@ -17,10 +17,7 @@ use starcoin_types::{
     },
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use starcoin_vm_runtime::{
-    starcoin_vm::DEFAULT_CURRENCY_TY,
-    transaction_scripts::{CREATE_ACCOUNT_TXN, MINT_TXN, PEER_TO_PEER_TXN},
-};
+use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
 use starcoin_vm_types::account_config::{
     KeyRotationCapabilityResource, WithdrawCapabilityResource,
 };
@@ -38,6 +35,7 @@ use starcoin_vm_types::{
 };
 use std::collections::BTreeMap;
 use std::time::Duration;
+use stdlib::transaction_scripts::StdlibScript;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -840,7 +838,7 @@ pub fn create_account_txn(
     args.push(TransactionArgument::U64(initial_amount));
 
     sender.create_signed_txn_with_args(
-        CREATE_ACCOUNT_TXN.clone(),
+        StdlibScript::CreateAccount.compiled_bytes().into_vec(),
         vec![],
         args,
         seq_num,
@@ -864,7 +862,7 @@ pub fn peer_to_peer_txn(
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
-        PEER_TO_PEER_TXN.clone(),
+        StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
         vec![stc_type_tag()],
         args,
         seq_num,
@@ -887,7 +885,7 @@ pub fn mint_txn(
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
-        MINT_TXN.clone(),
+        StdlibScript::Mint.compiled_bytes().into_vec(),
         vec![],
         args,
         seq_num,
@@ -909,7 +907,7 @@ pub fn create_account_txn_sent_as_association(
 
     create_signed_txn_with_association_account(
         Script::new(
-            CREATE_ACCOUNT_TXN.clone(),
+            StdlibScript::CreateAccount.compiled_bytes().into_vec(),
             vec![DEFAULT_CURRENCY_TY.clone()],
             args,
         ),
