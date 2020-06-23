@@ -200,7 +200,6 @@ async fn create_node(
     let node_config_clone = node_config.clone();
     let genesis_startup_info_clone = genesis_startup_info.clone();
     let storage_clone = storage.clone();
-    let network_clone = network.clone();
     let bus_clone = bus.clone();
     let chain = Arbiter::new()
         .exec(move || -> ChainActorRef<DummyConsensus> {

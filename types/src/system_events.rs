@@ -3,8 +3,8 @@
 
 use crate::{
     block::{Block, BlockDetail},
-    peer_info::PeerId,
     cmpact_block::CompactBlock,
+    peer_info::PeerId,
 };
 use actix::prelude::*;
 use std::sync::Arc;

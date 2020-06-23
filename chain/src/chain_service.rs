@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{chain::BlockChain, chain_metrics::CHAIN_METRICS};
-use actix::{prelude::*, Actor, Addr, Context, Handler};
+use actix::Addr;
 use anyhow::{format_err, Error, Result};
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
@@ -22,10 +22,10 @@ use types::{
 };
 
 pub struct ChainServiceImpl<C, S, P>
-where
-    C: Consensus,
-    P: TxPoolSyncService + 'static,
-    S: Store + 'static,
+    where
+        C: Consensus,
+        P: TxPoolSyncService + 'static,
+        S: Store + 'static,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
@@ -36,10 +36,10 @@ where
 }
 
 impl<C, S, P> ChainServiceImpl<C, S, P>
-where
-    C: Consensus,
-    P: TxPoolSyncService + 'static,
-    S: Store + 'static,
+    where
+        C: Consensus,
+        P: TxPoolSyncService + 'static,
+        S: Store + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -199,10 +199,10 @@ where
 }
 
 impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
-where
-    C: Consensus,
-    P: TxPoolSyncService,
-    S: Store,
+    where
+        C: Consensus,
+        P: TxPoolSyncService,
+        S: Store,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {

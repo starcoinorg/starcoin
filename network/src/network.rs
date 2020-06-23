@@ -651,7 +651,7 @@ impl Actor for NetworkActor {
                 async {}.into_actor(act)
             })
             .wait(ctx);
-        info!("Network actor started ", );
+        info!("Network actor started ",);
     }
 }
 
@@ -888,8 +888,8 @@ mod tests {
             bus.send(Subscription {
                 recipient: response_actor2.clone().recipient::<PeerTransactions>(),
             })
-                .await
-                .unwrap();
+            .await
+            .unwrap();
 
             network1
                 .network_actor_addr()
@@ -986,7 +986,7 @@ mod tests {
         type Context = Context<Self>;
 
         fn started(&mut self, _ctx: &mut Self::Context) {
-            info!("Test actor started ", );
+            info!("Test actor started ",);
         }
     }
 

@@ -236,7 +236,6 @@ where
                 chain_storage,
                 chain_bus,
                 chain_txpool_service,
-
             )
         })
         .await??;
