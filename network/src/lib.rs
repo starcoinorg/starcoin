@@ -35,13 +35,11 @@ pub struct InnerMessage {
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Encode, Decode)]
 pub enum Message {
-    ACK(u128),
     Payload(PayloadMsg),
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Encode, Decode)]
 pub struct PayloadMsg {
-    pub id: u128,
     pub data: Vec<u8>,
 }
 
@@ -62,28 +60,13 @@ where
 }
 
 impl Message {
-    pub fn new_ack(message_id: u128) -> Message {
-        Message::ACK(message_id)
-    }
-
-    pub fn new_payload(data: Vec<u8>) -> (Message, u128) {
-        let message_id = get_unix_ts();
-        (
-            Message::Payload(PayloadMsg {
-                id: message_id,
-                data,
-            }),
-            message_id,
-        )
-    }
-    pub fn new_message(data: Vec<u8>) -> Message {
-        Message::Payload(PayloadMsg { id: 0, data })
+    pub fn new_payload(data: Vec<u8>) -> Message {
+        Message::Payload(PayloadMsg { data })
     }
 
     pub fn into_payload(self) -> Option<Vec<u8>> {
         match self {
             Message::Payload(p) => Some(p.data),
-            _ => None,
         }
     }
 }

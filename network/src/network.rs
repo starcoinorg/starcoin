@@ -534,7 +534,7 @@ impl Inner {
     }
 
     async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) -> Result<()> {
-        debug!("event is {:?}", event);
+        debug!("handle_event_receive {:?}", event);
         match event.clone() {
             PeerEvent::Open(peer_id, peer_info) => {
                 inner.on_peer_connected(peer_id.into(), *peer_info).await?;
@@ -549,7 +549,6 @@ impl Inner {
             }
         }
         inner.bus.send(Broadcast { msg: event }).await?;
-        debug!("already broadcast event");
         Ok(())
     }
 
@@ -653,11 +652,7 @@ impl Handler<BlockMessage> for NetworkActor {
         let peers = self.peers.clone();
 
         let network_service = self.network_service.clone();
-
-        // let block_hash = block.header().id();
-        // let block_number = block.header().number();
         let block_header = block.header().clone();
-
         let total_difficulty = block.get_total_difficulty();
         let msg = PeerMessage::Block(block);
         let bytes = msg.encode().expect("should encode succ");
