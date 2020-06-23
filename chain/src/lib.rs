@@ -21,7 +21,6 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
-use network::NetworkAsyncService;
 use std::sync::Arc;
 use storage::Storage;
 use traits::{ChainAsyncService, ChainService, ConnectResult, Consensus};
@@ -51,19 +50,11 @@ where
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<Storage>,
-        network: Option<NetworkAsyncService>,
         bus: Addr<BusActor>,
         txpool: TxPoolService,
     ) -> Result<ChainActorRef<C>> {
         let actor = ChainActor {
-            service: ChainServiceImpl::new(
-                config,
-                startup_info,
-                storage,
-                network,
-                txpool,
-                bus.clone(),
-            )?,
+            service: ChainServiceImpl::new(config, startup_info, storage, txpool, bus.clone())?,
             bus,
         }
         .start();

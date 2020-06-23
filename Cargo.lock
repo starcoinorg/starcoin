@@ -6363,6 +6363,7 @@ dependencies = [
  "starcoin-metrics",
  "starcoin-network",
  "starcoin-open-block",
+ "starcoin-relayer",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
@@ -6848,6 +6849,35 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "stest",
+]
+
+[[package]]
+name = "starcoin-relayer"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures 0.3.5",
+ "hex 0.4.2",
+ "libp2p",
+ "network-api",
+ "once_cell",
+ "starcoin-bus",
+ "starcoin-canonical-serialization",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-metrics",
+ "starcoin-miner",
+ "starcoin-sync-api",
+ "starcoin-traits",
+ "starcoin-txpool-api",
+ "starcoin-types",
+ "starcoin-wallet-api",
+ "stest",
+ "tokio 0.2.21",
 ]
 
 [[package]]

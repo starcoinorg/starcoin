@@ -1,6 +1,6 @@
 use crate::messages::PeerMessage;
 use anyhow::*;
-use libp2p::PeerId;
+pub use libp2p::PeerId;
 use starcoin_types::system_events::NewHeadBlock;
 use std::time::Duration;
 

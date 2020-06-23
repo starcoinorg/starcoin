@@ -18,18 +18,19 @@ use txpool::TxPoolService;
 use types::peer_info::PeerId;
 
 pub struct SyncActor<C>
-    where
-        C: Consensus + Sync + Send + 'static + Clone,
+where
+    C: Consensus + Sync + Send + 'static + Clone,
 {
     _process_address: Addr<ProcessActor<C>>,
     download_address: Addr<DownloadActor<C>>,
+    #[allow(dead_code)]
     txn_sync_address: Addr<TxnSyncActor>,
     bus: Addr<BusActor>,
 }
 
 impl<C> SyncActor<C>
-    where
-        C: Consensus + Sync + Send + 'static + Clone,
+where
+    C: Consensus + Sync + Send + 'static + Clone,
 {
     pub fn launch(
         node_config: Arc<NodeConfig>,
@@ -63,8 +64,8 @@ impl<C> SyncActor<C>
 }
 
 impl<C> Actor for SyncActor<C>
-    where
-        C: Consensus + Sync + Send + 'static + Clone,
+where
+    C: Consensus + Sync + Send + 'static + Clone,
 {
     type Context = Context<Self>;
 
@@ -90,8 +91,8 @@ impl<C> Actor for SyncActor<C>
 }
 
 impl<C> Handler<PeerNewBlock> for SyncActor<C>
-    where
-        C: Consensus + Sync + Send + 'static + Clone,
+where
+    C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = ();
 
@@ -106,8 +107,8 @@ impl<C> Handler<PeerNewBlock> for SyncActor<C>
 }
 
 impl<C> Handler<PeerEvent> for SyncActor<C>
-    where
-        C: Consensus + Sync + Send + 'static + Clone,
+where
+    C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = Result<()>;
 

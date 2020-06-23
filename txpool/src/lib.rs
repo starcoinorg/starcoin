@@ -138,7 +138,7 @@ impl actix::Actor for TxPoolActor {
             })
             .wait(ctx);
 
-        // subscribe txn relay peer txns
+        // subscribe txn relayer peer txns
         let myself = ctx.address().recipient::<PeerTransactions>();
         self.bus
             .clone()
@@ -146,7 +146,7 @@ impl actix::Actor for TxPoolActor {
             .into_actor(self)
             .then(|res, act, ctx| {
                 if let Err(e) = res {
-                    error!("fail to subscribe txn relay message, err: {:?}", e);
+                    error!("fail to subscribe txn relayer message, err: {:?}", e);
                     ctx.terminate();
                 }
                 async {}.into_actor(act)

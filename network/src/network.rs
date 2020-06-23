@@ -25,7 +25,7 @@ use lru::LruCache;
 use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
 use scs::SCSCodec;
-use starcoin_sync_api::{PeerNewBlock, PeerNewCmpctBlock};
+use starcoin_sync_api::PeerNewBlock;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
@@ -36,7 +36,7 @@ use std::time::Duration;
 use tokio::runtime::Handle;
 use tx_relay::*;
 use types::peer_info::{PeerInfo, RpcInfo};
-use types::system_events::NewHeadBlock;
+use types::system_events::{NewHeadBlock, PeerNewCmpctBlock};
 use types::{block::BlockDetail, transaction::SignedUserTransaction};
 use types::{BLOCK_PROTOCOL_NAME, TXN_PROTOCOL_NAME};
 
@@ -651,7 +651,7 @@ impl Actor for NetworkActor {
                 async {}.into_actor(act)
             })
             .wait(ctx);
-        info!("Network actor started ",);
+        info!("Network actor started ", );
     }
 }
 
@@ -711,7 +711,7 @@ impl Handler<BlockMessage> for NetworkActor {
     }
 }
 
-/// handle txn relay
+/// handle txn relayer
 impl Handler<PropagateNewTransactions> for NetworkActor {
     type Result = <PropagateNewTransactions as Message>::Result;
 
@@ -888,8 +888,8 @@ mod tests {
             bus.send(Subscription {
                 recipient: response_actor2.clone().recipient::<PeerTransactions>(),
             })
-            .await
-            .unwrap();
+                .await
+                .unwrap();
 
             network1
                 .network_actor_addr()
@@ -986,7 +986,7 @@ mod tests {
         type Context = Context<Self>;
 
         fn started(&mut self, _ctx: &mut Self::Context) {
-            info!("Test actor started ",);
+            info!("Test actor started ", );
         }
     }
 

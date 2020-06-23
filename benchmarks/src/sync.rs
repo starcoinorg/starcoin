@@ -208,7 +208,6 @@ async fn create_node(
                 node_config_clone,
                 genesis_startup_info_clone,
                 storage_clone,
-                Some(network_clone),
                 bus_clone,
                 txpool_service_clone,
             )

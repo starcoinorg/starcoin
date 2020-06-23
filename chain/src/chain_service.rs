@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{chain::BlockChain, chain_metrics::CHAIN_METRICS};
-use actix::prelude::*;
+use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::{format_err, Error, Result};
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use network::NetworkAsyncService;
-use network_api::NetworkService;
+use starcoin_relayer::BlockRelayEvent;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
@@ -17,40 +16,35 @@ use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult, Consensus};
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
-    cmpact_block::CompactBlock,
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::StartupInfo,
-    system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
-    BLOCK_PROTOCOL_NAME,
 };
 
 pub struct ChainServiceImpl<C, S, P>
-    where
-        C: Consensus,
-        P: TxPoolSyncService + 'static,
-        S: Store + 'static,
+where
+    C: Consensus,
+    P: TxPoolSyncService + 'static,
+    S: Store + 'static,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
     master: BlockChain<C, S>,
     storage: Arc<S>,
-    network: Option<NetworkAsyncService>,
     txpool: P,
     bus: Addr<BusActor>,
 }
 
 impl<C, S, P> ChainServiceImpl<C, S, P>
-    where
-        C: Consensus,
-        P: TxPoolSyncService + 'static,
-        S: Store + 'static,
+where
+    C: Consensus,
+    P: TxPoolSyncService + 'static,
+    S: Store + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<S>,
-        network: Option<NetworkAsyncService>,
         txpool: P,
         bus: Addr<BusActor>,
     ) -> Result<Self> {
@@ -60,7 +54,6 @@ impl<C, S, P> ChainServiceImpl<C, S, P>
             startup_info,
             master,
             storage,
-            network,
             txpool,
             bus,
         })
@@ -123,13 +116,12 @@ impl<C, S, P> ChainServiceImpl<C, S, P>
 
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
-
-            CHAIN_METRICS.broadcast_head_count.inc();
-            let compact_block = CompactBlock::new(&block, vec![]);
-            let block_detail = Arc::new(
-                BlockDetail::from_compact_block(compact_block, total_difficulty));
-            self.broadcast_newblock_to_bus(block_detail.clone());
-            self.broadcast_newblock_to_network(block_detail);
+            self.bus.do_send(Broadcast {
+                msg: BlockRelayEvent {
+                    block,
+                    total_difficulty,
+                },
+            });
         } else {
             self.insert_branch(block_header);
         }
@@ -204,37 +196,13 @@ impl<C, S, P> ChainServiceImpl<C, S, P>
 
         Ok(blocks)
     }
-
-    pub fn broadcast_newblock_to_bus(&self, block: Arc<BlockDetail>) {
-        let bus = self.bus.clone();
-        bus.do_send(Broadcast {
-            msg: NewHeadBlock(block),
-        });
-    }
-
-    pub fn broadcast_newblock_to_network(&self, block_detail: Arc<BlockDetail>) {
-        if let Some(network) = self.network.clone() {
-            Arbiter::spawn(async move {
-                let block_id = block_detail.header().id();
-                if let Err(e) = network
-                    .broadcast_new_head_block(
-                        BLOCK_PROTOCOL_NAME.into(),
-                        NewHeadBlock(block_detail),
-                    )
-                    .await
-                {
-                    error!("broadcast new head block {:?} failed : {:?}", block_id, e);
-                }
-            });
-        };
-    }
 }
 
 impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
-    where
-        C: Consensus,
-        P: TxPoolSyncService,
-        S: Store,
+where
+    C: Consensus,
+    P: TxPoolSyncService,
+    S: Store,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {

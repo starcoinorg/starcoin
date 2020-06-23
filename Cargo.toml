@@ -36,6 +36,7 @@ members = [
     "node",
     "sync",
     "sync/api",
+    "relayer",
     "miner",
     "miner/stratum",
     "node",

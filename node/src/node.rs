@@ -234,9 +234,9 @@ where
                 chain_config,
                 startup_info,
                 chain_storage,
-                Some(chain_network),
                 chain_bus,
                 chain_txpool_service,
+
             )
         })
         .await??;
