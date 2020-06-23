@@ -21,7 +21,9 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::{stc_type_tag, EPILOGUE_NAME, PROLOGUE_NAME};
+use starcoin_vm_types::account_config::{
+    association_address, stc_type_tag, EPILOGUE_NAME, PROLOGUE_NAME,
+};
 use starcoin_vm_types::data_store::DataStore;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
@@ -444,11 +446,19 @@ impl StarcoinVM {
                 return Err(err);
             }
         };
-        //TODO supported authorize to deploy other address for genesis.
-        // Make sure the module's self address matches the transaction sender. The self address is
-        // where the module will actually be published. If we did not check this, the sender could
-        // publish a module under anyone's account.
-        if compiled_module.address() != &sender {
+        //TODO supported authorize mechanism to upgrade or deploy module for other address.
+
+        //Only support stdlib module upgrade.
+        if compiled_module.address() != &CORE_CODE_ADDRESS {
+            return Err(errors::verification_error(
+                IndexKind::AddressIdentifier,
+                compiled_module.self_handle_idx().0 as usize,
+                StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
+            ));
+        }
+
+        //Only allow association_address or CORE_CODE_ADDRESS to upgrade currently.
+        if sender != CORE_CODE_ADDRESS && sender != association_address() {
             return Err(errors::verification_error(
                 IndexKind::AddressIdentifier,
                 compiled_module.self_handle_idx().0 as usize,

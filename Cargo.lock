@@ -1037,43 +1037,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "compiled-stdlib"
-version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=72a0989b02db1d8ee297f89f9da0f2e35730b005#72a0989b02db1d8ee297f89f9da0f2e35730b005"
-dependencies = [
- "anyhow",
- "bytecode-verifier",
- "include_dir 0.6.0",
- "libra-canonical-serialization",
- "libra-crypto",
- "libra-types",
- "libra-workspace-hack",
- "once_cell",
- "sha2 0.9.0",
- "stdlib 0.1.0 (git+https://github.com/starcoinorg/libra?rev=72a0989b02db1d8ee297f89f9da0f2e35730b005)",
- "vm",
-]
-
-[[package]]
-name = "compiler"
-version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=72a0989b02db1d8ee297f89f9da0f2e35730b005#72a0989b02db1d8ee297f89f9da0f2e35730b005"
-dependencies = [
- "anyhow",
- "bytecode-source-map",
- "bytecode-verifier",
- "compiled-stdlib",
- "ir-to-bytecode",
- "libra-canonical-serialization",
- "libra-types",
- "libra-workspace-hack",
- "move-ir-types",
- "serde_json",
- "structopt 0.3.14",
- "vm",
-]
-
-[[package]]
 name = "console"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2716,18 +2679,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25ec8c61b6100ad0fc58ca644c59c0137d526d73cefa7497426369ea0d84d769"
 dependencies = [
  "glob",
- "include_dir_impl 0.5.0",
- "proc-macro-hack",
-]
-
-[[package]]
-name = "include_dir"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23d58bdeb22b1c4691106c084b1063781904c35d0f22eda2a283598968eac61a"
-dependencies = [
- "glob",
- "include_dir_impl 0.6.0",
+ "include_dir_impl",
  "proc-macro-hack",
 ]
 
@@ -2738,19 +2690,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f03b4f7b64011df46794cc221854be5c3084345e260576518b91693866d0afd1"
 dependencies = [
  "failure",
- "proc-macro-hack",
- "proc-macro2 1.0.18",
- "quote 1.0.7",
- "syn 1.0.31",
-]
-
-[[package]]
-name = "include_dir_impl"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "327869970574819d24d1dca25c891856144d29159ab797fa9dc725c5c3f57215"
-dependencies = [
- "anyhow",
  "proc-macro-hack",
  "proc-macro2 1.0.18",
  "quote 1.0.7",
@@ -4089,37 +4028,6 @@ dependencies = [
  "structopt 0.3.14",
  "vm",
  "walkdir",
-]
-
-[[package]]
-name = "move-prover"
-version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=72a0989b02db1d8ee297f89f9da0f2e35730b005#72a0989b02db1d8ee297f89f9da0f2e35730b005"
-dependencies = [
- "anyhow",
- "bytecode-source-map",
- "clap",
- "codespan",
- "codespan-reporting",
- "docgen",
- "handlebars",
- "itertools 0.9.0",
- "libra-temppath",
- "libra-types",
- "libra-workspace-hack",
- "log 0.4.8",
- "move-ir-types",
- "move-lang",
- "num 0.3.0",
- "once_cell",
- "pretty",
- "regex",
- "serde",
- "simplelog",
- "spec-lang",
- "stackless-bytecode-generator",
- "toml",
- "vm",
 ]
 
 [[package]]
@@ -6625,7 +6533,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "starcoin-wallet-api",
- "stdlib 0.1.0",
+ "stdlib",
  "structopt 0.3.14",
  "tokio 0.2.21",
 ]
@@ -6725,7 +6633,6 @@ name = "starcoin-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "compiler",
  "once_cell",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
@@ -6734,6 +6641,7 @@ dependencies = [
  "starcoin-functional-tests",
  "starcoin-genesis",
  "starcoin-logger",
+ "starcoin-move-compiler",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
@@ -6742,7 +6650,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib 0.1.0",
+ "stdlib",
  "stest",
 ]
 
@@ -6814,7 +6722,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib 0.1.0",
+ "stdlib",
  "tempfile",
  "termcolor",
  "thiserror",
@@ -6838,10 +6746,10 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-traits",
+ "starcoin-transaction-builder",
  "starcoin-types",
- "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib 0.1.0",
+ "stdlib",
  "stest",
  "structopt 0.3.14",
 ]
@@ -7398,9 +7306,10 @@ name = "starcoin-transaction-builder"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-vm-types",
- "stdlib 0.1.0",
+ "stdlib",
  "stest",
 ]
 
@@ -7537,7 +7446,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
- "include_dir 0.5.0",
+ "include_dir",
  "move-vm-runtime",
  "num_enum",
  "once_cell",
@@ -7551,7 +7460,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-types",
  "starcoin-vm-types",
- "stdlib 0.1.0",
+ "stdlib",
  "stest",
  "vm",
 ]
@@ -7647,32 +7556,11 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "stdlib"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=72a0989b02db1d8ee297f89f9da0f2e35730b005#72a0989b02db1d8ee297f89f9da0f2e35730b005"
-dependencies = [
- "anyhow",
- "bytecode-verifier",
- "clap",
- "datatest-stable",
- "libra-canonical-serialization",
- "libra-crypto",
- "libra-types",
- "libra-workspace-hack",
- "log 0.4.8",
- "move-lang",
- "move-prover 0.1.0 (git+https://github.com/starcoinorg/libra?rev=72a0989b02db1d8ee297f89f9da0f2e35730b005)",
- "rayon",
- "sha2 0.9.0",
- "vm",
-]
-
-[[package]]
-name = "stdlib"
-version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
  "datatest-stable",
- "include_dir 0.5.0",
+ "include_dir",
  "once_cell",
  "starcoin-canonical-serialization",
  "starcoin-crypto",

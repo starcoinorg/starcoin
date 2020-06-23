@@ -906,11 +906,11 @@ pub fn create_account_txn_sent_as_association(
     args.push(TransactionArgument::U64(initial_amount));
 
     create_signed_txn_with_association_account(
-        Script::new(
+        TransactionPayload::Script(Script::new(
             StdlibScript::CreateAccount.compiled_bytes().into_vec(),
             vec![DEFAULT_CURRENCY_TY.clone()],
             args,
-        ),
+        )),
         seq_num,
         TXN_RESERVED,
         1,

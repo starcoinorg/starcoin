@@ -24,7 +24,7 @@ starcoin-logger = { path = "../../commons/logger"}
 starcoin-consensus = { path = "../../consensus"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-vm-types = { path = "../../vm/types"}
-starcoin-vm-runtime = { path = "../../vm/vm-runtime"}
+starcoin-transaction-builder = { path = "../../vm/transaction-builder"}
 stdlib = { path = "../../vm/stdlib"}
 traits = { path = "../../core/traits", package = "starcoin-traits"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
