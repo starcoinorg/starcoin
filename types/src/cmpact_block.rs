@@ -12,13 +12,13 @@ pub struct CompactBlock {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PrefiledTxn {
-    index: u64, //todo: change to a small one
-    tx: SignedUserTransaction,
+    pub index: u64, //todo: change to a small one
+    pub tx: SignedUserTransaction,
 }
 
 // TODO: change to siphash24 of 6bites
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct ShortId(HashValue);
+pub struct ShortId(pub HashValue);
 
 impl CompactBlock {
     pub fn new(block: &Block, prefilled_txn: Vec<PrefiledTxn>) -> Self {

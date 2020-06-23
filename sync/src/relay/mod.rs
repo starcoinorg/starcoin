@@ -1,1 +1,1 @@
-pub mod block_relay;
+mod block_relay;

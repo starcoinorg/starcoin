@@ -27,17 +27,17 @@ pub type BranchNumber = (HashValue, u64);
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15 * 1000; // 15 Second;
 
 #[derive(
-    Default,
-    Clone,
-    Debug,
-    Hash,
-    Eq,
-    PartialEq,
-    PartialOrd,
-    Serialize,
-    Deserialize,
-    CryptoHasher,
-    CryptoHash,
+Default,
+Clone,
+Debug,
+Hash,
+Eq,
+PartialEq,
+PartialOrd,
+Serialize,
+Deserialize,
+CryptoHasher,
+CryptoHash,
 )]
 pub struct BlockHeader {
     /// Parent hash.
@@ -80,8 +80,8 @@ impl BlockHeader {
         difficulty: U256,
         consensus_header: H,
     ) -> BlockHeader
-    where
-        H: Into<Vec<u8>>,
+        where
+            H: Into<Vec<u8>>,
     {
         Self::new_with_auth(
             parent_hash,
@@ -113,8 +113,8 @@ impl BlockHeader {
         difficulty: U256,
         consensus_header: H,
     ) -> BlockHeader
-    where
-        H: Into<Vec<u8>>,
+        where
+            H: Into<Vec<u8>>,
     {
         BlockHeader {
             parent_hash,
@@ -284,8 +284,8 @@ pub struct Block {
 
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
-    where
-        B: Into<BlockBody>,
+        where
+            B: Into<BlockBody>,
     {
         Block {
             header,
@@ -430,15 +430,15 @@ impl BlockInfo {
 }
 
 impl
-    Into<(
-        HashValue,
-        HashValue,
-        Vec<HashValue>,
-        u64,
-        u64,
-        U256,
-        AccumulatorInfo,
-    )> for BlockInfo
+Into<(
+    HashValue,
+    HashValue,
+    Vec<HashValue>,
+    u64,
+    u64,
+    U256,
+    AccumulatorInfo,
+)> for BlockInfo
 {
     fn into(
         self,
@@ -519,8 +519,8 @@ impl BlockTemplate {
     }
 
     pub fn into_block<H>(self, consensus_header: H, difficulty: U256) -> Block
-    where
-        H: Into<Vec<u8>>,
+        where
+            H: Into<Vec<u8>>,
     {
         let header = BlockHeader::new_with_auth(
             self.parent_hash,
@@ -542,8 +542,8 @@ impl BlockTemplate {
         }
     }
     pub fn into_block_header<H>(self, consensus_header: H, difficulty: U256) -> BlockHeader
-    where
-        H: Into<Vec<u8>>,
+        where
+            H: Into<Vec<u8>>,
     {
         BlockHeader::new_with_auth(
             self.parent_hash,
@@ -585,8 +585,12 @@ pub enum BlockDetail {
 }
 
 impl BlockDetail {
-    pub fn new(block: Block, total_difficulty: U256) -> Self {
+    pub fn from_block(block: Block, total_difficulty: U256) -> Self {
         BlockDetail::Block(block, total_difficulty)
+    }
+
+    pub fn from_compact_block(compact_block: CompactBlock, total_difficulty: U256) -> Self {
+        BlockDetail::CompactBlock(compact_block, total_difficulty)
     }
 
     pub fn get_total_difficulty(&self) -> U256 {

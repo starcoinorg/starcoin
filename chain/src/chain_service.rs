@@ -12,13 +12,13 @@ use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
-use std::borrow::Cow;
 use std::sync::Arc;
 use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult, Consensus};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    cmpact_block::CompactBlock,
     startup_info::StartupInfo,
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
@@ -26,10 +26,10 @@ use types::{
 };
 
 pub struct ChainServiceImpl<C, S, P>
-where
-    C: Consensus,
-    P: TxPoolSyncService + 'static,
-    S: Store + 'static,
+    where
+        C: Consensus,
+        P: TxPoolSyncService + 'static,
+        S: Store + 'static,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
@@ -41,10 +41,10 @@ where
 }
 
 impl<C, S, P> ChainServiceImpl<C, S, P>
-where
-    C: Consensus,
-    P: TxPoolSyncService + 'static,
-    S: Store + 'static,
+    where
+        C: Consensus,
+        P: TxPoolSyncService + 'static,
+        S: Store + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -125,7 +125,9 @@ where
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
 
             CHAIN_METRICS.broadcast_head_count.inc();
-            let block_detail = Arc::new(BlockDetail::new(block, total_difficulty));
+            let compact_block = CompactBlock::new(&block, vec![]);
+            let block_detail = Arc::new(
+                BlockDetail::from_compact_block(compact_block, total_difficulty));
             self.broadcast_newblock_to_bus(block_detail.clone());
             self.broadcast_newblock_to_network(block_detail);
         } else {
@@ -216,7 +218,7 @@ where
                 let block_id = block_detail.header().id();
                 if let Err(e) = network
                     .broadcast_new_head_block(
-                        Cow::from(BLOCK_PROTOCOL_NAME),
+                        BLOCK_PROTOCOL_NAME.into(),
                         NewHeadBlock(block_detail),
                     )
                     .await
@@ -229,10 +231,10 @@ where
 }
 
 impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
-where
-    C: Consensus,
-    P: TxPoolSyncService,
-    S: Store,
+    where
+        C: Consensus,
+        P: TxPoolSyncService,
+        S: Store,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {
