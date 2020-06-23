@@ -1,17 +1,21 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use starcoin_config::ChainNetwork;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::language_storage::TypeTag;
-use starcoin_types::transaction::{
+use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config;
+use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::transaction::helpers::TransactionSigner;
+use starcoin_vm_types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, Transaction, TransactionArgument,
     TransactionPayload,
 };
-use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::stc_type_tag;
-use starcoin_vm_types::transaction::helpers::TransactionSigner;
 use std::time::Duration;
-use vm_runtime::transaction_scripts::{ACCEPT_COIN_TXN, CREATE_ACCOUNT_TXN, PEER_TO_PEER_TXN};
 
-//TODO move to transaction_builder crate.
+pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
+pub use stdlib::{stdlib_modules, StdLibOptions};
+
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const TXN_RESERVED: u64 = 2_000_000;
 
@@ -100,7 +104,11 @@ pub fn raw_peer_to_peer_txn(
     RawUserTransaction::new(
         sender,
         seq_num,
-        TransactionPayload::Script(Script::new(PEER_TO_PEER_TXN.clone(), vec![coin_type], args)),
+        TransactionPayload::Script(Script::new(
+            StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
+            vec![coin_type],
+            args,
+        )),
         max_gas,
         gas_price,
         Duration::from_secs(DEFAULT_EXPIRATION_TIME),
@@ -118,7 +126,7 @@ pub fn raw_accept_coin_txn(
         sender,
         seq_num,
         TransactionPayload::Script(Script::new(
-            ACCEPT_COIN_TXN.clone(),
+            StdlibScript::AcceptCoin.compiled_bytes().into_vec(),
             vec![coin_type],
             vec![],
         )),
@@ -134,7 +142,7 @@ pub fn encode_create_account_script(
     initial_balance: u64,
 ) -> Script {
     Script::new(
-        CREATE_ACCOUNT_TXN.clone(),
+        StdlibScript::CreateAccount.compiled_bytes().into_vec(),
         vec![],
         vec![
             TransactionArgument::Address(*account_address),
@@ -150,7 +158,7 @@ pub fn encode_transfer_script(
     amount: u64,
 ) -> Script {
     Script::new(
-        PEER_TO_PEER_TXN.clone(),
+        StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
         vec![stc_type_tag()],
         vec![
             TransactionArgument::Address(*recipient),
@@ -161,18 +169,13 @@ pub fn encode_transfer_script(
 }
 
 pub fn peer_to_peer_txn_sent_as_association(
-    addr: AccountAddress,
+    recipient: AccountAddress,
     auth_key_prefix: Vec<u8>,
     seq_num: u64,
     amount: u64,
 ) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(addr));
-    args.push(TransactionArgument::U8Vector(auth_key_prefix));
-    args.push(TransactionArgument::U64(amount));
-
     crate::create_signed_txn_with_association_account(
-        Script::new(PEER_TO_PEER_TXN.clone(), vec![stc_type_tag()], args),
+        encode_transfer_script(&recipient, auth_key_prefix, amount),
         seq_num,
         TXN_RESERVED,
         1,

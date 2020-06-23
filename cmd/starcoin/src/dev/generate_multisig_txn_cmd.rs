@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::buildin_script::BuildinScript;
 use crate::cli_state::CliState;
 use crate::mutlisig_transaction::MultisigTransaction;
 use crate::StarcoinOpt;
@@ -13,12 +12,12 @@ use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
+use starcoin_transaction_builder::StdlibScript;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
-
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
 use std::fs::{File, OpenOptions};
@@ -36,7 +35,7 @@ pub struct GenerateMultisigTxnOpt {
     /// account address of the multisig account.
     sender: Option<AccountAddress>,
 
-    #[structopt(short = "p", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(short = "p", required = true, min_values = 1, max_values = 32, parse(try_from_str = Ed25519PublicKey::from_encoded_string))]
     /// public keys of the mutli-sig account.
     public_key: Vec<Ed25519PublicKey>,
 
@@ -46,7 +45,7 @@ pub struct GenerateMultisigTxnOpt {
 
     #[structopt(name = "stdlib-script", long = "stdlib-script")]
     /// stdlib script name, conflict with script-file option.
-    stdlib_script: Option<BuildinScript>,
+    stdlib_script: Option<StdlibScript>,
 
     #[structopt(
         name = "script-file",
@@ -129,11 +128,8 @@ impl CommandAction for GenerateMultisigTxnCommand {
             auth_key.derived_address()
         };
 
-        let bytecode = match (
-            ctx.opt().stdlib_script.clone(),
-            ctx.opt().script_file.clone(),
-        ) {
-            (Some(s), None) => s.script_code(),
+        let bytecode = match (ctx.opt().stdlib_script, ctx.opt().script_file.clone()) {
+            (Some(s), None) => s.compiled_bytes().into_vec(),
             (None, Some(bytecode_path)) => {
                 let mut file = OpenOptions::new()
                     .read(true)

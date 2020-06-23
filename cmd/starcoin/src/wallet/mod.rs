@@ -3,7 +3,7 @@
 
 mod accept_coin_cmd;
 mod create_cmd;
-mod execute_buildin_script_cmd;
+mod execute_builtin_script_cmd;
 mod export_cmd;
 mod import_cmd;
 mod list_cmd;
@@ -14,7 +14,7 @@ mod unlock_cmd;
 
 pub use accept_coin_cmd::*;
 pub use create_cmd::*;
-pub use execute_buildin_script_cmd::*;
+pub use execute_builtin_script_cmd::*;
 pub use export_cmd::*;
 pub use import_cmd::*;
 pub use list_cmd::*;
