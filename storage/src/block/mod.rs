@@ -11,12 +11,13 @@ use anyhow::{bail, ensure, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::HashValue;
 use logger::prelude::*;
+use parking_lot::RwLock;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState};
 use std::io::Write;
 use std::mem::size_of;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StorageBlock {
@@ -417,7 +418,7 @@ impl BlockStorage {
     }
 
     fn get_sons(&self, parent_hash: HashValue) -> Result<Vec<HashValue>> {
-        match self.sons_store.read().unwrap().get(parent_hash)? {
+        match self.sons_store.read().get(parent_hash)? {
             Some(sons) => Ok(sons),
             None => bail!("cant't find sons: {}", parent_hash),
         }
@@ -429,16 +430,10 @@ impl BlockStorage {
             Ok(mut vec_hash) => {
                 debug!("branch block:{}, {:?}", parent_hash, vec_hash);
                 vec_hash.push(son_hash);
-                self.sons_store
-                    .write()
-                    .unwrap()
-                    .put(parent_hash, vec_hash)?;
+                self.sons_store.write().put(parent_hash, vec_hash)?;
             }
             _ => {
-                self.sons_store
-                    .write()
-                    .unwrap()
-                    .put(parent_hash, vec![son_hash])?;
+                self.sons_store.write().put(parent_hash, vec![son_hash])?;
             }
         }
         Ok(())
