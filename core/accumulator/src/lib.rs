@@ -108,7 +108,7 @@ impl MerkleAccumulator {
                 num_leaves,
                 num_notes,
                 root_hash,
-                store_type.clone(),
+                store_type,
                 node_store.clone(),
             )),
         })
