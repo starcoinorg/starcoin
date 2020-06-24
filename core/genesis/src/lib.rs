@@ -31,22 +31,22 @@ use std::convert::TryInto;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
 
+const DEV_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/dev/genesis");
+const HALLEY_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/halley/genesis");
+const PROXIMA_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/proxima/genesis");
+const MAIN_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/main/genesis");
+
 pub static GENERATED_GENESIS: Lazy<HashMap<ChainNetwork, Genesis>> = Lazy::new(|| {
     let mut genesis = HashMap::new();
     for net in ChainNetwork::networks() {
-        genesis.insert(
-            net,
-            Genesis::do_load_generated(net)
-                .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", net, e))
-                .unwrap_or_else(|| panic!("Can not find genesis by network: {}", net)),
-        );
+        genesis.insert(net, Genesis::load_generated(net));
     }
     genesis
 });
@@ -209,12 +209,18 @@ impl Genesis {
         Ok(Some(genesis))
     }
 
-    /// This function only work for compile time.
-    fn do_load_generated(net: ChainNetwork) -> Result<Option<Self>> {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push(GENESIS_GENERATED_DIR);
-        path.push(net.to_string());
-        Self::load_from_dir(path)
+    fn genesis_bytes(net: ChainNetwork) -> &'static [u8] {
+        match net {
+            ChainNetwork::Dev => DEV_GENESIS_BYTES,
+            ChainNetwork::Halley => HALLEY_GENESIS_BYTES,
+            ChainNetwork::Proxima => PROXIMA_GENESIS_BYTES,
+            ChainNetwork::Main => MAIN_GENESIS_BYTES,
+        }
+    }
+
+    pub fn load_generated(net: ChainNetwork) -> Self {
+        let bytes = Self::genesis_bytes(net);
+        scs::from_bytes(bytes).expect("Deserialize genesis must ok.")
     }
 
     pub fn execute(self, storage: Arc<dyn Store>) -> Result<StartupInfo> {
