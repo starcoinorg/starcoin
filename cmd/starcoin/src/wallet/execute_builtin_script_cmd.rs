@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::buildin_script::BuildinScript;
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
@@ -9,6 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
+use starcoin_transaction_builder::StdlibScript;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
@@ -18,15 +18,15 @@ use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "execute-buildin")]
-pub struct ExecuteBuildInScriptOpt {
+#[structopt(name = "execute-builtin")]
+pub struct ExecuteBuiltInScriptOpt {
     #[structopt(short = "s", long = "sender")]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
 
     #[structopt(long = "script", name = "script-name")]
-    /// buildin script name to execute
-    script_name: BuildinScript,
+    /// builtin script name to execute
+    script_name: StdlibScript,
 
     #[structopt(
     short = "t",
@@ -79,7 +79,7 @@ pub struct ExecuteBuildInCommand;
 impl CommandAction for ExecuteBuildInCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ExecuteBuildInScriptOpt;
+    type Opt = ExecuteBuiltInScriptOpt;
     type ReturnItem = HashValue;
 
     fn run(
@@ -104,7 +104,7 @@ impl CommandAction for ExecuteBuildInCommand {
         let account_resource = account_resource.unwrap();
         let expiration_time = Duration::from_secs(opt.expiration_time);
 
-        let bytecode = opt.script_name.script_code();
+        let bytecode = opt.script_name.compiled_bytes().into_vec();
         let type_tags = opt.type_tags.clone();
         let args = opt.args.clone();
 

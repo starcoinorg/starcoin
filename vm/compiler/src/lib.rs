@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 /// A wrap to move-lang compiler
 use crate::shared::Address;
-use anyhow::{ensure, Result};
+use anyhow::{bail, ensure, Result};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use move_lang::compiled_unit::CompiledUnit;
 pub use move_lang::{
     move_check, move_check_no_report, move_compile, move_compile_no_report,
     move_compile_to_expansion_no_report, MOVE_EXTENSION,
 };
+use starcoin_vm_types::account_address::AccountAddress;
 
 pub mod errors {
     pub use move_lang::errors::*;
@@ -89,6 +91,32 @@ where
         .with_extension(MOVE_EXTENSION);
     std::fs::write(temp_file.as_path(), processed_source)?;
     Ok(temp_file)
+}
+
+pub fn compile_source_string(
+    source: &str,
+    deps: &[String],
+    sender: AccountAddress,
+) -> Result<CompiledUnit> {
+    let temp_dir = tempfile::tempdir()?;
+    let temp_file = temp_dir.path().join("temp.move");
+    let sender = Address::new(sender.into());
+    let processed_source = process_source_tpl(source, sender, HashMap::new());
+    std::fs::write(temp_file.as_path(), processed_source.as_bytes())?;
+    let targets = vec![temp_file
+        .to_str()
+        .expect("temp file path must is str.")
+        .to_string()];
+    let (file_texts, compile_units) = move_compile_no_report(&targets, deps, Some(sender))?;
+    let mut compile_units = match compile_units {
+        Err(e) => {
+            let err = crate::errors::report_errors_to_color_buffer(file_texts, e);
+            bail!(String::from_utf8(err).unwrap())
+        }
+        Ok(r) => r,
+    };
+    let compile_result = compile_units.pop().unwrap();
+    Ok(compile_result)
 }
 
 #[cfg(test)]

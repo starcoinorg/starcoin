@@ -50,10 +50,10 @@ impl CacheStorage {
         record_metrics("cache", "batch", prefix_name).end_with(|| {
             for (key, write_op) in &batch.rows {
                 match write_op {
-                    WriteOp::Value(value) => self
-                        .put_obj(prefix_name, key.to_vec(), CacheObject::Value(value.clone()))
-                        .unwrap(),
-                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec()).unwrap(),
+                    WriteOp::Value(value) => {
+                        self.put_obj(prefix_name, key.to_vec(), CacheObject::Value(value.clone()))?
+                    }
+                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec())?,
                 };
             }
             Ok(())

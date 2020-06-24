@@ -46,8 +46,12 @@ impl UpgradePackage {
         }
     }
 
-    pub fn add_scripts(&mut self, su_account: Option<AccountAddress>, script: Script) {
+    pub fn add_script(&mut self, su_account: Option<AccountAddress>, script: Script) {
         self.scripts.push(InitScript { su_account, script });
+    }
+
+    pub fn add_module(&mut self, module: Module) {
+        self.modules.push(module);
     }
 }
 

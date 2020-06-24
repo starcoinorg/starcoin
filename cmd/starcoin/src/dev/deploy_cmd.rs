@@ -8,7 +8,6 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{Module, RawUserTransaction};
 use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule};
 use std::fs::OpenOptions;
@@ -81,8 +80,6 @@ impl CommandAction for DeployCommand {
             Ok(compiled_module) => compiled_module,
         };
         let module_address = *compiled_module.address();
-        // from libra address to our address
-        let module_address = AccountAddress::new(module_address.into());
         let client = ctx.state().client();
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use compiler::Compiler;
 use logger::prelude::*;
 use once_cell::sync::Lazy;
 use starcoin_config::ChainNetwork;
@@ -11,6 +10,10 @@ use starcoin_functional_tests::account::{
 };
 use starcoin_genesis::Genesis;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_transaction_builder::{
+    build_upgrade_package, create_signed_txn_with_association_account,
+};
+use starcoin_types::language_storage::CORE_CODE_ADDRESS;
 use starcoin_types::transaction::TransactionOutput;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -24,6 +27,7 @@ use starcoin_types::{
 use starcoin_vm_types::parser;
 use statedb::ChainStateDB;
 use std::time::{SystemTime, UNIX_EPOCH};
+use stdlib::StdLibOptions;
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
     Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
@@ -368,18 +372,10 @@ fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u64 {
         .unwrap_or_default()
 }
 
-pub fn compile_module_with_address(
-    address: &AccountAddress,
-    file_name: &str,
-    code: &str,
-) -> TransactionPayload {
-    let compiler = Compiler {
-        address: *address,
-        ..Compiler::default()
-    };
-    TransactionPayload::Module(Module::new(
-        compiler.into_module_blob(file_name, code).unwrap(),
-    ))
+fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
+    let compiled_unit =
+        starcoin_move_compiler::compile_source_string(code, &[], address).expect("compile fail");
+    Module::new(compiled_unit.serialize())
 }
 
 #[stest::test]
@@ -393,19 +389,17 @@ fn test_publish_module() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
-    let program = String::from(
-        "
+    let program = r#"
         module M {
 
         }
-        ",
-    );
+        "#;
     // compile with account 1's address
-    let compiled_module = compile_module_with_address(account1.address(), "file_name", &program);
+    let compiled_module = compile_module_with_address(*account1.address(), program);
 
     let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
         *account1.address(),
-        compiled_module,
+        TransactionPayload::Module(compiled_module),
         0,
         100_000,
         1,
@@ -447,6 +441,34 @@ fn test_block_metadata() -> Result<()> {
     let token = String::from("0x1::STC::STC");
     let token_balance = get_token_balance(*account1.address(), &chain_state, token)?.unwrap();
     assert_eq!(balance, token_balance);
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_stdlib_upgrade() -> Result<()> {
+    let chain_net = ChainNetwork::Dev;
+    let chain_state = prepare_genesis_with_chain_net(chain_net);
+
+    let mut upgrade_package = build_upgrade_package(chain_net, StdLibOptions::Fresh, false)?;
+
+    let program = r#"
+        module M {
+            public fun hello(){
+            }
+        }
+        "#;
+    let module = compile_module_with_address(CORE_CODE_ADDRESS, program);
+    upgrade_package.add_module(module);
+
+    let txn = create_signed_txn_with_association_account(
+        TransactionPayload::Package(upgrade_package),
+        0,
+        50_000_000,
+        1,
+    );
+    let output = execute_and_apply(&chain_state, Transaction::UserTransaction(txn));
+    assert_eq!(KEEP_STATUS.clone(), *output.status());
 
     Ok(())
 }

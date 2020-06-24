@@ -9,6 +9,7 @@ mod generate_multisig_txn_cmd;
 mod get_coin_cmd;
 mod submit_multisig_txn_cmd;
 mod subscribe_cmd;
+mod upgrade_stdlib_cmd;
 
 pub use compile_cmd::*;
 pub use deploy_cmd::*;
@@ -18,3 +19,4 @@ pub use generate_multisig_txn_cmd::*;
 pub use get_coin_cmd::*;
 pub use submit_multisig_txn_cmd::*;
 pub use subscribe_cmd::*;
+pub use upgrade_stdlib_cmd::*;

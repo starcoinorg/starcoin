@@ -22,7 +22,7 @@ use types::{
     account_address,
     account_address::AccountAddress,
     block_metadata::BlockMetadata,
-    transaction::{authenticator::AuthenticationKey, Script, Transaction},
+    transaction::{authenticator::AuthenticationKey, Script, Transaction, TransactionPayload},
 };
 
 struct AccountData {
@@ -256,8 +256,12 @@ pub fn run_benchmark(
 }
 
 fn create_transaction(sequence_number: u64, program: Script) -> Transaction {
-    let signed_txn =
-        executor::create_signed_txn_with_association_account(program, sequence_number, 400_000, 1);
+    let signed_txn = executor::create_signed_txn_with_association_account(
+        TransactionPayload::Script(program),
+        sequence_number,
+        400_000,
+        1,
+    );
     Transaction::UserTransaction(signed_txn)
 }
 
