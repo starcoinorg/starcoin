@@ -20,6 +20,7 @@ module Block {
       // Height of the current block
       // TODO: should we keep the height?
       height: u64,
+      block_timestamp: u64,
       // Hash of the current block of transactions.
       id: vector<u8>,
       // TODO rename and add more filed.
@@ -48,6 +49,7 @@ module Block {
           account,
       BlockMetadata {
         height: 0,
+        block_timestamp: 0,
         //TODO pass genesis id.
         id: Vector::empty(),
         proposer:0x0,
@@ -103,6 +105,7 @@ module Block {
 
         let new_height = block_metadata_ref.height + 1;
         block_metadata_ref.height = new_height;
+        block_metadata_ref.block_timestamp = timestamp;
         block_metadata_ref.proposer = proposer;
         block_metadata_ref.id = id;
 
@@ -121,6 +124,10 @@ module Block {
     // Get the current block height
     public fun get_current_block_height(): u64 acquires BlockMetadata {
       borrow_global<BlockMetadata>(0xA550C18).height
+    }
+
+    public fun get_current_block_timestamp(): u64 acquires BlockMetadata {
+      borrow_global<BlockMetadata>(0xA550C18).block_timestamp
     }
 
     // Get the current block id
