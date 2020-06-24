@@ -133,15 +133,18 @@ async fn test_rollback() -> Result<()> {
         let master = storage.get_startup_info()?.unwrap().master;
         let block_header = storage.get_block_header_by_hash(master)?.unwrap();
         let chain_state = ChainStateDB::new(storage.clone(), Some(block_header.state_root()));
-        let txns: Vec<_> = enacted_block
+        let mut txns: Vec<_> = enacted_block
             .transactions()
             .iter()
             .map(|t| Transaction::UserTransaction(t.clone()))
             .collect();
+        txns.insert(
+            0,
+            Transaction::BlockMetadata(enacted_block.header().clone().into_metadata()),
+        );
         let (root, _txn_infos) = starcoin_executor::block_execute(
             &chain_state,
             txns,
-            enacted_block.header().clone().into_metadata(),
             enacted_block.header().gas_limit(),
         )?;
 
