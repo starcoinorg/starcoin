@@ -241,25 +241,6 @@ where
         })
         .await??;
 
-    let pubsub_service = {
-        let txn_receiver = txpool_service.subscribe_txns();
-        let service = PubSubService::new();
-        service.start_transaction_subscription_handler(txn_receiver);
-        service.start_chain_notify_handler(bus.clone(), storage.clone());
-        service
-    };
-
-    let (json_rpc, _io_handler) = RpcActor::launch(
-        config.clone(),
-        txpool_service.clone(),
-        chain.clone(),
-        account_service,
-        chain_state_service,
-        Some(pubsub_service),
-        Some(network.clone()),
-        Some(logger_handle),
-    )?;
-
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
         "Self address is: {}",
@@ -309,7 +290,7 @@ where
 
     let miner = MinerActor::<C, TxPoolService, ChainActorRef<C>, Storage>::launch(
         config.clone(),
-        bus,
+        bus.clone(),
         storage.clone(),
         txpool.get_service(),
         chain.clone(),
@@ -320,6 +301,26 @@ where
     } else {
         None
     };
+
+    let pubsub_service = {
+        let txn_receiver = txpool_service.subscribe_txns();
+        let service = PubSubService::new();
+        service.start_transaction_subscription_handler(txn_receiver);
+        service.start_chain_notify_handler(bus, storage.clone());
+        service
+    };
+
+    let (json_rpc, _io_handler) = RpcActor::launch(
+        config,
+        txpool_service,
+        chain,
+        account_service,
+        chain_state_service,
+        Some(pubsub_service),
+        Some(network),
+        Some(logger_handle),
+    )?;
+
     Ok(NodeStartHandle {
         _miner_actor: miner,
         _sync_actor: sync,
