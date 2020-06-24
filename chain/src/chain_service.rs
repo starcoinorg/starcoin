@@ -8,7 +8,6 @@ use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use starcoin_relayer::BlockRelayEvent;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
@@ -16,16 +15,17 @@ use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult, Consensus};
 use types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     startup_info::StartupInfo,
+    system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
 pub struct ChainServiceImpl<C, S, P>
-    where
-        C: Consensus,
-        P: TxPoolSyncService + 'static,
-        S: Store + 'static,
+where
+    C: Consensus,
+    P: TxPoolSyncService + 'static,
+    S: Store + 'static,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
@@ -36,10 +36,10 @@ pub struct ChainServiceImpl<C, S, P>
 }
 
 impl<C, S, P> ChainServiceImpl<C, S, P>
-    where
-        C: Consensus,
-        P: TxPoolSyncService + 'static,
-        S: Store + 'static,
+where
+    C: Consensus,
+    P: TxPoolSyncService + 'static,
+    S: Store + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -116,12 +116,8 @@ impl<C, S, P> ChainServiceImpl<C, S, P>
 
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
-            self.bus.do_send(Broadcast {
-                msg: BlockRelayEvent {
-                    block,
-                    total_difficulty,
-                },
-            });
+            CHAIN_METRICS.broadcast_head_count.inc();
+            self.broadcast_2_bus(BlockDetail::new(block, total_difficulty));
         } else {
             self.insert_branch(block_header);
         }
@@ -196,13 +192,20 @@ impl<C, S, P> ChainServiceImpl<C, S, P>
 
         Ok(blocks)
     }
+
+    pub fn broadcast_2_bus(&self, block: BlockDetail) {
+        let bus = self.bus.clone();
+        bus.do_send(Broadcast {
+            msg: NewHeadBlock(Arc::new(block)),
+        });
+    }
 }
 
 impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
-    where
-        C: Consensus,
-        P: TxPoolSyncService,
-        S: Store,
+where
+    C: Consensus,
+    P: TxPoolSyncService,
+    S: Store,
 {
     //TODO define connect result.
     fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {

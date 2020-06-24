@@ -25,6 +25,7 @@ use lru::LruCache;
 use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
 use scs::SCSCodec;
+use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
 use starcoin_sync_api::PeerNewBlock;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -36,8 +37,8 @@ use std::time::Duration;
 use tokio::runtime::Handle;
 use tx_relay::*;
 use types::peer_info::{PeerInfo, RpcInfo};
-use types::system_events::{NewHeadBlock, PeerNewCmpctBlock};
-use types::{block::BlockDetail, transaction::SignedUserTransaction};
+use types::system_events::NewHeadBlock;
+use types::transaction::SignedUserTransaction;
 use types::{BLOCK_PROTOCOL_NAME, TXN_PROTOCOL_NAME};
 
 const LRU_CACHE_SIZE: usize = 1024;
@@ -417,26 +418,22 @@ impl Inner {
         debug!("receive network_message ");
         // decode msg based on protocol name.
         // when protocol upgrade, we can decoded data based on the new protocol.
-        match network_msg.protocol_name.as_ref() {
-            TXN_PROTOCOL_NAME => {
-                let txns: Vec<SignedUserTransaction> =
-                    scs::from_bytes(network_msg.data.as_slice())?;
-                inner.handle_txn_message(network_msg.peer_id, txns).await?;
-            }
-            BLOCK_PROTOCOL_NAME => {
-                let message = PeerMessage::decode(&network_msg.data);
-                match message {
-                    Ok(msg) => {
-                        inner
-                            .handle_network_message(network_msg.peer_id, msg)
-                            .await?
-                    }
-                    Err(e) => {
-                        debug!("get error {:?}", e);
-                    }
+        if network_msg.protocol_name.as_ref() == TXN_PROTOCOL_NAME {
+            let txns: Vec<SignedUserTransaction> = scs::from_bytes(network_msg.data.as_slice())?;
+            inner.handle_txn_message(network_msg.peer_id, txns).await?;
+        } else {
+            // Other peer message can be refactored in the similar way.
+            let message = PeerMessage::decode(&network_msg.data);
+            match message {
+                Ok(msg) => {
+                    inner
+                        .handle_network_message(network_msg.peer_id, msg)
+                        .await?
+                }
+                Err(e) => {
+                    debug!("get error {:?}", e);
                 }
             }
-            _ => unreachable!(),
         }
         Ok(())
     }
@@ -474,6 +471,7 @@ impl Inner {
                 );
                 let block_header = block.header().clone();
                 let total_difficulty = block.get_total_difficulty();
+
                 if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
                     debug!(
                         "total_difficulty is {},peer_info is {:?}",
@@ -484,26 +482,42 @@ impl Inner {
                         peer_info.peer_info.total_difficulty = total_difficulty;
                     }
                 }
-                match block.as_ref() {
-                    BlockDetail::Block(block, _) => {
-                        self.bus
-                            .send(Broadcast {
-                                msg: PeerNewBlock::new(peer_id.into(), block.clone()),
-                            })
-                            .await?;
-                    }
-                    BlockDetail::CompactBlock(compact_block, _) => {
-                        self.bus
-                            .send(Broadcast {
-                                msg: PeerNewCmpctBlock {
-                                    peer_id: peer_id.into(),
-                                    compact_block: compact_block.clone(),
-                                },
-                            })
-                            .await?;
+                self.bus
+                    .send(Broadcast {
+                        msg: PeerNewBlock::new(peer_id.into(), block.get_block().clone()),
+                    })
+                    .await?;
+            }
+
+            PeerMessage::CompactBlock(compact_block, total_diff) => {
+                //TODO: Check total difficulty
+                let block_header = compact_block.header.clone();
+                debug!(
+                    "Receive new compact block from {:?} with hash {:?}",
+                    peer_id,
+                    block_header.id()
+                );
+
+                if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
+                    debug!(
+                        "total_difficulty is {},peer_info is {:?}",
+                        total_diff, peer_info
+                    );
+                    if total_diff > peer_info.peer_info.total_difficulty {
+                        peer_info.peer_info.latest_header = block_header;
+                        peer_info.peer_info.total_difficulty = total_diff;
                     }
                 }
+                self.bus
+                    .send(Broadcast {
+                        msg: PeerCmpctBlockEvent {
+                            peer_id: peer_id.into(),
+                            compact_block,
+                        },
+                    })
+                    .await?;
             }
+
             PeerMessage::RawRPCRequest(id, _rpc_path, request) => {
                 debug!("do request {} from peer {}", id, peer_id);
                 let (tx, rx) = mpsc::channel(1);
@@ -651,7 +665,73 @@ impl Actor for NetworkActor {
                 async {}.into_actor(act)
             })
             .wait(ctx);
-        info!("Network actor started ",);
+        let block_relayer_recipient = ctx.address().recipient::<NetCmpctBlockMessage>();
+        self.bus
+            .clone()
+            .subscribe(block_relayer_recipient)
+            .into_actor(self)
+            .then(|res, act, ctx| {
+                if let Err(err) = res {
+                    error!(
+                        "Failed to subscribe block block-relayer message, err: {:?}",
+                        err
+                    );
+                    ctx.terminate();
+                }
+                async {}.into_actor(act)
+            })
+            .wait(ctx);
+        info!("Network actor started");
+    }
+}
+
+impl Handler<NetCmpctBlockMessage> for NetworkActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: NetCmpctBlockMessage, _ctx: &mut Self::Context) -> Self::Result {
+        let id = msg.compact_block.header.id();
+        debug!("broadcast new compact block message {:?}", id);
+        let peers = self.peers.clone();
+        let network_service = self.network_service.clone();
+        let block_header = msg.compact_block.header.clone();
+        let total_difficulty = msg.total_difficulty.clone();
+        let msg = PeerMessage::CompactBlock(msg.compact_block, total_difficulty);
+        let bytes = msg.encode().expect("should encode success");
+        let self_id = self.peer_id.clone();
+        Arbiter::spawn(async move {
+            if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
+                debug!(
+                    "total_difficulty is {},peer_info is {:?}",
+                    total_difficulty, peer_info
+                );
+                if total_difficulty > peer_info.peer_info.total_difficulty {
+                    peer_info.peer_info.latest_header = block_header;
+                    peer_info.peer_info.total_difficulty = total_difficulty;
+                }
+
+                // update self peer info
+                let self_info = PeerInfo::new_with_peer_info(
+                    self_id.clone().into(),
+                    peer_info.peer_info.total_difficulty,
+                    peer_info.peer_info.latest_header.clone(),
+                    peer_info.get_peer_info(),
+                );
+                network_service.update_self_info(self_info);
+            }
+
+            for (peer_id, peer_info) in peers.lock().await.iter_mut() {
+                if !peer_info.known_blocks.contains(&id) {
+                    peer_info.known_blocks.put(id, ());
+                } else {
+                    continue;
+                }
+
+                network_service
+                    .send_message(peer_id.clone(), BLOCK_PROTOCOL_NAME.into(), bytes.clone())
+                    .await
+                    .expect("send message failed ,check network service please");
+            }
+        })
     }
 }
 
@@ -711,7 +791,7 @@ impl Handler<BlockMessage> for NetworkActor {
     }
 }
 
-/// handle txn relayer
+/// handle txn block-relayer
 impl Handler<PropagateNewTransactions> for NetworkActor {
     type Result = <PropagateNewTransactions as Message>::Result;
 
@@ -737,7 +817,7 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                 let mut txns_unhandled = Vec::new();
                 for (id, txn) in &txn_map {
-                    if !peer_info.known_transactions.contains(id) && !peer_id.eq(&self_peer_id) {
+                    if !peer_info.known_transactions.contains(id) & &!peer_id.eq(&self_peer_id) {
                         peer_info.known_transactions.put(*id, ());
                         txns_unhandled.push(txn.clone());
                     }

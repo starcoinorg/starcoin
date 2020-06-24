@@ -6315,6 +6315,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-block-relayer"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures 0.3.5",
+ "hex 0.4.2",
+ "libp2p",
+ "network-api",
+ "once_cell",
+ "starcoin-block-relayer-api",
+ "starcoin-bus",
+ "starcoin-canonical-serialization",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-metrics",
+ "starcoin-miner",
+ "starcoin-sync-api",
+ "starcoin-traits",
+ "starcoin-txpool-api",
+ "starcoin-types",
+ "starcoin-wallet-api",
+ "stest",
+ "tokio 0.2.21",
+]
+
+[[package]]
+name = "starcoin-block-relayer-api"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "anyhow",
+ "futures 0.3.5",
+ "once_cell",
+ "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-traits",
+ "starcoin-types",
+]
+
+[[package]]
 name = "starcoin-bus"
 version = "0.1.0"
 dependencies = [
@@ -6352,6 +6396,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.9.0",
  "starcoin-accumulator",
+ "starcoin-block-relayer",
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-config",
@@ -6363,7 +6408,6 @@ dependencies = [
  "starcoin-metrics",
  "starcoin-network",
  "starcoin-open-block",
- "starcoin-relayer",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
@@ -6775,6 +6819,7 @@ dependencies = [
  "slog",
  "slog_derive",
  "smallvec 0.6.13",
+ "starcoin-block-relayer-api",
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-config",
@@ -6799,6 +6844,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.5",
+ "starcoin-block-relayer",
  "starcoin-bus",
  "starcoin-chain",
  "starcoin-config",
@@ -6849,35 +6895,6 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "stest",
-]
-
-[[package]]
-name = "starcoin-relayer"
-version = "0.1.0"
-dependencies = [
- "actix",
- "actix-rt",
- "anyhow",
- "async-trait",
- "futures 0.3.5",
- "hex 0.4.2",
- "libp2p",
- "network-api",
- "once_cell",
- "starcoin-bus",
- "starcoin-canonical-serialization",
- "starcoin-config",
- "starcoin-crypto",
- "starcoin-logger",
- "starcoin-metrics",
- "starcoin-miner",
- "starcoin-sync-api",
- "starcoin-traits",
- "starcoin-txpool-api",
- "starcoin-types",
- "starcoin-wallet-api",
- "stest",
- "tokio 0.2.21",
 ]
 
 [[package]]
@@ -7149,6 +7166,7 @@ dependencies = [
  "parking_lot 0.9.0",
  "rand 0.7.3",
  "starcoin-accumulator",
+ "starcoin-block-relayer",
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",

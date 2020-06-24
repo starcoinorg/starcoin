@@ -47,4 +47,4 @@ hex = "0.4.2"
 starcoin-wallet-api = { path = "../wallet/api"}
 libp2p = "0.19.1"
 stest = { path = "../commons/stest"}
-
+starcoin-block-relayer = { path = "../block-relayer"}

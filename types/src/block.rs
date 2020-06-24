@@ -10,7 +10,6 @@ use starcoin_crypto::{
 };
 
 use crate::accumulator_info::AccumulatorInfo;
-use crate::cmpact_block::CompactBlock;
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::U256;
 use serde::{Deserialize, Serialize};
@@ -579,39 +578,29 @@ impl BlockTemplate {
 }
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-pub enum BlockDetail {
-    Block(Block, U256),
-    CompactBlock(CompactBlock, U256),
+pub struct BlockDetail {
+    block: Block,
+    total_difficulty: U256,
 }
 
 impl BlockDetail {
-    pub fn from_block(block: Block, total_difficulty: U256) -> Self {
-        BlockDetail::Block(block, total_difficulty)
-    }
-
-    pub fn from_compact_block(compact_block: CompactBlock, total_difficulty: U256) -> Self {
-        BlockDetail::CompactBlock(compact_block, total_difficulty)
+    pub fn new(block: Block, total_difficulty: U256) -> Self {
+        BlockDetail {
+            block,
+            total_difficulty,
+        }
     }
 
     pub fn get_total_difficulty(&self) -> U256 {
-        match self {
-            BlockDetail::Block(_, total_diff) => total_diff.clone(),
-            BlockDetail::CompactBlock(_, total_diff) => total_diff.clone(),
-        }
+        self.total_difficulty
     }
 
     pub fn get_block(&self) -> &Block {
-        match self {
-            BlockDetail::Block(block, _) => block,
-            BlockDetail::CompactBlock(_, _) => unreachable!(),
-        }
+        &self.block
     }
 
     pub fn header(&self) -> &BlockHeader {
-        match self {
-            BlockDetail::Block(block, _) => &block.header,
-            BlockDetail::CompactBlock(block, _) => &block.header,
-        }
+        self.block.header()
     }
 }
 

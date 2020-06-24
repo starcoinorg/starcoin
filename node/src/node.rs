@@ -4,6 +4,7 @@
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
 use futures::StreamExt;
+use starcoin_block_relayer::BlockRelayer;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::NodeConfig;
@@ -214,7 +215,7 @@ where
     let head_block = storage
         .get_block(*startup_info.get_master())?
         .expect("Head block must exist.");
-
+    let _block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service())?;
     let chain_state_service = ChainStateActor::launch(
         config.clone(),
         bus.clone(),
@@ -224,7 +225,6 @@ where
 
     let chain_config = config.clone();
     let chain_storage = storage.clone();
-    let chain_network = network.clone();
     let chain_bus = bus.clone();
     let chain_txpool_service = txpool_service.clone();
 

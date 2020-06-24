@@ -74,7 +74,6 @@ fn test_miner_with_schedule_pacemaker() {
             config.clone(),
             startup_info.clone(),
             storage.clone(),
-            Some(network.clone()),
             bus.clone(),
             txpool.get_service(),
         )
@@ -171,7 +170,6 @@ fn test_miner_with_ondemand_pacemaker() {
             config.clone(),
             startup_info.clone(),
             storage.clone(),
-            Some(network.clone()),
             bus.clone(),
             txpool_service.clone(),
         )

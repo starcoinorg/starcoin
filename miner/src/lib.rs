@@ -147,7 +147,7 @@ where
         let stratum = self.stratum.clone();
         let miner_account = self.miner_account.clone();
         // block_gas_limit / min_gas_per_txn
-        let max_txns = self.config.miner.block_gas_limit / self.config.tx_pool.minimal_gas_price;
+        let max_txns = self.config.miner.block_gas_limit / 600;
         let f = async move {
             let txns = txpool.get_pending_txns(Some(max_txns));
             let startup_info = chain.master_startup_info().await?;

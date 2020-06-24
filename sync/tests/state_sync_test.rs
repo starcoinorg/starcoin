@@ -12,6 +12,7 @@ use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{MinerActor, MinerClientActor};
 use network_api::NetworkService;
+use starcoin_block_relayer::BlockRelayer;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
@@ -75,7 +76,6 @@ fn test_state_sync() {
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
-            Some(network_1.clone()),
             bus_1.clone(),
             txpool_1.get_service(),
         )
@@ -93,6 +93,7 @@ fn test_state_sync() {
             rx_1,
         )
         .unwrap();
+        BlockRelayer::new(bus_1.clone(), txpool_1.get_service()).unwrap();
         Delay::new(Duration::from_secs(1)).await;
         let _ = bus_1.clone().send(Broadcast { msg: SyncBegin }).await;
         let miner_account = WalletAccount::random();
@@ -176,13 +177,12 @@ fn test_state_sync() {
             genesis_hash,
         );
         debug!("addr_2 : {:?}", addr_2);
-
+        BlockRelayer::new(bus_2.clone(), txpool_2.get_service()).unwrap();
         // chain
         let second_chain = ChainActor::<DevConsensus>::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
-            Some(network_2.clone()),
             bus_2.clone(),
             txpool_2.get_service(),
         )

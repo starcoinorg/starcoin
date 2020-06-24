@@ -5,9 +5,9 @@ use actix::prelude::*;
 use anyhow::*;
 use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
-use starcoin_types::block::BlockDetail;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::{block::BlockDetail, cmpact_block::CompactBlock, U256};
 
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -21,6 +21,7 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Message)]
 pub enum PeerMessage {
     Block(Arc<BlockDetail>),
+    CompactBlock(CompactBlock, U256),
     RawRPCRequest(u128, String, Vec<u8>),
     RawRPCResponse(u128, Vec<u8>),
 }

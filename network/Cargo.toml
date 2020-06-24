@@ -56,3 +56,4 @@ prometheus = "0.8"
 
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path = "../sync/api"}
+starcoin-block-relayer-api = { path = "../block-relayer/api/" }

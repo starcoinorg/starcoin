@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-relayer"
+name = "starcoin-block-relayer"
 version = "0.1.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
@@ -23,6 +23,7 @@ async-trait = "0.1"
 starcoin-txpool-api = {path="../txpool/api"}
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
+starcoin-block-relayer-api = { path = "./api"}
 starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-types = {path = "../types", package = "starcoin-types" }
 starcoin-metrics = {path = "../commons/metrics"}
