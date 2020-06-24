@@ -124,6 +124,7 @@ fn run() -> Result<()> {
                 .subcommand(dev::DeriveAddressCommand)
                 .subcommand(dev::GenerateMultisigTxnCommand)
                 .subcommand(dev::ExecuteMultiSignedTxnCommand)
+                .subcommand(dev::UpgradeStdlibCommand)
                 .subcommand(
                     Command::with_name("subscribe")
                         .subcommand(dev::SubscribeBlockCommand)

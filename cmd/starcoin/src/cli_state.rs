@@ -6,6 +6,7 @@ use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config::association_address;
 use starcoin_wallet_api::WalletAccount;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -91,6 +92,10 @@ impl CliState {
         } else {
             self.default_account()
         }
+    }
+
+    pub fn association_account(&self) -> Result<Option<WalletAccount>> {
+        self.client.wallet_get(association_address())
     }
 
     pub fn watch_txn(&self, txn_hash: HashValue) -> Result<()> {

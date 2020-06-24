@@ -24,6 +24,7 @@ use starcoin_sync::SyncActor;
 use starcoin_traits::Consensus;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::account_config::association_address;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::system_events::{SyncBegin, SyncDone};
 use starcoin_wallet_api::WalletAsyncService;
@@ -134,7 +135,7 @@ where
 
     let account_service = WalletActor::launch(config.clone())?;
 
-    //init default account
+    //Init default account
     let default_account = match account_service.clone().get_default_account().await? {
         Some(account) => account,
         None => {
@@ -147,6 +148,21 @@ where
             wallet_account
         }
     };
+
+    //Only dev network pre_mine_config contains private_key.
+    if let Some(pre_mine_config) = config.net().get_config().pre_mine_config.as_ref() {
+        if let Some(private_key) = pre_mine_config.private_key.as_ref() {
+            account_service
+                .clone()
+                .import_account(
+                    association_address(),
+                    private_key.to_bytes().to_vec(),
+                    "".to_string(),
+                )
+                .await?;
+            info!("Import association account to wallet.");
+        }
+    }
 
     let head_block_hash = *startup_info.get_master();
 

@@ -114,7 +114,6 @@ where
         duration: Duration,
     ) -> Result<()> {
         let keypair = self.unlock_prikey(&address, password)?;
-        let address = account_address::from_public_key(&keypair.public_key);
         let ttl = std::time::Instant::now().add(duration);
         self.key_cache
             .write()
@@ -283,7 +282,22 @@ mod tests {
     use crate::keystore_wallet::gen_keypair;
     use anyhow::Result;
     use starcoin_types::account_address;
+    use starcoin_types::account_address::AccountAddress;
     use std::time::Duration;
+
+    #[test]
+    fn test_address_not_derive_from_public_key() -> Result<()> {
+        let tmp_path = tempfile::tempdir()?;
+        let wallet_store = FileWalletStore::new(tmp_path.path());
+        let wallet = KeyStoreWallet::new(wallet_store)?;
+        let keypair = gen_keypair();
+        let address = AccountAddress::random();
+        let password = "";
+        wallet.import_account(address, keypair.private_key.to_bytes().to_vec(), password)?;
+        wallet.unlock_account(address, password, Duration::from_secs(300))?;
+        wallet.sign_txn(RawUserTransaction::mock_by_sender(address), address)?;
+        Ok(())
+    }
 
     #[test]
     fn test_wallet() -> Result<()> {

@@ -14,6 +14,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
+use starcoin_transaction_builder::{build_upgrade_package, StdLibOptions};
 use starcoin_types::block::{BlockInfo, BlockState};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::TransactionInfo;
@@ -21,14 +22,10 @@ use starcoin_types::{
     accumulator_info::AccumulatorInfo, block::Block, transaction::Transaction,
     vm_error::StatusCode, U256,
 };
-use starcoin_vm_types::account_config::{
-    association_address, config_address, mint_address, transaction_fee_address, CORE_CODE_ADDRESS,
-};
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
 use starcoin_vm_types::transaction::{
-    Module, RawUserTransaction, Script, SignedUserTransaction, TransactionPayload, UpgradePackage,
+    RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
-use starcoin_vm_types::transaction_argument::TransactionArgument;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Display;
@@ -37,8 +34,6 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use stdlib::init_scripts::InitScript;
-use stdlib::{stdlib_modules, StdLibOptions};
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -151,7 +146,7 @@ impl Genesis {
     }
 
     pub fn build_genesis_transaction(net: ChainNetwork) -> Result<SignedUserTransaction> {
-        let package = Genesis::build_package(net)?;
+        let package = build_upgrade_package(net, StdLibOptions::Staged, true)?;
         let txn = RawUserTransaction::new(
             CORE_CODE_ADDRESS,
             0,
@@ -163,105 +158,6 @@ impl Genesis {
         let (genesis_private_key, genesis_public_key) = ChainNetwork::genesis_key_pair();
         let sign_txn = txn.sign(&genesis_private_key, genesis_public_key)?;
         Ok(sign_txn.into_inner())
-    }
-
-    fn build_package(net: ChainNetwork) -> Result<UpgradePackage> {
-        let modules = stdlib_modules(StdLibOptions::Staged);
-        let mut package = UpgradePackage::new_with_modules(
-            modules
-                .iter()
-                .map(|m| {
-                    let mut blob = vec![];
-                    m.serialize(&mut blob)
-                        .expect("serializing stdlib must work");
-                    Module::new(blob)
-                })
-                .collect(),
-        );
-        let chain_config = net.get_config();
-
-        let genesis_auth_key = chain_config
-            .pre_mine_config
-            .as_ref()
-            .map(|pre_mine_config| AuthenticationKey::ed25519(&pre_mine_config.public_key).to_vec())
-            .unwrap_or_else(|| vec![0u8; AuthenticationKey::LENGTH]);
-
-        package.add_scripts(
-            Some(association_address()),
-            Script::new(
-                InitScript::AssociationInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![TransactionArgument::U8Vector(genesis_auth_key)],
-            ),
-        );
-
-        let publish_option_bytes = scs::to_bytes(&chain_config.vm_config.publishing_option)
-            .expect("Cannot serialize publishing option");
-        let instruction_schedule =
-            scs::to_bytes(&chain_config.vm_config.gas_schedule.instruction_table)
-                .expect("Cannot serialize gas schedule");
-        let native_schedule = scs::to_bytes(&chain_config.vm_config.gas_schedule.native_table)
-            .expect("Cannot serialize gas schedule");
-        package.add_scripts(
-            Some(config_address()),
-            Script::new(
-                InitScript::ConfigInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![
-                    TransactionArgument::U8Vector(publish_option_bytes),
-                    TransactionArgument::U8Vector(instruction_schedule),
-                    TransactionArgument::U8Vector(native_schedule),
-                    TransactionArgument::U64(chain_config.reward_halving_interval),
-                    TransactionArgument::U64(chain_config.base_block_reward),
-                    TransactionArgument::U64(chain_config.reward_delay),
-                ],
-            ),
-        );
-
-        package.add_scripts(
-            Some(association_address()),
-            Script::new(
-                InitScript::STCInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![],
-            ),
-        );
-
-        package.add_scripts(
-            Some(mint_address()),
-            Script::new(
-                InitScript::MintInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![],
-            ),
-        );
-        let pre_mine_percent = chain_config
-            .pre_mine_config
-            .as_ref()
-            .map(|cfg| cfg.pre_mine_percent)
-            .unwrap_or(0);
-        package.add_scripts(
-            Some(association_address()),
-            Script::new(
-                InitScript::PreMineInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![
-                    TransactionArgument::U64(chain_config.total_supply),
-                    TransactionArgument::U64(pre_mine_percent),
-                ],
-            ),
-        );
-
-        package.add_scripts(
-            Some(transaction_fee_address()),
-            Script::new(
-                InitScript::FeeInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![],
-            ),
-        );
-
-        Ok(package)
     }
 
     pub fn execute_genesis_txn(
