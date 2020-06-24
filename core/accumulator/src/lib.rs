@@ -89,9 +89,7 @@ pub trait AccumulatorTreeStore:
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
 pub struct MerkleAccumulator {
-    store_type: AccumulatorStoreType,
     tree: Mutex<AccumulatorTree>,
-    node_store: Arc<dyn AccumulatorTreeStore>,
 }
 
 impl MerkleAccumulator {
@@ -103,31 +101,21 @@ impl MerkleAccumulator {
         store_type: AccumulatorStoreType,
         node_store: Arc<dyn AccumulatorTreeStore>,
     ) -> Result<Self> {
-        let sub_store_type = store_type.clone();
         Ok(Self {
-            store_type,
             tree: Mutex::new(AccumulatorTree::new(
                 HashValue::random(),
                 frozen_subtree_roots,
                 num_leaves,
                 num_notes,
                 root_hash,
-                sub_store_type,
+                store_type,
                 node_store.clone(),
             )),
-            node_store: node_store.clone(),
         })
     }
 
     pub fn get_id(&self) -> HashValue {
         self.tree.lock().get_id()
-    }
-
-    pub fn get_node_from_storage(&self, hash: HashValue) -> AccumulatorNode {
-        self.node_store
-            .get_node(self.store_type.clone(), hash)
-            .unwrap()
-            .unwrap()
     }
 }
 

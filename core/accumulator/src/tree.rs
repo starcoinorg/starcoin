@@ -162,7 +162,7 @@ impl AccumulatorTree {
         to_freeze = to_freeze
             .iter()
             .map(|node| {
-                node.clone().frozen().unwrap();
+                node.clone().frozen().expect("frozen must have value");
                 node.clone()
             })
             .collect();
@@ -175,7 +175,7 @@ impl AccumulatorTree {
         self.root_hash = hash;
         self.num_leaves = last_new_leaf_count;
         self.frozen_subtree_roots = FrozenSubTreeIterator::new(last_new_leaf_count)
-            .map(|p| self.get_node_hash(p).unwrap())
+            .map(|p| self.get_node_hash(p).expect("frozen root must have value"))
             .collect::<Vec<_>>();
         self.num_nodes = new_num_nodes;
         trace!("acc {} append_leaves ok: {:?}", self.id, new_leaves);
@@ -230,7 +230,7 @@ impl AccumulatorTree {
 
     pub(crate) fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>> {
         let result = FrozenSubTreeIterator::new(self.num_leaves)
-            .map(|p| self.get_node_hash(p).unwrap())
+            .map(|p| self.get_node_hash(p).expect("frozen root must have value"))
             .collect::<Vec<_>>();
         Ok(result)
     }
@@ -280,11 +280,7 @@ impl AccumulatorTree {
     }
 
     fn get_node_index(&self, key: NodeCacheKey) -> Option<HashValue> {
-        self.index_cache
-            .lock()
-            .get(&key)
-            .copied()
-            .map(|value| value)
+        self.index_cache.lock().get(&key).copied()
     }
 
     /// Get node hash always.
@@ -309,13 +305,6 @@ impl AccumulatorTree {
         }
 
         let parent_hash = parent_hash.unwrap_or(self.root_hash);
-        // println!(
-        //     "id:{:?}, leaves:{:?},index {:?} ,parent {:?}",
-        //     self.id.short_str(),
-        //     self.num_leaves,
-        //     index,
-        //     parent_hash.short_str()
-        // );
         // get node by hash
         let mut hash_vec = vec![parent_hash];
         for _i in 0..level {

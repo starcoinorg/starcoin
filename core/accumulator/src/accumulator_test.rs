@@ -255,7 +255,7 @@ fn test_flush() {
     accumulator.flush().unwrap();
     //get from storage
     for node_hash in leaves.clone() {
-        let node = accumulator.get_node_from_storage(node_hash);
+        let node = accumulator.get_node(node_hash).unwrap();
         assert!(!node.is_empty());
     }
 }
