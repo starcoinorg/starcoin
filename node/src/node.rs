@@ -292,7 +292,10 @@ where
         .await??;
 
     delay_for(Duration::from_secs(1)).await;
-    if !config.clone().network.disable_seed {
+
+    let waiting_sync = !(config.network.disable_seed
+        || (config.network.seeds.is_empty() && config.net().get_config().boot_nodes.is_empty()));
+    if waiting_sync {
         bus.clone().broadcast(SyncBegin).await?;
 
         info!("Waiting sync ......");
