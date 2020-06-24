@@ -176,22 +176,27 @@ impl<'test> TxnExecutor<'test> {
     fn run(&mut self) {
         let mut version = 0;
         let miner_account = AccountData::random();
-        while let Ok(transactions) = self.block_receiver.recv() {
+        while let Ok(mut transactions) = self.block_receiver.recv() {
+            let execute_start = std::time::Instant::now();
+            {
+                let block_meta = BlockMetadata::new(
+                    HashValue::random(),
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Clock may have gone backwards")
+                        .as_secs(),
+                    AccountAddress::random(),
+                    Some(miner_account.auth_key_prefix()),
+                );
+
+                transactions.insert(0, Transaction::BlockMetadata(block_meta));
+            };
+
             let num_txns = transactions.len();
             version += num_txns as u64;
 
-            let execute_start = std::time::Instant::now();
-            let block_meta = BlockMetadata::new(
-                HashValue::random(),
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Clock may have gone backwards")
-                    .as_secs(),
-                AccountAddress::random(),
-                Some(miner_account.auth_key_prefix()),
-            );
             let (_state_root, _txn_infos) =
-                executor::block_execute(self.chain_state, transactions, block_meta, u64::MAX)
+                executor::block_execute(self.chain_state, transactions, u64::MAX)
                     .expect("Execute transactions fail.");
             self.chain_state.flush().expect("flush state should be ok");
 

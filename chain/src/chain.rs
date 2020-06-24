@@ -11,6 +11,7 @@ use starcoin_accumulator::{
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, marker::PhantomData, sync::Arc};
 use storage::Store;
@@ -369,21 +370,21 @@ where
             return Ok(false);
         }
 
-        let chain_state = &self.chain_state;
-        let mut txns = block
-            .transactions()
-            .iter()
-            .cloned()
-            .map(Transaction::UserTransaction)
-            .collect::<Vec<Transaction>>();
-        let block_metadata = header.clone().into_metadata();
+        let txns = {
+            let block_metadata = header.clone().into_metadata();
+            let mut t = vec![Transaction::BlockMetadata(block_metadata)];
+            t.extend(
+                block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
+            t
+        };
 
-        let (state_root, vec_transaction_info) = executor::block_execute(
-            chain_state,
-            txns.clone(),
-            block_metadata.clone(),
-            block.header().gas_limit(),
-        )?;
+        let (state_root, vec_transaction_info) =
+            executor::block_execute(&self.chain_state, txns.clone(), block.header().gas_limit())?;
 
         assert_eq!(
             block.header().state_root(),
@@ -400,13 +401,10 @@ where
             "invalid block: gas_used is not match"
         );
 
-        // +1 because block_meta_data is not included in block.
         ensure!(
-            vec_transaction_info.len() == txns.len() + 1,
+            vec_transaction_info.len() == txns.len(),
             "invalid txn num in the block"
         );
-        // push the extra meta txn to save.
-        txns.push(Transaction::BlockMetadata(block_metadata));
 
         // txn accumulator verify.
         let executed_accumulator_root = {

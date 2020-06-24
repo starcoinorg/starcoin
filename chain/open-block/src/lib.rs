@@ -18,7 +18,9 @@ use types::{
     contract_event::ContractEventHasher,
     error::BlockExecutorError,
     proof::InMemoryAccumulator,
-    transaction::{SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus},
+    transaction::{
+        SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
+    },
 };
 
 pub struct OpenedBlock {
@@ -63,7 +65,7 @@ impl OpenedBlock {
         let chain_state = ChainStateDB::new(storage, Some(previous_header.state_root()));
         let block_meta =
             BlockMetadata::new(previous_block_id, block_timestamp, author, auth_key_prefix);
-        let opened_block = Self {
+        let mut opened_block = Self {
             previous_header,
             previous_block_info: block_info,
             block_meta,
@@ -74,6 +76,7 @@ impl OpenedBlock {
             gas_used: 0,
             included_user_txns: vec![],
         };
+        opened_block.initialize()?;
         Ok(opened_block)
     }
 
@@ -144,37 +147,14 @@ impl OpenedBlock {
         debug_assert_eq!(txns.len(), txn_outputs.len());
         for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
-            let (write_set, events, gas_used, status) = output.into_inner();
-            match status {
+            match output.status() {
                 TransactionStatus::Discard(status) => {
                     debug!("discard txn {}, vm status: {}", txn_hash, status);
                     discard_txns.push(txn.try_into().expect("user txn"));
                 }
-                TransactionStatus::Keep(status) => {
-                    // push txn, and update state
-                    self.state
-                        .apply_write_set(write_set)
-                        .map_err(BlockExecutorError::BlockChainStateErr)?;
-                    let txn_state_root = self
-                        .state
-                        .commit()
-                        .map_err(BlockExecutorError::BlockChainStateErr)?;
-                    let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
-                    let events_accumulator_hash =
-                        InMemoryAccumulator::<ContractEventHasher>::from_leaves(
-                            event_hashes.as_slice(),
-                        )
-                        .root_hash();
-                    let txn_info = TransactionInfo::new(
-                        txn_hash,
-                        txn_state_root,
-                        events_accumulator_hash,
-                        events,
-                        gas_used,
-                        status.major_status,
-                    );
-                    // NOTICE: txn_accumulator's leave is txn_info, not txn.
-                    self.txn_accumulator.append(&[txn_info.crypto_hash()])?;
+                TransactionStatus::Keep(_) => {
+                    let gas_used = output.gas_used();
+                    self.push_txn_and_state(txn_hash, output)?;
                     self.gas_used += gas_used;
                     self.included_user_txns
                         .push(txn.try_into().expect("user txn"));
@@ -187,42 +167,64 @@ impl OpenedBlock {
         })
     }
 
-    /// Construct a block template for mining.
-    pub fn finalize(self) -> Result<BlockTemplate> {
+    /// Run blockmeta first
+    fn initialize(&mut self) -> Result<()> {
         let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
         let mut results = executor::execute_transactions(&self.state, vec![block_metadata_txn])
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
         let output = results.pop().expect("execute txn has output");
-        let (write_set, events, gas_used, status) = output.into_inner();
-        let (state_root, accumulator_root) = match status {
+
+        match output.status() {
             TransactionStatus::Discard(status) => {
                 bail!("block_metadata txn is discarded, vm status: {}", status);
             }
-            TransactionStatus::Keep(status) => {
+            TransactionStatus::Keep(_) => {
+                // let (write_set, events, gas_used, status) = output.into_inner();
+                let gas_used = output.gas_used();
                 debug_assert_eq!(gas_used, 0, "execute block meta should not use any gas");
-
-                self.state
-                    .apply_write_set(write_set)
-                    .map_err(BlockExecutorError::BlockChainStateErr)?;
-                let txn_state_root = self
-                    .state
-                    .commit()
-                    .map_err(BlockExecutorError::BlockChainStateErr)?;
-                let txn_info = TransactionInfo::new(
-                    block_meta_txn_hash,
-                    txn_state_root,
-                    //TODO add event root hash.
-                    HashValue::zero(),
-                    events,
-                    gas_used,
-                    status.major_status,
-                );
-                let (accumulator_root, _) =
-                    self.txn_accumulator.append(&[txn_info.crypto_hash()])?;
-                (txn_state_root, accumulator_root)
+                let _ = self.push_txn_and_state(block_meta_txn_hash, output)?;
             }
         };
+        Ok(())
+    }
+
+    fn push_txn_and_state(
+        &mut self,
+        txn_hash: HashValue,
+        output: TransactionOutput,
+    ) -> Result<(HashValue, HashValue)> {
+        let (write_set, events, gas_used, status) = output.into_inner();
+        debug_assert!(matches!(status, TransactionStatus::Keep(_)));
+        let status = status.vm_status();
+        self.state
+            .apply_write_set(write_set)
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        let txn_state_root = self
+            .state
+            .commit()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+        let events_accumulator_hash =
+            InMemoryAccumulator::<ContractEventHasher>::from_leaves(event_hashes.as_slice())
+                .root_hash();
+
+        let txn_info = TransactionInfo::new(
+            txn_hash,
+            txn_state_root,
+            events_accumulator_hash,
+            events,
+            gas_used,
+            status.major_status,
+        );
+        let (accumulator_root, _) = self.txn_accumulator.append(&[txn_info.crypto_hash()])?;
+        Ok((txn_state_root, accumulator_root))
+    }
+
+    /// Construct a block template for mining.
+    pub fn finalize(self) -> Result<BlockTemplate> {
+        let accumulator_root = self.txn_accumulator.root_hash();
+        let state_root = self.state.state_root();
         let (parent_id, timestamp, author, auth_key_prefix) = self.block_meta.into_inner();
 
         let block_template = BlockTemplate::new(

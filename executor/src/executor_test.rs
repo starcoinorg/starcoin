@@ -103,7 +103,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
     let block_gas_limit = 1_000_000;
     let max_include_txn_num: u64 = block_gas_limit / transfer_txn_gas;
     {
-        let user_txns = (0u64..max_include_txn_num)
+        let mut txns = (0u64..max_include_txn_num)
             .map(|seq_number| {
                 Transaction::UserTransaction(peer_to_peer_txn(
                     &account1,
@@ -114,10 +114,10 @@ fn test_block_execute_gas_limit() -> Result<()> {
             })
             .collect::<Vec<_>>();
 
-        assert_eq!(max_include_txn_num, user_txns.len() as u64);
+        assert_eq!(max_include_txn_num, txns.len() as u64);
 
-        let (_, txn_infos) =
-            crate::block_execute(&chain_state, user_txns, block_meta.clone(), block_gas_limit)?;
+        txns.insert(0, Transaction::BlockMetadata(block_meta.clone()));
+        let (_, txn_infos) = crate::block_execute(&chain_state, txns, block_gas_limit)?;
 
         // all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
@@ -131,7 +131,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
     let latest_seq_number = max_include_txn_num;
 
     {
-        let user_txns = (0..max_include_txn_num * 2)
+        let mut txns: Vec<Transaction> = (0..max_include_txn_num * 2)
             .map(|i| {
                 let seq_number = i + latest_seq_number;
                 Transaction::UserTransaction(peer_to_peer_txn(
@@ -142,9 +142,8 @@ fn test_block_execute_gas_limit() -> Result<()> {
                 ))
             })
             .collect();
-
-        let (_, txn_infos) =
-            crate::block_execute(&chain_state, user_txns, block_meta, block_gas_limit)?;
+        txns.insert(0, Transaction::BlockMetadata(block_meta));
+        let (_, txn_infos) = crate::block_execute(&chain_state, txns, block_gas_limit)?;
 
         // not all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
