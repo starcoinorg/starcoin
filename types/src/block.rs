@@ -19,8 +19,6 @@ use std::cmp::PartialOrd;
 
 /// Type for block number.
 pub type BlockNumber = u64;
-/// Type for branch number.
-pub type BranchNumber = (HashValue, u64);
 
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15 * 1000; // 15 Second;

@@ -47,7 +47,7 @@ where
                 Vec::with_capacity(compact_block.short_ids.len());
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if let Some(txn) = txns_pool_map.get(short_id) {
-                    txns[index] = txn.clone().clone();
+                    txns[index] = (*txn).clone();
                 };
             }
             for prefilled_txn in compact_block.prefilled_txn {

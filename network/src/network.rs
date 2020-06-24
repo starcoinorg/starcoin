@@ -694,7 +694,7 @@ impl Handler<NetCmpctBlockMessage> for NetworkActor {
         let peers = self.peers.clone();
         let network_service = self.network_service.clone();
         let block_header = msg.compact_block.header.clone();
-        let total_difficulty = msg.total_difficulty.clone();
+        let total_difficulty = msg.total_difficulty;
         let msg = PeerMessage::CompactBlock(msg.compact_block, total_difficulty);
         let bytes = msg.encode().expect("should encode success");
         let self_id = self.peer_id.clone();
@@ -791,7 +791,7 @@ impl Handler<BlockMessage> for NetworkActor {
     }
 }
 
-/// handle txn block-relayer
+/// handle txn relayer
 impl Handler<PropagateNewTransactions> for NetworkActor {
     type Result = <PropagateNewTransactions as Message>::Result;
 
@@ -817,7 +817,7 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                 let mut txns_unhandled = Vec::new();
                 for (id, txn) in &txn_map {
-                    if !peer_info.known_transactions.contains(id) & &!peer_id.eq(&self_peer_id) {
+                    if !peer_info.known_transactions.contains(id) && !peer_id.eq(&self_peer_id) {
                         peer_info.known_transactions.put(*id, ());
                         txns_unhandled.push(txn.clone());
                     }

@@ -19,6 +19,7 @@ pub struct GetCounterMessage {}
 /// message from peer
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Serialize, Deserialize, Message)]
+#[allow(clippy::large_enum_variant)]
 pub enum PeerMessage {
     Block(Arc<BlockDetail>),
     CompactBlock(CompactBlock, U256),

@@ -12,7 +12,8 @@ pub struct CompactBlock {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PrefiledTxn {
-    pub index: u64, //todo: change to a small one
+    pub index: u64,
+    //todo: change to a small one
     pub tx: SignedUserTransaction,
 }
 
@@ -27,7 +28,7 @@ impl CompactBlock {
             .transactions()
             .iter()
             .map(|tx| Transaction::UserTransaction(tx.clone()).id())
-            .map(|id| ShortId(id))
+            .map(ShortId)
             .collect();
         CompactBlock {
             header,
