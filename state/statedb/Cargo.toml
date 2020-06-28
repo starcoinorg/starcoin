@@ -10,7 +10,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 thiserror = "1.0"
-actix-rt = "1.0"
+actix-rt = "1.1"
 parking_lot = "0.10.2"
 lru = "0.4.0"
 starcoin-types = {path = "../../types"}

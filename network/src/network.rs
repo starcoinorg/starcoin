@@ -1007,7 +1007,7 @@ mod tests {
                     .unwrap();
             };
             let f = actix::fut::wrap_future(f);
-            ctx.spawn(Box::new(f));
+            ctx.spawn(Box::pin(f));
         }
     }
 
