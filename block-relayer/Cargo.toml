@@ -10,7 +10,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-actix = "0.9"
+actix = "0.10.0-alpha.3"
 futures = "0.3"
 once_cell = "1.4.0"
 
@@ -23,6 +23,8 @@ async-trait = "0.1"
 starcoin-txpool-api = {path="../txpool/api"}
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
+starcoin-sync = {package="starcoin-sync", path="../sync"}
+starcoin-network ={path = "../network"}
 starcoin-block-relayer-api = { path = "./api"}
 starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-types = {path = "../types", package = "starcoin-types" }
@@ -30,7 +32,7 @@ starcoin-metrics = {path = "../commons/metrics"}
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
-actix-rt = "1.0"
+actix-rt = "1.1"
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.2"
 starcoin-wallet-api = { path = "../wallet/api"}

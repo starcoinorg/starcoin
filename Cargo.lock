@@ -6335,6 +6335,8 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-miner",
+ "starcoin-network",
+ "starcoin-sync",
  "starcoin-sync-api",
  "starcoin-traits",
  "starcoin-txpool-api",

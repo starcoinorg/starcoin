@@ -113,7 +113,6 @@ where
 
             debug_assert!(!enacted_blocks.is_empty());
             debug_assert_eq!(enacted_blocks.last().unwrap(), &block);
-
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
             CHAIN_METRICS.broadcast_head_count.inc();

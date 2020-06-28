@@ -200,8 +200,8 @@ where
     let network_config = config.clone();
     let network_bus = bus.clone();
     let network_handle = handle.clone();
-    let (network,rpc_rx) = Arbiter::new()
-        .exec(move || -> (NetworkAsyncService,futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>){
+    let (network, rpc_rx) = Arbiter::new()
+        .exec(move || -> (NetworkAsyncService, futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>){
             NetworkActor::launch(
                 network_config,
                 network_bus,
@@ -215,7 +215,7 @@ where
     let head_block = storage
         .get_block(*startup_info.get_master())?
         .expect("Head block must exist.");
-    let _block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service())?;
+    let _block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone())?;
     let chain_state_service = ChainStateActor::launch(
         config.clone(),
         bus.clone(),

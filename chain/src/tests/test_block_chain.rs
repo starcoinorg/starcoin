@@ -5,7 +5,6 @@ use config::NodeConfig;
 use consensus::dev::{DevConsensus, DummyHeader};
 use futures_timer::Delay;
 use logger::prelude::*;
-use starcoin_block_relayer::BlockRelayer;
 use starcoin_genesis::Genesis;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
@@ -34,7 +33,6 @@ async fn gen_master_chain(
         )
         .get_service()
     };
-    BlockRelayer::new(bus.clone(), txpool_service.clone()).unwrap();
     let chain = ChainActor::<DevConsensus>::launch(
         node_config.clone(),
         startup_info.clone(),

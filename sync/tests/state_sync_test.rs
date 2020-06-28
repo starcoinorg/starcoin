@@ -93,7 +93,7 @@ fn test_state_sync() {
             rx_1,
         )
         .unwrap();
-        BlockRelayer::new(bus_1.clone(), txpool_1.get_service()).unwrap();
+        BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
         Delay::new(Duration::from_secs(1)).await;
         let _ = bus_1.clone().send(Broadcast { msg: SyncBegin }).await;
         let miner_account = WalletAccount::random();
@@ -177,7 +177,7 @@ fn test_state_sync() {
             genesis_hash,
         );
         debug!("addr_2 : {:?}", addr_2);
-        BlockRelayer::new(bus_2.clone(), txpool_2.get_service()).unwrap();
+        BlockRelayer::new(bus_2.clone(), txpool_2.get_service(), network_2.clone()).unwrap();
         // chain
         let second_chain = ChainActor::<DevConsensus>::launch(
             node_config_2.clone(),

@@ -96,7 +96,7 @@ fn test_network_actor_rpc() {
             error!("error: {:?}", e);
         }
 
-        BlockRelayer::new(bus_1.clone(), txpool_1.get_service()).unwrap();
+        BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
 
         let miner_account = WalletAccount::random();
         // miner
@@ -191,7 +191,8 @@ fn test_network_actor_rpc() {
         )
         .unwrap();
 
-        let _block_relayer = BlockRelayer::new(bus_2.clone(), txpool_2.get_service()).unwrap();
+        let _block_relayer =
+            BlockRelayer::new(bus_2.clone(), txpool_2.get_service(), network_2.clone()).unwrap();
 
         Delay::new(Duration::from_secs(1)).await;
         if let Err(e) = bus_2.clone().send(Broadcast { msg: SyncBegin }).await {
@@ -271,7 +272,7 @@ fn test_network_actor_rpc_2() {
             genesis_hash,
         );
         info!("addr_1 : {:?}", addr_1);
-        BlockRelayer::new(bus_1.clone(), txpool_1.get_service()).unwrap();
+        BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
         // chain
         let first_chain = ChainActor::<DevConsensus>::launch(
             node_config_1.clone(),
@@ -345,7 +346,7 @@ fn test_network_actor_rpc_2() {
         let (network_2, addr_2, rx_2) =
             gen_network(node_config_2.clone(), bus_2.clone(), handle, genesis_hash);
         debug!("addr_2 : {:?}", addr_2);
-        BlockRelayer::new(bus_2.clone(), txpool_2.get_service()).unwrap();
+        BlockRelayer::new(bus_2.clone(), txpool_2.get_service(), network_2.clone()).unwrap();
         // chain
         let second_chain = ChainActor::launch(
             node_config_2.clone(),

@@ -10,10 +10,11 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-actix = "0.9"
+actix = "0.10.0-alpha.3"
+
 futures = "0.3"
 once_cell = "1.4.0"
-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+crypto = {package="starcoin-crypto", path = "../../commons/crypto"}
 traits = {path = "../../core/traits", package="starcoin-traits"}
 starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = {path = "../../types", package = "starcoin-types" }

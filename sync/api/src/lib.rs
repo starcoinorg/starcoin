@@ -72,7 +72,9 @@ pub enum SyncNotify {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GetTxns;
+pub struct GetTxns {
+    pub ids: Option<Vec<HashValue>>,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransactionsData {
