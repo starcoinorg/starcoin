@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 starcoin-types = {path = "../../types"}
-actix = "0.9"
+actix = "0.10.0-alpha.3"
 anyhow = "1.0"
 futures = "0.3"
 serde = { version = "1.0", default-features = false }

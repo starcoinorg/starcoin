@@ -296,7 +296,7 @@ mod tests {
         fn handle(&mut self, _msg: DoBroadcast2, _ctx: &mut Self::Context) -> Self::Result {
             let f = self.bus.clone().broadcast(MyMessage {});
             let f = actix::fut::wrap_future::<_, Self>(f);
-            Box::new(f)
+            Box::pin(f)
         }
     }
 

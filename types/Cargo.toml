@@ -28,7 +28,7 @@ serde = { version = "1.0", default-features = false }
 thiserror = "1.0.14"
 tiny-keccak = { version = "1.5.0", default-features = false }
 num_enum = "0.4.1"
-actix = "0.9"
+actix = "0.10.0-alpha.3"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
 libra-types = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }

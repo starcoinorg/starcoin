@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 chain = {path = "../chain", package="starcoin-chain" }
 anyhow = "1.0"
-actix = "0.9"
+actix = "0.10.0-alpha.3"
 rand = "0.7.3"
 config = {path = "../config", package="starcoin-config"}
 network = {path = "../network", package="starcoin-network"}
@@ -41,7 +41,7 @@ dyn-clone = "1.0.1"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
-actix-rt = "1.0"
+actix-rt = "1.1"
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.2"
 starcoin-wallet-api = { path = "../wallet/api"}

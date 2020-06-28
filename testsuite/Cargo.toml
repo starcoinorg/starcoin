@@ -8,8 +8,8 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-actix = "0.9"
-actix-rt = "1.0"
+actix = "0.10.0-alpha.3"
+actix-rt = "1.1"
 indexmap = "1.2.0"
 lazy_static = "1.4.0"
 static_assertions = "0.3.4"

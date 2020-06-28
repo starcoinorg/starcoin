@@ -18,4 +18,4 @@ stest = {path = "../../commons/stest"}
 futures-channel = "0.3"
 
 [dev-dependencies]
-actix-rt = "1.0"
+actix-rt = "1.1"
