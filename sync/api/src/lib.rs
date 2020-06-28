@@ -9,7 +9,7 @@ use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo},
-    transaction::SignedUserTransaction,
+    transaction::{SignedUserTransaction, TransactionInfo},
 };
 use std::cmp::Ordering;
 
@@ -48,6 +48,7 @@ pub enum SyncRpcRequest {
     GetStateNodeByNodeHash(HashValue),
     GetAccumulatorNodeByNodeHash(HashValue, AccumulatorStoreType),
     GetTxns(GetTxns),
+    GetTxnInfo(HashValue),
 }
 
 #[derive(Message, Clone, Serialize, Deserialize)]
@@ -59,6 +60,7 @@ pub enum SyncRpcResponse {
     StateNode(StateNode),
     AccumulatorNode(AccumulatorNode),
     GetTxns(TransactionsData),
+    GetTxnInfo(Option<TransactionInfo>),
 }
 
 #[derive(Debug, Message, Clone, Serialize, Deserialize)]

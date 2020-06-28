@@ -17,12 +17,14 @@ use std::borrow::Cow;
 use types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::{PeerId, RpcInfo},
+    transaction::TransactionInfo,
     CHAIN_PROTOCOL_NAME,
 };
 
 const HEAD_CT: usize = 10;
 
 const GET_TXNS_STR: &str = "GetTxns";
+const GET_TXN_INFO_STR: &str = "GetTxnInfo";
 const GET_BLOCK_HEADERS_BY_NUM_STR: &str = "GetBlockHeadersByNumber";
 const GET_BLOCK_HEADERS_STR: &str = "GetBlockHeaders";
 const GET_BLOCK_INFOS_STR: &str = "GetBlockInfos";
@@ -33,6 +35,7 @@ const GET_ACCUMULATOR_NODE_BY_NODE_HASH_STR: &str = "GetAccumulatorNodeByNodeHas
 pub fn sync_rpc_info() -> (&'static [u8], RpcInfo) {
     let mut paths = Vec::new();
     paths.push(GET_TXNS_STR.to_string());
+    paths.push(GET_TXN_INFO_STR.to_string());
     paths.push(GET_BLOCK_HEADERS_BY_NUM_STR.to_string());
     paths.push(GET_BLOCK_HEADERS_STR.to_string());
     paths.push(GET_BLOCK_INFOS_STR.to_string());
@@ -74,6 +77,25 @@ pub async fn get_txns(
         Ok(txn_data)
     } else {
         Err(format_err!("{:?}", "error SyncRpcResponse type."))
+    }
+}
+
+pub async fn get_txn_info(
+    network: &NetworkAsyncService,
+    peer_id: PeerId,
+    txn_info_hash: HashValue,
+) -> Result<Option<TransactionInfo>> {
+    let get_txn_info_req = SyncRpcRequest::GetTxnInfo(txn_info_hash);
+    if let SyncRpcResponse::GetTxnInfo(txn_info) =
+        do_request(&network, peer_id, GET_TXN_INFO_STR, get_txn_info_req).await?
+    {
+        //todo: Verify response
+        Ok(txn_info)
+    } else {
+        Err(format_err!(
+            "{:?}",
+            "error SyncRpcResponse type when get txn info."
+        ))
     }
 }
 
@@ -312,4 +334,12 @@ pub fn get_headers_msg_for_ancestor(
 ) -> GetBlockHeadersByNumber {
     //todo：binary search
     GetBlockHeadersByNumber::new(block_number, step, HEAD_CT)
+}
+
+pub async fn do_get_txn_info(
+    responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
+    txn_info: Option<TransactionInfo>,
+) -> Result<()> {
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetTxnInfo(txn_info))?;
+    do_response(responder, resp).await
 }
