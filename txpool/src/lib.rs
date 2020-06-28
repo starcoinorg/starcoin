@@ -138,7 +138,7 @@ impl actix::Actor for TxPoolActor {
             })
             .wait(ctx);
 
-        // subscribe txn relay peer txns
+        // subscribe txn relayer peer txns
         let myself = ctx.address().recipient::<PeerTransactions>();
         self.bus
             .clone()
@@ -146,7 +146,7 @@ impl actix::Actor for TxPoolActor {
             .into_actor(self)
             .then(|res, act, ctx| {
                 if let Err(e) = res {
-                    error!("fail to subscribe txn relay message, err: {:?}", e);
+                    error!("fail to subscribe txn relayer message, err: {:?}", e);
                     ctx.terminate();
                 }
                 async {}.into_actor(act)
@@ -219,8 +219,7 @@ impl actix::Handler<NewHeadBlock> for TxPoolActor {
 
     fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
         let NewHeadBlock(block) = msg;
-        self.inner
-            .notify_new_chain_header(block.get_block().header().clone());
+        self.inner.notify_new_chain_header(block.header().clone());
         self.inner.cull()
     }
 }

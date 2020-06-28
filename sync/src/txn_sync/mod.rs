@@ -103,9 +103,13 @@ impl Inner {
         bail!("fail to sync txn from all peers")
     }
     async fn sync_txn_from_peer(&self, peer_id: PeerId) -> Result<()> {
-        let txn_data = helper::get_txns(&self.network_service, peer_id.clone(), GetTxns)
-            .await?
-            .txns;
+        let txn_data = helper::get_txns(
+            &self.network_service,
+            peer_id.clone(),
+            GetTxns { ids: None },
+        )
+        .await?
+        .txns;
         let import_result = self.pool.add_txns(txn_data);
         let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
         info!("succ to sync {} txn from peer {}", succ_num, peer_id);

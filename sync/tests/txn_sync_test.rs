@@ -74,7 +74,6 @@ fn test_txn_sync_actor() {
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
-            Some(network_1.clone()),
             bus_1.clone(),
             txpool_1.get_service(),
         )
@@ -149,7 +148,6 @@ fn test_txn_sync_actor() {
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
-            Some(network_2.clone()),
             bus_2.clone(),
             txpool_2.get_service(),
         )

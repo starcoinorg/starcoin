@@ -95,7 +95,6 @@ where
     C: Consensus + Sync + Send + 'static + Clone,
 {
     type Result = ();
-
     fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
         let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block()));
         self.download_address

@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{chain::BlockChain, chain_metrics::CHAIN_METRICS};
-use actix::prelude::*;
+use actix::Addr;
 use anyhow::{format_err, Error, Result};
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use network::NetworkAsyncService;
-use network_api::NetworkService;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
@@ -21,7 +19,6 @@ use types::{
     startup_info::StartupInfo,
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
-    BLOCK_PROTOCOL_NAME,
 };
 
 pub struct ChainServiceImpl<C, S, P>
@@ -34,7 +31,6 @@ where
     startup_info: StartupInfo,
     master: BlockChain<C, S>,
     storage: Arc<S>,
-    network: Option<NetworkAsyncService>,
     txpool: P,
     bus: Addr<BusActor>,
 }
@@ -49,7 +45,6 @@ where
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<S>,
-        network: Option<NetworkAsyncService>,
         txpool: P,
         bus: Addr<BusActor>,
     ) -> Result<Self> {
@@ -59,7 +54,6 @@ where
             startup_info,
             master,
             storage,
-            network,
             txpool,
             bus,
         })
@@ -119,14 +113,10 @@ where
 
             debug_assert!(!enacted_blocks.is_empty());
             debug_assert_eq!(enacted_blocks.last().unwrap(), &block);
-
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
-
             CHAIN_METRICS.broadcast_head_count.inc();
-            let block_detail = BlockDetail::new(block, total_difficulty);
-            self.broadcast_2_bus(block_detail.clone());
-            self.broadcast_2_network(block_detail);
+            self.broadcast_2_bus(BlockDetail::new(block, total_difficulty));
         } else {
             self.insert_branch(block_header);
         }
@@ -207,23 +197,6 @@ where
         bus.do_send(Broadcast {
             msg: NewHeadBlock(Arc::new(block)),
         });
-    }
-
-    pub fn broadcast_2_network(&self, block: BlockDetail) {
-        if let Some(network) = self.network.clone() {
-            Arbiter::spawn(async move {
-                let block_id = block.header().id();
-                if let Err(e) = network
-                    .broadcast_new_head_block(
-                        BLOCK_PROTOCOL_NAME.into(),
-                        NewHeadBlock(Arc::new(block)),
-                    )
-                    .await
-                {
-                    error!("broadcast new head block {:?} failed : {:?}", block_id, e);
-                }
-            });
-        };
     }
 }
 

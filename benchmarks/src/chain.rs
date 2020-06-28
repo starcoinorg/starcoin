@@ -51,7 +51,6 @@ impl ChainBencher {
             node_config.clone(),
             startup_info,
             storage.clone(),
-            None,
             txpool.get_service(),
             bus,
         )

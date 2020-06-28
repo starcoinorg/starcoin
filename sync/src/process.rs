@@ -150,7 +150,10 @@ where
                         }
                     }
                     SyncRpcRequest::GetTxns(msg) => {
-                        let handler = GetTxnsHandler::new(processor.txpool.clone());
+                        let handler = GetTxnsHandler::new(
+                            processor.txpool.clone(),
+                            processor.storage.clone(),
+                        );
                         let result = handler.handle(responder, msg).await;
                         if let Err(e) = result {
                             warn!("handle get txn fail, error: {:?}", e);

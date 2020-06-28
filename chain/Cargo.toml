@@ -43,7 +43,7 @@ starcoin-genesis = {path = "../core/genesis"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-open-block = {path = "./open-block"}
-
 [dev-dependencies]
 starcoin-wallet-api = { path = "../wallet/api"}
 tokio = { version = "0.2", features = ["full"] }
+starcoin-block-relayer={path = "../block-relayer/"}

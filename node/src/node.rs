@@ -4,6 +4,7 @@
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
 use futures::StreamExt;
+use starcoin_block_relayer::BlockRelayer;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_config::NodeConfig;
@@ -199,8 +200,8 @@ where
     let network_config = config.clone();
     let network_bus = bus.clone();
     let network_handle = handle.clone();
-    let (network,rpc_rx) = Arbiter::new()
-        .exec(move || -> (NetworkAsyncService,futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>){
+    let (network, rpc_rx) = Arbiter::new()
+        .exec(move || -> (NetworkAsyncService, futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>){
             NetworkActor::launch(
                 network_config,
                 network_bus,
@@ -214,7 +215,7 @@ where
     let head_block = storage
         .get_block(*startup_info.get_master())?
         .expect("Head block must exist.");
-
+    let _block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone())?;
     let chain_state_service = ChainStateActor::launch(
         config.clone(),
         bus.clone(),
@@ -224,7 +225,6 @@ where
 
     let chain_config = config.clone();
     let chain_storage = storage.clone();
-    let chain_network = network.clone();
     let chain_bus = bus.clone();
     let chain_txpool_service = txpool_service.clone();
 
@@ -234,7 +234,6 @@ where
                 chain_config,
                 startup_info,
                 chain_storage,
-                Some(chain_network),
                 chain_bus,
                 chain_txpool_service,
             )

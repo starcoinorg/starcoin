@@ -37,7 +37,6 @@ async fn gen_master_chain(
         node_config.clone(),
         startup_info.clone(),
         storage.clone(),
-        None,
         bus.clone(),
         txpool_service,
     )

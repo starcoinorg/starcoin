@@ -20,7 +20,7 @@ pub use helper::get_unix_ts;
 
 pub use net::{build_network_service, SNetworkService};
 pub use network::NetworkAsyncService;
-pub use network_p2p::PeerId;
+use network_p2p::PeerId;
 
 use anyhow::*;
 use parity_codec::{Decode, Encode};

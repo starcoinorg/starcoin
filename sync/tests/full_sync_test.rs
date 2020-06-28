@@ -12,6 +12,7 @@ use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{MinerActor, MinerClientActor};
 use network_api::NetworkService;
+use starcoin_block_relayer::BlockRelayer;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
@@ -22,7 +23,6 @@ use std::{sync::Arc, time::Duration};
 use traits::ChainAsyncService;
 use txpool::{TxPool, TxPoolService};
 use types::system_events::SyncBegin;
-
 #[test]
 fn test_network_actor_rpc() {
     ::logger::init_for_test();
@@ -74,7 +74,6 @@ fn test_network_actor_rpc() {
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
-            Some(network_1.clone()),
             bus_1.clone(),
             tx_pool_service.clone(),
         )
@@ -96,6 +95,8 @@ fn test_network_actor_rpc() {
         if let Err(e) = bus_1.send(Broadcast { msg: SyncBegin }).await {
             error!("error: {:?}", e);
         }
+
+        BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
 
         let miner_account = WalletAccount::random();
         // miner
@@ -172,7 +173,6 @@ fn test_network_actor_rpc() {
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
-            Some(network_2.clone()),
             bus_2.clone(),
             txpool_2.get_service(),
         )
@@ -190,6 +190,10 @@ fn test_network_actor_rpc() {
             rx_2,
         )
         .unwrap();
+
+        let _block_relayer =
+            BlockRelayer::new(bus_2.clone(), txpool_2.get_service(), network_2.clone()).unwrap();
+
         Delay::new(Duration::from_secs(1)).await;
         if let Err(e) = bus_2.clone().send(Broadcast { msg: SyncBegin }).await {
             error!("error: {:?}", e);
@@ -268,13 +272,12 @@ fn test_network_actor_rpc_2() {
             genesis_hash,
         );
         info!("addr_1 : {:?}", addr_1);
-
+        BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
         // chain
         let first_chain = ChainActor::<DevConsensus>::launch(
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
-            Some(network_1.clone()),
             bus_1.clone(),
             txpool_1.get_service(),
         )
@@ -343,13 +346,12 @@ fn test_network_actor_rpc_2() {
         let (network_2, addr_2, rx_2) =
             gen_network(node_config_2.clone(), bus_2.clone(), handle, genesis_hash);
         debug!("addr_2 : {:?}", addr_2);
-
+        BlockRelayer::new(bus_2.clone(), txpool_2.get_service(), network_2.clone()).unwrap();
         // chain
         let second_chain = ChainActor::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
-            Some(network_2.clone()),
             bus_2.clone(),
             txpool_2.get_service(),
         )
