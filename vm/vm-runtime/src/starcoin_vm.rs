@@ -486,7 +486,7 @@ impl StarcoinVM {
         let txn_sequence_number = txn_data.sequence_number();
         let txn_public_key = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = txn_data.gas_unit_price().get();
-        let txn_max_gas_units = txn_data.max_gas_amount().get();
+        let txn_max_gas_amount = txn_data.max_gas_amount().get();
         let txn_expiration_time = txn_data.expiration_time();
         self.move_vm
             .execute_function(
@@ -498,7 +498,7 @@ impl StarcoinVM {
                     Value::u64(txn_sequence_number),
                     Value::vector_u8(txn_public_key),
                     Value::u64(txn_gas_price),
-                    Value::u64(txn_max_gas_units),
+                    Value::u64(txn_max_gas_amount),
                     Value::u64(txn_expiration_time),
                 ],
                 txn_data.sender(),
@@ -519,8 +519,16 @@ impl StarcoinVM {
         let gas_currency_ty = DEFAULT_CURRENCY_TY.clone();
         let txn_sequence_number = txn_data.sequence_number();
         let txn_gas_price = txn_data.gas_unit_price().get();
-        let txn_max_gas_units = txn_data.max_gas_amount().get();
+        let txn_max_gas_amount = txn_data.max_gas_amount().get();
         let gas_remaining = cost_strategy.remaining_gas().get();
+        let data_size = data_store.get_size(txn_data.sender);
+        let cost_is_negative = data_size.is_negative();
+        let state_cost_amount = if cost_is_negative {
+            data_size.wrapping_abs() as u64 * txn_data.size_unit_price().get()
+        } else {
+            data_size as u64 * txn_data.size_unit_price().get()
+        };
+        // let state_cost_amount = positive_data_size ;
         self.move_vm.execute_function(
             &account_config::ACCOUNT_MODULE,
             &EPILOGUE_NAME,
@@ -529,8 +537,10 @@ impl StarcoinVM {
                 Value::transaction_argument_signer_reference(txn_data.sender),
                 Value::u64(txn_sequence_number),
                 Value::u64(txn_gas_price),
-                Value::u64(txn_max_gas_units),
+                Value::u64(txn_max_gas_amount),
                 Value::u64(gas_remaining),
+                Value::u64(state_cost_amount),
+                Value::bool(cost_is_negative),
             ],
             txn_data.sender(),
             data_store,

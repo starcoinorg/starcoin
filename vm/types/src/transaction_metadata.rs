@@ -17,6 +17,7 @@ pub struct TransactionMetadata {
     pub sequence_number: u64,
     pub max_gas_amount: GasUnits<GasCarrier>,
     pub gas_unit_price: GasPrice<GasCarrier>,
+    pub size_unit_price: GasPrice<GasCarrier>, //TODO first define state cost unit price
     pub transaction_size: AbstractMemorySize<GasCarrier>,
     pub expiration_time: Duration,
 }
@@ -32,6 +33,7 @@ impl TransactionMetadata {
             sequence_number: txn.sequence_number(),
             max_gas_amount: GasUnits::new(txn.max_gas_amount()),
             gas_unit_price: GasPrice::new(txn.gas_unit_price()),
+            size_unit_price: GasPrice::new(1u64),
             transaction_size: AbstractMemorySize::new(txn.raw_txn_bytes_len() as u64),
             expiration_time: txn.expiration_time(),
         }
@@ -43,6 +45,10 @@ impl TransactionMetadata {
 
     pub fn gas_unit_price(&self) -> GasPrice<GasCarrier> {
         self.gas_unit_price
+    }
+
+    pub fn size_unit_price(&self) -> GasPrice<GasCarrier> {
+        self.size_unit_price
     }
 
     pub fn sender(&self) -> AccountAddress {
@@ -77,6 +83,7 @@ impl Default for TransactionMetadata {
             sequence_number: 0,
             max_gas_amount: GasUnits::new(100_000_000),
             gas_unit_price: GasPrice::new(0),
+            size_unit_price: GasPrice::new(0),
             transaction_size: AbstractMemorySize::new(0),
             expiration_time: Duration::new(0, 0),
         }

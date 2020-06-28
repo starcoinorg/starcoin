@@ -12,6 +12,7 @@ module Account {
     use 0x1::Signer;
     use 0x1::Timestamp;
     use 0x1::Option::{Self, Option};
+    use 0x1::SignedInteger64::{Self, SignedInteger64};
 
     // Every account has a Account::Account resource
     resource struct Account {
@@ -518,7 +519,9 @@ module Account {
         txn_sequence_number: u64,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
-        gas_units_remaining: u64
+        gas_units_remaining: u64,
+        state_cost_amount: u64,
+        cost_is_negative: bool
     ) acquires Account, Balance {
         // Load the transaction sender's account and balance resources
         let sender_account = borrow_global_mut<Account>(Signer::address_of(account));
@@ -530,6 +533,12 @@ module Account {
             balance_for(sender_balance) >= transaction_fee_amount,
             6
         );
+
+        let cost = SignedInteger64::create_from_raw_value(state_cost_amount, cost_is_negative);
+        Transaction::assert(
+            SignedInteger64::get_value(cost) >= 0, 7
+         );
+
         // Bump the sequence number
         sender_account.sequence_number = txn_sequence_number + 1;
 
