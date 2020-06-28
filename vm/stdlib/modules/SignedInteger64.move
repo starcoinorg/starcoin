@@ -35,15 +35,15 @@ module SignedInteger64 {
     }
     public fun add_u64(num: u64, addend: SignedInteger64): SignedInteger64 {
         if (addend.is_negative) {
-           if (num > minus.value)  {
-               let result = num - minus.value;
+           if (num > addend.value)  {
+               let result = num - addend.value;
                SignedInteger64 { value: (result as u64), is_negative: false }
            }else {
-               let result = minus.value - num;
+               let result = addend.value - num;
                SignedInteger64 { value: (result as u64), is_negative: true }
            }
         } else {
-             let result = num + minus.value;
+             let result = num + addend.value;
              SignedInteger64 { value: (result as u64), is_negative: false }
         }
     }

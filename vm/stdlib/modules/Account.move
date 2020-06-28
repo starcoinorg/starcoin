@@ -12,7 +12,7 @@ module Account {
     use 0x1::Signer;
     use 0x1::Timestamp;
     use 0x1::Option::{Self, Option};
-    use 0x1::SignedInteger64::{Self, SignedInteger64};
+    use 0x1::SignedInteger64::{Self};
 
     // Every account has a Account::Account resource
     resource struct Account {
@@ -535,7 +535,7 @@ module Account {
         );
 
         let cost = SignedInteger64::create_from_raw_value(state_cost_amount, cost_is_negative);
-        Transaction::assert(
+        assert(
             SignedInteger64::get_value(cost) >= 0, 7
          );
 
