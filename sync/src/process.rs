@@ -1,5 +1,6 @@
 use crate::helper::{
-    do_accumulator_node, do_get_body_by_hash, do_get_headers, do_get_info_by_hash, do_state_node,
+    do_accumulator_node, do_get_body_by_hash, do_get_headers, do_get_info_by_hash, do_get_txn_info,
+    do_state_node,
 };
 use crate::txn_sync::GetTxnsHandler;
 use actix::prelude::*;
@@ -20,7 +21,10 @@ use std::sync::Arc;
 use traits::ChainAsyncService;
 use traits::Consensus;
 use txpool::TxPoolService;
-use types::block::{BlockHeader, BlockInfo};
+use types::{
+    block::{BlockHeader, BlockInfo},
+    transaction::TransactionInfo,
+};
 
 pub struct ProcessActor<C>
 where
@@ -152,6 +156,14 @@ where
                             warn!("handle get txn fail, error: {:?}", e);
                         }
                     }
+                    SyncRpcRequest::GetTxnInfo(txn_info_hash) => {
+                        let txn_info =
+                            Processor::handle_get_txn_info_msg(processor.clone(), txn_info_hash)
+                                .await;
+                        if let Err(e) = do_get_txn_info(responder, txn_info).await {
+                            error!("do_get_headers request failed : {:?}", e);
+                        }
+                    }
                 }
             });
         }
@@ -254,6 +266,17 @@ where
             }
         }
         headers
+    }
+
+    pub async fn handle_get_txn_info_msg(
+        processor: Arc<Processor<C>>,
+        txn_info_hash: HashValue,
+    ) -> Option<TransactionInfo> {
+        if let Ok(txn_info) = processor.storage.get_transaction_info(txn_info_hash) {
+            txn_info
+        } else {
+            None
+        }
     }
 
     pub async fn handle_get_body_by_hash_msg(
