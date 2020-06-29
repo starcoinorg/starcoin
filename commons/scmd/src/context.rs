@@ -27,7 +27,7 @@ pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
         .history_ignore_space(true)
         .completion_type(CompletionType::List)
         .auto_add_history(true)
-        .edit_mode(EditMode::Vi)
+        .edit_mode(EditMode::Emacs)
         .color_mode(ColorMode::Enabled)
         .build()
 });
