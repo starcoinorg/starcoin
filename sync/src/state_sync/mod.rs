@@ -1,6 +1,8 @@
 use crate::block_sync::BlockSyncTaskRef;
 use crate::download::DownloadActor;
-use crate::helper::{get_accumulator_node_by_node_hash, get_state_node_by_node_hash, get_txn_info};
+use crate::helper::{
+    get_accumulator_node_by_node_hash, get_state_node_by_node_hash, get_txn_infos,
+};
 use crate::sync_metrics::{LABEL_ACCUMULATOR, LABEL_STATE, LABEL_TXN_INFO, SYNC_METRICS};
 use crate::sync_task::{
     SyncTaskAction, SyncTaskRequest, SyncTaskResponse, SyncTaskState, SyncTaskType,
@@ -33,29 +35,23 @@ use types::{
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
-struct TxnInfoEvent;
+struct TxnInfoEvent(Option<HashValue>);
 
 struct Roots {
     state: HashValue,
-    txn_accumulator: HashValue,
     block_accumulator: HashValue,
 }
 
 impl Roots {
-    pub fn new(state: HashValue, txn_accumulator: HashValue, block_accumulator: HashValue) -> Self {
+    pub fn new(state: HashValue, block_accumulator: HashValue) -> Self {
         Roots {
             state,
-            txn_accumulator,
             block_accumulator,
         }
     }
 
     fn state_root(&self) -> &HashValue {
         &self.state
-    }
-
-    fn txn_accumulator_root(&self) -> &HashValue {
-        &self.txn_accumulator
     }
 
     fn block_accumulator_root(&self) -> &HashValue {
@@ -68,7 +64,6 @@ async fn sync_accumulator_node<C>(
     peer_id: PeerId,
     network_service: NetworkAsyncService,
     address: Addr<StateSyncTaskActor<C>>,
-    accumulator_type: AccumulatorStoreType,
 ) where
     C: Consensus + Sync + Send + 'static + Clone,
 {
@@ -80,7 +75,7 @@ async fn sync_accumulator_node<C>(
         &network_service,
         peer_id.clone(),
         node_key,
-        accumulator_type.clone(),
+        AccumulatorStoreType::Block,
     )
     .await
     {
@@ -119,7 +114,6 @@ async fn sync_accumulator_node<C>(
         peer_id,
         node_key,
         accumulator_node,
-        accumulator_type,
     )) {
         error!("Send accumulator StateSyncTaskEvent failed : {:?}", err);
     };
@@ -177,7 +171,7 @@ async fn sync_state_node<C>(
 }
 
 async fn sync_txn_info<C>(
-    txn_info_hash: HashValue,
+    block_id: HashValue,
     peer_id: PeerId,
     network_service: NetworkAsyncService,
     address: Addr<StateSyncTaskActor<C>>,
@@ -188,33 +182,13 @@ async fn sync_txn_info<C>(
         .sync_done_time
         .with_label_values(&[LABEL_TXN_INFO])
         .start_timer();
-    let txn_info = match get_txn_info(&network_service, peer_id.clone(), txn_info_hash).await {
-        Ok(Some(info)) => {
-            if txn_info_hash == info.crypto_hash() {
-                SYNC_METRICS
-                    .sync_succ_count
-                    .with_label_values(&[LABEL_TXN_INFO])
-                    .inc();
-                Some(info)
-            } else {
-                SYNC_METRICS
-                    .sync_verify_fail_count
-                    .with_label_values(&[LABEL_TXN_INFO])
-                    .inc();
-                warn!(
-                    "txn info hash miss match {} :{:?}",
-                    txn_info_hash,
-                    info.crypto_hash()
-                );
-                None
-            }
-        }
-        Ok(None) => {
+    let txn_infos = match get_txn_infos(&network_service, peer_id.clone(), block_id).await {
+        Ok(infos) => {
             SYNC_METRICS
-                .sync_fail_count
+                .sync_succ_count
                 .with_label_values(&[LABEL_TXN_INFO])
                 .inc();
-            None
+            infos
         }
         Err(e) => {
             SYNC_METRICS
@@ -228,9 +202,7 @@ async fn sync_txn_info<C>(
     state_timer.observe_duration();
 
     if let Err(err) = address.try_send(StateSyncTaskEvent::new_txn_info(
-        peer_id,
-        txn_info_hash,
-        txn_info,
+        peer_id, block_id, txn_infos,
     )) {
         error!("Send txn info StateSyncTaskEvent failed : {:?}", err);
     };
@@ -261,17 +233,11 @@ impl<C> StateSyncReset for StateSyncTaskRef<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    async fn reset(
-        &self,
-        state_root: HashValue,
-        txn_accumulator_root: HashValue,
-        block_accumulator_root: HashValue,
-    ) {
+    async fn reset(&self, state_root: HashValue, block_accumulator_root: HashValue) {
         if let Err(e) = self
             .address
             .send(StateSyncEvent::RESET(ResetRoots {
                 state_root,
-                txn_accumulator_root,
                 block_accumulator_root,
             }))
             .await
@@ -284,7 +250,6 @@ where
 #[derive(Debug, Clone, PartialEq)]
 enum TaskType {
     STATE,
-    TxnAccumulator,
     BlockAccumulator,
     TxnInfo,
 }
@@ -293,10 +258,10 @@ enum TaskType {
 #[rtype(result = "Result<()>")]
 struct StateSyncTaskEvent {
     peer_id: PeerId,
-    node_key: HashValue,
+    key: HashValue,
     state_node: Option<StateNode>,
     accumulator_node: Option<AccumulatorNode>,
-    txn_info: Option<TransactionInfo>,
+    txn_infos: Option<Vec<TransactionInfo>>,
     task_type: TaskType,
 }
 
@@ -304,10 +269,10 @@ impl StateSyncTaskEvent {
     pub fn new_state(peer_id: PeerId, node_key: HashValue, state_node: Option<StateNode>) -> Self {
         StateSyncTaskEvent {
             peer_id,
-            node_key,
+            key: node_key,
             state_node,
             accumulator_node: None,
-            txn_info: None,
+            txn_infos: None,
             task_type: TaskType::STATE,
         }
     }
@@ -316,32 +281,28 @@ impl StateSyncTaskEvent {
         peer_id: PeerId,
         node_key: HashValue,
         accumulator_node: Option<AccumulatorNode>,
-        accumulator_type: AccumulatorStoreType,
     ) -> Self {
         StateSyncTaskEvent {
             peer_id,
-            node_key,
+            key: node_key,
             state_node: None,
             accumulator_node,
-            txn_info: None,
-            task_type: match accumulator_type {
-                AccumulatorStoreType::Block => TaskType::BlockAccumulator,
-                AccumulatorStoreType::Transaction => TaskType::TxnAccumulator,
-            },
+            txn_infos: None,
+            task_type: TaskType::BlockAccumulator,
         }
     }
 
     pub fn new_txn_info(
         peer_id: PeerId,
-        node_key: HashValue,
-        txn_info: Option<TransactionInfo>,
+        block_id: HashValue,
+        txn_infos: Option<Vec<TransactionInfo>>,
     ) -> Self {
         StateSyncTaskEvent {
             peer_id,
-            node_key,
+            key: block_id,
             state_node: None,
             accumulator_node: None,
-            txn_info,
+            txn_infos,
             task_type: TaskType::TxnInfo,
         }
     }
@@ -356,12 +317,12 @@ where
     storage: Arc<dyn Store>,
     network_service: NetworkAsyncService,
     state_sync_task: StateSyncTask<(HashValue, bool)>,
-    txn_accumulator_sync_task: StateSyncTask<HashValue>,
     txn_info_sync_task: StateSyncTask<HashValue>,
     block_accumulator_sync_task: StateSyncTask<HashValue>,
     block_sync_address: BlockSyncTaskRef<C>,
     state: SyncTaskState,
     download_address: Addr<DownloadActor<C>>,
+    total_txn_info_task: AtomicU64,
 }
 
 pub struct StateSyncTask<T> {
@@ -428,17 +389,15 @@ where
 {
     pub fn launch(
         self_peer_id: PeerId,
-        root: (HashValue, HashValue, HashValue),
+        root: (HashValue, HashValue),
         storage: Arc<dyn Store>,
         network_service: NetworkAsyncService,
         block_sync_address: BlockSyncTaskRef<C>,
         download_address: Addr<DownloadActor<C>>,
     ) -> StateSyncTaskRef<C> {
-        let roots = Roots::new(root.0, root.1, root.2);
+        let roots = Roots::new(root.0, root.1);
         let mut state_sync_task = StateSyncTask::new();
         state_sync_task.push_back((*roots.state_root(), true));
-        let mut txn_accumulator_sync_task = StateSyncTask::new();
-        txn_accumulator_sync_task.push_back(*roots.txn_accumulator_root());
         let mut block_accumulator_sync_task = StateSyncTask::new();
         block_accumulator_sync_task.push_back(*roots.block_accumulator_root());
         let address = StateSyncTaskActor::create(move |_ctx| Self {
@@ -447,12 +406,12 @@ where
             storage,
             network_service,
             state_sync_task,
-            txn_accumulator_sync_task,
             txn_info_sync_task: StateSyncTask::new(),
             block_accumulator_sync_task,
             block_sync_address,
             state: SyncTaskState::Ready,
             download_address,
+            total_txn_info_task: AtomicU64::new(0),
         });
         StateSyncTaskRef { address }
     }
@@ -461,18 +420,13 @@ where
         if !self.state.is_finish() {
             info!(
                 "state sync task info : {:?},\
-             txn accumulator sync task info : {:?},\
              block accumulator sync task info : {:?},\
              txn info sync task info : {:?}.",
                 self.state_sync_task.task_info(),
-                self.txn_accumulator_sync_task.task_info(),
                 self.block_accumulator_sync_task.task_info(),
                 self.txn_info_sync_task.task_info(),
             );
-            if self.state_sync_task.is_empty()
-                && self.accumulator_sync_finish()
-                && self.txn_info_sync_task.is_empty()
-            {
+            if self.state_sync_task.is_empty() && self.accumulator_sync_finish() {
                 info!("State sync task finish.");
                 self.state = SyncTaskState::Finish;
             }
@@ -482,7 +436,7 @@ where
     }
 
     fn accumulator_sync_finish(&self) -> bool {
-        self.txn_accumulator_sync_task.is_empty() && self.block_accumulator_sync_task.is_empty()
+        self.block_accumulator_sync_task.is_empty() && self.txn_info_sync_task.is_empty()
     }
 
     fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
@@ -537,7 +491,7 @@ where
         if let Some((state_node_hash, is_global)) = self.state_sync_task.get(&task_event.peer_id) {
             let is_global = *is_global;
             //1. push back
-            let current_node_key = task_event.node_key;
+            let current_node_key = task_event.key;
             if state_node_hash != &current_node_key {
                 debug!(
                     "hash miss match {:} : {:?}",
@@ -592,31 +546,23 @@ where
         }
     }
 
-    fn exe_accumulator_sync_task(
-        &mut self,
-        address: Addr<StateSyncTaskActor<C>>,
-        accumulator_type: AccumulatorStoreType,
-    ) {
-        let accumulator_sync_task = match accumulator_type {
-            AccumulatorStoreType::Transaction => &mut self.txn_accumulator_sync_task,
-            AccumulatorStoreType::Block => &mut self.block_accumulator_sync_task,
-        };
-        let value = accumulator_sync_task.pop_front();
+    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
+        let value = self.block_accumulator_sync_task.pop_front();
         if let Some(node_key) = value {
             SYNC_METRICS
                 .sync_total_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
             if let Ok(Some(accumulator_node)) =
-                self.storage.get_node(accumulator_type.clone(), node_key)
+                self.storage.get_node(AccumulatorStoreType::Block, node_key)
             {
                 debug!("find accumulator_node {:?} in db.", node_key);
-                accumulator_sync_task.insert(self.self_peer_id.clone(), node_key);
+                self.block_accumulator_sync_task
+                    .insert(self.self_peer_id.clone(), node_key);
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_accumulator(
                     self.self_peer_id.clone(),
                     node_key,
                     Some(accumulator_node),
-                    accumulator_type,
                 )) {
                     error!("Send accumulator StateSyncTaskEvent failed : {:?}", err);
                 };
@@ -628,7 +574,8 @@ where
                 );
                 if let Some(best_peer) = best_peer_info {
                     if self.self_peer_id != best_peer.get_peer_id() {
-                        accumulator_sync_task.insert(best_peer.get_peer_id(), node_key);
+                        self.block_accumulator_sync_task
+                            .insert(best_peer.get_peer_id(), node_key);
                         let network_service = self.network_service.clone();
                         Arbiter::spawn(async move {
                             sync_accumulator_node(
@@ -636,7 +583,6 @@ where
                                 best_peer.get_peer_id(),
                                 network_service,
                                 address,
-                                accumulator_type,
                             )
                             .await;
                         });
@@ -654,13 +600,11 @@ where
         task_event: StateSyncTaskEvent,
         address: Addr<StateSyncTaskActor<C>>,
     ) {
-        let accumulator_sync_task = match task_event.task_type {
-            TaskType::TxnAccumulator => &mut self.txn_accumulator_sync_task,
-            _ => &mut self.block_accumulator_sync_task,
-        };
-        if let Some(accumulator_node_hash) = accumulator_sync_task.get(&task_event.peer_id) {
+        if let Some(accumulator_node_hash) =
+            self.block_accumulator_sync_task.get(&task_event.peer_id)
+        {
             //1. push back
-            let current_node_key = task_event.node_key;
+            let current_node_key = task_event.key;
             if accumulator_node_hash != &current_node_key {
                 warn!(
                     "hash miss match {:} : {:?}",
@@ -668,33 +612,29 @@ where
                 );
                 return;
             }
-            let _ = accumulator_sync_task.remove(&task_event.peer_id);
+            let _ = self.block_accumulator_sync_task.remove(&task_event.peer_id);
             if let Some(accumulator_node) = task_event.accumulator_node {
-                if let Err(e) = self.storage.save_node(
-                    match task_event.task_type {
-                        TaskType::TxnAccumulator => AccumulatorStoreType::Transaction,
-                        _ => AccumulatorStoreType::Block,
-                    },
-                    accumulator_node.clone(),
-                ) {
+                if let Err(e) = self
+                    .storage
+                    .save_node(AccumulatorStoreType::Block, accumulator_node.clone())
+                {
                     debug!("{:?}", e);
-                    accumulator_sync_task.push_back(current_node_key);
+                    self.block_accumulator_sync_task.push_back(current_node_key);
                 } else {
                     debug!("receive accumulator_node: {:?}", accumulator_node);
-                    accumulator_sync_task.do_one_task();
+                    self.block_accumulator_sync_task.do_one_task();
                     match accumulator_node {
                         AccumulatorNode::Leaf(leaf) => {
-                            if let TaskType::TxnAccumulator = task_event.task_type {
-                                self.txn_info_sync_task.push_back(leaf.value());
-                                address.do_send(TxnInfoEvent {});
-                            }
+                            self.txn_info_sync_task.push_back(leaf.value());
+                            self.total_txn_info_task.fetch_add(1, Ordering::Relaxed);
+                            address.do_send(TxnInfoEvent(None));
                         }
                         AccumulatorNode::Internal(n) => {
                             if n.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
-                                accumulator_sync_task.push_back(n.left());
+                                self.block_accumulator_sync_task.push_back(n.left());
                             }
                             if n.right() != *ACCUMULATOR_PLACEHOLDER_HASH {
-                                accumulator_sync_task.push_back(n.right());
+                                self.block_accumulator_sync_task.push_back(n.right());
                             }
                         }
                         _ => {
@@ -703,7 +643,7 @@ where
                     }
                 }
             } else {
-                accumulator_sync_task.push_back(current_node_key);
+                self.block_accumulator_sync_task.push_back(current_node_key);
             }
         } else {
             debug!("discard state event : {:?}", task_event);
@@ -712,19 +652,19 @@ where
 
     fn exe_txn_info_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
         let value = self.txn_info_sync_task.pop_front();
-        if let Some(txn_info_hash) = value {
+        if let Some(block_id) = value {
             SYNC_METRICS
                 .sync_total_count
                 .with_label_values(&[LABEL_TXN_INFO])
                 .inc();
-            if let Ok(Some(txn_info)) = self.storage.get_transaction_info(txn_info_hash) {
-                debug!("find txn info {:?} in db.", txn_info_hash);
+            if let Ok(txn_infos) = self.storage.get_block_transaction_infos(block_id) {
+                debug!("find txn info {:?} in db.", block_id);
                 self.txn_info_sync_task
-                    .insert(self.self_peer_id.clone(), txn_info_hash);
+                    .insert(self.self_peer_id.clone(), block_id);
                 if let Err(err) = address.try_send(StateSyncTaskEvent::new_txn_info(
                     self.self_peer_id.clone(),
-                    txn_info_hash,
-                    Some(txn_info),
+                    block_id,
+                    Some(txn_infos),
                 )) {
                     error!("Send txn info StateSyncTaskEvent failed : {:?}", err);
                 };
@@ -732,7 +672,7 @@ where
                 let best_peer_info = get_best_peer_info(self.network_service.clone());
                 debug!(
                     "sync txn info {:?} from peer {:?}.",
-                    txn_info_hash, best_peer_info
+                    block_id, best_peer_info
                 );
                 if let Some(best_peer) = best_peer_info {
                     if self.self_peer_id == best_peer.get_peer_id() {
@@ -740,15 +680,10 @@ where
                     }
                     let network_service = self.network_service.clone();
                     self.txn_info_sync_task
-                        .insert(best_peer.get_peer_id(), txn_info_hash);
+                        .insert(best_peer.get_peer_id(), block_id);
                     Arbiter::spawn(async move {
-                        sync_txn_info(
-                            txn_info_hash,
-                            best_peer.get_peer_id(),
-                            network_service,
-                            address,
-                        )
-                        .await;
+                        sync_txn_info(block_id, best_peer.get_peer_id(), network_service, address)
+                            .await;
                     });
                 } else {
                     warn!("{:?}", "best peer is none, state sync may be failed.");
@@ -758,55 +693,63 @@ where
         }
     }
 
-    fn handle_txn_info_sync(&mut self, task_event: StateSyncTaskEvent) {
-        if let Some(txn_info_hash) = self.txn_info_sync_task.get(&task_event.peer_id) {
-            //1. push back
-            let current_node_key = task_event.node_key;
-            if txn_info_hash != &current_node_key {
-                debug!(
-                    "hash miss match {:} : {:?}",
-                    txn_info_hash, current_node_key
-                );
-                return;
-            }
-            let _ = self.txn_info_sync_task.remove(&task_event.peer_id);
-            if let Some(txn_info) = task_event.txn_info {
-                let mut infos = Vec::new();
-                infos.push(txn_info);
-                if let Err(e) = self.storage.save_transaction_infos(infos) {
-                    debug!("{:?}, retry {:?}.", e, current_node_key);
-                    self.txn_info_sync_task.push_back(current_node_key);
-                } else {
-                    self.txn_info_sync_task.do_one_task();
-                }
+    fn handle_txn_info_sync(
+        &mut self,
+        task_event: StateSyncTaskEvent,
+        address: Addr<StateSyncTaskActor<C>>,
+    ) {
+        // if let Some(block_id) = self.txn_info_sync_task.get(&task_event.peer_id) {
+        //1. push back
+        let current_block_id = task_event.key;
+        // if block_id != &current_block_id {
+        //     debug!("hash miss match {:} : {:?}", block_id, current_block_id);
+        //     return;
+        // }
+        let _ = self.txn_info_sync_task.remove(&task_event.peer_id);
+        if let Some(txn_infos) = task_event.txn_infos {
+            if let Err(e) = self.save_txn_infos(current_block_id, txn_infos) {
+                debug!("{:?}, retry {:?}.", e, current_block_id);
+                self.txn_info_sync_task.push_back(current_block_id);
+                address.do_send(TxnInfoEvent(None));
             } else {
-                self.txn_info_sync_task.push_back(current_node_key);
+                self.txn_info_sync_task.do_one_task();
             }
         } else {
-            debug!("discard state event : {:?}", task_event);
+            self.txn_info_sync_task.push_back(current_block_id);
+            address.do_send(TxnInfoEvent(None));
         }
+        // } else {
+        //     info!("discard state event : {:?}", task_event);
+        // }
+    }
+
+    pub fn save_txn_infos(
+        &self,
+        block_id: HashValue,
+        txn_infos: Vec<TransactionInfo>,
+    ) -> Result<()> {
+        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.crypto_hash()).collect();
+        self.storage
+            .save_block_txn_info_ids(block_id, txn_info_ids)?;
+        self.storage.save_transaction_infos(txn_infos)
     }
 
     pub fn reset(
         &mut self,
         state_root: &HashValue,
-        txn_accumulator_root: &HashValue,
         block_accumulator_root: &HashValue,
         address: Addr<StateSyncTaskActor<C>>,
     ) {
-        debug!("reset state sync task with state root : {:?}, txn accumulator root : {:?}, block accumulator root : {:?}.",
-               state_root, txn_accumulator_root, block_accumulator_root);
-        self.roots = Roots::new(*state_root, *txn_accumulator_root, *block_accumulator_root);
+        debug!(
+            "reset state sync task with state root : {:?}, block accumulator root : {:?}.",
+            state_root, block_accumulator_root
+        );
+        self.roots = Roots::new(*state_root, *block_accumulator_root);
 
         let old_state_is_empty = self.state_sync_task.is_empty();
         self.state_sync_task.clear();
         self.state_sync_task
             .push_back((*self.roots.state_root(), true));
-
-        let old_txn_accumulator_is_empty = self.txn_accumulator_sync_task.is_empty();
-        self.txn_accumulator_sync_task.clear();
-        self.txn_accumulator_sync_task
-            .push_back(*self.roots.txn_accumulator_root());
 
         let old_block_accumulator_is_empty = self.block_accumulator_sync_task.is_empty();
         self.block_accumulator_sync_task.clear();
@@ -818,11 +761,8 @@ where
         if old_state_is_empty {
             self.exe_state_sync_task(address.clone());
         }
-        if old_txn_accumulator_is_empty {
-            self.exe_accumulator_sync_task(address.clone(), AccumulatorStoreType::Transaction);
-        }
         if old_block_accumulator_is_empty {
-            self.exe_accumulator_sync_task(address, AccumulatorStoreType::Block);
+            self.exe_accumulator_sync_task(address);
         }
     }
 
@@ -831,8 +771,7 @@ where
             debug!("activation state sync task.");
             self.state = SyncTaskState::Syncing;
             self.exe_state_sync_task(address.clone());
-            self.exe_accumulator_sync_task(address.clone(), AccumulatorStoreType::Transaction);
-            self.exe_accumulator_sync_task(address, AccumulatorStoreType::Block);
+            self.exe_accumulator_sync_task(address);
         }
     }
 }
@@ -845,8 +784,7 @@ where
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.exe_state_sync_task(ctx.address());
-        self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Transaction);
-        self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Block);
+        self.exe_accumulator_sync_task(ctx.address());
     }
 }
 
@@ -856,7 +794,11 @@ where
 {
     type Result = Result<()>;
 
-    fn handle(&mut self, _event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
+        if let Some(block_id) = event.0 {
+            self.txn_info_sync_task.push_back(block_id);
+            self.total_txn_info_task.fetch_add(1, Ordering::Relaxed);
+        }
         self.exe_txn_info_sync_task(ctx.address());
         Ok(())
     }
@@ -872,8 +814,8 @@ where
         let task_type = task_event.task_type.clone();
         match task_type.clone() {
             TaskType::STATE => self.handle_state_sync(task_event),
-            TaskType::TxnInfo => self.handle_txn_info_sync(task_event),
-            _ => self.handle_accumulator_sync(task_event, ctx.address()),
+            TaskType::TxnInfo => self.handle_txn_info_sync(task_event, ctx.address()),
+            TaskType::BlockAccumulator => self.handle_accumulator_sync(task_event, ctx.address()),
         }
 
         if self.accumulator_sync_finish() {
@@ -883,15 +825,12 @@ where
         if !self.do_finish() {
             match task_type {
                 TaskType::STATE => self.exe_state_sync_task(ctx.address()),
-                TaskType::TxnAccumulator => {
-                    self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Transaction)
-                }
-                TaskType::BlockAccumulator => {
-                    self.exe_accumulator_sync_task(ctx.address(), AccumulatorStoreType::Block)
-                }
-                TaskType::TxnInfo => self.exe_txn_info_sync_task(ctx.address()),
+                TaskType::BlockAccumulator => self.exe_accumulator_sync_task(ctx.address()),
+                TaskType::TxnInfo => {}
             }
-        } else {
+        } else if self.total_txn_info_task.load(Ordering::Relaxed)
+            == self.txn_info_sync_task.done_tasks.load(Ordering::Relaxed)
+        {
             self.download_address.do_send(SyncTaskType::STATE);
             ctx.stop();
         }
@@ -908,7 +847,6 @@ enum StateSyncEvent {
 #[derive(Debug, Clone)]
 struct ResetRoots {
     state_root: HashValue,
-    txn_accumulator_root: HashValue,
     block_accumulator_root: HashValue,
 }
 
@@ -924,7 +862,6 @@ where
             StateSyncEvent::RESET(roots) => {
                 self.reset(
                     &roots.state_root,
-                    &roots.txn_accumulator_root,
                     &roots.block_accumulator_root,
                     ctx.address(),
                 );

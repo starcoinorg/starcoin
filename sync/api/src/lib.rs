@@ -48,7 +48,7 @@ pub enum SyncRpcRequest {
     GetStateNodeByNodeHash(HashValue),
     GetAccumulatorNodeByNodeHash(HashValue, AccumulatorStoreType),
     GetTxns(GetTxns),
-    GetTxnInfo(HashValue),
+    GetTxnInfos(HashValue),
 }
 
 #[derive(Message, Clone, Serialize, Deserialize)]
@@ -60,7 +60,7 @@ pub enum SyncRpcResponse {
     StateNode(StateNode),
     AccumulatorNode(AccumulatorNode),
     GetTxns(TransactionsData),
-    GetTxnInfo(Option<TransactionInfo>),
+    GetTxnInfos(Option<Vec<TransactionInfo>>),
 }
 
 #[derive(Debug, Message, Clone, Serialize, Deserialize)]

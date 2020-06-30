@@ -23,7 +23,7 @@ use logger::prelude::*;
 use message::ChainRequest;
 use std::sync::Arc;
 use storage::Storage;
-use traits::{ChainAsyncService, ChainService, ConnectResult, Consensus};
+use traits::{ChainAsyncService, ChainService, ConnectBlockResult, Consensus};
 use txpool::TxPoolService;
 use types::{
     account_address::AccountAddress,
@@ -140,17 +140,12 @@ where
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(Box::new(
                 self.service.get_block_info_by_hash(hash)?,
             ))),
-            ChainRequest::ConnectBlock(block, mut block_info) => {
-                let conn_state = if block_info.is_none() {
-                    self.service.try_connect(*block)?
-                } else {
-                    self.service.try_connect_with_block_info(
-                        *block,
-                        *block_info
-                            .take()
-                            .ok_or_else(|| format_err!("{:?}", "block info can not be none."))?,
-                    )?
-                };
+            ChainRequest::ConnectBlock(block) => {
+                let conn_state = self.service.try_connect(*block)?;
+                Ok(ChainResponse::Conn(conn_state))
+            }
+            ChainRequest::ConnectBlockWithExe(block) => {
+                let conn_state = self.service.try_connect_without_execute(*block)?;
                 Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
@@ -229,10 +224,10 @@ impl<C> ChainAsyncService for ChainActorRef<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    async fn try_connect(self, block: Block) -> Result<ConnectResult<()>> {
+    async fn try_connect(self, block: Block) -> Result<ConnectBlockResult> {
         if let ChainResponse::Conn(conn_result) = self
             .address
-            .send(ChainRequest::ConnectBlock(Box::new(block), None))
+            .send(ChainRequest::ConnectBlock(Box::new(block)))
             .await
             .map_err(Into::<Error>::into)??
         {
@@ -242,17 +237,10 @@ where
         }
     }
 
-    async fn try_connect_with_block_info(
-        &mut self,
-        block: Block,
-        block_info: BlockInfo,
-    ) -> Result<ConnectResult<()>> {
+    async fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {
         if let ChainResponse::Conn(conn_result) = self
             .address
-            .send(ChainRequest::ConnectBlock(
-                Box::new(block),
-                Some(Box::new(block_info)),
-            ))
+            .send(ChainRequest::ConnectBlockWithExe(Box::new(block)))
             .await
             .map_err(Into::<Error>::into)??
         {

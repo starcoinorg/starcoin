@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ChainAsyncService, ConnectResult};
+use crate::{ChainAsyncService, ConnectBlockResult};
 use anyhow::{Error, Result};
 use crypto::HashValue;
 use types::{
@@ -17,15 +17,11 @@ pub struct MockChainService;
 
 #[async_trait::async_trait]
 impl ChainAsyncService for MockChainService {
-    async fn try_connect(self, _block: Block) -> Result<ConnectResult<()>> {
+    async fn try_connect(self, _block: Block) -> Result<ConnectBlockResult> {
         unimplemented!()
     }
 
-    async fn try_connect_with_block_info(
-        &mut self,
-        _block: Block,
-        _block_info: BlockInfo,
-    ) -> Result<ConnectResult<()>, Error> {
+    async fn try_connect_without_execute(&mut self, _block: Block) -> Result<ConnectBlockResult> {
         unimplemented!()
     }
 

@@ -24,7 +24,7 @@ use types::{
 const HEAD_CT: usize = 10;
 
 const GET_TXNS_STR: &str = "GetTxns";
-const GET_TXN_INFO_STR: &str = "GetTxnInfo";
+const GET_TXN_INFOS_STR: &str = "GetTxnInfos";
 const GET_BLOCK_HEADERS_BY_NUM_STR: &str = "GetBlockHeadersByNumber";
 const GET_BLOCK_HEADERS_STR: &str = "GetBlockHeaders";
 const GET_BLOCK_INFOS_STR: &str = "GetBlockInfos";
@@ -35,7 +35,7 @@ const GET_ACCUMULATOR_NODE_BY_NODE_HASH_STR: &str = "GetAccumulatorNodeByNodeHas
 pub fn sync_rpc_info() -> (&'static [u8], RpcInfo) {
     let mut paths = Vec::new();
     paths.push(GET_TXNS_STR.to_string());
-    paths.push(GET_TXN_INFO_STR.to_string());
+    paths.push(GET_TXN_INFOS_STR.to_string());
     paths.push(GET_BLOCK_HEADERS_BY_NUM_STR.to_string());
     paths.push(GET_BLOCK_HEADERS_STR.to_string());
     paths.push(GET_BLOCK_INFOS_STR.to_string());
@@ -80,17 +80,17 @@ pub async fn get_txns(
     }
 }
 
-pub async fn get_txn_info(
+pub async fn get_txn_infos(
     network: &NetworkAsyncService,
     peer_id: PeerId,
-    txn_info_hash: HashValue,
-) -> Result<Option<TransactionInfo>> {
-    let get_txn_info_req = SyncRpcRequest::GetTxnInfo(txn_info_hash);
-    if let SyncRpcResponse::GetTxnInfo(txn_info) =
-        do_request(&network, peer_id, GET_TXN_INFO_STR, get_txn_info_req).await?
+    block_id: HashValue,
+) -> Result<Option<Vec<TransactionInfo>>> {
+    let get_txn_infos_req = SyncRpcRequest::GetTxnInfos(block_id);
+    if let SyncRpcResponse::GetTxnInfos(txn_infos) =
+        do_request(&network, peer_id, GET_TXN_INFOS_STR, get_txn_infos_req).await?
     {
         //todo: Verify response
-        Ok(txn_info)
+        Ok(txn_infos)
     } else {
         Err(format_err!(
             "{:?}",
@@ -192,29 +192,18 @@ pub async fn get_body_by_hash(
 
 pub async fn get_info_by_hash(
     network: &NetworkAsyncService,
+    peer_id: PeerId,
     hashs: Vec<HashValue>,
 ) -> Result<Vec<BlockInfo>> {
-    if let Some(peer_info) = network.best_peer().await? {
-        let get_info_by_hash_req = SyncRpcRequest::GetBlockInfos(hashs);
-        if let SyncRpcResponse::BlockInfos(infos) = do_request(
-            &network,
-            peer_info.get_peer_id(),
-            GET_BLOCK_INFOS_STR,
-            get_info_by_hash_req,
-        )
-        .await?
-        {
-            Ok(infos)
-        } else {
-            Err(format_err!(
-                "{:?}",
-                "error SyncRpcResponse type when sync block info."
-            ))
-        }
+    let get_info_by_hash_req = SyncRpcRequest::GetBlockInfos(hashs);
+    if let SyncRpcResponse::BlockInfos(infos) =
+        do_request(&network, peer_id, GET_BLOCK_INFOS_STR, get_info_by_hash_req).await?
+    {
+        Ok(infos)
     } else {
         Err(format_err!(
             "{:?}",
-            "Can not get peer when sync block info."
+            "error SyncRpcResponse type when sync block info."
         ))
     }
 }
@@ -338,8 +327,8 @@ pub fn get_headers_msg_for_ancestor(
 
 pub async fn do_get_txn_info(
     responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
-    txn_info: Option<TransactionInfo>,
+    txn_infos: Option<Vec<TransactionInfo>>,
 ) -> Result<()> {
-    let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetTxnInfo(txn_info))?;
+    let resp = SyncRpcResponse::encode(&SyncRpcResponse::GetTxnInfos(txn_infos))?;
     do_response(responder, resp).await
 }

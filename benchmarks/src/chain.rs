@@ -110,7 +110,7 @@ impl ChainBencher {
                 DummyConsensus::create_block(self.config.clone(), &block_chain, block_template)
                     .unwrap();
             latest_id = Some(block.header().parent_hash());
-            self.chain.write().try_connect(block).unwrap().unwrap();
+            self.chain.write().try_connect(block).unwrap();
         }
     }
 

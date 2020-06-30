@@ -15,7 +15,7 @@ use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
 use starcoin_network_api::NetworkService;
 use starcoin_sync::Downloader;
 use starcoin_sync::{
-    helper::{get_body_by_hash, get_headers, get_headers_msg_for_common, get_info_by_hash},
+    helper::{get_body_by_hash, get_headers, get_headers_msg_for_common},
     ProcessActor,
 };
 use starcoin_txpool::{TxPool, TxPoolService};
@@ -113,13 +113,12 @@ impl SyncBencher {
                         let hashs: Vec<HashValue> =
                             headers.iter().map(|header| header.id()).collect();
                         let bodies = get_body_by_hash(&network, hashs.clone()).await?;
-                        let infos = get_info_by_hash(&network, hashs).await?;
                         info!(
                             "sync block number : {:?} from peer {:?}",
                             latest_number,
                             best_peer.get_peer_id()
                         );
-                        downloader.do_blocks(headers, bodies, infos).await;
+                        downloader.do_blocks(headers, bodies).await;
                     }
                 }
             }
@@ -246,7 +245,7 @@ async fn create_node(
             let block =
                 DummyConsensus::create_block(node_config.clone(), &block_chain, block_template)
                     .unwrap();
-            chain.clone().try_connect(block).await.unwrap().unwrap();
+            chain.clone().try_connect(block).await.unwrap();
         }
     }
     Ok((
