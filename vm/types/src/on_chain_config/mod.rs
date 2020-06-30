@@ -14,12 +14,14 @@ use anyhow::{format_err, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
+mod consensus;
 mod genesis_gas_schedule;
 mod registered_currencies;
 mod version;
 mod vm_config;
 
 pub use self::{
+    consensus::Consensus,
     genesis_gas_schedule::INITIAL_GAS_SCHEDULE,
     registered_currencies::RegisteredCurrencies,
     version::Version,
@@ -48,6 +50,7 @@ pub const ON_CHAIN_CONFIG_REGISTRY: &[ConfigID] = &[
     VMConfig::CONFIG_ID,
     Version::CONFIG_ID,
     RegisteredCurrencies::CONFIG_ID,
+    Consensus::CONFIG_ID,
 ];
 
 #[derive(Clone, Debug, PartialEq)]
