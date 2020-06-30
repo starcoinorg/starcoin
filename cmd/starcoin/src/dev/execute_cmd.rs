@@ -6,6 +6,10 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_move_compiler::shared::Address;
+use starcoin_move_compiler::{
+    command_line::parse_address, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
+};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -15,14 +19,16 @@ use starcoin_types::transaction::{
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::fs::OpenOptions;
 use std::io::Read;
+use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "execute")]
 pub struct ExecuteOpt {
-    #[structopt(name = "sender", short = "s", long = "sender")]
-    sender: Option<AccountAddress>,
+    #[structopt(short = "s", long, parse(try_from_str = parse_address))]
+    /// hex encoded string, like 0x1, 0x12
+    sender: Option<Address>,
 
     #[structopt(
     short = "t",
@@ -68,8 +74,13 @@ pub struct ExecuteOpt {
     )]
     blocking: bool,
 
-    #[structopt(name = "bytecode_file", help = "script bytecode file path")]
-    bytecode_file: String,
+    #[structopt(name = "move_file", parse(from_os_str))]
+    /// bytecode file or move script source file
+    move_file: PathBuf,
+
+    #[structopt(name = "dependency_path", long = "dep")]
+    /// "path of dependency used to build, only "
+    deps: Vec<String>,
 }
 
 pub struct ExecuteCommand;
@@ -89,27 +100,64 @@ impl CommandAction for ExecuteCommand {
         let sender = if let Some(sender) = ctx.opt().sender {
             sender
         } else {
-            ctx.state().default_account()?.address
+            Address::new(ctx.state().default_account()?.address.into())
         };
 
-        let bytecode_path = ctx.opt().bytecode_file.clone();
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(false)
-            .open(bytecode_path)?;
-        let mut bytecode = vec![];
-        file.read_to_end(&mut bytecode)?;
-        let _compiled_script = match starcoin_vm_types::file_format::CompiledScript::deserialize(
-            bytecode.as_slice(),
-        ) {
-            Err(e) => {
-                bail!("invalid bytecode file, cannot deserialize as script, {}", e);
-            }
-            Ok(s) => s,
-        };
+        let bytecode_path = ctx.opt().move_file.clone();
 
+        let ext = bytecode_path
+            .extension()
+            .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
+            .unwrap_or_else(|| "");
+        let bytecode = if ext == MOVE_EXTENSION {
+            let temp_dir = ctx.state().temp_dir();
+            let source_file_path = starcoin_move_compiler::process_source_tpl_file(
+                temp_dir,
+                bytecode_path.as_path(),
+                sender,
+            )?;
+            let mut deps = stdlib::stdlib_files();
+            // add extra deps
+            deps.append(&mut ctx.opt().deps.clone());
+
+            let targets = vec![source_file_path
+                .to_str()
+                .expect("path to str should success.")
+                .to_owned()];
+            let (file_texts, compile_units) =
+                starcoin_move_compiler::move_compile_no_report(&targets, &deps, Some(sender))?;
+            let mut compile_units = match compile_units {
+                Err(e) => {
+                    let err = starcoin_move_compiler::errors::report_errors_to_color_buffer(
+                        file_texts, e,
+                    );
+                    bail!(String::from_utf8(err).unwrap())
+                }
+                Ok(r) => r,
+            };
+            let compile_result = compile_units.pop().unwrap();
+            compile_result.serialize()
+        } else if ext == MOVE_COMPILED_EXTENSION {
+            let mut file = OpenOptions::new()
+                .read(true)
+                .write(false)
+                .open(bytecode_path)?;
+            let mut bytecode = vec![];
+            file.read_to_end(&mut bytecode)?;
+            let _compiled_script = match starcoin_vm_types::file_format::CompiledScript::deserialize(
+                bytecode.as_slice(),
+            ) {
+                Err(e) => {
+                    bail!("invalid bytecode file, cannot deserialize as script, {}", e);
+                }
+                Ok(s) => s,
+            };
+            bytecode
+        } else {
+            bail!("Only support *.move or *.mv file");
+        };
         let args = opt.args.clone();
-
+        let sender = AccountAddress::new(sender.to_u8());
         let client = ctx.state().client();
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
