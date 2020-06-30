@@ -80,7 +80,7 @@ pub struct ExecuteOpt {
     move_file: PathBuf,
 
     #[structopt(name = "dependency_path", long = "dep")]
-    /// "path of dependency used to build, only "
+    /// path of dependency used to build, only used when using move source file
     deps: Vec<String>,
 }
 
@@ -111,37 +111,19 @@ impl CommandAction for ExecuteCommand {
             .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
             .unwrap_or_else(|| "");
         let (bytecode, is_script) = if ext == MOVE_EXTENSION {
-            let temp_dir = ctx.state().temp_dir();
-            let source_file_path = starcoin_move_compiler::process_source_tpl_file(
-                temp_dir,
-                bytecode_path.as_path(),
-                sender,
-            )?;
             let mut deps = stdlib::stdlib_files();
             // add extra deps
             deps.append(&mut ctx.opt().deps.clone());
-
-            let targets = vec![source_file_path
-                .to_str()
-                .expect("path to str should success.")
-                .to_owned()];
-            let (file_texts, compile_units) =
-                starcoin_move_compiler::move_compile_no_report(&targets, &deps, Some(sender))?;
-            let mut compile_units = match compile_units {
-                Err(e) => {
-                    let err = starcoin_move_compiler::errors::report_errors_to_color_buffer(
-                        file_texts, e,
-                    );
-                    bail!(String::from_utf8(err).unwrap())
-                }
-                Ok(r) => r,
-            };
-            let compile_result = compile_units.pop().unwrap();
-            let is_script = match compile_result {
+            let compile_units = starcoin_move_compiler::compile_source_string(
+                std::fs::read_to_string(bytecode_path)?.as_str(),
+                &deps,
+                AccountAddress::new(sender.to_u8()),
+            )?;
+            let is_script = match compile_units {
                 CompiledUnit::Module { .. } => false,
                 CompiledUnit::Script { .. } => true,
             };
-            (compile_result.serialize(), is_script)
+            (compile_units.serialize(), is_script)
         } else if ext == MOVE_COMPILED_EXTENSION {
             let mut file = OpenOptions::new()
                 .read(true)

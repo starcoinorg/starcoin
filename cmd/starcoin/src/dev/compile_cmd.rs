@@ -7,6 +7,7 @@ use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::command_line::parse_address;
 use starcoin_move_compiler::shared::Address;
+use starcoin_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -60,34 +61,20 @@ impl CommandAction for CompileCommand {
         if ext != starcoin_move_compiler::MOVE_EXTENSION {
             bail!("Only support compile *.move file.")
         }
-        let temp_dir = ctx.state().temp_dir();
-        let source_file_path =
-            starcoin_move_compiler::process_source_tpl_file(temp_dir, source_file_path, sender)?;
         let mut deps = stdlib::stdlib_files();
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone());
-
-        let targets = vec![source_file_path
-            .to_str()
-            .expect("path to str should success.")
-            .to_owned()];
-        let (file_texts, compile_units) =
-            starcoin_move_compiler::move_compile_no_report(&targets, &deps, Some(sender))?;
-        let mut compile_units = match compile_units {
-            Err(e) => {
-                let err =
-                    starcoin_move_compiler::errors::report_errors_to_color_buffer(file_texts, e);
-                bail!(String::from_utf8(err).unwrap())
-            }
-            Ok(r) => r,
-        };
-        let compile_result = compile_units.pop().unwrap();
+        let compile_result = starcoin_move_compiler::compile_source_string(
+            std::fs::read_to_string(source_file_path)?.as_str(),
+            &deps,
+            AccountAddress::new(sender.to_u8()),
+        )?;
 
         let mut txn_path = ctx
             .opt()
             .out_dir
             .clone()
-            .unwrap_or_else(|| temp_dir.to_path_buf());
+            .unwrap_or_else(|| ctx.state().temp_dir().to_path_buf());
 
         txn_path.push(source_file_path.file_name().unwrap());
         txn_path.set_extension(stdlib::STAGED_EXTENSION);
