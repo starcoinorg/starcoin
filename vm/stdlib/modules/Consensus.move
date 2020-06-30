@@ -3,10 +3,9 @@ address 0x1 {
 module Consensus {
     use 0x1::Config;
     use 0x1::Signer;
-    use 0x1::FixedPoint32;
 
     struct Consensus {
-        uncle_rate_target: FixedPoint32::FixedPoint32,
+        uncle_rate_target: u64,
         epoch_time_target: u64,
         reward_half_time_target:u64,                
     }
@@ -17,17 +16,17 @@ module Consensus {
         Config::publish_new_config<Self::Consensus>(
             account,
             Consensus { 
-                uncle_rate_target: FixedPoint32::create_from_rational(8,0) ,
+                uncle_rate_target: 80,
                 epoch_time_target :1209600, // two weeks in seconds
                 reward_half_time_target: 126144000, // four years in seconds
             },
         );
     }
 
-    public fun set_uncle_rate_target(account: &signer, numerator: u64, denominator: u64) {
+    public fun set_uncle_rate_target(account: &signer, uncle_rate_target:u64) {
         let old_config = Config::get<Self::Consensus>();
 
-        old_config.uncle_rate_target = FixedPoint32::create_from_rational(numerator,denominator);
+        old_config.uncle_rate_target = uncle_rate_target;
         Config::set<Self::Consensus>(
             account,
             old_config,    
@@ -54,9 +53,9 @@ module Consensus {
         );
     }
 
-    public fun uncle_rate_target(): FixedPoint32::FixedPoint32  {
+    public fun uncle_rate_target(): u64  {
         let current_config = Config::get<Self::Consensus>();
-        *&current_config.uncle_rate_target
+        current_config.uncle_rate_target
     }
 
     public fun epoch_time_target(): u64  {

@@ -4,6 +4,7 @@ use 0x1::RewardConfig;
 use 0x1::Version;
 use 0x1::Config;
 use 0x1::Coin;
+use 0x1::Consensus;
 
 //TODO refactor when move support ABI, and pass struct by argument
 fun config_init(config_account: &signer,
@@ -18,5 +19,6 @@ fun config_init(config_account: &signer,
     VMConfig::initialize(config_account, publishing_option, instruction_schedule, native_schedule);
     RewardConfig::initialize(config_account, reward_halving_interval, reward_base, reward_delay);
     Version::initialize(config_account);
+    Consensus::initialize(config_account);
 }
 }
