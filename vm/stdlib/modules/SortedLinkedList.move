@@ -8,18 +8,18 @@ module SortedLinkedList {
         prev: address, //account address where the previous node is stored (head if no previous node exists)
         next: address, //account address where the next node is stored (head if no next node exists)
         head: address, //account address where current list's head is stored -- whoever stores head is the owner of the whole list
-        value: T
+        key: T
     }
 
     public fun node_exists<T: copyable>(node_address: address): bool {
         exists<Node<T>>(node_address)
     }
 
-    public fun get_value_of_node<T: copyable>(node_address: address): T acquires Node {
+    public fun get_key_of_node<T: copyable>(node_address: address): T acquires Node {
         assert(exists<Node<T>>(node_address), 1);
 
         let node = borrow_global<Node<T>>(node_address);
-        *&node.value
+        *&node.key
     }
 
     //checks whether this address is the head of a list -- fails if there is no node here
@@ -36,7 +36,7 @@ module SortedLinkedList {
     }
 
     //creates a new list whose head is at txn_sender (is owned by the caller)
-    public fun create_new_list<T: copyable>(account: &signer, value: T) {
+    public fun create_new_list<T: copyable>(account: &signer, key: T) {
         let sender = Signer::address_of(account);
 
         //make sure no node/list is already stored in this account
@@ -46,13 +46,13 @@ module SortedLinkedList {
             prev: sender,
             next: sender,
             head: sender,
-            value: value
+            key: key
         };
         move_to<Node<T>>(account, head);
     }
 
     //adds a node that is stored in txn_sender's account and whose location in the list is right after prev_node_address
-    public fun add_node<T: copyable>(account: &signer, value: T, prev_node_address: address) acquires Node {
+    public fun add_node<T: copyable>(account: &signer, key: T, prev_node_address: address) acquires Node {
         let sender_address = Signer::address_of(account);
 
         //make sure no node is already stored in this account
@@ -67,26 +67,26 @@ module SortedLinkedList {
         let next_node = borrow_global<Node<T>>(next_node_address);
         let head_address = next_node.head;
 
-        //see if either prev or next are the head and get their values
-        let prev_value = *&prev_node.value;
-        let next_value = *&next_node.value;
-        let value_lcs_bytes = LCS::to_bytes(&value);
-        let cmp_with_prev = Compare::cmp_lcs_bytes(&value_lcs_bytes, &LCS::to_bytes(&prev_value));
-        let cmp_with_next = Compare::cmp_lcs_bytes(&value_lcs_bytes, &LCS::to_bytes(&next_value));
+        //see if either prev or next are the head and get their keys
+        let prev_key = *&prev_node.key;
+        let next_key = *&next_node.key;
+        let key_lcs_bytes = LCS::to_bytes(&key);
+        let cmp_with_prev = Compare::cmp_lcs_bytes(&key_lcs_bytes, &LCS::to_bytes(&prev_key));
+        let cmp_with_next = Compare::cmp_lcs_bytes(&key_lcs_bytes, &LCS::to_bytes(&next_key));
 
         let prev_is_head = Self::is_head_node<T>(prev_node_address);
         let next_is_head = Self::is_head_node<T>(next_node_address);
 
         //check the order -- the list must be sorted
-        assert(prev_is_head || cmp_with_prev == 2u8, 6); // prev_is_head || value > prev_value
-        assert(next_is_head || cmp_with_next == 1u8, 7); // next_is_head || value < next_value
+        assert(prev_is_head || cmp_with_prev == 2u8, 6); // prev_is_head || key > prev_key
+        assert(next_is_head || cmp_with_next == 1u8, 7); // next_is_head || key < next_key
 
         //create the new node
         let current_node = Node<T> {
             prev: prev_node_address,
             next: next_node_address,
             head: head_address,
-            value: value
+            key: key
         };
         move_to<Node<T>>(account, current_node);
 
@@ -118,7 +118,7 @@ module SortedLinkedList {
         prev_node_mut.next = next_node_address;
 
         //destroy the current node
-        let Node<T> { prev: _, next: _, head: _, value: _ } = move_from<Node<T>>(node_address);
+        let Node<T> { prev: _, next: _, head: _, key: _ } = move_from<Node<T>>(node_address);
     }
 
     public fun remove_node_by_list_owner<T: copyable>(account: &signer, node_address: address) acquires Node {
@@ -169,8 +169,33 @@ module SortedLinkedList {
         assert(prev_node_address == sender_address, 17);
 
         //destroy the Node
-        let Node<T> { prev: _, next: _, head: _, value: _ } = move_from<Node<T>>(sender_address);
+        let Node<T> { prev: _, next: _, head: _, key: _ } = move_from<Node<T>>(sender_address);
     }
 
+    // find() is expensive, will provide off-chain method soon
+    public fun find<T: copyable>(key: T, head_address: address): (bool, address) acquires Node {
+        assert(Self::is_head_node<T>(head_address), 18);
+
+        let key_lcs_bytes = LCS::to_bytes(&key);
+        let head_node = borrow_global<Node<T>>(head_address);
+        let next_node_address = head_node.next;
+        while (next_node_address != head_address) {
+            let next_node = borrow_global<Node<T>>(next_node_address);
+            let next_node_key = *&next_node.key;
+            let next_key_lcs_bytes = LCS::to_bytes(&next_node_key);
+            let cmp = Compare::cmp_lcs_bytes(&next_key_lcs_bytes, &key_lcs_bytes);
+      
+            if (cmp == 0u8) { // next_key == key
+                return (true, next_node_address)
+            } else if (cmp == 1u8) { // next_key < key, continue
+                next_node_address = *&next_node.next;
+            } else { // next_key > key, nothing found
+                let prev_node_address = *&next_node.prev;
+                return (false, prev_node_address)
+            }
+        };
+        return (false, *&head_node.prev)
+    }
+   
 }
 }
