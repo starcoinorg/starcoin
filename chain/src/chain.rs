@@ -469,7 +469,19 @@ where
         }
 
         // 2. verify body
-        if !verify_txns(block.transactions(), &txn_infos) {
+        let txns = {
+            let block_metadata = block.header().clone().into_metadata();
+            let mut t = vec![Transaction::BlockMetadata(block_metadata)];
+            t.extend(
+                block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
+            t
+        };
+        if let Ok(ConnectBlockResult::VerifyBodyFailed) = verify_txns(txns.as_ref(), &txn_infos) {
             return Ok(ConnectBlockResult::VerifyBodyFailed);
         }
 
@@ -501,19 +513,7 @@ where
             block_accumulator_info,
             total_difficulty,
         );
-        // save block's transaction relationship and save transaction
-        let txns = {
-            let block_metadata = block.header().clone().into_metadata();
-            let mut t = vec![Transaction::BlockMetadata(block_metadata)];
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
-            t
-        };
+
         self.save(block_id, txns, None)?;
         self.commit(block, block_info, BlockState::Verified)?;
         Ok(ConnectBlockResult::SUCCESS)
@@ -555,17 +555,14 @@ pub(crate) fn info_2_accumulator(
     )
 }
 
-fn verify_txns(txns: &[SignedUserTransaction], txn_infos: &[TransactionInfo]) -> bool {
-    let mut flag = true;
-    if txn_infos.len() == (txns.len() + 1) {
-        for i in 0..txns.len() {
-            if !flag {
-                break;
-            }
-            flag = txns[i].crypto_hash() == txn_infos[i + 1].transaction_hash()
-        }
-    } else {
-        flag = false;
+fn verify_txns(txns: &[Transaction], txn_infos: &[TransactionInfo]) -> Result<ConnectBlockResult> {
+    if txn_infos.len() != txns.len() {
+        return Ok(ConnectBlockResult::VerifyBodyFailed);
     }
-    flag
+    for i in 0..txns.len() {
+        if txns[i].id() != txn_infos[i].transaction_hash() {
+            return Ok(ConnectBlockResult::VerifyBodyFailed);
+        }
+    }
+    Ok(ConnectBlockResult::SUCCESS)
 }
