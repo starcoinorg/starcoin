@@ -2,7 +2,7 @@
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
-use traits::ConnectResult;
+use traits::ConnectBlockResult;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -26,7 +26,8 @@ pub enum ChainRequest {
     // just fot test
     GetBlockByHash(HashValue),
     GetBlockInfoByHash(HashValue),
-    ConnectBlock(Box<Block>, Option<Box<BlockInfo>>),
+    ConnectBlock(Box<Block>),
+    ConnectBlockWithoutExe(Box<Block>),
     GetStartupInfo(),
     GetHeadChainInfo(),
     GetTransaction(HashValue),
@@ -57,6 +58,6 @@ pub enum ChainResponse {
     BlockTransactionInfos(Vec<TransactionInfo>),
     TransactionInfo(Option<TransactionInfo>),
     None,
-    Conn(ConnectResult<()>),
+    Conn(ConnectBlockResult),
     BlockState(Option<Box<BlockState>>),
 }

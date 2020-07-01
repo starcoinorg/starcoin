@@ -12,7 +12,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
 use storage::Store;
-use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockError, ConnectResult, Consensus};
+use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult, Consensus};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -198,6 +198,34 @@ where
             msg: NewHeadBlock(Arc::new(block)),
         });
     }
+
+    fn connect_inner(&mut self, block: Block, execute: bool) -> Result<ConnectBlockResult> {
+        let (block_exist, fork) = self.find_or_fork(block.header())?;
+        if block_exist {
+            CHAIN_METRICS.duplicate_conn_count.inc();
+            Ok(ConnectBlockResult::DuplicateConn)
+        } else if let Some(mut branch) = fork {
+            let timer = CHAIN_METRICS
+                .exe_block_time
+                .with_label_values(&["time"])
+                .start_timer();
+            let connected = if execute {
+                branch.apply(block.clone())?
+            } else {
+                branch.apply_without_execute(block.clone())?
+            };
+            timer.observe_duration();
+            if connected != ConnectBlockResult::SUCCESS {
+                debug!("connected failed {:?}", block.header().id());
+                CHAIN_METRICS.verify_fail_count.inc();
+            } else {
+                self.select_head(branch)?;
+            }
+            Ok(connected)
+        } else {
+            Ok(ConnectBlockResult::FutureBlock)
+        }
+    }
 }
 
 impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
@@ -206,54 +234,12 @@ where
     P: TxPoolSyncService,
     S: Store,
 {
-    //TODO define connect result.
-    fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>> {
-        let (block_exist, fork) = self.find_or_fork(block.header())?;
-        if block_exist {
-            CHAIN_METRICS.duplicate_conn_count.inc();
-            Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
-        } else if let Some(mut branch) = fork {
-            let timer = CHAIN_METRICS
-                .exe_block_time
-                .with_label_values(&["time"])
-                .start_timer();
-            let connected = branch.apply(block.clone())?;
-            timer.observe_duration();
-            if !connected {
-                debug!("connected failed {:?}", block.header().id());
-                CHAIN_METRICS.verify_fail_count.inc();
-                Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
-            } else {
-                self.select_head(branch)?;
-                Ok(ConnectResult::Ok(()))
-            }
-        } else {
-            Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
-        }
+    fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult> {
+        self.connect_inner(block, true)
     }
 
-    fn try_connect_with_block_info(
-        &mut self,
-        block: Block,
-        block_info: BlockInfo,
-    ) -> Result<ConnectResult<()>> {
-        let (block_exist, fork) = self.find_or_fork(block.header())?;
-        if block_exist {
-            CHAIN_METRICS.duplicate_conn_count.inc();
-            Ok(ConnectResult::Err(ConnectBlockError::DuplicateConn))
-        } else if let Some(mut branch) = fork {
-            if C::verify(self.config.clone(), &branch, block.header()).is_ok() {
-                // 2. commit block
-                branch.append_block(block.id(), block_info.get_block_accumulator_info().clone())?;
-                branch.commit(block, block_info, BlockState::Verified)?;
-                self.select_head(branch)?;
-                Ok(ConnectResult::Ok(()))
-            } else {
-                Ok(ConnectResult::Err(ConnectBlockError::VerifyFailed))
-            }
-        } else {
-            Ok(ConnectResult::Err(ConnectBlockError::FutureBlock))
-        }
+    fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {
+        self.connect_inner(block, false)
     }
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {

@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ConnectResult;
+use crate::ConnectBlockResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockState;
@@ -17,12 +17,8 @@ use starcoin_types::{
 /// implement ChainService
 pub trait ChainService {
     /// chain service
-    fn try_connect(&mut self, block: Block) -> Result<ConnectResult<()>>;
-    fn try_connect_with_block_info(
-        &mut self,
-        block: Block,
-        block_info: BlockInfo,
-    ) -> Result<ConnectResult<()>>;
+    fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult>;
+    fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult>;
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
@@ -64,12 +60,8 @@ pub trait ChainAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {
     /// chain service
-    async fn try_connect(self, block: Block) -> Result<ConnectResult<()>>;
-    async fn try_connect_with_block_info(
-        &mut self,
-        block: Block,
-        block_info: BlockInfo,
-    ) -> Result<ConnectResult<()>>;
+    async fn try_connect(self, block: Block) -> Result<ConnectBlockResult>;
+    async fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult>;
     async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(self, hash: HashValue) -> Result<Block>;
     async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>>;

@@ -261,6 +261,11 @@ impl Genesis {
             "Genesis block accumulator root mismatch."
         );
         storage.commit_block(block, BlockState::Executed)?;
+        let mut txn_infos = Vec::new();
+        txn_infos.push(transaction_info);
+        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.crypto_hash()).collect();
+        storage.save_block_txn_info_ids(header.id(), txn_info_ids)?;
+        storage.save_transaction_infos(txn_infos)?;
 
         let startup_info = StartupInfo::new(header.id(), vec![]);
         let block_info = BlockInfo::new_with_accumulator_info(

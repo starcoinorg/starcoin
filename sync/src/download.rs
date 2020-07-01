@@ -1,7 +1,9 @@
-use crate::block_connector::BlockConnector;
+use crate::block_connector::{BlockConnector, PivotBlock};
 /// Sync message which outbound
 use crate::block_sync::BlockSyncTaskActor;
-use crate::helper::{get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer};
+use crate::helper::{
+    get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer, get_info_by_hash,
+};
 use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_STATE, SYNC_METRICS};
 use crate::sync_task::{SyncTask, SyncTaskType};
@@ -207,7 +209,7 @@ where
                 self.sync_task.activate_tasks();
                 debug!("new peer: {:?}", peer_id);
             }
-            SyncNotify::NewHeadBlock(_peer_id, block) => self.do_block_and_child(*block, None),
+            SyncNotify::NewHeadBlock(_peer_id, block) => self.do_block_and_child(*block),
             SyncNotify::ClosePeerMsg(peer_id) => {
                 debug!("close peer: {:?}", peer_id);
             }
@@ -321,7 +323,7 @@ where
                 }
 
                 // 3. sync task
-                let root = Downloader::<C>::get_pivot(
+                let (root, block_info) = Downloader::<C>::get_pivot(
                     &network,
                     best_peer.get_peer_id(),
                     (latest_block_id, latest_number),
@@ -341,18 +343,19 @@ where
 
                 let state_sync_task_address = StateSyncTaskActor::launch(
                     self_peer_id,
-                    (
-                        root.state_root(),
-                        root.accumulator_root(),
-                        root.parent_block_accumulator_root(),
-                    ),
-                    storage,
+                    (root.state_root(), root.parent_block_accumulator_root()),
+                    storage.clone(),
                     network.clone(),
                     block_sync_task,
                     download_address,
                 );
-                sync_task.push_task(SyncTaskType::STATE, Box::new(state_sync_task_address));
-                downloader.set_pivot(Some(root.number()));
+                sync_task.push_task(
+                    SyncTaskType::STATE,
+                    Box::new(state_sync_task_address.clone()),
+                );
+                let pivot_block =
+                    PivotBlock::new(root.number(), block_info, state_sync_task_address, storage);
+                downloader.set_pivot(Some(pivot_block));
 
             // address
             //     .reset(
@@ -445,24 +448,20 @@ where
                     Err(e) => Err(e),
                 }
             } else {
-                Err(format_err!(
-                    "{:?}",
-                    "block header is none when create sync task."
-                ))
+                Err(format_err!("block header is none when create sync task."))
             }
         } else {
             // Err(format_err!(
-            //     "{:?}",
             //     "best peer is none when create sync task."
             // ))
             Ok(true)
         }
     }
 
-    pub fn do_block_and_child(&self, block: Block, block_info: Option<BlockInfo>) {
+    pub fn do_block_and_child(&self, block: Block) {
         let downloader = self.downloader.clone();
         Arbiter::spawn(async move {
-            downloader.connect_block_and_child(block, block_info).await;
+            downloader.connect_block_and_child(block).await;
         });
     }
 }
@@ -543,7 +542,7 @@ where
         }
 
         if ancestor_header.is_none() {
-            return Err(format_err!("{:?}", "find ancestor is none."));
+            return Err(format_err!("find ancestor is none."));
         }
         Ok(ancestor_header)
     }
@@ -575,18 +574,36 @@ where
         Ok((need_executed, ancestor))
     }
 
+    fn verify_pivot(block_header: &BlockHeader, block_info: &BlockInfo) -> bool {
+        &block_header.parent_hash() == block_info.block_id()
+    }
+
     async fn get_pivot(
         network: &NetworkAsyncService,
         peer_id: PeerId,
         latest_block: (HashValue, BlockNumber),
         step: usize,
-    ) -> Result<BlockHeader> {
+    ) -> Result<(BlockHeader, BlockInfo)> {
         let get_headers_req = GetBlockHeaders::new(latest_block.0, step, true, 1);
-        let mut headers = get_headers_with_peer(&network, peer_id, get_headers_req).await?;
+        let mut headers = get_headers_with_peer(&network, peer_id.clone(), get_headers_req).await?;
         if let Some(pivot) = headers.pop() {
             let number = latest_block.1 - step as u64;
             if pivot.number() == number {
-                Ok(pivot)
+                let mut infos =
+                    get_info_by_hash(&network, peer_id, vec![pivot.parent_hash()]).await?;
+                if let Some(block_info) = infos.pop() {
+                    if Self::verify_pivot(&pivot, &block_info) {
+                        Ok((pivot, block_info))
+                    } else {
+                        Err(format_err!(
+                            "pivot header and info miss match : {:?} , {:?}",
+                            pivot,
+                            block_info
+                        ))
+                    }
+                } else {
+                    Err(format_err!("pivot block info is none."))
+                }
             } else {
                 Err(format_err!(
                     "pivot number miss match : {:?} , {:?}",
@@ -595,38 +612,27 @@ where
                 ))
             }
         } else {
-            Err(format_err!("{:?}", "pivot header is none."))
+            Err(format_err!("pivot header is none."))
         }
     }
 
-    pub async fn do_blocks(
-        &self,
-        headers: Vec<BlockHeader>,
-        bodies: Vec<BlockBody>,
-        infos: Vec<BlockInfo>,
-    ) {
+    pub async fn do_blocks(&self, headers: Vec<BlockHeader>, bodies: Vec<BlockBody>) {
         assert_eq!(headers.len(), bodies.len());
-        assert_eq!(headers.len(), infos.len());
         for i in 0..headers.len() {
             if let Some(header) = headers.get(i) {
                 if let Some(body) = bodies.get(i) {
-                    if let Some(info) = infos.get(i) {
-                        let block = Block::new(header.clone(), body.clone().transactions);
-                        self.connect_block_and_child(block, Some(info.clone()))
-                            .await;
-                    }
+                    let block = Block::new(header.clone(), body.clone().transactions);
+                    self.connect_block_and_child(block).await;
                 }
             }
         }
     }
 
-    pub async fn connect_block_and_child(&self, block: Block, block_info: Option<BlockInfo>) {
-        self.block_connector
-            .do_block_and_child(block, block_info)
-            .await;
+    pub async fn connect_block_and_child(&self, block: Block) {
+        self.block_connector.do_block_and_child(block).await;
     }
 
-    fn set_pivot(&self, pivot: Option<BlockNumber>) {
+    fn set_pivot(&self, pivot: Option<PivotBlock<C>>) {
         self.block_connector.update_pivot(pivot);
     }
 }

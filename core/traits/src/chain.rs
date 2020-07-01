@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::ConnectBlockResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
@@ -47,7 +48,11 @@ pub trait ChainReader {
 
 pub trait ChainWriter {
     /// execute and insert block to current chain.
-    fn apply(&mut self, block: Block) -> Result<bool>;
+    fn apply(&mut self, block: Block) -> Result<ConnectBlockResult>;
+
+    /// insert block to current chain.
+    fn apply_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult>;
+
     /// execute and insert block to current chain.
     fn commit(
         &mut self,
