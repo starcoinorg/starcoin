@@ -76,7 +76,7 @@ pub async fn get_txns(
     {
         Ok(txn_data)
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!("error SyncRpcResponse type."))
     }
 }
 
@@ -92,10 +92,7 @@ pub async fn get_txn_infos(
         //todo: Verify response
         Ok(txn_infos)
     } else {
-        Err(format_err!(
-            "{:?}",
-            "error SyncRpcResponse type when get txn info."
-        ))
+        Err(format_err!("error SyncRpcResponse type when get txn info."))
     }
 }
 
@@ -117,7 +114,6 @@ pub async fn get_headers_by_number(
         Ok(headers)
     } else {
         Err(format_err!(
-            "{:?}",
             "error SyncRpcResponse type when sync block header."
         ))
     }
@@ -141,7 +137,6 @@ pub async fn get_headers_with_peer(
         Ok(headers)
     } else {
         Err(format_err!(
-            "{:?}",
             "error SyncRpcResponse type when sync block header."
         ))
     }
@@ -154,10 +149,7 @@ pub async fn get_headers(
     if let Some(peer_info) = network.best_peer().await? {
         get_headers_with_peer(network, peer_info.get_peer_id(), req).await
     } else {
-        Err(format_err!(
-            "{:?}",
-            "Can not get peer when sync block header."
-        ))
+        Err(format_err!("Can not get peer when sync block header."))
     }
 }
 
@@ -178,15 +170,11 @@ pub async fn get_body_by_hash(
             Ok(bodies)
         } else {
             Err(format_err!(
-                "{:?}",
                 "error SyncRpcResponse type when sync block body."
             ))
         }
     } else {
-        Err(format_err!(
-            "{:?}",
-            "Can not get peer when sync block body."
-        ))
+        Err(format_err!("Can not get peer when sync block body."))
     }
 }
 
@@ -202,7 +190,6 @@ pub async fn get_info_by_hash(
         Ok(infos)
     } else {
         Err(format_err!(
-            "{:?}",
             "error SyncRpcResponse type when sync block info."
         ))
     }
@@ -223,7 +210,7 @@ pub async fn get_state_node_by_node_hash(
     {
         Ok(state_node)
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!("error SyncRpcResponse type."))
     }
 }
 
@@ -243,7 +230,7 @@ pub async fn get_accumulator_node_by_node_hash(
     {
         Ok(accumulator_node)
     } else {
-        Err(format_err!("{:?}", "error SyncRpcResponse type."))
+        Err(format_err!("error SyncRpcResponse type."))
     }
 }
 

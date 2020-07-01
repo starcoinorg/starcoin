@@ -480,7 +480,7 @@ where
                         .await;
                     });
                 } else {
-                    warn!("{:?}", "best peer is none, state sync may be failed.");
+                    warn!("best peer is none, state sync may be failed.");
                     self.state = SyncTaskState::Failed;
                 }
             }
@@ -588,7 +588,7 @@ where
                         });
                     }
                 } else {
-                    warn!("{:?}", "best peer is none.");
+                    warn!("best peer is none.");
                     self.state = SyncTaskState::Failed;
                 }
             }
@@ -686,7 +686,7 @@ where
                             .await;
                     });
                 } else {
-                    warn!("{:?}", "best peer is none, state sync may be failed.");
+                    warn!("best peer is none, state sync may be failed.");
                     self.state = SyncTaskState::Failed;
                 }
             }

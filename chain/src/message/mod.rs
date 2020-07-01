@@ -27,7 +27,7 @@ pub enum ChainRequest {
     GetBlockByHash(HashValue),
     GetBlockInfoByHash(HashValue),
     ConnectBlock(Box<Block>),
-    ConnectBlockWithExe(Box<Block>),
+    ConnectBlockWithoutExe(Box<Block>),
     GetStartupInfo(),
     GetHeadChainInfo(),
     GetTransaction(HashValue),

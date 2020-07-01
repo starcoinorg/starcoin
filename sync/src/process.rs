@@ -117,10 +117,10 @@ where
                                     error!("do state_node request failed : {:?}", e);
                                 }
                             } else {
-                                debug!("{:?}", "state_node is none.");
+                                debug!("state_node is none.");
                             }
                         } else {
-                            debug!("{:?}", "state_nodes is none.");
+                            debug!("state_nodes is none.");
                         }
                     }
                     SyncRpcRequest::GetAccumulatorNodeByNodeHash(
@@ -146,7 +146,7 @@ where
                                 debug!("accumulator_node {:?} is none.", accumulator_node_key);
                             }
                         } else {
-                            debug!("{:?}", "accumulator_nodes is none.");
+                            debug!("accumulator_nodes is none.");
                         }
                     }
                     SyncRpcRequest::GetTxns(msg) => {

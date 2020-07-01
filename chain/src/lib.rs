@@ -144,7 +144,7 @@ where
                 let conn_state = self.service.try_connect(*block)?;
                 Ok(ChainResponse::Conn(conn_state))
             }
-            ChainRequest::ConnectBlockWithExe(block) => {
+            ChainRequest::ConnectBlockWithoutExe(block) => {
                 let conn_state = self.service.try_connect_without_execute(*block)?;
                 Ok(ChainResponse::Conn(conn_state))
             }
@@ -240,7 +240,7 @@ where
     async fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {
         if let ChainResponse::Conn(conn_result) = self
             .address
-            .send(ChainRequest::ConnectBlockWithExe(Box::new(block)))
+            .send(ChainRequest::ConnectBlockWithoutExe(Box::new(block)))
             .await
             .map_err(Into::<Error>::into)??
         {

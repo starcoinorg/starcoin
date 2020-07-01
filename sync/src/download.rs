@@ -448,14 +448,10 @@ where
                     Err(e) => Err(e),
                 }
             } else {
-                Err(format_err!(
-                    "{:?}",
-                    "block header is none when create sync task."
-                ))
+                Err(format_err!("block header is none when create sync task."))
             }
         } else {
             // Err(format_err!(
-            //     "{:?}",
             //     "best peer is none when create sync task."
             // ))
             Ok(true)
@@ -546,7 +542,7 @@ where
         }
 
         if ancestor_header.is_none() {
-            return Err(format_err!("{:?}", "find ancestor is none."));
+            return Err(format_err!("find ancestor is none."));
         }
         Ok(ancestor_header)
     }
@@ -606,7 +602,7 @@ where
                         ))
                     }
                 } else {
-                    Err(format_err!("{:?}", "pivot block info is none."))
+                    Err(format_err!("pivot block info is none."))
                 }
             } else {
                 Err(format_err!(
@@ -616,7 +612,7 @@ where
                 ))
             }
         } else {
-            Err(format_err!("{:?}", "pivot header is none."))
+            Err(format_err!("pivot header is none."))
         }
     }
 
