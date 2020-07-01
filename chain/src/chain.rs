@@ -15,7 +15,7 @@ use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, marker::PhantomData, sync::Arc};
 use storage::Store;
-use traits::{ChainReader, ChainWriter, Consensus, ExcludedTxns};
+use traits::{ChainReader, ChainWriter, ConnectBlockResult, Consensus, ExcludedTxns};
 use types::{
     account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
@@ -156,21 +156,6 @@ where
         }
 
         Ok(false)
-    }
-
-    pub fn append_block(
-        &mut self,
-        block_id: HashValue,
-        block_accumulator_info: AccumulatorInfo,
-    ) -> Result<()> {
-        self.block_accumulator.append(&[block_id])?;
-        self.block_accumulator.flush()?;
-
-        let pivot_block_accumulator_info: AccumulatorInfo = (&self.block_accumulator).try_into()?;
-        assert_eq!(block_accumulator_info, pivot_block_accumulator_info);
-        debug!("save pivot {:?} succ.", block_id);
-
-        Ok(())
     }
 
     pub fn get_storage(&self) -> Arc<S> {
@@ -315,12 +300,19 @@ where
         &mut self,
         block_id: HashValue,
         transactions: Vec<Transaction>,
-        txn_infos: Vec<TransactionInfo>,
+        txn_infos: Option<Vec<TransactionInfo>>,
     ) -> Result<()> {
-        ensure!(
-            transactions.len() == txn_infos.len(),
-            "block txns' length should be equal to txn infos' length"
-        );
+        if txn_infos.is_some() {
+            let txn_infos = txn_infos.expect("txn infos is none.");
+            ensure!(
+                transactions.len() == txn_infos.len(),
+                "block txns' length should be equal to txn infos' length"
+            );
+            let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.crypto_hash()).collect();
+            self.storage
+                .save_block_txn_info_ids(block_id, txn_info_ids)?;
+            self.storage.save_transaction_infos(txn_infos)?;
+        }
         let txn_id_vec = transactions
             .iter()
             .cloned()
@@ -331,10 +323,6 @@ where
         // save transactions
         self.storage.save_transaction_batch(transactions)?;
 
-        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.crypto_hash()).collect();
-        self.storage
-            .save_block_txn_info_ids(block_id, txn_info_ids)?;
-        self.storage.save_transaction_infos(txn_infos)?;
         Ok(())
     }
 }
@@ -344,7 +332,7 @@ where
     C: Consensus,
     S: Store,
 {
-    fn apply(&mut self, block: Block) -> Result<bool> {
+    fn apply(&mut self, block: Block) -> Result<ConnectBlockResult> {
         let header = block.header();
         let pre_hash = header.parent_hash();
         assert_eq!(self.head.header().id(), pre_hash);
@@ -367,7 +355,7 @@ where
         );
         if let Err(e) = C::verify(self.config.clone(), self, header) {
             error!("verify header failed : {:?}", e);
-            return Ok(false);
+            return Ok(ConnectBlockResult::VerifyConsensusFailed);
         }
 
         let txns = {
@@ -448,9 +436,87 @@ where
             total_difficulty,
         );
         // save block's transaction relationship and save transaction
-        self.save(header.id(), txns, vec_transaction_info)?;
-        self.commit(block.clone(), block_info, BlockState::Executed)?;
-        Ok(true)
+        self.save(header.id(), txns, Some(vec_transaction_info))?;
+        self.commit(block, block_info, BlockState::Executed)?;
+        Ok(ConnectBlockResult::SUCCESS)
+    }
+
+    fn apply_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {
+        // 1. verify txn info
+        let block_id = block.id();
+        let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
+
+        let included_txn_info_hashes: Vec<_> =
+            txn_infos.iter().map(|info| info.crypto_hash()).collect();
+        let parent_block_info = self
+            .storage
+            .get_block_info(block.header().parent_hash())?
+            .expect("Parent block info is none.");
+        let executed_accumulator_root = {
+            let parent_txn_accumulator_info = parent_block_info.get_txn_accumulator_info();
+            let tmp_txn_accumulator = info_2_accumulator(
+                parent_txn_accumulator_info,
+                AccumulatorStoreType::Transaction,
+                self.storage.clone(),
+            )?;
+            let (accumulator_root, _first_leaf_idx) =
+                tmp_txn_accumulator.append(&included_txn_info_hashes)?;
+            accumulator_root
+        };
+        if executed_accumulator_root != block.header().accumulator_root() {
+            //TODO:remove txn infos
+            return Ok(ConnectBlockResult::VerifyTxnInfoFailed);
+        }
+
+        // 2. verify body
+        let txns = {
+            let block_metadata = block.header().clone().into_metadata();
+            let mut t = vec![Transaction::BlockMetadata(block_metadata)];
+            t.extend(
+                block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
+            t
+        };
+        if let Ok(ConnectBlockResult::VerifyBodyFailed) = verify_txns(txns.as_ref(), &txn_infos) {
+            return Ok(ConnectBlockResult::VerifyBodyFailed);
+        }
+
+        // 3. verify block
+        if let Err(e) = C::verify(self.config.clone(), self, block.header()) {
+            error!("verify header failed : {:?}", e);
+            return Ok(ConnectBlockResult::VerifyConsensusFailed);
+        }
+
+        // 4. save all data
+        let (accumulator_root, _) = self.txn_accumulator.append(&included_txn_info_hashes)?;
+        ensure!(
+            accumulator_root == block.header().accumulator_root(),
+            "verify block: txn accumulator root mismatch"
+        );
+        self.txn_accumulator
+            .flush()
+            .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
+
+        let total_difficulty =
+            parent_block_info.get_total_difficulty() + block.header().difficulty();
+        self.block_accumulator.append(&[block_id])?;
+        self.block_accumulator.flush()?;
+        let txn_accumulator_info: AccumulatorInfo = (&self.txn_accumulator).try_into()?;
+        let block_accumulator_info: AccumulatorInfo = (&self.block_accumulator).try_into()?;
+        let block_info = BlockInfo::new_with_accumulator_info(
+            block_id,
+            txn_accumulator_info,
+            block_accumulator_info,
+            total_difficulty,
+        );
+
+        self.save(block_id, txns, None)?;
+        self.commit(block, block_info, BlockState::Verified)?;
+        Ok(ConnectBlockResult::SUCCESS)
     }
 
     fn commit(
@@ -487,4 +553,16 @@ pub(crate) fn info_2_accumulator(
         store_type,
         node_store,
     )
+}
+
+fn verify_txns(txns: &[Transaction], txn_infos: &[TransactionInfo]) -> Result<ConnectBlockResult> {
+    if txn_infos.len() != txns.len() {
+        return Ok(ConnectBlockResult::VerifyBodyFailed);
+    }
+    for i in 0..txns.len() {
+        if txns[i].id() != txn_infos[i].transaction_hash() {
+            return Ok(ConnectBlockResult::VerifyBodyFailed);
+        }
+    }
+    Ok(ConnectBlockResult::SUCCESS)
 }

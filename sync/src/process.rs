@@ -117,10 +117,10 @@ where
                                     error!("do state_node request failed : {:?}", e);
                                 }
                             } else {
-                                debug!("{:?}", "state_node is none.");
+                                debug!("state_node is none.");
                             }
                         } else {
-                            debug!("{:?}", "state_nodes is none.");
+                            debug!("state_nodes is none.");
                         }
                     }
                     SyncRpcRequest::GetAccumulatorNodeByNodeHash(
@@ -146,7 +146,7 @@ where
                                 debug!("accumulator_node {:?} is none.", accumulator_node_key);
                             }
                         } else {
-                            debug!("{:?}", "accumulator_nodes is none.");
+                            debug!("accumulator_nodes is none.");
                         }
                     }
                     SyncRpcRequest::GetTxns(msg) => {
@@ -159,11 +159,10 @@ where
                             warn!("handle get txn fail, error: {:?}", e);
                         }
                     }
-                    SyncRpcRequest::GetTxnInfo(txn_info_hash) => {
-                        let txn_info =
-                            Processor::handle_get_txn_info_msg(processor.clone(), txn_info_hash)
-                                .await;
-                        if let Err(e) = do_get_txn_info(responder, txn_info).await {
+                    SyncRpcRequest::GetTxnInfos(block_id) => {
+                        let txn_infos =
+                            Processor::handle_get_txn_infos_msg(processor.clone(), block_id).await;
+                        if let Err(e) = do_get_txn_info(responder, txn_infos).await {
                             error!("do_get_headers request failed : {:?}", e);
                         }
                     }
@@ -271,12 +270,12 @@ where
         headers
     }
 
-    pub async fn handle_get_txn_info_msg(
+    pub async fn handle_get_txn_infos_msg(
         processor: Arc<Processor<C>>,
-        txn_info_hash: HashValue,
-    ) -> Option<TransactionInfo> {
-        if let Ok(txn_info) = processor.storage.get_transaction_info(txn_info_hash) {
-            txn_info
+        block_id: HashValue,
+    ) -> Option<Vec<TransactionInfo>> {
+        if let Ok(txn_infos) = processor.storage.get_block_transaction_infos(block_id) {
+            Some(txn_infos)
         } else {
             None
         }
