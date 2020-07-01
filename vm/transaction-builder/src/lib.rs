@@ -265,6 +265,9 @@ pub fn build_upgrade_package(
                     TransactionArgument::U64(chain_config.reward_halving_interval),
                     TransactionArgument::U64(chain_config.base_block_reward),
                     TransactionArgument::U64(chain_config.reward_delay),
+                    TransactionArgument::U64(chain_config.uncle_rate_target),
+                    TransactionArgument::U64(chain_config.epoch_time_target),
+                    TransactionArgument::U64(chain_config.reward_half_time_target),
                 ],
             ),
         );
