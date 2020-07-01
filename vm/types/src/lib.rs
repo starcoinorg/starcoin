@@ -109,6 +109,10 @@ pub mod vm_error {
     }
 }
 
+pub mod bytecode_verifier {
+    pub use bytecode_verifier::{VerifiedModule, VerifiedScript};
+}
+
 pub mod access_path;
 pub mod account_config;
 pub mod block_metadata;

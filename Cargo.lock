@@ -6788,7 +6788,9 @@ dependencies = [
  "once_cell",
  "regex",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-vm-types",
+ "stest",
  "tempfile",
 ]
 
@@ -7393,6 +7395,7 @@ name = "starcoin-vm-types"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytecode-verifier",
  "chrono",
  "libra-state-view",
  "libra-types",
