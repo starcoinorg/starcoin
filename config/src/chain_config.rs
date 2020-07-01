@@ -194,6 +194,8 @@ pub struct ChainConfig {
 }
 
 pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
+pub static EPOCH_TIME_TARGET: u64 = 1_209_600;
+pub static REWARD_HALF_TIME_TARGET: u64 = 126_144_000;
 
 pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let (private_key, public_key) = ChainNetwork::genesis_key_pair();
@@ -219,8 +221,8 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         },
         boot_nodes: vec![],
         uncle_rate_target: 80,
-        epoch_time_target: 1209600,
-        reward_half_time_target: 126144000,
+        epoch_time_target: EPOCH_TIME_TARGET,
+        reward_half_time_target: REWARD_HALF_TIME_TARGET,
     }
 });
 
@@ -251,8 +253,8 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
                          "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
                          "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"), ],
         uncle_rate_target: 80,
-        epoch_time_target: 1209600,
-        reward_half_time_target: 126144000,
+        epoch_time_target: EPOCH_TIME_TARGET,
+        reward_half_time_target: REWARD_HALF_TIME_TARGET,
     }
 });
 
@@ -276,8 +278,8 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
                          "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
                          "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"), ],
         uncle_rate_target: 80,
-        epoch_time_target: 1209600,
-        reward_half_time_target: 126144000,
+        epoch_time_target: EPOCH_TIME_TARGET,
+        reward_half_time_target: REWARD_HALF_TIME_TARGET,
     }
 });
 
@@ -298,6 +300,6 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     },
     boot_nodes: vec![],
     uncle_rate_target: 80,
-    epoch_time_target: 1209600,
-    reward_half_time_target: 126144000,
+    epoch_time_target: EPOCH_TIME_TARGET,
+    reward_half_time_target: REWARD_HALF_TIME_TARGET,
 });
