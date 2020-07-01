@@ -1,6 +1,6 @@
 use crate::download::DownloadActor;
-use crate::helper::{get_body_by_hash, get_headers, get_headers_msg_for_common, get_info_by_hash};
-use crate::sync_metrics::{LABEL_BLOCK_BODY, LABEL_BLOCK_INFO, LABEL_HASH, SYNC_METRICS};
+use crate::helper::{get_body_by_hash, get_headers, get_headers_msg_for_common};
+use crate::sync_metrics::{LABEL_BLOCK_BODY, LABEL_HASH, SYNC_METRICS};
 use crate::sync_task::{
     SyncTaskAction, SyncTaskRequest, SyncTaskResponse, SyncTaskState, SyncTaskType,
 };
@@ -18,7 +18,7 @@ use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::Consensus;
-use types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use types::block::{Block, BlockHeader, BlockNumber};
 
 const MAX_LEN: usize = 100;
 const MAX_SIZE: usize = 10;
@@ -33,7 +33,6 @@ pub struct NextTimeEvent;
 
 #[derive(Debug, Clone)]
 enum DataType {
-    Info,
     Header,
     Body,
 }
@@ -44,7 +43,6 @@ struct SyncDataEvent {
     data_type: DataType,
     hashs: Vec<HashValue>,
     headers: Vec<BlockHeader>,
-    infos: Vec<BlockInfo>,
     bodies: Vec<BlockBody>,
 }
 
@@ -54,17 +52,6 @@ impl SyncDataEvent {
             data_type: DataType::Header,
             hashs: Vec::new(),
             headers,
-            infos: Vec::new(),
-            bodies: Vec::new(),
-        }
-    }
-
-    fn new_info_event(infos: Vec<BlockInfo>, hashs: Vec<HashValue>) -> Self {
-        SyncDataEvent {
-            data_type: DataType::Info,
-            hashs,
-            headers: Vec::new(),
-            infos,
             bodies: Vec::new(),
         }
     }
@@ -74,7 +61,6 @@ impl SyncDataEvent {
             data_type: DataType::Body,
             hashs,
             headers: Vec::new(),
-            infos: Vec::new(),
             bodies,
         }
     }
@@ -135,8 +121,6 @@ where
     target_number: BlockNumber,
     next: (HashValue, BlockNumber),
     headers: HashMap<HashValue, BlockHeader>,
-    info_task: BlockSyncTask,
-    infos: HashMap<HashValue, BlockInfo>,
     body_task: BlockSyncTask,
     downloader: Arc<Downloader<C>>,
     network: NetworkAsyncService,
@@ -154,8 +138,6 @@ where
             .field(&self.target_number)
             .field(&self.next.clone())
             .field(&self.headers.len())
-            .field(&self.info_task.len())
-            .field(&self.infos.len())
             .field(&self.body_task.len())
             .finish()
     }
@@ -179,8 +161,6 @@ where
             target_number,
             next: (ancestor_header.id(), ancestor_header.number()),
             headers: HashMap::new(),
-            info_task: BlockSyncTask::new(),
-            infos: HashMap::new(),
             body_task: BlockSyncTask::new(),
             downloader,
             network,
@@ -199,8 +179,6 @@ where
             info!("Block sync task info : {:?}", &self);
             if self.next.1 >= self.target_number
                 && self.headers.is_empty()
-                && self.info_task.is_empty()
-                && self.infos.is_empty()
                 && self.body_task.is_empty()
             {
                 info!("Block sync task finish.");
@@ -212,11 +190,8 @@ where
     }
 
     fn sync_blocks(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
-        let sync_header_flag = !(self.info_task.len() > MAX_LEN
-            || self.body_task.len() > MAX_LEN
-            || self.next.1 >= self.target_number);
-
-        let info_hashs = self.info_task.take_hashs();
+        let sync_header_flag =
+            !(self.body_task.len() > MAX_LEN || self.next.1 >= self.target_number);
 
         let body_hashs = self.body_task.take_hashs();
 
@@ -241,24 +216,6 @@ where
 
                 address.clone().do_send(event);
                 hash_timer.observe_duration();
-            }
-
-            // sync info
-            if let Some(hashs) = info_hashs {
-                let block_info_timer = SYNC_METRICS
-                    .sync_done_time
-                    .with_label_values(&[LABEL_BLOCK_INFO])
-                    .start_timer();
-                let event = match get_info_by_hash(&network, hashs.clone()).await {
-                    Ok(infos) => SyncDataEvent::new_info_event(infos, Vec::new()),
-                    Err(e) => {
-                        error!("Sync infos err: {:?}", e);
-                        Delay::new(Duration::from_secs(1)).await;
-                        SyncDataEvent::new_info_event(Vec::new(), hashs)
-                    }
-                };
-                address.clone().do_send(event);
-                block_info_timer.observe_duration();
             }
 
             // sync body
@@ -287,10 +244,7 @@ where
     }
 
     fn _sync_headers(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
-        if self.info_task.len() > MAX_LEN
-            || self.body_task.len() > MAX_LEN
-            || self.next.1 >= self.target_number
-        {
+        if self.body_task.len() > MAX_LEN || self.next.1 >= self.target_number {
             return;
         }
 
@@ -320,7 +274,7 @@ where
         if !headers.is_empty() {
             let len = headers.len();
             for block_header in headers {
-                self.info_task.push_back(block_header.id());
+                self.body_task.push_back(block_header.id());
                 self.next = (block_header.id(), block_header.number());
                 self.headers.insert(block_header.id(), block_header);
             }
@@ -328,46 +282,6 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_HASH])
                 .inc_by(len as i64);
-        }
-    }
-
-    fn _sync_infos(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
-        if let Some(hashs) = self.info_task.take_hashs() {
-            let network = self.network.clone();
-            Arbiter::spawn(async move {
-                let block_info_timer = SYNC_METRICS
-                    .sync_done_time
-                    .with_label_values(&[LABEL_BLOCK_INFO])
-                    .start_timer();
-                let event = match get_info_by_hash(&network, hashs.clone()).await {
-                    Ok(infos) => SyncDataEvent::new_info_event(infos, Vec::new()),
-                    Err(e) => {
-                        error!("Sync infos err: {:?}", e);
-                        Delay::new(Duration::from_secs(1)).await;
-                        SyncDataEvent::new_info_event(Vec::new(), hashs)
-                    }
-                };
-                address.do_send(event);
-                block_info_timer.observe_duration();
-            });
-        }
-    }
-
-    fn handle_infos(&mut self, infos: Vec<BlockInfo>, hashs: Vec<HashValue>) {
-        if !infos.is_empty() {
-            let len = infos.len();
-            for block_info in infos {
-                let block_id = *block_info.block_id();
-                self.body_task.push_back(block_id.clone());
-                self.infos.insert(block_id, block_info);
-            }
-
-            SYNC_METRICS
-                .sync_total_count
-                .with_label_values(&[LABEL_BLOCK_INFO])
-                .inc_by(len as i64);
-        } else {
-            self.info_task.push_hashs(hashs);
         }
     }
 
@@ -401,18 +315,12 @@ where
     ) -> Option<Box<impl Future<Output = ()>>> {
         if !bodies.is_empty() {
             let len = bodies.len();
-            let mut blocks: Vec<(Block, Option<BlockInfo>)> = Vec::new();
+            let mut blocks: Vec<Block> = Vec::new();
             for block_body in bodies {
                 let (block_id, transactions) = block_body.into();
                 let block_header = self.headers.remove(&block_id);
-                let block_info = self.infos.remove(&block_id);
-
-                if block_info.is_some() && block_header.is_some() {
-                    let block =
-                        Block::new(block_header.expect("block_header is none."), transactions);
-
-                    blocks.push((block, block_info));
-                }
+                let block = Block::new(block_header.expect("block_header is none."), transactions);
+                blocks.push(block);
             }
 
             SYNC_METRICS
@@ -427,17 +335,16 @@ where
         }
     }
 
-    fn connect_blocks(
-        &self,
-        blocks: Vec<(Block, Option<BlockInfo>)>,
-    ) -> Box<impl Future<Output = ()>> {
+    fn connect_blocks(&self, blocks: Vec<Block>) -> Box<impl Future<Output = ()>> {
         let downloader = self.downloader.clone();
         let fut = async move {
-            for i in 0..blocks.len() {
-                if let Some((block, info)) = blocks.get(i) {
-                    downloader
-                        .connect_block_and_child(block.clone(), info.clone())
-                        .await;
+            let mut blocks = blocks;
+            loop {
+                let block = blocks.pop();
+                if let Some(b) = block {
+                    downloader.connect_block_and_child(b).await;
+                } else {
+                    break;
                 }
             }
         };
@@ -446,7 +353,6 @@ where
 
     fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
         // self.sync_headers(address.clone());
-        // self.sync_infos(address.clone());
         // self.sync_bodies(address);
         self.sync_blocks(address);
     }
@@ -482,9 +388,6 @@ where
         match data.data_type {
             DataType::Header => {
                 self.handle_headers(data.headers);
-            }
-            DataType::Info => {
-                self.handle_infos(data.infos, data.hashs);
             }
             DataType::Body => {
                 if let Some(fut) = self.handle_bodies(data.bodies, data.hashs) {

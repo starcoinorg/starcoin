@@ -8,7 +8,6 @@ const SC_NS: &str = "starcoin";
 const PRIFIX: &str = "starcoin_sync_";
 
 pub const LABEL_BLOCK: &str = "block";
-pub const LABEL_BLOCK_INFO: &str = "block_info";
 pub const LABEL_BLOCK_BODY: &str = "body";
 pub const LABEL_HASH: &str = "hash";
 pub const LABEL_STATE: &str = "state";
