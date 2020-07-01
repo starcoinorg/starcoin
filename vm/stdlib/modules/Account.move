@@ -13,6 +13,7 @@ module Account {
     use 0x1::Timestamp;
     use 0x1::Option::{Self, Option};
     use 0x1::SignedInteger64::{Self};
+    use 0x1::PackageTxnManager;
 
     // Every account has a Account::Account resource
     resource struct Account {
@@ -470,6 +471,9 @@ module Account {
     fun assert_can_freeze(addr: address) {
         assert(Association::has_privilege<FreezingPrivilege>(addr), 13);
     }
+    //TODO change to constants after Move support constant.
+    fun TXN_PAYLOAD_TYPE_SCRIPT():u8{0u8}
+    fun TXN_PAYLOAD_TYPE_PACKAGE():u8{ 1u8}
 
     // The prologue is invoked at the beginning of every transaction
     // It verifies:
@@ -483,6 +487,9 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         txn_expiration_time: u64,
+        txn_payload_type: u8,
+        txn_script_or_package_hash: vector<u8>,
+        txn_package_address: address,
     ) acquires Account, Balance {
         let transaction_sender = Signer::address_of(account);
 
@@ -510,6 +517,11 @@ module Account {
         assert(txn_sequence_number >= sender_account.sequence_number, 3);
         assert(txn_sequence_number == sender_account.sequence_number, 4);
         assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), 7);
+        if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE()){
+            PackageTxnManager::package_txn_prologue(account, txn_package_address, txn_script_or_package_hash);
+        }else if(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT()){
+            //TODO verify script hash.
+        };
     }
 
     // The epilogue is invoked at the end of transactions.
@@ -521,7 +533,10 @@ module Account {
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
         state_cost_amount: u64,
-        cost_is_negative: bool
+        cost_is_negative: bool,
+        txn_payload_type: u8,
+        _txn_script_or_package_hash: vector<u8>,
+        txn_package_address: address,
     ) acquires Account, Balance {
         // Load the transaction sender's account and balance resources
         let sender_account = borrow_global_mut<Account>(Signer::address_of(account));
@@ -553,6 +568,11 @@ module Account {
             // sent/received payment event.
             let transaction_fee_balance = borrow_global_mut<Balance<Token>>(0xFEE);
             Coin::deposit(&mut transaction_fee_balance.coin, transaction_fee);
+        };
+
+        if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE()){
+           //TODO split fail txn epilogue and success epilogue.
+           PackageTxnManager::package_txn_epilogue(account, txn_package_address, true);
         }
     }
 }

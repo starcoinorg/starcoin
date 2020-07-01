@@ -1,8 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crypto::HashValue;
-// use logger::prelude::*;
+use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainState;
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;

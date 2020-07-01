@@ -25,9 +25,10 @@ use starcoin_types::{
     vm_error::{StatusCode, VMStatus},
 };
 use starcoin_vm_types::parser;
+use starcoin_vm_types::transaction::Package;
 use statedb::ChainStateDB;
 use std::time::{SystemTime, UNIX_EPOCH};
-use stdlib::StdLibOptions;
+use stdlib::{stdlib_files, StdLibOptions};
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
     Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
@@ -79,7 +80,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
     info!("output: {:?}", output.gas_used());
 
     let block_meta = BlockMetadata::new(
-        crypto::HashValue::random(),
+        starcoin_crypto::HashValue::random(),
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -372,13 +373,15 @@ fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u64 {
 }
 
 fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
+    let stdlib_files = stdlib_files();
     let compiled_result =
-        starcoin_move_compiler::compile_source_string(code, &[], address).expect("compile fail");
+        starcoin_move_compiler::compile_source_string(code, &stdlib_files, address)
+            .expect("compile fail");
     Module::new(compiled_result.serialize())
 }
 
 #[stest::test]
-fn test_publish_module() -> Result<()> {
+fn test_publish_module_and_upgrade() -> Result<()> {
     let chain_state = prepare_genesis();
 
     let account1 = Account::new();
@@ -388,17 +391,41 @@ fn test_publish_module() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KEEP_STATUS.clone(), *output1.status());
 
-    let program = r#"
+    let module_source = r#"
         module M {
-
+            public fun hello(){
+            }
         }
         "#;
     // compile with account 1's address
-    let compiled_module = compile_module_with_address(*account1.address(), program);
+    let compiled_module = compile_module_with_address(*account1.address(), module_source);
 
     let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
         *account1.address(),
-        TransactionPayload::Module(compiled_module),
+        TransactionPayload::Package(Package::new_with_module(compiled_module).unwrap()),
+        0,
+        100_000,
+        1,
+    ));
+
+    let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
+    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
+
+    //upgrade, add new method.
+    let module_source = r#"
+        module M {
+            public fun hello(){
+            }
+            public fun hello2(){
+            }
+        }
+        "#;
+    // compile with account 1's address
+    let compiled_module = compile_module_with_address(*account1.address(), module_source);
+
+    let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
+        *account1.address(),
+        TransactionPayload::Package(Package::new_with_module(compiled_module).unwrap()),
         0,
         100_000,
         1,
@@ -424,7 +451,7 @@ fn test_block_metadata() -> Result<()> {
             .unwrap()
             .as_secs();
         let txn = Transaction::BlockMetadata(BlockMetadata::new(
-            crypto::HashValue::random(),
+            starcoin_crypto::HashValue::random(),
             timestamp,
             *account1.address(),
             Some(account1.auth_key_prefix()),
@@ -458,7 +485,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         }
         "#;
     let module = compile_module_with_address(CORE_CODE_ADDRESS, program);
-    upgrade_package.add_module(module);
+    upgrade_package.add_module(module)?;
 
     let txn = create_signed_txn_with_association_account(
         TransactionPayload::Package(upgrade_package),

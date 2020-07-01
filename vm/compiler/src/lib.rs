@@ -125,12 +125,12 @@ pub fn compile_source_string(
     Ok(compiled_unit)
 }
 
-pub fn check_module_compat(pre_code: Vec<u8>, new_code: Vec<u8>) -> Result<()> {
+pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> Result<()> {
     if pre_code == new_code {
         return Ok(());
     }
-    let mut pre_version = CompiledModule::deserialize(pre_code.as_slice())?;
-    let mut new_version = CompiledModule::deserialize(new_code.as_slice())?;
+    let mut pre_version = CompiledModule::deserialize(pre_code)?;
+    let mut new_version = CompiledModule::deserialize(new_code)?;
     pre_version = VerifiedModule::new(pre_version)
         .map_err(|e| e.1)?
         .into_inner();
@@ -234,7 +234,7 @@ mod tests {
         let new_code = compile_source_string(new_source_code, &[], CORE_CODE_ADDRESS)
             .unwrap()
             .serialize();
-        match check_module_compat(pre_code, new_code) {
+        match check_module_compat(pre_code.as_slice(), new_code.as_slice()) {
             Err(e) => {
                 if expect {
                     panic!(e)
