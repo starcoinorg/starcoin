@@ -1,19 +1,25 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+
 /// A wrap to move-lang compiler
 use crate::shared::Address;
 use anyhow::{bail, ensure, Result};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
+use starcoin_vm_types::account_address::AccountAddress;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+mod contract;
+
+use crate::contract::{Contract, ModuleContract};
 use move_lang::compiled_unit::CompiledUnit;
 pub use move_lang::{
     move_check, move_check_no_report, move_compile, move_compile_no_report,
     move_compile_to_expansion_no_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::bytecode_verifier::VerifiedModule;
+use starcoin_vm_types::file_format::CompiledModule;
 
 pub mod errors {
     pub use move_lang::errors::*;
@@ -108,21 +114,40 @@ pub fn compile_source_string(
         .expect("temp file path must is str.")
         .to_string()];
     let (file_texts, compile_units) = move_compile_no_report(&targets, deps, Some(sender))?;
-    let mut compile_units = match compile_units {
+    let mut compiled_units = match compile_units {
         Err(e) => {
             let err = crate::errors::report_errors_to_color_buffer(file_texts, e);
             bail!(String::from_utf8(err).unwrap())
         }
         Ok(r) => r,
     };
-    let compile_result = compile_units.pop().unwrap();
-    Ok(compile_result)
+    let compiled_unit = compiled_units.pop().expect("At least one compiled_unit");
+    Ok(compiled_unit)
+}
+
+pub fn check_module_compat(pre_code: Vec<u8>, new_code: Vec<u8>) -> Result<()> {
+    if pre_code == new_code {
+        return Ok(());
+    }
+    let mut pre_version = CompiledModule::deserialize(pre_code.as_slice())?;
+    let mut new_version = CompiledModule::deserialize(new_code.as_slice())?;
+    pre_version = VerifiedModule::new(pre_version)
+        .map_err(|e| e.1)?
+        .into_inner();
+    new_version = VerifiedModule::new(new_version)
+        .map_err(|e| e.1)?
+        .into_inner();
+    let pre_contract = ModuleContract::new(&pre_version);
+    let new_contract = ModuleContract::new(&new_version);
+    new_contract.compat_with(&pre_contract)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::command_line::parse_address;
+    use starcoin_logger::prelude::*;
+    use starcoin_vm_types::language_storage::CORE_CODE_ADDRESS;
 
     #[test]
     fn test_process_source_tpl() {
@@ -143,5 +168,85 @@ mod tests {
         let source = process_source_tpl(source_tpl, sender, vars);
         println!("{}", source);
         assert!(!source.contains("sender"))
+    }
+
+    #[stest::test]
+    fn test_compat() {
+        let test_cases = vec![
+            (
+                r#"
+            module M {
+                struct M{
+                    value: u64,
+                }
+
+                public fun hello(){
+                }
+            }
+        "#,
+                r#"
+            module M {
+                struct M{
+                    value: u64,
+                }
+                
+                struct M2{
+                    value: u128,
+                }
+
+                public fun hello(){
+                }
+                
+                public fun hello2(){
+                }
+            }
+        "#,
+                true,
+            ),
+            (
+                r#"
+            module M {
+                struct M{
+                    value: u64,
+                }
+            }
+        "#,
+                r#"
+            module M {
+                struct M{
+                    value: u64,
+                    new_field: address,
+                }
+            }
+        "#,
+                false,
+            ),
+        ];
+        for (pre_version, new_version, expect) in test_cases {
+            do_test_compat(pre_version, new_version, expect);
+        }
+    }
+
+    fn do_test_compat(pre_source_code: &str, new_source_code: &str, expect: bool) {
+        let pre_code = compile_source_string(pre_source_code, &[], CORE_CODE_ADDRESS)
+            .unwrap()
+            .serialize();
+        let new_code = compile_source_string(new_source_code, &[], CORE_CODE_ADDRESS)
+            .unwrap()
+            .serialize();
+        match check_module_compat(pre_code, new_code) {
+            Err(e) => {
+                if expect {
+                    panic!(e)
+                } else {
+                    debug!("expected checked compat error: {:?}", e);
+                }
+            }
+            Ok(_) => {
+                if !expect {
+                    panic!("expect not compat, but compat.")
+                }
+            }
+        }
     }
 }
