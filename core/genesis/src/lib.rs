@@ -17,19 +17,14 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
 use starcoin_transaction_builder::{build_upgrade_package, StdLibOptions};
-use starcoin_types::block::{BlockInfo, BlockState};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::{
-    accumulator_info::AccumulatorInfo, block::Block, transaction::Transaction,
-    vm_error::StatusCode, U256,
-};
+use starcoin_types::{block::Block, transaction::Transaction, vm_error::StatusCode};
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
@@ -226,63 +221,6 @@ impl Genesis {
         scs::from_bytes(bytes).expect("Deserialize genesis must ok.")
     }
 
-    pub fn execute(self, storage: Arc<dyn Store>) -> Result<StartupInfo> {
-        let Genesis { block } = self;
-        let (header, body) = block.clone().into_inner();
-        let chain_state_db = ChainStateDB::new(storage.clone().into_super_arc(), None);
-        let mut txns: Vec<SignedUserTransaction> = body.into();
-        ensure!(
-            txns.len() == 1,
-            "Genesis block must only contains one genesis txn."
-        );
-        let genesis_txn = txns.pop().expect("Genesis txn must exist.");
-        let transaction_info = Self::execute_genesis_txn(&chain_state_db, genesis_txn)?;
-
-        ensure!(
-            header.state_root() == transaction_info.state_root_hash(),
-            "Genesis block state root mismatch."
-        );
-
-        let txn_accumulator = MerkleAccumulator::new(
-            *ACCUMULATOR_PLACEHOLDER_HASH,
-            vec![],
-            0,
-            0,
-            AccumulatorStoreType::Transaction,
-            storage.clone().into_super_arc(),
-        )?;
-        let txn_info_hash = transaction_info.id();
-
-        let (_, _) = txn_accumulator.append(vec![txn_info_hash].as_slice())?;
-        txn_accumulator.flush()?;
-        let txn_accumulator_info: AccumulatorInfo = (&txn_accumulator).try_into()?;
-        ensure!(header.number() == 0, "Genesis block number must is 0.");
-        debug!("Genesis block id : {:?}", header.id());
-
-        ensure!(
-            header.accumulator_root() == *txn_accumulator_info.get_accumulator_root(),
-            "Genesis block accumulator root mismatch."
-        );
-        storage.commit_block(block, BlockState::Executed)?;
-        let mut txn_infos = Vec::new();
-        txn_infos.push(transaction_info);
-        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
-        storage.save_block_txn_info_ids(header.id(), txn_info_ids)?;
-        storage.save_transaction_infos(txn_infos)?;
-
-        let startup_info = StartupInfo::new(header.id(), vec![]);
-        let block_info = BlockInfo::new_with_accumulator_info(
-            header.id(),
-            txn_accumulator_info,
-            Self::genesis_block_accumulator_info(header.id(), storage.clone())?,
-            U256::zero(),
-        );
-        debug!("Genesis block_info: {:?}", block_info);
-        storage.save_block_info(block_info)?;
-        storage.save_startup_info(startup_info.clone())?;
-        Ok(startup_info)
-    }
-
     pub fn execute_genesis_block(
         self,
         net: ChainNetwork,
@@ -324,24 +262,6 @@ impl Genesis {
         let contents = scs::to_bytes(self)?;
         file.write_all(&contents)?;
         Ok(())
-    }
-
-    fn genesis_block_accumulator_info(
-        genesis_block_id: HashValue,
-        storage: Arc<dyn Store>,
-    ) -> Result<AccumulatorInfo> {
-        let accumulator = MerkleAccumulator::new(
-            *ACCUMULATOR_PLACEHOLDER_HASH,
-            vec![],
-            0,
-            0,
-            AccumulatorStoreType::Block,
-            storage.clone().into_super_arc(),
-        )?;
-
-        let (_, _) = accumulator.append(vec![genesis_block_id].as_slice())?;
-        accumulator.flush()?;
-        (&accumulator).try_into()
     }
 }
 
