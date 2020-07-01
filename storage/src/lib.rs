@@ -7,7 +7,7 @@ use crate::block_info::{BlockInfoStorage, BlockInfoStore};
 use crate::state_node::StateStorage;
 use crate::storage::{ColumnFamilyName, InnerStorage, KVStore, StorageInstance};
 use crate::transaction::TransactionStorage;
-use crate::transaction_info::TransactionInfoStorage;
+use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use crypto::HashValue;
 use once_cell::sync::Lazy;
@@ -57,6 +57,7 @@ pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "startup_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
+pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
 pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
@@ -74,6 +75,7 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         STARTUP_INFO_PREFIX_NAME,
         TRANSACTION_PREFIX_NAME,
         TRANSACTION_INFO_PREFIX_NAME,
+        TRANSACTION_INFO_HASH_PREFIX_NAME,
     ]
 });
 
@@ -131,7 +133,8 @@ pub trait BlockStore {
 }
 
 pub trait TransactionInfoStore {
-    fn get_transaction_info(&self, txn_info_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn get_transaction_info(&self, id: HashValue) -> Result<Option<TransactionInfo>>;
+    fn get_transaction_info_by_hash(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()> {
         self.save_transaction_infos(vec![txn_info])
     }
@@ -146,6 +149,7 @@ pub trait TransactionStore {
 
 pub struct Storage {
     transaction_info_storage: TransactionInfoStorage,
+    transaction_info_hash_storage: TransactionInfoHashStorage,
     transaction_storage: TransactionStorage,
     block_storage: BlockStorage,
     state_node_storage: StateStorage,
@@ -158,6 +162,7 @@ impl Storage {
     pub fn new(instance: StorageInstance) -> Result<Self> {
         Ok(Self {
             transaction_info_storage: TransactionInfoStorage::new(instance.clone()),
+            transaction_info_hash_storage: TransactionInfoHashStorage::new(instance.clone()),
             transaction_storage: TransactionStorage::new(instance.clone()),
             block_storage: BlockStorage::new(instance.clone()),
             state_node_storage: StateStorage::new(instance.clone()),
@@ -341,11 +346,24 @@ impl BlockInfoStore for Storage {
 }
 
 impl TransactionInfoStore for Storage {
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
-        self.transaction_info_storage.get(txn_hash)
+    fn get_transaction_info(&self, id: HashValue) -> Result<Option<TransactionInfo>> {
+        self.transaction_info_storage.get(id)
+    }
+
+    fn get_transaction_info_by_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<TransactionInfo>, Error> {
+        let transaction_info_id = self
+            .transaction_info_hash_storage
+            .get(txn_hash)
+            .expect("transaction_info hash must exist");
+        self.get_transaction_info(transaction_info_id.unwrap())
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
+        self.transaction_info_hash_storage
+            .save_transaction_infos(vec_txn_info.clone())?;
         self.transaction_info_storage
             .save_transaction_infos(vec_txn_info)
     }

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::ChainNetwork;
-use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
@@ -130,7 +130,7 @@ impl Genesis {
             AccumulatorStoreType::Transaction,
             storage,
         )?;
-        let txn_info_hash = transaction_info.crypto_hash();
+        let txn_info_hash = transaction_info.id();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
         accumulator.flush()?;
@@ -248,7 +248,7 @@ impl Genesis {
             AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
         )?;
-        let txn_info_hash = transaction_info.crypto_hash();
+        let txn_info_hash = transaction_info.id();
 
         let (_, _) = txn_accumulator.append(vec![txn_info_hash].as_slice())?;
         txn_accumulator.flush()?;
@@ -263,7 +263,7 @@ impl Genesis {
         storage.commit_block(block, BlockState::Executed)?;
         let mut txn_infos = Vec::new();
         txn_infos.push(transaction_info);
-        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.crypto_hash()).collect();
+        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
         storage.save_block_txn_info_ids(header.id(), txn_info_ids)?;
         storage.save_transaction_infos(txn_infos)?;
 

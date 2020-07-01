@@ -67,11 +67,20 @@ where
         Box::new(fut.compat())
     }
 
-    fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<Transaction> {
+    fn get_transaction(&self, transaction_hash: HashValue) -> FutureResult<Transaction> {
         let fut = self
             .service
             .clone()
-            .get_transaction(transaction_id)
+            .get_transaction(transaction_hash)
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
+
+    fn get_transaction_info(&self, transaction_hash: HashValue) -> FutureResult<TransactionInfo> {
+        let fut = self
+            .service
+            .clone()
+            .get_transaction_info(transaction_hash)
             .map_err(map_err);
         Box::new(fut.compat())
     }

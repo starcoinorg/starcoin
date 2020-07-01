@@ -6,7 +6,7 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{InnerStore, ValueCodec};
 use crate::DEFAULT_PREFIX_NAME;
-use crypto::{hash::PlainCryptoHash, HashValue};
+use crypto::HashValue;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;
@@ -24,7 +24,7 @@ fn test_db_batch() {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.crypto_hash();
+    let id = transaction_info1.id();
     write_batch
         .put::<HashValue, TransactionInfo>(id, transaction_info1.clone())
         .unwrap();
@@ -36,7 +36,7 @@ fn test_db_batch() {
         1,
         StatusCode::ABORTED,
     );
-    let id2 = transaction_info2.crypto_hash();
+    let id2 = transaction_info2.id();
     write_batch
         .put::<HashValue, TransactionInfo>(id2, transaction_info2.clone())
         .unwrap();
@@ -77,7 +77,7 @@ fn test_cache_batch() {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.crypto_hash();
+    let id = transaction_info1.id();
     write_batch
         .put::<HashValue, TransactionInfo>(id, transaction_info1.clone())
         .unwrap();
@@ -89,7 +89,7 @@ fn test_cache_batch() {
         1,
         StatusCode::ABORTED,
     );
-    let id2 = transaction_info2.crypto_hash();
+    let id2 = transaction_info2.id();
     write_batch
         .put::<HashValue, TransactionInfo>(id2, transaction_info2.clone())
         .unwrap();

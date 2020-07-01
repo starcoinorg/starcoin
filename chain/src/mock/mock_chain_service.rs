@@ -45,6 +45,10 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
+    async fn get_transaction_info(self, _txn_id: HashValue) -> Result<TransactionInfo> {
+        unimplemented!()
+    }
+
     async fn get_block_txn_infos(self, _block_id: HashValue) -> Result<Vec<TransactionInfo>> {
         unimplemented!()
     }

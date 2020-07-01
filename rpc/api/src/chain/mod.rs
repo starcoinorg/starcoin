@@ -30,6 +30,9 @@ pub trait ChainApi {
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
     fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<Transaction>;
+    /// Get chain transactions
+    #[rpc(name = "chain.get_transaction_info")]
+    fn get_transaction_info(&self, transaction_id: HashValue) -> FutureResult<TransactionInfo>;
 
     /// Get chain transactions infos by block id
     #[rpc(name = "chain.get_block_txn_infos")]

@@ -261,6 +261,11 @@ where
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
         self.storage.get_transaction(txn_hash)
     }
+
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
+        self.storage.get_transaction_info_by_hash(txn_hash)
+    }
+
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
         self.storage.get_block_transaction_infos(block_id)
     }

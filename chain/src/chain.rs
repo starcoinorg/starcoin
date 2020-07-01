@@ -3,7 +3,7 @@
 
 use anyhow::{ensure, format_err, Result};
 use config::NodeConfig;
-use crypto::{hash::PlainCryptoHash, HashValue};
+use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
@@ -308,7 +308,7 @@ where
                 transactions.len() == txn_infos.len(),
                 "block txns' length should be equal to txn infos' length"
             );
-            let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.crypto_hash()).collect();
+            let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
             self.storage
                 .save_block_txn_info_ids(block_id, txn_info_ids)?;
             self.storage.save_transaction_infos(txn_infos)?;
@@ -396,10 +396,8 @@ where
 
         // txn accumulator verify.
         let executed_accumulator_root = {
-            let included_txn_info_hashes: Vec<_> = vec_transaction_info
-                .iter()
-                .map(|info| info.crypto_hash())
-                .collect();
+            let included_txn_info_hashes: Vec<_> =
+                vec_transaction_info.iter().map(|info| info.id()).collect();
             let (accumulator_root, _first_leaf_idx) =
                 self.txn_accumulator.append(&included_txn_info_hashes)?;
             accumulator_root
@@ -446,8 +444,7 @@ where
         let block_id = block.id();
         let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
 
-        let included_txn_info_hashes: Vec<_> =
-            txn_infos.iter().map(|info| info.crypto_hash()).collect();
+        let included_txn_info_hashes: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
         let parent_block_info = self
             .storage
             .get_block_info(block.header().parent_hash())?
