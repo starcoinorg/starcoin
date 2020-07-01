@@ -28,29 +28,27 @@ use types::{
     U256,
 };
 
-pub struct BlockChain<C, S>
+pub struct BlockChain<C>
 where
     C: Consensus,
-    S: Store + 'static,
 {
     config: Arc<NodeConfig>,
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
-    head: Block,
+    head: Option<Block>,
     chain_state: ChainStateDB,
-    storage: Arc<S>,
+    storage: Arc<dyn Store>,
     phantom: PhantomData<C>,
 }
 
-impl<C, S> BlockChain<C, S>
+impl<C> BlockChain<C>
 where
     C: Consensus,
-    S: Store,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         head_block_hash: HashValue,
-        storage: Arc<S>,
+        storage: Arc<dyn Store>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
@@ -67,15 +65,37 @@ where
             txn_accumulator: info_2_accumulator(
                 txn_accumulator_info,
                 AccumulatorStoreType::Transaction,
-                storage.clone(),
+                storage.clone().into_super_arc(),
             )?,
             block_accumulator: info_2_accumulator(
                 block_accumulator_info.clone(),
                 AccumulatorStoreType::Block,
-                storage.clone(),
+                storage.clone().into_super_arc(),
             )?,
-            head,
-            chain_state: ChainStateDB::new(storage.clone(), Some(state_root)),
+            head: Some(head),
+            chain_state: ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
+            storage,
+            phantom: PhantomData,
+        };
+        Ok(chain)
+    }
+
+    pub fn init_empty_chain(storage: Arc<dyn Store>) -> Result<Self> {
+        let config = Arc::new(NodeConfig::default());
+        let txn_accumulator = MerkleAccumulator::new_empty(
+            AccumulatorStoreType::Transaction,
+            storage.clone().into_super_arc(),
+        )?;
+        let block_accumulator = MerkleAccumulator::new_empty(
+            AccumulatorStoreType::Block,
+            storage.clone().into_super_arc(),
+        )?;
+        let chain = Self {
+            config,
+            txn_accumulator,
+            block_accumulator,
+            head: None,
+            chain_state: ChainStateDB::new(storage.clone().into_super_arc(), None),
             storage,
             phantom: PhantomData,
         };
@@ -158,22 +178,21 @@ where
         Ok(false)
     }
 
-    pub fn get_storage(&self) -> Arc<S> {
+    pub fn get_storage(&self) -> Arc<dyn Store> {
         self.storage.clone()
     }
 }
 
-impl<C, S> ChainReader for BlockChain<C, S>
+impl<C> ChainReader for BlockChain<C>
 where
     C: Consensus,
-    S: Store,
 {
     fn head_block(&self) -> Block {
-        self.head.clone()
+        self.head.clone().expect("head block is none.")
     }
 
     fn current_header(&self) -> BlockHeader {
-        self.head.header().clone()
+        self.head_block().header().clone()
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -277,7 +296,7 @@ where
     }
 
     fn get_total_difficulty(&self) -> Result<U256> {
-        let block_info = self.storage.get_block_info(self.head.header().id())?;
+        let block_info = self.storage.get_block_info(self.head_block().id())?;
         Ok(block_info.map_or(U256::zero(), |info| info.total_difficulty))
     }
 
@@ -291,10 +310,9 @@ where
     }
 }
 
-impl<C, S> BlockChain<C, S>
+impl<C> BlockChain<C>
 where
     C: Consensus,
-    S: Store,
 {
     fn save(
         &mut self,
@@ -327,15 +345,14 @@ where
     }
 }
 
-impl<C, S> ChainWriter for BlockChain<C, S>
+impl<C> ChainWriter for BlockChain<C>
 where
     C: Consensus,
-    S: Store,
 {
     fn apply(&mut self, block: Block) -> Result<ConnectBlockResult> {
         let header = block.header();
         let pre_hash = header.parent_hash();
-        assert_eq!(self.head.header().id(), pre_hash);
+        assert_eq!(self.head_block().id(), pre_hash);
         // do not check genesis block timestamp check
         if let Some(pre_block) = self.get_block(pre_hash)? {
             ensure!(
@@ -454,7 +471,7 @@ where
             let tmp_txn_accumulator = info_2_accumulator(
                 parent_txn_accumulator_info,
                 AccumulatorStoreType::Transaction,
-                self.storage.clone(),
+                self.storage.clone().into_super_arc(),
             )?;
             let (accumulator_root, _first_leaf_idx) =
                 tmp_txn_accumulator.append(&included_txn_info_hashes)?;
@@ -524,10 +541,12 @@ where
     ) -> Result<()> {
         let block_id = block.id();
         self.save_block(&block, block_state);
-        self.head = block;
+        self.head = Some(block);
         self.save_block_info(block_info);
-        self.chain_state =
-            ChainStateDB::new(self.storage.clone(), Some(self.head.header().state_root()));
+        self.chain_state = ChainStateDB::new(
+            self.storage.clone().into_super_arc(),
+            Some(self.head_block().header().state_root()),
+        );
         debug!("save block {:?} succ.", block_id);
         Ok(())
     }

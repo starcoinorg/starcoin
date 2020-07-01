@@ -1,12 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_chain::BlockChain;
 use starcoin_config::ChainNetwork;
+use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
@@ -34,6 +36,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
+use traits::{ChainReader, ChainWriter, ConnectBlockResult, Consensus};
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -101,7 +104,7 @@ impl Genesis {
     }
 
     /// Build fresh genesis
-    pub(crate) fn build(net: ChainNetwork) -> Result<Self> {
+    pub fn build(net: ChainNetwork) -> Result<Self> {
         debug!("Init genesis");
         let block = Self::build_genesis_block(net)?;
         assert_eq!(block.header().number(), 0);
@@ -280,6 +283,34 @@ impl Genesis {
         Ok(startup_info)
     }
 
+    pub fn execute_genesis_block(
+        self,
+        net: ChainNetwork,
+        storage: Arc<dyn Store>,
+    ) -> Result<StartupInfo> {
+        if net.is_dev() {
+            self.execute_genesis_block_inner::<DevConsensus>(storage)
+        } else {
+            self.execute_genesis_block_inner::<ArgonConsensus>(storage)
+        }
+    }
+
+    pub fn execute_genesis_block_inner<C>(self, storage: Arc<dyn Store>) -> Result<StartupInfo>
+    where
+        C: Consensus + 'static,
+    {
+        let Genesis { block } = self;
+        let mut genesis_chain = BlockChain::<C>::init_empty_chain(storage)?;
+        if let ConnectBlockResult::SUCCESS = genesis_chain.apply(block)? {
+            Ok(StartupInfo::new(
+                genesis_chain.current_header().id(),
+                Vec::new(),
+            ))
+        } else {
+            Err(format_err!("Apply genesis block failed."))
+        }
+    }
+
     pub fn save<P>(&self, data_dir: P) -> Result<()>
     where
         P: AsRef<Path>,
@@ -354,12 +385,12 @@ mod tests {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
-        let startup_info = genesis.execute(storage.clone())?;
+        let startup_info = genesis.execute_genesis_block(net, storage.clone())?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
-        let startup_info2 = genesis2.execute(storage2)?;
+        let startup_info2 = genesis2.execute_genesis_block(net, storage2)?;
 
         assert_eq!(
             startup_info, startup_info2,

@@ -28,3 +28,4 @@ starcoin-transaction-builder = { path = "../../vm/transaction-builder"}
 stdlib = { path = "../../vm/stdlib"}
 traits = { path = "../../core/traits", package = "starcoin-traits"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+starcoin-chain = { path = "../../chain"}

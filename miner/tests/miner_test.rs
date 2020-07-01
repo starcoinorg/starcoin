@@ -48,7 +48,9 @@ fn test_miner_with_schedule_pacemaker() {
         let _address = account_address::from_public_key(&key_pair.public_key);
         let genesis = Genesis::load(config.net()).unwrap();
         let genesis_hash = genesis.block().header().id();
-        let startup_info = genesis.execute(storage.clone()).unwrap();
+        let startup_info = genesis
+            .execute_genesis_block(config.net(), storage.clone())
+            .unwrap();
         let txpool = {
             let best_block_id = *startup_info.get_master();
             TxPool::start(
@@ -142,7 +144,9 @@ fn test_miner_with_ondemand_pacemaker() {
 
         let genesis = Genesis::load(config.net()).unwrap();
         let genesis_hash = genesis.block().header().id();
-        let startup_info = genesis.execute(storage.clone()).unwrap();
+        let startup_info = genesis
+            .execute_genesis_block(config.net(), storage.clone())
+            .unwrap();
 
         let txpool = {
             let best_block_id = *startup_info.get_master();

@@ -6,32 +6,29 @@ use anyhow::Result;
 use jsonrpc_core::{futures as futures01, MetaIoHandler};
 use jsonrpc_pubsub::Session;
 // use starcoin_crypto::hash::HashValue;
+use crate::module::test_helper;
 use futures::{compat::Stream01CompatExt, StreamExt};
-use starcoin_rpc_api::pubsub::StarcoinPubSub;
-use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::account_address;
-use std::sync::Arc;
-use txpool::test_helper::start_txpool;
-// use txpool::TxPoolRef;
 use starcoin_bus::{Bus, BusActor};
-use starcoin_chain::test_helper as chain_test_helper;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::dev::DevConsensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use starcoin_logger::prelude::*;
+use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter, Consensus};
+use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::account_address;
 use starcoin_types::{
     block::BlockDetail, system_events::NewHeadBlock, transaction::authenticator::AuthenticationKey,
 };
 use starcoin_wallet_api::WalletAccount;
+use std::sync::Arc;
 
 #[actix_rt::test]
 pub async fn test_subscribe_to_events() -> Result<()> {
     // prepare
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain =
-        chain_test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
     let miner_account = WalletAccount::random();
 
     let pri_key = Ed25519PrivateKey::genesis();
@@ -122,7 +119,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
-    let (txpool, _) = start_txpool();
+    let (txpool, _) = test_helper::start_txpool();
     let txpool_service = txpool.get_service();
     let service = PubSubService::new();
     let txn_receiver = txpool_service.subscribe_txns();

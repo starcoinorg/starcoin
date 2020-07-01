@@ -21,7 +21,9 @@ async fn gen_master_chain(
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
     let genesis = Genesis::load(node_config.net()).unwrap();
-    let startup_info = genesis.execute(storage.clone()).unwrap();
+    let startup_info = genesis
+        .execute_genesis_block(node_config.net(), storage.clone())
+        .unwrap();
     let bus = BusActor::launch();
     let txpool_service = {
         let best_block_id = *startup_info.get_master();
@@ -45,7 +47,7 @@ async fn gen_master_chain(
     if times > 0 {
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
-            let block_chain = BlockChain::<DevConsensus, Storage>::new(
+            let block_chain = BlockChain::<DevConsensus>::new(
                 node_config.clone(),
                 startup_info.master,
                 storage.clone(),
