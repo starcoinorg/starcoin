@@ -11,7 +11,7 @@ use crate::StateSyncReset;
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
-use crypto::{hash::PlainCryptoHash, HashValue};
+use crypto::HashValue;
 use forkable_jellyfish_merkle::node_type::Node;
 use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use futures::executor::block_on;
@@ -728,7 +728,7 @@ where
         block_id: HashValue,
         txn_infos: Vec<TransactionInfo>,
     ) -> Result<()> {
-        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.crypto_hash()).collect();
+        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
         self.storage
             .save_block_txn_info_ids(block_id, txn_info_ids)?;
         self.storage.save_transaction_infos(txn_infos)

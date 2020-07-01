@@ -8,7 +8,7 @@ use crate::db_storage::DBStorage;
 use crate::storage::{InnerStore, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
 use crate::{Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
 use anyhow::Result;
-use crypto::{hash::PlainCryptoHash, HashValue};
+use crypto::HashValue;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::StatusCode;
 use std::sync::Arc;
@@ -70,7 +70,7 @@ fn test_storage() {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.crypto_hash();
+    let id = transaction_info1.id();
     storage
         .transaction_info_storage
         .put(id, transaction_info1.clone())
@@ -98,7 +98,7 @@ fn test_two_level_storage() {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.crypto_hash();
+    let id = transaction_info1.id();
     storage
         .transaction_info_storage
         .put(id, transaction_info1.clone())
@@ -149,7 +149,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
         0,
         StatusCode::ABORTED,
     );
-    let id = transaction_info1.crypto_hash();
+    let id = transaction_info1.id();
     storage
         .transaction_info_storage
         .put(id, transaction_info1.clone())

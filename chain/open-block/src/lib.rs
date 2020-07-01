@@ -217,7 +217,7 @@ impl OpenedBlock {
             gas_used,
             status.major_status,
         );
-        let (accumulator_root, _) = self.txn_accumulator.append(&[txn_info.crypto_hash()])?;
+        let (accumulator_root, _) = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))
     }
 

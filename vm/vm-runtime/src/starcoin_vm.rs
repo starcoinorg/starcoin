@@ -673,18 +673,7 @@ impl StarcoinVM {
                     }
                     result.push(output);
                 }
-                TransactionBlock::ChangeSet(change_set) => {
-                    //TODO change_set txn verify
-                    let (write_set, events) = change_set.into_inner();
-                    data_cache.push_write_set(&write_set);
-                    result.push(TransactionOutput::new(
-                        write_set,
-                        events,
-                        0,
-                        0,
-                        KEEP_STATUS.clone(),
-                    ));
-                }
+                TransactionBlock::ChangeSet(_change_set) => {}
             }
         }
         Ok(result)
@@ -739,13 +728,6 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
                     buf = vec![];
                 }
                 blocks.push(TransactionBlock::BlockPrologue(data));
-            }
-            Transaction::ChangeSet(cs) => {
-                if !buf.is_empty() {
-                    blocks.push(TransactionBlock::UserTransaction(buf));
-                    buf = vec![];
-                }
-                blocks.push(TransactionBlock::ChangeSet(cs));
             }
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);

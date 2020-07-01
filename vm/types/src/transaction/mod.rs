@@ -581,11 +581,6 @@ pub enum Transaction {
     /// Transaction submitted by the user. e.g: P2P payment transaction, publishing module
     /// transaction, etc.
     UserTransaction(SignedUserTransaction),
-
-    /// Transaction that applies a ChangeSet to the current ChainState. This should be used for ONLY for
-    /// genesis right now.
-    ChangeSet(ChangeSet),
-
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
 }
@@ -600,7 +595,10 @@ impl Transaction {
 
     pub fn id(&self) -> HashValue {
         //TODO rethink txn id's represent.
-        self.crypto_hash()
+        match self {
+            Transaction::UserTransaction(signed) => signed.crypto_hash(),
+            _ => self.crypto_hash(),
+        }
     }
 }
 

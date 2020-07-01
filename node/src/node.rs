@@ -153,15 +153,21 @@ where
     //Only dev network pre_mine_config contains private_key.
     if let Some(pre_mine_config) = config.net().get_config().pre_mine_config.as_ref() {
         if let Some(private_key) = pre_mine_config.private_key.as_ref() {
-            account_service
+            let association_account = account_service
                 .clone()
-                .import_account(
-                    association_address(),
-                    private_key.to_bytes().to_vec(),
-                    "".to_string(),
-                )
+                .get_account(association_address())
                 .await?;
-            info!("Import association account to wallet.");
+            if association_account.is_none() {
+                account_service
+                    .clone()
+                    .import_account(
+                        association_address(),
+                        private_key.to_bytes().to_vec(),
+                        "".to_string(),
+                    )
+                    .await?;
+                info!("Import association account to wallet.");
+            }
         }
     }
 
