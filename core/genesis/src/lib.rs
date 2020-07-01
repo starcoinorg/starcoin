@@ -104,7 +104,7 @@ impl Genesis {
     }
 
     /// Build fresh genesis
-    pub fn build(net: ChainNetwork) -> Result<Self> {
+    pub(crate) fn build(net: ChainNetwork) -> Result<Self> {
         debug!("Init genesis");
         let block = Self::build_genesis_block(net)?;
         assert_eq!(block.header().number(), 0);
