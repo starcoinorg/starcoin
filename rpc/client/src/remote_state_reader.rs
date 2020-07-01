@@ -52,6 +52,6 @@ impl<'a> StateView for RemoteStateReader<'a> {
     }
 
     fn is_genesis(&self) -> bool {
-        unimplemented!()
+        false
     }
 }

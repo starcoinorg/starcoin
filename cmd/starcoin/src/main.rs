@@ -121,6 +121,7 @@ fn run() -> Result<()> {
                 .subcommand(dev::CompileCommand)
                 .subcommand(dev::DeployCommand)
                 .subcommand(dev::ExecuteCommand)
+                .subcommand(dev::DryRunCommand)
                 .subcommand(dev::DeriveAddressCommand)
                 .subcommand(dev::GenerateMultisigTxnCommand)
                 .subcommand(dev::ExecuteMultiSignedTxnCommand)

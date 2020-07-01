@@ -20,6 +20,8 @@ pub use move_lang::{
 };
 use starcoin_vm_types::bytecode_verifier::VerifiedModule;
 use starcoin_vm_types::file_format::CompiledModule;
+use std::fs::OpenOptions;
+use std::io::Read;
 
 pub mod errors {
     pub use move_lang::errors::*;
@@ -140,6 +142,56 @@ pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> Result<()> {
     let pre_contract = ModuleContract::new(&pre_version);
     let new_contract = ModuleContract::new(&new_version);
     new_contract.compat_with(&pre_contract)
+}
+
+/// Compile move source file, or load move bytecode file, based on file path extension.
+pub fn compile_or_load_move_file<P: AsRef<Path>>(
+    file_path: P,
+    extra_deps: &[String],
+    sender: AccountAddress,
+) -> Result<(Vec<u8>, bool)> {
+    let ext = file_path
+        .as_ref()
+        .extension()
+        .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
+        .unwrap_or_else(|| "");
+    if ext == MOVE_EXTENSION {
+        let compile_units = compile_source_string(
+            std::fs::read_to_string(file_path)?.as_str(),
+            extra_deps,
+            sender,
+        )?;
+        let is_script = match compile_units {
+            CompiledUnit::Module { .. } => false,
+            CompiledUnit::Script { .. } => true,
+        };
+        Ok((compile_units.serialize(), is_script))
+    } else if ext == MOVE_COMPILED_EXTENSION {
+        let mut file = OpenOptions::new().read(true).write(false).open(file_path)?;
+        let mut bytecode = vec![];
+        file.read_to_end(&mut bytecode)?;
+        let is_script = match starcoin_vm_types::file_format::CompiledScript::deserialize(
+            bytecode.as_slice(),
+        ) {
+            Err(_) => {
+                match starcoin_vm_types::file_format::CompiledModule::deserialize(
+                    bytecode.as_slice(),
+                ) {
+                    Ok(_) => false,
+                    Err(e) => {
+                        bail!(
+                            "invalid bytecode file, cannot deserialize as script or module, {}",
+                            e
+                        );
+                    }
+                }
+            }
+            Ok(_) => true,
+        };
+        Ok((bytecode, is_script))
+    } else {
+        bail!("Only support *.move or *.mv file");
+    }
 }
 
 #[cfg(test)]
