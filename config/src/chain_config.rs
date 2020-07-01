@@ -185,9 +185,17 @@ pub struct ChainConfig {
     pub vm_config: VMConfig,
     /// List of initial node addresses
     pub boot_nodes: Vec<Multiaddr>,
+    /// uncle rate target
+    pub uncle_rate_target: u64,
+    /// epoch time target
+    pub epoch_time_target: u64,
+    /// reward half_time_target
+    pub reward_half_time_target: u64,
 }
 
 pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
+pub static EPOCH_TIME_TARGET: u64 = 1_209_600;
+pub static REWARD_HALF_TIME_TARGET: u64 = 126_144_000;
 
 pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let (private_key, public_key) = ChainNetwork::genesis_key_pair();
@@ -212,6 +220,9 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
         boot_nodes: vec![],
+        uncle_rate_target: 80,
+        epoch_time_target: EPOCH_TIME_TARGET,
+        reward_half_time_target: REWARD_HALF_TIME_TARGET,
     }
 });
 
@@ -241,6 +252,9 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         boot_nodes: vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
                          "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
                          "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"), ],
+        uncle_rate_target: 80,
+        epoch_time_target: EPOCH_TIME_TARGET,
+        reward_half_time_target: REWARD_HALF_TIME_TARGET,
     }
 });
 
@@ -263,6 +277,9 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         boot_nodes: vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
                          "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
                          "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"), ],
+        uncle_rate_target: 80,
+        epoch_time_target: EPOCH_TIME_TARGET,
+        reward_half_time_target: REWARD_HALF_TIME_TARGET,
     }
 });
 
@@ -282,4 +299,7 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
     },
     boot_nodes: vec![],
+    uncle_rate_target: 80,
+    epoch_time_target: EPOCH_TIME_TARGET,
+    reward_half_time_target: REWARD_HALF_TIME_TARGET,
 });
