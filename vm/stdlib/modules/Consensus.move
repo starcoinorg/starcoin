@@ -10,15 +10,15 @@ module Consensus {
         reward_half_time_target:u64,                
     }
 
-    public fun initialize(account: &signer) {
+    public fun initialize(account: &signer,uncle_rate_target:u64,epoch_time_target: u64,reward_half_time_target: u64) {
         assert(Signer::address_of(account) == Config::default_config_address(), 1);
 
         Config::publish_new_config<Self::Consensus>(
             account,
             Consensus { 
-                uncle_rate_target: 80,
-                epoch_time_target :1209600, // two weeks in seconds
-                reward_half_time_target: 126144000, // four years in seconds
+                uncle_rate_target: uncle_rate_target,//80
+                epoch_time_target : epoch_time_target, // two weeks in seconds 1209600
+                reward_half_time_target: reward_half_time_target, // four years in seconds 126144000
             },
         );
     }
