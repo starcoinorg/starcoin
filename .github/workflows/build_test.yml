@@ -41,18 +41,9 @@ jobs:
           args: --all-targets
       - name: build
         uses: actions-rs/cargo@v1
-        env:
-          RUSTFLAGS: -Clink-arg=-Wl,--no-keep-memory,-fuse-ld=gold,--no-map-whole-files
         with:
           command: build
           args: --all
-      - name: build testbin
-        uses: actions-rs/cargo@v1
-        env:
-          RUSTFLAGS: -Clink-arg=-Wl,--no-keep-memory,-fuse-ld=gold,--no-map-whole-files
-        with:
-          command: test
-          args: --all-targets --no-run
       - name: test
         env:
           RUST_LOG: error
