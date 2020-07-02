@@ -196,6 +196,49 @@ module SortedLinkedList {
         };
         return (false, *&head_node.prev)
     }
+
+    public fun empty_node<T: copyable>(account: &signer, key: T) {
+        let sender = Signer::address_of(account);
+
+        //make sure no node/list is already stored in this account
+        assert(!exists<Node<T>>(sender), 19);
+
+        let empty = Self::Node<T> {
+            prev: sender,
+            next: sender,
+            head: sender,
+            key: key
+        };
+        move_to<Node<T>>(account, empty);
+    }
+
+    public fun move_node_to<T: copyable>(account: &signer, receiver: address) acquires Node {
+        let sender_address = Signer::address_of(account);
+        //make sure the node exists
+        assert(exists<Node<T>>(sender_address), 20);
+        assert(exists<Node<T>>(receiver), 21);  //empty node
+
+        //find prev and next
+        let current_node = borrow_global<Node<T>>(sender_address);
+        let next_node_address = current_node.next;
+        let prev_node_address = current_node.prev;
+
+        //update next
+        let next_node_mut = borrow_global_mut<Node<T>>(next_node_address);
+        next_node_mut.prev = receiver;
+
+        //update prev
+        let prev_node_mut = borrow_global_mut<Node<T>>(prev_node_address);
+        prev_node_mut.next = receiver;
+
+        let Node<T> { prev, next, head, key } = move_from<Node<T>>(sender_address);
+        let receiver_node_mut = borrow_global_mut<Node<T>>(receiver);
+        receiver_node_mut.prev = prev;
+        receiver_node_mut.next = next;
+        receiver_node_mut.head = head;
+        receiver_node_mut.key = key;
+        
+    }
    
 }
 }
