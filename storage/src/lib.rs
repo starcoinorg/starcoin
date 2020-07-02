@@ -47,7 +47,6 @@ pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
-pub const BLOCK_SONS_PREFIX_NAME: ColumnFamilyName = "block_sons";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
@@ -65,7 +64,6 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         ACCUMULATOR_NODE_PREFIX_NAME,
         BLOCK_PREFIX_NAME,
         BLOCK_HEADER_PREFIX_NAME,
-        BLOCK_SONS_PREFIX_NAME,
         BLOCK_BODY_PREFIX_NAME,
         BLOCK_NUM_PREFIX_NAME,
         BLOCK_INFO_PREFIX_NAME,
@@ -95,8 +93,6 @@ pub trait BlockStore {
 
     fn commit_block(&self, block: Block, state: BlockState) -> Result<()>;
 
-    fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
-
     fn get_latest_block_header(&self) -> Result<Option<BlockHeader>>;
 
     fn get_latest_block(&self) -> Result<Option<Block>>;
@@ -108,12 +104,6 @@ pub trait BlockStore {
     fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>>;
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>>;
-
-    fn get_common_ancestor(
-        &self,
-        block_id1: HashValue,
-        block_id2: HashValue,
-    ) -> Result<Option<HashValue>>;
 
     fn save_block_transactions(
         &self,
@@ -231,10 +221,6 @@ impl BlockStore for Storage {
         self.block_storage.commit_block(block, state)
     }
 
-    fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
-        self.block_storage.get_branch_hashes(block_id)
-    }
-
     fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
         self.block_storage.get_latest_block_header()
     }
@@ -257,14 +243,6 @@ impl BlockStore for Storage {
 
     fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
         self.block_storage.get_block_by_number(number)
-    }
-
-    fn get_common_ancestor(
-        &self,
-        block_id1: HashValue,
-        block_id2: HashValue,
-    ) -> Result<Option<HashValue>> {
-        self.block_storage.get_common_ancestor(block_id1, block_id2)
     }
 
     fn save_block_transactions(

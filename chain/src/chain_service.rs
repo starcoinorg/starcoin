@@ -21,30 +21,28 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
-pub struct ChainServiceImpl<C, S, P>
+pub struct ChainServiceImpl<C, P>
 where
     C: Consensus,
     P: TxPoolSyncService + 'static,
-    S: Store + 'static,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
-    master: BlockChain<C, S>,
-    storage: Arc<S>,
+    master: BlockChain<C>,
+    storage: Arc<dyn Store>,
     txpool: P,
     bus: Addr<BusActor>,
 }
 
-impl<C, S, P> ChainServiceImpl<C, S, P>
+impl<C, P> ChainServiceImpl<C, P>
 where
     C: Consensus,
     P: TxPoolSyncService + 'static,
-    S: Store + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
-        storage: Arc<S>,
+        storage: Arc<dyn Store>,
         txpool: P,
         bus: Addr<BusActor>,
     ) -> Result<Self> {
@@ -59,10 +57,7 @@ where
         })
     }
 
-    pub fn find_or_fork(
-        &mut self,
-        header: &BlockHeader,
-    ) -> Result<(bool, Option<BlockChain<C, S>>)> {
+    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Result<(bool, Option<BlockChain<C>>)> {
         CHAIN_METRICS.try_connect_count.inc();
         let block_exist = self.block_exist(header.id());
         let block_chain = if !block_exist {
@@ -93,11 +88,11 @@ where
         unimplemented!()
     }
 
-    pub fn get_master(&self) -> &BlockChain<C, S> {
+    pub fn get_master(&self) -> &BlockChain<C> {
         &self.master
     }
 
-    fn select_head(&mut self, new_branch: BlockChain<C, S>) -> Result<()> {
+    fn select_head(&mut self, new_branch: BlockChain<C>) -> Result<()> {
         let block = new_branch.head_block();
         let block_header = block.header();
         let total_difficulty = new_branch.get_total_difficulty()?;
@@ -108,7 +103,7 @@ where
                 } else {
                     // TODO: After review the impl of find_common_ancestor in storage.
                     // we can just let find_ancestors do it work, no matter whether fork or not.
-                    self.find_ancestors(&new_branch)?
+                    self.find_ancestors_from_accumulator(&new_branch)?
                 };
 
             debug_assert!(!enacted_blocks.is_empty());
@@ -127,7 +122,7 @@ where
         self.save_startup()
     }
 
-    fn update_master(&mut self, new_master: BlockChain<C, S>) {
+    fn update_master(&mut self, new_master: BlockChain<C>) {
         let header = new_master.current_header();
         self.master = new_master;
         self.startup_info.update_master(&header);
@@ -148,23 +143,47 @@ where
         }
     }
 
-    fn find_ancestors(&self, new_branch: &BlockChain<C, S>) -> Result<(Vec<Block>, Vec<Block>)> {
+    fn find_ancestors_from_accumulator(
+        &self,
+        new_branch: &BlockChain<C>,
+    ) -> Result<(Vec<Block>, Vec<Block>)> {
+        let new_header_number = new_branch.current_header().number();
+        let master_header_number = self.get_master().current_header().number();
+        let mut number = if new_header_number >= master_header_number {
+            master_header_number
+        } else {
+            new_header_number
+        };
+
         let block_enacted = new_branch.current_header().id();
         let block_retracted = self.get_master().current_header().id();
 
-        let ancestor = self
-            .storage
-            .get_common_ancestor(block_enacted, block_retracted)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Can not find ancestor with {:?} and {:?}.",
-                    block_enacted,
-                    block_retracted
-                )
-            })?;
+        let mut ancestor = None;
+        loop {
+            let block_id_1 = new_branch.find_block_by_number(number)?;
+            let block_id_2 = self.get_master().find_block_by_number(number)?;
 
+            if block_id_1 == block_id_2 {
+                ancestor = Some(block_id_1);
+                break;
+            }
+
+            if number == 0 {
+                break;
+            }
+
+            number -= 1;
+        }
+
+        assert!(
+            ancestor.is_some(),
+            "Can not find ancestors from block accumulator."
+        );
+
+        let ancestor = ancestor.expect("Ancestor is none.");
         let enacted = self.find_blocks_until(block_enacted, ancestor)?;
         let retracted = self.find_blocks_until(block_retracted, ancestor)?;
+
         debug!(
             "commit block num:{}, rollback block num:{}",
             enacted.len(),
@@ -228,11 +247,10 @@ where
     }
 }
 
-impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
+impl<C, P> ChainService for ChainServiceImpl<C, P>
 where
     C: Consensus,
     P: TxPoolSyncService,
-    S: Store,
 {
     fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult> {
         self.connect_inner(block, true)

@@ -62,6 +62,7 @@ use crate::{
 };
 use crate::{config::NonReservedPeerMode, transport};
 use crate::{Multiaddr, PROTOCOL_NAME};
+use std::collections::HashMap;
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -275,6 +276,7 @@ impl NetworkWorker {
             service,
             from_worker,
             event_streams: Vec::new(),
+            sub_streams: HashMap::new(),
             metrics: Metrics::register().ok(),
         })
     }
@@ -493,6 +495,18 @@ impl NetworkService {
         rx
     }
 
+    pub fn sub_stream(
+        &self,
+        protocol_name: impl Into<Cow<'static, [u8]>>,
+    ) -> impl Stream<Item = Event> {
+        // Note: when transitioning to stable futures, remove the `Error` entirely
+        let (tx, rx) = mpsc::unbounded();
+        let _ = self
+            .to_worker
+            .unbounded_send(ServiceToWorkerMsg::EventSubStream(protocol_name.into(), tx));
+        rx
+    }
+
     /// Registers a new notifications protocol.
     ///
     /// After that, you can call `write_notifications`.
@@ -655,6 +669,7 @@ enum ServiceToWorkerMsg {
     PutValue(record::Key, Vec<u8>),
     AddKnownAddress(PeerId, Multiaddr),
     EventStream(mpsc::UnboundedSender<Event>),
+    EventSubStream(Cow<'static, [u8]>, mpsc::UnboundedSender<Event>),
     WriteNotification {
         message: Vec<u8>,
         protocol_name: Cow<'static, [u8]>,
@@ -687,6 +702,8 @@ pub struct NetworkWorker {
     from_worker: mpsc::UnboundedReceiver<ServiceToWorkerMsg>,
     /// Senders for events that happen on the network.
     event_streams: Vec<mpsc::UnboundedSender<Event>>,
+    /// Senders for events that happen on the network.
+    sub_streams: HashMap<Cow<'static, [u8]>, mpsc::UnboundedSender<Event>>,
     /// Prometheus network metrics.
     metrics: Option<Metrics>,
 }
@@ -714,6 +731,9 @@ impl Future for NetworkWorker {
                     this.network_service.add_known_address(peer_id, addr)
                 }
                 ServiceToWorkerMsg::EventStream(sender) => this.event_streams.push(sender),
+                ServiceToWorkerMsg::EventSubStream(protocol_name, sender) => {
+                    this.sub_streams.insert(protocol_name, sender);
+                }
                 ServiceToWorkerMsg::WriteNotification {
                     message,
                     protocol_name,
@@ -774,9 +794,25 @@ impl Future for NetworkWorker {
 
             match poll_value {
                 Poll::Pending => break,
-                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Event(ev))) => this
-                    .event_streams
-                    .retain(|sender| sender.unbounded_send(ev.clone()).is_ok()),
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Event(ev))) => {
+                    let ev_clone = ev.clone();
+                    this.event_streams
+                        .retain(|sender| sender.unbounded_send(ev_clone.clone()).is_ok());
+                    if let Event::NotificationsReceived {
+                        remote,
+                        protocol_name,
+                        messages,
+                    } = ev
+                    {
+                        if let Some(tx) = this.sub_streams.get(&protocol_name) {
+                            let _ = tx.unbounded_send(Event::NotificationsReceived {
+                                remote,
+                                protocol_name,
+                                messages,
+                            });
+                        }
+                    }
+                }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(_))) => {}
                 Poll::Ready(SwarmEvent::ConnectionEstablished {
                     peer_id, endpoint, ..

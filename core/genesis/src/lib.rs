@@ -1,13 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_chain::BlockChain;
 use starcoin_config::ChainNetwork;
-use starcoin_crypto::HashValue;
+use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
@@ -15,25 +16,21 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
 use starcoin_transaction_builder::{build_upgrade_package, StdLibOptions};
-use starcoin_types::block::{BlockInfo, BlockState};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::{
-    accumulator_info::AccumulatorInfo, block::Block, transaction::Transaction,
-    vm_error::StatusCode, U256,
-};
+use starcoin_types::{block::Block, transaction::Transaction, vm_error::StatusCode};
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
+use traits::{ChainReader, ConnectBlockResult, Consensus};
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -182,8 +179,6 @@ impl Genesis {
         Ok(TransactionInfo::new(
             txn_hash,
             state_root,
-            //TODO genesis event.
-            HashValue::zero(),
             events,
             gas_used,
             status.vm_status().major_status,
@@ -223,61 +218,31 @@ impl Genesis {
         scs::from_bytes(bytes).expect("Deserialize genesis must ok.")
     }
 
-    pub fn execute(self, storage: Arc<dyn Store>) -> Result<StartupInfo> {
+    pub fn execute_genesis_block(
+        self,
+        net: ChainNetwork,
+        storage: Arc<dyn Store>,
+    ) -> Result<StartupInfo> {
+        if net.is_dev() {
+            self.execute_genesis_block_inner::<DevConsensus>(storage)
+        } else {
+            self.execute_genesis_block_inner::<ArgonConsensus>(storage)
+        }
+    }
+
+    pub fn execute_genesis_block_inner<C>(self, storage: Arc<dyn Store>) -> Result<StartupInfo>
+    where
+        C: Consensus + 'static,
+    {
         let Genesis { block } = self;
-        let (header, body) = block.clone().into_inner();
-        let chain_state_db = ChainStateDB::new(storage.clone().into_super_arc(), None);
-        let mut txns: Vec<SignedUserTransaction> = body.into();
-        ensure!(
-            txns.len() == 1,
-            "Genesis block must only contains one genesis txn."
-        );
-        let genesis_txn = txns.pop().expect("Genesis txn must exist.");
-        let transaction_info = Self::execute_genesis_txn(&chain_state_db, genesis_txn)?;
-
-        ensure!(
-            header.state_root() == transaction_info.state_root_hash(),
-            "Genesis block state root mismatch."
-        );
-
-        let txn_accumulator = MerkleAccumulator::new(
-            *ACCUMULATOR_PLACEHOLDER_HASH,
-            vec![],
-            0,
-            0,
-            AccumulatorStoreType::Transaction,
-            storage.clone().into_super_arc(),
-        )?;
-        let txn_info_hash = transaction_info.id();
-
-        let (_, _) = txn_accumulator.append(vec![txn_info_hash].as_slice())?;
-        txn_accumulator.flush()?;
-        let txn_accumulator_info: AccumulatorInfo = (&txn_accumulator).try_into()?;
-        ensure!(header.number() == 0, "Genesis block number must is 0.");
-        debug!("Genesis block id : {:?}", header.id());
-
-        ensure!(
-            header.accumulator_root() == *txn_accumulator_info.get_accumulator_root(),
-            "Genesis block accumulator root mismatch."
-        );
-        storage.commit_block(block, BlockState::Executed)?;
-        let mut txn_infos = Vec::new();
-        txn_infos.push(transaction_info);
-        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
-        storage.save_block_txn_info_ids(header.id(), txn_info_ids)?;
-        storage.save_transaction_infos(txn_infos)?;
-
-        let startup_info = StartupInfo::new(header.id(), vec![]);
-        let block_info = BlockInfo::new_with_accumulator_info(
-            header.id(),
-            txn_accumulator_info,
-            Self::genesis_block_accumulator_info(header.id(), storage.clone())?,
-            U256::zero(),
-        );
-        debug!("Genesis block_info: {:?}", block_info);
-        storage.save_block_info(block_info)?;
-        storage.save_startup_info(startup_info.clone())?;
-        Ok(startup_info)
+        let mut genesis_chain = BlockChain::<C>::init_empty_chain(storage.clone())?;
+        if let ConnectBlockResult::SUCCESS = genesis_chain.apply_inner(block, true)? {
+            let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
+            storage.save_startup_info(startup_info.clone())?;
+            Ok(startup_info)
+        } else {
+            Err(format_err!("Apply genesis block failed."))
+        }
     }
 
     pub fn save<P>(&self, data_dir: P) -> Result<()>
@@ -294,29 +259,12 @@ impl Genesis {
         file.write_all(&contents)?;
         Ok(())
     }
-
-    fn genesis_block_accumulator_info(
-        genesis_block_id: HashValue,
-        storage: Arc<dyn Store>,
-    ) -> Result<AccumulatorInfo> {
-        let accumulator = MerkleAccumulator::new(
-            *ACCUMULATOR_PLACEHOLDER_HASH,
-            vec![],
-            0,
-            0,
-            AccumulatorStoreType::Block,
-            storage.clone().into_super_arc(),
-        )?;
-
-        let (_, _) = accumulator.append(vec![genesis_block_id].as_slice())?;
-        accumulator.flush()?;
-        (&accumulator).try_into()
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_crypto::HashValue;
     use starcoin_state_api::AccountStateReader;
     use starcoin_storage::block_info::BlockInfoStore;
     use starcoin_storage::cache_storage::CacheStorage;
@@ -354,12 +302,12 @@ mod tests {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
-        let startup_info = genesis.execute(storage.clone())?;
+        let startup_info = genesis.execute_genesis_block(net, storage.clone())?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
-        let startup_info2 = genesis2.execute(storage2)?;
+        let startup_info2 = genesis2.execute_genesis_block(net, storage2)?;
 
         assert_eq!(
             startup_info, startup_info2,

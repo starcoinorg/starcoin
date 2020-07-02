@@ -158,6 +158,10 @@ impl SNetworkService {
     pub async fn exist_notif_proto(&self, protocol_name: Cow<'static, [u8]>) -> bool {
         self.service.exist_notif_proto(protocol_name).await
     }
+
+    pub async fn sub_stream(&self, protocol_name: Cow<'static, [u8]>) -> impl Stream<Item = Event> {
+        self.service.sub_stream(protocol_name)
+    }
 }
 
 impl NetworkInner {

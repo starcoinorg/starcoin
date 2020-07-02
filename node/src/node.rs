@@ -121,7 +121,7 @@ where
         Ok(None) => {
             let genesis = load_and_check_genesis(&config, true)?;
             let genesis_hash = genesis.block().header().id();
-            let startup_info = genesis.execute(storage.clone())?;
+            let startup_info = genesis.execute_genesis_block(config.net(), storage.clone())?;
             (startup_info, genesis_hash)
         }
         Err(e) => {

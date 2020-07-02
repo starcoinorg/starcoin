@@ -3,12 +3,9 @@
 
 use crypto::HashValue;
 // use logger::prelude::*;
-use crypto::hash::PlainCryptoHash;
 use starcoin_state_api::ChainState;
-use starcoin_types::contract_event::ContractEventHasher;
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
-use starcoin_types::proof::InMemoryAccumulator;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use vm_runtime::metrics::TXN_STATUS_COUNTERS;
@@ -46,17 +43,10 @@ pub fn block_execute(
                 let txn_state_root = chain_state
                     .commit()
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
-                let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
-                let events_accumulator_hash =
-                    InMemoryAccumulator::<ContractEventHasher>::from_leaves(
-                        event_hashes.as_slice(),
-                    )
-                    .root_hash();
 
                 vec_transaction_info.push(TransactionInfo::new(
                     txn_hash,
                     txn_state_root,
-                    events_accumulator_hash,
                     events,
                     gas_used,
                     status.major_status,

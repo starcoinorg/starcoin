@@ -8,6 +8,8 @@ mod debug_rpc;
 mod node_rpc;
 mod pubsub;
 mod state_rpc;
+#[cfg(test)]
+mod test_helper;
 mod txpool_rpc;
 mod wallet_rpc;
 

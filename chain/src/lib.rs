@@ -9,6 +9,7 @@ mod chain_metrics;
 pub mod chain_service;
 pub mod message;
 pub mod mock;
+#[cfg(test)]
 pub mod test_helper;
 
 pub use chain_service::ChainServiceImpl;
@@ -22,7 +23,7 @@ use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
 use std::sync::Arc;
-use storage::Storage;
+use storage::Store;
 use traits::{ChainAsyncService, ChainService, ConnectBlockResult, Consensus};
 use txpool::TxPoolService;
 use types::{
@@ -38,7 +39,7 @@ pub struct ChainActor<C>
 where
     C: Consensus,
 {
-    service: ChainServiceImpl<C, Storage, TxPoolService>,
+    service: ChainServiceImpl<C, TxPoolService>,
     bus: Addr<BusActor>,
 }
 
@@ -49,7 +50,7 @@ where
     pub fn launch(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
-        storage: Arc<Storage>,
+        storage: Arc<dyn Store>,
         bus: Addr<BusActor>,
         txpool: TxPoolService,
     ) -> Result<ChainActorRef<C>> {

@@ -20,7 +20,7 @@ use traits::{ChainReader, ChainService, Consensus};
 
 /// Benchmarking support for chain.
 pub struct ChainBencher {
-    chain: Arc<RwLock<ChainServiceImpl<DummyConsensus, Storage, TxPoolService>>>,
+    chain: Arc<RwLock<ChainServiceImpl<DummyConsensus, TxPoolService>>>,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
     block_num: u64,
@@ -36,7 +36,9 @@ impl ChainBencher {
             Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
         let genesis = Genesis::load(node_config.net()).unwrap();
-        let startup_info = genesis.execute(storage.clone()).unwrap();
+        let startup_info = genesis
+            .execute_genesis_block(node_config.net(), storage.clone())
+            .unwrap();
 
         let txpool = {
             let best_block_id = *startup_info.get_master();
@@ -47,7 +49,7 @@ impl ChainBencher {
                 bus.clone(),
             )
         };
-        let chain = ChainServiceImpl::<DummyConsensus, Storage, TxPoolService>::new(
+        let chain = ChainServiceImpl::<DummyConsensus, TxPoolService>::new(
             node_config.clone(),
             startup_info,
             storage.clone(),
@@ -74,7 +76,7 @@ impl ChainBencher {
         let mut latest_id = None;
         let mut rng: StdRng = StdRng::from_seed([0; 32]);
         for i in 0..self.block_num {
-            let block_chain = BlockChain::<DummyConsensus, Storage>::new(
+            let block_chain = BlockChain::<DummyConsensus>::new(
                 self.config.clone(),
                 self.chain.read().get_master().head_block().header().id(),
                 self.storage.clone(),

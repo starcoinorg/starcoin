@@ -1,5 +1,5 @@
 use anyhow::{bail, format_err, Result};
-use crypto::hash::{HashValue, PlainCryptoHash};
+use crypto::hash::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
@@ -15,9 +15,7 @@ use types::{
     account_address::AccountAddress,
     block::{BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
-    contract_event::ContractEventHasher,
     error::BlockExecutorError,
-    proof::InMemoryAccumulator,
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
@@ -37,16 +35,13 @@ pub struct OpenedBlock {
 }
 
 impl OpenedBlock {
-    pub fn new<S>(
-        storage: Arc<S>,
+    pub fn new(
+        storage: Arc<dyn Store>,
         previous_header: BlockHeader,
         block_gas_limit: u64,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
-    ) -> Result<Self>
-    where
-        S: Store + 'static,
-    {
+    ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
             .get_block_info(previous_block_id)?
@@ -58,11 +53,12 @@ impl OpenedBlock {
             txn_accumulator_info.get_num_leaves(),
             txn_accumulator_info.get_num_nodes(),
             AccumulatorStoreType::Transaction,
-            storage.clone(),
+            storage.clone().into_super_arc(),
         )?;
         let block_timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
-        let chain_state = ChainStateDB::new(storage, Some(previous_header.state_root()));
+        let chain_state =
+            ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
         let block_meta =
             BlockMetadata::new(previous_block_id, block_timestamp, author, auth_key_prefix);
         let mut opened_block = Self {
@@ -204,15 +200,10 @@ impl OpenedBlock {
             .state
             .commit()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
-        let events_accumulator_hash =
-            InMemoryAccumulator::<ContractEventHasher>::from_leaves(event_hashes.as_slice())
-                .root_hash();
 
         let txn_info = TransactionInfo::new(
             txn_hash,
             txn_state_root,
-            events_accumulator_hash,
             events,
             gas_used,
             status.major_status,
