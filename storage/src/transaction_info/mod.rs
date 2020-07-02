@@ -44,7 +44,7 @@ impl TransactionInfoStore for TransactionInfoHashStorage {
     fn get_transaction_info_by_hash(
         &self,
         _txn_hash: HashValue,
-    ) -> Result<Option<Vec<TransactionInfo>>, Error> {
+    ) -> Result<Vec<TransactionInfo>, Error> {
         unimplemented!()
     }
 
@@ -69,7 +69,7 @@ impl TransactionInfoStore for TransactionInfoStorage {
     fn get_transaction_info_by_hash(
         &self,
         _txn_hash: HashValue,
-    ) -> Result<Option<Vec<TransactionInfo>>, Error> {
+    ) -> Result<Vec<TransactionInfo>, Error> {
         unimplemented!()
     }
 

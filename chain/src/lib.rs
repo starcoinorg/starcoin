@@ -167,7 +167,7 @@ where
                 self.service.master_blocks_by_number(number, count)?,
             )),
             ChainRequest::GetBlockTransactionInfos(block_id) => Ok(
-                ChainResponse::TransactionInfos(Some(self.service.get_block_txn_infos(block_id)?)),
+                ChainResponse::TransactionInfos(self.service.get_block_txn_infos(block_id)?),
             ),
             ChainRequest::GetTransactionInfoByBlockAndIndex { block_id, txn_idx } => {
                 Ok(ChainResponse::TransactionInfo(
@@ -327,7 +327,7 @@ where
             .send(ChainRequest::GetTransactionInfo(txn_hash))
             .await
             .map_err(Into::<Error>::into)??;
-        if let ChainResponse::TransactionInfos(Some(txns)) = response {
+        if let ChainResponse::TransactionInfos(txns) = response {
             Ok(txns)
         } else {
             bail!("get transaction_info error:{:?}", txn_hash)
@@ -341,11 +341,7 @@ where
             .await
             .map_err(Into::<Error>::into)??;
         if let ChainResponse::TransactionInfos(vec_txn_id) = response {
-            if let Some(vec_txn_id) = vec_txn_id {
-                Ok(vec_txn_id)
-            } else {
-                bail!("get block's transaction_info is none.")
-            }
+            Ok(vec_txn_id)
         } else {
             bail!("get block's transaction_info error.")
         }

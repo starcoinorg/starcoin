@@ -280,10 +280,7 @@ where
         self.storage.get_transaction(txn_hash)
     }
 
-    fn get_transaction_info(
-        &self,
-        txn_hash: HashValue,
-    ) -> Result<Option<Vec<TransactionInfo>>, Error> {
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Vec<TransactionInfo>, Error> {
         self.storage.get_transaction_info_by_hash(txn_hash)
     }
 
