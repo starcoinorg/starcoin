@@ -1,5 +1,5 @@
 use anyhow::{bail, format_err, Result};
-use crypto::hash::{HashValue, PlainCryptoHash};
+use crypto::hash::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
@@ -15,9 +15,7 @@ use types::{
     account_address::AccountAddress,
     block::{BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
-    contract_event::ContractEventHasher,
     error::BlockExecutorError,
-    proof::InMemoryAccumulator,
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
@@ -202,15 +200,10 @@ impl OpenedBlock {
             .state
             .commit()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
-        let events_accumulator_hash =
-            InMemoryAccumulator::<ContractEventHasher>::from_leaves(event_hashes.as_slice())
-                .root_hash();
 
         let txn_info = TransactionInfo::new(
             txn_hash,
             txn_state_root,
-            events_accumulator_hash,
             events,
             gas_used,
             status.major_status,

@@ -343,14 +343,8 @@ where
 
         Ok(())
     }
-}
 
-impl<C> ChainWriter for BlockChain<C>
-where
-    C: Consensus,
-{
-    fn apply(&mut self, block: Block) -> Result<ConnectBlockResult> {
-        let header = block.header();
+    fn verify_header(&self, header: &BlockHeader) -> Result<ConnectBlockResult> {
         let pre_hash = header.parent_hash();
         assert_eq!(self.head_block().id(), pre_hash);
         // do not check genesis block timestamp check
@@ -366,18 +360,34 @@ where
             );
         }
 
-        ensure!(
-            block.header().gas_used() <= block.header().gas_limit(),
-            "invalid block: gas_used should not greater than gas_limit"
-        );
         if let Err(e) = C::verify(self.config.clone(), self, header) {
             error!("verify header failed : {:?}", e);
             return Ok(ConnectBlockResult::VerifyConsensusFailed);
         }
 
+        Ok(ConnectBlockResult::SUCCESS)
+    }
+
+    pub fn apply_inner(&mut self, block: Block, is_genesis: bool) -> Result<ConnectBlockResult> {
+        let header = block.header();
+        ensure!(
+            block.header().gas_used() <= block.header().gas_limit(),
+            "invalid block: gas_used should not greater than gas_limit"
+        );
+
+        if !is_genesis {
+            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header)? {
+                return Ok(ConnectBlockResult::VerifyConsensusFailed);
+            }
+        }
+
         let txns = {
-            let block_metadata = header.clone().into_metadata();
-            let mut t = vec![Transaction::BlockMetadata(block_metadata)];
+            let mut t = if is_genesis {
+                vec![]
+            } else {
+                let block_metadata = header.clone().into_metadata();
+                vec![Transaction::BlockMetadata(block_metadata)]
+            };
             t.extend(
                 block
                     .transactions()
@@ -419,6 +429,7 @@ where
                 self.txn_accumulator.append(&included_txn_info_hashes)?;
             accumulator_root
         };
+
         ensure!(
             executed_accumulator_root == block.header().accumulator_root(),
             "verify block: txn accumulator root mismatch"
@@ -434,10 +445,14 @@ where
             .map_err(BlockExecutorError::BlockChainStateErr)?;
 
         let total_difficulty = {
-            let pre_total_difficulty = self
-                .get_block_info(block.header().parent_hash())?
-                .total_difficulty;
-            pre_total_difficulty + header.difficulty()
+            if is_genesis {
+                header.difficulty()
+            } else {
+                let pre_total_difficulty = self
+                    .get_block_info(block.header().parent_hash())?
+                    .total_difficulty;
+                pre_total_difficulty + header.difficulty()
+            }
         };
 
         self.block_accumulator.append(&[block.id()])?;
@@ -454,6 +469,15 @@ where
         self.save(header.id(), txns, Some(vec_transaction_info))?;
         self.commit(block, block_info, BlockState::Executed)?;
         Ok(ConnectBlockResult::SUCCESS)
+    }
+}
+
+impl<C> ChainWriter for BlockChain<C>
+where
+    C: Consensus,
+{
+    fn apply(&mut self, block: Block) -> Result<ConnectBlockResult> {
+        self.apply_inner(block, false)
     }
 
     fn apply_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {

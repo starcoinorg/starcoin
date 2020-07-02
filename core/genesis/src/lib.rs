@@ -9,7 +9,6 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
@@ -31,7 +30,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-use traits::{ChainReader, ChainWriter, ConnectBlockResult, Consensus};
+use traits::{ChainReader, ConnectBlockResult, Consensus};
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -180,8 +179,6 @@ impl Genesis {
         Ok(TransactionInfo::new(
             txn_hash,
             state_root,
-            //TODO genesis event.
-            HashValue::zero(),
             events,
             gas_used,
             status.vm_status().major_status,
@@ -239,7 +236,7 @@ impl Genesis {
     {
         let Genesis { block } = self;
         let mut genesis_chain = BlockChain::<C>::init_empty_chain(storage)?;
-        if let ConnectBlockResult::SUCCESS = genesis_chain.apply(block)? {
+        if let ConnectBlockResult::SUCCESS = genesis_chain.apply_inner(block, true)? {
             Ok(StartupInfo::new(
                 genesis_chain.current_header().id(),
                 Vec::new(),
@@ -268,6 +265,7 @@ impl Genesis {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_crypto::HashValue;
     use starcoin_state_api::AccountStateReader;
     use starcoin_storage::block_info::BlockInfoStore;
     use starcoin_storage::cache_storage::CacheStorage;
