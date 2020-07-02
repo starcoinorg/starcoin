@@ -157,7 +157,7 @@ where
                 txns.len()
             );
             let master = *startup_info.get_master();
-            let block_chain = BlockChain::<C, S>::new(config.clone(), master, storage)?;
+            let block_chain = BlockChain::<C>::new(config.clone(), master, storage)?;
             let (block_template, excluded_txns) = block_chain.create_block_template(
                 *miner_account.address(),
                 Some(miner_account.get_auth_key().prefix().to_vec()),

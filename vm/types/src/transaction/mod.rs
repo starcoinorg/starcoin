@@ -36,9 +36,11 @@ mod pending_transaction;
 mod transaction_argument;
 mod upgrade;
 
+use crate::contract_event::ContractEventHasher;
 use crate::transaction::authenticator::TransactionAuthenticator;
 pub use error::CallError;
 pub use error::Error as TransactionError;
+use libra_types::proof::accumulator::InMemoryAccumulator;
 pub use libra_types::transaction::{ChangeSet, Module, Script};
 pub use pending_transaction::{Condition, PendingTransaction};
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
@@ -520,15 +522,18 @@ impl TransactionInfo {
     pub fn new(
         transaction_hash: HashValue,
         state_root_hash: HashValue,
-        event_root_hash: HashValue,
         events: Vec<ContractEvent>,
         gas_used: u64,
         major_status: StatusCode,
     ) -> TransactionInfo {
+        let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+        let events_accumulator_hash =
+            InMemoryAccumulator::<ContractEventHasher>::from_leaves(event_hashes.as_slice())
+                .root_hash();
         TransactionInfo {
             transaction_hash,
             state_root_hash,
-            event_root_hash,
+            event_root_hash: events_accumulator_hash,
             events,
             gas_used,
             major_status,

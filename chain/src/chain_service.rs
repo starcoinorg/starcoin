@@ -21,30 +21,28 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 
-pub struct ChainServiceImpl<C, S, P>
+pub struct ChainServiceImpl<C, P>
 where
     C: Consensus,
     P: TxPoolSyncService + 'static,
-    S: Store + 'static,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
-    master: BlockChain<C, S>,
-    storage: Arc<S>,
+    master: BlockChain<C>,
+    storage: Arc<dyn Store>,
     txpool: P,
     bus: Addr<BusActor>,
 }
 
-impl<C, S, P> ChainServiceImpl<C, S, P>
+impl<C, P> ChainServiceImpl<C, P>
 where
     C: Consensus,
     P: TxPoolSyncService + 'static,
-    S: Store + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
-        storage: Arc<S>,
+        storage: Arc<dyn Store>,
         txpool: P,
         bus: Addr<BusActor>,
     ) -> Result<Self> {
@@ -59,10 +57,7 @@ where
         })
     }
 
-    pub fn find_or_fork(
-        &mut self,
-        header: &BlockHeader,
-    ) -> Result<(bool, Option<BlockChain<C, S>>)> {
+    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Result<(bool, Option<BlockChain<C>>)> {
         CHAIN_METRICS.try_connect_count.inc();
         let block_exist = self.block_exist(header.id());
         let block_chain = if !block_exist {
@@ -93,11 +88,11 @@ where
         unimplemented!()
     }
 
-    pub fn get_master(&self) -> &BlockChain<C, S> {
+    pub fn get_master(&self) -> &BlockChain<C> {
         &self.master
     }
 
-    fn select_head(&mut self, new_branch: BlockChain<C, S>) -> Result<()> {
+    fn select_head(&mut self, new_branch: BlockChain<C>) -> Result<()> {
         let block = new_branch.head_block();
         let block_header = block.header();
         let total_difficulty = new_branch.get_total_difficulty()?;
@@ -127,7 +122,7 @@ where
         self.save_startup()
     }
 
-    fn update_master(&mut self, new_master: BlockChain<C, S>) {
+    fn update_master(&mut self, new_master: BlockChain<C>) {
         let header = new_master.current_header();
         self.master = new_master;
         self.startup_info.update_master(&header);
@@ -148,7 +143,7 @@ where
         }
     }
 
-    fn find_ancestors(&self, new_branch: &BlockChain<C, S>) -> Result<(Vec<Block>, Vec<Block>)> {
+    fn find_ancestors(&self, new_branch: &BlockChain<C>) -> Result<(Vec<Block>, Vec<Block>)> {
         let block_enacted = new_branch.current_header().id();
         let block_retracted = self.get_master().current_header().id();
 
@@ -228,11 +223,10 @@ where
     }
 }
 
-impl<C, S, P> ChainService for ChainServiceImpl<C, S, P>
+impl<C, P> ChainService for ChainServiceImpl<C, P>
 where
     C: Consensus,
     P: TxPoolSyncService,
-    S: Store,
 {
     fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult> {
         self.connect_inner(block, true)

@@ -28,5 +28,8 @@ stest = {path = "../../commons/stest"}
 
 starcoin-statedb = {path = "../../state/statedb"}
 bus = {path = "../../bus", package="starcoin-bus" }
-starcoin-genesis = {path = "../../core/genesis"}
+
 starcoin-metrics = {path = "../../commons/metrics"}
+
+[dev-dependencies]
+starcoin-genesis = {path = "../../core/genesis"}

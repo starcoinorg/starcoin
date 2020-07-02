@@ -48,7 +48,6 @@ impl StorageBencher {
             let transaction_info1 = TransactionInfo::new(
                 HashValue::random(),
                 HashValue::zero(),
-                HashValue::zero(),
                 vec![],
                 0,
                 StatusCode::ABORTED,

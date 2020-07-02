@@ -39,11 +39,12 @@ network_api = {path = "../network/api", package="network-api"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-statedb = {path = "../state/statedb"}
 bus = {path = "../bus", package="starcoin-bus" }
-starcoin-genesis = {path = "../core/genesis"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-open-block = {path = "./open-block"}
+
 [dev-dependencies]
 starcoin-wallet-api = { path = "../wallet/api"}
 tokio = { version = "0.2", features = ["full"] }
 starcoin-block-relayer={path = "../block-relayer/"}
+starcoin-genesis = {path = "../core/genesis"}

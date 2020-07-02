@@ -61,3 +61,4 @@ starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
 starcoin-executor={path="../../executor"}
 starcoin-consensus= {path = "../../consensus"}
 tokio = { version = "0.2", features = ["full"] }
+starcoin-genesis = {path = "../../core/genesis"}
