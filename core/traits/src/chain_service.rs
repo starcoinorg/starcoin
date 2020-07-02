@@ -25,7 +25,7 @@ pub trait ChainService {
     fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<Vec<TransactionInfo>>>;
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     fn get_txn_info_by_block_and_index(
         &self,

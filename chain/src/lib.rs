@@ -160,7 +160,7 @@ where
                     .get_transaction(hash)?
                     .ok_or_else(|| format_err!("Can not find transaction by hash {:?}", hash))?,
             ))),
-            ChainRequest::GetTransactionInfo(hash) => Ok(ChainResponse::TransactionInfo(
+            ChainRequest::GetTransactionInfo(hash) => Ok(ChainResponse::TransactionInfos(
                 self.service.get_transaction_info(hash)?,
             )),
             ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
