@@ -144,18 +144,10 @@ where
         Ok((template, excluded_txns))
     }
 
-    fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
-        // let head_num = self.head.header().number();
-        // let head_id = self.head.header().id();
-        // if number == head_num {
-        //     Ok(head_id)
-        // } else if number > head_num {
-        //     Err(format_err!("number {} > head_num {}", number, head_num))
-        // } else {
+    pub fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
         self.block_accumulator
             .get_leaf(number)?
             .ok_or_else(|| format_err!("Can not find block by number {}", number))
-        // }
     }
 
     pub fn block_exist_by_number(
