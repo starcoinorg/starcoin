@@ -19,7 +19,6 @@ fn test_db_batch() {
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
         HashValue::zero(),
-        HashValue::zero(),
         vec![],
         0,
         StatusCode::ABORTED,
@@ -30,7 +29,6 @@ fn test_db_batch() {
         .unwrap();
     let transaction_info2 = TransactionInfo::new(
         HashValue::random(),
-        HashValue::zero(),
         HashValue::zero(),
         vec![],
         1,
@@ -72,7 +70,6 @@ fn test_cache_batch() {
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
         HashValue::zero(),
-        HashValue::zero(),
         vec![],
         0,
         StatusCode::ABORTED,
@@ -83,7 +80,6 @@ fn test_cache_batch() {
         .unwrap();
     let transaction_info2 = TransactionInfo::new(
         HashValue::random(),
-        HashValue::zero(),
         HashValue::zero(),
         vec![],
         1,

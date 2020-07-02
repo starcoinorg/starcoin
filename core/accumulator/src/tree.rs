@@ -38,7 +38,6 @@ pub struct AccumulatorTree {
 
 impl AccumulatorTree {
     pub fn new(
-        accumulator_id: HashValue,
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: LeafCount,
         num_nodes: NodeCount,
@@ -46,9 +45,10 @@ impl AccumulatorTree {
         store_type: AccumulatorStoreType,
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
-        trace!("accumulator cache new: {:?}", accumulator_id.short_str());
+        let id = HashValue::random();
+        trace!("accumulator cache new: {:?}", id.short_str());
         Self {
-            id: accumulator_id,
+            id,
             frozen_subtree_roots,
             index_cache: Mutex::new(LruCache::new(MAC_CACHE_SIZE)),
             num_leaves,

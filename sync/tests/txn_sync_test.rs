@@ -50,7 +50,9 @@ fn test_txn_sync_actor() {
         // genesis
         let genesis_1 = Genesis::load(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
-        let startup_info_1 = genesis_1.execute(storage_1.clone()).unwrap();
+        let startup_info_1 = genesis_1
+            .execute_genesis_block(node_config_1.net(), storage_1.clone())
+            .unwrap();
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
@@ -123,7 +125,9 @@ fn test_txn_sync_actor() {
 
         let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
         let genesis_hash = genesis_2.block().header().id();
-        let startup_info_2 = genesis_2.execute(storage_2.clone()).unwrap();
+        let startup_info_2 = genesis_2
+            .execute_genesis_block(node_config_2.net(), storage_2.clone())
+            .unwrap();
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();

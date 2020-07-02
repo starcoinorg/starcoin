@@ -163,7 +163,9 @@ async fn create_node(
     let genesis = Genesis::load(node_config.net()).unwrap();
     let genesis_hash = genesis.block().header().id();
 
-    let genesis_startup_info = genesis.execute(storage.clone()).unwrap();
+    let genesis_startup_info = genesis
+        .execute_genesis_block(node_config.net(), storage.clone())
+        .unwrap();
     let txpool = {
         let best_block_id = *genesis_startup_info.get_master();
         TxPool::start(
@@ -222,7 +224,7 @@ async fn create_node(
             );
             let startup_info = chain.clone().master_startup_info().await?;
 
-            let block_chain = BlockChain::<DummyConsensus, Storage>::new(
+            let block_chain = BlockChain::<DummyConsensus>::new(
                 node_config.clone(),
                 startup_info.master,
                 storage.clone(),
