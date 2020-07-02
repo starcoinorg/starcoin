@@ -235,12 +235,11 @@ impl Genesis {
         C: Consensus + 'static,
     {
         let Genesis { block } = self;
-        let mut genesis_chain = BlockChain::<C>::init_empty_chain(storage)?;
+        let mut genesis_chain = BlockChain::<C>::init_empty_chain(storage.clone())?;
         if let ConnectBlockResult::SUCCESS = genesis_chain.apply_inner(block, true)? {
-            Ok(StartupInfo::new(
-                genesis_chain.current_header().id(),
-                Vec::new(),
-            ))
+            let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
+            storage.save_startup_info(startup_info.clone())?;
+            Ok(startup_info)
         } else {
             Err(format_err!("Apply genesis block failed."))
         }
