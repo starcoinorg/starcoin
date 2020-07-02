@@ -5,9 +5,9 @@
 //! new-transaction
 //! sender: nftservice
 
-// a distributed key-value map is used to store entry (token_id, address, NftToken)
+// a distributed key-value map is used to store entry (token_id, address, NonFungibleToken)
 // key is the token_id(:vector<u8>), stored in a sorted linked list
-// value is a struct 'NftToken', contains the non fungible token
+// value is a struct 'NonFungibleToken', contains the non fungible token
 // the account address of each list node is actually the owner of the token
 module NonFungibleToken {
     use 0x1::Option::{Self, Option};
@@ -21,14 +21,26 @@ module NonFungibleToken {
         total: u64,
     }
 
-    resource struct NftToken<Token> {
+    resource struct NonFungibleToken<Token> {
         token: Option<Token>
+    }
+
+    resource struct TokenLock<Token> {
     }
 
     struct TransferEvent {
         from: address,
         to: address,
         token_id: vector<u8>
+    }
+
+    fun lock<Token>(account: &signer) {
+        move_to<TokenLock<Token>>(account, TokenLock<Token>{});
+    }
+
+    fun unlock<Token>(account: &signer) acquires TokenLock {
+        let sender = Signer::address_of(account);
+        let TokenLock<Token> {} = move_from<TokenLock<Token>>(sender);
     }
 
     fun verify_hash(hash_value: vector<u8>): bool {
@@ -39,15 +51,10 @@ module NonFungibleToken {
         let sender = Signer::address_of(account);
         assert(sender == {{nftservice}}, 8000);
 
-        assert(!limited || (limited && total > 0), 1);
-        let count = total;
-        if (!limited) {
-            count = 0;
-        };
         let limited_meta = LimitedMeta {
             init: true,
             limited: limited,
-            total: count,
+            total: total,
         };
         move_to<LimitedMeta>(account, limited_meta);
         SortedLinkedList::create_new_list<vector<u8>>(account, Vector::empty());
@@ -58,26 +65,29 @@ module NonFungibleToken {
         if (exist) return Option::some(token);
 
         SortedLinkedList::add_node<vector<u8>>(account, token_id, location);
-        move_to<NftToken<Token>>(account, NftToken<Token>{token: Option::some(token)});
+        move_to<NonFungibleToken<Token>>(account, NonFungibleToken<Token>{token: Option::some(token)});
         Option::none() //preemptive success
     }
 
     public fun accept_token<Token>(account: &signer) {
+        let sender = Signer::address_of(account);
+        assert(!exists<NonFungibleToken<Token>>(sender), 8001);
         SortedLinkedList::empty_node<vector<u8>>(account, Vector::empty());
-        move_to<NftToken<Token>>(account, NftToken<Token>{token: Option::none()});
+        move_to<NonFungibleToken<Token>>(account, NonFungibleToken<Token>{token: Option::none()});
     }
 
-    public fun safe_transfer<Token: copyable>(account: &signer, _nft_service_address: address, token_id: vector<u8>, receiver: address) acquires NftToken {
+    public fun safe_transfer<Token: copyable>(account: &signer, _nft_service_address: address, token_id: vector<u8>, receiver: address) acquires NonFungibleToken {
         let sender = Signer::address_of(account);
-        assert(exists<NftToken<Token>>(receiver), 100001);
-        assert(Self::get_token_id(sender) == token_id, 100002);
+        assert(exists<NonFungibleToken<Token>>(receiver), 8002);
+        assert(Option::is_none(&borrow_global<NonFungibleToken<Token>>(receiver).token), 8005);
+        assert(Self::get_token_id(sender) == token_id, 8003);
+        assert(!exists<TokenLock<Token>>(sender), 8004);
 
         SortedLinkedList::move_node_to<vector<u8>>(account, receiver);
-        let NftToken<Token>{ token } = move_from<NftToken<Token>>(sender);
-        let receiver_wallet_mut = borrow_global_mut<NftToken<Token>>(receiver);
-        receiver_wallet_mut.token = token;
+        let NonFungibleToken<Token>{ token } = move_from<NonFungibleToken<Token>>(sender);
+        let receiver_token_ref_mut = borrow_global_mut<NonFungibleToken<Token>>(receiver);
+        receiver_token_ref_mut.token = token;
     }
-
 
     public fun get_token_id(addr: address): vector<u8> {
         SortedLinkedList::get_key_of_node<vector<u8>>(addr)
@@ -88,19 +98,62 @@ module NonFungibleToken {
         SortedLinkedList::find<vector<u8>>(token_id, head_address)
     }
 
+    public fun get_nft<Token>(account: &signer): NonFungibleToken<Token> acquires NonFungibleToken {
+        let sender = Signer::address_of(account);
+        assert(exists<NonFungibleToken<Token>>(sender), 8006);
+        assert(!exists<TokenLock<Token>>(sender), 8007);
+        Self::lock<Token>(account);
+        move_from<NonFungibleToken<Token>>(sender)
+    }
+    
+    public fun put_nft<Token>(account: &signer, nft: NonFungibleToken<Token>) acquires TokenLock {
+        let sender = Signer::address_of(account);
+        assert(exists<TokenLock<Token>>(sender), 8008);
+        Self::unlock<Token>(account);
+        move_to<NonFungibleToken<Token>>(account, nft)
+    }
+}
+
+//! new-transaction
+//! sender: nftservice
+module TestNft {
     struct TestNft {}
     public fun new_test_nft(): TestNft {
         TestNft{}
     }
 }
+// check: EXECUTED
 
+//! new-transaction
+//! sender: alice
+// a sample for moving Nft into another resource
+module MoveNft {
+    use {{nftservice}}::NonFungibleToken::{Self, NonFungibleToken};
+    use {{nftservice}}::TestNft::TestNft;
+    use 0x1::Signer;
 
+    resource struct MoveNft {
+        nft: NonFungibleToken<TestNft>
+    }
+
+    public fun move_nft(account: &signer) {
+        let nft = NonFungibleToken::get_nft<TestNft>(account);
+        move_to<MoveNft>(account, MoveNft{ nft });
+    }
+
+    public fun move_back_nft(account: &signer) acquires MoveNft {
+        let sender = Signer::address_of(account);
+        let MoveNft { nft } = move_from<MoveNft>(sender);
+        NonFungibleToken::put_nft<TestNft>(account, nft);
+    }
+}
 // check: EXECUTED
 
 //! new-transaction
 //! sender: nftservice
 script {
-use {{nftservice}}::NonFungibleToken::{Self, TestNft};
+use {{nftservice}}::NonFungibleToken;
+use {{nftservice}}::TestNft::TestNft;
 fun main(account: &signer) {
     NonFungibleToken::initialize<TestNft>(account, false, 0);
 }
@@ -111,14 +164,25 @@ fun main(account: &signer) {
 //! new-transaction
 //! sender: alice
 script {
-use {{nftservice}}::NonFungibleToken::{Self, TestNft};
+use {{nftservice}}::NonFungibleToken;
+use {{nftservice}}::TestNft::{Self, TestNft};
 use 0x1::Hash;
 fun main(account: &signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
-    let nft_service_address = {{nftservice}};
-    let token = NonFungibleToken::new_test_nft();
-    NonFungibleToken::preemptive<TestNft>(account, nft_service_address, token_id, token);
+    let token = TestNft::new_test_nft();
+    NonFungibleToken::preemptive<TestNft>(account, {{nftservice}}, token_id, token);
+}
+}
+
+// check: EXECUTED
+
+//! new-transaction
+//! sender: alice
+script {
+use {{alice}}::MoveNft;
+fun main(account: &signer) {
+    MoveNft::move_nft(account);
 }
 }
 
@@ -127,7 +191,8 @@ fun main(account: &signer) {
 //! new-transaction
 //! sender: bob
 script {
-use {{nftservice}}::NonFungibleToken::{Self, TestNft};
+use {{nftservice}}::NonFungibleToken;
+use {{nftservice}}::TestNft::TestNft;
 fun main(account: &signer) {
     NonFungibleToken::accept_token<TestNft>(account);
 }
@@ -138,15 +203,41 @@ fun main(account: &signer) {
 //! new-transaction
 //! sender: alice
 script {
-use {{nftservice}}::NonFungibleToken::{Self, TestNft};
+use {{nftservice}}::NonFungibleToken;
+use {{nftservice}}::TestNft::TestNft;
 use 0x1::Hash;
 fun main(account: &signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
-    let nft_service_address = {{nftservice}};
-    let receiver = {{bob}};
-    NonFungibleToken::safe_transfer<TestNft>(account, nft_service_address, token_id, receiver);
+    NonFungibleToken::safe_transfer<TestNft>(account, {{nftservice}}, token_id, {{bob}});
+}
+}
+
+// check: ABORTED
+
+//! new-transaction
+//! sender: alice
+script {
+use {{alice}}::MoveNft;
+fun main(account: &signer) {
+    MoveNft::move_back_nft(account);
 }
 }
 
 // check: EXECUTED
+
+//! new-transaction
+//! sender: alice
+script {
+use {{nftservice}}::NonFungibleToken;
+use {{nftservice}}::TestNft::TestNft;
+use 0x1::Hash;
+fun main(account: &signer) {
+    let input = b"input";
+    let token_id = Hash::sha2_256(input);
+    NonFungibleToken::safe_transfer<TestNft>(account, {{nftservice}}, token_id, {{bob}});
+}
+}
+
+// check: EXECUTED
+
