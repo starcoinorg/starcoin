@@ -343,7 +343,11 @@ where
 
                 let state_sync_task_address = StateSyncTaskActor::launch(
                     self_peer_id,
-                    (root.state_root(), root.parent_block_accumulator_root()),
+                    (
+                        root.state_root(),
+                        root.parent_block_accumulator_root(),
+                        root.id(),
+                    ),
                     storage.clone(),
                     network.clone(),
                     block_sync_task,
@@ -361,7 +365,7 @@ where
             //     .reset(
             //         root.state_root(),
             //         root.accumulator_root(),
-            //         root.parent_block_accumulator_root(),
+            //         root.id(),
             //     )
             //     .await;
             } else {
@@ -475,7 +479,7 @@ where
     block_connector: BlockConnector<C>,
 }
 
-const MIN_BLOCKS_BEHIND: u64 = 10;
+const MIN_BLOCKS_BEHIND: u64 = 50;
 const MAIN_MIN_BLOCKS_BEHIND: u64 = 100;
 
 impl<C> Downloader<C>

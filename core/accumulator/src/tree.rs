@@ -199,10 +199,10 @@ impl AccumulatorTree {
             }
         }
 
-        let node = match self.store.clone().get_node(self.store_type.clone(), hash) {
+        let node = match self.store.get_node(self.store_type.clone(), hash) {
             Ok(Some(node)) => node,
             _ => {
-                info!(
+                debug!(
                     "get accumulator node from store none:{:?}",
                     hash.short_str()
                 );
