@@ -5,17 +5,22 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::shared::Address;
 use starcoin_move_compiler::{command_line::parse_address, compile_or_load_move_file};
-use starcoin_rpc_client::RemoteStateReader;
+use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
+    TransactionOutput,
 };
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 
+use crate::view::{ExecuteResultView, ExecutionOutputView};
+
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_error::StatusCode;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -71,6 +76,9 @@ pub struct ExecuteOpt {
         help = "blocking wait txn mined"
     )]
     blocking: bool,
+    #[structopt(long = "dry-run")]
+    /// dry-run script, only get transaction output, no state change to chain
+    dry_run: bool,
 
     #[structopt(name = "move_file", parse(from_os_str))]
     /// bytecode file or move script source file
@@ -87,7 +95,7 @@ impl CommandAction for ExecuteCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ExecuteOpt;
-    type ReturnItem = HashValue;
+    type ReturnItem = ExecuteResultView;
 
     fn run(
         &self,
@@ -111,20 +119,6 @@ impl CommandAction for ExecuteCommand {
         let args = opt.args.clone();
 
         let client = ctx.state().client();
-        let output = super::dry_run(
-            client,
-            opt.max_gas_amount,
-            bytecode.clone(),
-            is_script,
-            sender,
-            type_tags.clone(),
-            args.as_slice(),
-        )?;
-
-        if output.status().vm_status().major_status != StatusCode::EXECUTED {
-            bail!("move file dry-run error, {:?}", output.status());
-        }
-
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender)?;
@@ -138,7 +132,7 @@ impl CommandAction for ExecuteCommand {
             RawUserTransaction::new_script(
                 sender,
                 account_resource.sequence_number(),
-                Script::new(bytecode, type_tags.clone(), args),
+                Script::new(bytecode, type_tags, args),
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,
@@ -156,15 +150,36 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-        let succ = client.submit_transaction(signed_txn)?;
-        if let Err(e) = succ {
-            bail!("execute-txn is reject by node, reason: {}", &e)
-        }
-        println!("txn {:#x} submitted.", txn_hash);
 
-        if opt.blocking {
-            ctx.state().watch_txn(txn_hash)?;
+        let output = dry_run(client, Transaction::UserTransaction(signed_txn.clone()))?;
+        if output.status().vm_status().major_status != StatusCode::EXECUTED {
+            bail!("move file pre-run failed, {:?}", output.status());
         }
-        Ok(txn_hash)
+        if !opt.dry_run {
+            let succ = client.submit_transaction(signed_txn)?;
+            if let Err(e) = succ {
+                bail!("execute-txn is reject by node, reason: {}", &e)
+            }
+            println!("txn {:#x} submitted.", txn_hash);
+
+            let mut output_view = ExecutionOutputView::new(txn_hash);
+
+            if opt.blocking {
+                let block = ctx.state().watch_txn(txn_hash)?;
+                output_view.block_number = Some(block.header().number);
+                output_view.block_id = Some(block.header().id());
+            }
+            Ok(ExecuteResultView::RunOutput(output_view))
+        } else {
+            Ok(ExecuteResultView::DryRunOutput(output.into()))
+        }
     }
+}
+
+pub fn dry_run(client: &RpcClient, txn: Transaction) -> Result<TransactionOutput> {
+    let chain_state_reader = RemoteStateReader::new(client);
+    let mut starcoin_vm = StarcoinVM::new();
+    let mut outputs = starcoin_vm.execute_transactions(&chain_state_reader, vec![txn])?;
+    let output = outputs.pop().unwrap();
+    Ok(output)
 }

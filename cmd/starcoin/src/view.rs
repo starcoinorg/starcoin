@@ -3,7 +3,7 @@
 
 use anyhow::{format_err, Error};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_rpc_api::node::NodeInfo;
@@ -320,6 +320,41 @@ impl From<TransactionOutput> for TranscationOutputView {
             gas_used,
             delta_size,
             status,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ExecuteResultView {
+    DryRunOutput(TranscationOutputView),
+    RunOutput(ExecutionOutputView),
+}
+
+impl serde::Serialize for ExecuteResultView {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            ExecuteResultView::DryRunOutput(o) => o.serialize(serializer),
+            ExecuteResultView::RunOutput(o) => o.serialize(serializer),
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone, Copy)]
+pub struct ExecutionOutputView {
+    pub txn_hash: HashValue,
+    pub block_number: Option<u64>,
+    pub block_id: Option<HashValue>,
+}
+
+impl ExecutionOutputView {
+    pub fn new(txn_hash: HashValue) -> Self {
+        Self {
+            txn_hash,
+            block_number: None,
+            block_id: None,
         }
     }
 }
