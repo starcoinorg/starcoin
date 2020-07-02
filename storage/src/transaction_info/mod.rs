@@ -22,7 +22,7 @@ define_storage!(
 define_storage!(
     TransactionInfoHashStorage,
     HashValue,
-    HashValue,
+    Vec<HashValue>,
     TRANSACTION_INFO_HASH_PREFIX_NAME
 );
 
@@ -44,14 +44,19 @@ impl TransactionInfoStore for TransactionInfoHashStorage {
     fn get_transaction_info_by_hash(
         &self,
         _txn_hash: HashValue,
-    ) -> Result<Option<TransactionInfo>, Error> {
+    ) -> Result<Option<Vec<TransactionInfo>>, Error> {
         unimplemented!()
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for txn_info in vec_txn_info {
-            batch.put(txn_info.transaction_hash(), txn_info.id())?;
+            if let Ok(Some(mut id_vec)) = self.store.get(txn_info.transaction_hash()) {
+                id_vec.push(txn_info.id());
+                batch.put(txn_info.transaction_hash(), id_vec)?;
+            } else {
+                batch.put(txn_info.transaction_hash(), vec![txn_info.id()])?;
+            }
         }
         self.store.write_batch(batch)
     }
@@ -64,7 +69,7 @@ impl TransactionInfoStore for TransactionInfoStorage {
     fn get_transaction_info_by_hash(
         &self,
         _txn_hash: HashValue,
-    ) -> Result<Option<TransactionInfo>, Error> {
+    ) -> Result<Option<Vec<TransactionInfo>>, Error> {
         unimplemented!()
     }
 

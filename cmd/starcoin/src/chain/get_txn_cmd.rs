@@ -22,7 +22,7 @@ impl CommandAction for GetTransactionCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = TransactionInfo;
+    type ReturnItem = Vec<TransactionInfo>;
 
     fn run(
         &self,
@@ -30,8 +30,8 @@ impl CommandAction for GetTransactionCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let transaction = client.chain_get_transaction_info(opt.hash)?;
+        let transactions = client.chain_get_transaction_info(opt.hash)?;
 
-        Ok(transaction)
+        Ok(transactions)
     }
 }
