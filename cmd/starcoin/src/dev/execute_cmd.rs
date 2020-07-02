@@ -2,26 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::shared::Address;
 use starcoin_move_compiler::{command_line::parse_address, compile_or_load_move_file};
-use starcoin_rpc_client::{RemoteStateReader, RpcClient};
+use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
-    TransactionOutput,
 };
-use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-
-use crate::view::{ExecuteResultView, ExecutionOutputView};
-
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_error::StatusCode;
+use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -150,8 +145,7 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-
-        let output = dry_run(client, Transaction::UserTransaction(signed_txn.clone()))?;
+        let output = client.dry_run(signed_txn.clone())?;
         if output.status().vm_status().major_status != StatusCode::EXECUTED {
             bail!("move file pre-run failed, {:?}", output.status());
         }
@@ -174,12 +168,4 @@ impl CommandAction for ExecuteCommand {
             Ok(ExecuteResultView::DryRunOutput(output.into()))
         }
     }
-}
-
-pub fn dry_run(client: &RpcClient, txn: Transaction) -> Result<TransactionOutput> {
-    let chain_state_reader = RemoteStateReader::new(client);
-    let mut starcoin_vm = StarcoinVM::new();
-    let mut outputs = starcoin_vm.execute_transactions(&chain_state_reader, vec![txn])?;
-    let output = outputs.pop().unwrap();
-    Ok(output)
 }
