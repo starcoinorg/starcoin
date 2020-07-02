@@ -5,6 +5,7 @@ use logger::prelude::*;
 use parking_lot::RwLock;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_storage::Store;
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use traits::{ChainAsyncService, ConnectBlockResult, Consensus};
@@ -187,42 +188,61 @@ where
     async fn do_block_connect(&self, block: Block) -> bool {
         let pivot = self.get_pivot();
         let mut _state_sync_address = None;
+        let current_block_id = block.id();
         let connect_result = if pivot.is_none() {
             self.chain_reader.clone().try_connect(block.clone()).await
         } else {
             let tmp = pivot.expect("pivot is none.");
             let pivot_number = tmp.number;
+            let pivot_id = tmp.block_info.block_id();
             _state_sync_address = Some(tmp.state_sync_task_ref);
             let number = block.header().number();
-            if pivot_number >= number {
-                let block_accumulator = self
-                    .get_block_accumulator()
-                    .expect("Get block accumulator failed.");
-                match block_accumulator.get_leaf(number) {
-                    Ok(Some(block_id)) => {
-                        let current_block_id = block.id();
-                        if block_id == current_block_id {
-                            self.chain_reader
-                                .clone()
-                                .try_connect_without_execute(block.clone())
-                                .await
-                        } else {
-                            error!("block miss match {:?} : {:?}", block_id, current_block_id);
+            match pivot_number.cmp(&number) {
+                Ordering::Greater => {
+                    let block_accumulator = self
+                        .get_block_accumulator()
+                        .expect("Get block accumulator failed.");
+                    match block_accumulator.get_leaf(number) {
+                        Ok(Some(block_id)) => {
+                            if block_id == current_block_id {
+                                self.chain_reader
+                                    .clone()
+                                    .try_connect_without_execute(block.clone())
+                                    .await
+                            } else {
+                                error!(
+                                    "block miss match : {:?} :{:?} : {:?}",
+                                    number, block_id, current_block_id
+                                );
+                                Ok(ConnectBlockResult::VerifyBlockIdFailed)
+                            }
+                        }
+                        Ok(None) => Ok(ConnectBlockResult::VerifyBlockIdFailed),
+                        Err(err) => {
+                            error!("Get block accumulator leaf {:?} failed : {:?}", number, err);
                             Ok(ConnectBlockResult::VerifyBlockIdFailed)
                         }
                     }
-                    Ok(None) => Ok(ConnectBlockResult::VerifyBlockIdFailed),
-                    Err(err) => {
-                        error!("Get block accumulator leaf {:?} failed : {:?}", number, err);
+                }
+                Ordering::Equal => {
+                    let parent_id = block.header().parent_hash();
+                    if pivot_id == &parent_id {
+                        self.chain_reader
+                            .clone()
+                            .try_connect_without_execute(block.clone())
+                            .await
+                    } else {
+                        error!(
+                            "pivot block id miss match : {:?} :{:?} : {:?}",
+                            number, pivot_id, parent_id
+                        );
                         Ok(ConnectBlockResult::VerifyBlockIdFailed)
                     }
                 }
-            } else {
-                self.chain_reader.clone().try_connect(block.clone()).await
+                Ordering::Less => self.chain_reader.clone().try_connect(block.clone()).await,
             }
         };
 
-        let block_id = block.id();
         match connect_result {
             Ok(connect) => {
                 match connect {
@@ -234,20 +254,23 @@ where
                         //TODO
                     }
                     ConnectBlockResult::VerifyConsensusFailed => {
-                        error!("Connect block {:?} verify nonce failed.", block_id);
+                        error!("Connect block {:?} verify nonce failed.", current_block_id);
                         //TODO: remove child block
                     }
                     ConnectBlockResult::VerifyBodyFailed => {
-                        error!("Connect block {:?} verify body failed.", block_id);
+                        error!("Connect block {:?} verify body failed.", current_block_id);
                         //TODO:
                     }
                     ConnectBlockResult::VerifyTxnInfoFailed => {
-                        error!("Connect block {:?} verify txn info failed.", block_id);
+                        error!(
+                            "Connect block {:?} verify txn info failed.",
+                            current_block_id
+                        );
                         //todo: state_sync_address.expect("").reset();
                     }
                 }
             }
-            Err(e) => error!("Connect block {:?} failed : {:?}", block_id, e),
+            Err(e) => error!("Connect block {:?} failed : {:?}", current_block_id, e),
         }
 
         false

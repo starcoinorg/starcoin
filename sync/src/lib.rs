@@ -24,5 +24,10 @@ pub(crate) fn do_duration(delay: u64) -> Duration {
 
 #[async_trait::async_trait]
 pub trait StateSyncReset: DynClone + Send + Sync {
-    async fn reset(&self, state_root: HashValue, block_accumulator_root: HashValue);
+    async fn reset(
+        &self,
+        state_root: HashValue,
+        block_accumulator_root: HashValue,
+        pivot_id: HashValue,
+    );
 }
