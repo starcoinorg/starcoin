@@ -13,10 +13,13 @@ use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
-use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::transaction::{TransactionInfo, TransactionStatus};
 use starcoin_types::vm_error::StatusCode;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction, U256};
+use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::transaction::TransactionOutput;
+use starcoin_vm_types::write_set::WriteOp;
 use starcoin_wallet_api::WalletAccount;
 use std::collections::HashMap;
 
@@ -289,6 +292,34 @@ impl From<NodeInfo> for NodeInfoView {
             peer_info: node_info.peer_info.into(),
             self_address: node_info.self_address,
             net: node_info.net,
+        }
+    }
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TranscationOutputView {
+    pub write_set: Vec<(AccessPath, WriteOp)>,
+    /// The list of events emitted during this transaction.
+    pub events: Vec<ContractEvent>,
+
+    /// The amount of gas used during execution.
+    pub gas_used: u64,
+
+    /// The resource increment size
+    pub delta_size: i64,
+
+    /// The execution status.
+    pub status: TransactionStatus,
+}
+
+impl From<TransactionOutput> for TranscationOutputView {
+    fn from(output: TransactionOutput) -> Self {
+        let (write_set, events, gas_used, delta_size, status) = output.into_inner();
+        Self {
+            write_set: write_set.into_iter().collect::<Vec<_>>(),
+            events,
+            gas_used,
+            delta_size,
+            status,
         }
     }
 }

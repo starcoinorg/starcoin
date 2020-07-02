@@ -7,9 +7,7 @@ use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_move_compiler::shared::Address;
-use starcoin_move_compiler::{
-    command_line::parse_address, compile_or_load_move_file,
-};
+use starcoin_move_compiler::{command_line::parse_address, compile_or_load_move_file};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -18,7 +16,7 @@ use starcoin_types::transaction::{
 };
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 
-
+use starcoin_vm_types::vm_error::StatusCode;
 use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -109,8 +107,24 @@ impl CommandAction for ExecuteCommand {
         deps.append(&mut ctx.opt().deps.clone());
         let (bytecode, is_script) = compile_or_load_move_file(move_file_path, &deps, sender)?;
 
+        let type_tags = opt.type_tags.clone();
         let args = opt.args.clone();
+
         let client = ctx.state().client();
+        let output = super::dry_run(
+            client,
+            opt.max_gas_amount,
+            bytecode.clone(),
+            is_script,
+            sender,
+            type_tags.clone(),
+            args.as_slice(),
+        )?;
+
+        if output.status().vm_status().major_status != StatusCode::EXECUTED {
+            bail!("move file dry-run error, {:?}", output.status());
+        }
+
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender)?;
@@ -124,7 +138,7 @@ impl CommandAction for ExecuteCommand {
             RawUserTransaction::new_script(
                 sender,
                 account_resource.sequence_number(),
-                Script::new(bytecode, opt.type_tags.clone(), args),
+                Script::new(bytecode, type_tags.clone(), args),
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,

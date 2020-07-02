@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::TranscationOutputView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::shared::Address;
-use starcoin_move_compiler::{
-    command_line::parse_address, compile_or_load_move_file,
-};
-use starcoin_rpc_client::RemoteStateReader;
+use starcoin_move_compiler::{command_line::parse_address, compile_or_load_move_file};
+use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
 use starcoin_vm_runtime::data_cache::{RemoteStorage, TransactionDataCache};
@@ -60,7 +59,7 @@ impl CommandAction for DryRunCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = DryRunOpt;
-    type ReturnItem = TransactionOutput;
+    type ReturnItem = TranscationOutputView;
 
     fn run(
         &self,
@@ -81,46 +80,65 @@ impl CommandAction for DryRunCommand {
         let (bytecode, is_script) = compile_or_load_move_file(move_file_path, &deps, sender)?;
 
         let client = ctx.state().client();
-        let chain_state_reader = RemoteStateReader::new(client);
-        let remote_storage = RemoteStorage::new(&chain_state_reader);
-
-        let mut data_cache = TransactionDataCache::new(&remote_storage);
-        let move_vm = MoveVM::new();
-
-        let cost_table = {
-            let mut starcoin_vm = StarcoinVM::new();
-            starcoin_vm.load_configs(&chain_state_reader);
-            starcoin_vm.get_gas_schedule()?.clone()
-        };
-        let initial_gas = opt.initial_gas;
-        let mut cost_strategy = CostStrategy::transaction(&cost_table, GasUnits::new(initial_gas));
-        let vm_result = if is_script {
-            move_vm.execute_script(
-                bytecode,
-                opt.type_tags.clone(),
-                convert_txn_args(opt.args.as_slice()),
-                sender,
-                &mut data_cache,
-                &mut cost_strategy,
-            )
-        } else {
-            move_vm.publish_module(bytecode, sender, &mut data_cache)
-        };
-        let txn_status = match vm_result {
-            Err(e) => e,
-            Ok(_) => VMStatus::new(StatusCode::EXECUTED),
-        };
-        let write_set = data_cache.make_write_set()?;
-        let events = data_cache.event_data();
-        let gas_used = initial_gas - cost_strategy.remaining_gas().get();
-        let output = TransactionOutput::new(
-            write_set,
-            events.to_vec(),
-            gas_used,
-            0,
-            TransactionStatus::from(txn_status),
-        );
-
-        Ok(output)
+        let output = dry_run(
+            client,
+            opt.initial_gas,
+            bytecode,
+            is_script,
+            sender,
+            opt.type_tags.clone(),
+            opt.args.as_slice(),
+        )?;
+        Ok(output.into())
     }
+}
+
+pub fn dry_run(
+    client: &RpcClient,
+    initial_gas: u64,
+    bytecode: Vec<u8>,
+    is_script: bool,
+    sender: AccountAddress,
+    type_tags: Vec<TypeTag>,
+    args: &[TransactionArgument],
+) -> Result<TransactionOutput> {
+    let chain_state_reader = RemoteStateReader::new(client);
+    let remote_storage = RemoteStorage::new(&chain_state_reader);
+
+    let mut data_cache = TransactionDataCache::new(&remote_storage);
+    let move_vm = MoveVM::new();
+
+    let cost_table = {
+        let mut starcoin_vm = StarcoinVM::new();
+        starcoin_vm.load_configs(&chain_state_reader);
+        starcoin_vm.get_gas_schedule()?.clone()
+    };
+    let mut cost_strategy = CostStrategy::transaction(&cost_table, GasUnits::new(initial_gas));
+    let vm_result = if is_script {
+        move_vm.execute_script(
+            bytecode,
+            type_tags,
+            convert_txn_args(args),
+            sender,
+            &mut data_cache,
+            &mut cost_strategy,
+        )
+    } else {
+        move_vm.publish_module(bytecode, sender, &mut data_cache)
+    };
+    let txn_status = match vm_result {
+        Err(e) => e,
+        Ok(_) => VMStatus::new(StatusCode::EXECUTED),
+    };
+    let write_set = data_cache.make_write_set()?;
+    let events = data_cache.event_data();
+    let gas_used = initial_gas - cost_strategy.remaining_gas().get();
+    let output = TransactionOutput::new(
+        write_set,
+        events.to_vec(),
+        gas_used,
+        0,
+        TransactionStatus::from(txn_status),
+    );
+    Ok(output)
 }

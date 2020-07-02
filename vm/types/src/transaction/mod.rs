@@ -521,8 +521,14 @@ impl TransactionOutput {
         self.delta_size
     }
 
-    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, TransactionStatus) {
-        (self.write_set, self.events, self.gas_used, self.status)
+    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, i64, TransactionStatus) {
+        (
+            self.write_set,
+            self.events,
+            self.gas_used,
+            self.delta_size,
+            self.status,
+        )
     }
 }
 
