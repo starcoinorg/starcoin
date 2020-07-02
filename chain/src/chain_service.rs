@@ -103,7 +103,7 @@ where
                 } else {
                     // TODO: After review the impl of find_common_ancestor in storage.
                     // we can just let find_ancestors do it work, no matter whether fork or not.
-                    self.find_ancestors(&new_branch)?
+                    self.find_ancestors_from_accumulator(&new_branch)?
                 };
 
             debug_assert!(!enacted_blocks.is_empty());
@@ -143,23 +143,47 @@ where
         }
     }
 
-    fn find_ancestors(&self, new_branch: &BlockChain<C>) -> Result<(Vec<Block>, Vec<Block>)> {
+    fn find_ancestors_from_accumulator(
+        &self,
+        new_branch: &BlockChain<C>,
+    ) -> Result<(Vec<Block>, Vec<Block>)> {
+        let new_header_number = new_branch.current_header().number();
+        let master_header_number = self.get_master().current_header().number();
+        let mut number = if new_header_number >= master_header_number {
+            master_header_number
+        } else {
+            new_header_number
+        };
+
         let block_enacted = new_branch.current_header().id();
         let block_retracted = self.get_master().current_header().id();
 
-        let ancestor = self
-            .storage
-            .get_common_ancestor(block_enacted, block_retracted)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Can not find ancestor with {:?} and {:?}.",
-                    block_enacted,
-                    block_retracted
-                )
-            })?;
+        let mut ancestor = None;
+        loop {
+            let block_id_1 = new_branch.find_block_by_number(number)?;
+            let block_id_2 = self.get_master().find_block_by_number(number)?;
 
+            if block_id_1 == block_id_2 {
+                ancestor = Some(block_id_1);
+                break;
+            }
+
+            if number == 0 {
+                break;
+            }
+
+            number -= 1;
+        }
+
+        assert!(
+            ancestor.is_some(),
+            "Can not find ancestors from block accumulator."
+        );
+
+        let ancestor = ancestor.expect("Ancestor is none.");
         let enacted = self.find_blocks_until(block_enacted, ancestor)?;
         let retracted = self.find_blocks_until(block_retracted, ancestor)?;
+
         debug!(
             "commit block num:{}, rollback block num:{}",
             enacted.len(),

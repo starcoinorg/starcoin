@@ -5,13 +5,12 @@ use crate::define_storage;
 use crate::storage::{CodecStorage, KeyCodec, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_SONS_PREFIX_NAME, BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
+    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
 };
-use anyhow::{bail, ensure, Error, Result};
+use anyhow::{bail, Error, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::HashValue;
 use logger::prelude::*;
-use parking_lot::RwLock;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState};
@@ -50,12 +49,6 @@ define_storage!(
     BLOCK_HEADER_PREFIX_NAME
 );
 define_storage!(
-    BlockSonsStorage,
-    HashValue,
-    Vec<HashValue>,
-    BLOCK_SONS_PREFIX_NAME
-);
-define_storage!(
     BlockBodyStorage,
     HashValue,
     BlockBody,
@@ -84,8 +77,6 @@ define_storage!(
 pub struct BlockStorage {
     block_store: BlockInnerStorage,
     header_store: BlockHeaderStorage,
-    //store parents relationship
-    sons_store: RwLock<BlockSonsStorage>,
     body_store: BlockBodyStorage,
     number_store: BlockNumberStorage,
     block_txns_store: BlockTransactionsStorage,
@@ -166,7 +157,6 @@ impl BlockStorage {
         BlockStorage {
             block_store: BlockInnerStorage::new(instance.clone()),
             header_store: BlockHeaderStorage::new(instance.clone()),
-            sons_store: RwLock::new(BlockSonsStorage::new(instance.clone())),
             body_store: BlockBodyStorage::new(instance.clone()),
             number_store: BlockNumberStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
@@ -185,9 +175,7 @@ impl BlockStorage {
     }
 
     pub fn save_header(&self, header: BlockHeader) -> Result<()> {
-        self.header_store.put(header.id(), header.clone())?;
-        //save sons relationship
-        self.put_sons(header.parent_hash(), header.id())
+        self.header_store.put(header.id(), header)
     }
 
     pub fn get_headers(&self) -> Result<Vec<HashValue>> {
@@ -236,95 +224,6 @@ impl BlockStorage {
         self.save_body(block_id, body)?;
         //save block cache
         self.save(block, state)
-    }
-
-    ///返回某个块到分叉块的路径上所有块的hash
-    pub fn get_branch_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
-        let mut vev_hash = Vec::new();
-        let mut temp_block_id = block_id;
-        loop {
-            //get header by block_id
-            match self.get_block_header_by_hash(temp_block_id)? {
-                Some(header) => {
-                    if header.id() != block_id {
-                        vev_hash.push(header.id());
-                    }
-                    temp_block_id = header.parent_hash();
-                    match self.get_sons(temp_block_id) {
-                        Ok(sons) => {
-                            if sons.len() > 1 {
-                                break;
-                            }
-                        }
-                        Err(err) => bail!("get sons Error: {:?}", err),
-                    }
-                }
-                None => bail!("Error: can not find block {:?}", temp_block_id),
-            }
-        }
-        Ok(vev_hash)
-    }
-    /// Get common ancestor
-    pub fn get_common_ancestor(
-        &self,
-        block_id1: HashValue,
-        block_id2: HashValue,
-    ) -> Result<Option<HashValue>> {
-        let mut parent_id1 = block_id1;
-        let mut parent_id2 = block_id2;
-        let mut found;
-        if let Ok(Some(hash)) = self.get_relationship(block_id1, block_id2) {
-            return Ok(Some(hash));
-        }
-        if let Ok(Some(hash)) = self.get_relationship(block_id2, block_id1) {
-            return Ok(Some(hash));
-        }
-
-        loop {
-            //get header by block_id
-            match self.get_block_header_by_hash(parent_id1)? {
-                Some(header) => {
-                    parent_id1 = header.parent_hash();
-                    ensure!(parent_id1 != HashValue::zero(), "invalid block id is zero.");
-                    match self.get_sons(parent_id1) {
-                        Ok(sons1) => {
-                            debug!("parent: {:?}, sons1 : {:?}", parent_id1, sons1);
-                            if sons1.len() > 1 {
-                                // get parent2 from block2
-                                loop {
-                                    ensure!(
-                                        parent_id2 != HashValue::zero(),
-                                        "invalid block id is zero."
-                                    );
-                                    if sons1.contains(&parent_id2) {
-                                        found = true;
-                                        break;
-                                    }
-                                    match self.get_block_header_by_hash(parent_id2)? {
-                                        Some(header2) => {
-                                            parent_id2 = header2.parent_hash();
-                                        }
-                                        None => {
-                                            bail!("Error: can not find block2 {:?}", parent_id2)
-                                        }
-                                    }
-                                }
-                                if found {
-                                    break;
-                                }
-                            }
-                        }
-                        Err(err) => bail!("get sons Error: {:?}", err),
-                    }
-                }
-                None => bail!("Error: can not find block {:?}", parent_id1),
-            }
-        }
-        if found {
-            Ok(Some(parent_id1))
-        } else {
-            bail!("not find common ancestor");
-        }
     }
 
     pub fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
@@ -401,41 +300,5 @@ impl BlockStorage {
         txn_info_ids: Vec<HashValue>,
     ) -> Result<()> {
         self.block_txn_infos_store.put(block_id, txn_info_ids)
-    }
-
-    fn get_relationship(
-        &self,
-        block_id1: HashValue,
-        block_id2: HashValue,
-    ) -> Result<Option<HashValue>> {
-        if let Ok(sons) = self.get_sons(block_id1) {
-            if sons.contains(&block_id2) {
-                return Ok(Some(block_id1));
-            }
-        }
-
-        Ok(None)
-    }
-
-    fn get_sons(&self, parent_hash: HashValue) -> Result<Vec<HashValue>> {
-        match self.sons_store.read().get(parent_hash)? {
-            Some(sons) => Ok(sons),
-            None => bail!("cant't find sons: {}", parent_hash),
-        }
-    }
-
-    fn put_sons(&self, parent_hash: HashValue, son_hash: HashValue) -> Result<()> {
-        trace!("put son:{}, {}", parent_hash, son_hash);
-        match self.get_sons(parent_hash) {
-            Ok(mut vec_hash) => {
-                debug!("branch block:{}, {:?}", parent_hash, vec_hash);
-                vec_hash.push(son_hash);
-                self.sons_store.write().put(parent_hash, vec_hash)?;
-            }
-            _ => {
-                self.sons_store.write().put(parent_hash, vec![son_hash])?;
-            }
-        }
-        Ok(())
     }
 }
