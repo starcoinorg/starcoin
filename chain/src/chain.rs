@@ -152,7 +152,7 @@ where
 
     pub fn transaction_info_exist(&self, txn_id: HashValue) -> bool {
         if let Ok(node) = self.txn_accumulator.get_node(txn_id) {
-            return if !node.is_empty() { true } else { false };
+            return !node.is_empty();
         }
         false
     }
