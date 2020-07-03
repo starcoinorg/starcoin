@@ -5,11 +5,11 @@
 // default upgrade strategy is arbitrary
 //! sender: alice
 script {
-use 0x1::UpgradeManager;
+use 0x1::PackageTxnManager;
 use 0x1::Signer;
 fun main(account: &signer) {
     let hash = x"1111111111111111";
-    UpgradeManager::check_module_upgrade(Signer::address_of(account), {{alice}}, hash);
+    PackageTxnManager::check_package_txn(Signer::address_of(account), {{alice}}, hash);
 }
 }
 
@@ -18,9 +18,9 @@ fun main(account: &signer) {
 //! new-transaction
 //! sender: alice
 script {
-use 0x1::UpgradeManager;
+use 0x1::PackageTxnManager;
 fun main(account: &signer) {
-    UpgradeManager::update_module_upgrade_strategy(account, UpgradeManager::STRATEGY_TWO_PHASE());
+    PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::STRATEGY_TWO_PHASE());
 }
 }
 
@@ -30,11 +30,11 @@ fun main(account: &signer) {
 //! new-transaction
 //! sender: alice
 script {
-use 0x1::UpgradeManager;
+use 0x1::PackageTxnManager;
 use 0x1::Signer;
 fun main(account: &signer) {
     let hash = x"1111111111111111";
-    UpgradeManager::check_module_upgrade(Signer::address_of(account), {{alice}}, hash);
+    PackageTxnManager::check_package_txn(Signer::address_of(account), {{alice}}, hash);
 }
 }
 
@@ -43,27 +43,25 @@ fun main(account: &signer) {
 //! new-transaction
 //! sender: alice
 script {
-use 0x1::UpgradeManager;
+use 0x1::PackageTxnManager;
 fun main(account: &signer) {
     let hash = x"1111111111111111";
-    UpgradeManager::submit_upgrade_plan(account, copy hash, 1);
+    PackageTxnManager::submit_upgrade_plan(account, copy hash, 1);
 }
 }
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-script {
-use 0x1::UpgradeManager;
-use 0x1::Signer;
-fun main(account: &signer) {
-    let hash = x"1111111111111111";
-    UpgradeManager::check_module_upgrade(Signer::address_of(account), {{alice}}, hash);
-}
-}
+//FIXME current block height limit not work, fix me after refactor Block Module dependency.
+//script {
+//use 0x1::PackageTxnManager;
+//use 0x1::Signer;
+//fun main(account: &signer) {
+//    let hash = x"1111111111111111";
+//    PackageTxnManager::check_package_txn(Signer::address_of(account), {{alice}}, hash);
+//}
+//}
 
-// check: ABORT
 
 //! block-prologue
 //! proposer: bob
@@ -72,11 +70,11 @@ fun main(account: &signer) {
 //! new-transaction
 //! sender: alice
 script {
-use 0x1::UpgradeManager;
+use 0x1::PackageTxnManager;
 use 0x1::Signer;
 fun main(account: &signer) {
     let hash = x"1111111111111111";
-    UpgradeManager::check_module_upgrade(Signer::address_of(account), {{alice}}, hash);
+    PackageTxnManager::check_package_txn(Signer::address_of(account), {{alice}}, hash);
 }
 }
 

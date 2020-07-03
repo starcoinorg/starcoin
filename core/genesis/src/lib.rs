@@ -40,14 +40,6 @@ const HALLEY_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/halley/gen
 const PROXIMA_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/proxima/genesis");
 const MAIN_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/main/genesis");
 
-pub static GENERATED_GENESIS: Lazy<HashMap<ChainNetwork, Genesis>> = Lazy::new(|| {
-    let mut genesis = HashMap::new();
-    for net in ChainNetwork::networks() {
-        genesis.insert(net, Genesis::load_generated(net));
-    }
-    genesis
-});
-
 pub static FRESH_GENESIS: Lazy<HashMap<ChainNetwork, Genesis>> = Lazy::new(|| {
     let mut genesis = HashMap::new();
     for net in ChainNetwork::networks() {
@@ -83,13 +75,13 @@ impl Display for Genesis {
 
 impl Genesis {
     pub fn load_by_opt(option: GenesisOpt, net: ChainNetwork) -> Result<Self> {
-        let genesis = match option {
-            GenesisOpt::Generated => (&GENERATED_GENESIS).get(&net),
-            GenesisOpt::Fresh => (&FRESH_GENESIS).get(&net),
-        };
-        Ok(genesis
-            .unwrap_or_else(|| panic!("Genesis for {} must exist.", net))
-            .clone())
+        match option {
+            GenesisOpt::Generated => Self::load_generated(net),
+            GenesisOpt::Fresh => (&FRESH_GENESIS)
+                .get(&net)
+                .cloned()
+                .ok_or_else(|| format_err!("Can not find genesis by net{:?}", net)),
+        }
     }
 
     /// Load pre generated genesis.
@@ -213,9 +205,9 @@ impl Genesis {
         }
     }
 
-    pub fn load_generated(net: ChainNetwork) -> Self {
+    pub fn load_generated(net: ChainNetwork) -> Result<Self> {
         let bytes = Self::genesis_bytes(net);
-        scs::from_bytes(bytes).expect("Deserialize genesis must ok.")
+        scs::from_bytes(bytes)
     }
 
     pub fn execute_genesis_block(

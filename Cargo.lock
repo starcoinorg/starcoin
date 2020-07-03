@@ -6572,6 +6572,7 @@ dependencies = [
  "starcoin-vm-types",
  "stdlib",
  "stest",
+ "tempfile",
 ]
 
 [[package]]
@@ -7384,6 +7385,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-move-compiler",
  "starcoin-state-api",
  "starcoin-types",
  "starcoin-vm-types",

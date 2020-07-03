@@ -47,7 +47,7 @@ use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signatur
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
-pub use upgrade::{InitScript, UpgradePackage};
+pub use upgrade::{InitScript, Package};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
@@ -169,7 +169,10 @@ impl RawUserTransaction {
         RawUserTransaction {
             sender,
             sequence_number,
-            payload: TransactionPayload::Module(module),
+            payload: TransactionPayload::Package(
+                Package::new_with_module(module)
+                    .expect("build package with module should success."),
+            ),
             max_gas_amount,
             gas_unit_price,
             expiration_time,
@@ -231,10 +234,42 @@ impl RawUserTransaction {
 pub enum TransactionPayload {
     /// A transaction that executes code.
     Script(Script),
-    /// A transaction that publishes code.
-    Module(Module),
     /// A transaction that publish or update module code by a package.
-    Package(UpgradePackage),
+    Package(Package),
+}
+
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
+#[repr(u8)]
+pub enum TransactionPayloadType {
+    Script = 0,
+    Package = 1,
+}
+
+impl TransactionPayload {
+    pub fn payload_type(&self) -> TransactionPayloadType {
+        match self {
+            TransactionPayload::Script(_) => TransactionPayloadType::Script,
+            TransactionPayload::Package(_) => TransactionPayloadType::Package,
+        }
+    }
+}
+
+impl TryFrom<u8> for TransactionPayloadType {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(TransactionPayloadType::Script),
+            1 => Ok(TransactionPayloadType::Package),
+            _ => Err(format_err!("invalid PayloadType")),
+        }
+    }
+}
+
+impl From<TransactionPayloadType> for u8 {
+    fn from(t: TransactionPayloadType) -> Self {
+        t as u8
+    }
 }
 
 /// A transaction that has been signed.

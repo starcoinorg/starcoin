@@ -25,22 +25,37 @@ fn main() {
     for net in networks {
         let new_genesis =
             Genesis::load_by_opt(GenesisOpt::Fresh, net).expect("build genesis fail.");
-        let generated_genesis = Genesis::load(net).expect("load genesis fail");
-        if new_genesis.block().id() == generated_genesis.block().id() {
+        let generated_genesis = Genesis::load(net);
+        let regenerate = match generated_genesis {
+            Ok(generated_genesis) => {
+                let regenerate = new_genesis.block().id() != generated_genesis.block().id();
+                if regenerate {
+                    info!(
+                        "Chain net {} previous generated genesis({:?}) not same as new genesis({:?}), overwrite the genesis.",
+                        net,
+                        generated_genesis.block().id(),
+                        new_genesis.block().id()
+                    );
+                }
+                regenerate
+            }
+            Err(e) => {
+                warn!(
+                    "Load generated genesis fail: {:?}, overwrite the genesis.",
+                    e
+                );
+                true
+            }
+        };
+        if regenerate {
+            let path = Path::new(GENESIS_GENERATED_DIR).join(net.to_string());
+            new_genesis.save(path.as_path()).expect("save genesis fail");
+        } else {
             info!(
                 "Chain net {} previous generated genesis same as new genesis, do nothing. id: {:?}",
                 net,
                 new_genesis.block().id()
             );
-        } else {
-            info!(
-                "Chain net {} previous generated genesis({:?}) not same as new genesis({:?}), overwrite the genesis.",
-                net,
-                generated_genesis.block().id(),
-                new_genesis.block().id()
-            );
-            let path = Path::new(GENESIS_GENERATED_DIR).join(net.to_string());
-            new_genesis.save(path.as_path()).expect("save genesis fail");
         }
     }
 }

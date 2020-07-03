@@ -4,10 +4,10 @@
 use crate::data_cache::{RemoteStorage, StateViewCache, TransactionDataCache};
 use crate::metrics::TXN_EXECUTION_GAS_USAGE;
 use anyhow::Result;
-use bytecode_verifier::VerifiedModule;
 use move_vm_runtime::{data_cache::RemoteCache, move_vm::MoveVM};
 use once_cell::sync::Lazy;
 use starcoin_logger::prelude::*;
+use starcoin_move_compiler::check_module_compat;
 use starcoin_types::language_storage::CORE_CODE_ADDRESS;
 use starcoin_types::{
     account_config,
@@ -21,13 +21,11 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::{
-    association_address, stc_type_tag, EPILOGUE_NAME, PROLOGUE_NAME,
-};
+use starcoin_vm_types::account_config::{stc_type_tag, EPILOGUE_NAME, PROLOGUE_NAME};
 use starcoin_vm_types::data_store::DataStore;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
-use starcoin_vm_types::transaction::{Module, Script, UpgradePackage};
+use starcoin_vm_types::transaction::{Module, Package, Script};
 use starcoin_vm_types::{
     errors,
     errors::{convert_prologue_runtime_error, VMResult},
@@ -228,12 +226,12 @@ impl StarcoinVM {
 
     fn verify_script(
         &self,
-        remote_cache: &dyn RemoteCache,
+        data_cache: &StateViewCache,
         script: &Script,
         txn_data: &TransactionMetadata,
     ) -> VMResult<VerifiedTransactionPayload> {
         let mut cost_strategy = CostStrategy::system(self.get_gas_schedule()?, GasUnits::new(0));
-        let mut data_store = TransactionDataCache::new(remote_cache);
+        let mut data_store = TransactionDataCache::new(data_cache);
         if !self
             .vm_config()?
             .publishing_option
@@ -250,49 +248,37 @@ impl StarcoinVM {
         ))
     }
 
-    fn verify_module(
+    fn verify_package(
         &self,
-        remote_cache: &dyn RemoteCache,
-        module: &Module,
+        data_cache: &StateViewCache,
+        package: &Package,
         txn_data: &TransactionMetadata,
     ) -> VMResult<VerifiedTransactionPayload> {
-        let mut cost_strategy = CostStrategy::system(self.get_gas_schedule()?, GasUnits::new(0));
-        let mut data_store = TransactionDataCache::new(remote_cache);
-        if !&self.vm_config()?.publishing_option.is_open() {
-            warn!("[VM] Custom modules not allowed");
-            return Err(VMStatus::new(StatusCode::UNKNOWN_MODULE));
-        };
-        self.run_prologue(&mut data_store, &mut cost_strategy, &txn_data)?;
-        Ok(VerifiedTransactionPayload::Module(module.code().to_vec()))
-    }
-
-    fn verify_upgrade(
-        &self,
-        _remote_cache: &dyn RemoteCache,
-        upgrade: &UpgradePackage,
-        _txn_data: &TransactionMetadata,
-    ) -> VMResult<VerifiedTransactionPayload> {
-        //TODO custom prologue, check sender in prologue
-        //self.run_prologue(&mut data_store, &mut cost_strategy, &txn_data)?;
-        Ok(VerifiedTransactionPayload::Package(upgrade.clone()))
+        if !data_cache.is_genesis() {
+            let mut cost_strategy =
+                CostStrategy::system(self.get_gas_schedule()?, GasUnits::new(0));
+            let mut data_store = TransactionDataCache::new(data_cache);
+            //TODO move to prologue
+            if !&self.vm_config()?.publishing_option.is_open() {
+                warn!("[VM] Custom modules not allowed");
+                return Err(VMStatus::new(StatusCode::UNKNOWN_MODULE));
+            };
+            self.run_prologue(&mut data_store, &mut cost_strategy, &txn_data)?;
+        }
+        Ok(VerifiedTransactionPayload::Package(package.clone()))
     }
 
     fn verify_transaction_impl(
         &mut self,
         transaction: &SignatureCheckedTransaction,
-        remote_cache: &dyn RemoteCache,
+        data_cache: &StateViewCache,
         txn_data: &TransactionMetadata,
     ) -> Result<VerifiedTransactionPayload, VMStatus> {
         self.check_gas(transaction)?;
         match transaction.payload() {
-            TransactionPayload::Script(script) => {
-                self.verify_script(remote_cache, script, txn_data)
-            }
-            TransactionPayload::Module(module) => {
-                self.verify_module(remote_cache, module, txn_data)
-            }
+            TransactionPayload::Script(script) => self.verify_script(data_cache, script, txn_data),
             TransactionPayload::Package(upgrade) => {
-                self.verify_upgrade(remote_cache, upgrade, txn_data)
+                self.verify_package(data_cache, upgrade, txn_data)
             }
         }
     }
@@ -363,10 +349,17 @@ impl StarcoinVM {
             }
             VerifiedTransactionPayload::Package(package) => {
                 cost_strategy = CostStrategy::system(gas_schedule, GasUnits::new(0));
-                let (modules, scripts) = package.into_inner();
+                let (package_address, modules, scripts) = package.into_inner();
                 let mut ret: VMResult<Vec<_>> = modules
                     .iter()
-                    .map(|module| Self::update_module(txn_data.sender, module, &mut data_store))
+                    .map(|module| {
+                        Self::update_module(
+                            txn_data.sender,
+                            package_address,
+                            module,
+                            &mut data_store,
+                        )
+                    })
                     .collect();
                 if ret.is_ok() {
                     ret = scripts
@@ -433,11 +426,11 @@ impl StarcoinVM {
     }
 
     fn update_module(
-        sender: AccountAddress,
+        _sender: AccountAddress,
+        package_address: AccountAddress,
         module: &Module,
         data_store: &mut dyn DataStore,
     ) -> VMResult<()> {
-        //TODO move_vm should support method verify and update a module.
         let code = module.code().to_vec();
         let compiled_module = match CompiledModule::deserialize(code.as_slice()) {
             Ok(module) => module,
@@ -446,29 +439,31 @@ impl StarcoinVM {
                 return Err(err);
             }
         };
-        //TODO supported authorize mechanism to upgrade or deploy module for other address.
-
-        //Only support stdlib module upgrade.
-        if compiled_module.address() != &CORE_CODE_ADDRESS {
-            return Err(errors::verification_error(
-                IndexKind::AddressIdentifier,
-                compiled_module.self_handle_idx().0 as usize,
-                StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
-            ));
-        }
-
-        //Only allow association_address or CORE_CODE_ADDRESS to upgrade currently.
-        if sender != CORE_CODE_ADDRESS && sender != association_address() {
-            return Err(errors::verification_error(
-                IndexKind::AddressIdentifier,
-                compiled_module.self_handle_idx().0 as usize,
-                StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
-            ));
-        }
 
         let module_id = compiled_module.self_id();
-        //TODO verify module compatibility
-        let _verified_module = VerifiedModule::new(compiled_module).map_err(|(_, e)| e)?;
+        if module_id.address() != &package_address {
+            return Err(errors::verification_error(
+                IndexKind::AddressIdentifier,
+                compiled_module.self_handle_idx().0 as usize,
+                //TODO define new error code.
+                StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
+            ));
+        }
+
+        //verify module compatibility
+        if data_store.exists_module(&module_id) {
+            let pre_version = data_store.load_module(&module_id)?;
+            check_module_compat(pre_version.as_slice(), module.code()).map_err(|e| {
+                warn!("Check module compat error: {:?}", e);
+                errors::verification_error(
+                    IndexKind::ModuleHandle,
+                    compiled_module.self_handle_idx().0 as usize,
+                    //TODO define error code for compat.
+                    StatusCode::VERIFICATION_ERROR,
+                )
+            })?;
+        }
+
         //TODO check native implement.
         //Loader::check_natives(&verified_module)?;
         data_store.publish_module(module_id, code)
@@ -488,6 +483,9 @@ impl StarcoinVM {
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_amount = txn_data.max_gas_amount().get();
         let txn_expiration_time = txn_data.expiration_time();
+        let payload_type: u8 = txn_data.payload_type().into();
+        let script_or_package_hash = txn_data.script_or_package_hash();
+        let package_address = txn_data.package_address.unwrap_or_default();
         self.move_vm
             .execute_function(
                 &account_config::ACCOUNT_MODULE,
@@ -500,6 +498,9 @@ impl StarcoinVM {
                     Value::u64(txn_gas_price),
                     Value::u64(txn_max_gas_amount),
                     Value::u64(txn_expiration_time),
+                    Value::u8(payload_type),
+                    Value::vector_u8(script_or_package_hash.to_vec()),
+                    Value::address(package_address),
                 ],
                 txn_data.sender(),
                 data_store,
@@ -523,12 +524,10 @@ impl StarcoinVM {
         let gas_remaining = cost_strategy.remaining_gas().get();
         let data_size = data_store.get_size(txn_data.sender);
         let cost_is_negative = data_size.is_negative();
-        let state_cost_amount = if cost_is_negative {
-            data_size.wrapping_abs() as u64 * txn_data.size_unit_price().get()
-        } else {
-            data_size as u64 * txn_data.size_unit_price().get()
-        };
-        // let state_cost_amount = positive_data_size ;
+        let state_cost_amount = data_size.wrapping_abs() as u64;
+        let payload_type: u8 = txn_data.payload_type().into();
+        let script_or_package_hash = txn_data.script_or_package_hash();
+        let package_address = txn_data.package_address.unwrap_or_default();
         self.move_vm.execute_function(
             &account_config::ACCOUNT_MODULE,
             &EPILOGUE_NAME,
@@ -541,6 +540,9 @@ impl StarcoinVM {
                 Value::u64(gas_remaining),
                 Value::u64(state_cost_amount),
                 Value::bool(cost_is_negative),
+                Value::u8(payload_type),
+                Value::vector_u8(script_or_package_hash.to_vec()),
+                Value::address(package_address),
             ],
             txn_data.sender(),
             data_store,
@@ -790,5 +792,5 @@ fn get_transaction_output(
 pub enum VerifiedTransactionPayload {
     Script(Vec<u8>, Vec<TypeTag>, Vec<Value>),
     Module(Vec<u8>),
-    Package(UpgradePackage),
+    Package(Package),
 }

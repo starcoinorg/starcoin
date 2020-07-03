@@ -8,11 +8,11 @@ use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::{
     association_address, config_address, mint_address, stc_type_tag, transaction_fee_address,
 };
-use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::language_storage::{TypeTag, CORE_CODE_ADDRESS};
 use starcoin_vm_types::transaction::helpers::TransactionSigner;
 use starcoin_vm_types::transaction::{
-    Module, RawUserTransaction, Script, SignedUserTransaction, Transaction, TransactionArgument,
-    TransactionPayload, UpgradePackage,
+    Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,
+    TransactionArgument, TransactionPayload,
 };
 use std::time::Duration;
 
@@ -215,9 +215,9 @@ pub fn build_upgrade_package(
     net: ChainNetwork,
     stdlib_option: StdLibOptions,
     with_init_script: bool,
-) -> Result<UpgradePackage> {
+) -> Result<Package> {
     let modules = stdlib_modules(stdlib_option);
-    let mut package = UpgradePackage::new_with_modules(
+    let mut package = Package::new_with_modules(
         modules
             .iter()
             .map(|m| {
@@ -227,9 +227,18 @@ pub fn build_upgrade_package(
                 Module::new(blob)
             })
             .collect(),
-    );
+    )?;
     if with_init_script {
         let chain_config = net.get_config();
+
+        package.add_script(
+            Some(CORE_CODE_ADDRESS),
+            Script::new(
+                InitScript::GenesisInit.compiled_bytes().into_vec(),
+                vec![],
+                vec![],
+            ),
+        );
 
         let genesis_auth_key = chain_config
             .pre_mine_config
