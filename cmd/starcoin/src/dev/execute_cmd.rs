@@ -2,24 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::shared::Address;
-use starcoin_move_compiler::{
-    command_line::parse_address, compiled_unit::CompiledUnit, MOVE_COMPILED_EXTENSION,
-    MOVE_EXTENSION,
-};
+use starcoin_move_compiler::{command_line::parse_address, compile_or_load_move_file};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
+use starcoin_vm_types::vm_error::StatusCode;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-use std::fs::OpenOptions;
-use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -74,6 +71,9 @@ pub struct ExecuteOpt {
         help = "blocking wait txn mined"
     )]
     blocking: bool,
+    #[structopt(long = "dry-run")]
+    /// dry-run script, only get transaction output, no state change to chain
+    dry_run: bool,
 
     #[structopt(name = "move_file", parse(from_os_str))]
     /// bytecode file or move script source file
@@ -90,7 +90,7 @@ impl CommandAction for ExecuteCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ExecuteOpt;
-    type ReturnItem = HashValue;
+    type ReturnItem = ExecuteResultView;
 
     fn run(
         &self,
@@ -99,62 +99,20 @@ impl CommandAction for ExecuteCommand {
         let opt = ctx.opt();
 
         let sender = if let Some(sender) = ctx.opt().sender {
-            sender
+            AccountAddress::new(sender.to_u8())
         } else {
-            Address::new(ctx.state().default_account()?.address.into())
+            ctx.state().default_account()?.address
         };
 
-        let bytecode_path = ctx.opt().move_file.clone();
+        let move_file_path = ctx.opt().move_file.clone();
+        let mut deps = stdlib::stdlib_files();
+        // add extra deps
+        deps.append(&mut ctx.opt().deps.clone());
+        let (bytecode, is_script) = compile_or_load_move_file(move_file_path, &deps, sender)?;
 
-        let ext = bytecode_path
-            .extension()
-            .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
-            .unwrap_or_else(|| "");
-        let (bytecode, is_script) = if ext == MOVE_EXTENSION {
-            let mut deps = stdlib::stdlib_files();
-            // add extra deps
-            deps.append(&mut ctx.opt().deps.clone());
-            let compile_units = starcoin_move_compiler::compile_source_string(
-                std::fs::read_to_string(bytecode_path)?.as_str(),
-                &deps,
-                AccountAddress::new(sender.to_u8()),
-            )?;
-            let is_script = match compile_units {
-                CompiledUnit::Module { .. } => false,
-                CompiledUnit::Script { .. } => true,
-            };
-            (compile_units.serialize(), is_script)
-        } else if ext == MOVE_COMPILED_EXTENSION {
-            let mut file = OpenOptions::new()
-                .read(true)
-                .write(false)
-                .open(bytecode_path)?;
-            let mut bytecode = vec![];
-            file.read_to_end(&mut bytecode)?;
-            let is_script = match starcoin_vm_types::file_format::CompiledScript::deserialize(
-                bytecode.as_slice(),
-            ) {
-                Err(_) => {
-                    match starcoin_vm_types::file_format::CompiledModule::deserialize(
-                        bytecode.as_slice(),
-                    ) {
-                        Ok(_) => false,
-                        Err(e) => {
-                            bail!(
-                                "invalid bytecode file, cannot deserialize as script or module, {}",
-                                e
-                            );
-                        }
-                    }
-                }
-                Ok(_) => true,
-            };
-            (bytecode, is_script)
-        } else {
-            bail!("Only support *.move or *.mv file");
-        };
+        let type_tags = opt.type_tags.clone();
         let args = opt.args.clone();
-        let sender = AccountAddress::new(sender.to_u8());
+
         let client = ctx.state().client();
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
@@ -169,7 +127,7 @@ impl CommandAction for ExecuteCommand {
             RawUserTransaction::new_script(
                 sender,
                 account_resource.sequence_number(),
-                Script::new(bytecode, opt.type_tags.clone(), args),
+                Script::new(bytecode, type_tags, args),
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,
@@ -187,15 +145,27 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-        let succ = client.submit_transaction(signed_txn)?;
-        if let Err(e) = succ {
-            bail!("execute-txn is reject by node, reason: {}", &e)
+        let output = client.dry_run(signed_txn.clone())?;
+        if output.status().vm_status().major_status != StatusCode::EXECUTED {
+            bail!("move file pre-run failed, {:?}", output.status());
         }
-        println!("txn {:#x} submitted.", txn_hash);
+        if !opt.dry_run {
+            let succ = client.submit_transaction(signed_txn)?;
+            if let Err(e) = succ {
+                bail!("execute-txn is reject by node, reason: {}", &e)
+            }
+            println!("txn {:#x} submitted.", txn_hash);
 
-        if opt.blocking {
-            ctx.state().watch_txn(txn_hash)?;
+            let mut output_view = ExecutionOutputView::new(txn_hash);
+
+            if opt.blocking {
+                let block = ctx.state().watch_txn(txn_hash)?;
+                output_view.block_number = Some(block.header().number);
+                output_view.block_id = Some(block.header().id());
+            }
+            Ok(ExecuteResultView::Run(output_view))
+        } else {
+            Ok(ExecuteResultView::DryRun(output.into()))
         }
-        Ok(txn_hash)
     }
 }

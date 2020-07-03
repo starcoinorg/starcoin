@@ -190,7 +190,7 @@ impl OpenedBlock {
         txn_hash: HashValue,
         output: TransactionOutput,
     ) -> Result<(HashValue, HashValue)> {
-        let (write_set, events, gas_used, status) = output.into_inner();
+        let (write_set, events, gas_used, _, status) = output.into_inner();
         debug_assert!(matches!(status, TransactionStatus::Keep(_)));
         let status = status.vm_status();
         self.state

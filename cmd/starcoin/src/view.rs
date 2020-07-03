@@ -3,7 +3,7 @@
 
 use anyhow::{format_err, Error};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_rpc_api::node::NodeInfo;
@@ -13,10 +13,13 @@ use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
-use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::transaction::{TransactionInfo, TransactionStatus};
 use starcoin_types::vm_error::StatusCode;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction, U256};
+use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::transaction::TransactionOutput;
+use starcoin_vm_types::write_set::WriteOp;
 use starcoin_wallet_api::WalletAccount;
 use std::collections::HashMap;
 
@@ -291,4 +294,102 @@ impl From<NodeInfo> for NodeInfoView {
             net: node_info.net,
         }
     }
+}
+#[derive(Debug, Serialize)]
+pub struct TranscationOutputView {
+    pub write_set: Vec<(AccessPathView, WriteOpView)>,
+    /// The list of events emitted during this transaction.
+    pub events: Vec<EventView>,
+
+    /// The amount of gas used during execution.
+    pub gas_used: u64,
+
+    /// The resource increment size
+    pub delta_size: i64,
+
+    /// The execution status.
+    pub status: TransactionStatus,
+}
+
+impl From<TransactionOutput> for TranscationOutputView {
+    fn from(output: TransactionOutput) -> Self {
+        let (write_set, events, gas_used, delta_size, status) = output.into_inner();
+        Self {
+            write_set: write_set
+                .into_iter()
+                .map(|(ap, w)| (ap.into(), w.into()))
+                .collect::<Vec<_>>(),
+            events: events.into_iter().map(|e| e.into()).collect(),
+            gas_used,
+            delta_size,
+            status,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(tag = "type")]
+pub enum ExecuteResultView {
+    DryRun(TranscationOutputView),
+    Run(ExecutionOutputView),
+}
+
+#[derive(Serialize, Debug, Clone, Copy)]
+pub struct ExecutionOutputView {
+    pub txn_hash: HashValue,
+    pub block_number: Option<u64>,
+    pub block_id: Option<HashValue>,
+}
+
+impl ExecutionOutputView {
+    pub fn new(txn_hash: HashValue) -> Self {
+        Self {
+            txn_hash,
+            block_number: None,
+            block_id: None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct AccessPathView {
+    address: AccountAddress,
+    ty: u8,
+    #[serde(serialize_with = "serialize_bytes_to_hex")]
+    hash: Vec<u8>,
+    suffix: String,
+}
+
+impl From<AccessPath> for AccessPathView {
+    fn from(ap: AccessPath) -> Self {
+        Self {
+            address: ap.address,
+            ty: ap.path[0],
+            hash: ap.path[1..=HashValue::LENGTH].to_vec(),
+            suffix: String::from_utf8_lossy(&ap.path[1 + HashValue::LENGTH..]).to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(tag = "type", content = "data")]
+pub enum WriteOpView {
+    Deletion,
+    Value(#[serde(serialize_with = "serialize_bytes_to_hex")] Vec<u8>),
+}
+
+impl From<WriteOp> for WriteOpView {
+    fn from(op: WriteOp) -> Self {
+        match op {
+            WriteOp::Deletion => WriteOpView::Deletion,
+            WriteOp::Value(v) => WriteOpView::Value(v),
+        }
+    }
+}
+
+pub fn serialize_bytes_to_hex<S>(bytes: &[u8], s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_str(&hex::encode(bytes))
 }

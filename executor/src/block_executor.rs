@@ -25,7 +25,7 @@ pub fn block_execute(
         .zip(txn_outputs.into_iter())
     {
         let txn_hash = txn.id();
-        let (write_set, events, gas_used, status) = output.into_inner();
+        let (write_set, events, gas_used, _, status) = output.into_inner();
         match status {
             TransactionStatus::Discard(status) => {
                 TXN_STATUS_COUNTERS.with_label_values(&["DISCARD"]).inc();

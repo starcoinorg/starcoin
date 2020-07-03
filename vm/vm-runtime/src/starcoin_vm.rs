@@ -754,7 +754,7 @@ pub(crate) fn discard_error_output(err: VMStatus) -> TransactionOutput {
     )
 }
 
-fn convert_txn_args(args: &[TransactionArgument]) -> Vec<Value> {
+pub fn convert_txn_args(args: &[TransactionArgument]) -> Vec<Value> {
     args.iter()
         .map(|arg| match arg {
             TransactionArgument::U8(i) => Value::u8(*i),

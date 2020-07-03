@@ -17,7 +17,7 @@ use starcoin_rpc_api::types::event::Event;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::ThinBlock;
 use starcoin_rpc_api::{
-    chain::ChainClient, debug::DebugClient, node::NodeClient, state::StateClient,
+    chain::ChainClient, debug::DebugClient, dev::DevClient, node::NodeClient, state::StateClient,
     txpool::TxPoolClient, wallet::WalletClient,
 };
 use starcoin_state_api::StateWithProof;
@@ -28,7 +28,7 @@ use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{
-    RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo,
+    RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
 };
 use starcoin_wallet_api::WalletAccount;
 use std::cell::RefCell;
@@ -469,6 +469,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn dry_run(&self, txn: SignedUserTransaction) -> anyhow::Result<TransactionOutput> {
+        self.call_rpc_blocking(|inner| async move { inner.dev_client.dry_run(txn).compat().await })
+            .map_err(map_err)
+    }
+
     pub fn subscribe_events(
         &self,
         filter: EventFilter,
@@ -554,6 +559,7 @@ pub(crate) struct RpcClientInner {
     debug_client: DebugClient,
     chain_client: ChainClient,
     pubsub_client: PubSubClient,
+    dev_client: DevClient,
 }
 
 impl RpcClientInner {
@@ -565,6 +571,7 @@ impl RpcClientInner {
             state_client: channel.clone().into(),
             debug_client: channel.clone().into(),
             chain_client: channel.clone().into(),
+            dev_client: channel.clone().into(),
             pubsub_client: channel.into(),
         }
     }
