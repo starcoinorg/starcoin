@@ -54,7 +54,7 @@ fun main(account: &signer) {
 script {
 use 0x1::SortedLinkedList;
 fun main() {
-    let value = SortedLinkedList::get_value_of_node<u64>({{bob}});
+    let value = SortedLinkedList::get_key_of_node<u64>({{bob}});
     assert(value == 10, 21);
 }
 }
