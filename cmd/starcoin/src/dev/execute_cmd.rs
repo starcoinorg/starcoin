@@ -163,9 +163,9 @@ impl CommandAction for ExecuteCommand {
                 output_view.block_number = Some(block.header().number);
                 output_view.block_id = Some(block.header().id());
             }
-            Ok(ExecuteResultView::RunOutput(output_view))
+            Ok(ExecuteResultView::Run(output_view))
         } else {
-            Ok(ExecuteResultView::DryRunOutput(output.into()))
+            Ok(ExecuteResultView::DryRun(output.into()))
         }
     }
 }

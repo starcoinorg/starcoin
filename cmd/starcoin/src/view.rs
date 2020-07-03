@@ -295,11 +295,11 @@ impl From<NodeInfo> for NodeInfoView {
         }
     }
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct TranscationOutputView {
-    pub write_set: Vec<(AccessPath, WriteOp)>,
+    pub write_set: Vec<(AccessPathView, WriteOpView)>,
     /// The list of events emitted during this transaction.
-    pub events: Vec<ContractEvent>,
+    pub events: Vec<EventView>,
 
     /// The amount of gas used during execution.
     pub gas_used: u64,
@@ -315,8 +315,11 @@ impl From<TransactionOutput> for TranscationOutputView {
     fn from(output: TransactionOutput) -> Self {
         let (write_set, events, gas_used, delta_size, status) = output.into_inner();
         Self {
-            write_set: write_set.into_iter().collect::<Vec<_>>(),
-            events,
+            write_set: write_set
+                .into_iter()
+                .map(|(ap, w)| (ap.into(), w.into()))
+                .collect::<Vec<_>>(),
+            events: events.into_iter().map(|e| e.into()).collect(),
             gas_used,
             delta_size,
             status,
@@ -324,22 +327,11 @@ impl From<TransactionOutput> for TranscationOutputView {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
+#[serde(tag = "type")]
 pub enum ExecuteResultView {
-    DryRunOutput(TranscationOutputView),
-    RunOutput(ExecutionOutputView),
-}
-
-impl serde::Serialize for ExecuteResultView {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            ExecuteResultView::DryRunOutput(o) => o.serialize(serializer),
-            ExecuteResultView::RunOutput(o) => o.serialize(serializer),
-        }
-    }
+    DryRun(TranscationOutputView),
+    Run(ExecutionOutputView),
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
@@ -357,4 +349,47 @@ impl ExecutionOutputView {
             block_id: None,
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+pub struct AccessPathView {
+    address: AccountAddress,
+    ty: u8,
+    #[serde(serialize_with = "serialize_bytes_to_hex")]
+    hash: Vec<u8>,
+    suffix: String,
+}
+
+impl From<AccessPath> for AccessPathView {
+    fn from(ap: AccessPath) -> Self {
+        Self {
+            address: ap.address,
+            ty: ap.path[0],
+            hash: ap.path[1..=HashValue::LENGTH].to_vec(),
+            suffix: String::from_utf8_lossy(&ap.path[1 + HashValue::LENGTH..]).to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(tag = "type", content = "data")]
+pub enum WriteOpView {
+    Deletion,
+    Value(#[serde(serialize_with = "serialize_bytes_to_hex")] Vec<u8>),
+}
+
+impl From<WriteOp> for WriteOpView {
+    fn from(op: WriteOp) -> Self {
+        match op {
+            WriteOp::Deletion => WriteOpView::Deletion,
+            WriteOp::Value(v) => WriteOpView::Value(v),
+        }
+    }
+}
+
+pub fn serialize_bytes_to_hex<S>(bytes: &[u8], s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_str(&hex::encode(bytes))
 }
