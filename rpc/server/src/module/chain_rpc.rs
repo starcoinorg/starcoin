@@ -76,7 +76,10 @@ where
         Box::new(fut.compat())
     }
 
-    fn get_transaction_info(&self, transaction_hash: HashValue) -> FutureResult<TransactionInfo> {
+    fn get_transaction_info(
+        &self,
+        transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfo>> {
         let fut = self
             .service
             .clone()

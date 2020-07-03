@@ -56,7 +56,7 @@ pub enum ChainResponse {
     ChainInfo(ChainInfo),
     Transaction(Box<Transaction>),
     VecBlock(Vec<Block>),
-    BlockTransactionInfos(Vec<TransactionInfo>),
+    TransactionInfos(Vec<TransactionInfo>),
     TransactionInfo(Option<TransactionInfo>),
     None,
     Conn(ConnectBlockResult),

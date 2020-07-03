@@ -281,7 +281,13 @@ where
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        self.storage.get_transaction_info_by_hash(txn_hash)
+        let txn_vec = self.storage.get_transaction_info_ids_by_hash(txn_hash)?;
+        for txn_info_id in txn_vec {
+            if self.master.transaction_info_exist(txn_info_id) {
+                return self.storage.get_transaction_info(txn_info_id);
+            }
+        }
+        Ok(None)
     }
 
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {

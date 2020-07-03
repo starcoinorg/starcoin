@@ -124,7 +124,8 @@ pub trait BlockStore {
 
 pub trait TransactionInfoStore {
     fn get_transaction_info(&self, id: HashValue) -> Result<Option<TransactionInfo>>;
-    fn get_transaction_info_by_hash(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn get_transaction_info_by_hash(&self, txn_hash: HashValue) -> Result<Vec<TransactionInfo>>;
+    fn get_transaction_info_ids_by_hash(&self, txn_hash: HashValue) -> Result<Vec<HashValue>>;
     fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()> {
         self.save_transaction_infos(vec![txn_info])
     }
@@ -331,12 +332,24 @@ impl TransactionInfoStore for Storage {
     fn get_transaction_info_by_hash(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Option<TransactionInfo>, Error> {
-        let transaction_info_id = self
-            .transaction_info_hash_storage
-            .get(txn_hash)
-            .expect("transaction_info hash must exist");
-        self.get_transaction_info(transaction_info_id.unwrap())
+    ) -> Result<Vec<TransactionInfo>, Error> {
+        let mut transaction_info_vec = vec![];
+        if let Ok(Some(transaction_info_ids)) = self.transaction_info_hash_storage.get(txn_hash) {
+            for id in transaction_info_ids {
+                if let Ok(Some(transaction_info)) = self.get_transaction_info(id) {
+                    transaction_info_vec.push(transaction_info);
+                }
+            }
+        }
+        Ok(transaction_info_vec)
+    }
+
+    fn get_transaction_info_ids_by_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<HashValue>, Error> {
+        self.transaction_info_hash_storage
+            .get_transaction_info_ids_by_hash(txn_hash)
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {

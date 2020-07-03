@@ -68,7 +68,7 @@ pub trait ChainAsyncService:
     async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn get_block_info_by_hash(self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_transaction(self, txn_hash: HashValue) -> Result<Transaction>;
-    async fn get_transaction_info(self, txn_hash: HashValue) -> Result<TransactionInfo>;
+    async fn get_transaction_info(self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
     async fn get_block_txn_infos(self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     async fn get_txn_info_by_block_and_index(
         self,

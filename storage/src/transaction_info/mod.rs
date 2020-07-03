@@ -6,7 +6,7 @@ use crate::storage::{CodecStorage, ValueCodec};
 use crate::TRANSACTION_INFO_HASH_PREFIX_NAME;
 use crate::TRANSACTION_INFO_PREFIX_NAME;
 use crate::{define_storage, TransactionInfoStore};
-use anyhow::{Error, Result};
+use anyhow::{bail, Error, Result};
 use crypto::HashValue;
 use scs::SCSCodec;
 use starcoin_types::transaction::TransactionInfo;
@@ -22,7 +22,7 @@ define_storage!(
 define_storage!(
     TransactionInfoHashStorage,
     HashValue,
-    HashValue,
+    Vec<HashValue>,
     TRANSACTION_INFO_HASH_PREFIX_NAME
 );
 
@@ -44,14 +44,30 @@ impl TransactionInfoStore for TransactionInfoHashStorage {
     fn get_transaction_info_by_hash(
         &self,
         _txn_hash: HashValue,
-    ) -> Result<Option<TransactionInfo>, Error> {
+    ) -> Result<Vec<TransactionInfo>, Error> {
         unimplemented!()
+    }
+
+    fn get_transaction_info_ids_by_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<HashValue>, Error> {
+        if let Ok(Some(txn_id_vec)) = self.store.get(txn_hash) {
+            Ok(txn_id_vec)
+        } else {
+            bail!("get transaction_info ids error.")
+        }
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for txn_info in vec_txn_info {
-            batch.put(txn_info.transaction_hash(), txn_info.id())?;
+            if let Ok(Some(mut id_vec)) = self.store.get(txn_info.transaction_hash()) {
+                id_vec.push(txn_info.id());
+                batch.put(txn_info.transaction_hash(), id_vec)?;
+            } else {
+                batch.put(txn_info.transaction_hash(), vec![txn_info.id()])?;
+            }
         }
         self.store.write_batch(batch)
     }
@@ -64,7 +80,14 @@ impl TransactionInfoStore for TransactionInfoStorage {
     fn get_transaction_info_by_hash(
         &self,
         _txn_hash: HashValue,
-    ) -> Result<Option<TransactionInfo>, Error> {
+    ) -> Result<Vec<TransactionInfo>, Error> {
+        unimplemented!()
+    }
+
+    fn get_transaction_info_ids_by_hash(
+        &self,
+        _txn_hash: HashValue,
+    ) -> Result<Vec<HashValue>, Error> {
         unimplemented!()
     }
 

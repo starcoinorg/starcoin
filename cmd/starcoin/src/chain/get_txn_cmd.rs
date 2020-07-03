@@ -22,7 +22,7 @@ impl CommandAction for GetTransactionCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = TransactionInfo;
+    type ReturnItem = Option<TransactionInfo>;
 
     fn run(
         &self,
