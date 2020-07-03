@@ -40,13 +40,15 @@ struct TxnInfoEvent(Option<HashValue>);
 struct Roots {
     state: HashValue,
     block_accumulator: HashValue,
+    pivot_id: HashValue,
 }
 
 impl Roots {
-    pub fn new(state: HashValue, block_accumulator: HashValue) -> Self {
+    pub fn new(state: HashValue, block_accumulator: HashValue, pivot_id: HashValue) -> Self {
         Roots {
             state,
             block_accumulator,
+            pivot_id,
         }
     }
 
@@ -56,6 +58,10 @@ impl Roots {
 
     fn block_accumulator_root(&self) -> &HashValue {
         &self.block_accumulator
+    }
+
+    fn pivot_id(&self) -> &HashValue {
+        &self.pivot_id
     }
 }
 
@@ -233,12 +239,18 @@ impl<C> StateSyncReset for StateSyncTaskRef<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    async fn reset(&self, state_root: HashValue, block_accumulator_root: HashValue) {
+    async fn reset(
+        &self,
+        state_root: HashValue,
+        block_accumulator_root: HashValue,
+        pivot_id: HashValue,
+    ) {
         if let Err(e) = self
             .address
             .send(StateSyncEvent::RESET(ResetRoots {
                 state_root,
                 block_accumulator_root,
+                pivot_id,
             }))
             .await
         {
@@ -389,29 +401,32 @@ where
 {
     pub fn launch(
         self_peer_id: PeerId,
-        root: (HashValue, HashValue),
+        root: (HashValue, HashValue, HashValue),
         storage: Arc<dyn Store>,
         network_service: NetworkAsyncService,
         block_sync_address: BlockSyncTaskRef<C>,
         download_address: Addr<DownloadActor<C>>,
     ) -> StateSyncTaskRef<C> {
-        let roots = Roots::new(root.0, root.1);
+        let roots = Roots::new(root.0, root.1, root.2);
         let mut state_sync_task = StateSyncTask::new();
         state_sync_task.push_back((*roots.state_root(), true));
         let mut block_accumulator_sync_task = StateSyncTask::new();
         block_accumulator_sync_task.push_back(*roots.block_accumulator_root());
+        let mut txn_info_sync_task = StateSyncTask::new();
+        txn_info_sync_task.push_back(*roots.pivot_id());
+
         let address = StateSyncTaskActor::create(move |_ctx| Self {
             self_peer_id,
             roots,
             storage,
             network_service,
             state_sync_task,
-            txn_info_sync_task: StateSyncTask::new(),
+            txn_info_sync_task,
             block_accumulator_sync_task,
             block_sync_address,
             state: SyncTaskState::Ready,
             download_address,
-            total_txn_info_task: AtomicU64::new(0),
+            total_txn_info_task: AtomicU64::new(1),
         });
         StateSyncTaskRef { address }
     }
@@ -738,13 +753,14 @@ where
         &mut self,
         state_root: &HashValue,
         block_accumulator_root: &HashValue,
+        pivot_id: &HashValue,
         address: Addr<StateSyncTaskActor<C>>,
     ) {
         debug!(
             "reset state sync task with state root : {:?}, block accumulator root : {:?}.",
             state_root, block_accumulator_root
         );
-        self.roots = Roots::new(*state_root, *block_accumulator_root);
+        self.roots = Roots::new(*state_root, *block_accumulator_root, *pivot_id);
 
         let old_state_is_empty = self.state_sync_task.is_empty();
         self.state_sync_task.clear();
@@ -756,13 +772,18 @@ where
         self.block_accumulator_sync_task
             .push_back(*self.roots.block_accumulator_root());
 
+        let old_txn_info_is_empty = self.txn_info_sync_task.is_empty();
         self.txn_info_sync_task.clear();
+        self.txn_info_sync_task.push_back(*self.roots.pivot_id());
 
         if old_state_is_empty {
             self.exe_state_sync_task(address.clone());
         }
         if old_block_accumulator_is_empty {
-            self.exe_accumulator_sync_task(address);
+            self.exe_accumulator_sync_task(address.clone());
+        }
+        if old_txn_info_is_empty {
+            self.exe_txn_info_sync_task(address);
         }
     }
 
@@ -771,7 +792,8 @@ where
             debug!("activation state sync task.");
             self.state = SyncTaskState::Syncing;
             self.exe_state_sync_task(address.clone());
-            self.exe_accumulator_sync_task(address);
+            self.exe_accumulator_sync_task(address.clone());
+            self.exe_txn_info_sync_task(address);
         }
     }
 }
@@ -785,6 +807,7 @@ where
     fn started(&mut self, ctx: &mut Self::Context) {
         self.exe_state_sync_task(ctx.address());
         self.exe_accumulator_sync_task(ctx.address());
+        self.exe_txn_info_sync_task(ctx.address());
     }
 }
 
@@ -848,6 +871,7 @@ enum StateSyncEvent {
 struct ResetRoots {
     state_root: HashValue,
     block_accumulator_root: HashValue,
+    pivot_id: HashValue,
 }
 
 impl<C> Handler<StateSyncEvent> for StateSyncTaskActor<C>
@@ -863,6 +887,7 @@ where
                 self.reset(
                     &roots.state_root,
                     &roots.block_accumulator_root,
+                    &roots.pivot_id,
                     ctx.address(),
                 );
             }
