@@ -5,6 +5,7 @@ use starcoin_logger::prelude::*;
 
 mod chain_rpc;
 mod debug_rpc;
+mod dev_rpc;
 mod node_rpc;
 mod pubsub;
 mod state_rpc;
@@ -12,9 +13,9 @@ mod state_rpc;
 mod test_helper;
 mod txpool_rpc;
 mod wallet_rpc;
-
 pub use self::chain_rpc::ChainRpcImpl;
 pub use self::debug_rpc::DebugRpcImpl;
+pub use self::dev_rpc::{DevPlaygroudService, DevRpcImpl};
 pub use self::node_rpc::NodeRpcImpl;
 pub use self::pubsub::{PubSubImpl, PubSubService};
 pub use self::state_rpc::StateRpcImpl;

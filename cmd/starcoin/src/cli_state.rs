@@ -4,6 +4,7 @@ use anyhow::{format_err, Result};
 use starcoin_config::{ChainNetwork, DataDirPath};
 use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
+use starcoin_rpc_api::types::pubsub::ThinBlock;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
@@ -98,16 +99,16 @@ impl CliState {
         self.client.wallet_get(association_address())
     }
 
-    pub fn watch_txn(&self, txn_hash: HashValue) -> Result<()> {
+    pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ThinBlock> {
         let block = self
             .client
             .watch_txn(txn_hash, Some(Self::DEFAULT_WATCH_TIMEOUT))?;
         println!(
-            "txn mined in block hight: {}, hash: {:#x}",
+            "txn mined in block height: {}, hash: {:#x}",
             block.header().number(),
             block.header().id()
         );
-        Ok(())
+        Ok(block)
     }
 
     pub fn into_inner(self) -> (ChainNetwork, Arc<RpcClient>, Option<NodeHandle>) {

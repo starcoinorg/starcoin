@@ -14,7 +14,7 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
 use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
-use starcoin_rpc_server::module::PubSubService;
+use starcoin_rpc_server::module::{DevPlaygroudService, PubSubService};
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
 use starcoin_storage::block_info::BlockInfoStore;
@@ -321,6 +321,7 @@ where
         chain,
         account_service,
         chain_state_service,
+        Some(DevPlaygroudService::new(storage.clone())),
         Some(pubsub_service),
         Some(network),
         Some(logger_handle),

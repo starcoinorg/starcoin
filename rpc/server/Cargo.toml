@@ -52,6 +52,7 @@ starcoin-network = {path = "../../network"}
 starcoin-metrics = {path = "../../commons/metrics"}
 starcoin-bus = {path = "../../bus"}
 starcoin-storage = {path = "../../storage"}
+starcoin-executor = {path = "../../executor"}
 
 network-api = {package="network-api", path="../../network/api"}
 

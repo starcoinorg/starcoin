@@ -422,7 +422,7 @@ impl SignedUserTransaction {
 /// The status of executing a transaction. The VM decides whether or not we should `Keep` the
 /// transaction output or `Discard` it based upon the execution of the transaction. We wrap these
 /// decisions around a `VMStatus` that provides more detail on the final execution state of the VM.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TransactionStatus {
     /// Discard the transaction output
     Discard(VMStatus),
@@ -467,7 +467,7 @@ impl From<VMStatus> for TransactionStatus {
 }
 
 /// The output of executing a transaction.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionOutput {
     write_set: WriteSet,
 
@@ -521,8 +521,14 @@ impl TransactionOutput {
         self.delta_size
     }
 
-    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, TransactionStatus) {
-        (self.write_set, self.events, self.gas_used, self.status)
+    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, i64, TransactionStatus) {
+        (
+            self.write_set,
+            self.events,
+            self.gas_used,
+            self.delta_size,
+            self.status,
+        )
     }
 }
 

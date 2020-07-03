@@ -3,8 +3,8 @@
 
 use crate::metadata::Metadata;
 use crate::module::{
-    ChainRpcImpl, DebugRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl,
-    TxPoolRpcImpl, WalletRpcImpl,
+    ChainRpcImpl, DebugRpcImpl, DevPlaygroudService, DevRpcImpl, NodeRpcImpl, PubSubImpl,
+    PubSubService, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl,
 };
 use crate::service::RpcService;
 use actix::prelude::*;
@@ -17,7 +17,9 @@ use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::debug::DebugApi;
 use starcoin_rpc_api::wallet::WalletApi;
-use starcoin_rpc_api::{node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi};
+use starcoin_rpc_api::{
+    dev::DevApi, node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
+};
 use starcoin_rpc_middleware::MetricMiddleware;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_traits::ChainAsyncService;
@@ -38,6 +40,7 @@ impl RpcActor {
         chain_service: CS,
         account_service: AS,
         state_service: SS,
+        dev_playground_service: Option<DevPlaygroudService>,
         pubsub_service: Option<PubSubService>,
         //TODO after network async service provide trait, remove Option.
         network_service: Option<NetworkAsyncService>,
@@ -50,15 +53,22 @@ impl RpcActor {
         SS: ChainStateAsyncService + 'static,
     {
         let config_clone = config.clone();
-        let io_handler = Self::extend_apis(
+        let mut io_handler = Self::extend_apis(
             NodeRpcImpl::new(config.clone(), network_service),
             Some(ChainRpcImpl::new(chain_service)),
             Some(TxPoolRpcImpl::new(txpool_service)),
             Some(WalletRpcImpl::new(account_service)),
-            Some(StateRpcImpl::new(state_service)),
+            Some(StateRpcImpl::new(state_service.clone())),
             pubsub_service.map(PubSubImpl::new),
             logger_handle.map(|logger_handle| DebugRpcImpl::new(config_clone, logger_handle)),
         )?;
+
+        if let Some(dev_playgroud) = dev_playground_service {
+            io_handler.extend_with(DevApi::to_delegate(DevRpcImpl::new(
+                state_service,
+                dev_playgroud,
+            )));
+        }
 
         Self::launch_with_handler(config, io_handler)
     }
@@ -170,9 +180,9 @@ mod tests {
     use super::*;
     use starcoin_chain::mock::mock_chain_service::MockChainService;
     use starcoin_state_api::mock::MockChainStateService;
+    use starcoin_state_tree::mock::MockStateNodeStore;
     use starcoin_txpool_mock_service::MockTxPoolService;
     use starcoin_wallet_api::mock::MockWalletService;
-
     #[stest::test]
     async fn test_start() {
         let logger_handle = starcoin_logger::init_for_test();
@@ -181,12 +191,14 @@ mod tests {
         let account_service = MockWalletService::new().unwrap();
         let state_service = MockChainStateService::new();
         let chain_service = MockChainService::default();
+        let playground_service = DevPlaygroudService::new(Arc::new(MockStateNodeStore::new()));
         let _rpc_actor = RpcActor::launch(
             config,
             txpool,
             chain_service,
             account_service,
             state_service,
+            Some(playground_service),
             None,
             None,
             Some(logger_handle),

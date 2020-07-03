@@ -6451,6 +6451,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-transaction-builder",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-wallet-api",
  "stdlib",

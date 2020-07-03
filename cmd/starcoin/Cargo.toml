@@ -30,6 +30,7 @@ starcoin-wallet-api = {path = "../../wallet/api"}
 scmd = { path = "../../commons/scmd" }
 stdlib = {path = "../../vm/stdlib"}
 starcoin-vm-types = {path = "../../vm/types"}
+starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
 hex = { version = "0.4.2", default-features = false }
