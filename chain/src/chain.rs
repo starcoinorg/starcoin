@@ -150,6 +150,13 @@ where
             .ok_or_else(|| format_err!("Can not find block by number {}", number))
     }
 
+    pub fn transaction_info_exist(&self, txn_id: HashValue) -> bool {
+        if let Ok(node) = self.txn_accumulator.get_node(txn_id) {
+            return if !node.is_empty() { true } else { false };
+        }
+        false
+    }
+
     pub fn block_exist_by_number(
         &self,
         block_id: HashValue,

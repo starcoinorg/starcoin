@@ -428,7 +428,7 @@ impl RpcClient {
     pub fn chain_get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> anyhow::Result<Vec<TransactionInfo>> {
+    ) -> anyhow::Result<Option<TransactionInfo>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client

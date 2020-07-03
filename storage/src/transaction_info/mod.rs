@@ -6,7 +6,7 @@ use crate::storage::{CodecStorage, ValueCodec};
 use crate::TRANSACTION_INFO_HASH_PREFIX_NAME;
 use crate::TRANSACTION_INFO_PREFIX_NAME;
 use crate::{define_storage, TransactionInfoStore};
-use anyhow::{Error, Result};
+use anyhow::{bail, Error, Result};
 use crypto::HashValue;
 use scs::SCSCodec;
 use starcoin_types::transaction::TransactionInfo;
@@ -48,6 +48,17 @@ impl TransactionInfoStore for TransactionInfoHashStorage {
         unimplemented!()
     }
 
+    fn get_transaction_info_ids_by_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<HashValue>, Error> {
+        if let Ok(Some(txn_id_vec)) = self.store.get(txn_hash) {
+            Ok(txn_id_vec)
+        } else {
+            bail!("get transaction_info ids error.")
+        }
+    }
+
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for txn_info in vec_txn_info {
@@ -70,6 +81,13 @@ impl TransactionInfoStore for TransactionInfoStorage {
         &self,
         _txn_hash: HashValue,
     ) -> Result<Vec<TransactionInfo>, Error> {
+        unimplemented!()
+    }
+
+    fn get_transaction_info_ids_by_hash(
+        &self,
+        _txn_hash: HashValue,
+    ) -> Result<Vec<HashValue>, Error> {
         unimplemented!()
     }
 

@@ -79,7 +79,7 @@ where
     fn get_transaction_info(
         &self,
         transaction_hash: HashValue,
-    ) -> FutureResult<Vec<TransactionInfo>> {
+    ) -> FutureResult<Option<TransactionInfo>> {
         let fut = self
             .service
             .clone()
