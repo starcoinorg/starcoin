@@ -1,7 +1,6 @@
 address 0x1 {
-    module UpgradeManager {
+    module PackageTxnManager {
         use 0x1::Option::{Self,Option};
-        use 0x1::Block;
         use 0x1::Signer;
 
         struct UpgradePlan {
@@ -92,7 +91,8 @@ address 0x1 {
         }
 
         public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, active_after_height: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
-            assert(active_after_height >= Block::get_current_block_height(), 1005);
+            //FIXME
+            //assert(active_after_height >= Block::get_current_block_height(), 1005);
             let account_address = cap.account_address;
             assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), 1006);
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
@@ -139,19 +139,20 @@ address 0x1 {
             }
         }
 
-        public fun check_module_upgrade(sender: address, module_address: address, package_hash: vector<u8>) acquires ModuleMaintainer, TwoPhaseUpgrade, ModuleUpgradeStrategy{
-            let module_maintainer = get_module_maintainer(module_address);
+        public fun check_package_txn(sender: address, package_address: address, package_hash: vector<u8>) acquires ModuleMaintainer, TwoPhaseUpgrade, ModuleUpgradeStrategy{
+            let module_maintainer = get_module_maintainer(package_address);
             //TODO define error code.
             assert(module_maintainer == sender, 1000);
-            let strategy = get_module_upgrade_strategy(module_address);
+            let strategy = get_module_upgrade_strategy(package_address);
             if (strategy == STRATEGY_ARBITRARY()){
                 //do nothing
             }else if(strategy == STRATEGY_TWO_PHASE()){
-                let plan_opt = get_upgrade_plan(module_address);
+                let plan_opt = get_upgrade_plan(package_address);
                 assert(Option::is_some(&plan_opt), 1001);
                 let plan = Option::borrow(&plan_opt);
                 assert(*&plan.package_hash == package_hash, 1002);
-                assert(plan.active_after_height <= Block::get_current_block_height(), 1003);
+                //FIXME Using this module creates a dependency cycle: '0x1::Block' uses '0x1::Account' uses '0x1::PackageTxnManager' uses '0x1::Block'
+                //assert(plan.active_after_height <= Block::get_current_block_height(), 1003);
             }else if(strategy == STRATEGY_NEW_MODULE()){
                 //do check at VM
             }else if(strategy == STRATEGY_FREEZE()){
@@ -159,13 +160,22 @@ address 0x1 {
             };
         }
 
-        public fun module_upgrade_epilogue(_sender: address, module_address: address, success: bool) acquires TwoPhaseUpgrade, ModuleUpgradeStrategy {
+        fun finish_upgrade_plan(package_address: address) acquires TwoPhaseUpgrade {
+            let tpu = borrow_global_mut<TwoPhaseUpgrade>(package_address);
+            tpu.plan = Option::none<UpgradePlan>();
+        }
+
+        public fun package_txn_prologue(account: &signer, package_address: address, package_hash: vector<u8>) acquires ModuleMaintainer, TwoPhaseUpgrade, ModuleUpgradeStrategy {
+            check_package_txn(Signer::address_of(account), package_address, package_hash);
+        }
+
+        /// Package txn finished, and clean UpgradePlan
+        public fun package_txn_epilogue(_account: &signer, package_address: address, success: bool) acquires TwoPhaseUpgrade, ModuleUpgradeStrategy {
             //TODO limit call account
-            let strategy = get_module_upgrade_strategy(module_address);
+            let strategy = get_module_upgrade_strategy(package_address);
             if(strategy == STRATEGY_TWO_PHASE()){
                 if (success) {
-                    let tpu = borrow_global_mut<TwoPhaseUpgrade>(module_address);
-                    tpu.plan = Option::none<UpgradePlan>();
+                    finish_upgrade_plan(package_address)
                     //TODO fire event.
                 };
             };
