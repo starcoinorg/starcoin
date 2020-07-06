@@ -3,14 +3,17 @@ use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
 use consensus::dev::{DevConsensus, DummyHeader};
+use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use futures_timer::Delay;
 use logger::prelude::*;
-use starcoin_genesis::Genesis;
+use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use traits::{ChainReader, ChainWriter, Consensus};
 use txpool::TxPool;
+use types::account_address;
+use types::transaction::authenticator::AuthenticationKey;
 
 async fn gen_master_chain(
     times: u64,
@@ -20,7 +23,7 @@ async fn gen_master_chain(
     let node_config = Arc::new(node_config);
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
-    let genesis = Genesis::load(node_config.net()).unwrap();
+    let genesis = StarcoinGenesis::load(node_config.net()).unwrap();
     let startup_info = genesis
         .execute_genesis_block(node_config.net(), storage.clone())
         .unwrap();
@@ -127,6 +130,64 @@ async fn test_block_chain_forks() {
         chain.master_head_header().await.unwrap().unwrap().id(),
         parent_hash
     )
+}
+
+#[stest::test]
+///             ╭--> b3(t2)
+/// Genesis--> b1--> b2(t2)
+///             
+async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
+    let header = block_chain.current_header();
+    let miner_account = WalletAccount::random();
+
+    let (template_b1, _) = block_chain.create_block_template(
+        *miner_account.address(),
+        Some(miner_account.get_auth_key().prefix().to_vec()),
+        Some(header.id()),
+        vec![],
+    )?;
+
+    let block_b1 = DevConsensus::create_block(config.clone(), &block_chain, template_b1)?;
+    block_chain.apply(block_b1.clone())?;
+
+    let mut block_chain2 = block_chain.new_chain(block_b1.id()).unwrap();
+
+    // create transaction
+    let pri_key = Ed25519PrivateKey::genesis();
+    let public_key = pri_key.public_key();
+    let account_address = account_address::from_public_key(&public_key);
+    let signed_txn_t2 = {
+        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
+        let txn = executor::build_transfer_from_association(account_address, auth_prefix, 0, 10000);
+        txn.as_signed_user_txn()?.clone()
+    };
+    let tnx_hash = signed_txn_t2.crypto_hash();
+    let (template_b2, _) = block_chain.create_block_template(
+        *miner_account.address(),
+        Some(miner_account.get_auth_key().prefix().to_vec()),
+        Some(block_b1.clone().id()),
+        vec![signed_txn_t2.clone()],
+    )?;
+    let block_b2 = DevConsensus::create_block(config.clone(), &block_chain, template_b2.clone())?;
+
+    block_chain.apply(block_b2.clone())?;
+    let (template_b3, _) = block_chain2.create_block_template(
+        *miner_account.address(),
+        Some(miner_account.get_auth_key().prefix().to_vec()),
+        Some(block_b1.clone().id()),
+        vec![signed_txn_t2.clone()],
+    )?;
+    let block_b3 = DevConsensus::create_block(config.clone(), &block_chain2, template_b3.clone())?;
+    block_chain2.apply(block_b3.clone())?;
+
+    let vec_txn = block_chain2
+        .get_storage()
+        .get_transaction_info_ids_by_hash(tnx_hash)?;
+
+    assert_eq!(vec_txn.len(), 2);
+    Ok(())
 }
 
 #[stest::test]
