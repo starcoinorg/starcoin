@@ -41,8 +41,7 @@ module Block {
     // This can only be invoked by the Association address, and only a single time.
     // Currently, it is invoked in the genesis transaction
     public fun initialize_block_metadata(account: &signer) {
-      // Only callable by the Association address
-      assert(Signer::address_of(account) == CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), 1);
+      assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
 
       move_to<BlockMetadata>(
           account,
@@ -95,7 +94,7 @@ module Block {
         proposer: address,
         auth_key_prefix: vector<u8>
     ) acquires BlockMetadata, RewardInfo {
-        let block_metadata_ref = borrow_global_mut<BlockMetadata>(0xA550C18);
+        let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT());
 
         // TODO: Figure out a story for errors in the system transactions.
         //if(proposer != 0x0) assert(System::is_validator(proposer), 5002);
@@ -120,17 +119,17 @@ module Block {
 
     // Get the current block height
     public fun get_current_block_height(): u64 acquires BlockMetadata {
-      borrow_global<BlockMetadata>(0xA550C18).height
+      borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT()).height
     }
 
     // Get the current block id
     public fun get_current_block_id(): vector<u8> acquires BlockMetadata {
-      *&borrow_global<BlockMetadata>(0xA550C18).id
+      *&borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT()).id
     }
 
     // Gets the address of the proposer of the current block
     public fun get_current_proposer(): address acquires BlockMetadata {
-      borrow_global<BlockMetadata>(0xA550C18).proposer
+      borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT()).proposer
     }
 
     resource struct RewardInfo {

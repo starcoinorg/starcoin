@@ -11,7 +11,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_types::transaction::helpers::TransactionSigner;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::WalletAccount;
 use std::time::Duration;
@@ -78,16 +77,6 @@ fn sign_txn(
     client: &RpcClient,
     raw_txn: RawUserTransaction,
 ) -> Result<SignedUserTransaction, Error> {
-    let net = client.node_info().unwrap().net;
-    let result = if raw_txn.sender() == account_config::association_address() {
-        let chain_config = net.get_config();
-        let pre_mine_config = chain_config
-            .pre_mine_config
-            .as_ref()
-            .expect("Dev net pre mine config must exist.");
-        pre_mine_config.sign_txn(raw_txn).unwrap()
-    } else {
-        client.wallet_sign_txn(raw_txn).unwrap()
-    };
-    Ok(result)
+    client.wallet_unlock(raw_txn.sender(), "".to_string(), Duration::from_secs(300))?;
+    Ok(client.wallet_sign_txn(raw_txn).unwrap())
 }

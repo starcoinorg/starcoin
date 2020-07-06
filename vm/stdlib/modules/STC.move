@@ -4,11 +4,12 @@ module STC {
     use 0x1::Coin;
     use 0x1::FixedPoint32;
     use 0x1::Signer;
+    use 0x1::CoreAddresses;
 
     struct STC { }
 
     public fun initialize(account: &signer) {
-        assert(Signer::address_of(account) == 0xA550C18, 0);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 0);
         Coin::register_currency<STC>(
             account,
             FixedPoint32::create_from_rational(1, 1), // exchange rate to STC

@@ -3,7 +3,7 @@
 //! account: alice, 0STC
 
 // Minting from a privileged account should work
-//! sender: association
+//! sender: genesis
 script {
 use 0x1::STC::{STC};
 use 0x1::Coin;

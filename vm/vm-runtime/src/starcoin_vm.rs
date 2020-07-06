@@ -349,8 +349,8 @@ impl StarcoinVM {
             }
             VerifiedTransactionPayload::Package(package) => {
                 cost_strategy = CostStrategy::system(gas_schedule, GasUnits::new(0));
-                let (package_address, modules, scripts) = package.into_inner();
-                let mut ret: VMResult<Vec<_>> = modules
+                let (package_address, modules, init_script) = package.into_inner();
+                let ret: VMResult<Vec<_>> = modules
                     .iter()
                     .map(|module| {
                         Self::update_module(
@@ -361,29 +361,25 @@ impl StarcoinVM {
                         )
                     })
                     .collect();
-                if ret.is_ok() {
-                    ret = scripts
-                        .iter()
-                        .map(|init_script| {
-                            let sender = init_script
-                                .su_account()
-                                .unwrap_or_else(|| txn_data.sender());
-                            let ty_args = init_script.script().ty_args().to_vec();
-                            let args = convert_txn_args(init_script.script().args());
-                            let s = init_script.script().code().to_vec();
-                            debug!("execute init script by account {:?}", sender);
-                            self.move_vm.execute_script(
-                                s,
-                                ty_args,
-                                args,
-                                sender,
-                                &mut data_store,
-                                &mut cost_strategy,
-                            )
-                        })
-                        .collect();
+                match (ret, init_script) {
+                    (Ok(_), Some(init_script)) => {
+                        let sender = txn_data.sender;
+                        let ty_args = init_script.ty_args().to_vec();
+                        let args = convert_txn_args(init_script.args());
+                        let s = init_script.code().to_vec();
+                        debug!("execute init script by account {:?}", sender);
+                        self.move_vm.execute_script(
+                            s,
+                            ty_args,
+                            args,
+                            sender,
+                            &mut data_store,
+                            &mut cost_strategy,
+                        )
+                    }
+                    (Ok(_), None) => Ok(()),
+                    (Err(e), _) => Err(e),
                 }
-                ret.map(|_| ())
             }
         }
         .map_err(|err| {
