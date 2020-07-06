@@ -133,6 +133,12 @@ impl BlockHeader {
         self.crypto_hash()
     }
 
+    pub fn raw_hash(&self) -> HashValue {
+        let mut raw = self.clone();
+        raw.consensus_header = vec![];
+        raw.crypto_hash()
+    }
+
     pub fn parent_hash(&self) -> HashValue {
         self.parent_hash
     }
@@ -538,6 +544,11 @@ impl BlockTemplate {
             body: self.body,
         }
     }
+
+    pub fn into_raw_block_header(self, difficulty: U256) -> BlockHeader {
+        self.into_block_header(vec![], difficulty)
+    }
+
     pub fn into_block_header<H>(self, consensus_header: H, difficulty: U256) -> BlockHeader
     where
         H: Into<Vec<u8>>,

@@ -82,12 +82,11 @@ impl Consensus for ArgonConsensus {
         let consensus_header: ArgonConsensusHeader =
             ArgonConsensusHeader::try_from(header.consensus_header().to_vec())?;
         let nonce = consensus_header.nonce;
-        let header = header.parent_hash().to_hex();
         debug!(
             "Verify header, nonce, difficulty :{:?}, {:o}, {:x}",
             header, nonce, difficulty
         );
-        if verify(header.as_bytes(), nonce, difficulty) {
+        if verify(header.raw_hash().to_vec().as_slice(), nonce, difficulty) {
             Ok(())
         } else {
             Err(anyhow::Error::msg("Invalid header"))
@@ -130,9 +129,9 @@ fn generate_nonce() -> u64 {
 }
 
 pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
-    let len = header.len();
+    // let len = header.len();
     let mut header = header.to_owned();
-    header.truncate(len - 8);
+    // header.truncate(len - 8);
     let _ = header.write_u64::<LittleEndian>(nonce);
     header
 }

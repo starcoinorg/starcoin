@@ -27,13 +27,13 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         return Ok(difficult_to_target(current_header.difficulty));
     }
     let blocks = {
-        let mut blocks: Vec<BlockInfo> = vec![];
+        let mut blocks: Vec<BlockDiffInfo> = vec![];
         let calculate_window = if current_header.number < BLOCK_WINDOW {
             current_header.number
         } else {
             BLOCK_WINDOW
         };
-        blocks.push(BlockInfo {
+        blocks.push(BlockDiffInfo {
             timestamp: current_header.timestamp,
             target: difficult_to_target(current_header.difficulty),
         });
@@ -44,7 +44,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
                     if header.number == 0 {
                         break;
                     }
-                    blocks.push(BlockInfo {
+                    blocks.push(BlockDiffInfo {
                         timestamp: header.timestamp,
                         target: difficult_to_target(header.difficulty),
                     });
@@ -111,7 +111,7 @@ pub fn difficult_to_target(difficulty: U256) -> U256 {
 }
 
 #[derive(Clone)]
-pub struct BlockInfo {
+pub struct BlockDiffInfo {
     pub timestamp: u64,
     pub target: U256,
 }
