@@ -21,9 +21,8 @@ hex = "0.4.2"
 bytes = "0.5.0"
 
 parity-codec = { version = "3.2", features = ["derive"] }
-libp2p = "0.19.1"
+libp2p = "0.20.1"
 
-tokio = { version = "0.2", features = ["full"] }
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
 bus = {path = "../bus", package="starcoin-bus"}
@@ -51,9 +50,13 @@ slog_derive = "0.2.0"
 derive_more = "0.99.2"
 async-trait = "0.1.13"
 stest = {path = "../commons/stest"}
+async-std = "1.5"
 
 prometheus = "0.8"
 
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path = "../sync/api"}
 starcoin-block-relayer-api = { path = "../block-relayer/api/" }
+
+[dev-dependencies]
+tokio = { version = "0.2", features = ["full"] }

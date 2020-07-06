@@ -34,7 +34,6 @@ use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::runtime::Handle;
 use tx_relay::*;
 use types::peer_info::{PeerInfo, RpcInfo};
 use types::system_events::NewHeadBlock;
@@ -52,7 +51,6 @@ pub struct NetworkAsyncService {
     tx: mpsc::UnboundedSender<NetworkMessage>,
     network_service: SNetworkService,
     peer_id: PeerId,
-    handle: Handle,
     inner: Arc<Inner>,
     metrics: Option<NetworkMetrics>,
 }
@@ -61,7 +59,6 @@ struct Inner {
     network_service: SNetworkService,
     bus: Addr<BusActor>,
     raw_message_processor: MessageProcessor<u128, Vec<u8>>,
-    handle: Handle,
     peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
     connected_tx: mpsc::Sender<PeerEvent>,
     need_send_event: AtomicBool,
@@ -178,7 +175,7 @@ impl NetworkService for NetworkAsyncService {
             }
         };
 
-        self.handle.spawn(task);
+        async_std::task::spawn(task);
         let response = message_future.await;
         debug!("receive response from {} with id {}", peer_id, request_id);
         response
@@ -275,7 +272,6 @@ impl NetworkActor {
     pub fn launch(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
-        handle: Handle,
         genesis_hash: HashValue,
         self_info: PeerInfo,
     ) -> (
@@ -296,7 +292,7 @@ impl NetworkActor {
         let has_seed = !config.seeds.is_empty();
 
         let (service, tx, rx, event_rx, tx_command) =
-            build_network_service(&config, handle.clone(), genesis_hash, self_info.clone());
+            build_network_service(&config, genesis_hash, self_info.clone());
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
@@ -342,7 +338,6 @@ impl NetworkActor {
         let inner = Inner {
             network_service: service.clone(),
             bus,
-            handle: handle.clone(),
             raw_message_processor: raw_message_processor_clone,
             peers,
             connected_tx,
@@ -352,13 +347,7 @@ impl NetworkActor {
             rpc_tx,
         };
         let inner = Arc::new(inner);
-        handle.spawn(Self::start(
-            handle.clone(),
-            inner.clone(),
-            rx,
-            event_rx,
-            tx_command,
-        ));
+        async_std::task::spawn(Self::start(inner.clone(), rx, event_rx, tx_command));
 
         if has_seed {
             info!("Seed was in configuration and not ignored.So wait for connection open event.");
@@ -376,7 +365,6 @@ impl NetworkActor {
                 tx,
                 peer_id,
                 inner,
-                handle,
                 metrics,
             },
             rpc_rx,
@@ -384,7 +372,6 @@ impl NetworkActor {
     }
 
     async fn start(
-        handle: Handle,
         inner: Arc<Inner>,
         net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
         event_rx: mpsc::UnboundedReceiver<PeerEvent>,
@@ -396,11 +383,11 @@ impl NetworkActor {
         loop {
             futures::select! {
                 message = net_rx.select_next_some()=>{
-                    handle.spawn(Inner::handle_network_receive(inner.clone(),message));
+                    async_std::task::spawn(Inner::handle_network_receive(inner.clone(),message));
                     debug!("receive net message");
                 },
                 event = event_rx.select_next_some()=>{
-                    handle.spawn(Inner::handle_event_receive(inner.clone(),event));
+                    async_std::task::spawn(Inner::handle_event_receive(inner.clone(),event));
                     debug!("receive net event");
                 },
                 complete => {
@@ -526,8 +513,7 @@ impl Inner {
                     request,
                 })?;
                 let network_service = self.network_service.clone();
-                self.handle
-                    .spawn(Self::handle_response(id, peer_id, rx, network_service));
+                async_std::task::spawn(Self::handle_response(id, peer_id, rx, network_service));
             }
             PeerMessage::RawRPCResponse(id, response) => {
                 debug!("do response {} from peer {}", id, peer_id);
@@ -841,7 +827,7 @@ mod tests {
     use futures_timer::Delay;
     use network_p2p::Multiaddr;
     use serde::{Deserialize, Serialize};
-    use tokio::runtime::{Handle, Runtime};
+    use tokio::runtime::Runtime;
     use tokio::task;
     use types::{block::BlockHeader, transaction::SignedUserTransaction};
 
@@ -865,7 +851,6 @@ mod tests {
         use std::time::Duration;
 
         let mut rt = Runtime::new().unwrap();
-        let handle = rt.handle().clone();
 
         let local = task::LocalSet::new();
         let future = System::run_in_tokio("test", &local);
@@ -878,7 +863,7 @@ mod tests {
         let node_config1 = Arc::new(node_config1);
 
         let bus = BusActor::launch();
-        let (network1, rpc_rx_1) = build_network(node_config1.clone(), bus.clone(), handle.clone());
+        let (network1, rpc_rx_1) = build_network(node_config1.clone(), bus.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
@@ -892,7 +877,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, _rpc_rx_2) = build_network(node_config2, bus, handle);
+        let (network2, _rpc_rx_2) = build_network(node_config2, bus);
 
         Arbiter::spawn(async move {
             let (tx, _rx) = mpsc::unbounded();
@@ -927,7 +912,6 @@ mod tests {
         use std::time::Duration;
 
         let mut rt = Runtime::new().unwrap();
-        let handle = rt.handle().clone();
 
         let local = task::LocalSet::new();
         let future = System::run_in_tokio("test", &local);
@@ -940,8 +924,7 @@ mod tests {
         let node_config1 = Arc::new(node_config1);
 
         let bus = BusActor::launch();
-        let (network1, _rpc_rx_1) =
-            build_network(node_config1.clone(), bus.clone(), handle.clone());
+        let (network1, _rpc_rx_1) = build_network(node_config1.clone(), bus.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
         let addr1_hex = network1.peer_id.to_base58();
@@ -955,7 +938,7 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, rpc_rx_2) = build_network(node_config2, bus.clone(), handle);
+        let (network2, rpc_rx_2) = build_network(node_config2, bus.clone());
 
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();
@@ -1021,18 +1004,12 @@ mod tests {
     fn build_network(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
-        handle: Handle,
     ) -> (
         NetworkAsyncService,
         mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) {
-        let (network, rpc_rx) = NetworkActor::launch(
-            node_config,
-            bus,
-            handle,
-            HashValue::default(),
-            PeerInfo::default(),
-        );
+        let (network, rpc_rx) =
+            NetworkActor::launch(node_config, bus, HashValue::default(), PeerInfo::default());
         (network, rpc_rx)
     }
 

@@ -24,7 +24,6 @@ use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
-use tokio::runtime::Handle;
 use traits::{ChainAsyncService, Consensus};
 use types::peer_info::{PeerId, PeerInfo};
 
@@ -34,11 +33,9 @@ pub struct SyncBencher;
 impl SyncBencher {
     pub fn sync_block(&self, num: u64) {
         let mut system = System::new("sync-bench");
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let handle = rt.handle().clone();
         system.block_on(async move {
             let (_bus_1, addr_1, network_1, chain_1, tx_1, storage_1, rpc_rx) =
-                create_node(Some(num), None, handle.clone()).await.unwrap();
+                create_node(Some(num), None).await.unwrap();
             let chain_1_clone = chain_1.clone();
             let _processor = Arbiter::new()
                 .exec(move || -> Addr<ProcessActor<DummyConsensus>> {
@@ -48,9 +45,7 @@ impl SyncBencher {
                 .unwrap();
 
             let (_, _, network_2, chain_2, _, _, _) =
-                create_node(None, Some((addr_1, network_1)), handle.clone())
-                    .await
-                    .unwrap();
+                create_node(None, Some((addr_1, network_1))).await.unwrap();
             let chain_2_clone = chain_2.clone();
             let downloader = Arc::new(Downloader::new(chain_2_clone));
             for i in 0..3 {
@@ -131,7 +126,6 @@ impl SyncBencher {
 async fn create_node(
     num: Option<u64>,
     seed: Option<(Multiaddr, NetworkAsyncService)>,
-    handle: Handle,
 ) -> Result<(
     Addr<BusActor>,
     Multiaddr,
@@ -186,12 +180,10 @@ async fn create_node(
     rpc_proto_info.push((sync_rpc_proto_info.0.into(), sync_rpc_proto_info.1));
     let node_config_clone = node_config.clone();
     let bus_clone = bus.clone();
-    let handle_clone = handle.clone();
     let addr_clone = addr.clone();
     let (network, rpc_rx) = NetworkActor::launch(
         node_config_clone,
         bus_clone,
-        handle_clone,
         genesis_hash,
         PeerInfo::new_for_test(addr_clone, rpc_proto_info),
     );

@@ -285,7 +285,11 @@ impl Protocol {
     ) -> crate::net_error::Result<(Protocol, peerset::PeersetHandle)> {
         let important_peers = {
             let mut imp_p = HashSet::new();
-            for reserved in &peerset_config.reserved_nodes {
+            for reserved in peerset_config
+                .priority_groups
+                .iter()
+                .flat_map(|(_, l)| l.iter())
+            {
                 imp_p.insert(reserved.clone());
             }
             imp_p.shrink_to_fit();

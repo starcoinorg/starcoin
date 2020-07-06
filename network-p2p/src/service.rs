@@ -119,7 +119,6 @@ impl NetworkWorker {
         // List of multiaddresses that we know in the network.
         let mut known_addresses = Vec::new();
         let mut bootnodes = Vec::new();
-        let mut reserved_nodes = Vec::new();
         let mut boot_node_ids = HashSet::new();
 
         // Process the bootnodes.
@@ -151,22 +150,22 @@ impl NetworkWorker {
             }
         })?;
 
-        // Initialize the reserved peers.
-        for reserved in params.network_config.reserved_nodes.iter() {
-            if let Ok((peer_id, addr)) = parse_str_addr(reserved) {
-                reserved_nodes.push(peer_id.clone());
-                known_addresses.push((peer_id, addr));
-            } else {
-                warn!(target: "sub-libp2p", "Not a valid reserved node address: {}", reserved);
+        let priority_groups = {
+            let mut reserved_nodes = HashSet::new();
+            for reserved in params.network_config.reserved_nodes.iter() {
+                reserved_nodes.insert(reserved.peer_id.clone());
+                known_addresses.push((reserved.peer_id.clone(), reserved.multiaddr.clone()));
             }
-        }
+
+            vec![("reserved".to_owned(), reserved_nodes)]
+        };
 
         let peerset_config = peerset::PeersetConfig {
             in_peers: params.network_config.in_peers,
             out_peers: params.network_config.out_peers,
             bootnodes,
             reserved_only: params.network_config.non_reserved_mode == NonReservedPeerMode::Deny,
-            reserved_nodes,
+            priority_groups,
         };
 
         // Private and public keys configuration.
