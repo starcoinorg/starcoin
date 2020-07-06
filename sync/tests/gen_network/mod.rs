@@ -11,7 +11,7 @@ use types::peer_info::{PeerId, PeerInfo};
 pub fn gen_network(
     node_config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
-    handle: Handle,
+    _handle: Handle,
     genesis_hash: HashValue,
 ) -> (
     NetworkAsyncService,
@@ -26,7 +26,6 @@ pub fn gen_network(
     let (network, rpc_rx) = NetworkActor::launch(
         node_config,
         bus,
-        handle,
         genesis_hash,
         PeerInfo::new_for_test(addr.clone(), rpc_proto_info),
     );

@@ -1,26 +1,32 @@
-// Copyright 2018-2020 Parity Technologies (UK) Ltd.
 // This file is part of Substrate.
 
-// Substrate is free software: you can redistribute it and/or modify
+// Copyright (C) 2018-2020 Parity Technologies (UK) Ltd.
+// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
+
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Substrate is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use futures::prelude::*;
-use libp2p::core::{
-    self, muxing::StreamMuxerBox, transport::boxed::Boxed, transport::OptionalTransport, upgrade,
-};
 use libp2p::{
-    bandwidth, identity, mplex, noise, wasm_ext, InboundUpgradeExt, OutboundUpgradeExt, PeerId,
-    Transport,
+    bandwidth,
+    core::{
+        self,
+        either::{EitherError, EitherOutput},
+        muxing::StreamMuxerBox,
+        transport::{boxed::Boxed, OptionalTransport},
+        upgrade,
+    },
+    identity, mplex, noise, wasm_ext, InboundUpgradeExt, OutboundUpgradeExt, PeerId, Transport,
 };
 #[cfg(not(target_os = "unknown"))]
 use libp2p::{dns, tcp, websocket};
@@ -46,14 +52,28 @@ pub fn build_transport(
 ) {
     // Build configuration objects for encryption mechanisms.
     let noise_config = {
-        let noise_keypair = noise::Keypair::<noise::X25519>::new()
+        // For more information about these two panics, see in "On the Importance of
+        // Checking Cryptographic Protocols for Faults" by Dan Boneh, Richard A. DeMillo,
+        // and Richard J. Lipton.
+        let noise_keypair_legacy = noise::Keypair::<noise::X25519>::new()
             .into_authentic(&keypair)
             .expect(
                 "can only fail in case of a hardware bug; since this signing is performed only \
 				once and at initialization, we're taking the bet that the inconvenience of a very \
 				rare panic here is basically zero",
             );
-        noise::NoiseConfig::ix(noise_keypair)
+        let noise_keypair_spec = noise::Keypair::<noise::X25519Spec>::new()
+            .into_authentic(&keypair)
+            .expect(
+                "can only fail in case of a hardware bug; since this signing is performed only \
+				once and at initialization, we're taking the bet that the inconvenience of a very \
+				rare panic here is basically zero",
+            );
+
+        core::upgrade::SelectUpgrade::new(
+            noise::NoiseConfig::xx(noise_keypair_spec),
+            noise::NoiseConfig::ix(noise_keypair_legacy),
+        )
     };
 
     // Build configuration objects for multiplexing mechanisms.
@@ -102,15 +122,29 @@ pub fn build_transport(
 
     // Encryption
     let transport = transport.and_then(move |stream, endpoint| {
-        core::upgrade::apply(stream, noise_config, endpoint, upgrade::Version::V1).and_then(
-            |(remote_id, out)| async move {
-                let remote_key = match remote_id {
-                    noise::RemoteIdentity::IdentityKey(key) => key,
+        core::upgrade::apply(stream, noise_config, endpoint, upgrade::Version::V1)
+            .map_err(|err| {
+                err.map_err(|err| match err {
+                    EitherError::A(err) => err,
+                    EitherError::B(err) => err,
+                })
+            })
+            .and_then(|result| async move {
+                let remote_key = match &result {
+                    EitherOutput::First((noise::RemoteIdentity::IdentityKey(key), _)) => {
+                        key.clone()
+                    }
+                    EitherOutput::Second((noise::RemoteIdentity::IdentityKey(key), _)) => {
+                        key.clone()
+                    }
                     _ => return Err(upgrade::UpgradeError::Apply(noise::NoiseError::InvalidKey)),
                 };
+                let out = match result {
+                    EitherOutput::First((_, o)) => o,
+                    EitherOutput::Second((_, o)) => o,
+                };
                 Ok((out, remote_key.into_peer_id()))
-            },
-        )
+            })
     });
 
     // Multiplexing

@@ -352,7 +352,9 @@ impl DiscoveryBehaviour {
         let ip = match addr.iter().next() {
             Some(Protocol::Ip4(ip)) => IpNetwork::from(ip),
             Some(Protocol::Ip6(ip)) => IpNetwork::from(ip),
-            Some(Protocol::Dns4(_)) | Some(Protocol::Dns6(_)) => return true,
+            Some(Protocol::Dns(_)) | Some(Protocol::Dns4(_)) | Some(Protocol::Dns6(_)) => {
+                return true
+            }
             _ => return false,
         };
         ip.is_global()
@@ -628,7 +630,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             Err(GetClosestPeersError::Timeout { key, peers }) => {
                                 debug!(target: "sub-libp2p",
                                            "Libp2p => Query for {:?} timed out with {} results",
-                                       hex::encode(&key), peers.len());
+                                          hex::encode(&key), peers.len());
                             }
                             Ok(ok) => {
                                 trace!(target: "sub-libp2p",
@@ -646,8 +648,11 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                         } => {
                             let ev = match res {
                                 Ok(ok) => {
-                                    let results =
-                                        ok.records.into_iter().map(|r| (r.key, r.value)).collect();
+                                    let results = ok
+                                        .records
+                                        .into_iter()
+                                        .map(|r| (r.record.key, r.record.value))
+                                        .collect();
 
                                     DiscoveryOut::ValueFound(results)
                                 }
@@ -770,6 +775,7 @@ mod tests {
     use std::{collections::HashSet, task::Poll};
 
     #[test]
+    #[allow(clippy::single_match)]
     fn discovery_working() {
         let mut user_defined = Vec::new();
 
@@ -833,28 +839,31 @@ mod tests {
         let fut = futures::future::poll_fn(move |cx| {
             'polling: loop {
                 for swarm_n in 0..swarms.len() {
-                    if let Poll::Ready(Some(e)) = swarms[swarm_n].0.poll_next_unpin(cx) {
-                        match e {
-                            DiscoveryOut::UnroutablePeer(other) => {
-                                // Call `add_self_reported_address` to simulate identify happening.
-                                let addr = swarms
-                                    .iter()
-                                    .find_map(|(s, a)| {
-                                        if s.local_peer_id == other {
-                                            Some(a.clone())
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .unwrap();
-                                swarms[swarm_n].0.add_self_reported_address(&other, addr);
+                    match swarms[swarm_n].0.poll_next_unpin(cx) {
+                        Poll::Ready(Some(e)) => {
+                            match e {
+                                DiscoveryOut::UnroutablePeer(other) => {
+                                    // Call `add_self_reported_address` to simulate identify happening.
+                                    let addr = swarms
+                                        .iter()
+                                        .find_map(|(s, a)| {
+                                            if s.local_peer_id == other {
+                                                Some(a.clone())
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .unwrap();
+                                    swarms[swarm_n].0.add_self_reported_address(&other, addr);
+                                }
+                                DiscoveryOut::Discovered(other) => {
+                                    to_discover[swarm_n].remove(&other);
+                                }
+                                _ => {}
                             }
-                            DiscoveryOut::Discovered(other) => {
-                                to_discover[swarm_n].remove(&other);
-                            }
-                            _ => {}
+                            continue 'polling;
                         }
-                        continue 'polling;
+                        _ => {}
                     }
                 }
                 break;
