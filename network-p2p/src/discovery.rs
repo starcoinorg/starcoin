@@ -647,7 +647,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             let ev = match res {
                                 Ok(ok) => {
                                     let results =
-                                        ok.records.into_iter().map(|r| (r.key, r.value)).collect();
+                                        ok.records.into_iter().map(|r| (r.record.key, r.record.value)).collect();
 
                                     DiscoveryOut::ValueFound(results)
                                 }

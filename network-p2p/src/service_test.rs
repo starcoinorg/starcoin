@@ -38,6 +38,7 @@ mod tests {
         )
         .parse()
         .unwrap();
+        info!("seed is {:?}",seed);
         let config2 = generate_config(vec![seed]);
 
         let worker2 = NetworkWorker::new(Params::new(config2.clone(), protocol)).unwrap();
