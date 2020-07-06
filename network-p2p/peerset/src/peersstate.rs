@@ -709,7 +709,7 @@ mod tests {
             peers_state
                 .highest_not_connected_peer()
                 .map(|p| p.into_peer_id()),
-            Some(id2.clone())
+            Some(id2)
         );
     }
 
