@@ -53,6 +53,8 @@ types = {path = "../types", package="starcoin-types"}
 stest = {path = "../commons/stest"}
 prometheus = "0.8"
 ip_network = "0.3.4"
+bs58 = "0.3.1"
+
 
 [dependencies.libp2p]
 version = "0.20.1"

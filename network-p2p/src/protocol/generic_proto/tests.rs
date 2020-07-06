@@ -82,7 +82,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
                 vec![]
             },
             reserved_only: false,
-            reserved_nodes: Vec::new(),
+            priority_groups: Vec::new(),
         });
 
         let behaviour = CustomProtoWithAddr {
