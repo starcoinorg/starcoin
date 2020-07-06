@@ -30,7 +30,6 @@ use types::{
 #[stest::test]
 fn test_miner_with_schedule_pacemaker() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let handle = rt.handle().clone();
     let mut system = System::new("test");
 
     let fut = async move {
@@ -68,7 +67,6 @@ fn test_miner_with_schedule_pacemaker() {
         let (network, rx) = NetworkActor::launch(
             config.clone(),
             bus.clone(),
-            handle.clone(),
             genesis_hash,
             PeerInfo::new_only_proto(rpc_proto_info),
         );
@@ -125,7 +123,6 @@ fn test_miner_with_schedule_pacemaker() {
 fn test_miner_with_ondemand_pacemaker() {
     ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let handle = rt.handle().clone();
     let mut system = System::new("test");
 
     let fut = async move {
@@ -166,7 +163,6 @@ fn test_miner_with_ondemand_pacemaker() {
         let (network, rx) = NetworkActor::launch(
             config.clone(),
             bus.clone(),
-            handle.clone(),
             genesis_hash,
             PeerInfo::new_only_proto(rpc_proto_info),
         );

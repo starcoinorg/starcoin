@@ -16,14 +16,12 @@ use network_p2p::{
 use parity_codec::alloc::collections::HashSet;
 use std::borrow::Cow;
 use std::sync::Arc;
-use tokio::runtime::Handle;
 use types::peer_info::PeerInfo;
 
 const PROTOCOL_ID: &[u8] = b"starcoin";
 
 #[derive(Clone)]
 pub struct SNetworkService {
-    handle: Handle,
     inner: NetworkInner,
     service: Arc<NetworkService>,
     net_tx: Option<mpsc::UnboundedSender<NetworkMessage>>,
@@ -35,14 +33,14 @@ pub struct NetworkInner {
 }
 
 impl SNetworkService {
-    pub fn new(cfg: NetworkConfiguration, handle: Handle) -> Self {
+    pub fn new(cfg: NetworkConfiguration) -> Self {
         let protocol = network_p2p::ProtocolId::from(PROTOCOL_ID);
 
         let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
         let service = worker.service().clone();
         let worker = worker;
 
-        handle.spawn(worker);
+        async_std::task::spawn(worker);
 
         let inner = NetworkInner {
             service: service.clone(),
@@ -50,7 +48,6 @@ impl SNetworkService {
 
         Self {
             inner,
-            handle,
             service,
             net_tx: None,
         }
@@ -72,8 +69,7 @@ impl SNetworkService {
 
         self.net_tx = Some(net_tx.clone());
 
-        self.handle
-            .spawn(Self::start_network(inner, tx, rx, event_tx, close_rx));
+        async_std::task::spawn(Self::start_network(inner, tx, rx, event_tx, close_rx));
         (net_tx, net_rx, event_rx, close_tx)
     }
 
@@ -243,7 +239,6 @@ impl NetworkInner {
 
 pub fn build_network_service(
     cfg: &NetworkConfig,
-    handle: Handle,
     genesis_hash: HashValue,
     self_info: PeerInfo,
 ) -> (
@@ -268,7 +263,7 @@ pub fn build_network_service(
         self_info,
         ..NetworkConfiguration::default()
     };
-    let mut service = SNetworkService::new(config, handle);
+    let mut service = SNetworkService::new(config);
     let (net_tx, net_rx, event_rx, control_tx) = service.run();
     (service, net_tx, net_rx, event_rx, control_tx)
 }
