@@ -257,6 +257,16 @@ where
         self.storage.get_transaction(txn_hash)
     }
 
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
+        let txn_vec = self.storage.get_transaction_info_ids_by_hash(txn_hash)?;
+        for txn_info_id in txn_vec {
+            if self.transaction_info_exist(txn_info_id) {
+                return self.storage.get_transaction_info(txn_info_id);
+            }
+        }
+        Ok(None)
+    }
+
     fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<TransactionInfo>> {
         match self.txn_accumulator.get_leaf(version)? {
             None => Ok(None),

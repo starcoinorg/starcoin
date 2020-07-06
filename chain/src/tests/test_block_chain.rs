@@ -187,6 +187,9 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .get_transaction_info_ids_by_hash(tnx_hash)?;
 
     assert_eq!(vec_txn.len(), 2);
+    let txn_info = block_chain.get_transaction_info(tnx_hash)?;
+    assert!(txn_info.is_some());
+    assert_eq!(txn_info.unwrap().transaction_hash(), tnx_hash);
     Ok(())
 }
 
