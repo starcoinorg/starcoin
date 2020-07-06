@@ -6,21 +6,18 @@ mod tests {
     use crate::service::NetworkStateInfo;
     use crate::{Event, Multiaddr, NodeKeyConfig, ProtocolId, Secret};
     use crate::{NetworkConfiguration, NetworkWorker, Params};
+    use async_std::task;
     use crypto::HashValue;
     use futures::stream::StreamExt;
     use libp2p::identity;
     use std::thread;
     use std::time::Duration;
-    use tokio::runtime::Runtime;
 
     const PROTOCOL_NAME: &[u8] = b"/starcoin/notify/1";
 
     #[stest::test(timeout = 5)]
     #[allow(clippy::string_lit_as_bytes)]
     fn test_notify() {
-        let mut rt = Runtime::new().unwrap();
-        let handle = rt.handle().clone();
-
         let protocol = ProtocolId::from(b"stargate".as_ref());
         let config1 = generate_config(vec![]);
 
@@ -28,7 +25,7 @@ mod tests {
         let service1 = worker1.service().clone();
         let mut stream1 = service1.event_stream();
 
-        handle.spawn(worker1);
+        task::spawn(worker1);
 
         let addr1_hex = service1.peer_id().to_base58();
         let seed: Multiaddr = format!(
@@ -38,14 +35,16 @@ mod tests {
         )
         .parse()
         .unwrap();
-        info!("seed is {:?}",seed);
+        info!("seed is {:?}", seed);
         let config2 = generate_config(vec![seed]);
+
+        info!("start second worker");
 
         let worker2 = NetworkWorker::new(Params::new(config2.clone(), protocol)).unwrap();
         let service2 = worker2.service().clone();
         let mut stream2 = service2.event_stream();
 
-        handle.spawn(worker2);
+        task::spawn(worker2);
 
         thread::sleep(Duration::from_secs(1));
 
@@ -81,7 +80,7 @@ mod tests {
             }
         };
 
-        handle.spawn(fut);
+        task::spawn(fut);
 
         let fut = async move {
             while let Some(event) = stream1.next().await {
@@ -109,16 +108,13 @@ mod tests {
             }
         };
 
-        rt.block_on(fut);
+        task::block_on(fut);
     }
 
     #[test]
     #[allow(clippy::string_lit_as_bytes)]
     fn test_handshake_fail() {
         ::logger::init_for_test();
-
-        let mut rt = Runtime::new().unwrap();
-        let handle = rt.handle().clone();
 
         let protocol = ProtocolId::from(b"stargate".as_ref());
         let config1 = generate_config(vec![]);
@@ -127,7 +123,7 @@ mod tests {
         let service1 = worker1.service().clone();
         let mut stream = service1.event_stream();
 
-        handle.spawn(worker1);
+        task::spawn(worker1);
 
         let addr1_hex = service1.peer_id().to_base58();
         let seed: Multiaddr = format!(
@@ -143,7 +139,7 @@ mod tests {
         let worker2 = NetworkWorker::new(Params::new(config2, protocol)).unwrap();
         let service2 = worker2.service().clone();
 
-        handle.spawn(worker2);
+        task::spawn(worker2);
 
         thread::sleep(Duration::from_secs(1));
 
@@ -166,7 +162,7 @@ mod tests {
             }
         };
 
-        rt.block_on(fut);
+        task::block_on(fut);
     }
 
     fn generate_config(boot_nodes: Vec<Multiaddr>) -> NetworkConfiguration {

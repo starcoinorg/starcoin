@@ -472,7 +472,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-wallet-api",
- "tokio 0.2.21",
 ]
 
 [[package]]
@@ -4076,7 +4075,6 @@ dependencies = [
  "stest",
  "tempfile",
  "thiserror",
- "tokio 0.2.21",
  "unsigned-varint 0.3.3",
  "void",
  "wasm-timer",
@@ -6773,6 +6771,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "async-std",
  "async-trait",
  "bitflags",
  "bytes 0.5.4",

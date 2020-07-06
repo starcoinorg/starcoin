@@ -44,7 +44,6 @@ zeroize = "1.0.0"
 hex="0.4.2"
 wasm-timer = "0.2"
 peerset = {  path = "peerset" }
-tokio = { version = "0.2", features = ["full"] }
 sg_config = {path = "../config", package="starcoin-config"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
@@ -67,6 +66,7 @@ assert_matches = "1.3"
 quickcheck = "0.9.0"
 tempfile = "3.1.0"
 libp2p = { version = "0.20.1", default-features = false, features = ["secio"] }
+
 
 [features]
 default = []

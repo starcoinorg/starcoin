@@ -32,7 +32,6 @@ use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::runtime::Handle;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
@@ -81,7 +80,6 @@ fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
 pub async fn start<C>(
     config: Arc<NodeConfig>,
     logger_handle: Arc<LoggerHandle>,
-    handle: Handle,
 ) -> Result<NodeStartHandle<C>>
 where
     C: Consensus + 'static,
@@ -205,13 +203,11 @@ where
     );
     let network_config = config.clone();
     let network_bus = bus.clone();
-    let network_handle = handle.clone();
     let (network, rpc_rx) = Arbiter::new()
         .exec(move || -> (NetworkAsyncService, futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>){
             NetworkActor::launch(
                 network_config,
                 network_bus,
-                network_handle,
                 genesis_hash,
                 self_info,
             )

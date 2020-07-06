@@ -149,14 +149,12 @@ where
     let (stop_sender, stop_receiver) = oneshot::channel();
     let thread_handle = std::thread::spawn(move || {
         //TODO actix and tokio use same runtime, and config thread pool.
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let handle = rt.handle().clone();
         let mut system = System::builder().stop_on_panic(true).name("main").build();
         system.block_on(async {
             //let node_actor = NodeActor::<C, H>::new(config, handle);
             //let _node_ref = node_actor.start();
             //TODO fix me, this just a work around method.
-            let _handle = match node::start::<C>(config, logger_handle, handle).await {
+            let _handle = match node::start::<C>(config, logger_handle).await {
                 Err(e) => {
                     error!("Node start fail: {:?}, exist.", e);
                     System::current().stop();

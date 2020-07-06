@@ -366,7 +366,7 @@ impl From<multiaddr::Error> for ParseErr {
 /// # Example
 ///
 /// ```
-/// # use sc_network::{Multiaddr, PeerId, config::MultiaddrWithPeerId};
+/// # use network_p2p::{Multiaddr, PeerId, config::MultiaddrWithPeerId};
 /// let addr: MultiaddrWithPeerId =
 /// 	"/ip4/198.51.100.19/tcp/30333/p2p/QmSk5HQbn6LhUwDiNMseVUjuRYhEtYj4aUZ6WfWoGURpdV".parse().unwrap();
 /// assert_eq!(addr.peer_id.to_base58(), "QmSk5HQbn6LhUwDiNMseVUjuRYhEtYj4aUZ6WfWoGURpdV");
@@ -423,7 +423,7 @@ impl TryFrom<String> for MultiaddrWithPeerId {
 /// # Example
 ///
 /// ```
-/// # use sc_network::{Multiaddr, PeerId, config::parse_str_addr};
+/// # use network_p2p::{Multiaddr, PeerId, config::parse_str_addr};
 /// let (peer_id, addr) = parse_str_addr(
 /// 	"/ip4/198.51.100.19/tcp/30333/p2p/QmSk5HQbn6LhUwDiNMseVUjuRYhEtYj4aUZ6WfWoGURpdV"
 /// ).unwrap();

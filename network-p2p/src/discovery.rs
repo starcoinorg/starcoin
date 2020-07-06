@@ -311,14 +311,14 @@ impl DiscoveryBehaviour {
     }
 
     /// Returns the number of nodes that are in the Kademlia k-buckets.
-    pub fn num_kbuckets_entries(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
+    pub fn _num_kbuckets_entries(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
         self.kademlias
             .iter_mut()
             .map(|(id, kad)| (id, kad.kbuckets_entries().count()))
     }
 
     /// Returns the number of records in the Kademlia record stores.
-    pub fn num_kademlia_records(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
+    pub fn _num_kademlia_records(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
         // Note that this code is ok only because we use a `MemoryStore`.
         self.kademlias.iter_mut().map(|(id, kad)| {
             let num = kad.store_mut().records().count();
@@ -327,7 +327,7 @@ impl DiscoveryBehaviour {
     }
 
     /// Returns the total size in bytes of all the records in the Kademlia record stores.
-    pub fn kademlia_records_total_size(
+    pub fn _kademlia_records_total_size(
         &mut self,
     ) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
         // Note that this code is ok only because we use a `MemoryStore`. If the records were

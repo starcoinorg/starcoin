@@ -36,7 +36,6 @@ starcoin-sync = { path = "../sync" }
 starcoin-network = {path = "../network"}
 libp2p = "0.20.1"
 starcoin-network-api = {path = "../network/api", package="network-api"}
-tokio = { version = "0.2", features = ["full"] }
 executor-benchmark = {path = "../executor/benchmark", package="starcoin-executor-benchmark" }
 futures = "0.3"
 logger = {path = "../commons/logger",package="starcoin-logger"}
