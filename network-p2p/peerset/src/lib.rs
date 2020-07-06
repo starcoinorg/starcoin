@@ -43,6 +43,7 @@ const BANNED_THRESHOLD: i32 = 82 * (i32::min_value() / 100);
 /// Reputation change for a node when we get disconnected from it.
 const DISCONNECT_REPUTATION_CHANGE: i32 = -256;
 /// Reserved peers group ID
+#[allow(clippy::redundant_static_lifetimes)]
 const RESERVED_NODES: &'static str = "reserved";
 /// Amount of time between the moment we disconnect from a node and the moment we remove it from
 /// the list.
@@ -96,7 +97,7 @@ impl PeersetHandle {
     /// Has no effect if the node was already a reserved peer.
     ///
     /// > **Note**: Keep in mind that the networking has to know an address for this node,
-    /// >			otherwise it will not be able to connect to it.
+    /// > otherwise it will not be able to connect to it.
     pub fn add_reserved_peer(&self, peer_id: PeerId) {
         let _ = self.tx.unbounded_send(Action::AddReservedPeer(peer_id));
     }
@@ -181,7 +182,7 @@ pub struct PeersetConfig {
     /// List of bootstrap nodes to initialize the peer with.
     ///
     /// > **Note**: Keep in mind that the networking has to know an address for these nodes,
-    /// >			otherwise it will not be able to connect to them.
+    /// >otherwise it will not be able to connect to them.
     pub bootnodes: Vec<PeerId>,
 
     /// If true, we only accept nodes in [`PeersetConfig::priority_groups`].
@@ -190,7 +191,7 @@ pub struct PeersetConfig {
     /// Lists of nodes we should always be connected to.
     ///
     /// > **Note**: Keep in mind that the networking has to know an address for these nodes,
-    /// >			otherwise it will not be able to connect to them.
+    /// >otherwise it will not be able to connect to them.
     pub priority_groups: Vec<(String, HashSet<PeerId>)>,
 }
 
@@ -455,8 +456,7 @@ impl Peerset {
                     .get(RESERVED_NODES)
                     .into_iter()
                     .flatten()
-                    .filter(move |n| data.peer(n).into_connected().is_none())
-                    .next()
+                    .find(move |n| data.peer(n).into_connected().is_none())
                     .cloned()
             };
 
@@ -494,8 +494,7 @@ impl Peerset {
                 self.priority_groups
                     .values()
                     .flatten()
-                    .filter(move |n| data.peer(n).into_connected().is_none())
-                    .next()
+                    .find(move |n| data.peer(n).into_connected().is_none())
                     .cloned()
             };
 
@@ -522,13 +521,7 @@ impl Peerset {
         }
 
         // Now, we try to connect to non-priority nodes.
-        loop {
-            // Try to grab the next node to attempt to connect to.
-            let next = match self.data.highest_not_connected_peer() {
-                Some(p) => p,
-                None => break, // No known node to add.
-            };
-
+        while let Some(next) = self.data.highest_not_connected_peer() {
             // Don't connect to nodes with an abysmal reputation.
             if next.reputation() < BANNED_THRESHOLD {
                 break;
@@ -557,15 +550,14 @@ impl Peerset {
         trace!(target: "peerset", "Incoming {:?}", peer_id);
         self.update_time();
 
-        if self.reserved_only {
-            if !self
+        if self.reserved_only
+            && !self
                 .priority_groups
                 .get(RESERVED_NODES)
                 .map_or(false, |n| n.contains(&peer_id))
-            {
-                self.message_queue.push_back(Message::Reject(index));
-                return;
-            }
+        {
+            self.message_queue.push_back(Message::Reject(index));
+            return;
         }
 
         let not_connected = match self.data.peer(&peer_id) {
@@ -616,7 +608,7 @@ impl Peerset {
     /// Adds discovered peer ids to the PSM.
     ///
     /// > **Note**: There is no equivalent "expired" message, meaning that it is the responsibility
-    /// >			of the PSM to remove `PeerId`s that fail to dial too often.
+    /// > of the PSM to remove `PeerId`s that fail to dial too often.
     pub fn discovered<I: IntoIterator<Item = PeerId>>(&mut self, peer_ids: I) {
         let mut discovered_any = false;
 

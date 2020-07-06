@@ -19,4 +19,3 @@
 
 pub mod metrics;
 pub mod mpsc;
-pub mod status_sinks;
