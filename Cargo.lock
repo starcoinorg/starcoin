@@ -6475,6 +6475,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-traits",
  "starcoin-types",
+ "stest",
 ]
 
 [[package]]
