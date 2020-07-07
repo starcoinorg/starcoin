@@ -4,6 +4,7 @@
 use crate::ChainReader;
 use anyhow::Result;
 use starcoin_config::NodeConfig;
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
@@ -40,10 +41,7 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
         block_template: BlockTemplate,
     ) -> Result<Block> {
         let difficulty = Self::calculate_next_difficulty(config, reader)?;
-        let raw_hash = block_template
-            .clone()
-            .into_raw_block_header(difficulty)
-            .raw_hash();
+        let raw_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
         let consensus_header =
             Self::solve_consensus_header(raw_hash.to_vec().as_slice(), difficulty);
         Ok(block_template.into_block(consensus_header, difficulty))

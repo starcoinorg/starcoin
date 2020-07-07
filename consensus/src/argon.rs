@@ -7,6 +7,7 @@ use anyhow::{Error, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
 use config::NodeConfig;
+use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use rand::Rng;
 use std::convert::TryFrom;
@@ -14,7 +15,7 @@ use std::io::Cursor;
 use std::sync::Arc;
 use traits::ChainReader;
 use traits::{Consensus, ConsensusHeader};
-use types::block::BlockHeader;
+use types::block::{BlockHeader, RawBlockHeader};
 use types::{H256, U256};
 
 #[derive(Clone, Debug)]
@@ -86,7 +87,12 @@ impl Consensus for ArgonConsensus {
             "Verify header, nonce, difficulty :{:?}, {:o}, {:x}",
             header, nonce, difficulty
         );
-        if verify(header.raw_hash().to_vec().as_slice(), nonce, difficulty) {
+        let raw_block_header: RawBlockHeader = header.clone().into();
+        if verify(
+            raw_block_header.crypto_hash().to_vec().as_slice(),
+            nonce,
+            difficulty,
+        ) {
             Ok(())
         } else {
             Err(anyhow::Error::msg("Invalid header"))
