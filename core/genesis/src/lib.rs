@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
-use starcoin_config::ChainNetwork;
+use starcoin_config::{genesis_key_pair, ChainNetwork};
 use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
@@ -15,7 +15,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
-use starcoin_transaction_builder::{build_upgrade_package, StdLibOptions};
+use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction, vm_error::StatusCode};
@@ -135,7 +135,7 @@ impl Genesis {
     }
 
     pub fn build_genesis_transaction(net: ChainNetwork) -> Result<SignedUserTransaction> {
-        let package = build_upgrade_package(net, StdLibOptions::Staged, true)?;
+        let package = build_stdlib_package(net, StdLibOptions::Staged, true)?;
         let txn = RawUserTransaction::new(
             CORE_CODE_ADDRESS,
             0,
@@ -144,7 +144,7 @@ impl Genesis {
             0,
             Duration::from_secs(0),
         );
-        let (genesis_private_key, genesis_public_key) = ChainNetwork::genesis_key_pair();
+        let (genesis_private_key, genesis_public_key) = genesis_key_pair();
         let sign_txn = txn.sign(&genesis_private_key, genesis_public_key)?;
         Ok(sign_txn.into_inner())
     }

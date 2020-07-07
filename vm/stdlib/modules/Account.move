@@ -178,7 +178,7 @@ module Account {
         );
     }
 
-    // mint_to_address can only be called by accounts with MintCapability (see Libra)
+    // mint_to_address can only be called by accounts with MintCapability
     // and those accounts will be charged for gas. If those accounts don't have enough gas to pay
     // for the transaction cost they will fail minting.
     // However those account can also mint to themselves so that is a decent workaround
@@ -328,16 +328,21 @@ module Account {
     // Create an account at `new_account_address` with authentication key
     /// `auth_key_prefix` | `new_account_address`
     // TODO: can we get rid of this? the main thing this does is create an account without an
-    // Token (which is just needed to avoid circular dep issues in gensis)
+    // Token and return signer. (which is just needed to avoid circular dep issues in Genesis)
     public fun create_genesis_account(
         new_account_address: address,
         auth_key_prefix: vector<u8>
-    ) {
-        assert(Timestamp::is_genesis(), 0);
+    ) :signer {
+        assert(Timestamp::is_genesis(), 1);
         let new_account = create_signer(new_account_address);
         Event::publish_generator(&new_account);
         make_account(&new_account, auth_key_prefix);
-        destroy_signer(new_account);
+        new_account
+    }
+
+    // Release genesis account signer
+    public fun release_genesis_signer(genesis_account: signer){
+        destroy_signer(genesis_account);
     }
 
     // Creates a new account at `fresh_address` with a balance of zero and authentication

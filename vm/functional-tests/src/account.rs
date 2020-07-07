@@ -4,7 +4,7 @@
 //! Test infrastructure for modeling Libra accounts.
 
 use executor::{create_signed_txn_with_association_account, TXN_RESERVED};
-use starcoin_config::ChainNetwork;
+use starcoin_config::genesis_key_pair;
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::{
@@ -88,7 +88,7 @@ impl Account {
     /// The address will be [`address`], which should be an address for a genesis account and
     /// the account will use ChainNetwork::genesis_key_pair() as its keypair.
     pub fn new_genesis_account(address: AccountAddress) -> Self {
-        let (privkey, pubkey) = ChainNetwork::genesis_key_pair();
+        let (privkey, pubkey) = genesis_key_pair();
         Account {
             addr: address,
             pubkey,
