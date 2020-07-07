@@ -19,7 +19,7 @@ pub use libp2p::{
 };
 
 mod behaviour;
-mod config;
+pub mod config;
 mod debug_info;
 mod discovery;
 mod metrics;

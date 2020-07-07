@@ -32,9 +32,9 @@ pub mod authenticator {
 
 mod error;
 pub mod helpers;
+mod package;
 mod pending_transaction;
 mod transaction_argument;
-mod upgrade;
 
 use crate::contract_event::ContractEventHasher;
 use crate::transaction::authenticator::TransactionAuthenticator;
@@ -42,12 +42,12 @@ pub use error::CallError;
 pub use error::Error as TransactionError;
 use libra_types::proof::accumulator::InMemoryAccumulator;
 pub use libra_types::transaction::{ChangeSet, Module, Script};
+pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
-pub use upgrade::{InitScript, Package};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 

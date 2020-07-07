@@ -13,7 +13,7 @@ module RewardConfig {
     }
 
     public fun initialize(config_account: &signer, reward_halving_interval: u64, reward_base: u64, reward_delay: u64) {
-        assert(Signer::address_of(config_account) == CoreAddresses::DEFAULT_CONFIG_ADDRESS(), 1);
+        assert(Signer::address_of(config_account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
         assert(reward_halving_interval > 0, 6106);
         assert(reward_base > 0, 6107);
         assert(reward_delay > 0, 6108);

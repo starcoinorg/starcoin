@@ -32,7 +32,6 @@ use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::runtime::Handle;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
@@ -81,7 +80,6 @@ fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
 pub async fn start<C>(
     config: Arc<NodeConfig>,
     logger_handle: Arc<LoggerHandle>,
-    handle: Handle,
 ) -> Result<NodeStartHandle<C>>
 where
     C: Consensus + 'static,
@@ -150,24 +148,22 @@ where
         }
     };
 
-    //Only dev network pre_mine_config contains private_key.
-    if let Some(pre_mine_config) = config.net().get_config().pre_mine_config.as_ref() {
-        if let Some(private_key) = pre_mine_config.private_key.as_ref() {
-            let association_account = account_service
+    //Only dev network association_key_pair contains private_key.
+    if let (Some(association_private_key), _) = &config.net().get_config().association_key_pair {
+        let association_account = account_service
+            .clone()
+            .get_account(association_address())
+            .await?;
+        if association_account.is_none() {
+            account_service
                 .clone()
-                .get_account(association_address())
+                .import_account(
+                    association_address(),
+                    association_private_key.to_bytes().to_vec(),
+                    "".to_string(),
+                )
                 .await?;
-            if association_account.is_none() {
-                account_service
-                    .clone()
-                    .import_account(
-                        association_address(),
-                        private_key.to_bytes().to_vec(),
-                        "".to_string(),
-                    )
-                    .await?;
-                info!("Import association account to wallet.");
-            }
+            info!("Import association account to wallet.");
         }
     }
 
@@ -205,13 +201,11 @@ where
     );
     let network_config = config.clone();
     let network_bus = bus.clone();
-    let network_handle = handle.clone();
     let (network, rpc_rx) = Arbiter::new()
         .exec(move || -> (NetworkAsyncService, futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>){
             NetworkActor::launch(
                 network_config,
                 network_bus,
-                network_handle,
                 genesis_hash,
                 self_info,
             )

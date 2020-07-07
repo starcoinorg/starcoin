@@ -10,11 +10,9 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_executor::TXN_RESERVED;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::{
-    account_config,
-    transaction::{authenticator::AuthenticationKey, helpers::TransactionSigner},
-};
+use starcoin_types::{account_config, transaction::authenticator::AuthenticationKey};
 use structopt::StructOpt;
+use tokio::time::Duration;
 
 /// Get coin to default account.
 /// This command only available in dev network.
@@ -51,26 +49,29 @@ impl CommandAction for GetCoinCommand {
             format_err!("Can not find default account, Please create account first.")
         })?;
 
-        let pre_mine_address = account_config::association_address();
-        let chain_config = net.get_config();
-        let pre_mine_config = chain_config
-            .pre_mine_config
-            .as_ref()
-            .expect("Dev net pre mine config must exist.");
-
+        let association_address = account_config::association_address();
         let to_auth_key_prefix = AuthenticationKey::ed25519(&to.public_key).prefix();
-
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
-            .get_account_resource(&pre_mine_address)?
-            .unwrap_or_else(|| panic!("pre mine address {} must exist", pre_mine_address));
+            .get_account_resource(&association_address)?
+            .unwrap_or_else(|| {
+                panic!(
+                    "association_address address {} must exist",
+                    association_address
+                )
+            });
         let balance = account_state_reader
-            .get_balance(&pre_mine_address)?
-            .unwrap_or_else(|| panic!("pre mine address {} balance must exist", pre_mine_address));
+            .get_balance(&association_address)?
+            .unwrap_or_else(|| {
+                panic!(
+                    "association_address address {} balance must exist",
+                    association_address
+                )
+            });
         let amount = opt.amount.unwrap_or(balance * 20 / 100);
         let raw_txn = starcoin_executor::build_transfer_txn(
-            pre_mine_address,
+            association_address,
             to.address,
             to_auth_key_prefix.to_vec(),
             account_resource.sequence_number(),
@@ -78,12 +79,18 @@ impl CommandAction for GetCoinCommand {
             1,
             TXN_RESERVED,
         );
-        let txn = pre_mine_config.sign_txn(raw_txn)?;
-        let succ = client.submit_transaction(txn.clone())?;
-        if let Err(e) = succ {
-            bail!("execute-txn is reject by node, reason: {}", &e)
+        client.wallet_unlock(
+            association_address,
+            "".to_string(),
+            Duration::from_secs(300),
+        )?;
+        let txn = client.wallet_sign_txn(raw_txn)?;
+        let id = txn.crypto_hash();
+        let ret = client.submit_transaction(txn.clone())?;
+        if let Err(e) = ret {
+            bail!("execute-txn is reject by node, reason: {}", e)
         }
-        ctx.state().watch_txn(txn.crypto_hash())?;
+        ctx.state().watch_txn(id)?;
         Ok(txn.into())
     }
 }

@@ -6,6 +6,7 @@ mod tests {
     use crate::net::{build_network_service, SNetworkService};
     use crate::NetworkMessage;
     use crate::PeerEvent;
+    use async_std::task;
     use config::{get_available_port, NodeConfig};
     use crypto::hash::HashValue;
     use futures::{
@@ -16,7 +17,6 @@ mod tests {
     use network_p2p::Multiaddr;
     use network_p2p::PROTOCOL_NAME;
     use std::{thread, time::Duration};
-    use tokio::runtime::{Handle, Runtime};
     use types::peer_info::PeerInfo;
 
     pub type NetworkComponent = (
@@ -27,11 +27,8 @@ mod tests {
         UnboundedSender<()>,
     );
 
-    fn build_test_network_pair(
-        host: String,
-        handle: Handle,
-    ) -> (NetworkComponent, NetworkComponent) {
-        let mut l = build_test_network_services(2, host, get_available_port(), handle).into_iter();
+    fn build_test_network_pair(host: String) -> (NetworkComponent, NetworkComponent) {
+        let mut l = build_test_network_services(2, host, get_available_port()).into_iter();
         let a = l.next().unwrap();
         let b = l.next().unwrap();
         (a, b)
@@ -41,7 +38,6 @@ mod tests {
         num: usize,
         host: String,
         base_port: u16,
-        handle: Handle,
     ) -> Vec<(
         SNetworkService,
         UnboundedSender<NetworkMessage>,
@@ -79,12 +75,7 @@ mod tests {
                 first_addr = Some(config.listen.to_string());
             }
 
-            let server = build_network_service(
-                &config,
-                handle.clone(),
-                HashValue::default(),
-                PeerInfo::default(),
-            );
+            let server = build_network_service(&config, HashValue::default(), PeerInfo::default());
             result.push({
                 let c: NetworkComponent = server;
                 c
@@ -97,13 +88,10 @@ mod tests {
     fn test_send_receive_1() {
         ::logger::init_for_test();
         //let mut rt = Builder::new().core_threads(1).build().unwrap();
-        let mut rt = Runtime::new().unwrap();
-
-        let executor = rt.handle();
         let (
             (service1, tx1, rx1, _event_rx1, close_tx1),
             (service2, tx2, _rx2, _event_rx2, close_tx2),
-        ) = build_test_network_pair("127.0.0.1".to_string(), executor.clone());
+        ) = build_test_network_pair("127.0.0.1".to_string());
         let msg_peer_id_1 = service1.identify().clone();
         let msg_peer_id_2 = service2.identify().clone();
         // Once sender has been droped, the select_all will return directly. clone it to prevent it.
@@ -156,27 +144,25 @@ mod tests {
                 }
             }
         };
-        executor.spawn(receive_fut);
-        rt.handle().spawn(sender_fut);
+        task::spawn(receive_fut);
+        task::spawn(sender_fut);
 
         let task = async move {
             Delay::new(Duration::from_secs(6)).await;
             let _ = close_tx1.unbounded_send(());
             let _ = close_tx2.unbounded_send(());
         };
-        rt.block_on(task);
+        task::block_on(task);
     }
 
     #[test]
     fn test_send_receive_2() {
         ::logger::init_for_test();
 
-        let rt = Runtime::new().unwrap();
-        let executor = rt.handle();
         let (
             (service1, _tx1, rx1, _event_rx1, _close_tx1),
             (service2, _tx2, _rx2, _event_rx2, _close_tx2),
-        ) = build_test_network_pair("127.0.0.1".to_string(), executor.clone());
+        ) = build_test_network_pair("127.0.0.1".to_string());
         let msg_peer_id = service1.identify().clone();
         let receive_fut = async move {
             let mut rx1 = rx1.fuse();
@@ -193,7 +179,7 @@ mod tests {
             }
         };
 
-        executor.clone().spawn(receive_fut);
+        task::spawn(receive_fut);
 
         //wait the network started.
         thread::sleep(Duration::from_secs(1));
@@ -214,7 +200,7 @@ mod tests {
                     .await
                     .unwrap();
             };
-            executor.spawn(fut);
+            task::spawn(fut);
         }
         thread::sleep(Duration::from_secs(3));
     }
@@ -223,9 +209,7 @@ mod tests {
     fn test_connected_nodes() {
         ::logger::init_for_test();
 
-        let mut _rt = Runtime::new().unwrap();
-        let (service1, _service2) =
-            build_test_network_pair("127.0.0.1".to_string(), _rt.handle().clone());
+        let (service1, _service2) = build_test_network_pair("127.0.0.1".to_string());
         thread::sleep(Duration::from_secs(2));
         let fut = async move {
             assert_eq!(
@@ -241,7 +225,7 @@ mod tests {
             //     service1.0.identify()
             // );
         };
-        _rt.block_on(fut);
+        task::block_on(fut);
     }
 
     //FIXME temp ignore for #139
@@ -250,18 +234,13 @@ mod tests {
     fn test_reconnected_nodes() {
         ::logger::init_for_test();
 
-        let mut rt = Runtime::new().unwrap();
         let mut node_config1 = NodeConfig::random_for_test().network;
         node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
             .parse()
             .unwrap();
 
-        let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) = build_network_service(
-            &node_config1,
-            rt.handle().clone(),
-            HashValue::default(),
-            PeerInfo::default(),
-        );
+        let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
+            build_network_service(&node_config1, HashValue::default(), PeerInfo::default());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -274,12 +253,8 @@ mod tests {
             .parse()
             .unwrap();
         node_config2.seeds = vec![seed.clone()];
-        let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) = build_network_service(
-            &node_config2,
-            rt.handle().clone(),
-            HashValue::default(),
-            PeerInfo::default(),
-        );
+        let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) =
+            build_network_service(&node_config2, HashValue::default(), PeerInfo::default());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -288,12 +263,8 @@ mod tests {
             .parse()
             .unwrap();
         node_config3.seeds = vec![seed];
-        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) = build_network_service(
-            &node_config3,
-            rt.handle().clone(),
-            HashValue::default(),
-            PeerInfo::default(),
-        );
+        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
+            build_network_service(&node_config3, HashValue::default(), PeerInfo::default());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -319,25 +290,17 @@ mod tests {
 
             Delay::new(Duration::from_secs(1)).await;
         };
-        rt.block_on(fut);
+        task::block_on(fut);
 
         thread::sleep(Duration::from_secs(10));
 
-        let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) = build_network_service(
-            &node_config2,
-            rt.handle().clone(),
-            HashValue::default(),
-            PeerInfo::default(),
-        );
+        let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) =
+            build_network_service(&node_config2, HashValue::default(), PeerInfo::default());
 
         thread::sleep(Duration::from_secs(1));
 
-        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) = build_network_service(
-            &node_config3,
-            rt.handle().clone(),
-            HashValue::default(),
-            PeerInfo::default(),
-        );
+        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
+            build_network_service(&node_config3, HashValue::default(), PeerInfo::default());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -357,6 +320,6 @@ mod tests {
                 true
             );
         };
-        rt.block_on(fut);
+        task::block_on(fut);
     }
 }

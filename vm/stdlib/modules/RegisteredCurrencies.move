@@ -2,9 +2,9 @@ address 0x1 {
 //TODO Consider a more appropriate name.
 module RegisteredCurrencies {
     use 0x1::Vector;
-
     use 0x1::Config;
     use 0x1::Signer;
+    use 0x1::CoreAddresses;
 
     struct CurrencyRecord{
         // Currency module address.
@@ -53,7 +53,7 @@ module RegisteredCurrencies {
     }
 
     fun singleton_address(): address {
-        Config::default_config_address()
+        CoreAddresses::GENESIS_ACCOUNT()
     }
 
     public fun module_address_of(record: &CurrencyRecord): address{

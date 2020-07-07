@@ -81,13 +81,14 @@ impl OnChainConfigPayload {
     }
 }
 
+use crate::account_config::genesis_address;
 pub use libra_types::on_chain_config::ConfigStorage;
 
 /// Trait to be implemented by a Rust struct representation of an on-chain config
 /// that is stored in storage as a serialized byte array
 pub trait OnChainConfig: Send + Sync + DeserializeOwned {
     // association_address
-    const ADDRESS: &'static str = "0xF1A95";
+    const ADDRESS: &'static str = "0x1";
     const IDENTIFIER: &'static str;
     const CONFIG_ID: ConfigID = ConfigID(Self::ADDRESS, Self::IDENTIFIER);
 
@@ -122,7 +123,7 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
 }
 
 pub fn new_epoch_event_key() -> EventKey {
-    EventKey::new_from_address(&config_address(), 0)
+    EventKey::new_from_address(&genesis_address(), 0)
 }
 
 pub fn access_path_for_config(address: AccountAddress, config_name: Identifier) -> AccessPath {
