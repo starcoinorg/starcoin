@@ -21,7 +21,9 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::{stc_type_tag, EPILOGUE_NAME, PROLOGUE_NAME};
+use starcoin_vm_types::account_config::{
+    genesis_address, stc_type_tag, EPILOGUE_NAME, PROLOGUE_NAME,
+};
 use starcoin_vm_types::data_store::DataStore;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
@@ -392,7 +394,7 @@ impl StarcoinVM {
             let mut cost_strategy = CostStrategy::system(gas_schedule, failed_gas_left);
             //TODO handle genesis txn's epilogue.
             if txn_data.sender != CORE_CODE_ADDRESS {
-                self.run_epilogue(&mut data_store, &mut cost_strategy, txn_data)
+                self.run_epilogue(&mut data_store, &mut cost_strategy, txn_data, true)
                     .and_then(|_| {
                         get_transaction_output(
                             &mut data_store,
@@ -473,6 +475,7 @@ impl StarcoinVM {
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
     ) -> VMResult<()> {
+        let genesis_address = genesis_address();
         let gas_currency_ty = DEFAULT_CURRENCY_TY.clone();
         let txn_sequence_number = txn_data.sequence_number();
         let txn_public_key = txn_data.authentication_key_preimage().to_vec();
@@ -482,13 +485,15 @@ impl StarcoinVM {
         let payload_type: u8 = txn_data.payload_type().into();
         let script_or_package_hash = txn_data.script_or_package_hash();
         let package_address = txn_data.package_address.unwrap_or_default();
+        // Run prologue by genesis account
         self.move_vm
             .execute_function(
-                &account_config::ACCOUNT_MODULE,
+                &account_config::TRANSACTION_MANAGER_MODULE,
                 &PROLOGUE_NAME,
                 vec![gas_currency_ty],
                 vec![
-                    Value::transaction_argument_signer_reference(txn_data.sender),
+                    Value::transaction_argument_signer_reference(genesis_address),
+                    Value::address(txn_data.sender),
                     Value::u64(txn_sequence_number),
                     Value::vector_u8(txn_public_key),
                     Value::u64(txn_gas_price),
@@ -498,7 +503,7 @@ impl StarcoinVM {
                     Value::vector_u8(script_or_package_hash.to_vec()),
                     Value::address(package_address),
                 ],
-                txn_data.sender(),
+                genesis_address,
                 data_store,
                 cost_strategy,
             )
@@ -512,7 +517,9 @@ impl StarcoinVM {
         data_store: &mut TransactionDataCache,
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
+        success: bool,
     ) -> VMResult<()> {
+        let genesis_address = genesis_address();
         let gas_currency_ty = DEFAULT_CURRENCY_TY.clone();
         let txn_sequence_number = txn_data.sequence_number();
         let txn_gas_price = txn_data.gas_unit_price().get();
@@ -524,12 +531,14 @@ impl StarcoinVM {
         let payload_type: u8 = txn_data.payload_type().into();
         let script_or_package_hash = txn_data.script_or_package_hash();
         let package_address = txn_data.package_address.unwrap_or_default();
+        // Run epilogue by genesis account
         self.move_vm.execute_function(
-            &account_config::ACCOUNT_MODULE,
+            &account_config::TRANSACTION_MANAGER_MODULE,
             &EPILOGUE_NAME,
             vec![gas_currency_ty],
             vec![
-                Value::transaction_argument_signer_reference(txn_data.sender),
+                Value::transaction_argument_signer_reference(genesis_address),
+                Value::address(txn_data.sender),
                 Value::u64(txn_sequence_number),
                 Value::u64(txn_gas_price),
                 Value::u64(txn_max_gas_amount),
@@ -539,8 +548,9 @@ impl StarcoinVM {
                 Value::u8(payload_type),
                 Value::vector_u8(script_or_package_hash.to_vec()),
                 Value::address(package_address),
+                Value::bool(success),
             ],
-            txn_data.sender(),
+            genesis_address,
             data_store,
             cost_strategy,
         )
@@ -552,8 +562,8 @@ impl StarcoinVM {
         block_metadata: BlockMetadata,
     ) -> VMResult<TransactionOutput> {
         let mut txn_data = TransactionMetadata::default();
-        //TODO reconsider sender address
-        txn_data.sender = account_config::mint_address();
+        //process block metadata by genesis.
+        txn_data.sender = account_config::genesis_address();
         txn_data.max_gas_amount = GasUnits::new(std::u64::MAX);
 
         let gas_schedule = zero_cost_schedule();
@@ -561,14 +571,10 @@ impl StarcoinVM {
         let mut data_store = TransactionDataCache::new(remote_cache);
 
         let (parent_id, timestamp, author, auth) = block_metadata.into_inner();
-        let vote_maps = vec![];
-        let round = 0u64;
         let args = vec![
-            Value::transaction_argument_signer_reference(account_config::mint_address()),
-            Value::u64(round),
-            Value::u64(timestamp),
+            Value::transaction_argument_signer_reference(txn_data.sender),
             Value::vector_u8(parent_id.to_vec()),
-            Value::vector_address(vote_maps),
+            Value::u64(timestamp),
             Value::address(author),
             match auth {
                 Some(prefix) => Value::vector_u8(prefix),
@@ -577,8 +583,8 @@ impl StarcoinVM {
         ];
 
         self.move_vm.execute_function(
-            &account_config::BLOCK_MODULE,
-            &account_config::BLOCK_PROLOGUE,
+            &account_config::TRANSACTION_MANAGER_MODULE,
+            &account_config::BLOCK_PROLOGUE_NAME,
             vec![],
             args,
             txn_data.sender(),
@@ -699,7 +705,7 @@ impl StarcoinVM {
         let mut data_store = TransactionDataCache::new(remote_cache);
         match TransactionStatus::from(error_code) {
             TransactionStatus::Keep(status) => self
-                .run_epilogue(&mut data_store, &mut cost_strategy, txn_data)
+                .run_epilogue(&mut data_store, &mut cost_strategy, txn_data, false)
                 .and_then(|_| {
                     get_transaction_output(&mut data_store, &cost_strategy, txn_data, status)
                 })
