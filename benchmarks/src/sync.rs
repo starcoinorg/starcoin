@@ -8,7 +8,7 @@ use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
-use starcoin_config::{get_available_port, NodeConfig};
+use starcoin_config::{get_random_available_port, NodeConfig};
 use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
 use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
@@ -142,7 +142,7 @@ async fn create_node(
     // node config
     let mut config = NodeConfig::random_for_test();
     config.sync.full_sync_mode();
-    let my_addr: Multiaddr = format!("/ip4/127.0.0.1/tcp/{}", get_available_port())
+    let my_addr: Multiaddr = format!("/ip4/127.0.0.1/tcp/{}", get_random_available_port())
         .parse()
         .unwrap();
     config.network.listen = my_addr.clone();

@@ -857,7 +857,7 @@ mod tests {
 
         let mut node_config1 = NodeConfig::random_for_test();
         node_config1.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
                 .parse()
                 .unwrap();
         let node_config1 = Arc::new(node_config1);
@@ -871,7 +871,7 @@ mod tests {
             .parse()
             .unwrap();
         node_config2.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
                 .parse()
                 .unwrap();
         node_config2.network.seeds = vec![seed];
@@ -918,7 +918,7 @@ mod tests {
 
         let mut node_config1 = NodeConfig::random_for_test();
         node_config1.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
                 .parse()
                 .unwrap();
         let node_config1 = Arc::new(node_config1);
@@ -932,7 +932,7 @@ mod tests {
             .parse()
             .unwrap();
         node_config2.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
                 .parse()
                 .unwrap();
         node_config2.network.seeds = vec![seed];

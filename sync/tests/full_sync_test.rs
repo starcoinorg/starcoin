@@ -4,7 +4,7 @@ use actix::Actor;
 use actix_rt::System;
 use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
-use config::{get_available_port, NodeConfig};
+use config::{get_random_available_port, NodeConfig};
 use consensus::dev::DevConsensus;
 use futures_timer::Delay;
 use gen_network::gen_network;
@@ -40,7 +40,7 @@ fn test_network_actor_rpc() {
         );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
-        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port())
+        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_random_available_port())
             .parse()
             .unwrap();
         let node_config_1 = Arc::new(config_1);
@@ -142,9 +142,10 @@ fn test_network_actor_rpc() {
         let seed: Multiaddr = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex)
             .parse()
             .unwrap();
-        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
-            .parse()
-            .unwrap();
+        config_2.network.listen =
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
+                .parse()
+                .unwrap();
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
 
@@ -251,7 +252,7 @@ fn test_network_actor_rpc_2() {
         );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
-        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port())
+        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_random_available_port())
             .parse()
             .unwrap();
         let node_config_1 = Arc::new(config_1);
@@ -330,9 +331,10 @@ fn test_network_actor_rpc_2() {
         let seed: Multiaddr = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex)
             .parse()
             .unwrap();
-        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
-            .parse()
-            .unwrap();
+        config_2.network.listen =
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
+                .parse()
+                .unwrap();
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
         let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
