@@ -14,12 +14,6 @@ const STAGED_INIT_SCRIPTS_DIR: Dir = include_dir!("staged/init_scripts");
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum InitScript {
     GenesisInit,
-    AssociationInit,
-    ConfigInit,
-    MintInit,
-    PreMineInit,
-    STCInit,
-    FeeInit,
     // ...add new scripts here
 }
 
@@ -29,12 +23,6 @@ impl InitScript {
         use InitScript::*;
         vec![
             GenesisInit,
-            AssociationInit,
-            ConfigInit,
-            MintInit,
-            PreMineInit,
-            STCInit,
-            FeeInit,
             // ...add new scripts here
         ]
     }
@@ -102,12 +90,6 @@ impl fmt::Display for InitScript {
             "{}",
             match self {
                 GenesisInit => "genesis_init",
-                AssociationInit => "association_init",
-                ConfigInit => "config_init",
-                MintInit => "mint_init",
-                PreMineInit => "pre_mine_init",
-                STCInit => "stc_init",
-                FeeInit => "fee_init",
             }
         )
     }

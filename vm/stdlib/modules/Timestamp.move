@@ -1,7 +1,7 @@
 address 0x1 {
 
 module Timestamp {
-
+    use 0x1::CoreAddresses;
     use 0x1::Signer;
 
     // A singleton resource holding the current Unix time in microseconds
@@ -12,14 +12,14 @@ module Timestamp {
     // Initialize the global wall clock time resource.
     public fun initialize(account: &signer) {
         // Only callable by the Association address
-        assert(Signer::address_of(account) == 0xA550C18, 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
 
         // TODO: Should the initialized value be passed in to genesis?
         let timer = CurrentTimeMicroseconds {microseconds: 0};
         move_to<CurrentTimeMicroseconds>(account, timer);
     }
     spec fun initialize {
-        aborts_if Signer::get_address(account) != 0xA550C18;
+        aborts_if Signer::get_address(account) != CoreAddresses::GENESIS_ACCOUNT();
         aborts_if exists<CurrentTimeMicroseconds>(Signer::get_address(account));
         ensures exists<CurrentTimeMicroseconds>(Signer::get_address(account));
         ensures global<CurrentTimeMicroseconds>(Signer::get_address(account)).microseconds == 0;
@@ -31,7 +31,7 @@ module Timestamp {
         //TODO conform addr
         //assert(Signer::address_of(account) == 0x0, 33);
 
-        let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(0xA550C18);
+        let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(CoreAddresses::GENESIS_ACCOUNT());
         if (proposer == 0x0) {
             // NIL block with null address as proposer. Timestamp must be equal.
             //TODO
@@ -44,26 +44,26 @@ module Timestamp {
         global_timer.microseconds = timestamp;
     }
     spec fun update_global_time {
-        aborts_if !exists<CurrentTimeMicroseconds>(0xA550C18);
-        ensures global<CurrentTimeMicroseconds>(0xA550C18).microseconds == timestamp;
+        aborts_if !exists<CurrentTimeMicroseconds>(CoreAddresses::GENESIS_ACCOUNT());
+        ensures global<CurrentTimeMicroseconds>(CoreAddresses::GENESIS_ACCOUNT()).microseconds == timestamp;
     }
 
     // Get the timestamp representing `now` in microseconds.
     public fun now_microseconds(): u64 acquires CurrentTimeMicroseconds {
-        borrow_global<CurrentTimeMicroseconds>(0xA550C18).microseconds
+        borrow_global<CurrentTimeMicroseconds>(CoreAddresses::GENESIS_ACCOUNT()).microseconds
     }
     spec fun now_microseconds {
-        aborts_if !exists<CurrentTimeMicroseconds>(0xA550C18);
-        ensures result == global<CurrentTimeMicroseconds>(0xA550C18).microseconds;
+        aborts_if !exists<CurrentTimeMicroseconds>(CoreAddresses::GENESIS_ACCOUNT());
+        ensures result == global<CurrentTimeMicroseconds>(CoreAddresses::GENESIS_ACCOUNT()).microseconds;
     }
 
     // Helper function to determine if the blockchain is at genesis state.
     public fun is_genesis(): bool {
-        !exists<Self::CurrentTimeMicroseconds>(0xA550C18)
+        !exists<CurrentTimeMicroseconds>(CoreAddresses::GENESIS_ACCOUNT())
     }
     spec fun is_genesis {
         aborts_if false;
-        ensures result == !exists<CurrentTimeMicroseconds>(0xA550C18);
+        ensures result == !exists<CurrentTimeMicroseconds>(CoreAddresses::GENESIS_ACCOUNT());
     }
 }
 }

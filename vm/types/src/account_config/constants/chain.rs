@@ -26,8 +26,9 @@ pub static REWARD_CONF_MODULE: Lazy<ModuleId> = Lazy::new(|| {
 });
 
 pub static BLOCK_MODULE_NAME: &str = "Block";
+pub static TRANSACTION_MANAGER_MODULE_NAME: &str = "TransactionManager";
 
-/// The ModuleId for the libra block module
+/// The ModuleId for block module
 pub static BLOCK_MODULE: Lazy<ModuleId> = Lazy::new(|| {
     ModuleId::new(
         CORE_CODE_ADDRESS,
@@ -35,10 +36,15 @@ pub static BLOCK_MODULE: Lazy<ModuleId> = Lazy::new(|| {
     )
 });
 
-// Names for special functions and structs
-pub static CREATE_ACCOUNT_NAME: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("create_account").unwrap());
+/// The ModuleId for transaction manager module
+pub static TRANSACTION_MANAGER_MODULE: Lazy<ModuleId> = Lazy::new(|| {
+    ModuleId::new(
+        CORE_CODE_ADDRESS,
+        Identifier::new(TRANSACTION_MANAGER_MODULE_NAME).unwrap(),
+    )
+});
+
 pub static PROLOGUE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("prologue").unwrap());
-pub static EPILOGUE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unwrap());
-pub static BLOCK_PROLOGUE: Lazy<Identifier> =
+pub static BLOCK_PROLOGUE_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("block_prologue").unwrap());
+pub static EPILOGUE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unwrap());

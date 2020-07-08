@@ -246,6 +246,62 @@ impl Into<BlockMetadata> for BlockHeader {
     }
 }
 
+impl Into<RawBlockHeader> for BlockHeader {
+    fn into(self) -> RawBlockHeader {
+        RawBlockHeader {
+            parent_hash: self.parent_hash,
+            timestamp: self.timestamp,
+            number: self.number,
+            author: self.author,
+            auth_key_prefix: self.auth_key_prefix,
+            accumulator_root: self.accumulator_root,
+            parent_block_accumulator_root: self.parent_block_accumulator_root,
+            state_root: self.state_root,
+            gas_used: self.gas_used,
+            gas_limit: self.gas_limit,
+            difficulty: self.difficulty,
+        }
+    }
+}
+
+#[derive(
+    Default,
+    Clone,
+    Debug,
+    Hash,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    Deserialize,
+    CryptoHasher,
+    CryptoHash,
+)]
+pub struct RawBlockHeader {
+    /// Parent hash.
+    pub parent_hash: HashValue,
+    /// Block timestamp.
+    pub timestamp: u64,
+    /// Block number.
+    pub number: BlockNumber,
+    /// Block author.
+    pub author: AccountAddress,
+    /// auth_key_prefix for create_account
+    pub auth_key_prefix: Option<Vec<u8>>,
+    /// The transaction accumulator root hash after executing this block.
+    pub accumulator_root: HashValue,
+    /// The parent block accumulator root hash.
+    pub parent_block_accumulator_root: HashValue,
+    /// The last transaction state_root of this block after execute.
+    pub state_root: HashValue,
+    /// Gas used for contracts execution.
+    pub gas_used: u64,
+    /// Block gas limit.
+    pub gas_limit: u64,
+    /// Block difficulty
+    pub difficulty: U256,
+}
+
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockBody {
     /// The transactions in this block.
@@ -538,6 +594,23 @@ impl BlockTemplate {
             body: self.body,
         }
     }
+
+    pub fn as_raw_block_header(&self, difficulty: U256) -> RawBlockHeader {
+        RawBlockHeader {
+            parent_hash: self.parent_hash,
+            timestamp: self.timestamp,
+            number: self.number,
+            author: self.author,
+            auth_key_prefix: self.auth_key_prefix.clone(),
+            accumulator_root: self.accumulator_root,
+            parent_block_accumulator_root: self.parent_block_accumulator_root,
+            state_root: self.state_root,
+            gas_used: self.gas_used,
+            gas_limit: self.gas_limit,
+            difficulty,
+        }
+    }
+
     pub fn into_block_header<H>(self, consensus_header: H, difficulty: U256) -> BlockHeader
     where
         H: Into<Vec<u8>>,

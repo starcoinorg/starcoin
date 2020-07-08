@@ -1,20 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use libp2p::Multiaddr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{
-    ed25519::*, hash::PlainCryptoHash, Genesis, HashValue, PrivateKey, SigningKey,
-    ValidCryptoMaterialStringExt,
-};
+use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
 use starcoin_types::{
-    transaction::{
-        helpers::TransactionSigner,
-        {RawUserTransaction, SignedUserTransaction},
-    },
+    transaction::{RawUserTransaction, SignedUserTransaction},
     U256,
 };
 use starcoin_vm_types::on_chain_config::{
@@ -22,6 +16,13 @@ use starcoin_vm_types::on_chain_config::{
 };
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+
+/// A static key pair to sign genesis txn
+pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
+    let private_key = Ed25519PrivateKey::genesis();
+    let public_key = private_key.public_key();
+    (private_key, public_key)
+}
 
 #[derive(
     Clone,
@@ -113,6 +114,29 @@ impl ChainNetwork {
             ChainNetwork::Main => &MAIN_CHAIN_CONFIG,
         }
     }
+
+    pub fn sign_with_association(self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+        if let (Some(private_key), public_key) = &self.get_config().association_key_pair {
+            Ok(txn.sign(private_key, public_key.clone())?.into_inner())
+        } else {
+            bail!(
+                "association private_key not config at current network: {}.",
+                self
+            )
+        }
+    }
+
+    pub fn sign_with_genesis(self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+        if let Some((private_key, public_key)) = &self.get_config().genesis_key_pair {
+            Ok(txn.sign(private_key, public_key.clone())?.into_inner())
+        } else {
+            bail!(
+                "genesis private_key not config at current network: {}.",
+                self
+            )
+        }
+    }
+
     pub fn networks() -> Vec<ChainNetwork> {
         vec![
             ChainNetwork::Dev,
@@ -121,40 +145,11 @@ impl ChainNetwork {
             ChainNetwork::Main,
         ]
     }
-    /// A key pair to sign genesis txn, and as Dev network pre mine config key.
-    pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
-        let private_key = Ed25519PrivateKey::genesis();
-        let public_key = private_key.public_key();
-        (private_key, public_key)
-    }
 }
 
 impl Default for ChainNetwork {
     fn default() -> Self {
         ChainNetwork::Dev
-    }
-}
-
-#[derive(Debug)]
-pub struct PreMineConfig {
-    pub public_key: Ed25519PublicKey,
-    pub private_key: Option<Ed25519PrivateKey>,
-    /// pre mine percent of total_supply, from 0~100.
-    pub pre_mine_percent: u64,
-}
-
-impl TransactionSigner for PreMineConfig {
-    fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        let private_key = self
-            .private_key
-            .as_ref()
-            .expect("PreMineConfig not contains private_key");
-        let signature = private_key.sign_message(&raw_txn.crypto_hash());
-        Ok(SignedUserTransaction::new(
-            raw_txn,
-            self.public_key.clone(),
-            signature,
-        ))
     }
 }
 
@@ -179,8 +174,8 @@ pub struct ChainConfig {
     pub difficulty: U256,
     /// Genesis consensus header.
     pub consensus_header: Vec<u8>,
-    /// Pre mine to Association account config, if not preset, Not do pre mine, and association account only can be used in genesis.
-    pub pre_mine_config: Option<PreMineConfig>,
+    /// pre mine to Association account, percent of total_supply, from 0~100.
+    pub pre_mine_percent: u64,
     /// VM config for publishing_option and gas_schedule
     pub vm_config: VMConfig,
     /// List of initial node addresses
@@ -191,6 +186,10 @@ pub struct ChainConfig {
     pub epoch_time_target: u64,
     /// reward half_time_target
     pub reward_half_time_target: u64,
+    /// association account's key pair
+    pub association_key_pair: (Option<Ed25519PrivateKey>, Ed25519PublicKey),
+    /// genesis account's key pair
+    pub genesis_key_pair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
 }
 
 pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
@@ -198,7 +197,8 @@ pub static EPOCH_TIME_TARGET: u64 = 1_209_600;
 pub static REWARD_HALF_TIME_TARGET: u64 = 126_144_000;
 
 pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
-    let (private_key, public_key) = ChainNetwork::genesis_key_pair();
+    let (association_private_key, association_public_key) = genesis_key_pair();
+    let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
     ChainConfig {
         version: Version { major: 1 },
@@ -210,11 +210,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         reward_delay: 1,
         difficulty: 1.into(),
         consensus_header: vec![],
-        pre_mine_config: Some(PreMineConfig {
-            public_key,
-            private_key: Some(private_key),
-            pre_mine_percent: 20,
-        }),
+        pre_mine_percent: 20,
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
@@ -223,6 +219,8 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         uncle_rate_target: 80,
         epoch_time_target: EPOCH_TIME_TARGET,
         reward_half_time_target: REWARD_HALF_TIME_TARGET,
+        association_key_pair: (Some(association_private_key), association_public_key),
+        genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
     }
 });
 
@@ -237,14 +235,7 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         reward_delay: 3,
         difficulty: 10.into(),
         consensus_header: vec![],
-        pre_mine_config: Some(PreMineConfig {
-            public_key: Ed25519PublicKey::from_encoded_string(
-                "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
-            )
-                .expect("decode public key must success."),
-            private_key: None,
-            pre_mine_percent: 20,
-        }),
+        pre_mine_percent: 20,
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
@@ -255,6 +246,11 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         uncle_rate_target: 80,
         epoch_time_target: EPOCH_TIME_TARGET,
         reward_half_time_target: REWARD_HALF_TIME_TARGET,
+        association_key_pair: (None, Ed25519PublicKey::from_encoded_string(
+            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+        )
+            .expect("decode public key must success.")),
+        genesis_key_pair: None,
     }
 });
 
@@ -269,7 +265,7 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         reward_delay: 7,
         difficulty: 10.into(),
         consensus_header: vec![],
-        pre_mine_config: None,
+        pre_mine_percent: 20,
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
@@ -280,6 +276,11 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         uncle_rate_target: 80,
         epoch_time_target: EPOCH_TIME_TARGET,
         reward_half_time_target: REWARD_HALF_TIME_TARGET,
+        association_key_pair: (None, Ed25519PublicKey::from_encoded_string(
+            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+        )
+            .expect("decode public key must success.")),
+        genesis_key_pair: None,
     }
 });
 
@@ -293,7 +294,7 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     reward_delay: 7,
     difficulty: 10.into(),
     consensus_header: vec![],
-    pre_mine_config: None,
+    pre_mine_percent: 0,
     vm_config: VMConfig {
         publishing_option: VMPublishingOption::Open,
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
@@ -302,4 +303,12 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     uncle_rate_target: 80,
     epoch_time_target: EPOCH_TIME_TARGET,
     reward_half_time_target: REWARD_HALF_TIME_TARGET,
+    association_key_pair: (
+        None,
+        Ed25519PublicKey::from_encoded_string(
+            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+        )
+        .expect("decode public key must success."),
+    ),
+    genesis_key_pair: None,
 });

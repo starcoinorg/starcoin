@@ -8,7 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_transaction_builder::build_upgrade_package;
+use starcoin_transaction_builder::build_stdlib_package;
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::time::Duration;
@@ -73,7 +73,7 @@ impl CommandAction for UpgradeStdlibCommand {
                 .get_account_resource(association_account.address())?
                 .unwrap_or_else(|| panic!("association_account must exist on chain."));
             let upgrade_package =
-                build_upgrade_package(cli_state.net(), StdLibOptions::Fresh, false)?;
+                build_stdlib_package(cli_state.net(), StdLibOptions::Fresh, false)?;
 
             let expiration_time = Duration::from_secs(opt.expiration_time);
             let upgrade_txn = RawUserTransaction::new(

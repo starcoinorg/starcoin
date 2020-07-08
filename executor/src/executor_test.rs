@@ -11,7 +11,7 @@ use starcoin_functional_tests::account::{
 use starcoin_genesis::Genesis;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_transaction_builder::{
-    build_upgrade_package, create_signed_txn_with_association_account,
+    build_stdlib_package, create_signed_txn_with_association_account,
 };
 use starcoin_types::language_storage::CORE_CODE_ADDRESS;
 use starcoin_types::transaction::TransactionOutput;
@@ -476,7 +476,7 @@ fn test_stdlib_upgrade() -> Result<()> {
     let chain_net = ChainNetwork::Dev;
     let chain_state = prepare_genesis_with_chain_net(chain_net);
 
-    let mut upgrade_package = build_upgrade_package(chain_net, StdLibOptions::Fresh, false)?;
+    let mut upgrade_package = build_stdlib_package(chain_net, StdLibOptions::Fresh, false)?;
 
     let program = r#"
         module M {

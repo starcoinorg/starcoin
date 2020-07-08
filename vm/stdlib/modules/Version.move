@@ -3,6 +3,7 @@ address 0x1 {
 module Version {
     use 0x1::Config;
     use 0x1::Signer;
+    use 0x1::CoreAddresses;
 
 
     struct Version {
@@ -10,7 +11,7 @@ module Version {
     }
 
     public fun initialize(account: &signer) {
-        assert(Signer::address_of(account) == Config::default_config_address(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
 
         Config::publish_new_config<Self::Version>(
             account,

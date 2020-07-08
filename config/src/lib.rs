@@ -35,7 +35,7 @@ mod sync_config;
 mod txpool_config;
 
 pub use chain_config::{
-    ChainConfig, ChainNetwork, PreMineConfig, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG,
+    genesis_key_pair, ChainConfig, ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG,
     MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
 };
 pub use libra_temppath::TempPath;

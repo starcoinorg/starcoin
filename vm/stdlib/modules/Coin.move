@@ -3,7 +3,6 @@ address 0x1 {
 module Coin {
     use 0x1::Event;
     use 0x1::FixedPoint32::{Self, FixedPoint32};
-    use 0x1::Config;
     use 0x1::RegisteredCurrencies;
     use 0x1::Vector;
     use 0x1::Generic;
@@ -126,7 +125,7 @@ module Coin {
     // This can only be invoked by the Association address, and only a single time.
     // Currently, it is invoked in the genesis transaction
     public fun initialize(account: &signer) {
-        assert(Signer::address_of(account) == Config::default_config_address(), 0);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 0);
         let cap = RegisteredCurrencies::initialize(account);
         move_to(account,CurrencyRegistrationCapability{ cap })
     }
@@ -468,7 +467,7 @@ module Coin {
         RegisteredCurrencies::add_currency_code(
             coin_module_address,
             coin_module_name,
-            &borrow_global<CurrencyRegistrationCapability>(Config::default_config_address()).cap
+            &borrow_global<CurrencyRegistrationCapability>(CoreAddresses::GENESIS_ACCOUNT()).cap
         )
     }
 
@@ -561,11 +560,7 @@ module Coin {
     fun issuer_addr<CoinType>(): address {
         let (coin_type_addr, _,_) = Generic::type_of<CoinType>();
         Debug::print(&coin_type_addr);
-        if (coin_type_addr == 0x1) {
-            CoreAddresses::CURRENCY_INFO_ADDRESS()
-        }else{
-            coin_type_addr
-        }
+        coin_type_addr
     }
 
     fun assert_issuer<CoinType>(account: &signer){

@@ -3,6 +3,7 @@ address 0x1 {
 module Consensus {
     use 0x1::Config;
     use 0x1::Signer;
+    use 0x1::CoreAddresses;
 
     struct Consensus {
         uncle_rate_target: u64,
@@ -11,7 +12,7 @@ module Consensus {
     }
 
     public fun initialize(account: &signer,uncle_rate_target:u64,epoch_time_target: u64,reward_half_time_target: u64) {
-        assert(Signer::address_of(account) == Config::default_config_address(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
 
         Config::publish_new_config<Self::Consensus>(
             account,

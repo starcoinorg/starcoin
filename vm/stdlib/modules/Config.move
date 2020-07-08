@@ -6,6 +6,7 @@ module Config {
     use 0x1::Signer;
     use 0x1::Association;
     use 0x1::Offer;
+    use 0x1::CoreAddresses;
 
     spec module {
         pragma verify = false;
@@ -184,8 +185,9 @@ module Config {
         );
     }
 
-    public fun default_config_address(): address {
-        0xF1A95
+    //TODO refactor config to multi users, and remove default_config_address
+    fun default_config_address(): address {
+        CoreAddresses::GENESIS_ACCOUNT()
     }
 }
 }

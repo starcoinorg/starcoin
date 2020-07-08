@@ -3,20 +3,18 @@
 
 use anyhow::Result;
 use starcoin_config::ChainNetwork;
+use starcoin_logger::prelude::*;
+use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{
-    association_address, config_address, mint_address, stc_type_tag, transaction_fee_address,
-};
-use starcoin_vm_types::language_storage::{TypeTag, CORE_CODE_ADDRESS};
-use starcoin_vm_types::transaction::helpers::TransactionSigner;
+use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,
     TransactionArgument, TransactionPayload,
 };
 use std::time::Duration;
-
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use stdlib::init_scripts::InitScript;
 pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions};
@@ -194,24 +192,21 @@ pub fn create_signed_txn_with_association_account(
     max_gas_amount: u64,
     gas_unit_price: u64,
 ) -> SignedUserTransaction {
+    let raw_txn = RawUserTransaction::new(
+        account_config::association_address(),
+        sequence_number,
+        payload,
+        max_gas_amount,
+        gas_unit_price,
+        // TTL is 86400s. Initial time was set to 0.
+        Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+    );
     ChainNetwork::Dev
-        .get_config()
-        .pre_mine_config
-        .as_ref()
-        .expect("Dev network pre mine config should exist")
-        .sign_txn(RawUserTransaction::new(
-            account_config::association_address(),
-            sequence_number,
-            payload,
-            max_gas_amount,
-            gas_unit_price,
-            // TTL is 86400s. Initial time was set to 0.
-            Duration::from_secs(DEFAULT_EXPIRATION_TIME),
-        ))
+        .sign_with_association(raw_txn)
         .expect("Sign txn should work.")
 }
 
-pub fn build_upgrade_package(
+pub fn build_stdlib_package(
     net: ChainNetwork,
     stdlib_option: StdLibOptions,
     with_init_script: bool,
@@ -224,6 +219,12 @@ pub fn build_upgrade_package(
                 let mut blob = vec![];
                 m.serialize(&mut blob)
                     .expect("serializing stdlib must work");
+                let handle = &m.module_handles()[0];
+                debug!(
+                    "Add module: {}::{}",
+                    m.address_identifier_at(handle.address),
+                    m.identifier_at(handle.name)
+                );
                 Module::new(blob)
             })
             .collect(),
@@ -231,29 +232,14 @@ pub fn build_upgrade_package(
     if with_init_script {
         let chain_config = net.get_config();
 
-        package.add_script(
-            Some(CORE_CODE_ADDRESS),
-            Script::new(
-                InitScript::GenesisInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![],
-            ),
-        );
-
         let genesis_auth_key = chain_config
-            .pre_mine_config
+            .genesis_key_pair
             .as_ref()
-            .map(|pre_mine_config| AuthenticationKey::ed25519(&pre_mine_config.public_key).to_vec())
-            .unwrap_or_else(|| vec![0u8; AuthenticationKey::LENGTH]);
+            .map(|(_, public_key)| AuthenticationKey::ed25519(&public_key).to_vec())
+            .unwrap_or_else(|| vec![]);
 
-        package.add_script(
-            Some(association_address()),
-            Script::new(
-                InitScript::AssociationInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![TransactionArgument::U8Vector(genesis_auth_key)],
-            ),
-        );
+        let association_auth_key =
+            AuthenticationKey::ed25519(&chain_config.association_key_pair.1).to_vec();
 
         let publish_option_bytes = scs::to_bytes(&chain_config.vm_config.publishing_option)
             .expect("Cannot serialize publishing option");
@@ -262,67 +248,29 @@ pub fn build_upgrade_package(
                 .expect("Cannot serialize gas schedule");
         let native_schedule = scs::to_bytes(&chain_config.vm_config.gas_schedule.native_table)
             .expect("Cannot serialize gas schedule");
-        package.add_script(
-            Some(config_address()),
-            Script::new(
-                InitScript::ConfigInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![
-                    TransactionArgument::U8Vector(publish_option_bytes),
-                    TransactionArgument::U8Vector(instruction_schedule),
-                    TransactionArgument::U8Vector(native_schedule),
-                    TransactionArgument::U64(chain_config.reward_halving_interval),
-                    TransactionArgument::U64(chain_config.base_block_reward),
-                    TransactionArgument::U64(chain_config.reward_delay),
-                    TransactionArgument::U64(chain_config.uncle_rate_target),
-                    TransactionArgument::U64(chain_config.epoch_time_target),
-                    TransactionArgument::U64(chain_config.reward_half_time_target),
-                ],
-            ),
-        );
 
-        package.add_script(
-            Some(association_address()),
-            Script::new(
-                InitScript::STCInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![],
-            ),
-        );
+        let pre_mine_percent = chain_config.pre_mine_percent;
 
-        package.add_script(
-            Some(mint_address()),
-            Script::new(
-                InitScript::MintInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![],
-            ),
-        );
-        let pre_mine_percent = chain_config
-            .pre_mine_config
-            .as_ref()
-            .map(|cfg| cfg.pre_mine_percent)
-            .unwrap_or(0);
-        package.add_script(
-            Some(association_address()),
-            Script::new(
-                InitScript::PreMineInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![
-                    TransactionArgument::U64(chain_config.total_supply),
-                    TransactionArgument::U64(pre_mine_percent),
-                ],
-            ),
-        );
-
-        package.add_script(
-            Some(transaction_fee_address()),
-            Script::new(
-                InitScript::FeeInit.compiled_bytes().into_vec(),
-                vec![],
-                vec![],
-            ),
-        );
+        package.set_init_script(Script::new(
+            InitScript::GenesisInit.compiled_bytes().into_vec(),
+            vec![],
+            vec![
+                TransactionArgument::U8Vector(publish_option_bytes),
+                TransactionArgument::U8Vector(instruction_schedule),
+                TransactionArgument::U8Vector(native_schedule),
+                TransactionArgument::U64(chain_config.reward_halving_interval),
+                TransactionArgument::U64(chain_config.base_block_reward),
+                TransactionArgument::U64(chain_config.reward_delay),
+                TransactionArgument::U64(chain_config.uncle_rate_target),
+                TransactionArgument::U64(chain_config.epoch_time_target),
+                TransactionArgument::U64(chain_config.reward_half_time_target),
+                TransactionArgument::U64(chain_config.total_supply),
+                TransactionArgument::U64(pre_mine_percent),
+                TransactionArgument::U8Vector(chain_config.parent_hash.to_vec()),
+                TransactionArgument::U8Vector(association_auth_key),
+                TransactionArgument::U8Vector(genesis_auth_key),
+            ],
+        ));
     }
     Ok(package)
 }
