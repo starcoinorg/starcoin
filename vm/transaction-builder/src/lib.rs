@@ -3,17 +3,18 @@
 
 use anyhow::Result;
 use starcoin_config::ChainNetwork;
+use starcoin_logger::prelude::*;
+use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,
     TransactionArgument, TransactionPayload,
 };
 use std::time::Duration;
-
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use stdlib::init_scripts::InitScript;
 pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions};
@@ -218,6 +219,12 @@ pub fn build_stdlib_package(
                 let mut blob = vec![];
                 m.serialize(&mut blob)
                     .expect("serializing stdlib must work");
+                let handle = &m.module_handles()[0];
+                debug!(
+                    "Add module: {}::{}",
+                    m.address_identifier_at(handle.address),
+                    m.identifier_at(handle.name)
+                );
                 Module::new(blob)
             })
             .collect(),
@@ -259,6 +266,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U64(chain_config.reward_half_time_target),
                 TransactionArgument::U64(chain_config.total_supply),
                 TransactionArgument::U64(pre_mine_percent),
+                TransactionArgument::U8Vector(chain_config.parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),
             ],

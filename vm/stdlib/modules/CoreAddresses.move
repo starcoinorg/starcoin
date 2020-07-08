@@ -28,11 +28,5 @@ module CoreAddresses {
     public fun TRANSACTION_FEE_ADDRESS(): address {
         0xFEE
     }
-
-    /// The address to keep block reward
-    /// TODO omit this account
-    public fun MINT_ADDRESS(): address {
-        0x6D696E74
-    }
 }
 }

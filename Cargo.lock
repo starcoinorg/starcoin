@@ -7206,6 +7206,7 @@ dependencies = [
  "anyhow",
  "starcoin-canonical-serialization",
  "starcoin-config",
+ "starcoin-logger",
  "starcoin-vm-types",
  "stdlib",
  "stest",

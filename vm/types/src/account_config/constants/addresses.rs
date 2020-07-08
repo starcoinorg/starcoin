@@ -17,11 +17,6 @@ pub fn genesis_address() -> AccountAddress {
     CORE_CODE_ADDRESS
 }
 
-pub fn mint_address() -> AccountAddress {
-    AccountAddress::from_hex_literal("0x6d696e74")
-        .expect("Parsing valid hex literal should always succeed")
-}
-
 pub fn config_address() -> AccountAddress {
     AccountAddress::from_hex_literal("0xF1A95").expect("failed to get address")
 }

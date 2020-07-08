@@ -3,7 +3,6 @@ address 0x1 {
 module Genesis {
    use 0x1::CoreAddresses;
    use 0x1::Account;
-   use 0x1::Block;
    use 0x1::Signer;
    use 0x1::TransactionTimeout;
    use 0x1::Coin;
@@ -17,12 +16,15 @@ module Genesis {
    use 0x1::VMConfig;
    use 0x1::Config;
    use 0x1::Vector;
+   use 0x1::Block;
+   use 0x1::BlockReward;
 
    //TODO refactor when move support ABI, and pass struct by argument
    public fun initialize(publishing_option: vector<u8>, instruction_schedule: vector<u8>,native_schedule: vector<u8>,
                          reward_halving_interval: u64, reward_base: u64, reward_delay: u64,
                          uncle_rate_target:u64,epoch_time_target: u64,reward_half_time_target: u64,
                          total_supply: u64, pre_mine_percent:u64,
+                         parent_hash: vector<u8>,
                          association_auth_key: vector<u8>,
                          genesis_auth_key: vector<u8>,
    ){
@@ -33,6 +35,8 @@ module Genesis {
         // create genesis account
         let genesis_account = Account::create_genesis_account(CoreAddresses::GENESIS_ACCOUNT(),copy dummy_auth_key_prefix);
 
+        Block::initialize(&genesis_account, parent_hash);
+
         // init config
         Config::initialize(&genesis_account);
         Coin::initialize(&genesis_account);
@@ -42,15 +46,9 @@ module Genesis {
         Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_time_target);
 
         TransactionTimeout::initialize(&genesis_account);
-        Block::initialize_block_metadata(&genesis_account);
-
 
         STC::initialize(&genesis_account);
         Account::add_currency<STC>(&genesis_account);
-
-        let mint_account = Account::create_genesis_account(CoreAddresses::MINT_ADDRESS(), copy dummy_auth_key_prefix);
-        Account::add_currency<STC>(&mint_account);
-        Block::initialize_reward_info(&mint_account);
 
         let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), copy dummy_auth_key_prefix);
         Account::add_currency<STC>(&association);
@@ -59,10 +57,10 @@ module Genesis {
 
         let association_balance = total_supply * pre_mine_percent / 100;
         if (association_balance > 0) {
-                Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), association_balance);
+             Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), association_balance);
         };
-        let miner_reward_balance = total_supply + association_balance;
-        Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&mint_account), miner_reward_balance);
+        let miner_reward_balance = total_supply - association_balance;
+        BlockReward::initialize(&genesis_account, miner_reward_balance);
 
         let txn_fee_account = Account::create_genesis_account(CoreAddresses::TRANSACTION_FEE_ADDRESS(), dummy_auth_key_prefix);
         Account::add_currency<STC>(&txn_fee_account);
@@ -86,7 +84,6 @@ module Genesis {
         Timestamp::initialize(&genesis_account);
 
         Account::release_genesis_signer(genesis_account);
-        Account::release_genesis_signer(mint_account);
         Account::release_genesis_signer(txn_fee_account);
         Account::release_genesis_signer(association);
    }

@@ -7,13 +7,12 @@ module Account {
     use 0x1::Hash;
     use 0x1::LCS;
     use 0x1::Coin::{Self, Coin};
-    use 0x1::TransactionTimeout;
     use 0x1::Vector;
     use 0x1::Signer;
     use 0x1::Timestamp;
     use 0x1::Option::{Self, Option};
     use 0x1::SignedInteger64::{Self};
-    use 0x1::PackageTxnManager;
+    use 0x1::CoreAddresses;
 
     // Every account has a Account::Account resource
     resource struct Account {
@@ -476,36 +475,30 @@ module Account {
     fun assert_can_freeze(addr: address) {
         assert(Association::has_privilege<FreezingPrivilege>(addr), 13);
     }
-    //TODO change to constants after Move support constant.
-    fun TXN_PAYLOAD_TYPE_SCRIPT():u8{0u8}
-    fun TXN_PAYLOAD_TYPE_PACKAGE():u8{ 1u8}
 
     // The prologue is invoked at the beginning of every transaction
     // It verifies:
     // - The account's auth key matches the transaction's public key
     // - That the account has enough balance to pay for all of the gas
     // - That the sequence number matches the transaction's sequence key
-    fun prologue<Token>(
+    public fun txn_prologue<Token>(
         account: &signer,
+        txn_sender: address,
         txn_sequence_number: u64,
         txn_public_key: vector<u8>,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
-        txn_expiration_time: u64,
-        txn_payload_type: u8,
-        txn_script_or_package_hash: vector<u8>,
-        txn_package_address: address,
     ) acquires Account, Balance {
-        let transaction_sender = Signer::address_of(account);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists
-        assert(exists_at(transaction_sender), 5);
+        assert(exists_at(txn_sender), 5);
 
-        assert(!account_is_frozen(transaction_sender), 0);
+        assert(!account_is_frozen(txn_sender), 0);
 
         // Load the transaction sender's account
-        let sender_account = borrow_global_mut<Account>(transaction_sender);
+        let sender_account = borrow_global_mut<Account>(txn_sender);
 
         // Check that the hash of the transaction's public key matches the account's auth key
         assert(
@@ -515,37 +508,31 @@ module Account {
 
         // Check that the account has enough balance for all of the gas
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;
-        let balance_amount = balance<Token>(transaction_sender);
+        let balance_amount = balance<Token>(txn_sender);
         assert(balance_amount >= max_transaction_fee, 6);
 
         // Check that the transaction sequence number matches the sequence number of the account
         assert(txn_sequence_number >= sender_account.sequence_number, 3);
         assert(txn_sequence_number == sender_account.sequence_number, 4);
-        assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), 7);
-        if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE()){
-            PackageTxnManager::package_txn_prologue(account, txn_package_address, txn_script_or_package_hash);
-        }else if(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT()){
-            //TODO verify script hash.
-        };
     }
 
     // The epilogue is invoked at the end of transactions.
     // It collects gas and bumps the sequence number
-    fun epilogue<Token>(
+    public fun txn_epilogue<Token>(
         account: &signer,
+        txn_sender: address,
         txn_sequence_number: u64,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
         state_cost_amount: u64,
         cost_is_negative: bool,
-        txn_payload_type: u8,
-        _txn_script_or_package_hash: vector<u8>,
-        txn_package_address: address,
     ) acquires Account, Balance {
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+
         // Load the transaction sender's account and balance resources
-        let sender_account = borrow_global_mut<Account>(Signer::address_of(account));
-        let sender_balance = borrow_global_mut<Balance<Token>>(Signer::address_of(account));
+        let sender_account = borrow_global_mut<Account>(txn_sender);
+        let sender_balance = borrow_global_mut<Balance<Token>>(txn_sender);
 
         // Charge for gas
         let transaction_fee_amount = txn_gas_price * (txn_max_gas_units - gas_units_remaining);
@@ -574,11 +561,6 @@ module Account {
             let transaction_fee_balance = borrow_global_mut<Balance<Token>>(0xFEE);
             Coin::deposit(&mut transaction_fee_balance.coin, transaction_fee);
         };
-
-        if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE()){
-           //TODO split fail txn epilogue and success epilogue.
-           PackageTxnManager::package_txn_epilogue(account, txn_package_address, true);
-        }
     }
 }
 
