@@ -66,7 +66,7 @@ impl OpenedBlock {
             block_timestamp,
             author,
             auth_key_prefix,
-            previous_header.uncle_len(),
+            uncles.len() as u64,
         );
         let mut opened_block = Self {
             previous_header,
