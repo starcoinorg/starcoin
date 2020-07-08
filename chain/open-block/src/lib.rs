@@ -231,6 +231,7 @@ impl OpenedBlock {
             state_root,
             self.gas_used,
             self.gas_limit,
+            vec![],
             self.included_user_txns.into(),
         );
         Ok(block_template)
