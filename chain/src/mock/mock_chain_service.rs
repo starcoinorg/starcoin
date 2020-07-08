@@ -7,6 +7,7 @@ use crypto::HashValue;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
@@ -61,6 +62,12 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
+    async fn get_events_by_txn_info_id(
+        self,
+        _txn_info_id: HashValue,
+    ) -> Result<Option<Vec<ContractEvent>>, Error> {
+        unimplemented!()
+    }
     async fn master_head_header(self) -> Result<Option<BlockHeader>> {
         unimplemented!()
     }

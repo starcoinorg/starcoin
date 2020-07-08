@@ -54,6 +54,7 @@ pub fn add_command(
                 .subcommand(chain::GetTransactionCommand)
                 .subcommand(chain::GetTxnByBlockCommand)
                 .subcommand(chain::GetTransactionInfoCommand)
+                .subcommand(chain::GetEventsCommand)
                 .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::BranchesCommand),
         )

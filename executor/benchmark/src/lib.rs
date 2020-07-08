@@ -195,9 +195,8 @@ impl<'test> TxnExecutor<'test> {
             let num_txns = transactions.len();
             version += num_txns as u64;
 
-            let (_state_root, _txn_infos) =
-                executor::block_execute(self.chain_state, transactions, u64::MAX)
-                    .expect("Execute transactions fail.");
+            let _ = executor::block_execute(self.chain_state, transactions, u64::MAX)
+                .expect("Execute transactions fail.");
             self.chain_state.flush().expect("flush state should be ok");
 
             let execute_time = std::time::Instant::now().duration_since(execute_start);

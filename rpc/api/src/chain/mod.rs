@@ -6,6 +6,7 @@ use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{Block, BlockNumber};
+use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 
@@ -48,6 +49,11 @@ pub trait ChainApi {
         block_id: HashValue,
         idx: u64,
     ) -> FutureResult<Option<TransactionInfo>>;
+
+    /// FIXME: currently, contract event cannot be deserialized when using json.
+    #[rpc(name = "chain.get_events_by_txn_info_id")]
+    fn get_events_by_txn_info_id(&self, txn_info_id: HashValue)
+        -> FutureResult<Vec<ContractEvent>>;
 
     /// Get branches of current chain, first is master.
     #[rpc(name = "chain.branches")]

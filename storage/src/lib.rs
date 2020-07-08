@@ -4,6 +4,7 @@
 use crate::accumulator::AccumulatorStorage;
 use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
+use crate::contract_event::ContractEventStorage;
 use crate::state_node::StateStorage;
 use crate::storage::{ColumnFamilyName, InnerStorage, KVStore, StorageInstance};
 use crate::transaction::TransactionStorage;
@@ -17,6 +18,7 @@ use starcoin_accumulator::{
 };
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::block::BlockState;
+use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -32,6 +34,7 @@ pub mod batch;
 pub mod block;
 pub mod block_info;
 pub mod cache_storage;
+pub mod contract_event;
 pub mod db_storage;
 mod metrics;
 pub mod state_node;
@@ -57,6 +60,8 @@ pub const STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "startup_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
+pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
+
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
 pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
@@ -74,6 +79,7 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TRANSACTION_PREFIX_NAME,
         TRANSACTION_INFO_PREFIX_NAME,
         TRANSACTION_INFO_HASH_PREFIX_NAME,
+        CONTRACT_EVENT_PREFIX_NAME,
     ]
 });
 
@@ -131,6 +137,20 @@ pub trait TransactionInfoStore {
     }
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<()>;
 }
+pub trait ContractEventStore {
+    /// Save events by key `txn_info_id`.
+    /// As txn_info has accumulator root of events, so there is a one-to-one mapping.
+    fn save_contract_events(
+        &self,
+        txn_info_id: HashValue,
+        events: Vec<ContractEvent>,
+    ) -> Result<()>;
+
+    /// Get events by `txn_info_id`.
+    /// If the txn_info_id does not exists in the store, return `None`.
+    /// NOTICE: *don't exists* is different with *no events produced*.
+    fn get_contract_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>>;
+}
 
 pub trait TransactionStore {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
@@ -138,6 +158,8 @@ pub trait TransactionStore {
     fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<()>;
 }
 
+// TODO: remove Arc<dyn Store>, we can clone Storage directly.
+#[derive(Clone)]
 pub struct Storage {
     transaction_info_storage: TransactionInfoStorage,
     transaction_info_hash_storage: TransactionInfoHashStorage,
@@ -146,6 +168,7 @@ pub struct Storage {
     state_node_storage: StateStorage,
     accumulator_storage: AccumulatorStorage,
     block_info_storage: BlockInfoStorage,
+    event_storage: ContractEventStorage,
     startup_info_storage: Arc<dyn KVStore>,
 }
 
@@ -159,6 +182,7 @@ impl Storage {
             state_node_storage: StateStorage::new(instance.clone()),
             accumulator_storage: AccumulatorStorage::new(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
+            event_storage: ContractEventStorage::new(instance.clone()),
             startup_info_storage: Arc::new(InnerStorage::new(instance, STARTUP_INFO_PREFIX_NAME)),
         })
     }
@@ -360,6 +384,23 @@ impl TransactionInfoStore for Storage {
     }
 }
 
+impl ContractEventStore for Storage {
+    fn save_contract_events(
+        &self,
+        txn_info_id: HashValue,
+        events: Vec<ContractEvent>,
+    ) -> Result<(), Error> {
+        self.event_storage.save_contract_events(txn_info_id, events)
+    }
+
+    fn get_contract_events(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<ContractEvent>>, Error> {
+        self.event_storage.get(txn_info_id)
+    }
+}
+
 impl TransactionStore for Storage {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
         self.transaction_storage.get(txn_hash)
@@ -382,6 +423,7 @@ pub trait Store:
     + BlockInfoStore
     + TransactionStore
     + TransactionInfoStore
+    + ContractEventStore
     + IntoSuper<dyn StateNodeStore>
     + IntoSuper<dyn AccumulatorTreeStore>
 {

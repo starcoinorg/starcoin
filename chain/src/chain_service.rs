@@ -16,6 +16,7 @@ use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult, Consens
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    contract_event::ContractEvent,
     startup_info::StartupInfo,
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
@@ -295,6 +296,12 @@ where
     ) -> Result<Option<TransactionInfo>, Error> {
         self.storage
             .get_transaction_info_by_block_and_index(block_id, idx)
+    }
+    fn get_events_by_txn_info_id(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<ContractEvent>>, Error> {
+        self.storage.get_contract_events(txn_info_id)
     }
 
     fn master_head_header(&self) -> BlockHeader {

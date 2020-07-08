@@ -111,10 +111,10 @@ impl From<SignedUserTransaction> for TransactionView {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionInfoView {
+    pub txn_info_id: HashValue,
     pub transaction_hash: HashValue,
     pub state_root_hash: HashValue,
     pub event_root_hash: HashValue,
-    pub events: Vec<EventView>,
     pub gas_used: u64,
     pub major_status: StatusCode,
 }
@@ -122,14 +122,10 @@ pub struct TransactionInfoView {
 impl From<TransactionInfo> for TransactionInfoView {
     fn from(tx: TransactionInfo) -> Self {
         TransactionInfoView {
+            txn_info_id: tx.id(),
             transaction_hash: tx.transaction_hash(),
             state_root_hash: tx.state_root_hash(),
             event_root_hash: tx.event_root_hash(),
-            events: tx
-                .events()
-                .iter()
-                .map(|event| EventView::from(event.clone()))
-                .collect(),
             gas_used: tx.gas_used(),
             major_status: tx.major_status(),
         }

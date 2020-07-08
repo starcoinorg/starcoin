@@ -6,6 +6,7 @@ use traits::ConnectBlockResult;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
@@ -37,6 +38,9 @@ pub enum ChainRequest {
         block_id: HashValue,
         txn_idx: u64,
     },
+    GetEventsByTxnInfoId {
+        txn_info_id: HashValue,
+    },
     GetBlocksByNumber(Option<BlockNumber>, u64),
     GetBlockStateByHash(HashValue),
 }
@@ -58,6 +62,7 @@ pub enum ChainResponse {
     VecBlock(Vec<Block>),
     TransactionInfos(Vec<TransactionInfo>),
     TransactionInfo(Option<TransactionInfo>),
+    Events(Option<Vec<ContractEvent>>),
     None,
     Conn(ConnectBlockResult),
     BlockState(Option<Box<BlockState>>),

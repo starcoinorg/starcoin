@@ -23,6 +23,7 @@ use types::{
         Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate,
         ALLOWED_FUTURE_BLOCKTIME,
     },
+    contract_event::ContractEvent,
     error::BlockExecutorError,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
@@ -327,19 +328,27 @@ where
         &mut self,
         block_id: HashValue,
         transactions: Vec<Transaction>,
-        txn_infos: Option<Vec<TransactionInfo>>,
+        txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>,
     ) -> Result<()> {
         if txn_infos.is_some() {
-            let txn_infos = txn_infos.expect("txn infos is none.");
+            let (txn_infos, txn_events) = txn_infos.expect("txn infos is none.");
             ensure!(
                 transactions.len() == txn_infos.len(),
                 "block txns' length should be equal to txn infos' length"
             );
+            ensure!(
+                txn_events.len() == txn_infos.len(),
+                "events' length should be equal to txn infos' length"
+            );
             let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
+            for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
+                self.storage.save_contract_events(*info_id, events)?;
+            }
             self.storage
                 .save_block_txn_info_ids(block_id, txn_info_ids)?;
             self.storage.save_transaction_infos(txn_infos)?;
         }
+
         let txn_id_vec = transactions
             .iter()
             .cloned()
@@ -407,9 +416,10 @@ where
             t
         };
 
-        let (state_root, vec_transaction_info) =
+        let executed_data =
             executor::block_execute(&self.chain_state, txns.clone(), block.header().gas_limit())?;
-
+        let state_root = executed_data.state_root;
+        let vec_transaction_info = &executed_data.txn_infos;
         assert_eq!(
             block.header().state_root(),
             state_root,
@@ -475,7 +485,11 @@ where
             total_difficulty,
         );
         // save block's transaction relationship and save transaction
-        self.save(header.id(), txns, Some(vec_transaction_info))?;
+        self.save(
+            header.id(),
+            txns,
+            Some((executed_data.txn_infos, executed_data.txn_events)),
+        )?;
         self.commit(block, block_info, BlockState::Executed)?;
         Ok(ConnectBlockResult::SUCCESS)
     }

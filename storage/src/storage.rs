@@ -243,6 +243,7 @@ pub trait ValueCodec: Sized + PartialEq + Debug {
     fn decode_value(data: &[u8]) -> Result<Self>;
 }
 
+#[derive(Clone)]
 pub struct CodecStorage<K, V>
 where
     K: KeyCodec,

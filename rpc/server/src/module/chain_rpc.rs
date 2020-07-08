@@ -8,6 +8,7 @@ use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::{Block, BlockNumber};
+use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 
@@ -108,7 +109,18 @@ where
             .map_err(map_err);
         Box::new(fut.compat())
     }
-
+    fn get_events_by_txn_info_id(
+        &self,
+        txn_info_id: HashValue,
+    ) -> FutureResult<Vec<ContractEvent>> {
+        let fut = self
+            .service
+            .clone()
+            .get_events_by_txn_info_id(txn_info_id)
+            .map_ok(|d| d.unwrap_or_default())
+            .map_err(map_err);
+        Box::new(fut.compat())
+    }
     fn branches(&self) -> FutureResult<Vec<ChainInfo>> {
         let fut = self
             .service

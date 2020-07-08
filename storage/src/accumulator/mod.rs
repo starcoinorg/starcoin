@@ -28,6 +28,7 @@ define_storage!(
 
 pub type AccumulatorNodeKey = (HashValue, AccumulatorStoreType);
 
+#[derive(Clone)]
 pub struct AccumulatorStorage {
     node_store: AccumulatorNodeStore,
 }
