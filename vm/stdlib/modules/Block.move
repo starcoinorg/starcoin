@@ -13,6 +13,7 @@ module Block {
           parent_hash: vector<u8>,
           // Author of the current block.
           author: address,
+          uncles: u64,
           // Handle where events with the time of new blocks are emitted
           new_block_events: Event::EventHandle<Self::NewBlockEvent>,
     }
@@ -34,6 +35,7 @@ module Block {
         height: 0,
         parent_hash: parent_hash,
         author: CoreAddresses::GENESIS_ACCOUNT(),
+        uncles: 0,
         new_block_events: Event::new_event_handle<Self::NewBlockEvent>(account),
       });
     }
@@ -54,7 +56,7 @@ module Block {
     }
 
     // Call at block prologue
-    public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64): u64 acquires BlockMetadata{
+    public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64): u64 acquires BlockMetadata{
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT());
@@ -62,6 +64,7 @@ module Block {
         block_metadata_ref.height = new_height;
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;
+        block_metadata_ref.uncles = uncles;
 
         Event::emit_event<NewBlockEvent>(
           &mut block_metadata_ref.new_block_events,

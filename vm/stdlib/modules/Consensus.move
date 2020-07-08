@@ -11,8 +11,26 @@ module Consensus {
         reward_half_time_target:u64,                
     }
 
-    public fun initialize(account: &signer,uncle_rate_target:u64,epoch_time_target: u64,reward_half_time_target: u64) {
+    resource struct Epoch {
+        epoch_start_time: u64,
+        uncles: u64,
+        start_number: u64,
+        end_number: u64,
+        time_target: u64,
+        reward: u64,
+    }
+
+    public fun initialize(account: &signer,uncle_rate_target:u64,epoch_time_target: u64,reward_half_time_target: u64,init_block_time_target: u64) {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+
+        move_to<Epoch>(account, Epoch {
+             epoch_start_time: 0,
+             uncles: 0,
+             start_number: 0,
+             end_number: 10,
+             time_target: init_block_time_target,
+             reward: 0,
+         });
 
         Config::publish_new_config<Self::Consensus>(
             account,

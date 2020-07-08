@@ -156,7 +156,7 @@ where
             //TODO fix me, this just a work around method.
             let _handle = match node::start::<C>(config, logger_handle).await {
                 Err(e) => {
-                    error!("Node start fail: {:?}, exist.", e);
+                    error!("Node start fail: {:?}, exit.", e);
                     System::current().stop();
                     return;
                 }

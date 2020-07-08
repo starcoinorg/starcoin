@@ -224,7 +224,7 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, auth_key_prefix) = self.block_meta.into_inner();
+        let (parent_id, timestamp, author, auth_key_prefix, _uncles) = self.block_meta.into_inner();
 
         let block_template = BlockTemplate::new(
             parent_id,

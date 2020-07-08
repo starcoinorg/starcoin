@@ -50,12 +50,13 @@ impl BlockMetadata {
         }
     }
 
-    pub fn into_inner(self) -> (HashValue, u64, AccountAddress, Option<Vec<u8>>) {
+    pub fn into_inner(self) -> (HashValue, u64, AccountAddress, Option<Vec<u8>>, u64) {
         (
             self.parent_hash,
             self.timestamp,
             self.author,
             self.auth_key_prefix,
+            self.uncles,
         )
     }
 
