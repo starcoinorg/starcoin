@@ -467,7 +467,7 @@ module Coin {
         RegisteredCurrencies::add_currency_code(
             coin_module_address,
             coin_module_name,
-            &borrow_global<CurrencyRegistrationCapability>(CoreAddresses::GENESIS_ACCOUNT()).cap
+            &mut borrow_global_mut<CurrencyRegistrationCapability>(CoreAddresses::GENESIS_ACCOUNT()).cap
         )
     }
 

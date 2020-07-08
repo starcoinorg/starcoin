@@ -28,9 +28,13 @@ module RewardConfig {
         );
     }
 
+    public fun get_config(): RewardConfig{
+        Config::get_by_address<RewardConfig>(CoreAddresses::GENESIS_ACCOUNT())
+    }
+
     //Calculate reward by block height.
     public fun reward_coin(block_height: u64): u64  {
-        let current_config = Config::get<RewardConfig>();
+        let current_config = get_config();
         let halving = current_config.reward_halving_interval;
         let reward = current_config.reward_base;
         let times = block_height / halving;
@@ -48,17 +52,17 @@ module RewardConfig {
     }
 
     public fun reward_halving_interval(): u64  {
-        let current_config = Config::get<RewardConfig>();
+        let current_config = get_config();
         current_config.reward_halving_interval
     }
 
     public fun reward_base(): u64  {
-        let current_config = Config::get<RewardConfig>();
+        let current_config = get_config();
         current_config.reward_base
     }
 
     public fun reward_delay(): u64  {
-        let current_config = Config::get<RewardConfig>();
+        let current_config = get_config();
         current_config.reward_delay
     }
 

@@ -14,7 +14,6 @@ module Genesis {
    use 0x1::Version;
    use 0x1::RewardConfig;
    use 0x1::VMConfig;
-   use 0x1::Config;
    use 0x1::Vector;
    use 0x1::Block;
    use 0x1::BlockReward;
@@ -37,9 +36,9 @@ module Genesis {
 
         Block::initialize(&genesis_account, parent_hash);
 
-        // init config
-        Config::initialize(&genesis_account);
         Coin::initialize(&genesis_account);
+
+        // init config
         VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule);
         RewardConfig::initialize(&genesis_account, reward_halving_interval, reward_base, reward_delay);
         Version::initialize(&genesis_account);

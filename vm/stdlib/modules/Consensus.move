@@ -25,7 +25,7 @@ module Consensus {
     }
 
     public fun set_uncle_rate_target(account: &signer, uncle_rate_target:u64) {
-        let old_config = Config::get<Self::Consensus>();
+        let old_config = Config::get<Self::Consensus>(account);
 
         old_config.uncle_rate_target = uncle_rate_target;
         Config::set<Self::Consensus>(
@@ -35,7 +35,7 @@ module Consensus {
     }
 
     public fun set_epoch_time_target(account: &signer, epoch_time_target: u64) {
-        let old_config = Config::get<Self::Consensus>();
+        let old_config = Config::get<Self::Consensus>(account);
 
         old_config.epoch_time_target = epoch_time_target;
         Config::set<Self::Consensus>(
@@ -45,7 +45,7 @@ module Consensus {
     }
 
     public fun set_reward_half_time_target(account: &signer, reward_half_time_target: u64) {
-        let old_config = Config::get<Self::Consensus>();
+        let old_config = Config::get<Self::Consensus>(account);
 
         old_config.reward_half_time_target = reward_half_time_target;
         Config::set<Self::Consensus>(
@@ -53,19 +53,23 @@ module Consensus {
             old_config,    
         );
     }
+    
+    public fun get_config(): Consensus{
+        Config::get_by_address<Consensus>(CoreAddresses::GENESIS_ACCOUNT())
+    }
 
     public fun uncle_rate_target(): u64  {
-        let current_config = Config::get<Self::Consensus>();
+        let current_config = get_config();
         current_config.uncle_rate_target
     }
 
     public fun epoch_time_target(): u64  {
-        let current_config = Config::get<Self::Consensus>();
+        let current_config = get_config();
         current_config.epoch_time_target
     }
 
     public fun reward_half_time_target(): u64  {
-        let current_config = Config::get<Self::Consensus>();
+        let current_config = get_config();
         current_config.reward_half_time_target
     }
 

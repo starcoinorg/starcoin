@@ -19,8 +19,14 @@ module Version {
         );
     }
 
+    public fun get():u64{
+        let version = Config::get_by_address<Self::Version>(CoreAddresses::GENESIS_ACCOUNT());
+        version.major
+    }
+
     public fun set(account: &signer, major: u64) {
-        let old_config = Config::get<Self::Version>();
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        let old_config = Config::get<Self::Version>(account);
 
         assert(
             old_config.major < major,

@@ -38,17 +38,17 @@ module RegisteredCurrencies {
     public fun add_currency_code(
         module_address: address,
         currency_code: vector<u8>,
-        cap: &RegistrationCapability,
+        cap: &mut RegistrationCapability,
     ) {
-        let config = Config::get<RegisteredCurrencies>();
+        let config = Config::get_by_address<RegisteredCurrencies>(CoreAddresses::GENESIS_ACCOUNT());
         //TODO limit check cap
         let record = CurrencyRecord {module_address, currency_code};
         Vector::push_back(&mut config.currency_codes, record);
-        Config::set_with_capability(&cap.cap, config);
+        Config::set_with_capability(&mut cap.cap, config);
     }
 
     public fun currency_records(): vector<CurrencyRecord> {
-        let config = Config::get<RegisteredCurrencies>();
+        let config = Config::get_by_address<RegisteredCurrencies>(CoreAddresses::GENESIS_ACCOUNT());
         *&config.currency_codes
     }
 
