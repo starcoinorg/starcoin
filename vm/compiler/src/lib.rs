@@ -13,9 +13,9 @@ use std::path::{Path, PathBuf};
 mod contract;
 
 use crate::contract::{Contract, ModuleContract};
-use move_lang::compiled_unit::CompiledUnit;
+pub use move_lang::compiled_unit::{verify_units, CompiledUnit};
 pub use move_lang::{
-    move_check, move_check_no_report, move_compile, move_compile_no_report,
+    errors::*, move_check, move_check_no_report, move_compile, move_compile_no_report,
     move_compile_to_expansion_no_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
 use starcoin_vm_types::bytecode_verifier::VerifiedModule;

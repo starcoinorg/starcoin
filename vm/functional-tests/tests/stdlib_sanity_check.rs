@@ -2,14 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_move_compiler::{
+    compiled_unit::verify_units,
+    errors::report_errors_to_buffer,
     move_compile_no_report,
     shared::Address,
     test_utils::{read_bool_var, stdlib_files},
 };
 use std::{fs, path::Path};
 
-use move_lang::test_utils::*;
-use starcoin_move_compiler::test_utils::{error, STD_LIB_DIR};
+use starcoin_move_compiler::test_utils::error;
+
+pub const STD_LIB_DIR: &str = "../stdlib/modules";
+pub const STD_LIB_TRANSACTION_SCRIPTS_DIR: &str = "../stdlib/transaction_scripts";
 
 const OUT_EXT: &str = "out";
 
@@ -26,11 +30,11 @@ fn sanity_check_testsuite(path: &Path) -> datatest_stable::Result<()> {
     let (files, units_or_errors) = move_compile_no_report(&targets, &[], sender)?;
     let errors = match units_or_errors {
         Err(errors) => errors,
-        Ok(units) => move_lang::compiled_unit::verify_units(units).1,
+        Ok(units) => verify_units(units).1,
     };
     let has_errors = !errors.is_empty();
     let error_buffer = if has_errors {
-        move_lang::errors::report_errors_to_buffer(files, errors)
+        report_errors_to_buffer(files, errors)
     } else {
         vec![]
     };
