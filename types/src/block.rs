@@ -181,6 +181,7 @@ impl BlockHeader {
             self.timestamp,
             self.author,
             self.auth_key_prefix,
+            self.uncles.len() as u64,
         )
     }
     pub fn difficulty(&self) -> U256 {
@@ -189,6 +190,9 @@ impl BlockHeader {
 
     pub fn parent_block_accumulator_root(&self) -> HashValue {
         self.parent_block_accumulator_root
+    }
+    pub fn uncle_len(&self) -> u64 {
+        self.uncles.len() as u64
     }
 
     pub fn genesis_block_header(

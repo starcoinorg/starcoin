@@ -29,6 +29,7 @@ pub struct BlockMetadata {
     timestamp: u64,
     author: AccountAddress,
     auth_key_prefix: Option<Vec<u8>>,
+    uncles: u64,
     //TODO add more field.
 }
 
@@ -38,12 +39,14 @@ impl BlockMetadata {
         timestamp: u64,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
+        uncles: u64,
     ) -> Self {
         Self {
             parent_hash,
             timestamp,
             author,
             auth_key_prefix,
+            uncles,
         }
     }
 

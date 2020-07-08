@@ -41,6 +41,7 @@ fn test_block() {
         0,
         U256::zero(),
         consensus_header,
+        vec![],
     );
     storage
         .block_storage
@@ -104,6 +105,7 @@ fn test_block_number() {
         0,
         U256::zero(),
         consensus_header,
+        vec![],
     );
     storage
         .block_storage

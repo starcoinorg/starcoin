@@ -205,7 +205,7 @@ impl FakeExecutor {
 
     pub fn new_block(&mut self) {
         self.block_time += 1;
-        let new_block = BlockMetadata::new(HashValue::zero(), 0, association_address(), None);
+        let new_block = BlockMetadata::new(HashValue::zero(), 0, association_address(), None, 0);
         let output = self
             .execute_transaction_block(vec![Transaction::BlockMetadata(new_block)])
             .expect("Executing block prologue should succeed")
