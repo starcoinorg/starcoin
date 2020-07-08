@@ -33,3 +33,7 @@ starcoin-genesis = { path = "../../core/genesis"}
 [[test]]
 name = "testsuite"
 harness = false
+
+[[test]]
+name = "stdlib_sanity_check"
+harness = false
