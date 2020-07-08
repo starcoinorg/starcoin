@@ -91,6 +91,33 @@ module Consensus {
         current_config.reward_half_time_target
     }
 
+    fun first_epoch(block_height: u64, block_time: u64) acquires Epoch {
+        assert(block_height == 1, 333);
+        let count = Self::epoch_time_target() / block_time;
+        let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        epoch_ref.epoch_start_time = block_time;
+        epoch_ref.start_number = 1;
+        epoch_ref.end_number = count;
+    }
+
+    public fun adjust_epoch(account: &signer, block_height: u64, block_time: u64, uncles: u64) acquires Epoch {
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+        if (block_height == 1) {
+            assert(uncles == 0, 334);
+            Self::first_epoch(block_height, block_time);
+        } else {
+            let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+            if (block_height < epoch_ref.end_number) {
+                epoch_ref.uncles = epoch_ref.uncles + uncles;
+            } else {
+                //TODO:
+                epoch_ref.uncles = 0;
+                epoch_ref.epoch_start_time = block_time;
+                epoch_ref.start_number = block_height + 1;
+                epoch_ref.end_number = block_height + 10;
+            }
+        }
+    }
 }
 
 }
