@@ -10,7 +10,7 @@ use anyhow::Result;
 use bus::BusActor;
 use chain::BlockChain;
 use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
-use crypto::hash::{HashValue, PlainCryptoHash};
+use crypto::hash::HashValue;
 use futures::{channel::mpsc, prelude::*};
 use logger::prelude::*;
 use sc_stratum::Stratum;
@@ -19,7 +19,7 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_wallet_api::WalletAccount;
 use std::{marker::PhantomData, sync::Arc, time::Duration};
 use storage::Store;
-use traits::{ChainAsyncService, ChainReader, Consensus};
+use traits::{ChainAsyncService, Consensus};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
@@ -150,7 +150,7 @@ where
         let max_txns = self.config.miner.block_gas_limit / 600;
         let f = async move {
             let txns = txpool.get_pending_txns(Some(max_txns));
-            let startup_info = chain.master_startup_info().await?;
+            let startup_info = chain.clone().master_startup_info().await?;
             debug!(
                 "On GenerateBlockEvent, master: {:?}, txn len: {}",
                 startup_info.master,
@@ -158,17 +158,14 @@ where
             );
             let master = *startup_info.get_master();
             let block_chain = BlockChain::<C>::new(config.clone(), master, storage)?;
-            let (block_template, excluded_txns) = block_chain.create_block_template(
-                *miner_account.address(),
-                Some(miner_account.get_auth_key().prefix().to_vec()),
-                None,
-                txns,
-            )?;
-
-            // remove invalid txn from txpool
-            for invalid_txn in excluded_txns.discarded_txns {
-                let _ = txpool.remove_txn(invalid_txn.crypto_hash(), true);
-            }
+            let block_template = chain
+                .create_block_template(
+                    *miner_account.address(),
+                    Some(miner_account.get_auth_key().prefix().to_vec()),
+                    None,
+                    txns,
+                )
+                .await?;
 
             mint::<C>(stratum, miner, config, &block_chain, block_template)?;
             Ok(())

@@ -132,6 +132,7 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
+        uncles: Vec<BlockHeader>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
@@ -139,6 +140,7 @@ where
             self.config.miner.block_gas_limit,
             author,
             auth_key_prefix,
+            uncles,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -281,6 +283,7 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
+        uncles: Vec<BlockHeader>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let block_id = match parent_hash {
             Some(hash) => hash,
@@ -290,7 +293,13 @@ where
         let previous_header = self
             .get_header(block_id)?
             .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
-        self.create_block_template_inner(author, auth_key_prefix, previous_header, user_txns)
+        self.create_block_template_inner(
+            author,
+            auth_key_prefix,
+            previous_header,
+            user_txns,
+            uncles,
+        )
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

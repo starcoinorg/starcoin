@@ -479,7 +479,7 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
-    ) -> Result<Option<BlockTemplate>> {
+    ) -> Result<BlockTemplate> {
         let address = self.address.clone();
         drop(self);
         if let ChainResponse::BlockTemplate(block_template) = address
@@ -491,9 +491,9 @@ where
             ))
             .await??
         {
-            Ok(Some(*block_template))
+            Ok(*block_template)
         } else {
-            Ok(None)
+            bail!("create block template error")
         }
     }
 }

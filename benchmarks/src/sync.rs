@@ -234,7 +234,6 @@ async fn create_node(
                     txn_vec,
                 )
                 .await
-                .unwrap()
                 .unwrap();
             let block =
                 DummyConsensus::create_block(node_config.clone(), &block_chain, block_template)

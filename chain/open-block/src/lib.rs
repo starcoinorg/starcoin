@@ -32,6 +32,7 @@ pub struct OpenedBlock {
 
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
+    uncles: Vec<BlockHeader>,
 }
 
 impl OpenedBlock {
@@ -41,6 +42,7 @@ impl OpenedBlock {
         block_gas_limit: u64,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
+        uncles: Vec<BlockHeader>,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -71,6 +73,7 @@ impl OpenedBlock {
             txn_accumulator,
             gas_used: 0,
             included_user_txns: vec![],
+            uncles,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -231,7 +234,7 @@ impl OpenedBlock {
             state_root,
             self.gas_used,
             self.gas_limit,
-            vec![],
+            self.uncles,
             self.included_user_txns.into(),
         );
         Ok(block_template)
