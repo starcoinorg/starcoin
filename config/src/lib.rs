@@ -24,6 +24,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 
 mod account_vault_config;
+mod available_port;
 mod chain_config;
 mod logger_config;
 mod metrics_config;
@@ -33,6 +34,10 @@ mod rpc_config;
 mod storage_config;
 mod sync_config;
 mod txpool_config;
+
+pub use available_port::{
+    get_available_port_from, get_random_available_port, get_random_available_ports,
+};
 
 pub use chain_config::{
     genesis_key_pair, ChainConfig, ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG,
@@ -443,49 +448,6 @@ pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
         private_key,
         public_key,
     }
-}
-
-pub fn get_available_port() -> u16 {
-    for _ in 0..3 {
-        if let Ok(port) = get_ephemeral_port() {
-            return port;
-        }
-    }
-    panic!("Error: could not find an available port");
-}
-
-pub fn get_available_port_multi(num: usize) -> Vec<u16> {
-    let mut ports = vec![0u16; num];
-
-    for i in 0..num {
-        let mut port = get_available_port();
-        let mut retry_times = 0;
-        while ports.contains(&port) {
-            port = get_available_port();
-            retry_times += 1;
-            if retry_times > 3 {
-                panic!("Error: could not find an available port");
-            }
-        }
-        ports[i] = port;
-    }
-    ports
-}
-
-fn get_ephemeral_port() -> ::std::io::Result<u16> {
-    use std::net::{TcpListener, TcpStream};
-
-    // Request a random available port from the OS
-    let listener = TcpListener::bind(("localhost", 0))?;
-    let addr = listener.local_addr()?;
-
-    // Create and accept a connection (which we'll promptly drop) in order to force the port
-    // into the TIME_WAIT state, ensuring that the port will be reserved from some limited
-    // amount of time (roughly 60s on some Linux systems)
-    let _sender = TcpStream::connect(addr)?;
-    let _incoming = listener.accept()?;
-
-    Ok(addr.port())
 }
 
 #[cfg(test)]

@@ -167,7 +167,10 @@ mod tests {
 
     fn generate_config(boot_nodes: Vec<Multiaddr>) -> NetworkConfiguration {
         let mut config = NetworkConfiguration::default();
-        let listen = format!("/ip4/127.0.0.1/tcp/{}", sg_config::get_available_port());
+        let listen = format!(
+            "/ip4/127.0.0.1/tcp/{}",
+            sg_config::get_random_available_port()
+        );
         config.listen_addresses = vec![listen.parse().expect("Failed to parse network config")];
         let keypair = sg_config::gen_keypair();
         config.node_key = {

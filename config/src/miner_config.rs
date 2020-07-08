@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{get_available_port, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
+use crate::{
+    get_available_port_from, get_random_available_port, BaseConfig, ChainNetwork, ConfigModule,
+    StarcoinOpt,
+};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
@@ -54,7 +57,7 @@ impl ConfigModule for MinerConfig {
             _ => (PacemakerStrategy::HeadBlock, ConsensusStrategy::Argon(1)),
         };
         let port = match net {
-            ChainNetwork::Dev => get_available_port(),
+            ChainNetwork::Dev => get_available_port_from(DEFAULT_STRATUM_SERVER_PORT),
             _ => DEFAULT_STRATUM_SERVER_PORT,
         };
         let block_gas_limit = match net {
@@ -76,7 +79,7 @@ impl ConfigModule for MinerConfig {
     }
 
     fn random(&mut self, _base: &BaseConfig) {
-        self.stratum_server = format!("127.0.0.1:{}", get_available_port())
+        self.stratum_server = format!("127.0.0.1:{}", get_random_available_port())
             .parse::<SocketAddr>()
             .unwrap();
         self.pacemaker_strategy = PacemakerStrategy::Schedule;
