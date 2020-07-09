@@ -5,6 +5,7 @@ module Block {
     use 0x1::Timestamp;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
+    use 0x1::Consensus;
 
      resource struct BlockMetadata {
           // Height of the current block
@@ -65,6 +66,8 @@ module Block {
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;
         block_metadata_ref.uncles = uncles;
+
+        Consensus::adjust_epoch(account, new_height, timestamp, uncles);
 
         Event::emit_event<NewBlockEvent>(
           &mut block_metadata_ref.new_block_events,

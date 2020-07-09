@@ -111,12 +111,31 @@ module Consensus {
                 epoch_ref.uncles = epoch_ref.uncles + uncles;
             } else {
                 //TODO:
-                epoch_ref.uncles = 0;
+                assert(block_time > epoch_ref.epoch_start_time, 335);
+                let total_time = block_time - epoch_ref.epoch_start_time;
+                let total_uncles = epoch_ref.uncles + uncles;
+                let avg_block_time = total_time / (epoch_ref.end_number - epoch_ref.start_number);
+                let uncles_rate = total_uncles * 100 / (epoch_ref.end_number - epoch_ref.start_number);
+                let new_epoch_block_time_target = uncles_rate * avg_block_time / Self::uncle_rate_target();
+                let new_epoch_time_target = Self::epoch_time_target() * 2 - total_time;
+                let new_epoch_blocks = new_epoch_time_target / new_epoch_block_time_target;
+                assert(new_epoch_blocks > 1, 336);
+
                 epoch_ref.epoch_start_time = block_time;
+                epoch_ref.uncles = 0;
                 epoch_ref.start_number = block_height + 1;
-                epoch_ref.end_number = block_height + 10;
+                epoch_ref.end_number = block_height + new_epoch_blocks;
+                epoch_ref.time_target = new_epoch_block_time_target;
             }
         }
+    }
+
+    public fun current_epoch_info(): (u64, u64, u64) acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let start_number = epoch_ref.start_number;
+        let end_number = epoch_ref.end_number;
+        let time_target = epoch_ref.time_target;
+        (start_number, end_number, time_target)
     }
 }
 
