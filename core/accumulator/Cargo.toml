@@ -10,7 +10,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 once_cell = "1.4.0"
-mirai-annotations = "1.5.0"
+mirai-annotations = "1.9.1"
 byteorder = "1.3.2"
 itertools = { version = "0.8.0", default-features = false }
 logger = {path = "../../commons/logger", package="starcoin-logger"}
