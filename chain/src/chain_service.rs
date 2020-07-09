@@ -428,7 +428,10 @@ where
         if let Ok(Some(block)) = self.get_block_by_hash(block_id) {
             //TODO ensure is need create a new chain?
             let block_chain = self.get_master().new_chain(block_id)?;
-            let epoch_start_number = block.header.number - 10;
+            let mut epoch_start_number = 0;
+            if block.header.number > 10 {
+                epoch_start_number = block.header.number - 10;
+            }
             let uncles = self.find_available_uncles(epoch_start_number)?;
             let (block_template, excluded_txns) = block_chain.create_block_template(
                 author,
