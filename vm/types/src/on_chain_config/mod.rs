@@ -21,7 +21,7 @@ mod version;
 mod vm_config;
 
 pub use self::{
-    consensus::Consensus,
+    consensus::{Consensus, EpochResource},
     genesis_gas_schedule::INITIAL_GAS_SCHEDULE,
     registered_currencies::RegisteredCurrencies,
     version::Version,

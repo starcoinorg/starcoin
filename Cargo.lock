@@ -6418,6 +6418,7 @@ dependencies = [
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-wallet-api",
  "stest",
  "thiserror",
