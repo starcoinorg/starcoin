@@ -65,7 +65,6 @@ async fn gen_master_chain(
                     Vec::new(),
                 )
                 .await
-                .unwrap()
                 .unwrap();
             let block =
                 DevConsensus::create_block(node_config.clone(), &block_chain, block_template)
@@ -112,7 +111,6 @@ async fn test_block_chain_forks() {
                 )
                 .await
                 .unwrap()
-                .unwrap()
                 .into_block(DummyHeader {}, 10000.into());
             info!(
                 "{}:{:?}:{:?}:{:?}",
@@ -147,6 +145,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         Some(miner_account.get_auth_key().prefix().to_vec()),
         Some(header.id()),
         vec![],
+        vec![],
     )?;
 
     let block_b1 = DevConsensus::create_block(config.clone(), &block_chain, template_b1)?;
@@ -169,6 +168,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         Some(miner_account.get_auth_key().prefix().to_vec()),
         Some(block_b1.id()),
         vec![signed_txn_t2.clone()],
+        vec![],
     )?;
     let block_b2 = DevConsensus::create_block(config.clone(), &block_chain, template_b2)?;
 
@@ -178,6 +178,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         Some(miner_account.get_auth_key().prefix().to_vec()),
         Some(block_b1.id()),
         vec![signed_txn_t2],
+        vec![],
     )?;
     let block_b3 = DevConsensus::create_block(config, &block_chain2, template_b3)?;
     block_chain2.apply(block_b3)?;
@@ -205,6 +206,7 @@ async fn test_chain_apply() -> Result<()> {
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),
         Some(header.id()),
+        vec![],
         vec![],
     )?;
 

@@ -49,6 +49,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         Some(miner_account.get_auth_key().prefix().to_vec()),
         None,
         vec![txn.clone()],
+        vec![],
     )?;
     debug!(
         "block_template: gas_used: {}, gas_limit: {}",

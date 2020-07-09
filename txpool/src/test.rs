@@ -115,6 +115,7 @@ async fn test_rollback() -> Result<()> {
             u64::MAX,
             account_address,
             Some(auth_prefix),
+            vec![],
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
