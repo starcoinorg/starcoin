@@ -53,4 +53,27 @@ Feature: cmd integration test
       | wallet create -p dssss |
       | wallet show |
 
+  Scenario Outline: [cmd]  cli continuous 1
+    Then cmd: "wallet create -p dssss $.address"
+    Then cmd: "wallet show $.account.address"
+    Then cmd: "wallet unlock -p dssss $.account.address"
+
+    Examples:
+      |  |
+
+  Scenario Outline: [cmd]  cli continuous 2
+    Then cmd: "chain show $.head_block"
+    Then cmd: "chain get_block $.author"
+    Then cmd: "wallet show $.account.address"
+
+    Examples:
+      |  |
+
+  Scenario Outline: [cmd]  cli continuous 3
+    Then cmd: "chain show $.head_block"
+    Then cmd: "chain get_block $.author"
+    Then cmd: "wallet show $.account.address"
+
+    Examples:
+      |  |
 

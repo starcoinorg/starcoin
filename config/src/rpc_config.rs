@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    get_available_port, get_available_port_multi, BaseConfig, ChainNetwork, ConfigModule,
+    get_available_port_from, get_random_available_ports, BaseConfig, ChainNetwork, ConfigModule,
     StarcoinOpt,
 };
 use anyhow::Result;
@@ -15,8 +15,8 @@ const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 //10M
 const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
 const DEFAULT_HTTP_PORT: u16 = 9850;
-const DEFAULT_TCP_PORT: u16 = 9851;
-const DEFAULT_WEB_SOCKET_PORT: u16 = 9852;
+const DEFAULT_TCP_PORT: u16 = 9860;
+const DEFAULT_WEB_SOCKET_PORT: u16 = 9870;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
@@ -60,20 +60,20 @@ impl RpcConfig {
 impl ConfigModule for RpcConfig {
     fn default_with_net(net: ChainNetwork) -> Self {
         let port = match net {
-            ChainNetwork::Dev => get_available_port(),
+            ChainNetwork::Dev => get_available_port_from(DEFAULT_HTTP_PORT),
             _ => DEFAULT_HTTP_PORT,
         };
         let http_address = format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap();
         let tcp_address = {
             let port = match net {
-                ChainNetwork::Dev => get_available_port(),
+                ChainNetwork::Dev => get_available_port_from(DEFAULT_TCP_PORT),
                 _ => DEFAULT_TCP_PORT,
             };
             format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap()
         };
         let ws_address = {
             let port = match net {
-                ChainNetwork::Dev => get_available_port(),
+                ChainNetwork::Dev => get_available_port_from(DEFAULT_WEB_SOCKET_PORT),
                 _ => DEFAULT_WEB_SOCKET_PORT,
             };
             format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap()
@@ -89,7 +89,7 @@ impl ConfigModule for RpcConfig {
     }
 
     fn random(&mut self, base: &BaseConfig) {
-        let ports = get_available_port_multi(3);
+        let ports = get_random_available_ports(3);
         self.http_address = Some(
             format!("127.0.0.1:{}", ports[0])
                 .parse::<SocketAddr>()

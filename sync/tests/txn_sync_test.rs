@@ -3,7 +3,7 @@ mod gen_network;
 use actix_rt::System;
 use bus::{Bus, BusActor};
 use chain::ChainActor;
-use config::{get_available_port, NodeConfig};
+use config::{get_random_available_port, NodeConfig};
 use consensus::dev::DevConsensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use futures_timer::Delay;
@@ -42,7 +42,7 @@ fn test_txn_sync_actor() {
         );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
-        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port())
+        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_random_available_port())
             .parse()
             .unwrap();
         let node_config_1 = Arc::new(config_1);
@@ -117,9 +117,10 @@ fn test_txn_sync_actor() {
         let seed: Multiaddr = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex)
             .parse()
             .unwrap();
-        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
-            .parse()
-            .unwrap();
+        config_2.network.listen =
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
+                .parse()
+                .unwrap();
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
 

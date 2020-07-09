@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    decode_key, get_available_port, load_key, BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt,
+    decode_key, get_available_port_from, load_key, BaseConfig, ChainNetwork, ConfigModule,
+    StarcoinOpt,
 };
 use anyhow::{bail, ensure, Result};
 use libp2p::multiaddr::{Multiaddr, Protocol};
@@ -78,7 +79,7 @@ impl NetworkConfig {
 impl ConfigModule for NetworkConfig {
     fn default_with_net(net: ChainNetwork) -> Self {
         let port = match net {
-            ChainNetwork::Dev => get_available_port(),
+            ChainNetwork::Dev => get_available_port_from(DEFAULT_NETWORK_PORT),
             _ => DEFAULT_NETWORK_PORT,
         };
         Self {

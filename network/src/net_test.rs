@@ -7,7 +7,7 @@ mod tests {
     use crate::NetworkMessage;
     use crate::PeerEvent;
     use async_std::task;
-    use config::{get_available_port, NodeConfig};
+    use config::{get_random_available_port, NodeConfig};
     use crypto::hash::HashValue;
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
@@ -28,7 +28,7 @@ mod tests {
     );
 
     fn build_test_network_pair(host: String) -> (NetworkComponent, NetworkComponent) {
-        let mut l = build_test_network_services(2, host, get_available_port()).into_iter();
+        let mut l = build_test_network_services(2, host, get_random_available_port()).into_iter();
         let a = l.next().unwrap();
         let b = l.next().unwrap();
         (a, b)
@@ -235,7 +235,7 @@ mod tests {
         ::logger::init_for_test();
 
         let mut node_config1 = NodeConfig::random_for_test().network;
-        node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+        node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
             .parse()
             .unwrap();
 
@@ -249,7 +249,7 @@ mod tests {
         let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.listen, addr1_hex)
             .parse()
             .unwrap();
-        node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+        node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
             .parse()
             .unwrap();
         node_config2.seeds = vec![seed.clone()];
@@ -259,7 +259,7 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
 
         let mut node_config3 = NodeConfig::random_for_test().network;
-        node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
+        node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
             .parse()
             .unwrap();
         node_config3.seeds = vec![seed];

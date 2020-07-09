@@ -4,7 +4,7 @@ use actix::Actor;
 use actix_rt::System;
 use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
-use config::{get_available_port, NodeConfig};
+use config::{get_random_available_port, NodeConfig};
 use consensus::dev::DevConsensus;
 use futures_timer::Delay;
 use gen_network::gen_network;
@@ -41,7 +41,7 @@ fn test_state_sync() {
         );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
-        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port())
+        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_random_available_port())
             .parse()
             .unwrap();
         debug!("first peer : {:?}", config_1.network.self_peer_id);
@@ -151,9 +151,10 @@ fn test_state_sync() {
         )
         .parse()
         .unwrap();
-        config_2.network.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_available_port())
-            .parse()
-            .unwrap();
+        config_2.network.listen =
+            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
+                .parse()
+                .unwrap();
         config_2.network.seeds = vec![seed];
         debug!("second peer : {:?}", config_2.network.self_peer_id);
         let node_config_2 = Arc::new(config_2);
