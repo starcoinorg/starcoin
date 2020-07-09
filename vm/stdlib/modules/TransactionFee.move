@@ -50,14 +50,20 @@ module TransactionFee {
         let fee_address =  CoreAddresses::GENESIS_ACCOUNT();
         if (STC::is_stc<CoinType>()) {
             // extract fees
-            let fees = borrow_global_mut<TransactionFee<STC>>(fee_address);
-            let coins = Coin::withdraw_all<STC>(&mut fees.fee);
-            Account::deposit<STC>(account, current_author, coins);
+            let txn_fees = borrow_global_mut<TransactionFee<STC>>(fee_address);
+            let value = Coin::value<STC>(&txn_fees.fee);
+            if (value > 0) {
+                let coins = Coin::withdraw_all<STC>(&mut txn_fees.fee);
+                Account::deposit<STC>(account, current_author, coins);
+            }
         } else {
             // extract fees
-            let fees = borrow_global_mut<TransactionFee<CoinType>>(fee_address);
-            let coins = Coin::withdraw_all(&mut fees.fee);
-            Account::deposit<CoinType>(account, current_author, coins);
+            let txn_fees = borrow_global_mut<TransactionFee<CoinType>>(fee_address);
+            let value = Coin::value<CoinType>(&txn_fees.fee);
+            if (value > 0) {
+                let coins = Coin::withdraw_all(&mut txn_fees.fee);
+                Account::deposit<CoinType>(account, current_author, coins);
+            }
         }
     }
 }
