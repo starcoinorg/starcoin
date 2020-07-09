@@ -431,13 +431,13 @@ where
         if let Ok(Some(block)) = self.get_block_by_hash(block_id) {
             //TODO ensure is need create a new chain?
             let block_chain = self.get_master().new_chain(block_id)?;
-
             let account_reader = AccountStateReader::new(block_chain.chain_state_reader());
             let epoch = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)?;
-            let mut epoch_start_number = block.header.number;
-            if let Some(epoch) = epoch {
-                epoch_start_number = epoch.start_number();
-            }
+            let epoch_start_number  = if let Some(epoch) = epoch {
+                epoch.start_number()
+            } else {
+                block.header.number
+            };
             let uncles = self.find_available_uncles(epoch_start_number)?;
             let (block_template, excluded_txns) = block_chain.create_block_template(
                 author,

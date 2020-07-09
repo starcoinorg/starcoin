@@ -14,7 +14,6 @@ module Block {
           parent_hash: vector<u8>,
           // Author of the current block.
           author: address,
-          uncles: u64,
           // Handle where events with the time of new blocks are emitted
           new_block_events: Event::EventHandle<Self::NewBlockEvent>,
     }
@@ -36,7 +35,6 @@ module Block {
         height: 0,
         parent_hash: parent_hash,
         author: CoreAddresses::GENESIS_ACCOUNT(),
-        uncles: 0,
         new_block_events: Event::new_event_handle<Self::NewBlockEvent>(account),
       });
     }
@@ -65,7 +63,6 @@ module Block {
         block_metadata_ref.height = new_height;
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;
-        block_metadata_ref.uncles = uncles;
 
         Consensus::adjust_epoch(account, new_height, timestamp, uncles);
 
