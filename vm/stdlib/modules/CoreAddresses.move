@@ -21,12 +21,5 @@ module CoreAddresses {
     public fun VM_RESERVED_ADDRESS(): address {
         0x0
     }
-
-    /// This account holds the transaction fees collected, and is the account where
-    /// they are sent at the end of every transaction until they are collected
-    /// (burned). This account is created in genesis.
-    public fun TRANSACTION_FEE_ADDRESS(): address {
-        0xFEE
-    }
 }
 }

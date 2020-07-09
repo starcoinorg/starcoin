@@ -407,6 +407,13 @@ module Coin {
         Coin { value: amount }
     }
 
+    /// Return a `Coin<CoinType>` worth `coin.value` and reduces the `value` of the input `coin` to
+    /// zero. Does not abort.
+    public fun withdraw_all<CoinType>(coin: &mut Coin<CoinType>): Coin<CoinType> {
+        let val = coin.value;
+        withdraw(coin, val)
+    }
+
     // Merges two coins of the same currency and returns a new coin whose
     // value is equal to the sum of the two inputs
     public fun join<CoinType>(coin1: Coin<CoinType>, coin2: Coin<CoinType>): Coin<CoinType>  {
@@ -550,6 +557,7 @@ module Coin {
         let currency_info = borrow_global_mut<CurrencyInfo<CoinType>>(Signer::address_of(account));
         currency_info.can_mint = can_mint;
     }
+
 
     ///////////////////////////////////////////////////////////////////////////
     // Helper functions

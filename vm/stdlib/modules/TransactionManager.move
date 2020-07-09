@@ -8,6 +8,8 @@ module TransactionManager {
     use 0x1::PackageTxnManager;
     use 0x1::BlockReward;
     use 0x1::Block;
+    use 0x1::STC::{STC};
+    use 0x1::TransactionFee;
     use 0x1::Timestamp;
 
     //TODO change to constants after Move support constant.
@@ -83,9 +85,7 @@ module TransactionManager {
         Timestamp::update_global_time(account, author, timestamp);
         let height = Block::process_block_metadata(account, parent_hash, author, timestamp);
         BlockReward::process_block_reward(account, height, author, auth_key_prefix);
-
-        // TODO: distribute transaction fees
-        //TransactionFee::distribute_transaction_fees();
+        TransactionFee::distribute_transaction_fees<STC>(account, author);
     }
 }
 }

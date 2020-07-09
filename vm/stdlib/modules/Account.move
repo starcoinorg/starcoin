@@ -555,10 +555,7 @@ module Account {
                     sender_balance,
                     transaction_fee_amount
             );
-            // Pay the transaction fee into the transaction fee balance.
-            // Don't use the account deposit in order to not emit a
-            // sent/received payment event.
-            let transaction_fee_balance = borrow_global_mut<Balance<Token>>(0xFEE);
+            let transaction_fee_balance = borrow_global_mut<Balance<Token>>(CoreAddresses::GENESIS_ACCOUNT());
             Coin::deposit(&mut transaction_fee_balance.coin, transaction_fee);
         };
     }
