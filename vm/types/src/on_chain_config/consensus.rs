@@ -35,6 +35,7 @@ pub struct EpochResource {
     start_number: u64,
     end_number: u64,
     time_target: u64,
+    window: u64,
     reward: u64,
 }
 
@@ -45,6 +46,7 @@ impl EpochResource {
         start_number: u64,
         end_number: u64,
         time_target: u64,
+        window: u64,
         reward: u64,
     ) -> Self {
         Self {
@@ -53,6 +55,7 @@ impl EpochResource {
             start_number,
             end_number,
             time_target,
+            window,
             reward,
         }
     }

@@ -433,7 +433,7 @@ where
             let block_chain = self.get_master().new_chain(block_id)?;
             let account_reader = AccountStateReader::new(block_chain.chain_state_reader());
             let epoch = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)?;
-            let epoch_start_number  = if let Some(epoch) = epoch {
+            let epoch_start_number = if let Some(epoch) = epoch {
                 epoch.start_number()
             } else {
                 block.header.number
