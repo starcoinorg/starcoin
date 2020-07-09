@@ -93,8 +93,8 @@ module Consensus {
 
     fun first_epoch(block_height: u64, block_time: u64) acquires Epoch {
         assert(block_height == 1, 333);
-        let count = Self::epoch_time_target() / block_time;
         let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let count = Self::epoch_time_target() / epoch_ref.time_target;
         epoch_ref.epoch_start_time = block_time;
         epoch_ref.start_number = 1;
         epoch_ref.end_number = count;
