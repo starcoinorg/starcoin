@@ -92,8 +92,7 @@ mod tests {
     async fn test_txpool() {
         let pool = MockTxPoolService::new();
 
-        pool.clone()
-            .add_txns(vec![SignedUserTransaction::mock()])
+        pool.add_txns(vec![SignedUserTransaction::mock()])
             .pop()
             .unwrap()
             .unwrap();

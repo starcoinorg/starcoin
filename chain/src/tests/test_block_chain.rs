@@ -167,7 +167,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let (template_b2, _) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),
-        Some(block_b1.clone().id()),
+        Some(block_b1.id()),
         vec![signed_txn_t2.clone()],
     )?;
     let block_b2 = DevConsensus::create_block(config.clone(), &block_chain, template_b2)?;

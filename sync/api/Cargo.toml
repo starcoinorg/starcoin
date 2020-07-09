@@ -15,7 +15,6 @@ starcoin-config = {path = "../../config", package="starcoin-config"}
 starcoin-logger = {path = "../../commons/logger", package="starcoin-logger"}
 async-trait = "0.1"
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-dyn-clone = "1.0.1"
 serde = { version = "1.0", default-features = false }
 starcoin-state-tree={path = "../../state/state-tree"}
 starcoin-accumulator = {path = "../../core/accumulator"}

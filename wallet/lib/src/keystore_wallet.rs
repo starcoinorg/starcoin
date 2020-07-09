@@ -47,7 +47,7 @@ impl KeyCache {
             None => None,
             Some((ttl, kp)) => {
                 if Instant::now() < ttl {
-                    self.cache.insert(account.clone(), (ttl, kp));
+                    self.cache.insert(*account, (ttl, kp));
                     self.cache.get(account).map(|t| &t.1)
                 } else {
                     None

@@ -135,8 +135,8 @@ impl StratumImpl {
     fn subscribe(&self, _params: Params, meta: SocketMetadata) -> RpcResult {
         use std::str::FromStr;
 
-        self.subscribers.write().push(meta.addr().clone());
-        self.job_que.write().insert(meta.addr().clone());
+        self.subscribers.write().push(*meta.addr());
+        self.job_que.write().insert(*meta.addr());
         trace!(target: "stratum", "Subscription request from {:?}", meta.addr());
 
         Ok(match self.dispatcher.initial() {
@@ -164,7 +164,7 @@ impl StratumImpl {
                     }
                 }
                 trace!(target: "stratum", "New worker #{} registered", worker_id);
-                self.workers.write().insert(meta.addr().clone(), worker_id);
+                self.workers.write().insert(*meta.addr(), worker_id);
                 to_value(true)
             })
             .map(|v| v.expect("Only true/false is returned and it's always serializable; qed"))
@@ -235,8 +235,8 @@ impl StratumImpl {
                 trace!(target: "stratum", "pusing work to {}", addr);
                 match tcp_dispatcher.push_message(addr, workers_msg.clone()) {
                     Err(PushMessageError::NoSuchPeer) => {
-                        trace!(target: "stratum", "Worker no longer connected: {}", &addr);
-                        hup_peers.insert((*addr).clone());
+                        trace!(target: "stratum", "Worker no longer connected: {}", addr);
+                        hup_peers.insert(**addr);
                     }
                     Err(e) => {
                         warn!(target: "stratum", "Unexpected transport error: {:?}", e);

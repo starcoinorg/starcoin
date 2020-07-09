@@ -24,7 +24,6 @@ rand = "0.7.3"
 rand_core = { version = "0.5.1", default-features = false }
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 stdlib = { package="stdlib", path = "../stdlib"}
-include_dir = "0.5.0"
 starcoin-vm-types = { path = "../types"}
 starcoin-move-compiler = { path = "../compiler"}
 

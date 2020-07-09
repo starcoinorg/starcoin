@@ -15,5 +15,3 @@ quote = "1.0.6"
 proc-macro2 = "1.0.18"
 
 [dev-dependencies]
-serde = { version = "1.0" }
-scs = { package="starcoin-canonical-serialization", path = "../../scs"}
