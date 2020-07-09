@@ -77,23 +77,15 @@ impl FutureBlockPool {
     fn descendants(&self, parent_id: &HashValue) -> Vec<HashValue> {
         let mut child = Vec::new();
         let lock = self.child.read();
-        if lock.contains_key(parent_id) {
-            lock.get(parent_id)
-                .expect("parent not exist.")
-                .iter()
-                .for_each(|id| {
-                    child.push(*id);
-                });
 
-            if !child.is_empty() {
-                child.clone().iter().for_each(|new_parent_id| {
-                    let mut new_child = self.descendants(new_parent_id);
-                    if !new_child.is_empty() {
-                        child.append(&mut new_child);
-                    }
-                })
-            }
-        };
+        if let Some(set) = lock.get(parent_id) {
+            set.iter().for_each(|id| {
+                let mut new_child = self.descendants(id);
+                if !new_child.is_empty() {
+                    child.append(&mut new_child);
+                }
+            })
+        }
 
         child
     }

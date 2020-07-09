@@ -568,7 +568,7 @@ where
             blob,
         );
         let node_key = new_leaf_node.hash();
-        tree_cache.put_node(node_key.clone(), new_leaf_node.clone())?;
+        tree_cache.put_node(node_key, new_leaf_node.clone())?;
         Ok((node_key, new_leaf_node))
     }
 

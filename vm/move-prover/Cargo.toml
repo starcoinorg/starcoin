@@ -15,7 +15,6 @@ stackless-bytecode-generator = { git = "https://github.com/starcoinorg/libra", r
 vm = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
 libra-types = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
 libra-temppath = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
-libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
 bytecode-source-map = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
 move-ir-types = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
 

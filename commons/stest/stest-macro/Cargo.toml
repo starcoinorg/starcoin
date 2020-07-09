@@ -16,6 +16,5 @@ darling = "0.10.2"
 proc-macro2 = "1.0"
 
 [dev-dependencies]
-log = "0.4.8"
 actix-rt = { version = "1.1" }
 stest = { path = "../../stest"}

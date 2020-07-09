@@ -22,14 +22,10 @@ futures = "0.3"
 parking_lot = "0.9"
 once_cell = "1.4.0"
 storage = { package="starcoin-storage", path = "../../storage"}
-
 logger = {path = "../../commons/logger", package="starcoin-logger"}
-stest = {path = "../../commons/stest"}
-
 starcoin-statedb = {path = "../../state/statedb"}
-bus = {path = "../../bus", package="starcoin-bus" }
-
 starcoin-metrics = {path = "../../commons/metrics"}
 
 [dev-dependencies]
 starcoin-genesis = {path = "../../core/genesis"}
+stest = {path = "../../commons/stest"}

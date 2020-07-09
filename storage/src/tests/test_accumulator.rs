@@ -33,7 +33,7 @@ fn test_storage() {
         .unwrap();
     let acc_node3 = storage
         .accumulator_storage
-        .get_node(AccumulatorStoreType::Block, node_hash.clone())
+        .get_node(AccumulatorStoreType::Block, node_hash)
         .unwrap()
         .unwrap();
     assert_eq!(acc_node, acc_node3);

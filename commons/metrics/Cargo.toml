@@ -20,5 +20,3 @@ tokio = "0.2"
 psutil = { version = "3.0", default-features = false, features= ["cpu", "memory", "process"]}
 
 [dev-dependencies]
-rusty-fork = "0.2.1"
-assert_approx_eq = "1.1.0"

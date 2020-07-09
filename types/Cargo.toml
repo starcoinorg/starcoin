@@ -20,7 +20,6 @@ parity-multiaddr = "0.6.0"
 proptest = { version = "0.9.4", default-features = false, optional = true }
 proptest-derive = { version = "0.1.2", default-features = false, optional = true }
 prost = "0.6"
-radix_trie = { version = "0.1.4", default-features = false }
 rand = "0.7.3"
 rand_core = { version = "0.5.1", default-features = false }
 ref-cast = "1.0"
