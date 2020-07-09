@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
-use scmd::{CmdContext, Command};
+use jsonpath::Selector;
+use scmd::CmdContext;
 use serde_json::Value;
-use starcoin_cmd::dev::GetCoinCommand;
-use starcoin_cmd::node::{InfoCommand, PeersCommand};
+use starcoin_cmd::add_command;
 use starcoin_cmd::view::{AccountWithStateView, NodeInfoView, PeerInfoView, TransactionView};
-use starcoin_cmd::wallet::{CreateCommand, ListCommand, ShowCommand, UnlockCommand};
-use starcoin_cmd::{wallet, CliState, StarcoinOpt};
+use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_logger::prelude::*;
 use starcoin_wallet_api::WalletAccount;
 
@@ -21,8 +20,7 @@ pub fn steps() -> Steps<MyWorld> {
             let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // let context = world.context.as_mut().take().unwrap( );
-            let result = context
-                .command(Command::with_name("node").subcommand(InfoCommand))
+            let result = add_command(context)
                 .exec_with_args::<NodeInfoView>(vec!["starcoin", "node", "info"])
                 .unwrap();
             info!("result:{:?}", result);
@@ -33,8 +31,7 @@ pub fn steps() -> Steps<MyWorld> {
             let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // let context = world.context.as_mut().take().unwrap( );
-            let result = context
-                .command(Command::with_name("node").subcommand(PeersCommand))
+            let result = add_command(context)
                 .exec_with_args::<PeerInfoView>(vec!["starcoin", "node", "peers"])
                 .unwrap();
             info!("result:{:?}", result);
@@ -45,8 +42,7 @@ pub fn steps() -> Steps<MyWorld> {
             let state = CliState::new(node_info.net, client.clone(), None);
             // let state = world.cli_state.take().unwrap();
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
-            let mut list_result = context
-                .command(Command::with_name("wallet").subcommand(ListCommand))
+            let mut list_result = add_command(context)
                 .exec_with_args::<Vec<WalletAccount>>(vec!["starcoin", "wallet", "list"])
                 .unwrap();
             info!("wallet list result:{:?}", list_result);
@@ -57,8 +53,7 @@ pub fn steps() -> Steps<MyWorld> {
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(node_info.net, client.clone(), None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
-            let show_result = context
-                .command(Command::with_name("wallet").subcommand(ShowCommand))
+            let show_result = add_command(context)
                 .exec_with_args::<AccountWithStateView>(vec!["starcoin", "wallet", "show"])
                 .unwrap();
             info!("wallet show result:{:?}", show_result);
@@ -71,8 +66,7 @@ pub fn steps() -> Steps<MyWorld> {
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
-                let get_result = context
-                    .command(Command::with_name("dev").subcommand(GetCoinCommand))
+                let get_result = add_command(context)
                     .exec_with_args::<TransactionView>(vec![
                         "starcoin", "dev", "get_coin", "-v", amount,
                     ])
@@ -88,8 +82,7 @@ pub fn steps() -> Steps<MyWorld> {
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
-                let create_result = context
-                    .command(Command::with_name("wallet").subcommand(CreateCommand))
+                let create_result = add_command(context)
                     .exec_with_args::<WalletAccount>(vec![
                         "starcoin", "wallet", "create", "-p", password,
                     ])
@@ -106,8 +99,7 @@ pub fn steps() -> Steps<MyWorld> {
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(node_info.net, client.clone(), None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
-                let unlock_result = context
-                    .command(Command::with_name("wallet").subcommand(UnlockCommand))
+                let unlock_result = add_command(context)
                     .exec_with_args::<String>(vec![
                         "starcoin",
                         "wallet",
@@ -120,6 +112,40 @@ pub fn steps() -> Steps<MyWorld> {
                 info!("wallet unlock result:{:?}", unlock_result);
             },
         )
+        .then_regex(r#"cmd: "([^"]*)""#, |world: &mut MyWorld, args, _step| {
+            let client = world.rpc_client.as_ref().take().unwrap();
+
+            let node_info = client.clone().node_info().unwrap();
+            let state = CliState::new(node_info.net, client.clone(), None);
+            let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
+            // get last cmd result as current parameter
+            let mut vec = vec!["starcoin"];
+            let mut rex_parameter = "";
+            for parameter in args[1].as_str().split_whitespace() {
+                if !parameter.starts_with("$") {
+                    vec.push(parameter);
+                }
+                rex_parameter = parameter;
+            }
+
+            if world.cmd_value.as_ref().is_some() {
+                for parameter in world.cmd_value.as_ref().take().unwrap() {
+                    vec.push(parameter.as_str());
+                }
+            };
+            info!("parameter: {:?}", vec.clone());
+            let result = add_command(context).exec_with_args::<Value>(vec).unwrap();
+            info!("cmd rex_parameter: {:?}", rex_parameter);
+            // parse result
+            let selector = Selector::new(rex_parameter).unwrap();
+            let next_value: Vec<String> = selector
+                .find(&result)
+                .map(|t| t.as_str().unwrap().to_string())
+                .collect();
+            info!("next value: {:?}", next_value.clone());
+            world.cmd_value = Some(next_value);
+            info!("cmd continuous: {:?}", result);
+        })
         .then_regex(
             r#"cmd cli: "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
@@ -133,14 +159,7 @@ pub fn steps() -> Steps<MyWorld> {
                 for parameter in args[1].as_str().split_whitespace() {
                     vec.push(parameter);
                 }
-                let result = context
-                    .command(
-                        Command::with_name("wallet")
-                            .subcommand(wallet::CreateCommand)
-                            .subcommand(wallet::ShowCommand),
-                    )
-                    .exec_with_args::<Value>(vec)
-                    .unwrap();
+                let result = add_command(context).exec_with_args::<Value>(vec).unwrap();
                 println!("cmd cli: {:?}", result);
                 info!("cmd cli: {:?}", result);
             },

@@ -29,6 +29,7 @@ pub struct MyWorld {
     txn_account: Option<WalletAccount>,
     node_handle: Option<NodeHandle>,
     default_address: Option<AccountAddress>,
+    cmd_value: Option<Vec<String>>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {
