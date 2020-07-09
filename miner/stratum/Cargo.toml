@@ -6,7 +6,7 @@ license = "GPL-3.0"
 
 [dependencies]
 ethereum-types = "0.6.0"
-keccak-hash = "0.2.0"
+keccak-hash = "0.5.1"
 jsonrpc-core = "12.0.0"
 jsonrpc-tcp-server = "12.0.0"
 log = "0.4"
