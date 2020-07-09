@@ -52,16 +52,20 @@ fun main(account: &signer) {
 
 // check: EXECUTED
 
-//FIXME current block height limit not work, fix me after refactor Block Module dependency.
-//script {
-//use 0x1::PackageTxnManager;
-//use 0x1::Signer;
-//fun main(account: &signer) {
-//    let hash = x"1111111111111111";
-//    PackageTxnManager::check_package_txn(Signer::address_of(account), {{alice}}, hash);
-//}
-//}
 
+// package txn must wait after plan's active_after_height
+//! new-transaction
+//! sender: alice
+script {
+use 0x1::PackageTxnManager;
+use 0x1::Signer;
+fun main(account: &signer) {
+    let hash = x"1111111111111111";
+    PackageTxnManager::check_package_txn(Signer::address_of(account), {{alice}}, hash);
+}
+}
+
+// check: ABORTED
 
 //! block-prologue
 //! proposer: bob

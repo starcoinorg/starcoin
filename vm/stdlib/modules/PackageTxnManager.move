@@ -3,6 +3,7 @@ address 0x1 {
         use 0x1::Option::{Self,Option};
         use 0x1::Signer;
         use 0x1::CoreAddresses;
+        use 0x1::Block;
 
         struct UpgradePlan {
             package_hash: vector<u8>,
@@ -152,10 +153,9 @@ address 0x1 {
                 assert(Option::is_some(&plan_opt), 1001);
                 let plan = Option::borrow(&plan_opt);
                 assert(*&plan.package_hash == package_hash, 1002);
-                //FIXME Using this module creates a dependency cycle: '0x1::Block' uses '0x1::Account' uses '0x1::PackageTxnManager' uses '0x1::Block'
-                //assert(plan.active_after_height <= Block::get_current_block_height(), 1003);
+                assert(plan.active_after_height <= Block::get_current_block_height(), 1003);
             }else if(strategy == STRATEGY_NEW_MODULE()){
-                //do check at VM
+                //do check at VM runtime.
             }else if(strategy == STRATEGY_FREEZE()){
                 abort(1004)
             };
@@ -176,7 +176,6 @@ address 0x1 {
         public fun package_txn_epilogue(account: &signer, _txn_sender: address, package_address: address, success: bool) acquires TwoPhaseUpgrade, ModuleUpgradeStrategy {
             // Can only be invoked by genesis account
             assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
-
             let strategy = get_module_upgrade_strategy(package_address);
             if(strategy == STRATEGY_TWO_PHASE()){
                 if (success) {
