@@ -5713,9 +5713,9 @@ dependencies = [
 
 [[package]]
 name = "rust-flatten-json"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d0d62c70781901ff6d68c677e092551ee10223b2149cf8a3d8bd5ab6280894b"
+checksum = "264b19b0d73b6ab33a706dc04b2b8148390da5aa16cfe567a8df6135f431e972"
 dependencies = [
  "error-chain 0.12.2",
  "log 0.4.8",
