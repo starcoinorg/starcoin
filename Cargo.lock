@@ -4122,7 +4122,7 @@ dependencies = [
  "fnv",
  "futures 0.3.5",
  "futures-timer",
- "futures_codec 0.3.4",
+ "futures_codec 0.4.1",
  "hex 0.4.2",
  "ip_network",
  "libp2p",
