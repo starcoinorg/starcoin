@@ -6,6 +6,7 @@ use futures::executor::block_on;
 use futures::SinkExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
+use rand::prelude::*;
 use std::thread;
 use std::time::{Duration, Instant};
 use types::U256;
@@ -217,8 +218,13 @@ fn dummy_solver(
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    let time: u64 = diff.as_u64();
-    debug!("DevConsensus rand sleep time : {}", time);
+    let mut rng = rand::thread_rng();
+    let time: u64 = rng.gen_range(1, diff.as_u64());
+    debug!(
+        "DevConsensus rand sleep time : {}, difficulty : {}",
+        time,
+        diff.as_u64()
+    );
     thread::sleep(Duration::from_millis(time));
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
