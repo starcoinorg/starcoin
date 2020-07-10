@@ -1502,7 +1502,7 @@ dependencies = [
  "itertools 0.9.0",
  "libra-workspace-hack",
  "log 0.4.8",
- "num 0.3.0",
+ "num",
  "once_cell",
  "regex",
  "serde",
@@ -3963,7 +3963,7 @@ dependencies = [
  "log 0.4.8",
  "move-ir-types",
  "move-lang",
- "num 0.2.1",
+ "num",
  "once_cell",
  "pretty",
  "regex",
@@ -4214,40 +4214,15 @@ dependencies = [
 
 [[package]]
 name = "num"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8536030f9fea7127f841b45bb6243b27255787fb4eb83958aa1ef9d2fdc0c36"
-dependencies = [
- "num-bigint 0.2.6",
- "num-complex 0.2.4",
- "num-integer",
- "num-iter",
- "num-rational 0.2.4",
- "num-traits",
-]
-
-[[package]]
-name = "num"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab3e176191bc4faad357e3122c4747aa098ac880e88b168f106386128736cf4a"
 dependencies = [
- "num-bigint 0.3.0",
- "num-complex 0.3.0",
+ "num-bigint",
+ "num-complex",
  "num-integer",
  "num-iter",
- "num-rational 0.3.0",
- "num-traits",
-]
-
-[[package]]
-name = "num-bigint"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304"
-dependencies = [
- "autocfg 1.0.0",
- "num-integer",
+ "num-rational",
  "num-traits",
 ]
 
@@ -4259,16 +4234,6 @@ checksum = "b7f3fc75e3697059fb1bc465e3d8cca6cf92f56854f201158b3f9c77d5a3cfa0"
 dependencies = [
  "autocfg 1.0.0",
  "num-integer",
- "num-traits",
-]
-
-[[package]]
-name = "num-complex"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
-dependencies = [
- "autocfg 1.0.0",
  "num-traits",
 ]
 
@@ -4315,24 +4280,12 @@ dependencies = [
 
 [[package]]
 name = "num-rational"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
-dependencies = [
- "autocfg 1.0.0",
- "num-bigint 0.2.6",
- "num-integer",
- "num-traits",
-]
-
-[[package]]
-name = "num-rational"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5b4d7360f362cfb50dde8143501e6940b22f644be75a4cc90b2d81968908138"
 dependencies = [
  "autocfg 1.0.0",
- "num-bigint 0.3.0",
+ "num-bigint",
  "num-integer",
  "num-traits",
 ]
@@ -6337,7 +6290,7 @@ dependencies = [
  "move-core-types",
  "move-ir-types",
  "move-lang",
- "num 0.3.0",
+ "num",
  "regex",
  "vm",
 ]
@@ -6360,7 +6313,7 @@ dependencies = [
  "libra-types",
  "libra-workspace-hack",
  "move-core-types",
- "num 0.3.0",
+ "num",
  "spec-lang",
  "vm",
 ]
