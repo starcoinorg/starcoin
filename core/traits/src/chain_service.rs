@@ -5,6 +5,7 @@ use crate::ConnectBlockResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockState;
+use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_types::{
@@ -32,7 +33,10 @@ pub trait ChainService {
         block_id: HashValue,
         idx: u64,
     ) -> Result<Option<TransactionInfo>>;
-
+    fn get_events_by_txn_info_id(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<ContractEvent>>>;
     /// for master
     fn master_head_header(&self) -> BlockHeader;
     fn master_head_block(&self) -> Block;
@@ -75,7 +79,10 @@ pub trait ChainAsyncService:
         block_id: HashValue,
         idx: u64,
     ) -> Result<Option<TransactionInfo>>;
-
+    async fn get_events_by_txn_info_id(
+        self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<ContractEvent>>>;
     /// for master
     async fn master_head_header(self) -> Result<Option<BlockHeader>>;
     async fn master_head_block(self) -> Result<Option<Block>>;

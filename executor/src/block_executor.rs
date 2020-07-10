@@ -7,18 +7,36 @@ use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
+use starcoin_vm_types::contract_event::ContractEvent;
 use vm_runtime::metrics::TXN_STATUS_COUNTERS;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BlockExecutedData {
+    pub state_root: HashValue,
+    pub txn_infos: Vec<TransactionInfo>,
+    pub txn_events: Vec<Vec<ContractEvent>>,
+}
+
+impl Default for BlockExecutedData {
+    fn default() -> Self {
+        BlockExecutedData {
+            state_root: HashValue::zero(),
+            txn_events: vec![],
+            txn_infos: vec![],
+        }
+    }
+}
 
 pub fn block_execute(
     chain_state: &dyn ChainState,
     txns: Vec<Transaction>,
     block_gas_limit: u64,
-) -> ExecutorResult<(HashValue, Vec<TransactionInfo>)> {
-    let mut vec_transaction_info = vec![];
+) -> ExecutorResult<BlockExecutedData> {
     let txn_outputs =
         crate::execute_block_transactions(chain_state.as_super(), txns.clone(), block_gas_limit)
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
+    let mut executed_data = BlockExecutedData::default();
     for (txn, output) in txns
         .iter()
         .take(txn_outputs.len())
@@ -43,15 +61,18 @@ pub fn block_execute(
                     .commit()
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
 
-                vec_transaction_info.push(TransactionInfo::new(
+                executed_data.txn_infos.push(TransactionInfo::new(
                     txn_hash,
                     txn_state_root,
-                    events,
+                    events.as_slice(),
                     gas_used,
                     status.major_status,
                 ));
+                executed_data.txn_events.push(events);
             }
         };
     }
-    Ok((chain_state.state_root(), vec_transaction_info))
+
+    executed_data.state_root = chain_state.state_root();
+    Ok(executed_data)
 }

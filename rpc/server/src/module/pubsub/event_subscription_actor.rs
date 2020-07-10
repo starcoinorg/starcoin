@@ -141,13 +141,9 @@ impl ChainNotifyHandlerActor {
         // in reverse order to do limit
         let mut all_events: Vec<ContractEvent> = vec![];
         for (_i, txn_info_id) in txn_info_ids.into_iter().enumerate().rev() {
-            let txn_info = store.get_transaction_info(txn_info_id)?;
-            if txn_info.is_none() {
-                continue;
-            }
-            let txn_info = txn_info.unwrap();
-            let events = txn_info.events();
-            let events = events.iter().rev().cloned();
+            // get events directly by txn_info_id
+            let mut events = store.get_contract_events(txn_info_id)?.unwrap_or_default();
+            events.reverse();
             // .map(|e| Event::new(Some(block_id), None, Some(txn_hash), Some(i as u64), e));
             all_events.extend(events);
         }

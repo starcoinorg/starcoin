@@ -93,7 +93,7 @@ module VMConfig {
     }
 
     public fun set_publishing_option(account: &signer, publishing_option: vector<u8>) {
-        let current_config = Config::get<VMConfig>();
+        let current_config = Config::get<VMConfig>(account);
         current_config.publishing_option = publishing_option;
         Config::set<VMConfig>(account, current_config);
     }

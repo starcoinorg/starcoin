@@ -835,7 +835,7 @@ where
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
         let task_type = task_event.task_type.clone();
-        match task_type.clone() {
+        match task_type {
             TaskType::STATE => self.handle_state_sync(task_event),
             TaskType::TxnInfo => self.handle_txn_info_sync(task_event, ctx.address()),
             TaskType::BlockAccumulator => self.handle_accumulator_sync(task_event, ctx.address()),

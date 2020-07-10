@@ -236,7 +236,7 @@ pub fn build_stdlib_package(
             .genesis_key_pair
             .as_ref()
             .map(|(_, public_key)| AuthenticationKey::ed25519(&public_key).to_vec())
-            .unwrap_or_else(|| vec![]);
+            .unwrap_or_else(Vec::new);
 
         let association_auth_key =
             AuthenticationKey::ed25519(&chain_config.association_key_pair.1).to_vec();

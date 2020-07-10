@@ -49,7 +49,7 @@ impl StateCache {
         }
         cur_change_set.num_stale_leaves += cs_num_stale_leaves;
         for (nk, n) in cs.node_batch.iter() {
-            cur_change_set.node_batch.insert(nk.clone(), n.clone());
+            cur_change_set.node_batch.insert(*nk, n.clone());
             if n.is_leaf() {
                 cur_change_set.num_new_leaves += 1;
             }
@@ -121,7 +121,7 @@ impl StateTree {
     /// this will not compute new root hash,
     /// Use `commit` to recompute the root hash.
     pub fn remove(&self, key_hash: &HashValue) {
-        self.updates.write().unwrap().insert(key_hash.clone(), None);
+        self.updates.write().unwrap().insert(*key_hash, None);
     }
 
     /// use a key's hash `key_hash` to read a value.
@@ -153,7 +153,7 @@ impl StateTree {
             cache,
         };
         let tree = JellyfishMerkleTree::new(&reader);
-        let (data, proof) = tree.get_with_proof(cur_root_hash, key_hash.clone())?;
+        let (data, proof) = tree.get_with_proof(cur_root_hash, *key_hash)?;
         match data {
             Some(b) => Ok((Some(b.into()), proof)),
             None => Ok((None, proof)),

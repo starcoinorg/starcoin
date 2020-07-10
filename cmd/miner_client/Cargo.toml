@@ -12,7 +12,6 @@ actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 futures = { version = "0.3"}
 config = {path = "../../config", package="starcoin-config"}
-network = {path = "../../network", package="starcoin-network"}
 types = {path = "../../types", package="starcoin-types" }
 traits = {path = "../../core/traits", package="starcoin-traits" }
 consensus = {path = "../../consensus", package="starcoin-consensus" }
@@ -21,7 +20,6 @@ tokio = { version = "0.2", features = ["full"] }
 logger = {path = "../../commons/logger", package="starcoin-logger"}
 futures-channel = "0.3"
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-
 sc_stratum = {path = "../../miner/stratum", package ="starcoin-stratum"}
 jsonrpc-core = "12.0.0"
 jsonrpc-tcp-server="12.0.0"
@@ -36,7 +34,7 @@ async-std = "1.5.0"
 hex = { version = "0.4.2", default-features = false }
 thiserror = "1.0"
 structopt = "0.3.2"
-indicatif = "0.14"
+indicatif = "0.15"
 
 [[bin]]
 name = "starcoin_miner"

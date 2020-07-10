@@ -65,7 +65,7 @@ fn test_storage() {
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
         HashValue::zero(),
-        vec![],
+        vec![].as_slice(),
         0,
         StatusCode::ABORTED,
     );
@@ -92,7 +92,7 @@ fn test_two_level_storage() {
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
         HashValue::zero(),
-        vec![],
+        vec![].as_slice(),
         0,
         StatusCode::ABORTED,
     );
@@ -142,7 +142,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
         HashValue::zero(),
-        vec![],
+        vec![].as_slice(),
         0,
         StatusCode::ABORTED,
     );

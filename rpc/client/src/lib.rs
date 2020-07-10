@@ -46,6 +46,7 @@ pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
+use starcoin_types::contract_event::ContractEvent;
 
 #[derive(Debug, Clone)]
 enum ConnSource {
@@ -433,6 +434,20 @@ impl RpcClient {
             inner
                 .chain_client
                 .get_transaction_info(txn_hash)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn chain_get_events_by_txn_info_id(
+        &self,
+        txn_info_id: HashValue,
+    ) -> anyhow::Result<Vec<ContractEvent>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_events_by_txn_info_id(txn_info_id)
                 .compat()
                 .await
         })

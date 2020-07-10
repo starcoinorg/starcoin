@@ -204,7 +204,7 @@ impl OpenedBlock {
         let txn_info = TransactionInfo::new(
             txn_hash,
             txn_state_root,
-            events,
+            events.as_slice(),
             gas_used,
             status.major_status,
         );

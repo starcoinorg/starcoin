@@ -15,7 +15,7 @@ config = {path = "../config", package="starcoin-config"}
 network = {path = "../network", package="starcoin-network"}
 types = {path = "../types", package = "starcoin-types" }
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-itertools = { version = "0.8.0", default-features = false }
+itertools = { version = "0.9.0", default-features = false }
 traits = {path = "../core/traits", package="starcoin-traits"}
 futures = "0.3"
 bus = { path = "../bus", package = "starcoin-bus"}
@@ -28,7 +28,7 @@ logger = {path = "../commons/logger",package="starcoin-logger"}
 consensus = {path = "../consensus", package="starcoin-consensus" }
 executor = {path = "../executor", package="starcoin-executor" }
 starcoin-state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
-parking_lot = "0.9"
+parking_lot = "0.10"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}

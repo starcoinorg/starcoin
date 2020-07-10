@@ -1,12 +1,8 @@
 address 0x1 {
 module Config {
-
     use 0x1::Event;
-    //use 0x1::Timestamp;
     use 0x1::Signer;
-    use 0x1::Association;
-    use 0x1::Offer;
-    use 0x1::CoreAddresses;
+    use 0x1::Option::{Self, Option};
 
     spec module {
         pragma verify = false;
@@ -15,179 +11,94 @@ module Config {
     // A generic singleton resource that holds a value of a specific type.
     resource struct Config<ConfigValue: copyable> { payload: ConfigValue }
 
-    struct NewEpochEvent {
-        epoch: u64,
+    // Accounts with this privilege can modify config of type ConfigValue under account_address
+    resource struct ModifyConfigCapability<ConfigValue: copyable> {
+        account_address: address,
+        events: Event::EventHandle<ConfigChangeEvent<ConfigValue>>,
     }
 
-    resource struct Configuration {
-        epoch: u64,
-        last_reconfiguration_time: u64,
-        events: Event::EventHandle<NewEpochEvent>,
+    // A holder for ModifyConfigCapability, for extract and restore ModifyConfigCapability.
+    resource struct ModifyConfigCapabilityHolder<ConfigValue: copyable> {
+        cap: Option<ModifyConfigCapability<ConfigValue>>,
     }
 
-    // Accounts with this association privilege can publish new config under default_address
-    struct CreateConfigCapability {}
-
-    // Accounts with this privilege can modify config of type TypeName under default_address
-    resource struct ModifyConfigCapability<TypeName> {}
-
-    // This can only be invoked by the config address, and only a single time.
-    // Currently, it is invoked in the genesis transaction
-    public fun initialize(config_account: &signer) {
-        assert(Signer::address_of(config_account) == default_config_address(), 1);
-        //Association::grant_privilege<CreateConfigCapability>(association_account, config_account);
-        //Association::grant_privilege<CreateConfigCapability>(association_account, association_account);
-
-
-        move_to<Configuration>(
-            config_account,
-            Configuration {
-                epoch: 0,
-                last_reconfiguration_time: 0,
-                events: Event::new_event_handle<NewEpochEvent>(config_account),
-            }
-        );
+    struct ConfigChangeEvent<ConfigValue: copyable>{
+        account_address: address,
+        value: ConfigValue,
     }
 
-    // Get a copy of `ConfigValue` value stored under `addr`.
-    public fun get<ConfigValue: copyable>(): ConfigValue acquires Config {
-        let addr = default_config_address();
+    // Get a copy of `ConfigValue` value stored under account.
+    public fun get<ConfigValue: copyable>(account: &signer): ConfigValue acquires Config {
+        let addr = Signer::address_of(account);
         assert(exists<Config<ConfigValue>>(addr), 24);
         *&borrow_global<Config<ConfigValue>>(addr).payload
     }
 
-    // Set a config item to a new value with the default capability stored under config address and trigger a
-    // reconfiguration.
-    public fun set<ConfigValue: copyable>(account: &signer, payload: ConfigValue) acquires Config, Configuration {
-        let addr = default_config_address();
+    // Get a copy of `ConfigValue` value stored under `addr`.
+    public fun get_by_address<ConfigValue: copyable>(addr: address): ConfigValue acquires Config {
         assert(exists<Config<ConfigValue>>(addr), 24);
-        let signer_address = Signer::address_of(account);
-        assert(
-            exists<ModifyConfigCapability<ConfigValue>>(signer_address)
-             || signer_address == Association::root_address(),
-            24
-        );
-
-        let config = borrow_global_mut<Config<ConfigValue>>(addr);
-        config.payload = payload;
-
-        reconfigure_();
+        *&borrow_global<Config<ConfigValue>>(addr).payload
     }
 
-    // Set a config item to a new value and trigger a reconfiguration.
-    public fun set_with_capability<ConfigValue: copyable>(
-        _cap: &ModifyConfigCapability<ConfigValue>,
-        payload: ConfigValue
-    ) acquires Config, Configuration {
-        let addr = default_config_address();
+    // Set a config item to a new value with capability stored under signer
+    public fun set<ConfigValue: copyable>(account: &signer, payload: ConfigValue) acquires Config,ModifyConfigCapabilityHolder{
+        let signer_address = Signer::address_of(account);
+        //TODO define no capability error code.
+        assert(exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address), 24);
+        let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address);
+        assert(Option::is_some(&cap_holder.cap), 24);
+        set_with_capability(Option::borrow_mut(&mut cap_holder.cap), payload)
+    }
+
+    // Set a config item to a new value with cap.
+    public fun set_with_capability<ConfigValue: copyable>(cap: &mut ModifyConfigCapability<ConfigValue>, payload: ConfigValue) acquires Config{
+        let addr = cap.account_address;
         assert(exists<Config<ConfigValue>>(addr), 24);
         let config = borrow_global_mut<Config<ConfigValue>>(addr);
-        config.payload = payload;
-
-        reconfigure_();
+        config.payload = copy payload;
+        emit_config_change_event(cap, payload);
     }
 
     // Publish a new config item. The caller will use the returned ModifyConfigCapability to specify the access control
     // policy for who can modify the config.
     public fun publish_new_config_with_capability<ConfigValue: copyable>(
-        config_account: &signer,
+        account: &signer,
         payload: ConfigValue,
-    ): ModifyConfigCapability<ConfigValue> {
-        //assert(
-        //    Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
-        //    1
-        //);
-
-        move_to(config_account, Config { payload });
-        // We don't trigger reconfiguration here, instead we'll wait for all validators update the binary
-        // to register this config into ON_CHAIN_CONFIG_REGISTRY then send another transaction to change
-        // the value which triggers the reconfiguration.
-
-        return ModifyConfigCapability<ConfigValue> {}
+    ): ModifyConfigCapability<ConfigValue> acquires ModifyConfigCapabilityHolder{
+        publish_new_config<ConfigValue>(account, payload);
+        extract_modify_config_capability<ConfigValue>(account)
     }
 
-    // Publish a new config item. Only the config address can modify such config.
-    public fun publish_new_config<ConfigValue: copyable>(config_account: &signer, payload: ConfigValue) {
-        //assert(
-        //    Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
-        //    1
-        //);
-
-        move_to(config_account, ModifyConfigCapability<ConfigValue> {});
-        move_to(config_account, Config{ payload });
-        // We don't trigger reconfiguration here, instead we'll wait for all validators update the binary
-        // to register this config into ON_CHAIN_CONFIG_REGISTRY then send another transaction to change
-        // the value which triggers the reconfiguration.
+    // Publish a new config item under account address.
+    public fun publish_new_config<ConfigValue: copyable>(account: &signer, payload: ConfigValue) {
+        move_to(account, Config{ payload });
+        let cap = ModifyConfigCapability<ConfigValue> {account_address: Signer::address_of(account), events: Event::new_event_handle<ConfigChangeEvent<ConfigValue>>(account)};
+        move_to(account, ModifyConfigCapabilityHolder{cap: Option::some(cap)});
     }
 
-    // Publish a new config item. Only the delegated address can modify such config after redeeming the capability.
-    public fun publish_new_config_with_delegate<ConfigValue: copyable>(
-        config_account: &signer,
-        payload: ConfigValue,
-        delegate: address,
-    ) {
-        //assert(
-        //    Association::has_privilege<CreateConfigCapability>(Signer::address_of(config_account)),
-        //    1
-        //);
-
-        Offer::create(config_account, ModifyConfigCapability<ConfigValue>{}, delegate);
-        move_to(config_account, Config { payload });
-        // We don't trigger reconfiguration here, instead we'll wait for all validators update the
-        // binary to register this config into ON_CHAIN_CONFIG_REGISTRY then send another
-        // transaction to change the value which triggers the reconfiguration.
+    // Extract account's ModifyConfigCapability for ConfigValue type
+    public fun extract_modify_config_capability<ConfigValue: copyable>(account: &signer): ModifyConfigCapability<ConfigValue> acquires ModifyConfigCapabilityHolder{
+        let signer_address = Signer::address_of(account);
+        let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address);
+        Option::extract(&mut cap_holder.cap)
     }
 
-    // Claim a delegated modify config capability granted by publish_new_config_with_delegate.
-    public fun claim_delegated_modify_config<ConfigValue>(account: &signer, offer_address: address) {
-        move_to(account, Offer::redeem<ModifyConfigCapability<ConfigValue>>(account, offer_address))
+    // Restore account's ModifyConfigCapability
+    public fun restore_modify_config_capability<ConfigValue: copyable>(cap: ModifyConfigCapability<ConfigValue>) acquires ModifyConfigCapabilityHolder{
+        let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address);
+        Option::fill(&mut cap_holder.cap, cap);
     }
 
-    public fun reconfigure(_account: &signer) acquires Configuration {
-        // Only callable by association address or by the VM internally.
-        //assert(
-        //    Association::has_privilege<Self::CreateConfigCapability>(Signer::address_of(account)),
-        //    1
-        //);
-        reconfigure_();
-    }
-
-    fun reconfigure_() acquires Configuration {
-       // Do not do anything if time is not set up yet, this is to avoid genesis emit too many epochs.
-       //TODO add timestamp limit.
-       //if (Timestamp::is_genesis()) {
-       //    return ()
-       //};
-
-       //let config_ref = borrow_global_mut<Configuration>(default_config_address());
-
-       // Ensure that there is at most one reconfiguration per transaction. This ensures that there is a 1-1
-       // correspondence between system reconfigurations and emitted ReconfigurationEvents.
-
-       //let current_block_time = Timestamp::now_microseconds();
-       //assert(current_block_time > config_ref.last_reconfiguration_time, 23);
-       //config_ref.last_reconfiguration_time = current_block_time;
-
-       emit_reconfiguration_event();
-    }
-
-    // Emit a reconfiguration event. This function will be invoked by the genesis directly to generate the very first
-    // reconfiguration event.
-    fun emit_reconfiguration_event() acquires Configuration {
-        let config_ref = borrow_global_mut<Configuration>(default_config_address());
-        config_ref.epoch = config_ref.epoch + 1;
-
-        Event::emit_event<NewEpochEvent>(
-            &mut config_ref.events,
-            NewEpochEvent {
-                epoch: config_ref.epoch,
+    // Emit a config change event.
+    fun emit_config_change_event<ConfigValue: copyable>(cap: &mut ModifyConfigCapability<ConfigValue>, value: ConfigValue) {
+        Event::emit_event<ConfigChangeEvent<ConfigValue>>(
+            &mut cap.events,
+            ConfigChangeEvent {
+                account_address: cap.account_address,
+                value: value,
             },
         );
     }
 
-    //TODO refactor config to multi users, and remove default_config_address
-    fun default_config_address(): address {
-        CoreAddresses::GENESIS_ACCOUNT()
-    }
 }
 }

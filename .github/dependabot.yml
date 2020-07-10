@@ -1,0 +1,10 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "02:00"
+    # Use UTC +08:00
+    timezone: "Asia/Shanghai"
+  open-pull-requests-limit: 10

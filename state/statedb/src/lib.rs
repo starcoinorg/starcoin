@@ -384,7 +384,7 @@ impl ChainStateReader for ChainStateDB {
             let mut state_sets = vec![];
             for storage_root in account_state.storage_roots().iter() {
                 let state_set = match storage_root {
-                    Some(storage_root) => Some(self.new_state_tree(storage_root.clone()).dump()?),
+                    Some(storage_root) => Some(self.new_state_tree(*storage_root).dump()?),
                     None => None,
                 };
 
@@ -447,7 +447,7 @@ impl ChainStateWriter for ChainStateDB {
 
             let new_account_state = AccountState::new(new_storage_roots);
             self.state_tree
-                .put(address_hash.clone(), new_account_state.try_into()?);
+                .put(*address_hash, new_account_state.try_into()?);
         }
         self.state_tree.commit()?;
         self.state_tree.flush()?;
