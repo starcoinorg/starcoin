@@ -2575,9 +2575,9 @@ dependencies = [
 
 [[package]]
 name = "include_dir"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25ec8c61b6100ad0fc58ca644c59c0137d526d73cefa7497426369ea0d84d769"
+checksum = "23d58bdeb22b1c4691106c084b1063781904c35d0f22eda2a283598968eac61a"
 dependencies = [
  "glob",
  "include_dir_impl",
@@ -2586,11 +2586,11 @@ dependencies = [
 
 [[package]]
 name = "include_dir_impl"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f03b4f7b64011df46794cc221854be5c3084345e260576518b91693866d0afd1"
+checksum = "327869970574819d24d1dca25c891856144d29159ab797fa9dc725c5c3f57215"
 dependencies = [
- "failure",
+ "anyhow",
  "proc-macro-hack",
  "proc-macro2 1.0.18",
  "quote 1.0.7",
