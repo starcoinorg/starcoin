@@ -202,7 +202,7 @@ pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
 pub static EPOCH_TIME_TARGET: u64 = 1_209_600;
 pub static REWARD_HALF_TIME_TARGET: u64 = 126_144_000;
 pub static INIT_BLOCK_TIME_TARGET: u64 = 20;
-pub static BLOCK_WINDOW: u64 = 20;
+pub static BLOCK_WINDOW: u64 = 24;
 
 pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();

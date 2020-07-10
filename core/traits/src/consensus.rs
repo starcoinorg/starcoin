@@ -5,6 +5,7 @@ use crate::ChainReader;
 use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_state_api::StateNodeStore;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
@@ -21,8 +22,11 @@ pub trait ConsensusHeader:
 pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
     type ConsensusHeader: ConsensusHeader;
 
-    fn calculate_next_difficulty(config: Arc<NodeConfig>, reader: &dyn ChainReader)
-        -> Result<U256>;
+    fn calculate_next_difficulty(
+        config: Arc<NodeConfig>,
+        reader: &dyn ChainReader,
+        store: Option<Arc<dyn StateNodeStore>>,
+    ) -> Result<U256>;
 
     /// Calculate new block consensus header
     // TODO use &HashValue to replace &[u8] for parent_hash
@@ -32,6 +36,7 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,
         header: &BlockHeader,
+        store: Option<Arc<dyn StateNodeStore>>,
     ) -> Result<()>;
 
     /// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_header
@@ -39,8 +44,9 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,
         block_template: BlockTemplate,
+        store: Option<Arc<dyn StateNodeStore>>,
     ) -> Result<Block> {
-        let difficulty = Self::calculate_next_difficulty(config, reader)?;
+        let difficulty = Self::calculate_next_difficulty(config, reader, store)?;
         let raw_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
         let consensus_header =
             Self::solve_consensus_header(raw_hash.to_vec().as_slice(), difficulty);

@@ -5,6 +5,7 @@ use crate::dev::DummyHeader;
 use anyhow::Result;
 use config::NodeConfig;
 use rand::prelude::*;
+use starcoin_state_api::StateNodeStore;
 use std::sync::Arc;
 use traits::ChainReader;
 use traits::Consensus;
@@ -20,6 +21,7 @@ impl Consensus for DummyConsensus {
     fn calculate_next_difficulty(
         config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
+        _store: Option<Arc<dyn StateNodeStore>>,
     ) -> Result<U256> {
         let mut rng = rand::thread_rng();
         // if produce block on demand, use a default wait time.
@@ -40,6 +42,7 @@ impl Consensus for DummyConsensus {
         _config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
         _header: &BlockHeader,
+        _store: Option<Arc<dyn StateNodeStore>>,
     ) -> Result<()> {
         Ok(())
     }

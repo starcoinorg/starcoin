@@ -55,7 +55,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         "block_template: gas_used: {}, gas_limit: {}",
         block_template.gas_used, block_template.gas_limit
     );
-    let new_block = DevConsensus::create_block(config.clone(), &block_chain, block_template)?;
+    let new_block = DevConsensus::create_block(config.clone(), &block_chain, block_template, None)?;
     block_chain.apply(new_block.clone())?;
 
     let reader = AccountStateReader::new(block_chain.chain_state_reader());

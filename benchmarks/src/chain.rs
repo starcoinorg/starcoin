@@ -108,9 +108,13 @@ impl ChainBencher {
                     txn_vec,
                 )
                 .unwrap();
-            let block =
-                DummyConsensus::create_block(self.config.clone(), &block_chain, block_template)
-                    .unwrap();
+            let block = DummyConsensus::create_block(
+                self.config.clone(),
+                &block_chain,
+                block_template,
+                None,
+            )
+            .unwrap();
             latest_id = Some(block.header().parent_hash());
             self.chain.write().try_connect(block).unwrap();
         }

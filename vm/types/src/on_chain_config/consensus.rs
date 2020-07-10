@@ -65,6 +65,15 @@ impl EpochResource {
     pub fn start_number(&self) -> u64 {
         self.start_number
     }
+
+    pub fn window(&self) -> u64 {
+        self.window
+    }
+
+    pub fn time_target(&self) -> u64 {
+        self.time_target
+    }
+
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
     pub fn struct_tag_for_epoch(currency_typetag: TypeTag) -> StructTag {
         StructTag {

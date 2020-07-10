@@ -157,7 +157,7 @@ where
                 txns.len()
             );
             let master = *startup_info.get_master();
-            let block_chain = BlockChain::<C>::new(config.clone(), master, storage)?;
+            let block_chain = BlockChain::<C>::new(config.clone(), master, storage.clone())?;
             let block_template = chain
                 .create_block_template(
                     *miner_account.address(),
@@ -167,7 +167,14 @@ where
                 )
                 .await?;
 
-            mint::<C>(stratum, miner, config, &block_chain, block_template)?;
+            mint::<C>(
+                stratum,
+                miner,
+                config,
+                &block_chain,
+                block_template,
+                storage,
+            )?;
             Ok(())
         }
         .map(|result: Result<()>| {

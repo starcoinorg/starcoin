@@ -10,6 +10,7 @@ use config::NodeConfig;
 use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use rand::Rng;
+use starcoin_state_api::StateNodeStore;
 use std::convert::TryFrom;
 use std::io::Cursor;
 use std::sync::Arc;
@@ -52,10 +53,13 @@ impl Consensus for ArgonConsensus {
     fn calculate_next_difficulty(
         _config: Arc<NodeConfig>,
         reader: &dyn ChainReader,
+        store: Option<Arc<dyn StateNodeStore>>,
     ) -> Result<U256> {
-        let target = difficulty::get_next_work_required(reader)?;
+        assert!(store.is_some());
+        let target = difficulty::get_next_work_required(reader, store.unwrap())?;
         Ok(target_to_difficulty(target))
     }
+
     fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
         let mut nonce = generate_nonce();
         loop {
@@ -75,8 +79,10 @@ impl Consensus for ArgonConsensus {
         config: Arc<NodeConfig>,
         reader: &dyn ChainReader,
         header: &BlockHeader,
+        store: Option<Arc<dyn StateNodeStore>>,
     ) -> Result<()> {
-        let difficulty = ArgonConsensus::calculate_next_difficulty(config, reader)?;
+        assert!(store.is_some());
+        let difficulty = ArgonConsensus::calculate_next_difficulty(config, reader, store)?;
         if header.difficulty() != difficulty {
             return Err(anyhow::Error::msg("Invalid difficulty"));
         }

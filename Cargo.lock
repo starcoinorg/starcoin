@@ -6505,8 +6505,11 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-state-api",
+ "starcoin-statedb",
  "starcoin-traits",
  "starcoin-types",
+ "starcoin-vm-types",
  "stest",
 ]
 

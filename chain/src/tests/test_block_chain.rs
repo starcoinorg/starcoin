@@ -67,7 +67,7 @@ async fn gen_master_chain(
                 .await
                 .unwrap();
             let block =
-                DevConsensus::create_block(node_config.clone(), &block_chain, block_template)
+                DevConsensus::create_block(node_config.clone(), &block_chain, block_template, None)
                     .unwrap();
             let _ = chain.clone().try_connect(block).await.unwrap();
             if delay {
@@ -148,7 +148,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
     )?;
 
-    let block_b1 = DevConsensus::create_block(config.clone(), &block_chain, template_b1)?;
+    let block_b1 = DevConsensus::create_block(config.clone(), &block_chain, template_b1, None)?;
     block_chain.apply(block_b1.clone())?;
 
     let mut block_chain2 = block_chain.new_chain(block_b1.id()).unwrap();
@@ -170,7 +170,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2.clone()],
         vec![],
     )?;
-    let block_b2 = DevConsensus::create_block(config.clone(), &block_chain, template_b2)?;
+    let block_b2 = DevConsensus::create_block(config.clone(), &block_chain, template_b2, None)?;
 
     block_chain.apply(block_b2)?;
     let (template_b3, _) = block_chain2.create_block_template(
@@ -180,7 +180,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2],
         vec![],
     )?;
-    let block_b3 = DevConsensus::create_block(config, &block_chain2, template_b3)?;
+    let block_b3 = DevConsensus::create_block(config, &block_chain2, template_b3, None)?;
     block_chain2.apply(block_b3)?;
 
     let vec_txn = block_chain2
@@ -210,7 +210,7 @@ async fn test_chain_apply() -> Result<()> {
         vec![],
     )?;
 
-    let new_block = DevConsensus::create_block(config, &block_chain, block_template)?;
+    let new_block = DevConsensus::create_block(config, &block_chain, block_template, None)?;
 
     // block_chain.txn_accumulator.append(&[HashValue::random()])?;
     // block_chain.txn_accumulator.flush()?;

@@ -5,6 +5,7 @@ use anyhow::{Error, Result};
 use config::{ConsensusStrategy, NodeConfig};
 use logger::prelude::*;
 use rand::prelude::*;
+use starcoin_state_api::StateNodeStore;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use std::thread;
@@ -43,6 +44,7 @@ impl Consensus for DevConsensus {
     fn calculate_next_difficulty(
         config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
+        _store: Option<Arc<dyn StateNodeStore>>,
     ) -> Result<U256> {
         let mut rng = rand::thread_rng();
         // if produce block on demand, use a default wait time.
@@ -71,6 +73,7 @@ impl Consensus for DevConsensus {
         _config: Arc<NodeConfig>,
         _reader: &dyn ChainReader,
         _header: &BlockHeader,
+        _store: Option<Arc<dyn StateNodeStore>>,
     ) -> Result<()> {
         Ok(())
     }
