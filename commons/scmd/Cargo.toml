@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-rustyline = "4.1.0"
+rustyline = "6.2.0"
 structopt = "0.3.2"
 clap = "2.33.1"
 git-version = "0.3.4"
