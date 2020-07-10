@@ -9,7 +9,7 @@ edition = "2018"
 
 [dependencies]
 pbkdf2="0.3"
-hmac = "0.7"
+hmac = "0.8"
 sha2 = "0.8"
 aes-gcm = "0.5"
 rand = "0.7.3"
