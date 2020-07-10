@@ -9,6 +9,7 @@
 #[macro_export]
 macro_rules! define_storage {
     ($storage_type: ident, $key_type: ty, $value_type: ty, $prefix_name: expr) => {
+        #[derive(Clone)]
         pub struct $storage_type {
             store: CodecStorage<$key_type, $value_type>,
         }

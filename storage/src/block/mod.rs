@@ -74,6 +74,7 @@ define_storage!(
     BLOCK_TRANSACTION_INFOS_PREFIX_NAME
 );
 
+#[derive(Clone)]
 pub struct BlockStorage {
     block_store: BlockInnerStorage,
     header_store: BlockHeaderStorage,

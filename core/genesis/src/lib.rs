@@ -171,7 +171,7 @@ impl Genesis {
         Ok(TransactionInfo::new(
             txn_hash,
             state_root,
-            events,
+            events.as_slice(),
             gas_used,
             status.vm_status().major_status,
         ))

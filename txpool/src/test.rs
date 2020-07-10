@@ -142,11 +142,12 @@ async fn test_rollback() -> Result<()> {
             0,
             Transaction::BlockMetadata(enacted_block.header().clone().into_metadata()),
         );
-        let (root, _txn_infos) = starcoin_executor::block_execute(
+        let root = starcoin_executor::block_execute(
             &chain_state,
             txns,
             enacted_block.header().gas_limit(),
-        )?;
+        )?
+        .state_root;
 
         assert_eq!(root, enacted_block.header().state_root());
         chain_state.flush()?;

@@ -29,6 +29,7 @@ use txpool::TxPoolService;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
     system_events::MinedBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
@@ -175,6 +176,9 @@ where
                         .get_txn_info_by_block_and_index(block_id, txn_idx)?,
                 ))
             }
+            ChainRequest::GetEventsByTxnInfoId { txn_info_id } => Ok(ChainResponse::Events(
+                self.service.get_events_by_txn_info_id(txn_info_id)?,
+            )),
         }
     }
 }
@@ -361,6 +365,22 @@ where
             .map_err(Into::<Error>::into)??;
         if let ChainResponse::TransactionInfo(info) = response {
             Ok(info)
+        } else {
+            bail!("get txn info by block and idx error.")
+        }
+    }
+
+    async fn get_events_by_txn_info_id(
+        self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<ContractEvent>>> {
+        let response = self
+            .address
+            .send(ChainRequest::GetEventsByTxnInfoId { txn_info_id })
+            .await
+            .map_err(Into::<Error>::into)??;
+        if let ChainResponse::Events(events) = response {
+            Ok(events)
         } else {
             bail!("get txn info by block and idx error.")
         }

@@ -118,7 +118,8 @@ fn test_block_execute_gas_limit() -> Result<()> {
         assert_eq!(max_include_txn_num, txns.len() as u64);
 
         txns.insert(0, Transaction::BlockMetadata(block_meta.clone()));
-        let (_, txn_infos) = crate::block_execute(&chain_state, txns, block_gas_limit)?;
+        let executed_data = crate::block_execute(&chain_state, txns, block_gas_limit)?;
+        let txn_infos = executed_data.txn_infos;
 
         // all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
@@ -144,7 +145,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
             })
             .collect();
         txns.insert(0, Transaction::BlockMetadata(block_meta));
-        let (_, txn_infos) = crate::block_execute(&chain_state, txns, block_gas_limit)?;
+        let txn_infos = crate::block_execute(&chain_state, txns, block_gas_limit)?.txn_infos;
 
         // not all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
