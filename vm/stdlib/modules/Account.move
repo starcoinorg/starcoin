@@ -12,6 +12,7 @@ module Account {
     use 0x1::Timestamp;
     use 0x1::Option::{Self, Option};
     use 0x1::SignedInteger64::{Self};
+    use 0x1::TransactionFee;
     use 0x1::CoreAddresses;
 
     // Every account has a Account::Account resource
@@ -555,11 +556,9 @@ module Account {
                     sender_balance,
                     transaction_fee_amount
             );
-            // Pay the transaction fee into the transaction fee balance.
-            // Don't use the account deposit in order to not emit a
-            // sent/received payment event.
-            let transaction_fee_balance = borrow_global_mut<Balance<Token>>(0xFEE);
-            Coin::deposit(&mut transaction_fee_balance.coin, transaction_fee);
+            TransactionFee::pay_fee(transaction_fee);
+            //let transaction_fee_balance = borrow_global_mut<Balance<Token>>(CoreAddresses::GENESIS_ACCOUNT());
+            //Coin::deposit(&mut transaction_fee_balance.coin, transaction_fee);
         };
     }
 }

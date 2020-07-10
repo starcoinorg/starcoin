@@ -16,6 +16,7 @@ module Genesis {
    use 0x1::VMConfig;
    use 0x1::Vector;
    use 0x1::Block;
+   use 0x1::TransactionFee;
    use 0x1::BlockReward;
 
    //TODO refactor when move support ABI, and pass struct by argument
@@ -61,9 +62,7 @@ module Genesis {
         let miner_reward_balance = total_supply - association_balance;
         BlockReward::initialize(&genesis_account, miner_reward_balance);
 
-        let txn_fee_account = Account::create_genesis_account(CoreAddresses::TRANSACTION_FEE_ADDRESS(), dummy_auth_key_prefix);
-        Account::add_currency<STC>(&txn_fee_account);
-
+        TransactionFee::initialize(&genesis_account);
         //Grant stdlib maintainer to association
         PackageTxnManager::grant_maintainer(&genesis_account, Signer::address_of(&association));
         //TODO set stdlib upgrade strategy.
@@ -83,7 +82,6 @@ module Genesis {
         Timestamp::initialize(&genesis_account);
 
         Account::release_genesis_signer(genesis_account);
-        Account::release_genesis_signer(txn_fee_account);
         Account::release_genesis_signer(association);
    }
 }

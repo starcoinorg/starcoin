@@ -17,5 +17,11 @@ module STC {
             1000,    // fractional_part = 10^3
         );
     }
+
+    /// Returns true if `CoinType` is `STC::STC`
+    public fun is_stc<CoinType>(): bool {
+        Coin::is_currency<CoinType>() &&
+            Coin::currency_code<CoinType>() == Coin::currency_code<STC>()
+    }
 }
 }
