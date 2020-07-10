@@ -10,7 +10,7 @@ edition = "2018"
 [dependencies]
 pbkdf2="0.3"
 hmac = "0.7"
-sha2 = "0.8"
+sha2 = "0.9"
 aes-gcm = "0.5"
 rand = "0.7.3"
 rand_core = { version = "0.5.1", default-features = false }

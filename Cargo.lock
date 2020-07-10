@@ -6562,7 +6562,7 @@ dependencies = [
  "pbkdf2",
  "rand 0.7.3",
  "rand_core 0.5.1",
- "sha2 0.8.2",
+ "sha2 0.9.1",
 ]
 
 [[package]]
@@ -7800,7 +7800,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
- "sha2 0.8.2",
+ "sha2 0.9.1",
  "starcoin-chain",
  "starcoin-cmd",
  "starcoin-config",
