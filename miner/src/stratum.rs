@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::miner::{MineCtx, Miner};
-use config::NodeConfig;
 use logger::prelude::*;
 use sc_stratum::*;
-use starcoin_state_api::StateNodeStore;
 use std::sync::Arc;
 use traits::{ChainReader, Consensus};
 use types::block::BlockTemplate;
@@ -40,15 +38,13 @@ where
 pub fn mint<C>(
     stratum: Arc<Stratum>,
     mut miner: Miner<C>,
-    config: Arc<NodeConfig>,
     chain: &dyn ChainReader,
     block_template: BlockTemplate,
-    store: Arc<dyn StateNodeStore>,
 ) -> anyhow::Result<()>
 where
     C: Consensus,
 {
-    let difficulty = C::calculate_next_difficulty(config, chain, Some(store))?;
+    let difficulty = C::calculate_next_difficulty(chain)?;
     miner.set_mint_job(MineCtx::new(block_template, difficulty));
     let job = miner.get_mint_job();
     debug!("Push job to worker {}", job);

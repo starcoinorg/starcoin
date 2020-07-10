@@ -3,10 +3,6 @@
 
 use crate::dev::DummyHeader;
 use anyhow::Result;
-use config::NodeConfig;
-use rand::prelude::*;
-use starcoin_state_api::StateNodeStore;
-use std::sync::Arc;
 use traits::ChainReader;
 use traits::Consensus;
 use types::block::BlockHeader;
@@ -18,32 +14,16 @@ pub struct DummyConsensus {}
 impl Consensus for DummyConsensus {
     type ConsensusHeader = DummyHeader;
 
-    fn calculate_next_difficulty(
-        config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
-        _store: Option<Arc<dyn StateNodeStore>>,
-    ) -> Result<U256> {
-        let mut rng = rand::thread_rng();
-        // if produce block on demand, use a default wait time.
-        let high: u64 = if config.miner.dev_period == 0 {
-            1000
-        } else {
-            config.miner.dev_period * 1000
-        };
-        let time: u64 = rng.gen_range(1, high);
-        Ok(time.into())
+    fn calculate_next_difficulty(chain: &dyn ChainReader) -> Result<U256> {
+        let epoch = Self::epoch(chain)?;
+        Ok(epoch.time_target().into())
     }
 
     fn solve_consensus_header(_header_hash: &[u8], _difficulty: U256) -> Self::ConsensusHeader {
         DummyHeader {}
     }
 
-    fn verify(
-        _config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
-        _header: &BlockHeader,
-        _store: Option<Arc<dyn StateNodeStore>>,
-    ) -> Result<()> {
+    fn verify(_reader: &dyn ChainReader, _header: &BlockHeader) -> Result<()> {
         Ok(())
     }
 }

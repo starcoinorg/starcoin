@@ -2,12 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use config::{ConsensusStrategy, NodeConfig};
 use logger::prelude::*;
 use rand::prelude::*;
-use starcoin_state_api::StateNodeStore;
 use std::convert::TryFrom;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use traits::ChainReader;
@@ -41,40 +38,24 @@ pub struct DevConsensus {}
 impl Consensus for DevConsensus {
     type ConsensusHeader = DummyHeader;
 
-    fn calculate_next_difficulty(
-        config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
-        _store: Option<Arc<dyn StateNodeStore>>,
-    ) -> Result<U256> {
-        let mut rng = rand::thread_rng();
-        // if produce block on demand, use a default wait time.
-        match &config.miner.consensus_strategy {
-            ConsensusStrategy::Dummy(dev_period) => {
-                let high: u64 = if *dev_period == 0 {
-                    1000
-                } else {
-                    *dev_period * 1000
-                };
-                let time: u64 = rng.gen_range(1, high);
-                Ok(time.into())
-            }
-            ConsensusStrategy::Argon(_) => panic!("Incompatible consensus strategy"),
-        }
+    fn calculate_next_difficulty(chain: &dyn ChainReader) -> Result<U256> {
+        let epoch = Self::epoch(chain)?;
+        Ok(epoch.time_target().into())
     }
 
     fn solve_consensus_header(_header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
-        let time: u64 = difficulty.as_u64();
-        debug!("DevConsensus rand sleep time : {}", time);
+        let mut rng = rand::thread_rng();
+        let time: u64 = rng.gen_range(1, difficulty.as_u64());
+        debug!(
+            "DevConsensus rand sleep time : {}, difficulty : {}",
+            time,
+            difficulty.as_u64()
+        );
         thread::sleep(Duration::from_millis(time));
         DummyHeader {}
     }
 
-    fn verify(
-        _config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
-        _header: &BlockHeader,
-        _store: Option<Arc<dyn StateNodeStore>>,
-    ) -> Result<()> {
+    fn verify(_reader: &dyn ChainReader, _header: &BlockHeader) -> Result<()> {
         Ok(())
     }
 }

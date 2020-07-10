@@ -387,12 +387,7 @@ where
             );
         }
 
-        if let Err(e) = C::verify(
-            self.config.clone(),
-            self,
-            header,
-            Some(self.storage.clone().into_super_arc()),
-        ) {
+        if let Err(e) = C::verify(self, header) {
             error!("verify header failed : {:?}", e);
             return Ok(ConnectBlockResult::VerifyConsensusFailed);
         }
@@ -561,12 +556,7 @@ where
         }
 
         // 3. verify block
-        if let Err(e) = C::verify(
-            self.config.clone(),
-            self,
-            block.header(),
-            Some(self.storage.clone().into_super_arc()),
-        ) {
+        if let Err(e) = C::verify(self, block.header()) {
             error!("verify header failed : {:?}", e);
             return Ok(ConnectBlockResult::VerifyConsensusFailed);
         }

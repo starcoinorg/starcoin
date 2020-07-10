@@ -235,13 +235,7 @@ async fn create_node(
                 )
                 .await
                 .unwrap();
-            let block = DummyConsensus::create_block(
-                node_config.clone(),
-                &block_chain,
-                block_template,
-                None,
-            )
-            .unwrap();
+            let block = DummyConsensus::create_block(&block_chain, block_template).unwrap();
             chain.clone().try_connect(block).await.unwrap();
         }
     }

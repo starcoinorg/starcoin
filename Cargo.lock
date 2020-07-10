@@ -7224,6 +7224,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-state-api",
  "starcoin-types",
+ "starcoin-vm-types",
  "thiserror",
 ]
 

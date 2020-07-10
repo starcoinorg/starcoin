@@ -167,14 +167,7 @@ where
                 )
                 .await?;
 
-            mint::<C>(
-                stratum,
-                miner,
-                config,
-                &block_chain,
-                block_template,
-                storage,
-            )?;
+            mint::<C>(stratum, miner, &block_chain, block_template)?;
             Ok(())
         }
         .map(|result: Result<()>| {
