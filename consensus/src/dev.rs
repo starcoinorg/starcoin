@@ -40,6 +40,7 @@ impl Consensus for DevConsensus {
 
     fn calculate_next_difficulty(chain: &dyn ChainReader) -> Result<U256> {
         let epoch = Self::epoch(chain)?;
+        debug!("epoch: {:?}", epoch);
         Ok(epoch.time_target().into())
     }
 

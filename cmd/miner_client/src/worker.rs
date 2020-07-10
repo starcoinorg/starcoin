@@ -219,7 +219,7 @@ fn dummy_solver(
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
     let mut rng = rand::thread_rng();
-    let time: u64 = rng.gen_range(1, diff.as_u64());
+    let time: u64 = rng.gen_range(1, diff.as_u64() * 2);
     debug!(
         "DevConsensus rand sleep time : {}, difficulty : {}",
         time,
