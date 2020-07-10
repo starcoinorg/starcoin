@@ -4653,17 +4653,17 @@ checksum = "a3bf70094d203e07844da868b634207e71bfab254fe713171fae9a6e751ccf31"
 
 [[package]]
 name = "pbkdf2"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "006c038a43a45995a9670da19e67600114740e8511d4333bf97a56e66a7542d9"
+checksum = "216eaa586a190f0a738f2f918511eecfa90f13295abec0e457cdebcceda80cbd"
 dependencies = [
- "base64 0.9.3",
- "byteorder 1.3.4",
- "crypto-mac 0.7.0",
- "hmac 0.7.1",
- "rand 0.5.6",
- "sha2 0.8.2",
- "subtle 1.0.0",
+ "base64 0.12.3",
+ "crypto-mac 0.8.0",
+ "hmac 0.8.1",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "sha2 0.9.1",
+ "subtle 2.2.3",
 ]
 
 [[package]]
