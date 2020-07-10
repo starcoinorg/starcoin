@@ -24,7 +24,7 @@ starcoin-executor = {path = "../executor", package="starcoin-executor" }
 starcoin-bus = {path = "../bus"}
 traits = {path = "../core/traits", package="starcoin-traits"}
 starcoin-wallet-api = { path = "../wallet/api"}
-parking_lot = "0.9"
+parking_lot = "0.10"
 actix = "0.10.0-alpha.3"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
