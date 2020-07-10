@@ -262,8 +262,11 @@ mod tests {
     use starcoin_storage::cache_storage::CacheStorage;
     use starcoin_storage::storage::StorageInstance;
     use starcoin_storage::{BlockStore, IntoSuper, Storage};
+    use starcoin_types::account_config::genesis_address;
     use starcoin_vm_types::account_config::association_address;
-    use starcoin_vm_types::on_chain_config::{RegisteredCurrencies, VMConfig, Version};
+    use starcoin_vm_types::on_chain_config::{
+        EpochResource, RegisteredCurrencies, VMConfig, Version,
+    };
 
     #[stest::test]
     pub fn test_genesis_load() -> Result<()> {
@@ -369,6 +372,9 @@ mod tests {
         //ensure block_accumulator can work.
         block_accumulator.append(&[HashValue::random()])?;
         block_accumulator.flush()?;
+
+        let epoch = account_state_reader.get_resource::<EpochResource>(genesis_address())?;
+        assert!(epoch.is_some(), "Epoch resource should exist.");
 
         Ok(())
     }

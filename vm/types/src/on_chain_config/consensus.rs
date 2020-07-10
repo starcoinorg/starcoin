@@ -4,14 +4,8 @@
 use crate::on_chain_config::OnChainConfig;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    access_path::AccessPath,
-    account_config::constants::{stc_type_tag, CORE_CODE_ADDRESS},
-};
-use move_core_types::{
-    language_storage::{StructTag, TypeTag},
-    move_resource::MoveResource,
-};
+use crate::{access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS};
+use move_core_types::{language_storage::StructTag, move_resource::MoveResource};
 
 const CONSENSUS_MODULE_NAME: &str = "Consensus";
 
@@ -75,26 +69,22 @@ impl EpochResource {
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
-    pub fn struct_tag_for_epoch(currency_typetag: TypeTag) -> StructTag {
+    pub fn struct_tag_for_epoch() -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             name: EpochResource::struct_identifier(),
             module: EpochResource::module_identifier(),
-            type_params: vec![currency_typetag],
+            type_params: vec![],
         }
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
-    pub fn access_path_for(epoch_typetag: TypeTag) -> Vec<u8> {
-        AccessPath::resource_access_vec(&EpochResource::struct_tag_for_epoch(epoch_typetag))
+    pub fn access_path_for() -> Vec<u8> {
+        AccessPath::resource_access_vec(&EpochResource::struct_tag_for_epoch())
     }
 }
 
 impl MoveResource for EpochResource {
     const MODULE_NAME: &'static str = CONSENSUS_MODULE_NAME;
     const STRUCT_NAME: &'static str = "Epoch";
-
-    fn type_params() -> Vec<TypeTag> {
-        vec![stc_type_tag()]
-    }
 }

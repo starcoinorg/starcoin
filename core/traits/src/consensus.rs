@@ -9,7 +9,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
 };
-use starcoin_vm_types::{account_config::CORE_CODE_ADDRESS, on_chain_config::EpochResource};
+use starcoin_vm_types::{account_config::genesis_address, on_chain_config::EpochResource};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 
@@ -23,7 +23,7 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
 
     fn epoch(chain: &dyn ChainReader) -> Result<EpochResource> {
         let account_reader = AccountStateReader::new(chain.chain_state_reader());
-        if let Some(epoch) = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)? {
+        if let Some(epoch) = account_reader.get_resource::<EpochResource>(genesis_address())? {
             Ok(epoch)
         } else {
             Err(format_err!("Epoch is none."))

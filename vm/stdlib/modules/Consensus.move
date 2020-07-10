@@ -30,7 +30,7 @@ module Consensus {
              epoch_start_time: 0,
              uncles: 0,
              start_number: 0,
-             end_number: 10,
+             end_number: 0,
              time_target: init_block_time_target,
              window: 0,
              reward: 0,
