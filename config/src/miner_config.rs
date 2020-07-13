@@ -47,7 +47,6 @@ pub enum ConsensusStrategy {
 pub enum PacemakerStrategy {
     HeadBlock,
     Ondemand,
-    Schedule,
 }
 
 impl ConfigModule for MinerConfig {
@@ -82,13 +81,13 @@ impl ConfigModule for MinerConfig {
         self.stratum_server = format!("127.0.0.1:{}", get_random_available_port())
             .parse::<SocketAddr>()
             .unwrap();
-        self.pacemaker_strategy = PacemakerStrategy::Schedule;
+        self.pacemaker_strategy = PacemakerStrategy::HeadBlock;
         self.consensus_strategy = ConsensusStrategy::Dummy(1);
     }
 
     fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
         if base.net.is_dev() && opt.dev_period > 0 {
-            self.pacemaker_strategy = PacemakerStrategy::Schedule;
+            self.pacemaker_strategy = PacemakerStrategy::HeadBlock;
             self.consensus_strategy = ConsensusStrategy::Dummy(opt.dev_period);
         } else if !base.net.is_dev() {
             if let Some(thread_num) = opt.miner_thread {

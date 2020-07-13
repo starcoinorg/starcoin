@@ -40,19 +40,19 @@ impl Consensus for DevConsensus {
 
     fn calculate_next_difficulty(chain: &dyn ChainReader) -> Result<U256> {
         let epoch = Self::epoch(chain)?;
-        debug!("epoch: {:?}", epoch);
+        info!("epoch: {:?}", epoch);
         Ok(epoch.time_target().into())
     }
 
     fn solve_consensus_header(_header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
         let mut rng = rand::thread_rng();
-        let time: u64 = rng.gen_range(1, difficulty.as_u64());
-        debug!(
+        let time: u64 = rng.gen_range(1, difficulty.as_u64() * 2);
+        info!(
             "DevConsensus rand sleep time : {}, difficulty : {}",
             time,
             difficulty.as_u64()
         );
-        thread::sleep(Duration::from_millis(time));
+        thread::sleep(Duration::from_secs(time));
         DummyHeader {}
     }
 

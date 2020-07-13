@@ -118,13 +118,13 @@ module Consensus {
         assert(block_height == 1, 333);
         let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
         let count = Self::epoch_time_target() / epoch_ref.time_target;
+        assert(count > 1, 336);
         epoch_ref.epoch_start_time = block_time;
         epoch_ref.start_number = 1;
         epoch_ref.end_number = count;
         epoch_ref.window = Self::block_window(account, 1, block_height);
     }
 
-    //TODO: has bug
     public fun adjust_epoch(account: &signer, block_height: u64, block_time: u64, uncles: u64) acquires Epoch {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
         if (block_height == 1) {
@@ -132,37 +132,70 @@ module Consensus {
             Self::first_epoch(account, block_height, block_time);
         } else {
             let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
-            if (block_height < epoch_ref.end_number) {
+            if (block_height <= epoch_ref.end_number) {
                 epoch_ref.uncles = epoch_ref.uncles + uncles;
-                epoch_ref.window = Self::block_window(account, block_height - epoch_ref.start_number + 1, block_height);
+                if (block_height == epoch_ref.end_number) {
+                    epoch_ref.window = Self::block_window(account, 0, block_height);
+                } else {
+                    epoch_ref.window = Self::block_window(account, block_height - epoch_ref.start_number + 1, block_height);
+                }
             } else {
-                //TODO:
                 assert(block_time > epoch_ref.epoch_start_time, 335);
                 let total_time = block_time - epoch_ref.epoch_start_time;
-                let total_uncles = epoch_ref.uncles + uncles;
-                let avg_block_time = total_time / (epoch_ref.end_number - epoch_ref.start_number);
-                let uncles_rate = total_uncles * 1000 / (epoch_ref.end_number - epoch_ref.start_number);
-                let new_epoch_block_time_target = (1000 + Self::uncle_rate_target()) * avg_block_time / (uncles_rate + 1000);
+                let total_uncles = epoch_ref.uncles;
+                let avg_block_time = total_time / (epoch_ref.end_number - epoch_ref.start_number + 1);
+                let uncles_rate = total_uncles * 1000 / (epoch_ref.end_number - epoch_ref.start_number + 1);
+                let new_epoch_block_time_target = (1000 + uncles_rate) * avg_block_time / (Self::uncle_rate_target() + 1000);
+                if (new_epoch_block_time_target < 10) {
+                    new_epoch_block_time_target = 10;
+                };
                 let new_epoch_time_target = Self::epoch_time_target() * 2 - total_time;
                 let new_epoch_blocks = new_epoch_time_target / new_epoch_block_time_target;
-                assert(new_epoch_blocks > 1, 336);
+                assert(new_epoch_blocks > 1, 337);
 
                 epoch_ref.epoch_start_time = block_time;
-                epoch_ref.uncles = 0;
-                epoch_ref.start_number = block_height + 1;
+                epoch_ref.uncles = uncles;
+                epoch_ref.start_number = block_height;
                 epoch_ref.end_number = block_height + new_epoch_blocks;
                 epoch_ref.time_target = new_epoch_block_time_target;
-                epoch_ref.window = Self::block_window(account, 0, block_height);
+                epoch_ref.window = Self::block_window(account, 1, block_height);
             }
         }
     }
 
-    public fun current_epoch_info(): (u64, u64, u64) acquires Epoch {
+    public fun epoch_start_time(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
-        let start_number = epoch_ref.start_number;
-        let end_number = epoch_ref.end_number;
-        let time_target = epoch_ref.time_target;
-        (start_number, end_number, time_target)
+        epoch_ref.epoch_start_time
+    }
+
+    public fun uncles(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        epoch_ref.uncles
+    }
+
+    public fun start_number(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        epoch_ref.start_number
+    }
+
+    public fun end_number(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        epoch_ref.end_number
+    }
+
+    public fun time_target(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        epoch_ref.time_target
+    }
+
+    public fun window(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        epoch_ref.window
+    }
+
+    public fun reward(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        epoch_ref.reward
     }
 }
 

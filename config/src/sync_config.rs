@@ -31,13 +31,9 @@ impl SyncConfig {
 }
 
 impl ConfigModule for SyncConfig {
-    fn default_with_net(net: ChainNetwork) -> Self {
+    fn default_with_net(_net: ChainNetwork) -> Self {
         SyncConfig {
-            sync_mode: if net.is_dev() {
-                SyncMode::FULL
-            } else {
-                SyncMode::FAST
-            },
+            sync_mode: SyncMode::FULL,
         }
     }
 
