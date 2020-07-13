@@ -695,7 +695,7 @@ source = "git+https://github.com/starcoinorg/libra?rev=72a0989b02db1d8ee297f89f9
 dependencies = [
  "anyhow",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "libra-canonical-serialization",
  "libra-types",
  "libra-workspace-hack",
@@ -909,6 +909,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "600c3317d4705222ff820139aaa76a3a208024ffc41f894da565a4c3b949d4c9"
 dependencies = [
  "codespan",
+ "termcolor",
+ "unicode-width",
+]
+
+[[package]]
+name = "codespan-reporting"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e0762455306b1ed42bc651ef6a2197aabda5e1d4a43c34d5eab5c1a3634e81d"
+dependencies = [
  "termcolor",
  "unicode-width",
 ]
@@ -1491,7 +1501,7 @@ source = "git+https://github.com/starcoinorg/libra?rev=72a0989b02db1d8ee297f89f9
 dependencies = [
  "anyhow",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "itertools 0.9.0",
  "libra-workspace-hack",
  "log 0.4.8",
@@ -2665,7 +2675,7 @@ dependencies = [
  "anyhow",
  "bytecode-source-map",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "ir-to-bytecode-syntax",
  "libra-types",
  "libra-workspace-hack",
@@ -3935,7 +3945,7 @@ dependencies = [
  "bytecode-verifier",
  "byteorder 1.3.4",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "datatest-stable",
  "difference",
  "hex 0.4.2",
@@ -3959,7 +3969,7 @@ dependencies = [
  "bytecode-source-map",
  "clap",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.9.5",
  "datatest-stable",
  "docgen",
  "handlebars",
@@ -6264,7 +6274,7 @@ dependencies = [
  "bytecode-source-map",
  "bytecode-verifier",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "itertools 0.9.0",
  "libra-types",
  "libra-workspace-hack",
