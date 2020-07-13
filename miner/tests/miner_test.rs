@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 use actix::Actor;
 use actix_rt::System;
-use bus::{Bus, BusActor};
+use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
 use consensus::dev::DevConsensus;
-use futures::StreamExt;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -24,7 +23,6 @@ use txpool::{TxPool, TxPoolService};
 use types::{
     account_address,
     peer_info::{PeerId, PeerInfo},
-    system_events::MinedBlock,
 };
 
 #[ignore]
