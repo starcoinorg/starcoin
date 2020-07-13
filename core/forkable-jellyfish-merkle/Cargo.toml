@@ -28,7 +28,7 @@ scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization"
 rand = "0.7.3"
 rand_core = { version = "0.5.1", default-features = false }
 proptest = "0.9.2"
-proptest-derive = "0.1.2"
+proptest-derive = "0.2.0"
 criterion = "0.3"
 
 [features]
