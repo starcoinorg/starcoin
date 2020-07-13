@@ -77,7 +77,7 @@ async fn gen_master_chain(
     (chain, node_config)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_block_chain_head() {
     ::logger::init_for_test();
     let times = 10;
@@ -88,7 +88,7 @@ async fn test_block_chain_head() {
     );
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_block_chain_forks() {
     ::logger::init_for_test();
     let times = 5;
@@ -128,7 +128,7 @@ async fn test_block_chain_forks() {
     )
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 ///             ╭--> b3(t2)
 /// Genesis--> b1--> b2(t2)
 ///             
@@ -192,7 +192,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_chain_apply() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config)?;
