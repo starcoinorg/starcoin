@@ -1801,7 +1801,7 @@ dependencies = [
  "num-traits",
  "once_cell",
  "proptest 0.9.6",
- "proptest-derive 0.1.2",
+ "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
@@ -3442,7 +3442,7 @@ dependencies = [
  "mirai-annotations",
  "once_cell",
  "proptest 0.10.0",
- "proptest-derive 0.2.0",
+ "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
@@ -3489,7 +3489,7 @@ dependencies = [
  "libra-crypto",
  "libra-workspace-hack",
  "proptest 0.10.0",
- "proptest-derive 0.2.0",
+ "proptest-derive",
  "serde",
  "serde_bytes",
  "thiserror",
@@ -3512,7 +3512,7 @@ dependencies = [
  "crossbeam",
  "libra-workspace-hack",
  "proptest 0.10.0",
- "proptest-derive 0.2.0",
+ "proptest-derive",
 ]
 
 [[package]]
@@ -3555,7 +3555,7 @@ dependencies = [
  "move-core-types",
  "once_cell",
  "proptest 0.10.0",
- "proptest-derive 0.2.0",
+ "proptest-derive",
  "radix_trie",
  "rand 0.7.3",
  "serde",
@@ -3901,7 +3901,7 @@ dependencies = [
  "libra-workspace-hack",
  "mirai-annotations",
  "proptest 0.10.0",
- "proptest-derive 0.2.0",
+ "proptest-derive",
  "rand 0.7.3",
  "ref-cast",
  "serde",
@@ -5036,17 +5036,6 @@ dependencies = [
  "regex-syntax",
  "rusty-fork 0.3.0",
  "tempfile",
-]
-
-[[package]]
-name = "proptest-derive"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d31edb17edac73aeacc947bd61462dda15220584268896a58e12f053d767f15b"
-dependencies = [
- "proc-macro2 0.4.30",
- "quote 0.6.13",
- "syn 0.15.44",
 ]
 
 [[package]]
@@ -6311,7 +6300,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.10.2",
  "proptest 0.9.6",
- "proptest-derive 0.1.2",
+ "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
@@ -7348,7 +7337,7 @@ dependencies = [
  "once_cell",
  "parity-multiaddr 0.6.0",
  "proptest 0.9.6",
- "proptest-derive 0.1.2",
+ "proptest-derive",
  "prost",
  "rand 0.7.3",
  "rand_core 0.5.1",
