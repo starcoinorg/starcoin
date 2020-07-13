@@ -4157,7 +4157,7 @@ dependencies = [
  "stest",
  "tempfile",
  "thiserror",
- "unsigned-varint 0.3.3",
+ "unsigned-varint 0.4.0",
  "void",
  "wasm-timer",
  "zeroize",
@@ -8519,12 +8519,6 @@ name = "unsigned-varint"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f67332660eb59a6f1eb24ff1220c9e8d01738a8503c6002e30bcfe4bd9f2b4a9"
-dependencies = [
- "bytes 0.5.5",
- "futures-io",
- "futures-util",
- "futures_codec 0.3.4",
-]
 
 [[package]]
 name = "unsigned-varint"
@@ -8533,6 +8527,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "669d776983b692a906c881fcd0cfb34271a48e197e4d6cb8df32b05bfc3d3fa5"
 dependencies = [
  "bytes 0.5.5",
+ "futures-io",
+ "futures-util",
  "futures_codec 0.4.1",
 ]
 
