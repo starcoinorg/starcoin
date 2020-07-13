@@ -231,7 +231,7 @@ where
         for branch_header_id in &self.startup_info.branches {
             let available_uncles = self.find_available_uncles_in_branch(
                 epoch_start_number,
-                branch_header_id.clone(),
+                *branch_header_id,
                 &exists_uncles,
             )?;
             for uncle in available_uncles {
