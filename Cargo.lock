@@ -1670,7 +1670,7 @@ dependencies = [
  "fixed-hash 0.3.2",
  "impl-rlp",
  "impl-serde",
- "primitive-types",
+ "primitive-types 0.3.0",
  "uint 0.7.1",
 ]
 
@@ -1746,6 +1746,15 @@ dependencies = [
  "rand 0.5.6",
  "rustc-hex 2.1.0",
  "static_assertions 0.2.5",
+]
+
+[[package]]
+name = "fixed-hash"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3367952ceb191f4ab95dd5685dc163ac539e36202f9fcfd0cb22f9f9c542fefc"
+dependencies = [
+ "static_assertions 1.1.0",
 ]
 
 [[package]]
@@ -2937,11 +2946,11 @@ checksum = "67c21572b4949434e4fc1e1978b99c5f77064153c59d998bf13ecd96fb5ecba7"
 
 [[package]]
 name = "keccak-hash"
-version = "0.2.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69e8ee697b9aa6dcc34d7657565fa5052763a1627a5b59e4c3c0ae3ed0d70a65"
+checksum = "4f0e55d8f242fdc281c21c4cd70960a25db6dd17cc6232d8b38b564b5b18c784"
 dependencies = [
- "primitive-types",
+ "primitive-types 0.6.2",
  "tiny-keccak 1.5.0",
 ]
 
@@ -4918,6 +4927,16 @@ dependencies = [
  "impl-rlp",
  "impl-serde",
  "uint 0.7.1",
+]
+
+[[package]]
+name = "primitive-types"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4336f4f5d5524fa60bcbd6fe626f9223d8142a50e7053e979acdf0da41ab975"
+dependencies = [
+ "fixed-hash 0.5.2",
+ "uint 0.8.3",
 ]
 
 [[package]]
