@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 criterion = "0.3.1"
-proptest = "0.9.6"
+proptest = "0.10.0"
 types = {path = "../types", package="starcoin-types"}
 storage = { package="starcoin-storage", path = "../storage"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
