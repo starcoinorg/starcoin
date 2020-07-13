@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_types::{
-    transaction::{SignedUserTransaction, Transaction, TransactionOutput},
-    vm_error::VMStatus,
-};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
+use starcoin_vm_types::{state_view::StateView, vm_status::VMStatus};
 use vm_runtime::{metrics::TXN_EXECUTION_HISTOGRAM, starcoin_vm::StarcoinVM};
 
 pub fn execute_transactions(

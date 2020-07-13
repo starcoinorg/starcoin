@@ -33,7 +33,7 @@ fn test_stratum_client() {
         Delay::new(Duration::from_millis(3000)).await;
         info!("started stratum server");
         let mine_ctx = {
-            let header = BlockHeader::default();
+            let header = BlockHeader::random();
             let body = BlockBody::default();
             let block = Block::new(header, body);
             let block_template = BlockTemplate::from_block(block);

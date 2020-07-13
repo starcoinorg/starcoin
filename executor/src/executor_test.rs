@@ -22,23 +22,22 @@ use starcoin_types::{
     transaction::Transaction,
     transaction::TransactionStatus,
     transaction::{Module, TransactionPayload},
-    vm_error::{StatusCode, VMStatus},
 };
-use starcoin_vm_types::parser;
-use starcoin_vm_types::transaction::Package;
+use starcoin_vm_types::{
+    parser,
+    transaction::Package,
+    vm_status::{StatusCode, VMStatus},
+};
 use statedb::ChainStateDB;
 use std::time::{SystemTime, UNIX_EPOCH};
 use stdlib::{stdlib_files, StdLibOptions};
 
 pub static KEEP_STATUS: Lazy<TransactionStatus> =
-    Lazy::new(|| TransactionStatus::Keep(VMStatus::new(StatusCode::EXECUTED)));
+    Lazy::new(|| TransactionStatus::Keep(VMStatus::executed()));
 
-// We use 10 as the assertion error code for insufficient balance within the Libra coin contract.
-pub static DISCARD_STATUS: Lazy<TransactionStatus> = Lazy::new(|| {
-    TransactionStatus::Discard(
-        VMStatus::new(StatusCode::ABORTED).with_sub_status(StatusCode::REJECTED_WRITE_SET.into()),
-    )
-});
+// We use 10 as the assertion error code for insufficient balance within the Coin contract.
+pub static DISCARD_STATUS: Lazy<TransactionStatus> =
+    Lazy::new(|| TransactionStatus::Discard(VMStatus::new(StatusCode::ABORTED, Some(10), None)));
 
 fn prepare_genesis() -> ChainStateDB {
     prepare_genesis_with_chain_net(ChainNetwork::Dev)
@@ -161,7 +160,40 @@ fn test_block_execute_gas_limit() -> Result<()> {
 }
 
 #[stest::test]
-fn test_validate_txn_with_starcoin_vm() -> Result<()> {
+fn test_validate_sequence_number_too_new() -> Result<()> {
+    let chain_state = prepare_genesis();
+    let account1 = Account::new();
+    let txn = create_account_txn_sent_as_association(&account1, 10000, 50_000_000);
+    let output = crate::validate_transaction(&chain_state, txn);
+    assert_eq!(output, None);
+    Ok(())
+}
+
+#[stest::test]
+fn test_validate_sequence_number_too_old() -> Result<()> {
+    let chain_state = prepare_genesis();
+    let account1 = Account::new();
+    let txn1 = create_account_txn_sent_as_association(&account1, 0, 50_000_000);
+    let output1 = execute_and_apply(&chain_state, Transaction::UserTransaction(txn1));
+    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    let txn2 = create_account_txn_sent_as_association(&account1, 0, 50_000_000);
+    let output = crate::validate_transaction(&chain_state, txn2);
+    assert!(
+        output.is_some(),
+        "expect validate transaction return VMStatus, but get None "
+    );
+    let status_code = output.unwrap().major_status;
+    assert_eq!(
+        status_code,
+        StatusCode::SEQUENCE_NUMBER_TOO_OLD,
+        "expect StatusCode SEQUENCE_NUMBER_TOO_OLD, but get: {:?}",
+        status_code
+    );
+    Ok(())
+}
+
+#[stest::test]
+fn test_validate_txn() -> Result<()> {
     let chain_state = prepare_genesis();
 
     let account1 = Account::new();
@@ -493,7 +525,7 @@ fn test_stdlib_upgrade() -> Result<()> {
     let txn = create_signed_txn_with_association_account(
         TransactionPayload::Package(upgrade_package),
         0,
-        50_000_000,
+        2_000_000,
         1,
     );
     let output = execute_and_apply(&chain_state, Transaction::UserTransaction(txn));

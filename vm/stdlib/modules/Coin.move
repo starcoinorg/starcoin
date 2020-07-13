@@ -6,7 +6,6 @@ module Coin {
     use 0x1::RegisteredCurrencies;
     use 0x1::Vector;
     use 0x1::Generic;
-    use 0x1::Debug;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
 
@@ -567,7 +566,6 @@ module Coin {
     // information is published.
     fun issuer_addr<CoinType>(): address {
         let (coin_type_addr, _,_) = Generic::type_of<CoinType>();
-        Debug::print(&coin_type_addr);
         coin_type_addr
     }
 

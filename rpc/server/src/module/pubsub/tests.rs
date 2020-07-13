@@ -160,14 +160,13 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     );
     // Send new transactions
     let txn = {
-        let pri_key = Ed25519PrivateKey::genesis();
-        let public_key = pri_key.public_key();
-        let account_address = account_address::from_public_key(&public_key);
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
+        let auth_key = AuthenticationKey::random();
+        let account_address = auth_key.derived_address();
+        let auth_prefix = auth_key.prefix().to_vec();
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
             auth_prefix,
-            1,
+            0,
             10000,
         );
         txn.as_signed_user_txn()?.clone()

@@ -24,17 +24,7 @@ pub type BlockNumber = u64;
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15 * 1000; // 15 Second;
 
 #[derive(
-    Default,
-    Clone,
-    Debug,
-    Hash,
-    Eq,
-    PartialEq,
-    PartialOrd,
-    Serialize,
-    Deserialize,
-    CryptoHasher,
-    CryptoHash,
+    Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHasher, CryptoHash,
 )]
 pub struct BlockHeader {
     /// Parent hash.
@@ -278,17 +268,7 @@ impl Into<RawBlockHeader> for BlockHeader {
 }
 
 #[derive(
-    Default,
-    Clone,
-    Debug,
-    Hash,
-    Eq,
-    PartialEq,
-    PartialOrd,
-    Serialize,
-    Deserialize,
-    CryptoHasher,
-    CryptoHash,
+    Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHasher, CryptoHash,
 )]
 pub struct RawBlockHeader {
     /// Parent hash.
