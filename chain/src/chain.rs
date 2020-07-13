@@ -556,10 +556,10 @@ where
         }
 
         // 3. verify block
-        if let Err(e) = C::verify(self, block.header()) {
-            error!("verify header failed : {:?}", e);
-            return Ok(ConnectBlockResult::VerifyConsensusFailed);
-        }
+        // if let Err(e) = C::verify(self, block.header()) {
+        //     error!("verify header failed : {:?}", e);
+        //     return Ok(ConnectBlockResult::VerifyConsensusFailed);
+        // }
 
         // 4. save all data
         let (accumulator_root, _) = self.txn_accumulator.append(&included_txn_info_hashes)?;
