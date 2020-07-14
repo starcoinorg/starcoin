@@ -29,6 +29,7 @@ use tokio::time::Duration;
 
 #[actix_rt::test]
 pub async fn test_subscribe_to_events() -> Result<()> {
+    starcoin_logger::init_for_test();
     // prepare
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
@@ -77,7 +78,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     io.extend_with(pubsub);
 
     let mut metadata = Metadata::default();
-    let (sender, receiver) = futures01::sync::mpsc::channel(8);
+    let (sender, receiver) = futures01::sync::mpsc::channel(128);
     metadata.session = Some(Arc::new(Session::new(sender)));
 
     // Subscribe
