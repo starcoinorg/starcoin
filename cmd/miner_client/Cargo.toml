@@ -21,7 +21,7 @@ logger = {path = "../../commons/logger", package="starcoin-logger"}
 futures-channel = "0.3"
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 sc_stratum = {path = "../../miner/stratum", package ="starcoin-stratum"}
-jsonrpc-core = "12.0.0"
+jsonrpc-core = "14.2.0"
 jsonrpc-tcp-server="12.0.0"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
