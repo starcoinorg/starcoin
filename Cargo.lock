@@ -1808,7 +1808,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "thiserror",
- "tiny-keccak 1.5.0",
+ "tiny-keccak 2.0.2",
 ]
 
 [[package]]
@@ -7321,7 +7321,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-vm-types",
  "thiserror",
- "tiny-keccak 1.5.0",
+ "tiny-keccak 2.0.2",
 ]
 
 [[package]]
