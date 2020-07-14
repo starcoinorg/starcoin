@@ -23,6 +23,9 @@ use starcoin_types::{
 };
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
+use tokio::time::timeout;
+
+use tokio::time::Duration;
 
 #[actix_rt::test]
 pub async fn test_subscribe_to_events() -> Result<()> {
@@ -100,7 +103,11 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     bus.broadcast(NewHeadBlock(block_detail)).await?;
 
     let mut receiver = receiver.compat();
-    let res = receiver.next().await.transpose().unwrap();
+
+    let res = timeout(Duration::from_secs(5), receiver.next())
+        .await?
+        .transpose()
+        .unwrap();
     assert!(res.is_some());
 
     let res = res.unwrap();
@@ -180,7 +187,11 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         Some(response.to_owned())
     );
 
-    let res = receiver.next().await.transpose().unwrap();
+    let res = timeout(Duration::from_secs(5), receiver.next())
+        .await?
+        .transpose()
+        .unwrap();
+
     assert_eq!(res, None);
     Ok(())
 }
