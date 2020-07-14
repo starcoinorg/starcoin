@@ -1669,7 +1669,7 @@ dependencies = [
  "fixed-hash 0.3.2",
  "impl-rlp",
  "impl-serde",
- "primitive-types",
+ "primitive-types 0.3.0",
  "uint 0.7.1",
 ]
 
@@ -1742,6 +1742,18 @@ checksum = "d1a683d1234507e4f3bf2736eeddf0de1dc65996dc0164d57eba0a74bcf29489"
 dependencies = [
  "byteorder 1.3.4",
  "heapsize",
+ "rand 0.5.6",
+ "rustc-hex 2.1.0",
+ "static_assertions 0.2.5",
+]
+
+[[package]]
+name = "fixed-hash"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "516877b7b9a1cc2d0293cbce23cd6203f0edbfd4090e6ca4489fecb5aa73050e"
+dependencies = [
+ "byteorder 1.3.4",
  "rand 0.5.6",
  "rustc-hex 2.1.0",
  "static_assertions 0.2.5",
@@ -2561,6 +2573,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "impl-codec"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1be51a921b067b0eaca2fad532d9400041561aa922221cc65f95a85641c6bf53"
+dependencies = [
+ "parity-scale-codec",
+]
+
+[[package]]
 name = "impl-rlp"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2936,11 +2957,11 @@ checksum = "67c21572b4949434e4fc1e1978b99c5f77064153c59d998bf13ecd96fb5ecba7"
 
 [[package]]
 name = "keccak-hash"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69e8ee697b9aa6dcc34d7657565fa5052763a1627a5b59e4c3c0ae3ed0d70a65"
+checksum = "09364fca1db2974c2730ddfe2627b03a8def6128c9899303ca05e40ca6f20903"
 dependencies = [
- "primitive-types",
+ "primitive-types 0.5.1",
  "tiny-keccak 1.5.0",
 ]
 
@@ -4913,10 +4934,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2288eb2a39386c4bc817974cc413afe173010dc80e470fcb1e9a35580869f024"
 dependencies = [
  "fixed-hash 0.3.2",
- "impl-codec",
+ "impl-codec 0.2.0",
  "impl-rlp",
  "impl-serde",
  "uint 0.7.1",
+]
+
+[[package]]
+name = "primitive-types"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83ef7b3b965c0eadcb6838f34f827e1dfb2939bdd5ebd43f9647e009b12b0371"
+dependencies = [
+ "fixed-hash 0.4.0",
+ "impl-codec 0.4.2",
+ "uint 0.8.3",
 ]
 
 [[package]]
