@@ -148,7 +148,7 @@ impl ChainNotifyHandlerActor {
             all_events.extend(events);
         }
 
-        for (_id, (c, filter)) in self.subscribers.read().iter() {
+        for (id, (c, filter)) in self.subscribers.read().iter() {
             let filtered_events = all_events
                 .iter()
                 .filter(|e| filter.matching(block_number, *e))
@@ -159,6 +159,11 @@ impl ChainNotifyHandlerActor {
                 to_send_events.push(pubsub::Result::Event(Box::new(e)));
             }
             to_send_events.reverse();
+            debug!(
+                "send {} events to subscriber {:?}",
+                to_send_events.len(),
+                id
+            );
             notify::notify_many(c, to_send_events);
         }
         Ok(())
