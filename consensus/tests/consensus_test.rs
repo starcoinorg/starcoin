@@ -1,4 +1,7 @@
 use crypto::hash::PlainCryptoHash;
+use starcoin_consensus::argon::{verify, ArgonConsensus};
+use starcoin_consensus::difficulty::difficult_1_target;
+use traits::Consensus;
 use types::block::{BlockHeader, RawBlockHeader};
 
 #[stest::test]
@@ -15,4 +18,19 @@ fn raw_hash_test() {
     let raw_id_2 = raw_2.crypto_hash();
     assert_ne!(id_1, id_2);
     assert_eq!(raw_id_1, raw_id_2);
+}
+
+#[stest::test]
+fn verify_header_test() {
+    let header = BlockHeader::random();
+    let raw_header: RawBlockHeader = header.into();
+    let nonce = ArgonConsensus::solve_consensus_header(
+        raw_header.crypto_hash().to_vec().as_slice(),
+        difficult_1_target(),
+    );
+    assert!(verify(
+        raw_header.crypto_hash().to_vec().as_slice(),
+        nonce.nonce,
+        difficult_1_target(),
+    ));
 }

@@ -98,7 +98,7 @@ pub fn u64_to_vec(u: u64) -> Vec<u8> {
     wtr
 }
 
-fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
+pub fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
     let pow_header = set_header_nonce(header, nonce);
     let pow_hash = calculate_hash(&pow_header);
     if pow_hash.is_err() {
