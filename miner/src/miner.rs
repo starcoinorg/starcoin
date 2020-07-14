@@ -6,6 +6,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
+use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_metrics::HistogramTimer;
@@ -36,7 +37,7 @@ pub struct MineCtx {
 
 impl MineCtx {
     pub fn new(block_template: BlockTemplate, difficulty: U256) -> MineCtx {
-        let header_hash = block_template.parent_hash;
+        let header_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
         let metrics_timer = Some(
             MINER_METRICS
                 .block_mint_time

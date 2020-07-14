@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::difficulty;
 use crate::difficulty::{difficult_to_target, target_to_difficulty};
+use crate::{difficulty, set_header_nonce};
 use anyhow::{Error, Result};
 use argon2::{self, Config};
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
 use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use rand::Rng;
@@ -58,7 +58,8 @@ impl Consensus for ArgonConsensus {
             let pow_hash: U256 = calculate_hash(&set_header_nonce(&header_hash, nonce))
                 .expect("calculate hash should work")
                 .into();
-            if pow_hash > difficulty {
+            let target = difficult_to_target(difficulty);
+            if pow_hash > target {
                 nonce += 1;
                 continue;
             }
@@ -81,7 +82,7 @@ impl Consensus for ArgonConsensus {
         );
         let raw_block_header: RawBlockHeader = header.clone().into();
         if verify(
-            raw_block_header.crypto_hash().to_vec().as_slice(),
+            raw_block_header.crypto_hash().to_hex().as_bytes(),
             nonce,
             difficulty,
         ) {
@@ -92,13 +93,7 @@ impl Consensus for ArgonConsensus {
     }
 }
 
-pub fn u64_to_vec(u: u64) -> Vec<u8> {
-    let mut wtr = vec![];
-    wtr.write_u64::<LittleEndian>(u).unwrap();
-    wtr
-}
-
-fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
+pub fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
     let pow_header = set_header_nonce(header, nonce);
     let pow_hash = calculate_hash(&pow_header);
     if pow_hash.is_err() {
@@ -124,14 +119,6 @@ fn generate_nonce() -> u64 {
     let mut rng = rand::thread_rng();
     rng.gen::<u64>();
     rng.gen_range(0, u64::max_value())
-}
-
-pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
-    // let len = header.len();
-    let mut header = header.to_owned();
-    // header.truncate(len - 8);
-    let _ = header.write_u64::<LittleEndian>(nonce);
-    header
 }
 
 pub fn vec_to_u64(v: Vec<u8>) -> u64 {

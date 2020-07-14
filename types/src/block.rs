@@ -59,10 +59,10 @@ pub struct BlockHeader {
     pub gas_limit: u64,
     /// Block difficulty
     pub difficulty: U256,
-    /// Consensus extend header field.
-    pub consensus_header: Vec<u8>,
     /// uncles block header
     pub uncles: Vec<BlockHeader>,
+    /// Consensus extend header field.
+    pub consensus_header: Vec<u8>,
 }
 
 impl BlockHeader {
@@ -272,6 +272,7 @@ impl Into<RawBlockHeader> for BlockHeader {
             gas_used: self.gas_used,
             gas_limit: self.gas_limit,
             difficulty: self.difficulty,
+            uncles: self.uncles,
         }
     }
 }
@@ -312,6 +313,8 @@ pub struct RawBlockHeader {
     pub gas_limit: u64,
     /// Block difficulty
     pub difficulty: U256,
+    /// uncles block header
+    pub uncles: Vec<BlockHeader>,
 }
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -624,6 +627,7 @@ impl BlockTemplate {
             gas_used: self.gas_used,
             gas_limit: self.gas_limit,
             difficulty,
+            uncles: self.uncles.clone(),
         }
     }
 
