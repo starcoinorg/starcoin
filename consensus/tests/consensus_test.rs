@@ -1,6 +1,5 @@
 use crypto::hash::PlainCryptoHash;
 use starcoin_consensus::argon::{verify, ArgonConsensus};
-use starcoin_consensus::difficulty::difficult_1_target;
 use traits::Consensus;
 use types::block::{BlockHeader, RawBlockHeader};
 

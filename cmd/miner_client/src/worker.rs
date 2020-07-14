@@ -1,4 +1,4 @@
-use crate::{nonce_generator, partition_nonce, set_header_nonce};
+use crate::{nonce_generator, partition_nonce};
 use config::{ConsensusStrategy, MinerConfig};
 use consensus::{argon, dev::DevConsensus, difficulty::difficult_to_target};
 use futures::channel::mpsc;
@@ -196,7 +196,7 @@ fn argon_solver(
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    let input = set_header_nonce(pow_header, nonce);
+    let input = consensus::set_header_nonce(pow_header, nonce);
     if let Ok(pow_hash) = argon::calculate_hash(&input) {
         let pow_hash_u256: U256 = pow_hash.into();
         let target = difficult_to_target(diff);
