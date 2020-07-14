@@ -26,11 +26,11 @@ fn verify_header_test() {
     let raw_header: RawBlockHeader = header.into();
     let nonce = ArgonConsensus::solve_consensus_header(
         raw_header.crypto_hash().to_vec().as_slice(),
-        difficult_1_target(),
+        1.into(),
     );
     assert!(verify(
         raw_header.crypto_hash().to_vec().as_slice(),
         nonce.nonce,
-        difficult_1_target(),
+        1.into(),
     ));
 }

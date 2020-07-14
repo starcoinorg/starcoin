@@ -58,7 +58,8 @@ impl Consensus for ArgonConsensus {
             let pow_hash: U256 = calculate_hash(&set_header_nonce(&header_hash, nonce))
                 .expect("calculate hash should work")
                 .into();
-            if pow_hash > difficulty {
+            let target = difficult_to_target(difficulty);
+            if pow_hash > target {
                 nonce += 1;
                 continue;
             }
