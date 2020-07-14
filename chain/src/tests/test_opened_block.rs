@@ -28,6 +28,7 @@ pub fn test_open_block() -> Result<()> {
             block_gas_limit,
             miner_account.address,
             Some(miner_account.get_auth_key().prefix().to_vec()),
+            vec![],
         )?
     };
 

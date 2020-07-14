@@ -116,7 +116,7 @@ fn test_network_actor_rpc() {
             miner_account,
         );
         MinerClientActor::new(node_config_1.miner.clone()).start();
-        Delay::new(Duration::from_secs(20)).await;
+        Delay::new(Duration::from_secs(60)).await;
         let block_1 = first_chain
             .clone()
             .master_head_block()
@@ -204,7 +204,7 @@ fn test_network_actor_rpc() {
             error!("error: {:?}", e);
         }
 
-        Delay::new(Duration::from_secs(30)).await;
+        Delay::new(Duration::from_secs(60)).await;
 
         for i in 0..5 as usize {
             Delay::new(Duration::from_secs(2)).await;

@@ -126,7 +126,7 @@ struct StratumImpl {
     workers: Arc<RwLock<HashMap<SocketAddr, String>>>,
     /// Secret if any
     secret: Option<H256>,
-    /// Dispatch notify couinter
+    /// Dispatch notify counter
     notify_counter: RwLock<u32>,
 }
 

@@ -24,7 +24,7 @@ use traits::ChainAsyncService;
 use txpool::{TxPool, TxPoolService};
 use types::system_events::SyncBegin;
 
-#[stest::test(timeout = 120)]
+#[stest::test(timeout = 360)]
 fn test_state_sync() {
     ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -114,7 +114,7 @@ fn test_state_sync() {
             miner_account,
         );
         MinerClientActor::new(node_config_1.miner.clone()).start();
-        Delay::new(Duration::from_secs(30)).await;
+        Delay::new(Duration::from_secs(60)).await;
         let mut block_1 = first_chain
             .clone()
             .master_head_block()

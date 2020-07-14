@@ -1,6 +1,6 @@
 use crate::{nonce_generator, partition_nonce, set_header_nonce};
 use config::{ConsensusStrategy, MinerConfig};
-use consensus::{argon, difficulty::difficult_to_target};
+use consensus::{argon, dev::DevConsensus, difficulty::difficult_to_target};
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
@@ -8,6 +8,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use std::thread;
 use std::time::{Duration, Instant};
+use traits::Consensus;
 use types::U256;
 
 const HASH_RATE_UPDATE_DURATION_MILLIS: u128 = 300;
@@ -217,9 +218,7 @@ fn dummy_solver(
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    let time: u64 = diff.as_u64();
-    debug!("DevConsensus rand sleep time : {}", time);
-    thread::sleep(Duration::from_millis(time));
+    DevConsensus::solve_consensus_header(pow_header, diff);
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
         return false;

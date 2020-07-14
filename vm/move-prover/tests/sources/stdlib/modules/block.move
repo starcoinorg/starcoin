@@ -25,6 +25,7 @@ module Block {
       // TODO rename and add more filed.
       // Proposer of the current block.
       proposer: address,
+      uncles: u64,
       // Handle where events with the time of new blocks are emitted
       new_block_events: Event::EventHandle<Self::NewBlockEvent>,
     }
@@ -51,6 +52,7 @@ module Block {
         //TODO pass genesis id.
         id: Vector::empty(),
         proposer:0x0,
+        uncles: 0,
         new_block_events: Event::new_event_handle<Self::NewBlockEvent>(account),
       });
     }
@@ -67,14 +69,15 @@ module Block {
         id: vector<u8>,
         previous_block_votes: vector<address>,
         proposer: address,
-        auth_key_prefix: vector<u8>
+        auth_key_prefix: vector<u8>,
+        uncles: u64
     ) acquires BlockMetadata,SubsidyInfo {
         // Can only be invoked by LibraVM privilege.
         //Transaction::assert(Signer::address_of(account) == 0x0, 33);
         //TODO conform this address.
         Transaction::assert(Signer::address_of(account) == 0x6d696e74, 33);
 
-        process_block_prologue(account, round, timestamp, id, previous_block_votes, proposer, auth_key_prefix);
+        process_block_prologue(account, round, timestamp, id, previous_block_votes, proposer, auth_key_prefix, uncles);
 
         // Currently distribute once per-block.
         // TODO: Once we have a better on-chain representation of epochs we will make this per-epoch.
@@ -93,7 +96,8 @@ module Block {
         id: vector<u8>,
         previous_block_votes: vector<address>,
         proposer: address,
-        auth_key_prefix: vector<u8>
+        auth_key_prefix: vector<u8>,
+        uncles: u64
     ) acquires BlockMetadata, SubsidyInfo {
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(0xA550C18);
 
@@ -105,6 +109,7 @@ module Block {
         block_metadata_ref.height = new_height;
         block_metadata_ref.proposer = proposer;
         block_metadata_ref.id = id;
+        block_metadata_ref.uncles = uncles;
 
         do_subsidy(account, new_height, proposer, auth_key_prefix);
         Event::emit_event<NewBlockEvent>(

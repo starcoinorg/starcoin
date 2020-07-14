@@ -32,6 +32,7 @@ pub struct OpenedBlock {
 
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
+    uncles: Vec<BlockHeader>,
 }
 
 impl OpenedBlock {
@@ -41,6 +42,7 @@ impl OpenedBlock {
         block_gas_limit: u64,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
+        uncles: Vec<BlockHeader>,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -59,8 +61,13 @@ impl OpenedBlock {
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
-        let block_meta =
-            BlockMetadata::new(previous_block_id, block_timestamp, author, auth_key_prefix);
+        let block_meta = BlockMetadata::new(
+            previous_block_id,
+            block_timestamp,
+            author,
+            auth_key_prefix,
+            uncles.len() as u64,
+        );
         let mut opened_block = Self {
             previous_header,
             previous_block_info: block_info,
@@ -71,6 +78,7 @@ impl OpenedBlock {
             txn_accumulator,
             gas_used: 0,
             included_user_txns: vec![],
+            uncles,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -216,7 +224,7 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, auth_key_prefix) = self.block_meta.into_inner();
+        let (parent_id, timestamp, author, auth_key_prefix, _uncles) = self.block_meta.into_inner();
 
         let block_template = BlockTemplate::new(
             parent_id,
@@ -231,6 +239,7 @@ impl OpenedBlock {
             state_root,
             self.gas_used,
             self.gas_limit,
+            self.uncles,
             self.included_user_txns.into(),
         );
         Ok(block_template)

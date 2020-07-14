@@ -79,7 +79,8 @@ module TransactionManager {
         parent_hash: vector<u8>,
         timestamp: u64,
         author: address,
-        auth_key_prefix: vector<u8>
+        auth_key_prefix: vector<u8>,
+        uncles: u64
     ){
         // Can only be invoked by genesis account
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
@@ -90,7 +91,7 @@ module TransactionManager {
         let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);
         distribute(account, txn_fee, previous_author);
 
-        let height = Block::process_block_metadata(account, parent_hash, author, timestamp);
+        let height = Block::process_block_metadata(account, parent_hash, author, timestamp, uncles);
         BlockReward::process_block_reward(account, height, author, auth_key_prefix);
     }
 

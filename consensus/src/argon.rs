@@ -6,13 +6,11 @@ use crate::difficulty::{difficult_to_target, target_to_difficulty};
 use anyhow::{Error, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
-use config::NodeConfig;
 use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use rand::Rng;
 use std::convert::TryFrom;
 use std::io::Cursor;
-use std::sync::Arc;
 use traits::ChainReader;
 use traits::{Consensus, ConsensusHeader};
 use types::block::{BlockHeader, RawBlockHeader};
@@ -49,13 +47,11 @@ pub struct ArgonConsensus {}
 impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
-    fn calculate_next_difficulty(
-        _config: Arc<NodeConfig>,
-        reader: &dyn ChainReader,
-    ) -> Result<U256> {
+    fn calculate_next_difficulty(reader: &dyn ChainReader) -> Result<U256> {
         let target = difficulty::get_next_work_required(reader)?;
         Ok(target_to_difficulty(target))
     }
+
     fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
         let mut nonce = generate_nonce();
         loop {
@@ -71,12 +67,8 @@ impl Consensus for ArgonConsensus {
         ArgonConsensusHeader { nonce }
     }
 
-    fn verify(
-        config: Arc<NodeConfig>,
-        reader: &dyn ChainReader,
-        header: &BlockHeader,
-    ) -> Result<()> {
-        let difficulty = ArgonConsensus::calculate_next_difficulty(config, reader)?;
+    fn verify(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+        let difficulty = ArgonConsensus::calculate_next_difficulty(reader)?;
         if header.difficulty() != difficulty {
             return Err(anyhow::Error::msg("Invalid difficulty"));
         }

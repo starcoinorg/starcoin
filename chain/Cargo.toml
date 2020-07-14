@@ -37,6 +37,7 @@ starcoin-statedb = {path = "../state/statedb"}
 bus = {path = "../bus", package="starcoin-bus" }
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-open-block = {path = "./open-block"}
+starcoin-vm-types = { path = "../vm/types"}
 
 [dev-dependencies]
 starcoin-wallet-api = { path = "../wallet/api"}

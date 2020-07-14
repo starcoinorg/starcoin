@@ -103,5 +103,5 @@ pub trait ChainAsyncService:
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
-    ) -> Result<Option<BlockTemplate>>;
+    ) -> Result<BlockTemplate>;
 }

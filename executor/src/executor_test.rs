@@ -87,6 +87,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
             .as_secs(),
         *account1.address(),
         Some(account1.auth_key_prefix()),
+        0,
     );
 
     // pre-run a txn to get gas_used
@@ -456,6 +457,7 @@ fn test_block_metadata() -> Result<()> {
             timestamp,
             *account1.address(),
             Some(account1.auth_key_prefix()),
+            0,
         ));
         let output = execute_and_apply(&chain_state, txn);
         assert_eq!(KEEP_STATUS.clone(), *output.status());
