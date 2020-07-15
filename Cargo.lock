@@ -907,6 +907,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "colored"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
+dependencies = [
+ "atty",
+ "lazy_static",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3861,6 +3872,23 @@ dependencies = [
  "serde",
  "serde_bytes",
  "thiserror",
+]
+
+[[package]]
+name = "move-coverage"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytecode-source-map",
+ "codespan",
+ "colored",
+ "libra-workspace-hack",
+ "once_cell",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "structopt",
 ]
 
 [[package]]
@@ -7118,6 +7146,7 @@ dependencies = [
  "libra-state-view",
  "libra-types",
  "move-core-types",
+ "move-ir-types",
  "move-vm-types",
  "num_enum",
  "once_cell",
