@@ -14,6 +14,7 @@ num_enum = "0.5.0"
 chrono = { version = "0.4.7", default-features = false, features = ["clock"] }
 move-core-types = {git = "https://github.com/starcoinorg/libra", rev="f13864de3dbc41f778b91cddd920707390b851a3" }
 move-vm-types = {git = "https://github.com/starcoinorg/libra", rev="f13864de3dbc41f778b91cddd920707390b851a3" }
+move-ir-types = {git = "https://github.com/starcoinorg/libra", rev="f13864de3dbc41f778b91cddd920707390b851a3" }
 libra_types = { package="libra-types", features=["fuzzing"], git = "https://github.com/starcoinorg/libra", rev="f13864de3dbc41f778b91cddd920707390b851a3" }
 bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev="f13864de3dbc41f778b91cddd920707390b851a3" }
 vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="f13864de3dbc41f778b91cddd920707390b851a3" }

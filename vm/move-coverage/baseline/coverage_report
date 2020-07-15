@@ -1,0 +1,76 @@
++-------------------------+
+| Move Coverage Summary   |
++-------------------------+
+Module 00000000000000000000000000000001::Debug
+>>> % Module coverage: NaN
+Module 00000000000000000000000000000001::Vector
+>>> % Module coverage: 45.50
+Module 00000000000000000000000000000001::Signer
+>>> % Module coverage: 100.00
+Module 00000000000000000000000000000001::CoreAddresses
+>>> % Module coverage: 66.67
+Module 00000000000000000000000000000001::Timestamp
+>>> % Module coverage: 89.19
+Module 00000000000000000000000000000001::FixedPoint32
+>>> % Module coverage: 39.73
+Module 00000000000000000000000000000001::Option
+>>> % Module coverage: 31.06
+Module 00000000000000000000000000000001::LCS
+>>> % Module coverage: NaN
+Module 00000000000000000000000000000001::Event
+>>> % Module coverage: 91.53
+Module 00000000000000000000000000000001::Config
+>>> % Module coverage: 92.37
+Module 00000000000000000000000000000001::RegisteredCurrencies
+>>> % Module coverage: 92.59
+Module 00000000000000000000000000000001::Generic
+>>> % Module coverage: NaN
+Module 00000000000000000000000000000001::Coin
+>>> % Module coverage: 38.26
+Module 00000000000000000000000000000001::STC
+>>> % Module coverage: 48.39
+Module 00000000000000000000000000000001::TransactionFee
+>>> % Module coverage: 85.51
+Module 00000000000000000000000000000001::SignedInteger64
+>>> % Module coverage: 90.71
+Module 00000000000000000000000000000001::Hash
+>>> % Module coverage: NaN
+Module 00000000000000000000000000000001::Account
+>>> % Module coverage: 65.10
+Module 00000000000000000000000000000001::Association
+>>> % Module coverage: 38.55
+Module 00000000000000000000000000000001::Authenticator
+>>> % Module coverage: 100.00
+Module 00000000000000000000000000000001::Consensus
+>>> % Module coverage: 75.00
+Module 00000000000000000000000000000001::Block
+>>> % Module coverage: 80.90
+Module 00000000000000000000000000000001::RewardConfig
+>>> % Module coverage: 71.03
+Module 00000000000000000000000000000001::BlockReward
+>>> % Module coverage: 72.52
+Module 00000000000000000000000000000001::Compare
+>>> % Module coverage: 100.00
+Module 00000000000000000000000000000001::Version
+>>> % Module coverage: 22.22
+Module 00000000000000000000000000000001::VMConfig
+>>> % Module coverage: 62.07
+Module 00000000000000000000000000000001::TransactionTimeout
+>>> % Module coverage: 61.02
+Module 00000000000000000000000000000001::PackageTxnManager
+>>> % Module coverage: 58.10
+Module 00000000000000000000000000000001::Genesis
+>>> % Module coverage: 96.40
+Module 00000000000000000000000000000001::Offer
+>>> % Module coverage: 0.00
+Module 00000000000000000000000000000001::Signature
+>>> % Module coverage: NaN
+Module 00000000000000000000000000000001::SharedEd25519PublicKey
+>>> % Module coverage: 100.00
+Module 00000000000000000000000000000001::SortedLinkedList
+>>> % Module coverage: 88.67
+Module 00000000000000000000000000000001::TransactionManager
+>>> % Module coverage: 84.78
++-------------------------+
+| % Move Coverage: 67.86  |
++-------------------------+
