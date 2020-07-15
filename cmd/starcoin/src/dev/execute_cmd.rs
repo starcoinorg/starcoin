@@ -146,7 +146,7 @@ impl CommandAction for ExecuteCommand {
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let output = client.dry_run(signed_txn.clone())?;
-        if output.status().vm_status().major_status != StatusCode::EXECUTED {
+        if output.status().vm_status().status_code() != StatusCode::EXECUTED {
             bail!("move file pre-run failed, {:?}", output.status());
         }
         if !opt.dry_run {

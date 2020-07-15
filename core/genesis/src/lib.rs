@@ -161,7 +161,7 @@ impl Genesis {
             .expect("Execute output must exist.");
         let (write_set, events, gas_used, _, status) = output.into_inner();
         ensure!(
-            status.vm_status().major_status == StatusCode::EXECUTED,
+            status.vm_status().status_code() == StatusCode::EXECUTED,
             "Genesis txn execute fail for: {:?}",
             status
         );
@@ -173,7 +173,7 @@ impl Genesis {
             state_root,
             events.as_slice(),
             gas_used,
-            status.vm_status().major_status,
+            status.vm_status().status_code(),
         ))
     }
 
@@ -322,7 +322,7 @@ mod tests {
             "association account must exist in genesis state."
         );
 
-        let currencies = account_state_reader.get_on_chain_config::<RegisteredCurrencies>();
+        let currencies = account_state_reader.get_on_chain_config::<RegisteredCurrencies>()?;
         assert!(
             currencies.is_some(),
             "RegisteredCurrencies on_chain_config should exist."
@@ -332,13 +332,13 @@ mod tests {
             "RegisteredCurrencies should not empty."
         );
 
-        let vm_config = account_state_reader.get_on_chain_config::<VMConfig>();
+        let vm_config = account_state_reader.get_on_chain_config::<VMConfig>()?;
         assert!(
             vm_config.is_some(),
             "VMConfig on_chain_config should exist."
         );
 
-        let version = account_state_reader.get_on_chain_config::<Version>();
+        let version = account_state_reader.get_on_chain_config::<Version>()?;
         assert!(version.is_some(), "Version on_chain_config should exist.");
 
         let block_info = storage

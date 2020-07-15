@@ -5,13 +5,12 @@ use crate::{
     access_path::AccessPath,
     account_address::AccountAddress,
     account_config::CORE_CODE_ADDRESS,
-    event::{EventHandle, EventKey},
+    event::EventKey,
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
-    move_resource::MoveResource,
 };
 use anyhow::{format_err, Result};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::de::DeserializeOwned;
 use std::{collections::HashMap, sync::Arc};
 
 mod consensus;
@@ -112,13 +111,14 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
         Self::deserialize_default_impl(bytes)
     }
 
-    fn fetch_config<T>(storage: T) -> Option<Self>
+    fn fetch_config<T>(storage: T) -> Result<Option<Self>>
     where
         T: ConfigStorage,
     {
         storage
             .fetch_config(Self::CONFIG_ID.access_path())
-            .and_then(|bytes| Self::deserialize_into_config(&bytes).ok())
+            .map(|bytes| Self::deserialize_into_config(&bytes))
+            .transpose()
     }
 }
 
@@ -141,30 +141,4 @@ pub fn access_path_for_config(address: AccountAddress, config_name: Identifier) 
             })],
         }),
     )
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ConfigurationResource {
-    height: u64,
-    last_reconfiguration_time: u64,
-    events: EventHandle,
-}
-
-impl ConfigurationResource {
-    pub fn height(&self) -> u64 {
-        self.height
-    }
-
-    pub fn last_reconfiguration_time(&self) -> u64 {
-        self.last_reconfiguration_time
-    }
-
-    pub fn events(&self) -> &EventHandle {
-        &self.events
-    }
-}
-
-impl MoveResource for ConfigurationResource {
-    const MODULE_NAME: &'static str = "Config";
-    const STRUCT_NAME: &'static str = "Configuration";
 }

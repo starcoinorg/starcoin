@@ -214,7 +214,7 @@ impl OpenedBlock {
             txn_state_root,
             events.as_slice(),
             gas_used,
-            status.major_status,
+            status.status_code(),
         );
         let (accumulator_root, _) = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))

@@ -241,16 +241,17 @@ impl<'a> AccountStateReader<'a> {
             .ok_or_else(|| format_err!("Can not find account by address:{}", address))
     }
 
-    pub fn get_on_chain_config<C>(&self) -> Option<C>
+    pub fn get_on_chain_config<C>(&self) -> Result<Option<C>>
     where
         C: OnChainConfig,
     {
         C::fetch_config(self.reader)
     }
 
-    pub fn get_registered_currencies(&self) -> RegisteredCurrencies {
-        self.get_on_chain_config()
-            .expect("RegisteredCurrencies on chain config should exist.")
+    pub fn get_registered_currencies(&self) -> Result<RegisteredCurrencies> {
+        Ok(self
+            .get_on_chain_config()?
+            .expect("RegisteredCurrencies on chain config should exist."))
     }
 
     /// Get default coin balance by address
@@ -279,7 +280,7 @@ impl<'a> AccountStateReader<'a> {
 
     /// Get all balance of account
     pub fn get_balances(&self, address: &AccountAddress) -> Result<HashMap<String, u64>> {
-        let currencies = self.get_registered_currencies();
+        let currencies = self.get_registered_currencies()?;
         let mut result = HashMap::new();
         //TODO batch get.
         for record in currencies.currency_codes() {

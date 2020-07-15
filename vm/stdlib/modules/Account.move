@@ -519,8 +519,6 @@ module Account {
                     transaction_fee_amount
             );
             TransactionFee::pay_fee(transaction_fee);
-            //let transaction_fee_balance = borrow_global_mut<Balance<Token>>(CoreAddresses::GENESIS_ACCOUNT());
-            //Coin::deposit(&mut transaction_fee_balance.coin, transaction_fee);
         };
     }
 }
