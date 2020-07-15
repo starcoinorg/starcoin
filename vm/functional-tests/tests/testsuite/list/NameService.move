@@ -13,7 +13,7 @@
 // value is a struct 'Expiration', contains the expiration date of the name
 // the account address of each list node is actually the address bound to the key(name)
 module NameService {
-    use 0x1::SortedLinkedList;
+    use 0x1::SortedLinkedList::{Self, EntryHandle};
     use 0x1::Block;
     use 0x1::Signer;
     use 0x1::Vector;
@@ -22,7 +22,11 @@ module NameService {
     public fun EXPIRE_AFTER() : u64{5}
 
     resource struct Expiration {
-        expire_on_block_height: u64
+        expire_on_block_height: vector<u64>
+    }
+
+    public fun entry_handle(addr: address, index: u64): EntryHandle {
+        SortedLinkedList::entry_handle(addr, index)
     }
 
     public fun initialize(account: &signer) {
@@ -30,49 +34,74 @@ module NameService {
         assert(sender == {{nameservice}}, 8000);
 
         SortedLinkedList::create_new_list<vector<u8>>(account, Vector::empty());
-        move_to<Expiration>(account, Expiration {expire_on_block_height: 0});
+        move_to<Expiration>(account, Expiration { expire_on_block_height: Vector::singleton(0u64)});
     }
 
-    public fun add_name(account: &signer, name: vector<u8>, prev_entry_address: address) {
+    fun add_expirtation(account: &signer) acquires Expiration {
+        let sender = Signer::address_of(account);
         let current_block = Block::get_current_block_height();
-        SortedLinkedList::add_node(account, name, prev_entry_address);
-        move_to<Expiration>(account, Expiration {expire_on_block_height: current_block + EXPIRE_AFTER()});
+        if (!exists<Expiration>(sender)) {
+            move_to<Expiration>(account, Expiration {expire_on_block_height: Vector::singleton(current_block + EXPIRE_AFTER())});
+        } else {
+            let expire_vector_mut = &mut borrow_global_mut<Expiration>(sender).expire_on_block_height;
+            Vector::push_back<u64>(expire_vector_mut, current_block + EXPIRE_AFTER());
+        };
     }
 
-    public fun get_name_for(addr: address): vector<u8> {
-        SortedLinkedList::get_key_of_node<vector<u8>>(addr)
+    public fun add_name(account: &signer, name: vector<u8>, prev_entry: EntryHandle) acquires Expiration {
+        SortedLinkedList::insert_node(account, name, prev_entry);
+        Self::add_expirtation(account);
     }
 
-    public fun remove_entry_by_entry_owner(account: &signer) acquires Expiration {
-        SortedLinkedList::remove_node_by_node_owner<vector<u8>>(account);
-        let Expiration { expire_on_block_height: _ } = move_from<Expiration>(Signer::address_of(account));
+    public fun get_name_for(entry: EntryHandle): vector<u8> {
+        SortedLinkedList::get_data<vector<u8>>(entry)
     }
 
-    public fun remove_entry_by_service_owner(account: &signer, entry_address: address) acquires Expiration {
-        SortedLinkedList::remove_node_by_list_owner<vector<u8>>(account, entry_address);
-        let Expiration { expire_on_block_height: _ } = move_from<Expiration>(entry_address);
+    fun remove_expiration(entry: EntryHandle) acquires Expiration {
+        let account_address = SortedLinkedList::get_addr(copy entry);
+        let index = SortedLinkedList::get_index(entry);
+        let expire_vector_mut = &mut borrow_global_mut<Expiration>(account_address).expire_on_block_height;
+        Vector::remove<u64>(expire_vector_mut, index);
+        if (Vector::is_empty<u64>(expire_vector_mut)) {
+            let Expiration { expire_on_block_height } = move_from<Expiration>(account_address);
+            Vector::destroy_empty(expire_on_block_height);
+        }
+    }
+    public fun remove_entry_by_entry_owner(account: &signer, entry: EntryHandle) acquires Expiration {
+        SortedLinkedList::remove_node_by_node_owner<vector<u8>>(account, copy entry);
+        Self::remove_expiration(entry);
     }
 
-    // TODO: find() is expensive, will provide off-chain method
-    public fun find(name: vector<u8>, head_address: address): (bool, address) {
-        SortedLinkedList::find<vector<u8>>(name, head_address)
+    public fun remove_entry_by_service_owner(account: &signer, entry: EntryHandle) acquires Expiration {
+        SortedLinkedList::remove_node_by_list_owner<vector<u8>>(account, copy entry);
+        Self::remove_expiration(entry);
     }
 
-    public fun is_head_entry(entry_address: address): bool {
-		SortedLinkedList::is_head_node<vector<u8>>(entry_address)
+    public fun find_position_and_insert(account: &signer, name: vector<u8>, head: EntryHandle): bool acquires Expiration {
+        if (SortedLinkedList::find_position_and_insert<vector<u8>>(account, name, head)) {
+            Self::add_expirtation(account);
+            return true
+        } else {
+            return false
+        }
     }
 
-    public fun expire_on_block_height(entry_address: address): u64 acquires Expiration {
-        let entry = borrow_global<Expiration>(entry_address);
-        entry.expire_on_block_height
+    public fun is_head_entry(entry: EntryHandle): bool {
+		SortedLinkedList::is_head_node<vector<u8>>(&entry)
     }
 
-    public fun is_expired(entry_address: address): bool acquires Expiration {
-        let entry = borrow_global<Expiration>(entry_address);
+    public fun expire_on_block_height(entry: EntryHandle): u64 acquires Expiration {
+        let addr = SortedLinkedList::get_addr(copy entry);
+        let index = SortedLinkedList::get_index(entry);
+        let expire_vector = *&borrow_global<Expiration>(addr).expire_on_block_height;
+        *Vector::borrow<u64>(&expire_vector, index)
+    }
+
+    public fun is_expired(entry: EntryHandle): bool acquires Expiration {
         let current_block_height = Block::get_current_block_height();
-        current_block_height > entry.expire_on_block_height
+        current_block_height > expire_on_block_height(entry)
     }
- 
+
 }
 
 //! new-transaction
@@ -92,10 +121,8 @@ fun main(account: &signer) {
 script {
 use {{nameservice}}::NameService;
 fun main(account: &signer) {
-    let (exist, location) = NameService::find(b"alice", {{nameservice}});
-    assert(exist == false, 20);
-    assert(location == {{nameservice}}, 21);
-    NameService::add_name(account, b"alice", location);
+    let head = NameService::entry_handle({{nameservice}}, 0);
+    NameService::find_position_and_insert(account, b"alice", head);
 }
 }
 // check: EXECUTED
@@ -106,10 +133,8 @@ fun main(account: &signer) {
 script {
 use {{nameservice}}::NameService;
 fun main(account: &signer) {
-    let (exist, location) = NameService::find(b"bob", {{nameservice}});
-    assert(exist == false, 22);
-    assert(location == {{nameservice}}, 23);
-    NameService::add_name(account, b"bob", location);
+    let head = NameService::entry_handle({{nameservice}}, 0);
+    NameService::find_position_and_insert(account, b"bob", head);
 }
 }
 // check: EXECUTED
@@ -120,23 +145,8 @@ fun main(account: &signer) {
 script {
 use {{nameservice}}::NameService;
 fun main(account: &signer) {
-    let (exist, location) = NameService::find(b"carol", {{nameservice}});
-    assert(exist == false, 24);
-    assert(location == {{alice}}, 25);
-    NameService::add_name(account, b"carol", location);
-}
-}
-// check: EXECUTED
-
-//! new-transaction
-//! sender: david
-// look up the address bound to b"alice"
-script {
-use {{nameservice}}::NameService;
-fun main() {
-    let (exist, address) = NameService::find(b"alice", {{nameservice}});
-    assert(exist, 28);
-    assert(address == {{alice}}, 29);
+    let head = NameService::entry_handle({{nameservice}}, 0);
+    NameService::find_position_and_insert(account, b"carol", head);
 }
 }
 // check: EXECUTED
@@ -147,7 +157,8 @@ fun main() {
 script {
 use {{nameservice}}::NameService;
 fun main() {
-    let name = NameService::get_name_for({{alice}});
+    let entry = NameService::entry_handle({{alice}}, 0);
+    let name = NameService::get_name_for(entry);
     assert(name == b"alice", 26);
 }
 }
@@ -159,19 +170,21 @@ fun main() {
 script {
 use {{nameservice}}::NameService;
 fun main(account: &signer) {
-    NameService::remove_entry_by_entry_owner(account);
+    let entry = NameService::entry_handle({{carol}}, 0);
+    NameService::remove_entry_by_entry_owner(account, entry);
 }
 }
 // check: EXECUTED
 
 //! new-transaction
 //! sender: nameservice
-//removes her entry _@nameservice -> b"alice"@alice
+//removes bob's entry _@nameservice -> b"alice"@alice
 script {
 use {{nameservice}}::NameService;
 fun main(account: &signer) {
-    assert(NameService::is_expired({{bob}}), 27);
-    NameService::remove_entry_by_service_owner(account, {{bob}});
+    let entry = NameService::entry_handle({{bob}}, 0);
+    assert(NameService::is_expired(copy entry), 27);
+    NameService::remove_entry_by_service_owner(account, entry);
 }
 }
 // check: ABORTED
@@ -179,27 +192,27 @@ fun main(account: &signer) {
 
 //! block-prologue
 //! proposer: vivian
-//! block-time: 1
+//! block-time: 1001
 
 //! block-prologue
 //! proposer: vivian
-//! block-time: 1
+//! block-time: 1002
 
 //! block-prologue
 //! proposer: vivian
-//! block-time: 1
+//! block-time: 1003
 
 //! block-prologue
 //! proposer: vivian
-//! block-time: 1
+//! block-time: 1004
 
 //! block-prologue
 //! proposer: vivian
-//! block-time: 1
+//! block-time: 1005
 
 //! block-prologue
 //! proposer: vivian
-//! block-time: 1
+//! block-time: 1006
 
 //! new-transaction
 //! sender: nameservice
@@ -207,8 +220,9 @@ fun main(account: &signer) {
 script {
 use {{nameservice}}::NameService;
 fun main(account: &signer) {
-    assert(NameService::is_expired({{bob}}), 27);
-    NameService::remove_entry_by_service_owner(account, {{bob}});
+    let entry = NameService::entry_handle({{bob}}, 0);
+    assert(NameService::is_expired(copy entry), 27);
+    NameService::remove_entry_by_service_owner(account, entry);
 }
 }
 // check: EXECUTED
