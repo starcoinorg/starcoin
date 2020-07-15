@@ -3087,7 +3087,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-swarm",
  "log 0.4.8",
- "lru",
+ "lru 0.4.3",
  "prost",
  "prost-build",
  "rand 0.7.3",
@@ -3673,6 +3673,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lru"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35c456c123957de3a220cd03786e0d86aa542a88b46029973b542f426da6ef34"
+dependencies = [
+ "hashbrown",
+]
+
+[[package]]
 name = "lru-cache"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4059,7 +4068,7 @@ dependencies = [
  "libp2p",
  "linked-hash-map",
  "log 0.4.8",
- "lru",
+ "lru 0.5.3",
  "nohash-hasher",
  "parity-scale-codec",
  "parking_lot 0.10.2",
@@ -6058,7 +6067,7 @@ dependencies = [
  "anyhow",
  "byteorder 1.3.4",
  "itertools 0.9.0",
- "lru",
+ "lru 0.5.3",
  "mirai-annotations",
  "once_cell",
  "parking_lot 0.10.2",
@@ -6565,7 +6574,7 @@ dependencies = [
  "hex 0.4.2",
  "libp2p",
  "log 0.4.8",
- "lru",
+ "lru 0.5.3",
  "network-api",
  "network-p2p",
  "parity-codec",
@@ -6853,7 +6862,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "forkable-jellyfish-merkle",
- "lru",
+ "lru 0.5.3",
  "parking_lot 0.10.2",
  "serde",
  "starcoin-canonical-serialization",
@@ -6874,7 +6883,7 @@ dependencies = [
  "byteorder 1.3.4",
  "chrono",
  "forkable-jellyfish-merkle",
- "lru",
+ "lru 0.5.3",
  "once_cell",
  "parking_lot 0.10.2",
  "rocksdb",

@@ -18,7 +18,7 @@ logger = {path = "../../commons/logger", package="starcoin-logger"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0" }
-lru = "0.4.3"
+lru = "0.5.3"
 parking_lot = "0.10.2"
 
 [dev-dependencies]
