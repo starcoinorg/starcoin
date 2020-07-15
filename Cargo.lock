@@ -7232,12 +7232,6 @@ checksum = "c19be23126415861cb3a23e501d34a708f7f9b2183c5252d690941c2e69199d5"
 
 [[package]]
 name = "static_assertions"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f3eb36b47e512f8f1c9e3d10c2c1965bc992bd9cdb024fa581e2194501c83d3"
-
-[[package]]
-name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
@@ -7523,7 +7517,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-wallet-api",
- "static_assertions 0.3.4",
+ "static_assertions 1.1.0",
  "structopt",
 ]
 
