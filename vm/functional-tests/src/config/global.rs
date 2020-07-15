@@ -9,6 +9,7 @@ use crate::{common::strip, errors::*, genesis_accounts::make_genesis_accounts};
 use once_cell::sync::Lazy;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::account_config;
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::identifier::Identifier;
 use std::{
     collections::{btree_map, BTreeMap},
@@ -54,6 +55,8 @@ impl FromStr for Balance {
 pub struct AccountDefinition {
     /// Name of the account. The name is case insensitive.
     pub name: String,
+    /// Address explicit specified
+    pub address: Option<AccountAddress>,
     /// The initial balance of the account.
     pub balance: Option<Balance>,
     /// The initial sequence number of the account.
@@ -87,12 +90,24 @@ impl FromStr for Entry {
                 )
                 .into());
             }
-            let balance = v.get(1).and_then(|s| s.parse::<Balance>().ok());
-            let sequence_number = v.get(2).and_then(|s| s.parse::<u64>().ok());
-            // These two are mutually exclusive, so we can double-use the third position
+
+            // support seq parse.
+            let mut next_to_parse = 1;
+            let account_address = v
+                .get(next_to_parse)
+                .and_then(|s| AccountAddress::from_hex_literal(s).ok());
+            if account_address.is_some() {
+                next_to_parse += 1;
+            }
+            let balance = v.get(next_to_parse).and_then(|s| s.parse::<Balance>().ok());
+            if balance.is_some() {
+                next_to_parse += 1;
+            }
+            let sequence_number = v.get(next_to_parse).and_then(|s| s.parse::<u64>().ok());
 
             return Ok(Entry::AccountDefinition(AccountDefinition {
                 name: v[0].to_string(),
+                address: account_address,
                 balance,
                 sequence_number,
             }));
@@ -126,9 +141,8 @@ impl Config {
                 Entry::AccountDefinition(def) => {
                     let balance = def.balance.as_ref().unwrap_or(&DEFAULT_BALANCE).clone();
                     let (privkey, pubkey) = keygen.generate_keypair();
-                    let account_data = AccountData::with_keypair(
-                        privkey,
-                        pubkey,
+                    let account_data = AccountData::with_account(
+                        Account::with_keypair(privkey, pubkey, def.address),
                         balance.amount,
                         balance.currency_code,
                         def.sequence_number.unwrap_or(0),

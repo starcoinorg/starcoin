@@ -1,4 +1,4 @@
-//! account: alice
+//! account: alice, 0x1
 //! account: bob
 
 //! new-transaction
