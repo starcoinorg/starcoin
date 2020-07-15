@@ -1,27 +1,29 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::contract::{Contract, ModuleContract};
 /// A wrap to move-lang compiler
 use crate::shared::Address;
 use anyhow::{bail, ensure, Result};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use starcoin_vm_types::account_address::AccountAddress;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-
-mod contract;
-
-use crate::contract::{Contract, ModuleContract};
-pub use move_lang::compiled_unit::{verify_units, CompiledUnit};
-pub use move_lang::{
-    errors::*, move_check, move_check_no_report, move_compile, move_compile_no_report,
-    move_compile_to_expansion_no_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
-};
-use starcoin_vm_types::bytecode_verifier::VerifiedModule;
+use starcoin_vm_types::bytecode_verifier::verify_module;
+use starcoin_vm_types::errors::Location;
 use starcoin_vm_types::file_format::CompiledModule;
+use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Read;
+use std::path::{Path, PathBuf};
+
+pub use move_lang::{
+    compiled_unit::{verify_units, CompiledUnit},
+    errors::*,
+    move_check, move_check_no_report, move_compile, move_compile_no_report,
+    move_compile_to_expansion_no_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
+};
+
+mod contract;
 
 pub mod errors {
     pub use move_lang::errors::*;
@@ -129,21 +131,22 @@ pub fn compile_source_string(
     Ok(compiled_unit)
 }
 
-pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> Result<()> {
-    if pre_code == new_code {
-        return Ok(());
+/// pre_module must has bean verified, return new code verified CompiledModule
+pub fn check_compat_and_verify_module(
+    pre_module: CompiledModule,
+    new_code: &[u8],
+) -> Result<CompiledModule> {
+    let new_module = CompiledModule::deserialize(new_code)
+        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
+
+    if let Err(e) = verify_module(&new_module) {
+        return Err(e.into_vm_status().into());
     }
-    let mut pre_version = CompiledModule::deserialize(pre_code)?;
-    let mut new_version = CompiledModule::deserialize(new_code)?;
-    pre_version = VerifiedModule::new(pre_version)
-        .map_err(|e| e.1)?
-        .into_inner();
-    new_version = VerifiedModule::new(new_version)
-        .map_err(|e| e.1)?
-        .into_inner();
-    let pre_contract = ModuleContract::new(&pre_version);
-    let new_contract = ModuleContract::new(&new_version);
-    new_contract.compat_with(&pre_contract)
+
+    let pre_contract = ModuleContract::new(&pre_module);
+    let new_contract = ModuleContract::new(&new_module);
+    new_contract.compat_with(&pre_contract)?;
+    Ok(new_module)
 }
 
 /// Compile move source file, or load move bytecode file, based on file path extension.
@@ -303,13 +306,15 @@ mod tests {
     }
 
     fn do_test_compat(pre_source_code: &str, new_source_code: &str, expect: bool) {
-        let pre_code = compile_source_string(pre_source_code, &[], CORE_CODE_ADDRESS)
-            .unwrap()
-            .serialize();
+        let pre_module =
+            match compile_source_string(pre_source_code, &[], CORE_CODE_ADDRESS).unwrap() {
+                CompiledUnit::Module { module, .. } => module,
+                CompiledUnit::Script { .. } => panic!("Expect module but get script"),
+            };
         let new_code = compile_source_string(new_source_code, &[], CORE_CODE_ADDRESS)
             .unwrap()
             .serialize();
-        match check_module_compat(pre_code.as_slice(), new_code.as_slice()) {
+        match check_compat_and_verify_module(pre_module, new_code.as_slice()) {
             Err(e) => {
                 if expect {
                     panic!(e)

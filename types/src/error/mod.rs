@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::vm_error::VMStatus;
 use starcoin_crypto::HashValue;
+use starcoin_vm_types::vm_status::VMStatus;
 use std::error::Error;
 use thiserror::Error;
 

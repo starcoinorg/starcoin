@@ -13,7 +13,6 @@ use starcoin_types::{
     access_path::AccessPath,
     block_metadata::BlockMetadata,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
-    vm_error::VMStatus,
     write_set::WriteSet,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
@@ -24,6 +23,7 @@ use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::ModuleId,
     state_view::StateView,
+    vm_status::VMStatus,
 };
 
 /// Provides an environment to run a VM instance.

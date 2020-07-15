@@ -66,6 +66,7 @@ module VMConfig {
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
     ) {
+        //TODO pass gas_constants as init argument and onchain config.
         let gas_constants = GasConstants {
             global_memory_per_byte_cost: 8,
             global_memory_per_byte_write_cost: 8,
@@ -75,7 +76,7 @@ module VMConfig {
             maximum_number_of_gas_units: 2000000,
             min_price_per_gas_unit: 0,
             max_price_per_gas_unit: 10000,
-            max_transaction_size_in_bytes: 4096,
+            max_transaction_size_in_bytes: 40960,
         };
 
 

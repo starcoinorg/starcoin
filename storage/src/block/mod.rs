@@ -166,7 +166,7 @@ impl BlockStorage {
     }
     pub fn save(&self, block: Block, state: BlockState) -> Result<()> {
         debug!(
-            "insert block:{:?}, block:{:?}",
+            "insert block:{}, parent:{}",
             block.header().id(),
             block.header().parent_hash()
         );

@@ -839,7 +839,7 @@ mod tests {
 
     #[test]
     fn test_peer_info() {
-        let mut peer_info = PeerInfo::default();
+        let mut peer_info = PeerInfo::random();
         peer_info.latest_header = BlockHeader::random();
         let data = peer_info.encode().unwrap();
         let peer_info_decode = PeerInfo::decode(&data).unwrap();
@@ -1009,7 +1009,7 @@ mod tests {
         mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) {
         let (network, rpc_rx) =
-            NetworkActor::launch(node_config, bus, HashValue::default(), PeerInfo::default());
+            NetworkActor::launch(node_config, bus, HashValue::default(), PeerInfo::random());
         (network, rpc_rx)
     }
 

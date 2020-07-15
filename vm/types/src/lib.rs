@@ -49,6 +49,10 @@ pub mod parser {
 
 pub mod transaction_metadata;
 
+pub mod value {
+    pub use move_core_types::value::*;
+}
+
 pub mod values {
     pub use move_vm_types::values::*;
 }
@@ -101,16 +105,17 @@ pub mod contract_event {
     };
 }
 
-pub mod vm_error {
-    pub use libra_types::vm_error::*;
-
+pub mod vm_status {
+    pub use move_core_types::vm_status::*;
     pub mod sub_status {
-        pub use libra_types::vm_error::sub_status::*;
+        pub use move_core_types::vm_status::sub_status::*;
     }
 }
 
 pub mod bytecode_verifier {
-    pub use bytecode_verifier::{VerifiedModule, VerifiedScript};
+    pub use bytecode_verifier::{
+        verify_main_signature, verify_module, verify_script, DependencyChecker,
+    };
 }
 
 pub mod access_path;

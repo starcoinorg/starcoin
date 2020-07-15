@@ -3,10 +3,10 @@
 
 use criterion::{BatchSize, Bencher};
 use crypto::HashValue;
+use starcoin_vm_types::vm_status::StatusCode;
 use storage::Storage;
 use storage::TransactionInfoStore;
 use types::transaction::TransactionInfo;
-use types::vm_error::StatusCode;
 
 /// Benchmarking support for storage.
 pub struct StorageBencher {

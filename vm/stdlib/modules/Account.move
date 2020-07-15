@@ -2,7 +2,6 @@ address 0x1 {
 
 // The module for the account resource that governs every account
 module Account {
-    use 0x1::Association;
     use 0x1::Event;
     use 0x1::Hash;
     use 0x1::LCS;
@@ -40,7 +39,6 @@ module Account {
         // The current sequence number.
         // Incremented by one each time a transaction is submitted
         sequence_number: u64,
-        is_frozen: bool,
     }
 
     // A resource that holds the coins stored in this account
@@ -85,10 +83,6 @@ module Account {
         // Metadata associated with the payment
         metadata: vector<u8>,
     }
-
-    // A privilege to allow the freezing of accounts.
-    struct FreezingPrivilege { }
-
 
     // Deposits the `to_deposit` coin into the `payee`'s account balance
     public fun deposit<Token>(account: &signer, payee: address, to_deposit: Coin<Token>)
@@ -378,7 +372,6 @@ module Account {
               received_events: Event::new_event_handle<ReceivedPaymentEvent>(new_account),
               sent_events: Event::new_event_handle<SentPaymentEvent>(new_account),
               sequence_number: 0,
-              is_frozen: false,
         });
     }
 
@@ -447,35 +440,6 @@ module Account {
         exists<Account>(check_addr)
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Freezing
-    ///////////////////////////////////////////////////////////////////////////
-
-    // Freeze the account at `addr`.
-    public fun freeze_account(account: &signer, addr: address)
-    acquires Account {
-        assert_can_freeze(Signer::address_of(account));
-        // The root association account cannot be frozen
-        assert(addr != Association::root_address(), 14);
-        borrow_global_mut<Account>(addr).is_frozen = true;
-    }
-
-    // Unfreeze the account at `addr`.
-    public fun unfreeze_account(account: &signer, addr: address)
-    acquires Account {
-        assert_can_freeze(Signer::address_of(account));
-        borrow_global_mut<Account>(addr).is_frozen = false;
-    }
-
-    // Returns if the account at `addr` is frozen.
-    public fun account_is_frozen(addr: address): bool
-    acquires Account {
-        borrow_global<Account>(addr).is_frozen
-     }
-
-    fun assert_can_freeze(addr: address) {
-        assert(Association::has_privilege<FreezingPrivilege>(addr), 13);
-    }
 
     // The prologue is invoked at the beginning of every transaction
     // It verifies:
@@ -494,9 +458,7 @@ module Account {
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists
-        assert(exists_at(txn_sender), 5);
-
-        assert(!account_is_frozen(txn_sender), 0);
+        assert(exists_at(txn_sender), 4);
 
         // Load the transaction sender's account
         let sender_account = borrow_global_mut<Account>(txn_sender);
@@ -513,8 +475,8 @@ module Account {
         assert(balance_amount >= max_transaction_fee, 6);
 
         // Check that the transaction sequence number matches the sequence number of the account
-        assert(txn_sequence_number >= sender_account.sequence_number, 3);
-        assert(txn_sequence_number == sender_account.sequence_number, 4);
+        assert(txn_sequence_number >= sender_account.sequence_number, 2);
+        assert(txn_sequence_number == sender_account.sequence_number, 3);
     }
 
     // The epilogue is invoked at the end of transactions.

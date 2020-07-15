@@ -3,9 +3,9 @@
 
 #![forbid(unsafe_code)]
 
-use bytecode_verifier::{batch_verify_modules, VerifiedModule};
 use once_cell::sync::Lazy;
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
+use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
 use std::path::PathBuf;
 
@@ -29,7 +29,7 @@ pub const STAGED_EXTENSION: &str = "mv";
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
-static FRESH_MOVELANG_STDLIB: Lazy<Vec<VerifiedModule>> = Lazy::new(build_stdlib);
+static FRESH_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> = Lazy::new(build_stdlib);
 
 // This needs to be a string literal due to restrictions imposed by include_bytes.
 /// The staged library needs to be included in the Rust binary due to Docker deployment issues.
@@ -45,13 +45,21 @@ pub const STAGED_STDLIB_BYTES: &[u8] = std::include_bytes!("../staged/stdlib.mv"
 // regenerate genesis). The staged version of the stdlib/scripts are used unless otherwise
 // specified either by the MOVE_NO_USE_STAGED env var, or by passing the "StdLibOptions::Fresh"
 // option to `stdlib_modules`.
-static STAGED_MOVELANG_STDLIB: Lazy<Vec<VerifiedModule>> = Lazy::new(|| {
-    let modules = scs::from_bytes::<Vec<Vec<u8>>>(STAGED_STDLIB_BYTES)
+static STAGED_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> = Lazy::new(|| {
+    let modules: Vec<CompiledModule> = scs::from_bytes::<Vec<Vec<u8>>>(STAGED_STDLIB_BYTES)
         .unwrap()
         .into_iter()
         .map(|bytes| CompiledModule::deserialize(&bytes).unwrap())
         .collect();
-    batch_verify_modules(modules)
+
+    let mut verified_modules = vec![];
+    for module in modules {
+        verify_module(&module).expect("stdlib module failed to verify");
+        DependencyChecker::verify_module(&module, &verified_modules)
+            .expect("stdlib module dependency failed to verify");
+        verified_modules.push(module)
+    }
+    verified_modules
 });
 
 /// An enum specifying whether the staged stdlib/scripts should be used or freshly built versions
@@ -65,7 +73,7 @@ pub enum StdLibOptions {
 /// Returns a reference to the standard library. Depending upon the `option` flag passed in
 /// either a staged version of the standard library will be returned or a new freshly built stdlib
 /// will be used.
-pub fn stdlib_modules(option: StdLibOptions) -> &'static [VerifiedModule] {
+pub fn stdlib_modules(option: StdLibOptions) -> &'static [CompiledModule] {
     match option {
         StdLibOptions::Staged => &*STAGED_MOVELANG_STDLIB,
         StdLibOptions::Fresh => &*FRESH_MOVELANG_STDLIB,
@@ -78,7 +86,7 @@ pub fn stdlib_modules(option: StdLibOptions) -> &'static [VerifiedModule] {
 /// The order the modules are presented in is important: later modules depend on earlier ones.
 /// The defualt is to return a staged version of the stdlib unless it is otherwise specified by the
 /// `MOVE_NO_USE_STAGED` environment variable.
-pub fn env_stdlib_modules() -> &'static [VerifiedModule] {
+pub fn env_stdlib_modules() -> &'static [CompiledModule] {
     let option = if use_staged() {
         StdLibOptions::Staged
     } else {
@@ -111,18 +119,22 @@ pub fn stdlib_files() -> Vec<String> {
     filter_move_files(dirfiles).collect::<Vec<_>>()
 }
 
-pub fn build_stdlib() -> Vec<VerifiedModule> {
+pub fn build_stdlib() -> Vec<CompiledModule> {
     let (_, compiled_units) =
         move_compile(&stdlib_files(), &[], Some(Address::LIBRA_CORE)).unwrap();
-    batch_verify_modules(
-        compiled_units
-            .into_iter()
-            .map(|compiled_unit| match compiled_unit {
-                CompiledUnit::Module { module, .. } => module,
-                CompiledUnit::Script { .. } => panic!("Unexpected Script in stdlib"),
-            })
-            .collect(),
-    )
+    let mut modules = vec![];
+    for compiled_unit in compiled_units {
+        match compiled_unit {
+            CompiledUnit::Module { module, .. } => {
+                verify_module(&module).expect("stdlib module failed to verify");
+                DependencyChecker::verify_module(&module, &modules)
+                    .expect("stdlib module dependency failed to verify");
+                modules.push(module)
+            }
+            CompiledUnit::Script { .. } => panic!("Unexpected Script in stdlib"),
+        }
+    }
+    modules
 }
 
 pub fn compile_script(source_file_str: String) -> Vec<u8> {

@@ -15,7 +15,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::vm_error::StatusCode;
+use starcoin_vm_types::vm_status::StatusCode;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
 use std::time::Duration;

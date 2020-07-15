@@ -70,7 +70,6 @@ async fn test_subscribe_txns() {
     let _ = pool.get_service().subscribe_txns();
 }
 
-// TODO: ignore test for now. will fire another PR to make this happen
 #[stest::test]
 async fn test_rollback() -> Result<()> {
     let (pool, storage) = test_helper::start_txpool();

@@ -10,6 +10,7 @@ use crate::{
 use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
+use vm::errors::Location;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Package {
@@ -47,7 +48,8 @@ impl Package {
     }
 
     fn parse_module_address(module: &Module) -> Result<AccountAddress> {
-        let compiled_module = CompiledModule::deserialize(module.code())?;
+        let compiled_module = CompiledModule::deserialize(module.code())
+            .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
         Ok(*compiled_module.address())
     }
 

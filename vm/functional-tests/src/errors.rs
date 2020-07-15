@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub use anyhow::{anyhow, bail, format_err, Error, Result};
-use starcoin_types::{transaction::TransactionOutput, vm_error::VMStatus};
+use starcoin_vm_types::{transaction::TransactionOutput, vm_status::VMStatus};
 use thiserror::Error;
 
 /// Defines all errors in this crate.
