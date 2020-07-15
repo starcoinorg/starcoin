@@ -17,6 +17,7 @@ module BlockReward {
     resource struct RewardInfo {
         reward_height: u64,
         heights: vector<u64>,
+        rewards: vector<u64>,
         miners: vector<address>,
     }
 
@@ -26,6 +27,7 @@ module BlockReward {
         move_to<RewardInfo>(account, RewardInfo {
             reward_height: 0,
             heights: Vector::empty(),
+            rewards: Vector::empty(),
             miners: Vector::empty(),
         });
         let reward_token = Token::mint<STC>(account,  reward_balance);
@@ -39,7 +41,7 @@ module BlockReward {
         Token::withdraw<STC>(&mut block_reward.balance, amount)
     }
 
-    public fun process_block_reward(account: &signer, current_height: u64, current_author: address, auth_key_prefix: vector<u8>) acquires RewardInfo, BlockReward {
+    public fun process_block_reward(account: &signer, current_height: u64, current_reward: u64, current_author: address, auth_key_prefix: vector<u8>) acquires RewardInfo, BlockReward {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
 
         if (current_height > 0) {
@@ -54,8 +56,11 @@ module BlockReward {
                 let reward_height = *&reward_info.reward_height + 1;
                 let first_height = *Vector::borrow(&reward_info.heights, 0);
                 assert((reward_height == first_height), 6005);
+                let reward_len = Vector::length(&reward_info.rewards);
+                assert((len == reward_len), 6005);
+                let reward_amount = *Vector::borrow(&reward_info.rewards, 0);
 
-                let reward_amount = RewardConfig::reward_coin(reward_height);
+                //let reward_amount = RewardConfig::reward_coin(reward_height);
                 let reward_miner = *Vector::borrow(&reward_info.miners, 0);
                 reward_info.reward_height = reward_height;
                 if (reward_amount > 0) {
@@ -63,11 +68,13 @@ module BlockReward {
                     let reward = withdraw(reward_amount);
                     Account::deposit<STC>(account, reward_miner, reward);
                 };
+                Vector::remove(&mut reward_info.rewards, 0);
                 Vector::remove(&mut reward_info.heights, 0);
                 Vector::remove(&mut reward_info.miners, 0);
             };
 
             Vector::push_back(&mut reward_info.heights, current_height);
+            Vector::push_back(&mut reward_info.rewards, current_reward);
             if (!Account::exists_at(current_author)) {
                 assert(!Vector::is_empty(&auth_key_prefix), 6007);
                 Account::create_account<STC>(current_author, auth_key_prefix);

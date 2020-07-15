@@ -21,8 +21,9 @@ module Genesis {
    public fun initialize(publishing_option: vector<u8>, instruction_schedule: vector<u8>,native_schedule: vector<u8>,
                          reward_halving_interval: u64, reward_base: u64, reward_delay: u64,
                          uncle_rate_target:u64,epoch_time_target: u64,
-                         reward_half_time_target: u64, init_block_time_target: u64,
-                         block_window: u64, only_current_epoch: bool, total_supply: u64,
+                         reward_half_epoch: u64, init_block_time_target: u64,
+                         block_window: u64, only_current_epoch: bool,
+                         reward_per_uncle_percent: u64, total_supply: u64,
                          pre_mine_percent:u64, parent_hash: vector<u8>,
                          association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
    ){
@@ -39,7 +40,6 @@ module Genesis {
         VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule);
         RewardConfig::initialize(&genesis_account, reward_halving_interval, reward_base, reward_delay);
         Version::initialize(&genesis_account);
-        Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_time_target, init_block_time_target, block_window, only_current_epoch);
 
         TransactionTimeout::initialize(&genesis_account);
 
@@ -54,6 +54,9 @@ module Genesis {
              Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), association_balance);
         };
         let miner_reward_balance = total_supply - association_balance;
+        let init_reward_per_epoch = miner_reward_balance / reward_half_epoch;
+        Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_window, only_current_epoch, init_reward_per_epoch, reward_per_uncle_percent);
+
         BlockReward::initialize(&genesis_account, miner_reward_balance);
 
         TransactionFee::initialize(&genesis_account);

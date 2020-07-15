@@ -14,7 +14,7 @@ const CONSENSUS_MODULE_NAME: &str = "Consensus";
 pub struct Consensus {
     pub uncle_rate_target: u64,
     pub epoch_time_target: u64,
-    pub reward_half_time_target: u64,
+    pub reward_half_epoch: u64,
     pub block_window: u64,
     pub only_current_epoch: bool,
 }
