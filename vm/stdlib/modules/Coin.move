@@ -19,12 +19,6 @@ module Coin {
     // A burn capability allows coins of type `CoinType` to be burned
     resource struct BurnCapability<CoinType> { }
 
-    // A operations capability to allow this module to register currencies
-    // with the RegisteredCurrencies on-chain config.
-    resource struct CurrencyRegistrationCapability {
-        cap: RegisteredCurrencies::RegistrationCapability,
-    }
-
     struct MintEvent {
         // funds added to the system
         amount: u64,
@@ -125,8 +119,7 @@ module Coin {
     // Currently, it is invoked in the genesis transaction
     public fun initialize(account: &signer) {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 0);
-        let cap = RegisteredCurrencies::initialize(account);
-        move_to(account,CurrencyRegistrationCapability{ cap })
+        RegisteredCurrencies::initialize(account);
     }
 
     // Returns a MintCapability for the `CoinType` currency. `CoinType`
@@ -447,11 +440,11 @@ module Coin {
         to_stc_exchange_rate: FixedPoint32,
         scaling_factor: u64,
         fractional_part: u64,
-    ) acquires CurrencyRegistrationCapability {
+    ) {
         // And only callable by the designated currency address.
         //assert(Association::has_privilege<AddCurrency>(Signer::address_of(account)), 8);
         assert_issuer<CoinType>(account);
-        let (coin_module_address,coin_module_name,struct_name) = Generic::type_of<CoinType>();
+        let (_coin_module_address,coin_module_name,struct_name) = Generic::type_of<CoinType>();
         // CoinType's struct name must be same as Coin Name. TODO consider a more graceful approach.
         assert(struct_name == copy coin_module_name, 8);
         move_to(account,MintCapability<CoinType>{});
@@ -471,9 +464,8 @@ module Coin {
             cancel_burn_events: Event::new_event_handle<CancelBurnEvent>(account)
         });
         RegisteredCurrencies::add_currency_code(
-            coin_module_address,
-            coin_module_name,
-            &mut borrow_global_mut<CurrencyRegistrationCapability>(CoreAddresses::GENESIS_ACCOUNT()).cap
+            account,
+            coin_module_name
         )
     }
 

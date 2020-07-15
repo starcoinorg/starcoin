@@ -2,67 +2,55 @@ address 0x1 {
 //TODO Consider a more appropriate name.
 module RegisteredCurrencies {
     use 0x1::Vector;
-    use 0x1::Config;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
+    use 0x1::SortedLinkedList::{Self, EntryHandle};
 
     struct CurrencyRecord{
-        // Currency module address.
-        module_address: address,
         currency_code: vector<u8>,
     }
 
-    // An on-chain config holding all of the currency codes for registered
-    // currencies. Must be named "RegisteredCurrencies" for an on-chain config.
-    struct RegisteredCurrencies {
-        currency_codes: vector<CurrencyRecord>,
-    }
-
-    // An operations capability to allow updating of the on-chain config
-    resource struct RegistrationCapability {
-        cap: Config::ModifyConfigCapability<Self::RegisteredCurrencies>,
-    }
-
-    public fun initialize(account: &signer): RegistrationCapability {
-        // enforce that this is only going to one specific address,
+    public fun initialize(account: &signer) {
+        // enforce that this is only going to one specific address
         assert(Signer::address_of(account) == singleton_address(), 0);
-        let cap = Config::publish_new_config_with_capability(account, empty());
-
-        RegistrationCapability{ cap }
+        SortedLinkedList::create_new_list<CurrencyRecord>(account, empty());
     }
 
-    fun empty(): RegisteredCurrencies {
-        RegisteredCurrencies { currency_codes: Vector::empty() }
+    fun empty(): CurrencyRecord {
+        CurrencyRecord {
+            currency_code: Vector::empty()
+        }
     }
 
     public fun add_currency_code(
-        module_address: address,
+        account: &signer,
         currency_code: vector<u8>,
-        cap: &mut RegistrationCapability,
     ) {
-        let config = Config::get_by_address<RegisteredCurrencies>(CoreAddresses::GENESIS_ACCOUNT());
-        //TODO limit check cap
-        let record = CurrencyRecord {module_address, currency_code};
-        Vector::push_back(&mut config.currency_codes, record);
-        Config::set_with_capability(&mut cap.cap, config);
+        let record = CurrencyRecord { currency_code: currency_code };
+        SortedLinkedList::find_position_and_insert<CurrencyRecord>(account, record, currency_records());
     }
 
-    public fun currency_records(): vector<CurrencyRecord> {
-        let config = Config::get_by_address<RegisteredCurrencies>(CoreAddresses::GENESIS_ACCOUNT());
-        *&config.currency_codes
+    public fun get_currency_for(addr: address, index: u64): vector<u8> {
+        let entry = SortedLinkedList::entry_handle(addr, index);
+        *&SortedLinkedList::get_data<CurrencyRecord>(entry).currency_code
+    }
+
+    public fun currency_records(): EntryHandle {
+        SortedLinkedList::entry_handle(singleton_address(), 0)
     }
 
     fun singleton_address(): address {
         CoreAddresses::GENESIS_ACCOUNT()
     }
 
-    public fun module_address_of(record: &CurrencyRecord): address{
-        *&record.module_address
-    }
 
-    public fun currency_code_of(record: &CurrencyRecord): vector<u8>{
-        *&record.currency_code
-    }
+    // public fun module_address_of(record: &CurrencyRecord): address{
+    //     *&record.module_address
+    // }
+
+    // public fun currency_code_of(record: &CurrencyRecord): vector<u8>{
+    //     *&record.currency_code
+    // }
 }
 
 }
