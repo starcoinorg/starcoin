@@ -56,7 +56,7 @@ module FixedQuantityCoin {
         0x1
     }
 
-    fun total_supply(): u64 {
+    public fun total_supply(): u64 {
         100000000
     }
 }

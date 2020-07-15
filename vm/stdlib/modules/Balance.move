@@ -1,7 +1,6 @@
 address 0x1 {
 module Balance {
     use 0x1::Token;
-    use 0x1::Signer;
 
     resource struct Balance<TokenType: resource> {
         coin: Token::Coin<TokenType>,
@@ -35,11 +34,6 @@ module Balance {
         deposit_to(receiver, withdrawed_token);
     }
     */
-    public fun withdraw<TokenType: resource>(signer: &signer, amount: u64): Token::Coin<TokenType>
-    acquires Balance {
-        let my_balance = borrow_global_mut<Balance<TokenType>>(Signer::address_of(signer));
-        Token::withdraw(&mut my_balance.coin, amount)
-    }
 
     public fun withdraw_with_capability<TokenType: resource>(
         _cap: &WithdrawCapability<TokenType>,
