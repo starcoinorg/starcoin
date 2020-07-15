@@ -36,11 +36,11 @@ Module 00000000000000000000000000000001::SignedInteger64
 Module 00000000000000000000000000000001::Hash
 >>> % Module coverage: NaN
 Module 00000000000000000000000000000001::Account
->>> % Module coverage: 64.12
+>>> % Module coverage: 65.10
 Module 00000000000000000000000000000001::Association
 >>> % Module coverage: 38.55
 Module 00000000000000000000000000000001::Authenticator
->>> % Module coverage: 0.00
+>>> % Module coverage: 100.00
 Module 00000000000000000000000000000001::Consensus
 >>> % Module coverage: 75.00
 Module 00000000000000000000000000000001::Block
@@ -66,11 +66,11 @@ Module 00000000000000000000000000000001::Offer
 Module 00000000000000000000000000000001::Signature
 >>> % Module coverage: NaN
 Module 00000000000000000000000000000001::SharedEd25519PublicKey
->>> % Module coverage: 0.00
+>>> % Module coverage: 100.00
 Module 00000000000000000000000000000001::SortedLinkedList
 >>> % Module coverage: 88.67
 Module 00000000000000000000000000000001::TransactionManager
 >>> % Module coverage: 84.78
 +-------------------------+
-| % Move Coverage: 64.80  |
+| % Move Coverage: 67.86  |
 +-------------------------+
