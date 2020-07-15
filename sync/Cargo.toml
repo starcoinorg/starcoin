@@ -28,7 +28,7 @@ logger = {path = "../commons/logger",package="starcoin-logger"}
 consensus = {path = "../consensus", package="starcoin-consensus" }
 executor = {path = "../executor", package="starcoin-executor" }
 starcoin-state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
-parking_lot = "0.10"
+parking_lot = "0.11"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}

@@ -11,7 +11,7 @@ edition = "2018"
 anyhow = "1.0"
 thiserror = "1.0"
 actix-rt = "1.1"
-parking_lot = "0.10.2"
+parking_lot = "0.11.0"
 lru = "0.5.3"
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../../vm/types"}

@@ -23,7 +23,7 @@ rand = "0.7.3"
 rand_core = { version = "0.5.1", default-features = false }
 serde = "1.0"
 serde_derive = "1.0"
-parking_lot = "0.10"
+parking_lot = "0.11"
 linked-hash-map = "0.5"
 trace-time = "0.1"
 starcoin-logger = {path = "../commons/logger"}
