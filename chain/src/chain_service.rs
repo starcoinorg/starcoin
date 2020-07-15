@@ -253,16 +253,16 @@ where
         block_id: HashValue,
         exists_uncles: &mut HashSet<BlockHeader>,
     ) -> Result<()> {
-        let block_header = self.storage.get_block_header_by_hash(block_id)?;
+        let block = self.storage.get_block_by_hash(block_id)?;
 
-        if let Some(block_header) = block_header {
-            if block_header.number < epoch_start_number {
+        if let Some(block) = block {
+            if block.header.number < epoch_start_number {
                 return Ok(());
             }
-            for uncle in block_header.uncles {
-                exists_uncles.insert(uncle);
+            for uncle in block.uncles() {
+                exists_uncles.insert(uncle.clone());
             }
-            self.merge_exists_uncles(epoch_start_number, block_header.parent_hash, exists_uncles)?;
+            self.merge_exists_uncles(epoch_start_number, block.header.parent_hash, exists_uncles)?;
         }
         Ok(())
     }
@@ -273,16 +273,16 @@ where
         block_id: HashValue,
         exists_uncles: &HashSet<BlockHeader>,
     ) -> Result<Vec<BlockHeader>> {
-        let block_header = self.storage.get_block_header_by_hash(block_id)?;
+        let block = self.storage.get_block_by_hash(block_id)?;
         let mut result = vec![];
 
-        if let Some(block_header) = block_header {
-            if block_header.number < epoch_start_number {
+        if let Some(block) = block {
+            if block.header.number < epoch_start_number {
                 return Ok(result);
             }
-            for uncle in block_header.uncles {
+            for uncle in block.uncles() {
                 if !exists_uncles.contains(&uncle) {
-                    result.push(uncle);
+                    result.push(uncle.clone());
                 }
                 if result.len() == MAX_UNCLE_COUNT_PER_BLOCK {
                     return Ok(result);
@@ -290,7 +290,7 @@ where
             }
             self.find_available_uncles_in_branch(
                 epoch_start_number,
-                block_header.parent_hash,
+                block.header.parent_hash,
                 exists_uncles,
             )?;
         }

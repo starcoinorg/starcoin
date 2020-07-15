@@ -412,7 +412,7 @@ where
             let mut t = if is_genesis {
                 vec![]
             } else {
-                let block_metadata = header.clone().into_metadata();
+                let block_metadata = block.clone().into_metadata();
                 vec![Transaction::BlockMetadata(block_metadata)]
             };
             t.extend(
@@ -540,7 +540,7 @@ where
 
         // 2. verify body
         let txns = {
-            let block_metadata = block.header().clone().into_metadata();
+            let block_metadata = block.clone().into_metadata();
             let mut t = vec![Transaction::BlockMetadata(block_metadata)];
             t.extend(
                 block
