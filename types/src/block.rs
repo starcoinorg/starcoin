@@ -49,10 +49,10 @@ pub struct BlockHeader {
     pub gas_limit: u64,
     /// Block difficulty
     pub difficulty: U256,
-    /// uncles block header
-    pub uncles: Vec<BlockHeader>,
     /// Consensus extend header field.
     pub consensus_header: Vec<u8>,
+    /// hash for uncle blocks header
+    pub uncle_hash: Option<HashValue>,
 }
 
 impl BlockHeader {
@@ -68,7 +68,7 @@ impl BlockHeader {
         gas_limit: u64,
         difficulty: U256,
         consensus_header: H,
-        uncles: Vec<BlockHeader>,
+        uncle_hash: Option<HashValue>,
     ) -> BlockHeader
     where
         H: Into<Vec<u8>>,
@@ -86,7 +86,7 @@ impl BlockHeader {
             gas_limit,
             difficulty,
             consensus_header,
-            uncles,
+            uncle_hash,
         )
     }
 
@@ -103,7 +103,7 @@ impl BlockHeader {
         gas_limit: u64,
         difficulty: U256,
         consensus_header: H,
-        uncles: Vec<BlockHeader>,
+        uncle_hash: Option<HashValue>,
     ) -> BlockHeader
     where
         H: Into<Vec<u8>>,
@@ -121,7 +121,7 @@ impl BlockHeader {
             gas_limit,
             difficulty,
             consensus_header: consensus_header.into(),
-            uncles,
+            uncle_hash,
         }
     }
 
@@ -164,25 +164,12 @@ impl BlockHeader {
     pub fn consensus_header(&self) -> &[u8] {
         self.consensus_header.as_slice()
     }
-
-    pub fn into_metadata(self) -> BlockMetadata {
-        BlockMetadata::new(
-            self.parent_hash(),
-            self.timestamp,
-            self.author,
-            self.auth_key_prefix,
-            self.uncles.len() as u64,
-        )
-    }
     pub fn difficulty(&self) -> U256 {
         self.difficulty
     }
 
     pub fn parent_block_accumulator_root(&self) -> HashValue {
         self.parent_block_accumulator_root
-    }
-    pub fn uncle_len(&self) -> u64 {
-        self.uncles.len() as u64
     }
 
     pub fn genesis_block_header(
@@ -206,7 +193,7 @@ impl BlockHeader {
             gas_limit: 0,
             difficulty,
             consensus_header,
-            uncles: vec![],
+            uncle_hash: None,
         }
     }
 
@@ -224,7 +211,7 @@ impl BlockHeader {
             gas_limit: rand::random(),
             difficulty: U256::max_value(),
             consensus_header: vec![],
-            uncles: vec![],
+            uncle_hash: None,
         }
     }
 }
@@ -242,12 +229,6 @@ impl Ord for BlockHeader {
     }
 }
 
-impl Into<BlockMetadata> for BlockHeader {
-    fn into(self) -> BlockMetadata {
-        self.into_metadata()
-    }
-}
-
 impl Into<RawBlockHeader> for BlockHeader {
     fn into(self) -> RawBlockHeader {
         RawBlockHeader {
@@ -262,7 +243,7 @@ impl Into<RawBlockHeader> for BlockHeader {
             gas_used: self.gas_used,
             gas_limit: self.gas_limit,
             difficulty: self.difficulty,
-            uncles: self.uncles,
+            uncle_hash: self.uncle_hash,
         }
     }
 }
@@ -293,25 +274,33 @@ pub struct RawBlockHeader {
     pub gas_limit: u64,
     /// Block difficulty
     pub difficulty: U256,
-    /// uncles block header
-    pub uncles: Vec<BlockHeader>,
+    /// hash for uncle blocks header
+    pub uncle_hash: Option<HashValue>,
 }
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockBody {
     /// The transactions in this block.
     transactions: Vec<SignedUserTransaction>,
+    /// uncles block header
+    uncles: Vec<BlockHeader>,
 }
 
 impl BlockBody {
-    pub fn new(transactions: Vec<SignedUserTransaction>) -> Self {
-        Self { transactions }
+    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Vec<BlockHeader>) -> Self {
+        Self {
+            transactions,
+            uncles,
+        }
     }
 }
 
 impl Into<BlockBody> for Vec<SignedUserTransaction> {
     fn into(self) -> BlockBody {
-        BlockBody { transactions: self }
+        BlockBody {
+            transactions: self,
+            uncles: vec![],
+        }
     }
 }
 
@@ -350,6 +339,10 @@ impl Block {
     pub fn transactions(&self) -> &[SignedUserTransaction] {
         self.body.transactions.as_slice()
     }
+    pub fn uncles(&self) -> &[BlockHeader] {
+        self.body.uncles.as_slice()
+    }
+
     pub fn into_inner(self) -> (BlockHeader, BlockBody) {
         (self.header, self.body)
     }
@@ -373,8 +366,24 @@ impl Block {
         );
         Self {
             header,
-            body: BlockBody::new(vec![genesis_txn]),
+            body: BlockBody::new(vec![genesis_txn], vec![]),
         }
+    }
+
+    pub fn into_metadata(self) -> BlockMetadata {
+        BlockMetadata::new(
+            self.header.parent_hash(),
+            self.header.timestamp,
+            self.header.author,
+            self.header.auth_key_prefix,
+            self.body.uncles.len() as u64,
+        )
+    }
+}
+
+impl Into<BlockMetadata> for Block {
+    fn into(self) -> BlockMetadata {
+        self.into_metadata()
     }
 }
 
@@ -533,8 +542,8 @@ pub struct BlockTemplate {
     pub gas_used: u64,
     /// Block gas limit.
     pub gas_limit: u64,
-
-    pub uncles: Vec<BlockHeader>,
+    /// hash for uncle blocks header
+    pub uncle_hash: Option<HashValue>,
     pub body: BlockBody,
 }
 
@@ -550,7 +559,7 @@ impl BlockTemplate {
         state_root: HashValue,
         gas_used: u64,
         gas_limit: u64,
-        uncles: Vec<BlockHeader>,
+        uncle_hash: Option<HashValue>,
         body: BlockBody,
     ) -> Self {
         Self {
@@ -564,7 +573,7 @@ impl BlockTemplate {
             state_root,
             gas_used,
             gas_limit,
-            uncles,
+            uncle_hash,
             body,
         }
     }
@@ -586,7 +595,7 @@ impl BlockTemplate {
             self.gas_limit,
             difficulty,
             consensus_header.into(),
-            self.uncles,
+            self.uncle_hash,
         );
         Block {
             header,
@@ -606,8 +615,8 @@ impl BlockTemplate {
             state_root: self.state_root,
             gas_used: self.gas_used,
             gas_limit: self.gas_limit,
+            uncle_hash: self.uncle_hash,
             difficulty,
-            uncles: self.uncles.clone(),
         }
     }
 
@@ -628,7 +637,7 @@ impl BlockTemplate {
             self.gas_limit,
             difficulty,
             consensus_header.into(),
-            self.uncles,
+            self.uncle_hash,
         )
     }
 
@@ -645,7 +654,7 @@ impl BlockTemplate {
             gas_used: block.header().gas_used,
             gas_limit: block.header().gas_limit,
             body: block.body,
-            uncles: block.header.uncles,
+            uncle_hash: block.header.uncle_hash,
         }
     }
 }

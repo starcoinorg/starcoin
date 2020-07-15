@@ -140,7 +140,7 @@ async fn test_rollback() -> Result<()> {
             .collect();
         txns.insert(
             0,
-            Transaction::BlockMetadata(enacted_block.header().clone().into_metadata()),
+            Transaction::BlockMetadata(enacted_block.clone().into_metadata()),
         );
         let root = starcoin_executor::block_execute(
             &chain_state,
