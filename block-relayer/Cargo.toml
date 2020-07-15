@@ -34,5 +34,5 @@ starcoin-metrics = {path = "../commons/metrics"}
 tokio = { version = "0.2", features = ["full"] }
 actix-rt = "1.1"
 hex = "0.4.2"
-libp2p = "0.20.1"
+libp2p = "0.21.1"
 stest = { path = "../commons/stest"}
