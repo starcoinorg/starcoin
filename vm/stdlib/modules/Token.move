@@ -4,7 +4,6 @@ module Token {
     use 0x1::Signer;
     use 0x1::Vector;
     use 0x1::LCS;
-    use 0x1::Generic::type_of as name_of;
     /// The currency has a `TokenType` color that tells us what currency the
     /// `value` inside represents.
     resource struct Coin<TokenType> {
@@ -283,10 +282,7 @@ module Token {
         is_registered_in<TokenType>(addr)
     }
 
-    // /// Native method to get struct's:
-    // /// - address
-    // /// - module_name
-    // /// - struct_name
-    // native fun name_of<TokenType>(): (address, vector<u8>, vector<u8>);
+    /// Return Token's module address, module name, and type name of `TokenType`.
+    native fun name_of<TokenType>(): (address, vector<u8>, vector<u8>);
 }
 }
