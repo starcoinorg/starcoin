@@ -16,6 +16,9 @@ pub mod gas_schedule {
     pub use move_core_types::gas_schedule::*;
     pub use move_vm_types::gas_schedule::*;
 }
+pub mod location {
+    pub use move_ir_types::location::Loc;
+}
 
 pub mod identifier {
     pub use move_core_types::identifier::{IdentStr, Identifier};
