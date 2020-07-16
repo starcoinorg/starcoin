@@ -132,10 +132,9 @@ pub fn compile_source_string(
 }
 
 /// pre_module must has bean verified, return new code verified CompiledModule
-pub fn check_compat_and_verify_module(
-    pre_module: CompiledModule,
-    new_code: &[u8],
-) -> Result<CompiledModule> {
+pub fn check_compat_and_verify_module(pre_code: &[u8], new_code: &[u8]) -> Result<CompiledModule> {
+    let pre_module = CompiledModule::deserialize(pre_code)
+        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
     let new_module = CompiledModule::deserialize(new_code)
         .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
 
@@ -306,15 +305,13 @@ mod tests {
     }
 
     fn do_test_compat(pre_source_code: &str, new_source_code: &str, expect: bool) {
-        let pre_module =
-            match compile_source_string(pre_source_code, &[], CORE_CODE_ADDRESS).unwrap() {
-                CompiledUnit::Module { module, .. } => module,
-                CompiledUnit::Script { .. } => panic!("Expect module but get script"),
-            };
+        let pre_code = compile_source_string(pre_source_code, &[], CORE_CODE_ADDRESS)
+            .unwrap()
+            .serialize();
         let new_code = compile_source_string(new_source_code, &[], CORE_CODE_ADDRESS)
             .unwrap()
             .serialize();
-        match check_compat_and_verify_module(pre_module, new_code.as_slice()) {
+        match check_compat_and_verify_module(pre_code.as_slice(), new_code.as_slice()) {
             Err(e) => {
                 if expect {
                     panic!(e)

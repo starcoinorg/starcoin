@@ -4,7 +4,7 @@
 use crate::MyWorld;
 use anyhow::Error;
 use cucumber::{Steps, StepsBuilder};
-use starcoin_executor::TXN_RESERVED;
+use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
@@ -67,7 +67,7 @@ fn transfer_txn(
         account_resource.sequence_number(),
         amount,
         1,
-        TXN_RESERVED,
+        DEFAULT_MAX_GAS_AMOUNT,
     );
 
     let txn = sign_txn(client, raw_txn).unwrap();

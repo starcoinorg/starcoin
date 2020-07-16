@@ -10,29 +10,30 @@ module TransactionTimeout {
     duration_microseconds: u64,
   }
 
-  public fun initialize(association: &signer) {
-    // Only callable by the Association address
-    assert(Signer::address_of(association) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+  public fun initialize(account: &signer) {
+    // Only callable by the Genesis address
+    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
     // Currently set to 1day.
-    move_to(association, TTL {duration_microseconds: 86400000000});
+    //TODO set by onchain config.
+    move_to(account, TTL {duration_microseconds: 86400000000});
   }
   spec fun initialize {
-    aborts_if Signer::get_address(association) != CoreAddresses::GENESIS_ACCOUNT();
-    aborts_if exists<TTL>(Signer::get_address(association));
-    ensures global<TTL>(Signer::get_address(association)).duration_microseconds == 86400000000;
+    aborts_if Signer::get_address(account) != CoreAddresses::GENESIS_ACCOUNT();
+    aborts_if exists<TTL>(Signer::get_address(account));
+    ensures global<TTL>(Signer::get_address(account)).duration_microseconds == 86400000000;
   }
 
-  public fun set_timeout(association: &signer, new_duration: u64) acquires TTL {
-    // Only callable by the Association address
-    assert(Signer::address_of(association) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+  public fun set_timeout(account: &signer, new_duration: u64) acquires TTL {
+    // Only callable by the Genesis address
+    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
 
     let timeout = borrow_global_mut<TTL>(CoreAddresses::GENESIS_ACCOUNT());
     timeout.duration_microseconds = new_duration;
   }
   spec fun set_timeout {
-    aborts_if Signer::get_address(association) != 1;
+    aborts_if Signer::get_address(account) != 1;
     aborts_if !exists<TTL>(CoreAddresses::GENESIS_ACCOUNT());
-    ensures global<TTL>(Signer::get_address(association)).duration_microseconds == new_duration;
+    ensures global<TTL>(Signer::get_address(account)).duration_microseconds == new_duration;
   }
 
   public fun is_valid_transaction_timestamp(timestamp: u64): bool acquires TTL {

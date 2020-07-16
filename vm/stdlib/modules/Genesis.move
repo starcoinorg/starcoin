@@ -7,7 +7,6 @@ module Genesis {
    use 0x1::TransactionTimeout;
    use 0x1::Coin;
    use 0x1::Timestamp;
-   use 0x1::Association;
    use 0x1::STC::{Self,STC};
    use 0x1::PackageTxnManager;
    use 0x1::Consensus;
@@ -52,8 +51,6 @@ module Genesis {
 
         let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), copy dummy_auth_key_prefix);
         Account::add_currency<STC>(&association);
-        Association::initialize(&association);
-        Association::grant_privilege<Coin::AddCurrency>(&association, &association);
 
         let association_balance = total_supply * pre_mine_percent / 100;
         if (association_balance > 0) {

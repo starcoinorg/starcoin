@@ -26,4 +26,4 @@ rand_core = { version = "0.5.1", default-features = false }
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm/types" }
 starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
-libra-temppath = { git = "https://github.com/starcoinorg/libra", rev="f13864de3dbc41f778b91cddd920707390b851a3" }
+libra-temppath = { git = "https://github.com/starcoinorg/libra", rev="e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3" }

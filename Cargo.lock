@@ -622,7 +622,7 @@ dependencies = [
 [[package]]
 name = "borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "libra-workspace-hack",
  "mirai-annotations",
@@ -667,7 +667,7 @@ checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 [[package]]
 name = "bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "codespan",
@@ -684,7 +684,7 @@ dependencies = [
 [[package]]
 name = "bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "borrow-graph",
@@ -815,18 +815,9 @@ checksum = "498d20a7aaf62625b9bf26e637cf7736417cde1d0c99f1d04d1170229a85cf87"
 
 [[package]]
 name = "clang-sys"
-version = "0.29.4"
+version = "0.29.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b14a9b9fadc5fabb63ceb60e8c2d833bcc97d19d8eb1e229f452d07fe2001e0"
-dependencies = [
- "clang-sys-linkage",
-]
-
-[[package]]
-name = "clang-sys-linkage"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "720a18d5e5b09e70856c278d2fcf64917db370987beb78bf569fde9adba4ea63"
+checksum = "fe6837df1d5cba2397b835c8530f51723267e16abbf83892e9e5af4f0e5dd10a"
 dependencies = [
  "glob",
  "libc",
@@ -907,6 +898,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "colored"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
+dependencies = [
+ "atty",
+ "lazy_static",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -982,9 +984,9 @@ checksum = "b3a71ab494c0b5b860bdc8407ae08978052417070c2ced38573a9157ad75b8ac"
 
 [[package]]
 name = "cpuid-bool"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d375c433320f6c5057ae04a04376eef4d04ce2801448cf8863a78da99107be4"
+checksum = "ec6763c20301ab0dc67051d1b6f4cc9132ad9e6eddcb1f10c6c53ea6d6ae2183"
 
 [[package]]
 name = "crc32fast"
@@ -1328,7 +1330,7 @@ checksum = "72aa14c04dfae8dd7d8a2b1cb7ca2152618cd01336dbfe704b8dcbf8d41dbd69"
 [[package]]
 name = "datatest-stable"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "libra-workspace-hack",
  "regex",
@@ -2601,7 +2603,7 @@ checksum = "47be2f14c678be2fdcab04ab1171db51b2762ce6f0a8ee87c8dd4a04ed216135"
 [[package]]
 name = "ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "bytecode-source-map",
@@ -2620,7 +2622,7 @@ dependencies = [
 [[package]]
 name = "ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "codespan",
@@ -3357,7 +3359,7 @@ dependencies = [
 [[package]]
 name = "libra-canonical-serialization"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "libra-workspace-hack",
  "serde",
@@ -3367,7 +3369,7 @@ dependencies = [
 [[package]]
 name = "libra-crypto"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "aes-gcm 0.6.0",
  "anyhow",
@@ -3400,7 +3402,7 @@ dependencies = [
 [[package]]
 name = "libra-crypto-derive"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "libra-workspace-hack",
  "proc-macro2 1.0.18",
@@ -3411,7 +3413,7 @@ dependencies = [
 [[package]]
 name = "libra-logger"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "chrono",
  "env_logger",
@@ -3426,7 +3428,7 @@ dependencies = [
 [[package]]
 name = "libra-network-address"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "aes-gcm 0.6.0",
  "libra-canonical-serialization",
@@ -3444,7 +3446,7 @@ dependencies = [
 [[package]]
 name = "libra-nibble"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "libra-workspace-hack",
  "serde",
@@ -3453,7 +3455,7 @@ dependencies = [
 [[package]]
 name = "libra-proptest-helpers"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "crossbeam",
  "libra-workspace-hack",
@@ -3464,7 +3466,7 @@ dependencies = [
 [[package]]
 name = "libra-state-view"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "libra-crypto",
@@ -3475,7 +3477,7 @@ dependencies = [
 [[package]]
 name = "libra-temppath"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "hex 0.4.2",
  "libra-workspace-hack",
@@ -3485,7 +3487,7 @@ dependencies = [
 [[package]]
 name = "libra-types"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "bytes 0.5.6",
@@ -3514,7 +3516,7 @@ dependencies = [
 [[package]]
 name = "libra-workspace-hack"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "bytes 0.5.6",
  "cc",
@@ -3845,7 +3847,7 @@ checksum = "54c239a898de56dc502ef97e1ab8fdbd1a7a0de9afc7d8412dd1f8cbda52ee55"
 [[package]]
 name = "move-core-types"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "hex 0.4.2",
@@ -3864,9 +3866,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-coverage"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytecode-source-map",
+ "codespan",
+ "colored",
+ "libra-workspace-hack",
+ "once_cell",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "structopt",
+]
+
+[[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "codespan",
@@ -3881,7 +3900,7 @@ dependencies = [
 [[package]]
 name = "move-lang"
 version = "0.0.1"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "borrow-graph",
@@ -3908,7 +3927,7 @@ dependencies = [
 [[package]]
 name = "move-vm-natives"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "libra-crypto",
  "libra-types",
@@ -3924,7 +3943,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "bytecode-verifier",
  "libra-crypto",
@@ -3942,7 +3961,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "libra-canonical-serialization",
  "libra-crypto",
@@ -4163,7 +4182,7 @@ dependencies = [
 [[package]]
 name = "num-variants"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "libra-workspace-hack",
  "proc-macro2 1.0.18",
@@ -7118,6 +7137,7 @@ dependencies = [
  "libra-state-view",
  "libra-types",
  "move-core-types",
+ "move-ir-types",
  "move-vm-types",
  "num_enum",
  "once_cell",
@@ -8287,7 +8307,7 @@ checksum = "b5a972e5669d67ba988ce3dc826706fb0a8b01471c088cb0b6110b805cc36aed"
 [[package]]
 name = "vm"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=f13864de3dbc41f778b91cddd920707390b851a3#f13864de3dbc41f778b91cddd920707390b851a3"
+source = "git+https://github.com/starcoinorg/libra?rev=e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3#e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"
 dependencies = [
  "anyhow",
  "libra-crypto",

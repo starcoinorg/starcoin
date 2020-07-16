@@ -1,0 +1,27 @@
+[package]
+name = "move-coverage"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+description = "starcoin Move VM code coverage"
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+once_cell = "1.4.0"
+structopt = "0.3.15"
+serde = { version = "1.0.114", default-features = false }
+anyhow = "1.0.31"
+codespan = { version = "0.8.0", features = ["serialization"] }
+colored = "1.9.3"
+
+scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+starcoin-types = { path = "../../types"}
+starcoin-vm-types = { path = "../types"}
+libra-workspace-hack = { package = "libra-workspace-hack", version = "0.1.0", git = "https://github.com/starcoinorg/libra", rev="e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3"}
+bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/libra", rev="e2ef2bbe0e1056a0c8510fa572c04095a10b3ff3" }
+
+
+[features]
+default = []
+

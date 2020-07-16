@@ -215,7 +215,7 @@ impl OpenedBlock {
             txn_state_root,
             events.as_slice(),
             gas_used,
-            status.major_status,
+            status.status_code(),
         );
         let (accumulator_root, _) = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))
@@ -227,10 +227,11 @@ impl OpenedBlock {
         let state_root = self.state.state_root();
         let (parent_id, timestamp, author, auth_key_prefix, _uncles) = self.block_meta.into_inner();
 
-        let mut uncle_hash = None;
-        if self.uncles.len() > 0 {
-            uncle_hash = Some(HashValue::sha3_256_of(&self.uncles.encode()?));
-        }
+        let uncle_hash = if !self.uncles.is_empty() {
+            Some(HashValue::sha3_256_of(&self.uncles.encode()?))
+        } else {
+            None
+        };
         let body = BlockBody::new(self.included_user_txns, self.uncles);
         let block_template = BlockTemplate::new(
             parent_id,

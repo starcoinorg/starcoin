@@ -195,7 +195,6 @@ impl FakeExecutor {
     /// Verifies the given transaction by running it through the VM verifier.
     pub fn verify_transaction(&self, txn: SignedUserTransaction) -> Option<VMStatus> {
         let mut vm = StarcoinVM::new();
-        vm.load_configs(self.get_state_view());
         vm.verify_transaction(&self.data_store, txn)
     }
 
