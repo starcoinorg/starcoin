@@ -1,7 +1,6 @@
 //! account: alice, 100000000
 //! account: bob
 //! account: carol
-//! account: david
 
 //! new-transaction
 //! sender: alice
@@ -32,7 +31,10 @@ fun main(account: &signer) {
 script {
 use 0x1::SortedLinkedList;
 fun main(account: &signer) {
-    SortedLinkedList::add_node<u64>(account, 10, {{alice}});
+    // let prev_entry = SortedLinkedList::entry_handle({{alice}}, 0);
+    // SortedLinkedList::insert_node<u64>(account, 10, prev_entry);
+    let head_entry = SortedLinkedList::entry_handle({{alice}}, 0);
+    SortedLinkedList::find_position_and_insert(account, 10, head_entry);
 }
 }
 // check: EXECUTED
@@ -43,52 +45,68 @@ fun main(account: &signer) {
 script {
 use 0x1::SortedLinkedList;
 fun main(account: &signer) {
-    SortedLinkedList::add_node<u64>(account, 12, {{bob}});
+    // let prev_entry = SortedLinkedList::entry_handle({{bob}}, 0);
+    // SortedLinkedList::insert_node<u64>(account, 12, prev_entry);
+    let head_entry = SortedLinkedList::entry_handle({{alice}}, 0);
+    SortedLinkedList::find_position_and_insert(account, 12, head_entry);
 }
 }
 // check: EXECUTED
 
 //! new-transaction
 //! sender: carol
-//get value of Bob's node
-script {
-use 0x1::SortedLinkedList;
-fun main() {
-    let value = SortedLinkedList::get_key_of_node<u64>({{bob}});
-    assert(value == 10, 21);
-}
-}
-// check: EXECUTED
-
-//! new-transaction
-//! sender: david
-//adding a new element to Alice's list _@alice -> 10@bob -> 11@david -> 12@carol
+//adding a new element to Alice's list _@alice -> 10@bob -> 11@carol -> 12@carol
 script {
 use 0x1::SortedLinkedList;
 fun main(account: &signer) {
-    SortedLinkedList::add_node<u64>(account, 11, {{bob}});
+    let head_entry = SortedLinkedList::entry_handle({{alice}}, 0);
+    SortedLinkedList::find_position_and_insert(account, 11, head_entry);
 }
 }
 // check: EXECUTED
 
 //! new-transaction
 //! sender: alice
-//Alice removes Bob's node _@alice -> 11@david -> 12@carol
+//check the list _@alice -> 10@bob -> 11@carol -> 12@carol
 script {
 use 0x1::SortedLinkedList;
-fun main(account: &signer) {
-    SortedLinkedList::remove_node_by_list_owner<u64>(account, {{bob}});
+fun main() {
+    let entry0 = SortedLinkedList::entry_handle({{alice}}, 0);
+    assert(SortedLinkedList::get_data(copy entry0) == 0, 29);
+    assert(SortedLinkedList::get_prev_node_addr<u64>(entry0) == {{carol}}, 30);
+    let entry1 = SortedLinkedList::entry_handle({{bob}}, 0);
+    assert(SortedLinkedList::get_data(copy entry1) == 10, 31);
+    assert(SortedLinkedList::get_prev_node_addr<u64>(entry1) == {{alice}}, 34);
+    let entry2 = SortedLinkedList::entry_handle({{carol}}, 1);
+    assert(SortedLinkedList::get_data(copy entry2) == 11, 32);
+    assert(SortedLinkedList::get_prev_node_addr<u64>(entry2) == {{bob}}, 35);
+    let entry3 = SortedLinkedList::entry_handle({{carol}}, 0);
+    assert(SortedLinkedList::get_data(copy entry3) == 12, 33);
+    assert(SortedLinkedList::get_prev_node_addr<u64>(entry3) == {{carol}}, 36);
 }
 }
 // check: EXECUTED
 
 //! new-transaction
-//! sender: david
+//! sender: alice
+//Alice removes Bob's node _@alice -> 11@carol -> 12@carol
+script {
+use 0x1::SortedLinkedList;
+fun main(account: &signer) {
+    let entry = SortedLinkedList::entry_handle({{bob}}, 0);
+    SortedLinkedList::remove_node_by_list_owner<u64>(account, entry);
+}
+}
+// check: EXECUTED
+
+//! new-transaction
+//! sender: carol
 //David removes his node _@alice -> 12@carol
 script {
 use 0x1::SortedLinkedList;
 fun main(account: &signer) {
-    SortedLinkedList::remove_node_by_node_owner<u64>(account);
+    let entry = SortedLinkedList::entry_handle({{carol}}, 1);
+    SortedLinkedList::remove_node_by_node_owner<u64>(account, entry);
 }
 }
 // check: EXECUTED
@@ -99,7 +117,8 @@ fun main(account: &signer) {
 script {
 use 0x1::SortedLinkedList;
 fun main(account: &signer) {
-    SortedLinkedList::remove_node_by_list_owner<u64>(account, {{carol}});
+    let entry = SortedLinkedList::entry_handle({{carol}}, 0);
+    SortedLinkedList::remove_node_by_list_owner<u64>(account, entry);
     SortedLinkedList::remove_list<u64>(account);
 }
 }
