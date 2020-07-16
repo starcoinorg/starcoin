@@ -3,7 +3,7 @@
 
 //! Test infrastructure for modeling Libra accounts.
 
-use executor::{create_signed_txn_with_association_account, TXN_RESERVED};
+use executor::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_config::genesis_key_pair;
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
@@ -313,7 +313,7 @@ impl Account {
             *self.address(),
             TransactionPayload::Script(script),
             sequence_number,
-            TXN_RESERVED,
+            DEFAULT_MAX_GAS_AMOUNT,
             0, // gas price
         )
     }
@@ -721,7 +721,7 @@ impl WithdrawCapability {
     }
 
     pub fn value(&self) -> Value {
-        Value::vector_general(vec![Value::struct_(Struct::pack(
+        Value::vector_resource_for_testing_only(vec![Value::struct_(Struct::pack(
             vec![Value::address(self.account_address)],
             true,
         ))])
@@ -742,7 +742,7 @@ impl KeyRotationCapability {
     }
 
     pub fn value(&self) -> Value {
-        Value::vector_general(vec![Value::struct_(Struct::pack(
+        Value::vector_resource_for_testing_only(vec![Value::struct_(Struct::pack(
             vec![Value::address(self.account_address)],
             true,
         ))])
@@ -766,7 +766,7 @@ pub fn create_account_txn(
         vec![],
         args,
         seq_num,
-        TXN_RESERVED,
+        DEFAULT_MAX_GAS_AMOUNT,
         1,
     )
 }
@@ -790,8 +790,8 @@ pub fn peer_to_peer_txn(
         vec![stc_type_tag()],
         args,
         seq_num,
-        TXN_RESERVED, // this is a default for gas
-        1,            // this is a default for gas
+        DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
+        1,                      // this is a default for gas
     )
 }
 
@@ -813,8 +813,8 @@ pub fn mint_txn(
         vec![],
         args,
         seq_num,
-        TXN_RESERVED, // this is a default for gas
-        1,            // this is a default for gas
+        DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
+        1,                      // this is a default for gas
     )
 }
 
@@ -836,7 +836,7 @@ pub fn create_account_txn_sent_as_association(
             args,
         )),
         seq_num,
-        TXN_RESERVED,
+        DEFAULT_MAX_GAS_AMOUNT,
         1,
     )
 }

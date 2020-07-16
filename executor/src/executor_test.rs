@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use logger::prelude::*;
-use once_cell::sync::Lazy;
 use starcoin_config::ChainNetwork;
 use starcoin_functional_tests::account::{
     create_account_txn_sent_as_association, peer_to_peer_txn, Account,
@@ -31,13 +30,6 @@ use starcoin_vm_types::{
 use statedb::ChainStateDB;
 use std::time::{SystemTime, UNIX_EPOCH};
 use stdlib::{stdlib_files, StdLibOptions};
-
-pub static KEEP_STATUS: Lazy<TransactionStatus> =
-    Lazy::new(|| TransactionStatus::Keep(VMStatus::executed()));
-
-// We use 10 as the assertion error code for insufficient balance within the Coin contract.
-pub static DISCARD_STATUS: Lazy<TransactionStatus> =
-    Lazy::new(|| TransactionStatus::Discard(VMStatus::new(StatusCode::ABORTED, Some(10), None)));
 
 fn prepare_genesis() -> ChainStateDB {
     prepare_genesis_with_chain_net(ChainNetwork::Dev)
@@ -90,7 +82,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
     );
 
     // pre-run a txn to get gas_used
-    // transferring to an non-exists account uses about 30w gas.
+    // transferring to an non-exists account uses about 700 gas.
     let transfer_txn_gas = {
         let txn =
             Transaction::UserTransaction(peer_to_peer_txn(&account1, &Account::new(), 0, 10_000));
@@ -101,7 +93,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
             .gas_used()
     };
 
-    let block_gas_limit = 1_000_000;
+    let block_gas_limit = 10_000;
     let max_include_txn_num: u64 = block_gas_limit / transfer_txn_gas;
     {
         let mut txns = (0u64..max_include_txn_num)
@@ -175,14 +167,14 @@ fn test_validate_sequence_number_too_old() -> Result<()> {
     let account1 = Account::new();
     let txn1 = create_account_txn_sent_as_association(&account1, 0, 50_000_000);
     let output1 = execute_and_apply(&chain_state, Transaction::UserTransaction(txn1));
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    assert_eq!(VMStatus::Executed, *output1.status().vm_status());
     let txn2 = create_account_txn_sent_as_association(&account1, 0, 50_000_000);
     let output = crate::validate_transaction(&chain_state, txn2);
     assert!(
         output.is_some(),
         "expect validate transaction return VMStatus, but get None "
     );
-    let status_code = output.unwrap().major_status;
+    let status_code = output.unwrap().status_code();
     assert_eq!(
         status_code,
         StatusCode::SEQUENCE_NUMBER_TOO_OLD,
@@ -201,7 +193,7 @@ fn test_validate_txn() -> Result<()> {
         &account1, 0, 50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    assert_eq!(VMStatus::Executed, *output1.status().vm_status());
 
     let account2 = Account::new();
 
@@ -212,7 +204,7 @@ fn test_validate_txn() -> Result<()> {
         0,
         1000,
         1,
-        crate::TXN_RESERVED,
+        crate::DEFAULT_MAX_GAS_AMOUNT,
     );
     let txn2 = account1.sign_txn(raw_txn);
     let output = crate::validate_transaction(&chain_state, txn2);
@@ -232,7 +224,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    assert_eq!(VMStatus::Executed, *output1.status().vm_status());
 
     let sequence_number2 = get_sequence_number(account_config::association_address(), &chain_state);
     let account2 = Account::new();
@@ -242,7 +234,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         1_000,
     ));
     let output2 = execute_and_apply(&chain_state, txn2);
-    assert_eq!(KEEP_STATUS.clone(), *output2.status());
+    assert_eq!(VMStatus::Executed, *output2.status().vm_status());
 
     let sequence_number3 = get_sequence_number(*account1.address(), &chain_state);
     let txn3 = Transaction::UserTransaction(peer_to_peer_txn(
@@ -252,7 +244,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         100,
     ));
     let output3 = execute_and_apply(&chain_state, txn3);
-    assert_eq!(KEEP_STATUS.clone(), *output3.status());
+    assert_eq!(VMStatus::Executed, *output3.status().vm_status());
 
     Ok(())
 }
@@ -269,7 +261,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
         1000,
     );
     let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
+    assert_eq!(VMStatus::Executed, *output[0].status().vm_status());
 
     Ok(())
 }
@@ -283,7 +275,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         &account1, 0, 50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    assert_eq!(VMStatus::Executed, *output1.status().vm_status());
 
     let account2 = Account::new();
 
@@ -294,12 +286,12 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         0,
         1000,
         1,
-        crate::TXN_RESERVED,
+        crate::DEFAULT_MAX_GAS_AMOUNT,
     );
 
     let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
     let output = crate::execute_transactions(&chain_state, vec![txn2]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
+    assert_eq!(VMStatus::Executed, *output[0].status().vm_status());
 
     Ok(())
 }
@@ -313,7 +305,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         &account1, 0, 50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    assert_eq!(VMStatus::Executed, *output1.status().vm_status());
 
     let account2 = Account::new();
 
@@ -324,7 +316,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         0,
         1000,
         1,
-        crate::TXN_RESERVED,
+        crate::DEFAULT_MAX_GAS_AMOUNT,
     )));
 
     let txn3 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
@@ -334,12 +326,12 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         1,
         1000,
         1,
-        crate::TXN_RESERVED,
+        crate::DEFAULT_MAX_GAS_AMOUNT,
     )));
 
     let output = crate::execute_transactions(&chain_state, vec![txn2, txn3]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
-    assert_eq!(KEEP_STATUS.clone(), *output[1].status());
+    assert_eq!(VMStatus::Executed, *output[0].status().vm_status());
+    assert_eq!(VMStatus::Executed, *output[1].status().vm_status());
 
     Ok(())
 }
@@ -361,7 +353,7 @@ fn test_sequence_number() -> Result<()> {
         1000,
     );
     let output = execute_and_apply(&chain_state, txn);
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
+    assert_eq!(VMStatus::Executed, *output.status().vm_status());
 
     let new_sequence_number =
         get_sequence_number(account_config::association_address(), &chain_state);
@@ -383,7 +375,7 @@ fn test_gas_used() -> Result<()> {
         1000,
     );
     let output = execute_and_apply(&chain_state, txn);
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
+    assert_eq!(VMStatus::Executed, *output.status().vm_status());
     assert!(output.gas_used() > 0);
 
     Ok(())
@@ -423,7 +415,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
         &account1, 0, 50_000_000,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
-    assert_eq!(KEEP_STATUS.clone(), *output1.status());
+    assert_eq!(VMStatus::Executed, *output1.status().vm_status());
 
     let module_source = r#"
         module M {
@@ -443,7 +435,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
     ));
 
     let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
+    assert_eq!(VMStatus::Executed, *output[0].status().vm_status());
 
     //upgrade, add new method.
     let module_source = r#"
@@ -466,7 +458,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
     ));
 
     let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
-    assert_eq!(KEEP_STATUS.clone(), *output[0].status());
+    assert_eq!(VMStatus::Executed, *output[0].status().vm_status());
 
     Ok(())
 }
@@ -492,7 +484,7 @@ fn test_block_metadata() -> Result<()> {
             0,
         ));
         let output = execute_and_apply(&chain_state, txn);
-        assert_eq!(KEEP_STATUS.clone(), *output.status());
+        assert_eq!(VMStatus::Executed, *output.status().vm_status());
     }
 
     let balance = get_balance(*account1.address(), &chain_state);
@@ -529,7 +521,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         1,
     );
     let output = execute_and_apply(&chain_state, Transaction::UserTransaction(txn));
-    assert_eq!(KEEP_STATUS.clone(), *output.status());
+    assert_eq!(VMStatus::Executed, *output.status().vm_status());
 
     Ok(())
 }

@@ -20,7 +20,7 @@ pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
-pub const TXN_RESERVED: u64 = 2_000_000;
+pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 20000;
 
 pub fn build_transfer_from_association(
     addr: AccountAddress,
@@ -180,7 +180,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     crate::create_signed_txn_with_association_account(
         TransactionPayload::Script(encode_transfer_script(&recipient, auth_key_prefix, amount)),
         seq_num,
-        TXN_RESERVED,
+        DEFAULT_MAX_GAS_AMOUNT,
         1,
     )
 }

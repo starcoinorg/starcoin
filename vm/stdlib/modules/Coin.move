@@ -113,15 +113,11 @@ module Coin {
         is_approved: bool,
     }
 
-    // An association account holding this privilege can add/remove the
-    // currencies from the system.
-    struct AddCurrency { }
-
     ///////////////////////////////////////////////////////////////////////////
     // Initialization and granting of privileges
     ///////////////////////////////////////////////////////////////////////////
 
-    // This can only be invoked by the Association address, and only a single time.
+    // This can only be invoked by the Genesis address, and only a single time.
     // Currently, it is invoked in the genesis transaction
     public fun initialize(account: &signer) {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 0);
@@ -183,8 +179,6 @@ module Coin {
     }
 
     // Mint a new Coin::Coin worth `value`. The caller must have a reference to a MintCapability.
-    // Only the Association account can acquire such a reference, and it can do so only via
-    // `borrow_sender_mint_capability`
     public fun mint_with_capability<Token>(
         value: u64,
         _capability: &MintCapability<Token>
@@ -448,8 +442,6 @@ module Coin {
         scaling_factor: u64,
         fractional_part: u64,
     ) acquires CurrencyRegistrationCapability {
-        // And only callable by the designated currency address.
-        //assert(Association::has_privilege<AddCurrency>(Signer::address_of(account)), 8);
         assert_issuer<CoinType>(account);
         let (coin_module_address,coin_module_name,struct_name) = Generic::type_of<CoinType>();
         // CoinType's struct name must be same as Coin Name. TODO consider a more graceful approach.
@@ -544,17 +536,6 @@ module Coin {
     public fun stc_exchange_rate<CoinType>(): FixedPoint32
     acquires CurrencyInfo {
         *&borrow_global<CurrencyInfo<CoinType>>(issuer_addr<CoinType>()).to_stc_exchange_rate
-    }
-
-    // There may be situations in which we disallow the further minting of
-    // coins in the system without removing the currency. This function
-    // allows the association to control whether or not further coins of
-    // `CoinType` can be minted or not.
-    public fun update_minting_ability<CoinType>(account: &signer, can_mint: bool)
-    acquires CurrencyInfo {
-        assert_issuer_and_currency<CoinType>(account);
-        let currency_info = borrow_global_mut<CurrencyInfo<CoinType>>(Signer::address_of(account));
-        currency_info.can_mint = can_mint;
     }
 
 

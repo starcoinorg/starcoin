@@ -11,10 +11,10 @@ module Timestamp {
 
     // Initialize the global wall clock time resource.
     public fun initialize(account: &signer) {
-        // Only callable by the Association address
+        // Only callable by the Genesis address
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
 
-        // TODO: Should the initialized value be passed in to genesis?
+        // TODO: Pass the initialized value be passed in to genesis?
         let timer = CurrentTimeMicroseconds {microseconds: 0};
         move_to<CurrentTimeMicroseconds>(account, timer);
     }

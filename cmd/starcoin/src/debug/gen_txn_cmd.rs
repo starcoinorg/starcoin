@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
-use starcoin_executor::TXN_RESERVED;
+use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -119,7 +119,7 @@ impl CommandAction for GenTxnCommand {
                 sequence_number + i as u64,
                 opt.amount,
                 1,
-                TXN_RESERVED,
+                DEFAULT_MAX_GAS_AMOUNT,
             );
             gen_result.total_amount += opt.amount;
             let txn = client.wallet_sign_txn(raw_txn)?;
