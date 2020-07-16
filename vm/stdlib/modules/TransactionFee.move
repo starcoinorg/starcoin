@@ -2,7 +2,7 @@ address 0x1 {
 
 module TransactionFee {
     //use 0x1::Account;
-    use 0x1::Coin::{Self, Coin};
+    use 0x1::Token::{Self, Coin};
     use 0x1::CoreAddresses;
     use 0x1::Signer;
     use 0x1::STC::{STC};
@@ -33,7 +33,7 @@ module TransactionFee {
         move_to(
             account,
             TransactionFee<CoinType> {
-                fee: Coin::zero(),
+                fee: Token::zero(),
             }
         )
      }
@@ -43,7 +43,7 @@ module TransactionFee {
         let txn_fees = borrow_global_mut<TransactionFee<CoinType>>(
             CoreAddresses::GENESIS_ACCOUNT()
         );
-        Coin::deposit(&mut txn_fees.fee, coin)
+        Token::deposit(&mut txn_fees.fee, coin)
     }
 
     /// Distribute the transaction fees collected in the `CoinType` currency.
@@ -57,11 +57,11 @@ module TransactionFee {
 
         // extract fees
         let txn_fees = borrow_global_mut<TransactionFee<CoinType>>(fee_address);
-        let value = Coin::value<CoinType>(&txn_fees.fee);
+        let value = Token::value<CoinType>(&txn_fees.fee);
         if (value > 0) {
-            Coin::withdraw_all(&mut txn_fees.fee)
+            Token::withdraw(&mut txn_fees.fee, value)
         }else {
-            Coin::zero<CoinType>()
+            Token::zero<CoinType>()
         }
     }
  }

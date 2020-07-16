@@ -13,6 +13,7 @@ pub struct CurrencyRecord {
     pub currency_code: Identifier,
 }
 
+/// TODO: remove this.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RegisteredCurrencies {
     currency_codes: Vec<CurrencyRecord>,

@@ -2,7 +2,7 @@ address 0x1 {
 
 module BlockReward {
     use 0x1::Timestamp;
-    use 0x1::Coin::{Self,Coin};
+    use 0x1::Token::{Self,Coin};
     use 0x1::STC::{STC};
     use 0x1::Vector;
     use 0x1::Account;
@@ -28,7 +28,7 @@ module BlockReward {
             heights: Vector::empty(),
             miners: Vector::empty(),
         });
-        let reward_token = Coin::mint<STC>(account, reward_balance);
+        let reward_token = Token::mint<STC>(account,  reward_balance);
         move_to<BlockReward>(account, BlockReward {
             balance: reward_token,
         });
@@ -36,7 +36,7 @@ module BlockReward {
 
     fun withdraw(amount: u64): Coin<STC> acquires BlockReward {
         let block_reward = borrow_global_mut<BlockReward>(CoreAddresses::GENESIS_ACCOUNT());
-        Coin::withdraw<STC>(&mut block_reward.balance, amount)
+        Token::withdraw<STC>(&mut block_reward.balance, amount)
     }
 
     public fun process_block_reward(account: &signer, current_height: u64, current_author: address, auth_key_prefix: vector<u8>) acquires RewardInfo, BlockReward {

@@ -3,7 +3,7 @@ address 0x1 {
 module TransactionManager {
     use 0x1::TransactionTimeout;
     use 0x1::Signer;
-    use 0x1::Coin::{Self,Coin};
+    use 0x1::Token::{Self,Coin};
     use 0x1::CoreAddresses;
     use 0x1::Account;
     use 0x1::PackageTxnManager;
@@ -96,11 +96,11 @@ module TransactionManager {
     }
 
     fun distribute<CoinType>(account: &signer, txn_fee: Coin<CoinType>, author: address) {
-        let value = Coin::value<CoinType>(&txn_fee);
+        let value = Token::value<CoinType>(&txn_fee);
         if (value > 0) {
             Account::deposit<CoinType>(account, author, txn_fee);
         }else {
-            Coin::destroy_zero<CoinType>(txn_fee);
+            Token::destroy_zero<CoinType>(txn_fee);
         }
     }
 }

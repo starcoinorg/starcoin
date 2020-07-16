@@ -264,9 +264,7 @@ mod tests {
     use starcoin_storage::{BlockStore, IntoSuper, Storage};
     use starcoin_types::account_config::genesis_address;
     use starcoin_vm_types::account_config::association_address;
-    use starcoin_vm_types::on_chain_config::{
-        EpochResource, RegisteredCurrencies, VMConfig, Version,
-    };
+    use starcoin_vm_types::on_chain_config::{EpochResource, VMConfig, Version};
 
     #[stest::test]
     pub fn test_genesis_load() -> Result<()> {
@@ -320,16 +318,6 @@ mod tests {
         assert!(
             account_resource.is_some(),
             "association account must exist in genesis state."
-        );
-
-        let currencies = account_state_reader.get_on_chain_config::<RegisteredCurrencies>()?;
-        assert!(
-            currencies.is_some(),
-            "RegisteredCurrencies on_chain_config should exist."
-        );
-        assert!(
-            !currencies.unwrap().currency_codes().is_empty(),
-            "RegisteredCurrencies should not empty."
         );
 
         let vm_config = account_state_reader.get_on_chain_config::<VMConfig>()?;
