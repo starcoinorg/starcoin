@@ -259,8 +259,10 @@ where
             if block.header.number < epoch_start_number {
                 return Ok(());
             }
-            for uncle in block.uncles() {
-                exists_uncles.insert(uncle.clone());
+            if let Some(uncles) = block.uncles() {
+                for uncle in uncles {
+                    exists_uncles.insert(uncle.clone());
+                }
             }
             self.merge_exists_uncles(epoch_start_number, block.header.parent_hash, exists_uncles)?;
         }
@@ -280,12 +282,14 @@ where
             if block.header.number < epoch_start_number {
                 return Ok(result);
             }
-            for uncle in block.uncles() {
-                if !exists_uncles.contains(&uncle) {
-                    result.push(uncle.clone());
-                }
-                if result.len() == MAX_UNCLE_COUNT_PER_BLOCK {
-                    return Ok(result);
+            if let Some(uncles) = block.uncles() {
+                for uncle in uncles {
+                    if !exists_uncles.contains(uncle) {
+                        result.push(uncle.clone());
+                    }
+                    if result.len() == MAX_UNCLE_COUNT_PER_BLOCK {
+                        return Ok(result);
+                    }
                 }
             }
             self.find_available_uncles_in_branch(
