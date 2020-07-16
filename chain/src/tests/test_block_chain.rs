@@ -77,7 +77,7 @@ async fn gen_master_chain(
     (chain, node_config)
 }
 
-#[stest::test(timeout = 240)]
+#[stest::test(timeout = 480)]
 async fn test_block_chain_head() {
     ::logger::init_for_test();
     let times = 10;

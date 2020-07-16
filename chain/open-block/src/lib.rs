@@ -1,6 +1,7 @@
 use anyhow::{bail, format_err, Result};
 use crypto::hash::HashValue;
 use logger::prelude::*;
+use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -13,7 +14,7 @@ use storage::Store;
 use traits::ExcludedTxns;
 use types::{
     account_address::AccountAddress,
-    block::{BlockHeader, BlockInfo, BlockTemplate},
+    block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
     transaction::{
@@ -226,6 +227,12 @@ impl OpenedBlock {
         let state_root = self.state.state_root();
         let (parent_id, timestamp, author, auth_key_prefix, _uncles) = self.block_meta.into_inner();
 
+        let uncle_hash = if !self.uncles.is_empty() {
+            Some(HashValue::sha3_256_of(&self.uncles.encode()?))
+        } else {
+            None
+        };
+        let body = BlockBody::new(self.included_user_txns, self.uncles);
         let block_template = BlockTemplate::new(
             parent_id,
             self.previous_block_info
@@ -239,8 +246,8 @@ impl OpenedBlock {
             state_root,
             self.gas_used,
             self.gas_limit,
-            self.uncles,
-            self.included_user_txns.into(),
+            uncle_hash,
+            body,
         );
         Ok(block_template)
     }
