@@ -10,7 +10,6 @@ module Genesis {
    use 0x1::PackageTxnManager;
    use 0x1::Consensus;
    use 0x1::Version;
-   use 0x1::RewardConfig;
    use 0x1::VMConfig;
    use 0x1::Vector;
    use 0x1::Block;
@@ -18,11 +17,11 @@ module Genesis {
    use 0x1::BlockReward;
 
    //TODO refactor when move support ABI, and pass struct by argument
-   public fun initialize(publishing_option: vector<u8>, instruction_schedule: vector<u8>,native_schedule: vector<u8>,
-                         reward_halving_interval: u64, reward_base: u64, reward_delay: u64,
+   public fun initialize(publishing_option: vector<u8>, instruction_schedule: vector<u8>,
+                         native_schedule: vector<u8>, reward_delay: u64,
                          uncle_rate_target:u64,epoch_time_target: u64,
                          reward_half_epoch: u64, init_block_time_target: u64,
-                         block_window: u64, only_current_epoch: bool,
+                         block_window: u64, only_current_epoch: bool, min_time_target:u64,
                          reward_per_uncle_percent: u64, total_supply: u64,
                          pre_mine_percent:u64, parent_hash: vector<u8>,
                          association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
@@ -38,7 +37,6 @@ module Genesis {
 
         // init config
         VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule);
-        RewardConfig::initialize(&genesis_account, reward_halving_interval, reward_base, reward_delay);
         Version::initialize(&genesis_account);
 
         TransactionTimeout::initialize(&genesis_account);
@@ -55,9 +53,9 @@ module Genesis {
         };
         let miner_reward_balance = total_supply - association_balance;
         let init_reward_per_epoch = miner_reward_balance / reward_half_epoch;
-        Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_window, only_current_epoch, init_reward_per_epoch, reward_per_uncle_percent);
+        Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_window, only_current_epoch, init_reward_per_epoch, reward_per_uncle_percent, min_time_target);
 
-        BlockReward::initialize(&genesis_account, miner_reward_balance);
+        BlockReward::initialize(&genesis_account, miner_reward_balance, reward_delay);
 
         TransactionFee::initialize(&genesis_account);
         //Grant stdlib maintainer to association

@@ -12,6 +12,7 @@ module Consensus {
         block_window: u64,
         only_current_epoch: bool,
         reward_per_uncle_percent: u64,
+        min_time_target: u64,
     }
 
     resource struct Epoch {
@@ -27,10 +28,12 @@ module Consensus {
 
     public fun initialize(account: &signer,uncle_rate_target:u64,epoch_time_target: u64,
         reward_half_epoch: u64,init_block_time_target: u64, block_window: u64,
-        only_current_epoch: bool, init_reward_per_epoch: u64, reward_per_uncle_percent: u64) {
+        only_current_epoch: bool, init_reward_per_epoch: u64, reward_per_uncle_percent: u64,
+        min_time_target:u64) {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
         assert(init_block_time_target > 0, 2);
         assert(init_reward_per_epoch > 0, 3);
+        assert(min_time_target > 0, 4);
 
         move_to<Epoch>(account, Epoch {
             epoch_number:0,
@@ -52,6 +55,7 @@ module Consensus {
                 block_window: block_window,
                 only_current_epoch: only_current_epoch,
                 reward_per_uncle_percent: reward_per_uncle_percent,
+                min_time_target: min_time_target,
             },
         );
     }
@@ -100,6 +104,11 @@ module Consensus {
         current_config.epoch_time_target
     }
 
+    public fun min_time_target(): u64  {
+        let current_config = get_config();
+        current_config.min_time_target
+    }
+
     public fun reward_half_epoch(): u64  {
         let current_config = get_config();
         current_config.reward_half_epoch
@@ -127,16 +136,14 @@ module Consensus {
         }
     }
 
-    fun reward_per_block(): u64 acquires Epoch {
-        let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
-        let blocks = epoch_ref.end_number - epoch_ref.start_number + 1;
+    fun reward_per_block(blocks:u64, reward_per_epoch: u64): u64 {
         let max_uncles = (blocks * Self::uncle_rate_target() * Self::reward_per_uncle_percent()) / (1000 * 100);
-        let reward = epoch_ref.reward_per_epoch / (max_uncles + blocks);
+        let reward = reward_per_epoch / (max_uncles + blocks);
         reward
     }
 
-    fun reward_per_uncle(): u64 acquires Epoch {
-        let reward = Self::reward_per_block() * Self::reward_per_uncle_percent();
+    fun reward_per_uncle(blocks:u64, reward_per_epoch: u64): u64 {
+        let reward = Self::reward_per_block(blocks, reward_per_epoch) * Self::reward_per_uncle_percent();
         reward
     }
 
@@ -174,28 +181,42 @@ module Consensus {
                 let avg_block_time = total_time / blocks;
                 let uncles_rate = total_uncles * 1000 / blocks;
                 let new_epoch_block_time_target = (1000 + uncles_rate) * avg_block_time / (Self::uncle_rate_target() + 1000);
-                if (new_epoch_block_time_target < 10) {
-                    new_epoch_block_time_target = 10;
+                let total_reward = blocks * Self::reward_per_block(blocks, epoch_ref.reward_per_epoch) + total_uncles * Self::reward_per_uncle(blocks, epoch_ref.reward_per_epoch);
+
+                if (new_epoch_block_time_target < Self::min_time_target()) {
+                    new_epoch_block_time_target = Self::min_time_target();
                 };
-                let new_epoch_time_target = Self::epoch_time_target() * 2 - total_time;
-                let new_epoch_blocks = new_epoch_time_target / new_epoch_block_time_target;
-                assert(new_epoch_blocks > 1, 337);
+                let new_epoch_blocks = if (total_time >= (Self::epoch_time_target() * 2)) {
+                    1
+                } else {
+                    let new_epoch_time_target = Self::epoch_time_target() * 2 - total_time;
+                    new_epoch_time_target / new_epoch_block_time_target
+                };
+                assert(new_epoch_blocks >= 1, 337);
 
                 epoch_ref.epoch_start_time = block_time;
                 epoch_ref.uncles = uncles;
                 epoch_ref.start_number = block_height;
-                epoch_ref.end_number = block_height + new_epoch_blocks;
+                epoch_ref.end_number = block_height + new_epoch_blocks - 1;
                 epoch_ref.time_target = new_epoch_block_time_target;
                 epoch_ref.window = Self::block_window(account, 1, block_height);
                 epoch_ref.epoch_number = epoch_ref.epoch_number + 1;
 
-                if (epoch_ref.epoch_number % Self::reward_half_epoch() == 0) {
-                    epoch_ref.reward_per_epoch = (epoch_ref.reward_per_epoch / 2);
-                }
+                let old_reward_per_epoch = epoch_ref.reward_per_epoch;
+                let current_reward_per_epoch = if (epoch_ref.epoch_number % Self::reward_half_epoch() == 1) {
+                    (epoch_ref.reward_per_epoch / 2)
+                } else {
+                    epoch_ref.reward_per_epoch
+                };
+
+                assert((old_reward_per_epoch + current_reward_per_epoch) > total_reward,  338);
+                epoch_ref.reward_per_epoch = (old_reward_per_epoch + current_reward_per_epoch) - total_reward;
             }
         };
 
-        let reward = Self::reward_per_block() + (Self::reward_per_uncle() * uncles);
+        let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let blocks = epoch_ref.end_number - epoch_ref.start_number + 1;
+        let reward = Self::reward_per_block(blocks, epoch_ref.reward_per_epoch) + (Self::reward_per_uncle(blocks, epoch_ref.reward_per_epoch) * uncles);
         reward
     }
 
@@ -217,6 +238,11 @@ module Consensus {
     public fun end_number(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
         epoch_ref.end_number
+    }
+
+    public fun epoch_number(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        epoch_ref.epoch_number
     }
 
     public fun time_target(): u64 acquires Epoch {
