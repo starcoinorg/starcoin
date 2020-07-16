@@ -227,12 +227,15 @@ impl OpenedBlock {
         let state_root = self.state.state_root();
         let (parent_id, timestamp, author, auth_key_prefix, _uncles) = self.block_meta.into_inner();
 
-        let uncle_hash = if !self.uncles.is_empty() {
-            Some(HashValue::sha3_256_of(&self.uncles.encode()?))
+        let (uncle_hash, uncles) = if !self.uncles.is_empty() {
+            (
+                Some(HashValue::sha3_256_of(&self.uncles.encode()?)),
+                Some(self.uncles),
+            )
         } else {
-            None
+            (None, None)
         };
-        let body = BlockBody::new(self.included_user_txns, self.uncles);
+        let body = BlockBody::new(self.included_user_txns, uncles);
         let block_template = BlockTemplate::new(
             parent_id,
             self.previous_block_info

@@ -283,11 +283,11 @@ pub struct BlockBody {
     /// The transactions in this block.
     transactions: Vec<SignedUserTransaction>,
     /// uncles block header
-    uncles: Vec<BlockHeader>,
+    uncles: Option<Vec<BlockHeader>>,
 }
 
 impl BlockBody {
-    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Vec<BlockHeader>) -> Self {
+    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
         Self {
             transactions,
             uncles,
@@ -299,7 +299,7 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
     fn into(self) -> BlockBody {
         BlockBody {
             transactions: self,
-            uncles: vec![],
+            uncles: None,
         }
     }
 }
@@ -339,8 +339,11 @@ impl Block {
     pub fn transactions(&self) -> &[SignedUserTransaction] {
         self.body.transactions.as_slice()
     }
-    pub fn uncles(&self) -> &[BlockHeader] {
-        self.body.uncles.as_slice()
+    pub fn uncles(&self) -> Option<&[BlockHeader]> {
+        match &self.body.uncles {
+            Some(uncles) => Some(uncles.as_slice()),
+            None => None,
+        }
     }
 
     pub fn into_inner(self) -> (BlockHeader, BlockBody) {
@@ -366,17 +369,21 @@ impl Block {
         );
         Self {
             header,
-            body: BlockBody::new(vec![genesis_txn], vec![]),
+            body: BlockBody::new(vec![genesis_txn], None),
         }
     }
 
     pub fn into_metadata(self) -> BlockMetadata {
+        let uncles = match &self.body.uncles {
+            Some(uncles) => uncles.len() as u64,
+            None => 0 as u64,
+        };
         BlockMetadata::new(
             self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,
             self.header.auth_key_prefix,
-            self.body.uncles.len() as u64,
+            uncles,
         )
     }
 }
