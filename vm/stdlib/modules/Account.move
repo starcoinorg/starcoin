@@ -5,7 +5,7 @@ module Account {
     use 0x1::Event;
     use 0x1::Hash;
     use 0x1::LCS;
-    use 0x1::Coin::{Self, Coin};
+    use 0x1::Token::{Self, Coin};
     use 0x1::Vector;
     use 0x1::Signer;
     use 0x1::Timestamp;
@@ -65,7 +65,7 @@ module Account {
         // The amount of Coin<Token> sent
         amount: u64,
         // The code symbol for the currency that was sent
-        currency_code: vector<u8>,
+        token_code: vector<u8>,
         // The address that was paid
         payee: address,
         // Metadata associated with the payment
@@ -77,7 +77,7 @@ module Account {
         // The amount of Coin<Token> received
         amount: u64,
         // The code symbol for the currency that was received
-        currency_code: vector<u8>,
+        token_code: vector<u8>,
         // The address that sent the coin
         payer: address,
         // Metadata associated with the payment
@@ -124,7 +124,7 @@ module Account {
         _metadata_signature: vector<u8>
     ) acquires Account, Balance {
         // Check that the `to_deposit` coin is non-zero
-        let deposit_value = Coin::value(&to_deposit);
+        let deposit_value = Token::value(&to_deposit);
         assert(deposit_value > 0, 7);
 
         //TODO check signature
@@ -139,8 +139,13 @@ module Account {
         //    9002, // TODO: proper error code
         //);
 
-        // Get the code symbol for this currency
-        let currency_code = Coin::currency_code<Token>();
+
+        // TODO: we need nft to get token_code based on TokenType. disabled for now.
+
+        // // Get the code symbol for this currency
+        // let token_code = Coin::token_code<Token>();
+
+        let token_code = Token::token_code<Token>();
 
         // Load the sender's account
         let sender_account_ref = borrow_global_mut<Account>(sender);
@@ -149,7 +154,7 @@ module Account {
             &mut sender_account_ref.sent_events,
             SentPaymentEvent {
                 amount: deposit_value,
-                currency_code: copy currency_code,
+                token_code: (copy token_code),
                 payee: payee,
                 metadata: *&metadata
             },
@@ -159,13 +164,13 @@ module Account {
         let payee_account_ref = borrow_global_mut<Account>(payee);
         let payee_balance = borrow_global_mut<Balance<Token>>(payee);
         // Deposit the `to_deposit` coin
-        Coin::deposit(&mut payee_balance.coin, to_deposit);
+        Token::deposit(&mut payee_balance.coin, to_deposit);
         // Log a received event
         Event::emit_event<ReceivedPaymentEvent>(
             &mut payee_account_ref.received_events,
             ReceivedPaymentEvent {
                 amount: deposit_value,
-                currency_code,
+                token_code: token_code,
                 payer: sender,
                 metadata: metadata
             }
@@ -182,22 +187,12 @@ module Account {
         amount: u64
     ) acquires Account, Balance {
         // Mint and deposit the coin
-        deposit(account, payee, Coin::mint<Token>(account, amount));
-    }
-
-    // Cancel the oldest burn request from `preburn_address` and return the funds.
-    // Fails if the sender does not have a published MintCapability.
-    public fun cancel_burn<Token>(
-        account: &signer,
-        preburn_address: address,
-    ) acquires Account, Balance {
-        let to_return = Coin::cancel_burn<Token>(account, preburn_address);
-        deposit(account, preburn_address, to_return)
+        deposit(account, payee, Token::mint<Token>(account, amount));
     }
 
     // Helper to withdraw `amount` from the given account balance and return the withdrawn Coin<Token>
     fun withdraw_from_balance<Token>(_addr: address, balance: &mut Balance<Token>, amount: u64): Coin<Token>{
-        Coin::withdraw(&mut balance.coin, amount)
+        Token::withdraw(&mut balance.coin, amount)
     }
 
     // Withdraw `amount` Coin<Token> from the transaction sender's account balance
@@ -380,7 +375,7 @@ module Account {
 
     // Helper to return the u64 value of the `balance` for `account`
     fun balance_for<Token>(balance: &Balance<Token>): u64 {
-        Coin::value<Token>(&balance.coin)
+        Token::value<Token>(&balance.coin)
     }
 
     // Return the current balance of the account at `addr`.
@@ -390,7 +385,7 @@ module Account {
     //TODO use a unify name https://github.com/starcoinorg/starcoin/issues/570
     // Add a balance of `Token` type to the sending account.
     public fun add_currency<Token>(account: &signer) {
-        move_to(account, Balance<Token>{ coin: Coin::zero<Token>() })
+        move_to(account, Balance<Token>{ coin: Token::zero<Token>() })
     }
 
     // Return whether the account at `addr` accepts `Token` type coins
