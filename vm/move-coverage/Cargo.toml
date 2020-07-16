@@ -13,7 +13,7 @@ structopt = "0.3.15"
 serde = { version = "1.0.114", default-features = false }
 anyhow = "1.0.31"
 codespan = { version = "0.8.0", features = ["serialization"] }
-colored = "1.9.3"
+colored = "2.0.0"
 
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}
