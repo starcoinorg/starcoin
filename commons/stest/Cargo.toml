@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 stest-macro = {path = "./stest-macro"}
 starcoin-logger = {path = "../logger"}
-log = "0.4.8"
+log = "0.4.11"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 futures = "0.3"
