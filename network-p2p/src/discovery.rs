@@ -762,6 +762,7 @@ mod tests {
     use std::{collections::HashSet, task::Poll};
 
     #[test]
+    #[allow(clippy::single_match)]
     fn discovery_working() {
         let mut user_defined = Vec::new();
 
