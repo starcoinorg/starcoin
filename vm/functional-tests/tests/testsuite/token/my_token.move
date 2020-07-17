@@ -12,7 +12,7 @@ module MyToken {
     public fun init(account: &signer) {
         assert(Signer::address_of(account) == {{alice}}, 8000);
 
-        Token::register_currency<MyToken>(
+        Token::register_token<MyToken>(
                     account,
                     1000000, // scaling_factor = 10^6
                     1000,    // fractional_part = 10^3
@@ -35,8 +35,8 @@ fun main(account: &signer) {
     let market_cap = Token::market_cap<MyToken>();
     assert(market_cap == 0, 8001);
     assert(Token::is_registered_in<MyToken>({{alice}}), 8002);
-    // Create 'Balance<Token>' resource under sender account, and init with zero
-    Account::add_currency<MyToken>(account);
+    // Create 'Balance<TokenType>' resource under sender account, and init with zero
+    Account::accept_token<MyToken>(account);
 }
 }
 
