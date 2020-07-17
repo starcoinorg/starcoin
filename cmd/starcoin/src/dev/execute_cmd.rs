@@ -18,6 +18,8 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_status::StatusCode;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
@@ -77,6 +79,10 @@ pub struct ExecuteOpt {
     #[structopt(long = "dry-run")]
     /// dry-run script, only get transaction output, no state change to chain
     dry_run: bool,
+
+    #[structopt(long = "local")]
+    /// Whether dry-run in local cli or remote node.
+    local_mode: bool,
 
     #[structopt(name = "move_file", parse(from_os_str))]
     /// bytecode file or move script source file
@@ -179,7 +185,20 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-        let output = client.dry_run(signed_txn.clone())?;
+
+        let output = if opt.local_mode {
+            let mut vm = StarcoinVM::new();
+            let state_view = RemoteStateReader::new(client);
+            vm.execute_transactions(
+                &state_view,
+                vec![Transaction::UserTransaction(signed_txn.clone())],
+            )?
+            .pop()
+            .expect("at least one txn output")
+        } else {
+            client.dry_run(signed_txn.clone())?
+        };
+
         if output.status().vm_status().status_code() != StatusCode::EXECUTED {
             bail!("move file pre-run failed, {:?}", output.status());
         }
