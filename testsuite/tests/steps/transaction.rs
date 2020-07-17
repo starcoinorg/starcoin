@@ -49,7 +49,7 @@ fn transfer_txn(
     client: &RpcClient,
     to: &WalletAccount,
     from: AccountAddress,
-    amount: Option<u64>,
+    amount: Option<u128>,
 ) -> Result<(), Error> {
     let to_auth_key_prefix = AuthenticationKey::ed25519(&to.public_key).prefix();
     let chain_state_reader = RemoteStateReader::new(client);

@@ -12,7 +12,7 @@ edition = "2018"
 anyhow = "1.0"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde_json = { version="1.0", features = ["arbitrary_precision"]}
 hex = "0.4"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
@@ -20,7 +20,7 @@ jsonrpc-core = "14.0"
 jsonrpc-derive = "14.0"
 jsonrpc-server-utils = "14.0"
 jsonrpc-pubsub = "14.0"
-jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws"]}
+jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 futures = { version = "0.3", features = ["compat"] }
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}

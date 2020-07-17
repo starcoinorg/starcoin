@@ -22,7 +22,7 @@ static DEFAULT_BALANCE: Lazy<Balance> = Lazy::new(|| Balance {
 
 #[derive(Debug, Clone)]
 pub struct Balance {
-    pub amount: u64,
+    pub amount: u128,
     pub currency_code: Identifier,
 }
 
@@ -43,7 +43,7 @@ impl FromStr for Balance {
         }
         let s = s.trim_end_matches(currency_code);
         Ok(Balance {
-            amount: s.parse::<u64>()?,
+            amount: s.parse::<u128>()?,
             currency_code: account_config::from_currency_code_string(currency_code)?,
         })
     }

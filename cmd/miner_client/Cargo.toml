@@ -23,7 +23,7 @@ crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 sc_stratum = {path = "../../miner/stratum", package ="starcoin-stratum"}
 jsonrpc-core = "12.0.0"
 jsonrpc-tcp-server="12.0.0"
-serde_json = "1.0"
+serde_json = { version="1.0", features = ["arbitrary_precision"]}
 serde = { version = "1.0", features = ["derive"] }
 rust-argon2 = "0.8"
 rand = "0.7.3"

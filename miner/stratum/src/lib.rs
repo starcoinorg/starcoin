@@ -362,7 +362,9 @@ mod tests {
     #[test]
     fn can_be_started() {
         let stratum = Stratum::start(
-            &"127.0.0.1:19980".parse().unwrap(),
+            &format!("127.0.0.1:{}", starcoin_config::get_random_available_port())
+                .parse()
+                .unwrap(),
             Arc::new(VoidManager),
             None,
         );
@@ -373,7 +375,9 @@ mod tests {
     fn records_subscriber() {
         starcoin_logger::init_for_test();
 
-        let addr = "127.0.0.1:19985".parse().unwrap();
+        let addr = format!("127.0.0.1:{}", starcoin_config::get_random_available_port())
+            .parse()
+            .unwrap();
         let stratum = Stratum::start(&addr, Arc::new(VoidManager), None).unwrap();
         let request = r#"{"jsonrpc": "2.0", "method": "mining.subscribe", "params": [], "id": 1}"#;
         dummy_request(&addr, request);
@@ -420,7 +424,9 @@ mod tests {
 
     #[test]
     fn receives_initial_payload() {
-        let addr = "127.0.0.1:19975".parse().unwrap();
+        let addr = format!("127.0.0.1:{}", starcoin_config::get_random_available_port())
+            .parse()
+            .unwrap();
         let _stratum = Stratum::start(&addr, DummyManager::new(), None)
             .expect("There should be no error starting stratum");
         let request = r#"{"jsonrpc": "2.0", "method": "mining.subscribe", "params": [], "id": 2}"#;
@@ -435,7 +441,9 @@ mod tests {
 
     #[test]
     fn can_authorize() {
-        let addr = "127.0.0.1:19970".parse().unwrap();
+        let addr = format!("127.0.0.1:{}", starcoin_config::get_random_available_port())
+            .parse()
+            .unwrap();
         let stratum = Stratum::start(
             &addr,
             Arc::new(DummyManager::build().of_initial(r#"["dummy autorize payload"]"#)),
@@ -457,7 +465,9 @@ mod tests {
     fn can_push_work() {
         starcoin_logger::init_for_test();
 
-        let addr = "127.0.0.1:19995".parse().unwrap();
+        let addr = format!("127.0.0.1:{}", starcoin_config::get_random_available_port())
+            .parse()
+            .unwrap();
         let stratum = Stratum::start(
             &addr,
             Arc::new(DummyManager::build().of_initial(r#"["dummy autorize payload"]"#)),

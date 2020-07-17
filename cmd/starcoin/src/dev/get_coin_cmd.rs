@@ -21,7 +21,7 @@ use tokio::time::Duration;
 pub struct GetCoinOpt {
     #[structopt(short = "v")]
     /// if amount absent, transfer 20% of association_address's balance.
-    amount: Option<u64>,
+    amount: Option<u128>,
 }
 
 pub struct GetCoinCommand;

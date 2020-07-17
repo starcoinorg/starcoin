@@ -163,7 +163,7 @@ pub struct ChainConfig {
     /// Genesis timestamp
     pub timestamp: u64,
     /// Starcoin total supply.
-    pub total_supply: u64,
+    pub total_supply: u128,
     /// How many block to delay before rewarding miners.
     pub reward_delay: u64,
     /// Genesis difficulty, should match consensus in different ChainNetwork.
@@ -198,7 +198,7 @@ pub struct ChainConfig {
     pub genesis_key_pair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
 }
 
-pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
+pub static STARCOIN_TOTAL_SUPPLY: u128 = 2_100_000_000 * 1_000_000;
 pub static EPOCH_TIME_TARGET: u64 = 1_209_600;
 pub static REWARD_HALF_TIME_TARGET: u64 = 126_144_000;
 pub static INIT_BLOCK_TIME_TARGET: u64 = 20;

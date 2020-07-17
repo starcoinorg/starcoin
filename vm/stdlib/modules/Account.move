@@ -63,7 +63,7 @@ module Account {
     // Message for sent events
     struct SentPaymentEvent {
         // The amount of Token<TokenType> sent
-        amount: u64,
+        amount: u128,
         // The code symbol for the token that was sent
         token_code: vector<u8>,
         // The address that was paid
@@ -75,7 +75,7 @@ module Account {
     // Message for received events
     struct ReceivedPaymentEvent {
         // The amount of Token<TokenType> received
-        amount: u64,
+        amount: u128,
         // The code symbol for the token that was received
         token_code: vector<u8>,
         // The address that sent the token
@@ -178,19 +178,19 @@ module Account {
     public fun mint_to_address<TokenType>(
         account: &signer,
         payee: address,
-        amount: u64
+        amount: u128
     ) acquires Account, Balance {
         // Mint and deposit the token
         deposit(account, payee, Token::mint<TokenType>(account, amount));
     }
 
     // Helper to withdraw `amount` from the given account balance and return the withdrawn Token<TokenType>
-    fun withdraw_from_balance<TokenType>(_addr: address, balance: &mut Balance<TokenType>, amount: u64): Token<TokenType>{
+    fun withdraw_from_balance<TokenType>(_addr: address, balance: &mut Balance<TokenType>, amount: u128): Token<TokenType>{
         Token::withdraw(&mut balance.token, amount)
     }
 
     // Withdraw `amount` Token<TokenType> from the transaction sender's account balance
-    public fun withdraw_from_sender<TokenType>(account: &signer, amount: u64): Token<TokenType>
+    public fun withdraw_from_sender<TokenType>(account: &signer, amount: u128): Token<TokenType>
     acquires Account, Balance {
         let sender_addr = Signer::address_of(account);
         let sender_balance = borrow_global_mut<Balance<TokenType>>(sender_addr);
@@ -202,7 +202,7 @@ module Account {
 
     // Withdraw `amount` Token<TokenType> from the account under cap.account_address
     public fun withdraw_with_capability<TokenType>(
-        cap: &WithdrawCapability, amount: u64
+        cap: &WithdrawCapability, amount: u128
     ): Token<TokenType> acquires Balance {
         let balance = borrow_global_mut<Balance<TokenType>>(cap.account_address);
         withdraw_from_balance<TokenType>(cap.account_address, balance , amount)
@@ -231,7 +231,7 @@ module Account {
     public fun pay_from_capability<TokenType>(
         payee: address,
         cap: &WithdrawCapability,
-        amount: u64,
+        amount: u128,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
     ) acquires Account, Balance {
@@ -250,7 +250,7 @@ module Account {
     public fun pay_from_sender_with_metadata<TokenType>(
         account: &signer,
         payee: address,
-        amount: u64,
+        amount: u128,
         metadata: vector<u8>,
         metadata_signature: vector<u8>
     ) acquires Account, Balance {
@@ -269,7 +269,7 @@ module Account {
     public fun pay_from_sender<TokenType>(
         account: &signer,
         payee: address,
-        amount: u64
+        amount: u128
     ) acquires Account, Balance {
         pay_from_sender_with_metadata<TokenType>(account, payee, amount, x"", x"");
     }
@@ -367,13 +367,13 @@ module Account {
     native fun create_signer(addr: address): signer;
     native fun destroy_signer(sig: signer);
 
-    // Helper to return the u64 value of the `balance` for `account`
-    fun balance_for<TokenType>(balance: &Balance<TokenType>): u64 {
+    // Helper to return the u128 value of the `balance` for `account`
+    fun balance_for<TokenType>(balance: &Balance<TokenType>): u128 {
         Token::value<TokenType>(&balance.token)
     }
 
-    // Return the current balance of the account at `addr`.
-    public fun balance<TokenType>(addr: address): u64 acquires Balance {
+    // Return the current TokenType balance of the account at `addr`.
+    public fun balance<TokenType>(addr: address): u128 acquires Balance {
         balance_for(borrow_global<Balance<TokenType>>(addr))
     }
 
@@ -461,7 +461,7 @@ module Account {
         // Check that the account has enough balance for all of the gas
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;
         let balance_amount = balance<TokenType>(txn_sender);
-        assert(balance_amount >= max_transaction_fee, 6);
+        assert(balance_amount >= (max_transaction_fee as u128), 6);
 
         // Check that the transaction sequence number matches the sequence number of the account
         assert(txn_sequence_number >= sender_account.sequence_number, 2);
@@ -487,7 +487,7 @@ module Account {
         let sender_balance = borrow_global_mut<Balance<TokenType>>(txn_sender);
 
         // Charge for gas
-        let transaction_fee_amount = txn_gas_price * (txn_max_gas_units - gas_units_remaining);
+        let transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
         assert(
             balance_for(sender_balance) >= transaction_fee_amount,
             6

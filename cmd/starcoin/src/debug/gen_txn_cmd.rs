@@ -38,7 +38,7 @@ pub struct GenTxnOpt {
 
     ///Transfer amount of every transaction, default is 1.
     #[structopt(short = "v", default_value = "1")]
-    amount: u64,
+    amount: u128,
 }
 
 pub struct GenTxnCommand;
@@ -46,7 +46,7 @@ pub struct GenTxnCommand;
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct GenerateResult {
     count: usize,
-    total_amount: u64,
+    total_amount: u128,
     submit_success: usize,
     submit_fail: usize,
     //TODO add execute result and gas_used after watch api provider.
