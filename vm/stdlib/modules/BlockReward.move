@@ -2,7 +2,7 @@ address 0x1 {
 
 module BlockReward {
     use 0x1::Timestamp;
-    use 0x1::Token::{Self,Coin};
+    use 0x1::Token::{Self,Token};
     use 0x1::STC::{STC};
     use 0x1::Vector;
     use 0x1::Account;
@@ -11,7 +11,7 @@ module BlockReward {
     use 0x1::CoreAddresses;
 
     resource struct BlockReward{
-        balance: Coin<STC>,
+        balance: Token<STC>,
     }
 
     resource struct RewardInfo {
@@ -34,7 +34,7 @@ module BlockReward {
         });
     }
 
-    fun withdraw(amount: u64): Coin<STC> acquires BlockReward {
+    fun withdraw(amount: u64): Token<STC> acquires BlockReward {
         let block_reward = borrow_global_mut<BlockReward>(CoreAddresses::GENESIS_ACCOUNT());
         Token::withdraw<STC>(&mut block_reward.balance, amount)
     }

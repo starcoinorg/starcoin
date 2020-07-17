@@ -5,7 +5,7 @@ module VMConfig {
     use 0x1::Signer;
     use 0x1::CoreAddresses;
 
-    // The struct to hold all config data needed to operate the LibraVM.
+    // The struct to hold all config data needed to operate the VM.
     // * publishing_option: Defines Scripts/Modules that are allowed to execute in the current configruation.
     // * gas_schedule: Cost of running the VM.
     struct VMConfig {

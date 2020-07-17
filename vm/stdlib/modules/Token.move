@@ -4,13 +4,13 @@ module Token {
     use 0x1::Signer;
     use 0x1::Vector;
     use 0x1::LCS;
-    /// The currency has a `TokenType` color that tells us what currency the
+    /// The token has a `TokenType` color that tells us what token the
     /// `value` inside represents.
-    resource struct Coin<TokenType> {
+    resource struct Token<TokenType> {
         value: u64,
     }
 
-    /// A minting capability allows coins of type `TokenType` to be minted
+    /// A minting capability allows tokens of type `TokenType` to be minted
     resource struct MintCapability<TokenType> { }
 
     resource struct BurnCapability<TokenType> { }
@@ -30,15 +30,15 @@ module Token {
     }
 
     resource struct TokenInfo<TokenType> {
-        /// The total value for the currency represented by
+        /// The total value for the token represented by
         /// `TokenType`. Mutable.
         total_value: u128,
-        /// The scaling factor for the coin (i.e. the amount to multiply by
-        /// to get to the human-readable reprentation for this currency). e.g. 10^6 for Coin1
+        /// The scaling factor for the token (i.e. the amount to multiply by
+        /// to get to the human-readable reprentation for this token). e.g. 10^6 for Token1
         scaling_factor: u64,
         /// The smallest fractional part (number of decimal places) to be
-        /// used in the human-readable representation for the currency (e.g.
-        /// 10^2 for Coin1 cents)
+        /// used in the human-readable representation for the token (e.g.
+        /// 10^2 for Token1 cents)
         fractional_part: u64,
         // The code symbol for this `TokenType`. UTF-8 encoded.
         // e.g. for "STC" this is x"4C4252". No character limit.
@@ -49,9 +49,8 @@ module Token {
         burn_events: Event::EventHandle<BurnEvent>,
     }
 
-    /// Register the type `TokenType` as a currency. Without this, a type
-    /// cannot be used as a coin/currency unit n Libra.
-    public fun register_currency<TokenType>(
+    /// Register the type `TokenType` as a Token.
+    public fun register_token<TokenType>(
         account: &signer,
         scaling_factor: u64,
         fractional_part: u64,
@@ -104,25 +103,25 @@ module Token {
         let BurnCapability<TokenType>{  } = cap;
     }
 
-    /// Return `amount` coins.
+    /// Return `amount` tokens.
     /// Fails if the sender does not have a published MintCapability.
     public fun mint<TokenType>(
         account: &signer,
         amount: u64,
-    ): Coin<TokenType> acquires TokenInfo, MintCapability {
+    ): Token<TokenType> acquires TokenInfo, MintCapability {
         mint_with_capability(
             borrow_global<MintCapability<TokenType>>(Signer::address_of(account)),
             amount,
         )
     }
 
-    /// Mint a new Coin::Coin worth `value`. The caller must have a reference to a MintCapability.
+    /// Mint a new Token::Token worth `value`. The caller must have a reference to a MintCapability.
     /// Only the Association account can acquire such a reference, and it can do so only via
     /// `borrow_sender_mint_capability`
     public fun mint_with_capability<TokenType>(
         _capability: &MintCapability<TokenType>,
         value: u64,
-    ): Coin<TokenType> acquires TokenInfo {
+    ): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
         // assert_is_token<TokenType>();
         let (token_address, module_name, token_name) = name_of<TokenType>();
@@ -135,12 +134,12 @@ module Token {
                 token_code: code_to_bytes(token_address, module_name, token_name),
             }
         );
-        Coin<TokenType> { value }
+        Token<TokenType> { value }
     }
 
     public fun burn<TokenType>(
         account: &signer,
-        tokens: Coin<TokenType>,
+        tokens: Token<TokenType>,
     ) acquires TokenInfo, BurnCapability {
         burn_with_capability(
             borrow_global<BurnCapability<TokenType>>(Signer::address_of(account)),
@@ -150,11 +149,11 @@ module Token {
 
     public fun burn_with_capability<TokenType>(
         _capability: &BurnCapability<TokenType>,
-        tokens: Coin<TokenType>,
+        tokens: Token<TokenType>,
     ) acquires TokenInfo {
         let (token_address, module_name, token_name) = name_of<TokenType>();
         let info = borrow_global_mut<TokenInfo<TokenType>>(token_address);
-        let Coin{ value: value } = tokens;
+        let Token{ value: value } = tokens;
         info.total_value = info.total_value - (value as u128);
         Event::emit_event(
             &mut info.burn_events,
@@ -166,76 +165,76 @@ module Token {
 
     }
 
-    /// Create a new Coin::Coin<TokenType> with a value of 0
-    public fun zero<TokenType>(): Coin<TokenType> {
-        Coin<TokenType> { value: 0 }
+    /// Create a new Token::Token<TokenType> with a value of 0
+    public fun zero<TokenType>(): Token<TokenType> {
+        Token<TokenType> { value: 0 }
     }
 
-    /// Public accessor for the value of a coin
-    public fun value<TokenType>(coin: &Coin<TokenType>): u64 {
-        coin.value
+    /// Public accessor for the value of a token
+    public fun value<TokenType>(token: &Token<TokenType>): u64 {
+        token.value
     }
 
-    /// Splits the given coin into two and returns them both
+    /// Splits the given token into two and returns them both
     /// It leverages `Self::withdraw` for any verifications of the values
     public fun split<TokenType>(
-        coin: Coin<TokenType>,
+        token: Token<TokenType>,
         amount: u64,
-    ): (Coin<TokenType>, Coin<TokenType>) {
-        let other = withdraw(&mut coin, amount);
-        (coin, other)
+    ): (Token<TokenType>, Token<TokenType>) {
+        let other = withdraw(&mut token, amount);
+        (token, other)
     }
 
-    /// "Divides" the given coin into two, where the original coin is modified in place
-    /// The original coin will have value = original value - `amount`
-    /// The new coin will have a value = `amount`
-    /// Fails if the coins value is less than `amount`
+    /// "Divides" the given token into two, where the original token is modified in place
+    /// The original token will have value = original value - `amount`
+    /// The new token will have a value = `amount`
+    /// Fails if the tokens value is less than `amount`
     public fun withdraw<TokenType>(
-        coin: &mut Coin<TokenType>,
+        token: &mut Token<TokenType>,
         amount: u64,
-    ): Coin<TokenType> {
-        // Check that `amount` is less than the coin's value
-        assert(coin.value >= amount, 10);
-        coin.value = coin.value - amount;
-        Coin { value: amount }
+    ): Token<TokenType> {
+        // Check that `amount` is less than the token's value
+        assert(token.value >= amount, 10);
+        token.value = token.value - amount;
+        Token { value: amount }
     }
 
-    /// Merges two coins of the same currency and returns a new coin whose
+    /// Merges two tokens of the same token and returns a new token whose
     /// value is equal to the sum of the two inputs
     public fun join<TokenType>(
-        coin1: Coin<TokenType>,
-        coin2: Coin<TokenType>,
-    ): Coin<TokenType> {
-        deposit(&mut coin1, coin2);
-        coin1
+        token1: Token<TokenType>,
+        token2: Token<TokenType>,
+    ): Token<TokenType> {
+        deposit(&mut token1, token2);
+        token1
     }
 
-    /// "Merges" the two coins
-    /// The coin passed in by reference will have a value equal to the sum of the two coins
-    /// The `check` coin is consumed in the process
-    public fun deposit<TokenType>(coin: &mut Coin<TokenType>, check: Coin<TokenType>) {
-        let Coin{ value: value } = check;
-        coin.value = coin.value + value;
+    /// "Merges" the two tokens
+    /// The token passed in by reference will have a value equal to the sum of the two tokens
+    /// The `check` token is consumed in the process
+    public fun deposit<TokenType>(token: &mut Token<TokenType>, check: Token<TokenType>) {
+        let Token{ value: value } = check;
+        token.value = token.value + value;
     }
 
-    /// Destroy a coin
+    /// Destroy a token
     /// Fails if the value is non-zero
-    /// The amount of Coin in the system is a tightly controlled property,
-    /// so you cannot "burn" any non-zero amount of Coin
-    public fun destroy_zero<TokenType>(coin: Coin<TokenType>) {
-        let Coin{ value: value } = coin;
+    /// The amount of Token in the system is a tightly controlled property,
+    /// so you cannot "burn" any non-zero amount of Token
+    public fun destroy_zero<TokenType>(token: Token<TokenType>) {
+        let Token{ value: value } = token;
         assert(value == 0, 5)
     }
 
 
-    /// Returns the scaling factor for the `CoinType` currency.
+    /// Returns the scaling factor for the `TokenType` token.
     public fun scaling_factor<TokenType>(): u64
     acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
 
-    /// Returns the representable fractional part for the `CoinType` currency.
+    /// Returns the representable fractional part for the `TokenType` token.
     public fun fractional_part<TokenType>(): u64
     acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
@@ -244,7 +243,7 @@ module Token {
 
 
 
-    /// Return the total amount of currency minted of type `TokenType`
+    /// Return the total amount of token minted of type `TokenType`
     public fun market_cap<TokenType>(): u128 acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).total_value

@@ -1,4 +1,4 @@
-// Move representation of the authenticator types used in Libra:
+// Move representation of the authenticator types
 // - Ed25519 (single-sig)
 // - MultiEd25519 (K-of-N multisig)
 

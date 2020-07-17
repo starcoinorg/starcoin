@@ -129,7 +129,7 @@ pub fn raw_accept_coin_txn(
         sender,
         seq_num,
         TransactionPayload::Script(Script::new(
-            StdlibScript::AcceptCoin.compiled_bytes().into_vec(),
+            StdlibScript::AcceptToken.compiled_bytes().into_vec(),
             vec![coin_type],
             vec![],
         )),
