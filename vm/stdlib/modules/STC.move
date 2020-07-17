@@ -10,7 +10,7 @@ module STC {
     public fun initialize(account: &signer) {
         assert(Signer::address_of(account) == token_address(), 0);
 
-        Token::register_currency<STC>(
+        Token::register_token<STC>(
             account,
             1000000, // scaling_factor = 10^6
             1000,    // fractional_part = 10^3
@@ -21,9 +21,9 @@ module STC {
         // Token::destroy_burn_capability(burn_cap);
     }
 
-    /// Returns true if `CoinType` is `STC::STC`
-    public fun is_stc<CoinType>(): bool {
-        Token::is_registered_in<CoinType>(CoreAddresses::GENESIS_ACCOUNT())
+    /// Returns true if `TokenType` is `STC::STC`
+    public fun is_stc<TokenType>(): bool {
+        Token::is_registered_in<TokenType>(CoreAddresses::GENESIS_ACCOUNT())
     }
 
     public fun token_address(): address {

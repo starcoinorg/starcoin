@@ -44,10 +44,10 @@ module Genesis {
         TransactionTimeout::initialize(&genesis_account);
 
         STC::initialize(&genesis_account);
-        Account::add_currency<STC>(&genesis_account);
+        Account::accept_token<STC>(&genesis_account);
 
         let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), copy dummy_auth_key_prefix);
-        Account::add_currency<STC>(&association);
+        Account::accept_token<STC>(&association);
 
         let association_balance = total_supply * pre_mine_percent / 100;
         if (association_balance > 0) {

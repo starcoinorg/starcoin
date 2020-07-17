@@ -3,7 +3,7 @@ address 0x1 {
 module TransactionManager {
     use 0x1::TransactionTimeout;
     use 0x1::Signer;
-    use 0x1::Token::{Self,Coin};
+    use 0x1::Token::{Self,Token};
     use 0x1::CoreAddresses;
     use 0x1::Account;
     use 0x1::PackageTxnManager;
@@ -23,7 +23,7 @@ module TransactionManager {
     // - The account's auth key matches the transaction's public key
     // - That the account has enough balance to pay for all of the gas
     // - That the sequence number matches the transaction's sequence key
-    public fun prologue<Token>(
+    public fun prologue<TokenType>(
         account: &signer,
         txn_sender: address,
         txn_sequence_number: u64,
@@ -38,7 +38,7 @@ module TransactionManager {
         // Can only be invoked by genesis account
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
 
-        Account::txn_prologue<Token>(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
+        Account::txn_prologue<TokenType>(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
         assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), 7);
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE()){
             PackageTxnManager::package_txn_prologue(account, txn_sender, txn_package_address, txn_script_or_package_hash);
@@ -49,7 +49,7 @@ module TransactionManager {
 
     // The epilogue is invoked at the end of transactions.
     // It collects gas and bumps the sequence number
-    public fun epilogue<Token>(
+    public fun epilogue<TokenType>(
         account: &signer,
         txn_sender: address,
         txn_sequence_number: u64,
@@ -66,7 +66,7 @@ module TransactionManager {
     ){
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
 
-        Account::txn_epilogue<Token>(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining, state_cost_amount, cost_is_negative);
+        Account::txn_epilogue<TokenType>(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining, state_cost_amount, cost_is_negative);
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE()){
            PackageTxnManager::package_txn_epilogue(account, txn_sender, txn_package_address, success);
         }
@@ -84,7 +84,7 @@ module TransactionManager {
     ){
         // Can only be invoked by genesis account
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
-        Timestamp::update_global_time(account, author, timestamp);
+        Timestamp::update_global_time(account, timestamp);
 
         //get previous author for distribute txn_fee
         let previous_author = Block::get_current_author();
@@ -95,12 +95,12 @@ module TransactionManager {
         BlockReward::process_block_reward(account, height, author, auth_key_prefix);
     }
 
-    fun distribute<CoinType>(account: &signer, txn_fee: Coin<CoinType>, author: address) {
-        let value = Token::value<CoinType>(&txn_fee);
+    fun distribute<TokenType>(account: &signer, txn_fee: Token<TokenType>, author: address) {
+        let value = Token::value<TokenType>(&txn_fee);
         if (value > 0) {
-            Account::deposit<CoinType>(account, author, txn_fee);
+            Account::deposit<TokenType>(account, author, txn_fee);
         }else {
-            Token::destroy_zero<CoinType>(txn_fee);
+            Token::destroy_zero<TokenType>(txn_fee);
         }
     }
 }
