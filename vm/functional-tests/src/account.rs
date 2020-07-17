@@ -810,7 +810,7 @@ pub fn mint_txn(
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
         StdlibScript::Mint.compiled_bytes().into_vec(),
-        vec![],
+        vec![stc_type_tag()],
         args,
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas

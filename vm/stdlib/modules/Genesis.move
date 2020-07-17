@@ -5,7 +5,6 @@ module Genesis {
    use 0x1::Account;
    use 0x1::Signer;
    use 0x1::TransactionTimeout;
-   use 0x1::Coin;
    use 0x1::Timestamp;
    use 0x1::STC::{Self,STC};
    use 0x1::PackageTxnManager;
@@ -35,8 +34,6 @@ module Genesis {
         let genesis_account = Account::create_genesis_account(CoreAddresses::GENESIS_ACCOUNT(),copy dummy_auth_key_prefix);
 
         Block::initialize(&genesis_account, parent_hash);
-
-        Coin::initialize(&genesis_account);
 
         // init config
         VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule);

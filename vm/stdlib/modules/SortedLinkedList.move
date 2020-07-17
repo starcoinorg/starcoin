@@ -3,242 +3,263 @@ module SortedLinkedList {
     use 0x1::Compare;
     use 0x1::LCS;
     use 0x1::Signer;
+    use 0x1::Vector;
+
+    struct EntryHandle {
+        //address where the Node is stored
+        addr: address,
+        //an index into the NodeVector stored under addr
+        index: u64
+    }
 
     resource struct Node<T> {
-        prev: address, //account address where the previous node is stored (head if no previous node exists)
-        next: address, //account address where the next node is stored (head if no next node exists)
-        head: address, //account address where current list's head is stored -- whoever stores head is the owner of the whole list
-        key: T
+        //pointer to previous and next Node's in the sorted linked list
+        prev: EntryHandle,
+        next: EntryHandle,
+        head: EntryHandle,
+        data: T
     }
 
-    public fun node_exists<T: copyable>(node_address: address): bool {
-        exists<Node<T>>(node_address)
+    //a vector of Node's stored under a single account
+    resource struct NodeVector<T> {
+        nodes: vector<Node<T>>
     }
 
-    public fun get_key_of_node<T: copyable>(node_address: address): T acquires Node {
-        assert(exists<Node<T>>(node_address), 1);
-
-        let node = borrow_global<Node<T>>(node_address);
-        *&node.key
+    public fun entry_handle(addr: address, index: u64): EntryHandle {
+        EntryHandle { addr, index }
     }
 
-    //checks whether this address is the head of a list -- fails if there is no node here
-    public fun is_head_node<T: copyable>(current_node_address: address): bool acquires Node {
+    public fun get_addr(entry: EntryHandle): address {
+        entry.addr
+    }
+
+    public fun get_index(entry: EntryHandle): u64 {
+        entry.index
+    }
+
+    public fun node_exists<T: copyable>(entry: EntryHandle): bool acquires NodeVector {
+        if (!exists<NodeVector<T>>(entry.addr)) return false;
+        let node_vector = &borrow_global<NodeVector<T>>(entry.addr).nodes;
+        if (entry.index >= Vector::length<Node<T>>(node_vector)) return false;
+        true
+    }
+
+    public fun get_data<T: copyable>(entry: EntryHandle): T acquires NodeVector {
+        //make sure a node exists in entry
+        assert(node_exists<T>(copy entry), 1);
+        let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
+        let node = Vector::borrow<Node<T>>(nodes, entry.index);
+        *&node.data
+    }
+
+    public fun get_prev_node_addr<T: copyable>(entry: EntryHandle): address acquires NodeVector {
+        //make sure a node exists in entry
+        assert(node_exists<T>(copy entry), 2);
+        let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
+        let node = Vector::borrow<Node<T>>(nodes, entry.index);
+        *&node.prev.addr
+    }
+
+    //checks whether this entry is the head of a list
+    public fun is_head_node<T: copyable>(entry: &EntryHandle): bool acquires NodeVector {
 		//check that a node exists
-		assert(exists<Node<T>>(current_node_address), 2);
-
+        assert(node_exists<T>(*entry), 3);
+        let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
         //find the head node
-		let current_node = borrow_global<Node<T>>(current_node_address);
-        let head_node_address = current_node.head;
+        let node = Vector::borrow<Node<T>>(nodes, entry.index);
 
         //check if this is the head node
-        head_node_address == current_node_address
+        node.head.addr == entry.addr && node.head.index == entry.index
     }
 
     //creates a new list whose head is at txn_sender (is owned by the caller)
-    public fun create_new_list<T: copyable>(account: &signer, key: T) {
+    public fun create_new_list<T: copyable>(account: &signer, data: T) {
         let sender = Signer::address_of(account);
 
         //make sure no node/list is already stored in this account
-        assert(!exists<Node<T>>(sender), 3);
-
+        assert(!exists<NodeVector<T>>(sender), 3);
+        let head_handle = entry_handle(sender, 0);
         let head = Self::Node<T> {
-            prev: sender,
-            next: sender,
-            head: sender,
-            key: key
+            prev: copy head_handle,
+            next: copy head_handle,
+            head: head_handle,
+            data: data
         };
-        move_to<Node<T>>(account, head);
+
+        let node_vector = Vector::singleton(head);
+        move_to<NodeVector<T>>(account, NodeVector<T> { nodes: node_vector });
     }
 
     //adds a node that is stored in txn_sender's account and whose location in the list is right after prev_node_address
-    public fun add_node<T: copyable>(account: &signer, key: T, prev_node_address: address) acquires Node {
+    public fun insert_node<T: copyable>(account: &signer, data: T, prev_entry: EntryHandle) acquires NodeVector {
         let sender_address = Signer::address_of(account);
 
-        //make sure no node is already stored in this account
-        assert(!exists<Node<T>>(sender_address), 4);
-
-        //make sure a node exists in prev_node_address
-        assert(exists<Node<T>>(prev_node_address), 5);
+        //make sure a node exists in prev_entry
+        assert(node_exists<T>(copy prev_entry), 1);
+        let prev_nodes = &borrow_global<NodeVector<T>>(prev_entry.addr).nodes;
 
         //get a reference to prev_node and find the address and reference to next_node, head
-        let prev_node = borrow_global<Node<T>>(prev_node_address);
-        let next_node_address = prev_node.next;
-        let next_node = borrow_global<Node<T>>(next_node_address);
-        let head_address = next_node.head;
+        let prev_node = Vector::borrow(prev_nodes, prev_entry.index);
+        let next_entry = *&prev_node.next;
+        let next_node_vector = &borrow_global<NodeVector<T>>(next_entry.addr).nodes;
+        let next_node = Vector::borrow(next_node_vector, next_entry.index);
+        let head_entry = *&next_node.head;
 
-        //see if either prev or next are the head and get their keys
-        let prev_key = *&prev_node.key;
-        let next_key = *&next_node.key;
-        let key_lcs_bytes = LCS::to_bytes(&key);
-        let cmp_with_prev = Compare::cmp_lcs_bytes(&key_lcs_bytes, &LCS::to_bytes(&prev_key));
-        let cmp_with_next = Compare::cmp_lcs_bytes(&key_lcs_bytes, &LCS::to_bytes(&next_key));
+        //see if either prev or next are the head and get their datas
+        let prev_data = *&prev_node.data;
+        let next_data = *&next_node.data;
+        let data_lcs_bytes = LCS::to_bytes(&data);
+        let cmp_with_prev = Compare::cmp_lcs_bytes(&data_lcs_bytes, &LCS::to_bytes(&prev_data));
+        let cmp_with_next = Compare::cmp_lcs_bytes(&data_lcs_bytes, &LCS::to_bytes(&next_data));
 
-        let prev_is_head = Self::is_head_node<T>(prev_node_address);
-        let next_is_head = Self::is_head_node<T>(next_node_address);
+        let prev_is_head = Self::is_head_node<T>(&prev_entry);
+        let next_is_head = Self::is_head_node<T>(&next_entry);
 
         //check the order -- the list must be sorted
-        assert(prev_is_head || cmp_with_prev == 2u8, 6); // prev_is_head || key > prev_key
-        assert(next_is_head || cmp_with_next == 1u8, 7); // next_is_head || key < next_key
+        assert(prev_is_head || cmp_with_prev == 2u8, 6); // prev_is_head || data > prev_data
+        assert(next_is_head || cmp_with_next == 1u8, 7); // next_is_head || data < next_data
 
         //create the new node
-        let current_node = Node<T> {
-            prev: prev_node_address,
-            next: next_node_address,
-            head: head_address,
-            key: key
+        let node = Self::Node<T> {
+            prev: copy prev_entry,
+            next: copy next_entry,
+            head: head_entry,
+            data: data
         };
-        move_to<Node<T>>(account, current_node);
 
+        let index = 0u64;
+        if (!exists<NodeVector<T>>(sender_address)) {
+            move_to<NodeVector<T>>(account, NodeVector<T> { nodes: Vector::singleton(node) });
+        } else {
+            let node_vector_mut = &mut borrow_global_mut<NodeVector<T>>(sender_address).nodes;
+            Vector::push_back<Node<T>>(node_vector_mut, node);
+            index = Vector::length<Node<T>>(node_vector_mut) - 1;
+        };
+
+        let prev_node_vector_mut = &mut borrow_global_mut<NodeVector<T>>(prev_entry.addr).nodes;
+        let prev_node_mut = Vector::borrow_mut(prev_node_vector_mut, prev_entry.index);
         //fix the pointers at prev
-        let prev_node_mut = borrow_global_mut<Node<T>>(prev_node_address);
-        prev_node_mut.next = sender_address;
+        prev_node_mut.next.addr = sender_address;
+        prev_node_mut.next.index = index;
 
+        let next_node_vector_mut = &mut borrow_global_mut<NodeVector<T>>(next_entry.addr).nodes;
+        let next_node_mut = Vector::borrow_mut(next_node_vector_mut, next_entry.index);
         //fix the pointers at next
-        let next_node_mut = borrow_global_mut<Node<T>>(next_node_address);
-        next_node_mut.prev = sender_address;
+        next_node_mut.prev.addr = sender_address;
+        next_node_mut.prev.index = index;
     }
 
     //private function used for removing a non-head node -- does not check permissions
-    fun remove_node<T: copyable>(node_address: address) acquires Node {
-        //make sure the node exists
-        assert(exists<Node<T>>(node_address), 8);
+    fun remove_node<T: copyable>(entry: EntryHandle) acquires NodeVector {
+        //check that a node exists
+        assert(node_exists<T>(copy entry), 1);
+        let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
 
         //find prev and next
-        let current_node = borrow_global<Node<T>>(node_address);
-        let next_node_address = current_node.next;
-        let prev_node_address = current_node.prev;
+        let current_node = Vector::borrow(nodes, entry.index);
+        let prev_entry = *&current_node.prev;
+        let next_entry = *&current_node.next;
 
-        //update next
-        let next_node_mut = borrow_global_mut<Node<T>>(next_node_address);
-        next_node_mut.prev = prev_node_address;
+        let prev_node_vector_mut = &mut borrow_global_mut<NodeVector<T>>(prev_entry.addr).nodes;
+        let prev_node_mut = Vector::borrow_mut(prev_node_vector_mut, prev_entry.index);
+        //fix the pointers at prev
+        prev_node_mut.next.addr = next_entry.addr;
+        prev_node_mut.next.index = next_entry.index;
 
-        //update prev
-        let prev_node_mut = borrow_global_mut<Node<T>>(prev_node_address);
-        prev_node_mut.next = next_node_address;
+        let next_node_vector_mut = &mut borrow_global_mut<NodeVector<T>>(next_entry.addr).nodes;
+        let next_node_mut = Vector::borrow_mut(next_node_vector_mut, next_entry.index);
+        //fix the pointers at next
+        next_node_mut.prev.addr = prev_entry.addr;
+        next_node_mut.prev.index = prev_entry.index;
 
+        let node_vector_mut = &mut borrow_global_mut<NodeVector<T>>(entry.addr).nodes;
         //destroy the current node
-        let Node<T> { prev: _, next: _, head: _, key: _ } = move_from<Node<T>>(node_address);
+        let Node<T> { prev: _, next: _, head: _, data: _ } = Vector::remove<Node<T>>(node_vector_mut, entry.index);
     }
 
-    public fun remove_node_by_list_owner<T: copyable>(account: &signer, node_address: address) acquires Node {
-        //make sure the node exists
-        assert(exists<Node<T>>(node_address), 9);
-
+    public fun remove_node_by_list_owner<T: copyable>(account: &signer, entry: EntryHandle) acquires NodeVector {
+        //check that a node exists
+        assert(node_exists<T>(copy entry), 1);
         //make sure it is not a head node
-        assert(!Self::is_head_node<T>(node_address), 10);
-
+        assert(!Self::is_head_node<T>(&copy entry), 10);
         //make sure the caller owns the list
-        let node = borrow_global<Node<T>>(node_address);
-        let list_owner = node.head;
+
+        let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
+        let current_node = Vector::borrow(nodes, entry.index);
+        let list_owner = current_node.head.addr;
         assert(list_owner == Signer::address_of(account), 11);
 
         //remove it
-        Self::remove_node<T>(node_address);
+        Self::remove_node<T>(entry);
     }
 
     //removes the current non-head node -- fails if the passed node is the head of a list
-    public fun remove_node_by_node_owner<T: copyable>(account: &signer) acquires Node {
-        let sender_address = Signer::address_of(account);
-
-        //make sure a node exists
-        assert(exists<Node<T>>(sender_address), 12);
-
-        //make sure it is not a head node (heads can be removed using remove_list)
-        assert(!Self::is_head_node<T>(sender_address), 13);
+    public fun remove_node_by_node_owner<T: copyable>(account: &signer, entry: EntryHandle) acquires NodeVector {
+        //check that a node exists
+        assert(node_exists<T>(copy entry), 1);
+        //make sure it is not a head node
+        assert(!Self::is_head_node<T>(&copy entry), 10);
+        //make sure the caller owns the node
+        assert(entry.addr == Signer::address_of(account), 11);
 
         //remove it
-        Self::remove_node<T>(sender_address);
+        Self::remove_node<T>(entry);
     }
 
-    //can only called by the list owner (head) -- removes the list if it is empty, 
+    //can only called by the list owner (head) -- removes the list if it is empty,
     //fails if it is non-empty or if no list is owned by the caller
-    public fun remove_list<T: copyable>(account: &signer) acquires Node {
+    public fun remove_list<T: copyable>(account: &signer) acquires NodeVector {
         let sender_address = Signer::address_of(account);
 
         //fail if the caller does not own a list
-        assert(Self::is_head_node<T>(sender_address), 14);
+        assert(Self::is_head_node<T>(&Self::entry_handle(sender_address, 0)), 14);
 
-        assert(exists<Node<T>>(sender_address), 15);
-        let current_node = borrow_global<Node<T>>(sender_address);
+        let node_vector = &borrow_global<NodeVector<T>>(sender_address).nodes;
+        let current_node = Vector::borrow(node_vector, 0);
 
         //check that the list is empty
-        let next_node_address = current_node.next;
-        let prev_node_address = current_node.prev;
-        assert(next_node_address == sender_address, 16);
-        assert(prev_node_address == sender_address, 17);
+        assert(current_node.next.addr == sender_address, 15);
+        assert(current_node.next.index == 0, 16);
+        assert(current_node.prev.addr == sender_address, 17);
+        assert(current_node.prev.index == 0, 18);
 
         //destroy the Node
-        let Node<T> { prev: _, next: _, head: _, key: _ } = move_from<Node<T>>(sender_address);
+        let NodeVector { nodes: nodes } = move_from<NodeVector<T>>(sender_address);
+        let Node<T> { prev: _, next: _, head: _, data: _ } = Vector::remove<Node<T>>(&mut nodes, 0);
+        Vector::destroy_empty(nodes);
     }
 
-    // find() is expensive, will provide off-chain method soon
-    public fun find<T: copyable>(key: T, head_address: address): (bool, address) acquires Node {
-        assert(Self::is_head_node<T>(head_address), 18);
+    public fun find_position_and_insert<T: copyable>(account: &signer, data: T, head: EntryHandle): bool acquires NodeVector {
+        assert(Self::is_head_node<T>(&copy head), 18);
 
-        let key_lcs_bytes = LCS::to_bytes(&key);
-        let head_node = borrow_global<Node<T>>(head_address);
-        let next_node_address = head_node.next;
-        while (next_node_address != head_address) {
-            let next_node = borrow_global<Node<T>>(next_node_address);
-            let next_node_key = *&next_node.key;
-            let next_key_lcs_bytes = LCS::to_bytes(&next_node_key);
-            let cmp = Compare::cmp_lcs_bytes(&next_key_lcs_bytes, &key_lcs_bytes);
-      
-            if (cmp == 0u8) { // next_key == key
-                return (true, next_node_address)
-            } else if (cmp == 1u8) { // next_key < key, continue
-                next_node_address = *&next_node.next;
-            } else { // next_key > key, nothing found
-                let prev_node_address = *&next_node.prev;
-                return (false, prev_node_address)
+        let data_lcs_bytes = LCS::to_bytes(&data);
+        let nodes = &borrow_global<NodeVector<T>>(head.addr).nodes;
+        let head_node = Vector::borrow<Node<T>>(nodes, head.index);
+        let next_entry = *&head_node.next;
+        let last_entry = *&head_node.prev;
+
+        while (!Self::is_head_node<T>(&next_entry)) {
+            let next_nodes = &borrow_global<NodeVector<T>>(next_entry.addr).nodes;
+            let next_node = Vector::borrow<Node<T>>(next_nodes, next_entry.index);
+
+            let next_node_data = *&next_node.data;
+            let next_data_lcs_bytes = LCS::to_bytes(&next_node_data);
+            let cmp = Compare::cmp_lcs_bytes(&next_data_lcs_bytes, &data_lcs_bytes);
+
+            if (cmp == 0u8) { // next_data == data
+                return false  // data already exist
+            } else if (cmp == 1u8) { // next_data < data, continue
+                next_entry = *&next_node.next;
+            } else { // next_data > data, nothing found
+                let prev_entry = *&next_node.prev;
+                insert_node(account, data, prev_entry);
+                return true
             }
         };
-        return (false, *&head_node.prev)
+        // list is empty, insert after head
+        insert_node(account, data, last_entry);
+        true
     }
 
-    public fun empty_node<T: copyable>(account: &signer, key: T) {
-        let sender = Signer::address_of(account);
-
-        //make sure no node/list is already stored in this account
-        assert(!exists<Node<T>>(sender), 19);
-
-        let empty = Self::Node<T> {
-            prev: sender,
-            next: sender,
-            head: sender,
-            key: key
-        };
-        move_to<Node<T>>(account, empty);
-    }
-
-    public fun move_node_to<T: copyable>(account: &signer, receiver: address) acquires Node {
-        let sender_address = Signer::address_of(account);
-        //make sure the node exists
-        assert(exists<Node<T>>(sender_address), 20);
-        assert(exists<Node<T>>(receiver), 21);  //empty node
-
-        //find prev and next
-        let current_node = borrow_global<Node<T>>(sender_address);
-        let next_node_address = current_node.next;
-        let prev_node_address = current_node.prev;
-
-        //update next
-        let next_node_mut = borrow_global_mut<Node<T>>(next_node_address);
-        next_node_mut.prev = receiver;
-
-        //update prev
-        let prev_node_mut = borrow_global_mut<Node<T>>(prev_node_address);
-        prev_node_mut.next = receiver;
-
-        let Node<T> { prev, next, head, key } = move_from<Node<T>>(sender_address);
-        let receiver_node_mut = borrow_global_mut<Node<T>>(receiver);
-        receiver_node_mut.prev = prev;
-        receiver_node_mut.next = next;
-        receiver_node_mut.head = head;
-        receiver_node_mut.key = key;
-        
-    }
-   
 }
 }
