@@ -4,7 +4,9 @@
 use crate::on_chain_config::OnChainConfig;
 use serde::{Deserialize, Serialize};
 
-use crate::{access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS};
+use crate::{
+    access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS, event::EventHandle,
+};
 use move_core_types::{language_storage::StructTag, move_resource::MoveResource};
 
 const CONSENSUS_MODULE_NAME: &str = "Consensus";
@@ -35,6 +37,7 @@ pub struct EpochResource {
     block_time_target: u64,
     reward_per_epoch: u64,
     reward_per_block: u64,
+    new_epoch_events: EventHandle,
 }
 
 impl EpochResource {
@@ -46,6 +49,7 @@ impl EpochResource {
         block_time_target: u64,
         reward_per_epoch: u64,
         reward_per_block: u64,
+        new_epoch_events: EventHandle,
     ) -> Self {
         Self {
             epoch_number,
@@ -55,6 +59,7 @@ impl EpochResource {
             block_time_target,
             reward_per_epoch,
             reward_per_block,
+            new_epoch_events,
         }
     }
 
@@ -85,23 +90,6 @@ impl EpochResource {
 impl MoveResource for EpochResource {
     const MODULE_NAME: &'static str = CONSENSUS_MODULE_NAME;
     const STRUCT_NAME: &'static str = "Epoch";
-}
-
-/// The Epoch resource held under an account.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct EpochDataResource {
-    epoch_number: u64,
-    epoch_start_time: u64,
-    start_number: u64,
-    end_number: u64,
-    block_time_target: u64,
-    reward_per_epoch: u64,
-    reward_per_block: u64,
-}
-
-impl MoveResource for EpochDataResource {
-    const MODULE_NAME: &'static str = CONSENSUS_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "EpochData";
 }
 
 #[derive(Debug)]

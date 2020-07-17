@@ -47,9 +47,15 @@ module Consensus {
         init_reward_per_epoch: u64, reward_per_uncle_percent: u64,
         min_time_target:u64, max_uncles_per_block:u64) {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
-        assert(init_block_time_target > 0, 2);
-        assert(init_reward_per_epoch > 0, 3);
-        assert(min_time_target > 0, 4);
+        assert(uncle_rate_target > 0, 2);
+        assert(epoch_time_target > 0, 3);
+        assert(reward_half_epoch > 0, 4);
+        assert(init_block_time_target > 0, 5);
+        assert(block_difficulty_window > 0, 6);
+        assert(init_reward_per_epoch > 0, 7);
+        assert(reward_per_uncle_percent > 0, 8);
+        assert(min_time_target > 0, 9);
+        assert(max_uncles_per_block >= 0, 10);
 
         move_to<Epoch>(account, Epoch {
             epoch_number:0,
