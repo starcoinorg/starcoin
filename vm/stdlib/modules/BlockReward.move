@@ -42,7 +42,12 @@ module BlockReward {
 
     fun withdraw(amount: u64): Token<STC> acquires BlockReward {
         let block_reward = borrow_global_mut<BlockReward>(CoreAddresses::GENESIS_ACCOUNT());
-        Token::withdraw<STC>(&mut block_reward.balance, amount)
+        let real_amount = if (Token::value<STC>(&block_reward.balance) < amount) {
+            Token::value<STC>(&block_reward.balance)
+        } else {
+            amount
+        };
+        Token::withdraw<STC>(&mut block_reward.balance, real_amount)
     }
 
     public fun process_block_reward(account: &signer, current_height: u64, current_reward: u64,
