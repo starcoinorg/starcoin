@@ -11,8 +11,8 @@ public fun test(genesis_account: &signer, block_height: u64, block_time: u64) {
         if ((block_height + times) == 13) {
             assert(Consensus::start_number() == 13, 10000);
             assert(Consensus::epoch_start_time() == 13, 10001);
-            assert(Consensus::end_number() == 120, 10002);
-            assert(Consensus::time_target() == 1, 10003);
+            assert(Consensus::end_number() == 121, 10002);
+            assert(Consensus::block_time_target() == 1, 10003);
             assert(Consensus::epoch_number() == 2, 10004);
         };
 

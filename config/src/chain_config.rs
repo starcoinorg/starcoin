@@ -185,13 +185,13 @@ pub struct ChainConfig {
     /// init first epoch
     pub init_block_time_target: u64,
     /// block window
-    pub block_window: u64,
-    /// only current epoch
-    pub only_current_epoch: bool,
+    pub block_difficulty_window: u64,
     /// reward per uncle percent
     pub reward_per_uncle_percent: u64,
     /// min time target
     pub min_time_target: u64,
+    /// max uncle block count per block
+    pub max_uncles_per_block: u64,
     /// association account's key pair
     pub association_key_pair: (Option<Ed25519PrivateKey>, Ed25519PublicKey),
     /// genesis account's key pair
@@ -202,9 +202,10 @@ pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
 pub static EPOCH_TIME_TARGET: u64 = 1_209_600;
 pub static REWARD_HALF_TIME_TARGET: u64 = 126_144_000;
 pub static INIT_BLOCK_TIME_TARGET: u64 = 20;
-pub static BLOCK_WINDOW: u64 = 24;
+pub static BLOCK_DIFF_WINDOW: u64 = 24;
 pub static REWARD_PER_UNCLE_PERCENT: u64 = 10;
 pub static MIN_TIME_TARGET: u64 = 10;
+pub static MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 pub static DEV_EPOCH_TIME_TARGET: u64 = 60;
 pub static DEV_MIN_TIME_TARGET: u64 = 1;
@@ -231,10 +232,10 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         epoch_time_target: DEV_EPOCH_TIME_TARGET,
         reward_half_epoch: DEV_EPOCH_TIME_TARGET * 2 / DEV_EPOCH_TIME_TARGET,
         init_block_time_target: 5,
-        block_window: BLOCK_WINDOW,
-        only_current_epoch: true,
+        block_difficulty_window: BLOCK_DIFF_WINDOW,
         reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
         min_time_target: DEV_MIN_TIME_TARGET,
+        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
     }
@@ -261,10 +262,10 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         epoch_time_target: EPOCH_TIME_TARGET,
         reward_half_epoch: REWARD_HALF_TIME_TARGET / EPOCH_TIME_TARGET,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
-        block_window: BLOCK_WINDOW,
-        only_current_epoch: true,
+        block_difficulty_window: BLOCK_DIFF_WINDOW,
         reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
         min_time_target: MIN_TIME_TARGET,
+        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
         association_key_pair: (None, Ed25519PublicKey::from_encoded_string(
             "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
         )
@@ -294,10 +295,10 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         epoch_time_target: EPOCH_TIME_TARGET,
         reward_half_epoch: REWARD_HALF_TIME_TARGET / EPOCH_TIME_TARGET,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
-        block_window: BLOCK_WINDOW,
-        only_current_epoch: true,
+        block_difficulty_window: BLOCK_DIFF_WINDOW,
         reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
         min_time_target: MIN_TIME_TARGET,
+        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
         association_key_pair: (None, Ed25519PublicKey::from_encoded_string(
             "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
         )
@@ -324,10 +325,10 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     epoch_time_target: EPOCH_TIME_TARGET,
     reward_half_epoch: REWARD_HALF_TIME_TARGET / EPOCH_TIME_TARGET,
     init_block_time_target: INIT_BLOCK_TIME_TARGET,
-    block_window: BLOCK_WINDOW,
-    only_current_epoch: true,
+    block_difficulty_window: BLOCK_DIFF_WINDOW,
     reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
     min_time_target: MIN_TIME_TARGET,
+    max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
     association_key_pair: (
         None,
         Ed25519PublicKey::from_encoded_string(
