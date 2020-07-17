@@ -15,10 +15,11 @@ use starcoin_types::{
     language_storage::TypeTag,
     state_set::ChainStateSet,
 };
+use starcoin_vm_types::account_config::STC_NAME;
 use starcoin_vm_types::{
-    account_config::{stc_type_tag, type_tag_for_currency_code},
+    account_config::stc_type_tag,
     move_resource::MoveResource,
-    on_chain_config::{ConfigStorage, OnChainConfig, RegisteredCurrencies},
+    on_chain_config::{ConfigStorage, OnChainConfig},
     state_view::StateView,
 };
 use std::collections::HashMap;
@@ -248,13 +249,6 @@ impl<'a> AccountStateReader<'a> {
         C::fetch_config(self.reader)
     }
 
-    pub fn get_registered_currencies(&self) -> Result<RegisteredCurrencies> {
-        Ok(self
-            .get_on_chain_config()?
-            .expect("RegisteredCurrencies on chain config should exist."))
-    }
-
-    /// Get default coin balance by address
     pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
         self.get_balance_by_type(address, &stc_type_tag())
     }
@@ -279,25 +273,18 @@ impl<'a> AccountStateReader<'a> {
     }
 
     /// Get all balance of account
+    /// TODO: rename to get_balance.
+    /// For now, we only return STC.
     pub fn get_balances(&self, address: &AccountAddress) -> Result<HashMap<String, u64>> {
-        let currencies = self.get_registered_currencies()?;
         let mut result = HashMap::new();
-        //TODO batch get.
-        for record in currencies.currency_codes() {
-            let balance = self
-                .get_balance_by_type(
-                    &address,
-                    &type_tag_for_currency_code(
-                        Some(record.module_address),
-                        record.currency_code.clone(),
-                    ),
-                )
-                .ok()
-                .flatten();
-            if let Some(balance) = balance {
-                result.insert(record.currency_code.as_str().to_owned(), balance);
-            }
+        let balance = self
+            .get_balance_by_type(&address, &stc_type_tag())
+            .ok()
+            .flatten();
+        if let Some(balance) = balance {
+            result.insert(STC_NAME.to_string(), balance);
         }
+
         Ok(result)
     }
 }

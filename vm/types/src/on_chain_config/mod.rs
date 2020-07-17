@@ -15,14 +15,12 @@ use std::{collections::HashMap, sync::Arc};
 
 mod consensus;
 mod genesis_gas_schedule;
-mod registered_currencies;
 mod version;
 mod vm_config;
 
 pub use self::{
     consensus::{Consensus, EpochResource},
     genesis_gas_schedule::INITIAL_GAS_SCHEDULE,
-    registered_currencies::RegisteredCurrencies,
     version::Version,
     vm_config::{VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
 };
@@ -48,7 +46,6 @@ impl ConfigID {
 pub const ON_CHAIN_CONFIG_REGISTRY: &[ConfigID] = &[
     VMConfig::CONFIG_ID,
     Version::CONFIG_ID,
-    RegisteredCurrencies::CONFIG_ID,
     Consensus::CONFIG_ID,
 ];
 
