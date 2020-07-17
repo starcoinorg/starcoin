@@ -8,7 +8,10 @@ use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::shared::Address;
-use starcoin_move_compiler::{command_line::parse_address, compile_or_load_move_file};
+use starcoin_move_compiler::{
+    command_line::parse_address, compile_source_string_no_report, errors, load_bytecode_file,
+    CompiledUnit, MOVE_EXTENSION,
+};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -105,10 +108,41 @@ impl CommandAction for ExecuteCommand {
         };
 
         let move_file_path = ctx.opt().move_file.clone();
-        let mut deps = stdlib::stdlib_files();
-        // add extra deps
-        deps.append(&mut ctx.opt().deps.clone());
-        let (bytecode, is_script) = compile_or_load_move_file(move_file_path, &deps, sender)?;
+        let ext = move_file_path
+            .as_path()
+            .extension()
+            .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
+            .unwrap_or_else(|| "");
+        let (bytecode, is_script) = if ext == MOVE_EXTENSION {
+            let mut deps = stdlib::stdlib_files();
+            // add extra deps
+            deps.append(&mut ctx.opt().deps.clone());
+            let (sources, compile_result) = compile_source_string_no_report(
+                std::fs::read_to_string(move_file_path.as_path())?.as_str(),
+                &deps,
+                sender,
+            )?;
+            let compile_unit = match compile_result {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!(
+                        "{}",
+                        String::from_utf8_lossy(
+                            errors::report_errors_to_color_buffer(sources, e).as_slice()
+                        )
+                    );
+                    bail!("compile error")
+                }
+            };
+
+            let is_script = match compile_unit {
+                CompiledUnit::Module { .. } => false,
+                CompiledUnit::Script { .. } => true,
+            };
+            (compile_unit.serialize(), is_script)
+        } else {
+            load_bytecode_file(move_file_path.as_path())?
+        };
 
         let type_tags = opt.type_tags.clone();
         let args = opt.args.clone();
