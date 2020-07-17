@@ -52,7 +52,7 @@ module Genesis {
              Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), association_balance);
         };
         let miner_reward_balance = total_supply - association_balance;
-        let init_reward_per_epoch = miner_reward_balance / reward_half_epoch;
+        let init_reward_per_epoch = miner_reward_balance / (reward_half_epoch * 2);
         Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_difficulty_window,
                                 init_reward_per_epoch, reward_per_uncle_percent, min_time_target, max_uncles_per_block);
 
