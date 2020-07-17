@@ -32,6 +32,40 @@ jobs:
           args: -- --check
       - name: setup environment
         run: bash ./scripts/dev_setup.sh
+
+      - id: cargo-deps
+        name: (load cache) Download dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-deps-
+      - if: ${{ steps.cargo-deps.outputs.cache-hit != 'true' }}
+        name: Download dependencies
+        uses: actions-rs/cargo@v1
+        with:
+          command: fetch
+          args: --locked
+
+      - id: cargo-build
+        name: (load cache) Build with --lib
+        uses: actions/cache@v2
+        with:
+          path: ./target
+          key: cargo-build-lib-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-build-lib-
+
+      - if: ${{ steps.cargo-build.outputs.cache-hit != 'true' }}
+        name: Build with --lib
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --lib
+
       - name: run cargo check
         uses: actions-rs/cargo@v1
         env:
