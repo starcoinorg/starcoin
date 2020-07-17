@@ -16,7 +16,7 @@ impl Consensus for DummyConsensus {
 
     fn calculate_next_difficulty(chain: &dyn ChainReader) -> Result<U256> {
         let epoch = Self::epoch(chain)?;
-        Ok(epoch.time_target().into())
+        Ok(epoch.block_time_target().into())
     }
 
     fn solve_consensus_header(_header_hash: &[u8], _difficulty: U256) -> Self::ConsensusHeader {

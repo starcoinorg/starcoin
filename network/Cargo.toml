@@ -21,7 +21,7 @@ hex = "0.4.2"
 bytes = "0.5.0"
 
 parity-codec = { version = "3.2", features = ["derive"] }
-libp2p = "0.20.1"
+libp2p = "0.21.1"
 
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}

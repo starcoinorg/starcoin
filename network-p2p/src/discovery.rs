@@ -118,7 +118,7 @@ impl DiscoveryConfig {
     {
         for (peer_id, addr) in user_defined {
             for kad in self.kademlias.values_mut() {
-                kad.add_address(&peer_id, addr.clone())
+                kad.add_address(&peer_id, addr.clone());
             }
             self.user_defined.push((peer_id, addr))
         }
@@ -240,17 +240,18 @@ pub struct DiscoveryBehaviour {
 
 impl DiscoveryBehaviour {
     /// Returns the list of nodes that we know exist in the network.
-    pub fn known_peers(&mut self) -> impl Iterator<Item = &PeerId> {
-        let mut set = HashSet::new();
-        for p in self
-            .kademlias
-            .values_mut()
-            .map(|k| k.kbuckets_entries())
-            .flatten()
-        {
-            set.insert(p);
+    pub fn known_peers(&mut self) -> HashSet<PeerId> {
+        let mut peers = HashSet::new();
+        for k in self.kademlias.values_mut() {
+            for b in k.kbuckets() {
+                for e in b.iter() {
+                    if !peers.contains(e.node.key.preimage()) {
+                        peers.insert(e.node.key.preimage().clone());
+                    }
+                }
+            }
         }
-        set.into_iter()
+        peers
     }
 
     /// Adds a hard-coded address for the given peer, that never expires.
@@ -265,7 +266,7 @@ impl DiscoveryBehaviour {
             .all(|(p, a)| *p != peer_id && *a != addr)
         {
             for k in self.kademlias.values_mut() {
-                k.add_address(&peer_id, addr.clone())
+                k.add_address(&peer_id, addr.clone());
             }
             self.pending_events
                 .push_back(DiscoveryOut::Discovered(peer_id.clone()));
@@ -280,7 +281,7 @@ impl DiscoveryBehaviour {
     pub fn add_self_reported_address(&mut self, peer_id: &PeerId, addr: Multiaddr) {
         if self.allow_non_globals_in_dht || self.can_add_to_dht(&addr) {
             for k in self.kademlias.values_mut() {
-                k.add_address(peer_id, addr.clone())
+                k.add_address(peer_id, addr.clone());
             }
         } else {
             log::trace!(target: "sub-libp2p", "Ignoring self-reported address {} from {}", addr, peer_id);
@@ -314,7 +315,7 @@ impl DiscoveryBehaviour {
     pub fn _num_kbuckets_entries(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
         self.kademlias
             .iter_mut()
-            .map(|(id, kad)| (id, kad.kbuckets_entries().count()))
+            .map(|(id, kad)| (id, kad.kbuckets().map(|bucket| bucket.iter().count()).sum()))
     }
 
     /// Returns the number of records in the Kademlia record stores.
@@ -441,22 +442,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
             list.extend(list_to_filter);
         }
 
-        if !list.is_empty() {
-            trace!(target: "sub-libp2p", "Addresses of {:?}: {:?}", peer_id, list);
-        } else {
-            let mut has_entry = false;
-            for k in self.kademlias.values_mut() {
-                if k.kbuckets_entries().any(|p| p == peer_id) {
-                    has_entry = true;
-                    break;
-                }
-            }
-            if has_entry {
-                trace!(target: "sub-libp2p", "Addresses of {:?}: none (peer in k-buckets)", peer_id);
-            } else {
-                trace!(target: "sub-libp2p", "Addresses of {:?}: none (peer not in k-buckets)", peer_id);
-            }
-        }
+        trace!(target: "sub-libp2p", "Addresses of {:?}: {:?}", peer_id, list);
 
         list
     }
@@ -615,13 +601,17 @@ impl NetworkBehaviour for DiscoveryBehaviour {
             while let Poll::Ready(ev) = kademlia.poll(cx, params) {
                 match ev {
                     NetworkBehaviourAction::GenerateEvent(ev) => match ev {
+                        KademliaEvent::RoutingUpdated { peer, .. } => {
+                            let ev = DiscoveryOut::Discovered(peer);
+                            return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
+                        }
                         KademliaEvent::UnroutablePeer { peer, .. } => {
                             let ev = DiscoveryOut::UnroutablePeer(peer);
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
                         }
-                        KademliaEvent::RoutingUpdated { peer, .. } => {
-                            let ev = DiscoveryOut::Discovered(peer);
-                            return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
+                        KademliaEvent::RoutablePeer { .. }
+                        | KademliaEvent::PendingRoutablePeer { .. } => {
+                            // We are not interested in these events at the moment.
                         }
                         KademliaEvent::QueryResult {
                             result: QueryResult::GetClosestPeers(res),
@@ -630,7 +620,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             Err(GetClosestPeersError::Timeout { key, peers }) => {
                                 debug!(target: "sub-libp2p",
                                            "Libp2p => Query for {:?} timed out with {} results",
-                                          hex::encode(&key), peers.len());
+                                           hex::encode(&key), peers.len());
                             }
                             Ok(ok) => {
                                 trace!(target: "sub-libp2p",
@@ -694,9 +684,6 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                                                 "Libp2p => Republishing of record {:?} failed with: {:?}",
                                                 e.key(), e),
                         },
-                        KademliaEvent::Discovered { .. } => {
-                            // We are not interested in these events at the moment.
-                        }
                         // We never start any other type of query.
                         e => {
                             warn!(target: "sub-libp2p", "Libp2p => Unhandled Kademlia event: {:?}", e)
