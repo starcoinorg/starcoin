@@ -5,14 +5,16 @@
 
 //! Functionality related to the command line interface of the Move prover.
 
+use abigen::AbigenOptions;
 use anyhow::anyhow;
 use clap::{App, Arg};
-use docgen::docgen::DocgenOptions;
+use docgen::DocgenOptions;
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 use simplelog::{
     CombinedLogger, Config, ConfigBuilder, LevelPadding, SimpleLogger, TermLogger, TerminalMode,
 };
+use spec_lang::env::VerificationScope;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Represents the virtual path to the boogie prelude which is inlined into the binary.
@@ -22,7 +24,6 @@ pub const INLINE_PRELUDE: &str = "<inline-prelude>";
 
 const DEFAULT_BOOGIE_FLAGS: &[&str] = &[
     "-doModSetAnalysis",
-    "-noinfer",
     "-printVerifiedProceduresCount:0",
     "-printModel:4",
     // Right now, we let boogie only produce one error per procedure. The boogie wrapper isn't
@@ -35,23 +36,6 @@ static LOGGER_CONFIGURED: AtomicBool = AtomicBool::new(false);
 
 /// Atomic used to detect whether we are running in test mode.
 static TEST_MODE: AtomicBool = AtomicBool::new(false);
-
-/// Default for what functions to verify.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum VerificationScope {
-    /// Verify only public functions.
-    Public,
-    /// Verify all functions.
-    All,
-    /// Verify no functions
-    None,
-}
-
-impl Default for VerificationScope {
-    fn default() -> Self {
-        Self::Public
-    }
-}
 
 /// Represents options provided to the tool. Most of those options are configured via a toml
 /// source; some over the command line flags.
@@ -67,6 +51,8 @@ pub struct Options {
     pub verbosity_level: LevelFilter,
     /// Whether to run the documentation generator instead of the prover.
     pub run_docgen: bool,
+    /// Whether to run the ABI generator instead of the prover.
+    pub run_abigen: bool,
     /// An account address to use if none is specified in the source.
     pub account_address: String,
     /// The paths to the Move sources.
@@ -80,6 +66,8 @@ pub struct Options {
     pub backend: BackendOptions,
     /// Options for the documentation generator.
     pub docgen: DocgenOptions,
+    /// Options for the ABI generator.
+    pub abigen: AbigenOptions,
 }
 
 impl Default for Options {
@@ -88,13 +76,15 @@ impl Default for Options {
             prelude_path: INLINE_PRELUDE.to_string(),
             output_path: "output.bpl".to_string(),
             run_docgen: false,
+            run_abigen: false,
             account_address: "0x234567".to_string(),
             verbosity_level: LevelFilter::Info,
             move_sources: vec![],
             move_deps: vec![],
-            docgen: DocgenOptions::default(),
             prover: ProverOptions::default(),
             backend: BackendOptions::default(),
+            docgen: DocgenOptions::default(),
+            abigen: AbigenOptions::default(),
         }
     }
 }
@@ -170,6 +160,14 @@ pub struct BackendOptions {
     /// How many times to call the prover backend for the verification problem. This is used for
     /// benchmarking.
     pub bench_repeat: usize,
+    /// Whether to use the sequence theory as the internal representation for $Vector type.
+    pub vector_using_sequences: bool,
+    /// A seed for the prover.
+    pub random_seed: usize,
+    /// The number of cores to use for parallel processing of verification conditions.
+    pub proc_cores: usize,
+    /// A (soft) timeout for the solver, per verification condition, in seconds.
+    pub vc_timeout: usize,
 }
 
 impl Default for BackendOptions {
@@ -190,6 +188,10 @@ impl Default for BackendOptions {
             aggressive_func_inline: "".to_owned(),
             func_inline: "{:inline}".to_owned(),
             serialize_bound: 4,
+            vector_using_sequences: false,
+            random_seed: 0,
+            proc_cores: 1,
+            vc_timeout: 40,
         }
     }
 }
@@ -275,10 +277,45 @@ impl Options {
                     .help("enables automatic tracing of expressions in prover errors")
             )
             .arg(
+                Arg::with_name("seed")
+                    .long("seed")
+                    .short("s")
+                    .takes_value(true)
+                    .value_name("NUMBER")
+                    .validator(is_number)
+                    .help("sets a random seed for the prover (default 0)")
+            )
+            .arg(
+                Arg::with_name("cores")
+                    .long("cores")
+                    .takes_value(true)
+                    .value_name("NUMBER")
+                    .validator(is_number)
+                    .help("sets the number of cores to use. \
+                     NOTE: multiple cores may currently lead to scrambled model \
+                     output from boogie (default 1)")
+            )
+            .arg(
+                Arg::with_name("timeout")
+                    .long("timeout")
+                    .short("T")
+                    .takes_value(true)
+                    .value_name("NUMBER")
+                    .validator(is_number)
+                    .help("sets a timeout (in seconds) for each \
+                             individual verification condition (default 40)")
+            )
+            .arg(
                 Arg::with_name("docgen")
                     .long("docgen")
                     .help("run the documentation generator instead of the prover. \
                     Generated docs will be written into the directory `./doc` unless configured otherwise via toml"),
+            )
+            .arg(
+                Arg::with_name("abigen")
+                    .long("abigen")
+                    .help("run the ABI generator instead of the prover. \
+                    Generated ABIs will be written into the directory `./abi` unless configured otherwise via toml"),
             )
             .arg(
                 Arg::with_name("verify")
@@ -376,8 +413,20 @@ impl Options {
         if matches.is_present("docgen") {
             options.run_docgen = true;
         }
+        if matches.is_present("abigen") {
+            options.run_abigen = true;
+        }
         if matches.is_present("trace") {
             options.prover.debug_trace = true;
+        }
+        if matches.is_present("seed") {
+            options.backend.random_seed = matches.value_of("seed").unwrap().parse::<usize>()?;
+        }
+        if matches.is_present("timeout") {
+            options.backend.vc_timeout = matches.value_of("timeout").unwrap().parse::<usize>()?;
+        }
+        if matches.is_present("cores") {
+            options.backend.proc_cores = matches.value_of("cores").unwrap().parse::<usize>()?;
         }
         if matches.is_present("print-config") {
             println!("{}", toml::to_string(&options).unwrap());
@@ -427,8 +476,28 @@ impl Options {
         if self.backend.use_array_theory {
             add(&["-useArrayTheory"]);
         }
+        add(&[&format!(
+            "-vcsCores:{}",
+            if self.prover.stable_test_output {
+                // Do not use multiple cores if stable test output is requested.
+                // Error messages may appear in non-deterministic order otherwise.
+                1
+            } else {
+                self.backend.proc_cores
+            }
+        )]);
+        if self.backend.vc_timeout != 0 {
+            add(&[&format!(
+                "-proverOpt:O:timeout={}",
+                self.backend.vc_timeout * 1000
+            )]);
+        }
         add(&["-proverOpt:O:smt.QI.EAGER_THRESHOLD=100"]);
         add(&["-proverOpt:O:smt.QI.LAZY_THRESHOLD=100"]);
+        add(&[&format!(
+            "-proverOpt:O:smt.random_seed={}",
+            self.backend.random_seed
+        )]);
         // TODO: see what we can make out of these flags.
         //add(&["-proverOpt:O:smt.QI.PROFILE=true"]);
         //add(&["-proverOpt:O:trace=true"]);
