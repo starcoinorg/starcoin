@@ -164,10 +164,6 @@ pub struct ChainConfig {
     pub timestamp: u64,
     /// Starcoin total supply.
     pub total_supply: u64,
-    /// Base reward for every Block miner.
-    pub base_block_reward: u64,
-    /// Halving reward for how many block mined.
-    pub reward_halving_interval: u64,
     /// How many block to delay before rewarding miners.
     pub reward_delay: u64,
     /// Genesis difficulty, should match consensus in different ChainNetwork.
@@ -184,14 +180,18 @@ pub struct ChainConfig {
     pub uncle_rate_target: u64,
     /// epoch time target
     pub epoch_time_target: u64,
-    /// reward half_time_target
-    pub reward_half_time_target: u64,
+    /// reward half epoch
+    pub reward_half_epoch: u64,
     /// init first epoch
     pub init_block_time_target: u64,
     /// block window
-    pub block_window: u64,
-    /// only current epoch
-    pub only_current_epoch: bool,
+    pub block_difficulty_window: u64,
+    /// reward per uncle percent
+    pub reward_per_uncle_percent: u64,
+    /// min time target
+    pub min_time_target: u64,
+    /// max uncle block count per block
+    pub max_uncles_per_block: u64,
     /// association account's key pair
     pub association_key_pair: (Option<Ed25519PrivateKey>, Ed25519PublicKey),
     /// genesis account's key pair
@@ -202,7 +202,13 @@ pub static STARCOIN_TOTAL_SUPPLY: u64 = 2_100_000_000 * 1_000_000;
 pub static EPOCH_TIME_TARGET: u64 = 1_209_600;
 pub static REWARD_HALF_TIME_TARGET: u64 = 126_144_000;
 pub static INIT_BLOCK_TIME_TARGET: u64 = 20;
-pub static BLOCK_WINDOW: u64 = 24;
+pub static BLOCK_DIFF_WINDOW: u64 = 24;
+pub static REWARD_PER_UNCLE_PERCENT: u64 = 10;
+pub static MIN_TIME_TARGET: u64 = 10;
+pub static MAX_UNCLES_PER_BLOCK: u64 = 2;
+
+pub static DEV_EPOCH_TIME_TARGET: u64 = 60;
+pub static DEV_MIN_TIME_TARGET: u64 = 1;
 
 pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
@@ -212,9 +218,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         version: Version { major: 1 },
         parent_hash: HashValue::zero(),
         timestamp: 0,
-        total_supply: STARCOIN_TOTAL_SUPPLY,
-        base_block_reward: 5000 * 1_000_000,
-        reward_halving_interval: 100,
+        total_supply: STARCOIN_TOTAL_SUPPLY, //420_000_000 * 1_000_000 + 1_680_000_000 * 1_000_000 // 840_000_000 * 1_000_000 * 2 = (70_000_000 * 1_000_000 * 12) * 2 = (840_000_000 * 1_000_000 / 116) * 2
         reward_delay: 1,
         difficulty: 1.into(),
         consensus_header: vec![],
@@ -225,11 +229,13 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         },
         boot_nodes: vec![],
         uncle_rate_target: 80,
-        epoch_time_target: 60 * 4,
-        reward_half_time_target: REWARD_HALF_TIME_TARGET,
-        init_block_time_target: 20,
-        block_window: BLOCK_WINDOW,
-        only_current_epoch: true,
+        epoch_time_target: DEV_EPOCH_TIME_TARGET,
+        reward_half_epoch: DEV_EPOCH_TIME_TARGET * 2 / DEV_EPOCH_TIME_TARGET,
+        init_block_time_target: 5,
+        block_difficulty_window: BLOCK_DIFF_WINDOW,
+        reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
+        min_time_target: DEV_MIN_TIME_TARGET,
+        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
     }
@@ -241,8 +247,6 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         parent_hash: HashValue::zero(),
         timestamp: 0,
         total_supply: STARCOIN_TOTAL_SUPPLY,
-        base_block_reward: 5000 * 1_000_000,
-        reward_halving_interval: 1000,
         reward_delay: 3,
         difficulty: 10.into(),
         consensus_header: vec![],
@@ -256,10 +260,12 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
                          "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"), ],
         uncle_rate_target: 80,
         epoch_time_target: EPOCH_TIME_TARGET,
-        reward_half_time_target: REWARD_HALF_TIME_TARGET,
+        reward_half_epoch: REWARD_HALF_TIME_TARGET / EPOCH_TIME_TARGET,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
-        block_window: BLOCK_WINDOW,
-        only_current_epoch: true,
+        block_difficulty_window: BLOCK_DIFF_WINDOW,
+        reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
+        min_time_target: MIN_TIME_TARGET,
+        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
         association_key_pair: (None, Ed25519PublicKey::from_encoded_string(
             "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
         )
@@ -274,8 +280,6 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         parent_hash: HashValue::zero(),
         timestamp: 0,
         total_supply: STARCOIN_TOTAL_SUPPLY,
-        base_block_reward: 5000 * 1_000_000,
-        reward_halving_interval: 10000,
         reward_delay: 7,
         difficulty: 10.into(),
         consensus_header: vec![],
@@ -289,10 +293,12 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
                          "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"), ],
         uncle_rate_target: 80,
         epoch_time_target: EPOCH_TIME_TARGET,
-        reward_half_time_target: REWARD_HALF_TIME_TARGET,
+        reward_half_epoch: REWARD_HALF_TIME_TARGET / EPOCH_TIME_TARGET,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
-        block_window: BLOCK_WINDOW,
-        only_current_epoch: true,
+        block_difficulty_window: BLOCK_DIFF_WINDOW,
+        reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
+        min_time_target: MIN_TIME_TARGET,
+        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
         association_key_pair: (None, Ed25519PublicKey::from_encoded_string(
             "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
         )
@@ -306,8 +312,6 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     parent_hash: HashValue::zero(),
     timestamp: 0,
     total_supply: STARCOIN_TOTAL_SUPPLY,
-    base_block_reward: 5000 * 1_000_000,
-    reward_halving_interval: 52500,
     reward_delay: 7,
     difficulty: 10.into(),
     consensus_header: vec![],
@@ -319,10 +323,12 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     boot_nodes: vec![],
     uncle_rate_target: 80,
     epoch_time_target: EPOCH_TIME_TARGET,
-    reward_half_time_target: REWARD_HALF_TIME_TARGET,
+    reward_half_epoch: REWARD_HALF_TIME_TARGET / EPOCH_TIME_TARGET,
     init_block_time_target: INIT_BLOCK_TIME_TARGET,
-    block_window: BLOCK_WINDOW,
-    only_current_epoch: true,
+    block_difficulty_window: BLOCK_DIFF_WINDOW,
+    reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
+    min_time_target: MIN_TIME_TARGET,
+    max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
     association_key_pair: (
         None,
         Ed25519PublicKey::from_encoded_string(

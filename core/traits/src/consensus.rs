@@ -9,7 +9,10 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
 };
-use starcoin_vm_types::{account_config::genesis_address, on_chain_config::EpochResource};
+use starcoin_vm_types::{
+    account_config::genesis_address,
+    on_chain_config::{Consensus as ConsensusConfig, EpochInfo, EpochResource},
+};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 
@@ -21,13 +24,17 @@ pub trait ConsensusHeader:
 pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
     type ConsensusHeader: ConsensusHeader;
 
-    fn epoch(chain: &dyn ChainReader) -> Result<EpochResource> {
+    fn epoch(chain: &dyn ChainReader) -> Result<EpochInfo> {
         let account_reader = AccountStateReader::new(chain.chain_state_reader());
-        if let Some(epoch) = account_reader.get_resource::<EpochResource>(genesis_address())? {
-            Ok(epoch)
-        } else {
-            Err(format_err!("Epoch is none."))
-        }
+        let epoch = account_reader
+            .get_resource::<EpochResource>(genesis_address())?
+            .ok_or_else(|| format_err!("Epoch is none."))?;
+
+        let consensus_conf = account_reader
+            .get_on_chain_config::<ConsensusConfig>()?
+            .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
+
+        Ok(EpochInfo::new(&epoch, &consensus_conf))
     }
 
     fn calculate_next_difficulty(reader: &dyn ChainReader) -> Result<U256>;

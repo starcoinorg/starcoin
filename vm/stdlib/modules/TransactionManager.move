@@ -91,8 +91,8 @@ module TransactionManager {
         let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);
         distribute(account, txn_fee, previous_author);
 
-        let height = Block::process_block_metadata(account, parent_hash, author, timestamp, uncles);
-        BlockReward::process_block_reward(account, height, author, auth_key_prefix);
+        let (height, reward) = Block::process_block_metadata(account, parent_hash, author, timestamp, uncles);
+        BlockReward::process_block_reward(account, height, reward, author, auth_key_prefix);
     }
 
     fun distribute<TokenType>(account: &signer, txn_fee: Token<TokenType>, author: address) {
