@@ -17,9 +17,9 @@ public fun test(genesis_account: &signer, block_height: u64, block_time: u64) {
         };
 
         if (Consensus::epoch_number() == 1) {
-            assert(reward == (70000000 * 1000000), 10005);
+            assert(reward == (70000000 * 1000000 / 2), 10005);
         } else if (Consensus::epoch_number() == 2) {
-            assert(reward == (840000000 * 1000000 / 108), 10006);
+            assert(reward == (840000000 * 1000000 / (108 * 2)), 10006);
         };
 
         times = times + 1;
