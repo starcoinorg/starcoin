@@ -18,7 +18,7 @@ use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::Consensus;
-use types::block::{Block, BlockHeader, BlockNumber};
+use types::block::{Block, BlockBody as RealBlockBody, BlockHeader, BlockNumber};
 
 const MAX_LEN: usize = 100;
 const MAX_SIZE: usize = 10;
@@ -318,7 +318,9 @@ where
             let mut blocks: Vec<Block> = Vec::new();
             for block_body in bodies {
                 let block_header = self.headers.remove(&block_body.hash);
-                let block = Block::new(block_header.expect("block_header is none."), block_body);
+                let body = RealBlockBody::new(block_body.transactions, block_body.uncles);
+                let block =
+                    Block::new_with_body(block_header.expect("block_header is none."), body);
                 blocks.push(block);
             }
 
@@ -338,6 +340,7 @@ where
         let downloader = self.downloader.clone();
         let fut = async move {
             let mut blocks = blocks;
+            blocks.reverse();
             loop {
                 let block = blocks.pop();
                 if let Some(b) = block {
