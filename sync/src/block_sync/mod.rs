@@ -317,9 +317,8 @@ where
             let len = bodies.len();
             let mut blocks: Vec<Block> = Vec::new();
             for block_body in bodies {
-                let (block_id, transactions) = block_body.into();
-                let block_header = self.headers.remove(&block_id);
-                let block = Block::new(block_header.expect("block_header is none."), transactions);
+                let block_header = self.headers.remove(&block_body.hash);
+                let block = Block::new(block_header.expect("block_header is none."), block_body);
                 blocks.push(block);
             }
 

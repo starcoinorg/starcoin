@@ -287,12 +287,24 @@ where
     ) -> Vec<BlockBody> {
         let mut bodies = Vec::new();
         for hash in hashs {
-            let transactions = match processor.chain_reader.clone().get_block_by_hash(hash).await {
-                Ok(block) => block.transactions().to_vec(),
-                _ => Vec::new(),
-            };
+            let (transactions, uncles) =
+                match processor.chain_reader.clone().get_block_by_hash(hash).await {
+                    Ok(block) => (
+                        block.transactions().to_vec(),
+                        if block.uncles().is_some() {
+                            Some(block.uncles().expect("block.uncles() is none.").to_vec())
+                        } else {
+                            None
+                        },
+                    ),
+                    _ => (Vec::new(), None),
+                };
 
-            let body = BlockBody { transactions, hash };
+            let body = BlockBody {
+                transactions,
+                hash,
+                uncles,
+            };
 
             bodies.push(body);
         }
