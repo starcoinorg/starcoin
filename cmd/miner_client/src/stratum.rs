@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 use anyhow::Result;
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
 use byteorder::{ByteOrder, LittleEndian};
@@ -7,7 +10,7 @@ use futures::{SinkExt, StreamExt};
 pub use jsonrpc_core::types::{
     id, request, response, version, Error as Jsonrpc_err, Id, MethodCall, Params, Value, Version,
 };
-use jsonrpc_core::Output;
+use jsonrpc_core::{Output, Response};
 use logger::prelude::*;
 use serde_json::error::Error as JsonError;
 use serde_json::{self, json};
@@ -82,9 +85,9 @@ impl StratumClient {
         self.request(method, params, 0).await?;
         let mut buf = String::new();
         BufReader::new(&*tcp_stream).read_line(&mut buf).await?;
-        let output =
-            serde_json::from_slice::<Output>(buf.as_bytes()).map_err(StratumError::Json)?;
-        let authed = parse_response::<bool>(output)?;
+        debug!("auth response: {}", buf);
+        let response = Response::from_json(buf.as_str()).map_err(StratumError::Json)?;
+        let authed = parse_response::<bool>(response)?;
         Ok(authed)
     }
 
@@ -127,16 +130,22 @@ impl StratumClient {
 #[derive(Error, Debug)]
 pub enum StratumError {
     #[error("json error")]
-    Json(JsonError),
+    Json(#[from] JsonError),
     #[error("rpc failed")]
     Fail(Jsonrpc_err),
 }
 
-fn parse_response<T: serde::de::DeserializeOwned>(output: Output) -> Result<T, StratumError> {
-    match output {
-        Output::Success(success) => {
-            serde_json::from_value::<T>(success.result).map_err(StratumError::Json)
+fn parse_response<T: serde::de::DeserializeOwned>(response: Response) -> Result<T, StratumError> {
+    match response {
+        Response::Single(output) => match output {
+            Output::Success(success) => {
+                serde_json::from_value::<T>(success.result).map_err(StratumError::Json)
+            }
+            Output::Failure(failure) => Err(StratumError::Fail(failure.error)),
+        },
+        Response::Batch(outputs) => {
+            error!("Unsupported batch response: {:?}", outputs);
+            Err(StratumError::Fail(Jsonrpc_err::parse_error()))
         }
-        Output::Failure(failure) => Err(StratumError::Fail(failure.error)),
     }
 }

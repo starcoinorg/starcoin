@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{nonce_generator, partition_nonce};
 use config::{ConsensusStrategy, MinerConfig};
 use consensus::{argon, dev::DevConsensus, difficulty::difficult_to_target};

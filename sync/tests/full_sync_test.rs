@@ -125,7 +125,7 @@ fn test_network_actor_rpc() {
             .unwrap();
         let number = block_1.header().number();
         debug!("first chain :{:?}", number);
-        assert!(number > 0);
+        assert!(number > 0, "assert first chain number >0 fail.");
 
         ////////////////////////
         // second chain

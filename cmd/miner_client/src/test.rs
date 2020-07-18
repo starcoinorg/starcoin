@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::miner::MinerClientActor;
 use actix::Actor;
 use actix_rt::System;
@@ -6,6 +9,7 @@ use config::MinerConfig;
 use config::NodeConfig;
 use consensus::argon::ArgonConsensus;
 use futures_timer::Delay;
+use jsonrpc_core::{Output, Response};
 use logger::prelude::*;
 use sc_stratum::{PushWorkHandler, Stratum};
 use starcoin_miner::{
@@ -47,4 +51,23 @@ fn test_stratum_client() {
             Delay::new(Duration::from_millis(2000)).await;
         }
     });
+}
+
+#[test]
+fn test_json() {
+    let json_str = r#"
+        {"jsonrpc":"2.0","result":{"name":"aaa"},"id":0}
+    "#;
+
+    let response = Response::from_json(json_str).unwrap();
+
+    let success = if let Response::Single(output) = response {
+        match output {
+            Output::Success(_) => true,
+            Output::Failure(_) => false,
+        }
+    } else {
+        false
+    };
+    assert!(success)
 }
