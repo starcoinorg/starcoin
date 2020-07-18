@@ -8,7 +8,7 @@ use starcoin_state_tree::StateNode;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo},
+    block::{Block, BlockBody as RealBlockBody, BlockHeader, BlockInfo},
     transaction::{SignedUserTransaction, TransactionInfo},
 };
 use std::cmp::Ordering;
@@ -121,11 +121,12 @@ impl GetBlockHeaders {
 pub struct BlockBody {
     pub hash: HashValue,
     pub transactions: Vec<SignedUserTransaction>,
+    pub uncles: Option<Vec<BlockHeader>>,
 }
 
-impl Into<(HashValue, Vec<SignedUserTransaction>)> for BlockBody {
-    fn into(self) -> (HashValue, Vec<SignedUserTransaction>) {
-        (self.hash, self.transactions)
+impl Into<RealBlockBody> for BlockBody {
+    fn into(self) -> RealBlockBody {
+        RealBlockBody::new(self.transactions, self.uncles)
     }
 }
 

@@ -244,6 +244,10 @@ where
                     ConnectBlockResult::FutureBlock => self.future_blocks.add_future_block(block),
                     ConnectBlockResult::VerifyBlockIdFailed => {
                         //TODO
+                        error!(
+                            "Connect block {:?} verify block id failed.",
+                            current_block_id
+                        );
                     }
                     ConnectBlockResult::VerifyConsensusFailed => {
                         error!("Connect block {:?} verify nonce failed.", current_block_id);
