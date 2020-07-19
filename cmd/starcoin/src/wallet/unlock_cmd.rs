@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
@@ -33,7 +34,7 @@ impl CommandAction for UnlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = UnlockOpt;
-    type ReturnItem = String;
+    type ReturnItem = StringView;
 
     fn run(
         &self,
@@ -46,9 +47,8 @@ impl CommandAction for UnlockCommand {
 
         let duration = Duration::from_secs(opt.duration as u64);
         client.wallet_unlock(account.address, opt.password.clone(), duration)?;
-        Ok(format!(
-            "account {} unlocked for {:?}",
-            account.address, duration
-        ))
+        Ok(StringView {
+            result: account.address.to_string(),
+        })
     }
 }

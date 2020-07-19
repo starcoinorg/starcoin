@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
@@ -40,7 +41,7 @@ impl CommandAction for CompileCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = CompileOpt;
-    type ReturnItem = PathBuf;
+    type ReturnItem = StringView;
 
     fn run(
         &self,
@@ -65,7 +66,9 @@ impl CommandAction for CompileCommand {
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone());
         let compile_result = starcoin_move_compiler::compile_source_string(
-            std::fs::read_to_string(source_file_path)?.as_str(),
+            std::fs::read_to_string(source_file_path)
+                .expect("read file error")
+                .as_str(),
             &deps,
             AccountAddress::new(sender.to_u8()),
         )?;
@@ -78,7 +81,11 @@ impl CommandAction for CompileCommand {
 
         txn_path.push(source_file_path.file_name().unwrap());
         txn_path.set_extension(stdlib::STAGED_EXTENSION);
-        File::create(txn_path.clone())?.write_all(&compile_result.serialize())?;
-        Ok(txn_path)
+        let mut file = File::create(txn_path.clone()).expect("unable create out file");
+        file.write_all(&compile_result.serialize())
+            .expect("write out file error");
+        Ok(StringView {
+            result: txn_path.to_str().unwrap().to_string(),
+        })
     }
 }
