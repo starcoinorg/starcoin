@@ -30,7 +30,7 @@ pub enum PeerMessage {
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Message, Clone)]
 pub struct RawRpcRequestMessage {
-    pub request: Vec<u8>,
+    pub request: (String, Vec<u8>, PeerId),
     pub responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
 }
 

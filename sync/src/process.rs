@@ -68,7 +68,7 @@ where
     fn handle(&mut self, msg: RawRpcRequestMessage, _ctx: &mut Self::Context) {
         let responder = msg.responder.clone();
         let processor = self.processor.clone();
-        if let Ok(req) = SyncRpcRequest::decode(msg.request.as_slice()) {
+        if let Ok(req) = SyncRpcRequest::decode(msg.request.1.as_slice()) {
             Arbiter::spawn(async move {
                 match req {
                     SyncRpcRequest::GetBlockHeaders(get_block_headers) => {

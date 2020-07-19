@@ -59,7 +59,7 @@ use wasm_timer::Instant;
 /// The role of the `GenericProto` is to synchronize the following components:
 ///
 /// - The libp2p swarm that opens new connections and reports disconnects.
-/// - The connection handler (see `handler.rs`) that handles individual connections.
+/// - The connection handler (see `server`) that handles individual connections.
 /// - The peerset manager (PSM) that requests links to peers to be established or broken.
 /// - The external API, that requires knowledge of the links that have been established.
 ///
