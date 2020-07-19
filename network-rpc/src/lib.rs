@@ -6,6 +6,7 @@ use types::transaction::SignedUserTransaction;
 
 mod rpc;
 mod rpc_impl;
+#[cfg(test)]
 mod tests;
 
 pub use rpc::{gen_client, gen_server};
