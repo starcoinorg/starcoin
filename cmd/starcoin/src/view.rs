@@ -26,6 +26,11 @@ use std::collections::HashMap;
 //TODO add a derive to auto generate View Object
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct StringView {
+    pub result: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccountWithStateView {
     pub account: WalletAccount,
     // hex encoded bytes
