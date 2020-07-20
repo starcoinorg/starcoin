@@ -105,11 +105,25 @@ where
     Ok(temp_file)
 }
 
-pub fn compile_source_string(
+/// Compile source, and report error.
+pub fn compile_sorce_string(
     source: &str,
     deps: &[String],
     sender: AccountAddress,
-) -> Result<CompiledUnit> {
+) -> anyhow::Result<(FilesSourceText, CompiledUnit)> {
+    let (source_text, compiled_result) = compile_source_string_no_report(source, deps, sender)?;
+    match compiled_result {
+        Ok(c) => Ok((source_text, c)),
+        Err(e) => errors::report_errors(source_text, e),
+    }
+}
+
+/// Compile source, and return compile error.
+pub fn compile_source_string_no_report(
+    source: &str,
+    deps: &[String],
+    sender: AccountAddress,
+) -> Result<(FilesSourceText, Result<CompiledUnit, Errors>)> {
     let temp_dir = tempfile::tempdir()?;
     let temp_file = temp_dir.path().join("temp.move");
     let sender = Address::new(sender.into());
@@ -119,16 +133,10 @@ pub fn compile_source_string(
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
-    let (file_texts, compile_units) = move_compile_no_report(&targets, deps, Some(sender))?;
-    let mut compiled_units = match compile_units {
-        Err(e) => {
-            let err = crate::errors::report_errors_to_color_buffer(file_texts, e);
-            bail!(String::from_utf8(err).unwrap())
-        }
-        Ok(r) => r,
-    };
-    let compiled_unit = compiled_units.pop().expect("At least one compiled_unit");
-    Ok(compiled_unit)
+    move_compile_no_report(&targets, deps, Some(sender)).map(|(f, u)| {
+        let compiled_result = u.map(|mut us| us.pop().expect("At least one compiled_unit"));
+        (f, compiled_result)
+    })
 }
 
 /// pre_module must has bean verified, return new code verified CompiledModule
@@ -148,35 +156,13 @@ pub fn check_compat_and_verify_module(pre_code: &[u8], new_code: &[u8]) -> Resul
     Ok(new_module)
 }
 
-/// Compile move source file, or load move bytecode file, based on file path extension.
-pub fn compile_or_load_move_file<P: AsRef<Path>>(
-    file_path: P,
-    extra_deps: &[String],
-    sender: AccountAddress,
-) -> Result<(Vec<u8>, bool)> {
-    let ext = file_path
-        .as_ref()
-        .extension()
-        .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
-        .unwrap_or_else(|| "");
-    if ext == MOVE_EXTENSION {
-        let compile_units = compile_source_string(
-            std::fs::read_to_string(file_path)?.as_str(),
-            extra_deps,
-            sender,
-        )?;
-        let is_script = match compile_units {
-            CompiledUnit::Module { .. } => false,
-            CompiledUnit::Script { .. } => true,
-        };
-        Ok((compile_units.serialize(), is_script))
-    } else if ext == MOVE_COMPILED_EXTENSION {
-        let mut file = OpenOptions::new().read(true).write(false).open(file_path)?;
-        let mut bytecode = vec![];
-        file.read_to_end(&mut bytecode)?;
-        let is_script = match starcoin_vm_types::file_format::CompiledScript::deserialize(
-            bytecode.as_slice(),
-        ) {
+/// Load bytecode file, return the bytecode bytes, and whether it's script.
+pub fn load_bytecode_file<P: AsRef<Path>>(file_path: P) -> Result<(Vec<u8>, bool)> {
+    let mut file = OpenOptions::new().read(true).write(false).open(file_path)?;
+    let mut bytecode = vec![];
+    file.read_to_end(&mut bytecode)?;
+    let is_script =
+        match starcoin_vm_types::file_format::CompiledScript::deserialize(bytecode.as_slice()) {
             Err(_) => {
                 match starcoin_vm_types::file_format::CompiledModule::deserialize(
                     bytecode.as_slice(),
@@ -192,10 +178,7 @@ pub fn compile_or_load_move_file<P: AsRef<Path>>(
             }
             Ok(_) => true,
         };
-        Ok((bytecode, is_script))
-    } else {
-        bail!("Only support *.move or *.mv file");
-    }
+    Ok((bytecode, is_script))
 }
 
 #[cfg(test)]
@@ -305,10 +288,14 @@ mod tests {
     }
 
     fn do_test_compat(pre_source_code: &str, new_source_code: &str, expect: bool) {
-        let pre_code = compile_source_string(pre_source_code, &[], CORE_CODE_ADDRESS)
+        let pre_code = compile_source_string_no_report(pre_source_code, &[], CORE_CODE_ADDRESS)
+            .unwrap()
+            .1
             .unwrap()
             .serialize();
-        let new_code = compile_source_string(new_source_code, &[], CORE_CODE_ADDRESS)
+        let new_code = compile_source_string_no_report(new_source_code, &[], CORE_CODE_ADDRESS)
+            .unwrap()
+            .1
             .unwrap()
             .serialize();
         match check_compat_and_verify_module(pre_code.as_slice(), new_code.as_slice()) {
