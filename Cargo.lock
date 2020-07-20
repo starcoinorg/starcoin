@@ -3402,7 +3402,7 @@ dependencies = [
  "libra-workspace-hack",
  "log 0.4.11",
  "once_cell",
- "prometheus",
+ "prometheus 0.9.0",
  "serde",
  "serde_json",
 ]
@@ -4054,7 +4054,7 @@ dependencies = [
  "parking_lot 0.11.0",
  "peerset",
  "pin-project",
- "prometheus",
+ "prometheus 0.9.0",
  "prost",
  "rand 0.7.3",
  "rustc-hex 2.1.0",
@@ -4076,6 +4076,35 @@ dependencies = [
  "void",
  "wasm-timer",
  "zeroize",
+]
+
+[[package]]
+name = "network-rpc-core"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "anyhow",
+ "futures 0.3.5",
+ "network-api",
+ "starcoin-logger",
+ "starcoin-types",
+]
+
+[[package]]
+name = "network-rpc-derive"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "futures 0.3.5",
+ "network-rpc-core",
+ "proc-macro-crate",
+ "proc-macro2 1.0.18",
+ "quote 1.0.7",
+ "serde",
+ "starcoin-canonical-serialization",
+ "starcoin-logger",
+ "starcoin-types",
+ "syn 1.0.34",
 ]
 
 [[package]]
@@ -4774,6 +4803,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "beae6331a816b1f65d04c45b078fd8e6c93e8071771f41b8163255bbd8d7c8fa"
 dependencies = [
  "unicode-xid 0.2.1",
+]
+
+[[package]]
+name = "prometheus"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0575e258dab62268e7236d7307caa38848acbda7ec7ab87bd9093791e999d20"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "protobuf",
+ "spin",
+ "thiserror",
 ]
 
 [[package]]
@@ -5971,7 +6014,7 @@ dependencies = [
  "futures 0.3.5",
  "futures-core",
  "lazy_static",
- "prometheus",
+ "prometheus 0.9.0",
 ]
 
 [[package]]
@@ -6379,7 +6422,7 @@ dependencies = [
  "futures 0.3.5",
  "hyper 0.13.7",
  "once_cell",
- "prometheus",
+ "prometheus 0.9.0",
  "psutil",
  "serde_json",
  "starcoin-logger",
@@ -6499,7 +6542,7 @@ dependencies = [
  "network-p2p",
  "parity-codec",
  "parking_lot 0.11.0",
- "prometheus",
+ "prometheus 0.9.0",
  "rand 0.7.3",
  "serde",
  "serde_json",
@@ -6520,6 +6563,44 @@ dependencies = [
  "tokio 0.2.21",
  "yamux",
  "zeroize",
+]
+
+[[package]]
+name = "starcoin-network-rpc"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "bytes 0.5.6",
+ "futures 0.3.5",
+ "hex 0.4.2",
+ "network-api",
+ "network-rpc-core",
+ "network-rpc-derive",
+ "parity-codec",
+ "prometheus 0.8.0",
+ "serde",
+ "serde_json",
+ "starcoin-accumulator",
+ "starcoin-block-relayer-api",
+ "starcoin-bus",
+ "starcoin-canonical-serialization",
+ "starcoin-chain",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-network",
+ "starcoin-state-tree",
+ "starcoin-storage",
+ "starcoin-traits",
+ "starcoin-txpool",
+ "starcoin-txpool-api",
+ "starcoin-types",
+ "stest",
+ "tokio 0.2.21",
 ]
 
 [[package]]
@@ -6965,7 +7046,7 @@ dependencies = [
  "log 0.4.11",
  "once_cell",
  "parking_lot 0.11.0",
- "prometheus",
+ "prometheus 0.9.0",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
@@ -7058,7 +7139,7 @@ dependencies = [
  "move-vm-runtime",
  "num_enum",
  "once_cell",
- "prometheus",
+ "prometheus 0.9.0",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "starcoin-canonical-serialization",
