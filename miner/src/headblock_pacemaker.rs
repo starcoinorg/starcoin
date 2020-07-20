@@ -6,6 +6,8 @@ use actix::prelude::*;
 
 use futures::channel::mpsc;
 
+use actix::clock::Duration;
+use actix_rt::time::delay_for;
 use bus::{BusActor, Subscription};
 use logger::prelude::*;
 use types::system_events::NewHeadBlock;
@@ -23,7 +25,7 @@ impl HeadBlockPacemaker {
 
     pub fn send_event(&mut self) {
         if let Err(e) = self.sender.try_send(GenerateBlockEvent {}) {
-            trace!("err : {:?}", e);
+            error!("err : {:?}", e);
         }
     }
 }
@@ -38,10 +40,16 @@ impl Actor for HeadBlockPacemaker {
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-
-        info!("{}", "head block pacemaker started.");
-        info!("{}", "Fire first GenerateBlock event");
-        self.send_event();
+        let mut sender = self.sender.clone();
+        //TODO fire first GenerateBlock event when node is ready.
+        Arbiter::spawn(async move {
+            delay_for(Duration::from_secs(5)).await;
+            info!("{}", "head block pacemaker started.");
+            info!("{}", "Fire first GenerateBlock event");
+            if let Err(e) = sender.try_send(GenerateBlockEvent {}) {
+                error!("err : {:?}", e);
+            }
+        });
     }
 }
 

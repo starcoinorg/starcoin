@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::miner::MinerClientActor;
+use crate::stratum::{parse_response, process_request};
 use actix::Actor;
 use actix_rt::System;
 use bus::BusActor;
@@ -9,7 +10,6 @@ use config::MinerConfig;
 use config::NodeConfig;
 use consensus::argon::ArgonConsensus;
 use futures_timer::Delay;
-use jsonrpc_core::{Output, Response};
 use logger::prelude::*;
 use sc_stratum::{PushWorkHandler, Stratum};
 use starcoin_miner::{
@@ -56,18 +56,14 @@ fn test_stratum_client() {
 #[test]
 fn test_json() {
     let json_str = r#"
-        {"jsonrpc":"2.0","result":{"name":"aaa"},"id":0}
+        {"jsonrpc":"2.0","result":true,"id":0}
     "#;
+    let result = parse_response::<bool>(json_str);
+    assert!(result.is_ok(), "parse response error: {:?}", result.err());
 
-    let response = Response::from_json(json_str).unwrap();
-
-    let success = if let Response::Single(output) = response {
-        match output {
-            Output::Success(_) => true,
-            Output::Failure(_) => false,
-        }
-    } else {
-        false
-    };
-    assert!(success)
+    let json_str = r#"
+    { "id": 19, "method": "mining.notify", "params": ["e419ff9f57cc615f1b9ee900097f6ce34ad5eaff61eda78414efa1c3fa9e8200","1"] }
+    "#;
+    let result = process_request(json_str);
+    assert!(result.is_ok(), "process request fail:{:?}", result.err());
 }
