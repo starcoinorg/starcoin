@@ -55,6 +55,12 @@ impl StratumClient {
             let mut lines = reader.lines();
             while let Some(line) = lines.next().await {
                 let request: String = line.unwrap();
+                if let Ok(response_ok) = parse_response::<bool>(&request) {
+                    if !response_ok {
+                        error!("stratum received server respond false");
+                    }
+                    continue;
+                };
                 debug!("Receive from stratum: {}", &request);
                 match process_request(request.as_str()) {
                     Ok(job) => {
