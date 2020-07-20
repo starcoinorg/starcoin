@@ -55,7 +55,7 @@ pub fn start_worker(
         }
         strategy => {
             let (worker_tx, worker_rx) = mpsc::unbounded();
-            let worker_name = format!("starcoin-miner-{}-worker", strategy).to_owned();
+            let worker_name = format!("starcoin-miner-{}-worker", strategy);
             let pb =
                 if let Some(mp) = mp.as_ref() {
                     let pb = mp.add(ProgressBar::new(100));
