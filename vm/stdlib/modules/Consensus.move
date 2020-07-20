@@ -199,11 +199,11 @@ module Consensus {
                 if (new_epoch_block_time_target < Self::min_time_target()) {
                     new_epoch_block_time_target = Self::min_time_target();
                 };
-                let new_epoch_blocks = if (total_time >= (Self::epoch_time_target() * 2)) {
-                    1
-                } else {
+                let new_epoch_blocks = if ((total_time + new_epoch_block_time_target) <= (Self::epoch_time_target() * 2)) {
                     let new_epoch_time_target = Self::epoch_time_target() * 2 - total_time;
                     new_epoch_time_target / new_epoch_block_time_target
+                } else {
+                    1
                 };
                 assert(new_epoch_blocks >= 1, 337);
 
