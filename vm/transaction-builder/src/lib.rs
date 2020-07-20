@@ -26,7 +26,7 @@ pub fn build_transfer_from_association(
     addr: AccountAddress,
     auth_key_prefix: Vec<u8>,
     association_sequence_num: u64,
-    amount: u64,
+    amount: u128,
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
@@ -41,7 +41,7 @@ pub fn build_transfer_txn(
     receiver: AccountAddress,
     receiver_auth_key_prefix: Vec<u8>,
     seq_num: u64,
-    amount: u64,
+    amount: u128,
     gas_price: u64,
     max_gas: u64,
 ) -> RawUserTransaction {
@@ -62,7 +62,7 @@ pub fn build_transfer_txn_by_coin_type(
     receiver: AccountAddress,
     receiver_auth_key_prefix: Vec<u8>,
     seq_num: u64,
-    amount: u64,
+    amount: u128,
     gas_price: u64,
     max_gas: u64,
     coin_type: TypeTag,
@@ -93,7 +93,7 @@ pub fn raw_peer_to_peer_txn(
     sender: AccountAddress,
     receiver: AccountAddress,
     receiver_auth_key_prefix: Vec<u8>,
-    transfer_amount: u64,
+    transfer_amount: u128,
     seq_num: u64,
     gas_price: u64,
     max_gas: u64,
@@ -102,7 +102,7 @@ pub fn raw_peer_to_peer_txn(
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(receiver));
     args.push(TransactionArgument::U8Vector(receiver_auth_key_prefix));
-    args.push(TransactionArgument::U64(transfer_amount));
+    args.push(TransactionArgument::U128(transfer_amount));
 
     RawUserTransaction::new(
         sender,
@@ -158,7 +158,7 @@ pub fn encode_create_account_script(
 pub fn encode_transfer_script(
     recipient: &AccountAddress,
     auth_key_prefix: Vec<u8>,
-    amount: u64,
+    amount: u128,
 ) -> Script {
     Script::new(
         StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
@@ -166,7 +166,7 @@ pub fn encode_transfer_script(
         vec![
             TransactionArgument::Address(*recipient),
             TransactionArgument::U8Vector(auth_key_prefix),
-            TransactionArgument::U64(amount),
+            TransactionArgument::U128(amount),
         ],
     )
 }
@@ -175,7 +175,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     recipient: AccountAddress,
     auth_key_prefix: Vec<u8>,
     seq_num: u64,
-    amount: u64,
+    amount: u128,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
         TransactionPayload::Script(encode_transfer_script(&recipient, auth_key_prefix, amount)),
@@ -267,7 +267,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U64(chain_config.reward_per_uncle_percent),
                 TransactionArgument::U64(chain_config.min_time_target),
                 TransactionArgument::U64(chain_config.max_uncles_per_block),
-                TransactionArgument::U64(chain_config.total_supply),
+                TransactionArgument::U128(chain_config.total_supply),
                 TransactionArgument::U64(pre_mine_percent),
                 TransactionArgument::U8Vector(chain_config.parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),

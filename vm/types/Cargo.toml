@@ -23,4 +23,4 @@ scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-crypto = { path = "../../commons/crypto"}
 
 [dev-dependencies]
-
+serde_json = { version="1.0", features = ["arbitrary_precision"] }

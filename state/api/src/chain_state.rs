@@ -249,7 +249,7 @@ impl<'a> AccountStateReader<'a> {
         C::fetch_config(self.reader)
     }
 
-    pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u64>> {
+    pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u128>> {
         self.get_balance_by_type(address, &stc_type_tag())
     }
 
@@ -258,7 +258,7 @@ impl<'a> AccountStateReader<'a> {
         &self,
         address: &AccountAddress,
         type_tag: &TypeTag,
-    ) -> Result<Option<u64>> {
+    ) -> Result<Option<u128>> {
         Ok(self
             .reader
             .get(&AccessPath::new(
@@ -269,13 +269,13 @@ impl<'a> AccountStateReader<'a> {
                 Some(bytes) => Ok(Some(scs::from_bytes::<BalanceResource>(bytes.as_slice())?)),
                 None => Ok(None),
             })?
-            .map(|resource| resource.coin()))
+            .map(|resource| resource.token()))
     }
 
     /// Get all balance of account
     /// TODO: rename to get_balance.
     /// For now, we only return STC.
-    pub fn get_balances(&self, address: &AccountAddress) -> Result<HashMap<String, u64>> {
+    pub fn get_balances(&self, address: &AccountAddress) -> Result<HashMap<String, u128>> {
         let mut result = HashMap::new();
         let balance = self
             .get_balance_by_type(&address, &stc_type_tag())

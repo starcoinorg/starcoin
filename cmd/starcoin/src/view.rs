@@ -36,13 +36,13 @@ pub struct AccountWithStateView {
     // hex encoded bytes
     pub auth_key_prefix: String,
     pub sequence_number: Option<u64>,
-    pub balances: HashMap<String, u64>,
+    pub balances: HashMap<String, u128>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountView {
     pub sequence_number: Option<u64>,
-    pub balance: Option<u64>,
+    pub balance: Option<u128>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -208,7 +208,7 @@ impl From<ContractEvent> for EventView {
         } else if event.type_tag() == &TypeTag::Struct(MintEvent::struct_tag()) {
             if let Ok(mint_event) = MintEvent::try_from_bytes(&event.event_data()) {
                 let amount_view =
-                    AmountView::new(mint_event.amount(), mint_event.currency_code().as_str());
+                    AmountView::new(mint_event.amount(), mint_event.token_code().as_str());
                 Ok(EventDataView::Mint {
                     amount: amount_view,
                 })
@@ -250,15 +250,15 @@ impl From<&Vec<u8>> for BytesView {
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct AmountView {
-    pub amount: u64,
-    pub currency: String,
+    pub amount: u128,
+    pub token_code: String,
 }
 
 impl AmountView {
-    fn new(amount: u64, currency: &str) -> Self {
+    fn new(amount: u128, token_code: &str) -> Self {
         Self {
             amount,
-            currency: currency.to_string(),
+            token_code: token_code.to_string(),
         }
     }
 }

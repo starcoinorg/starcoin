@@ -253,15 +253,25 @@ impl StarcoinVM {
     ) -> Result<TransactionOutput, VMStatus> {
         let mut session = self.move_vm.new_session(remote_cache);
 
-        // genesis txn skip check gas and txn prologue.
-        if !remote_cache.is_genesis() {
+        {
             // Run the validation logic
             cost_strategy.disable_metering();
-            //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
-            self.check_gas(txn_data)?;
-            self.run_prologue(&mut session, cost_strategy, &txn_data)?;
+            // genesis txn skip check gas and txn prologue.
+            if !remote_cache.is_genesis() {
+                //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
+                self.check_gas(txn_data)?;
+                self.run_prologue(&mut session, cost_strategy, &txn_data)?;
+            }
         }
         {
+            // Genesis txn not enable gas charge.
+            if !remote_cache.is_genesis() {
+                cost_strategy.enable_metering();
+            }
+            cost_strategy
+                .charge_intrinsic_gas(txn_data.transaction_size())
+                .map_err(|e| e.into_vm_status())?;
+
             let package_address = package.package_address();
             for module in package.modules() {
                 let compiled_module = match CompiledModule::deserialize(module.code()) {
@@ -326,11 +336,7 @@ impl StarcoinVM {
                     .execute_script(s, ty_args, args, sender, cost_strategy)
                     .map_err(|e| e.into_vm_status())?
             }
-            let gas_usage = txn_data
-                .max_gas_amount()
-                .sub(cost_strategy.remaining_gas())
-                .get();
-            TXN_EXECUTION_GAS_USAGE.observe(gas_usage as f64);
+            charge_global_write_gas_usage(cost_strategy, &session)?;
 
             cost_strategy.disable_metering();
             self.success_transaction_cleanup(
@@ -378,11 +384,7 @@ impl StarcoinVM {
                 )
                 .map_err(|e| e.into_vm_status())?;
 
-            let gas_usage = txn_data
-                .max_gas_amount()
-                .sub(cost_strategy.remaining_gas())
-                .get();
-            TXN_EXECUTION_GAS_USAGE.observe(gas_usage as f64);
+            charge_global_write_gas_usage(cost_strategy, &session)?;
 
             cost_strategy.disable_metering();
             self.success_transaction_cleanup(
@@ -632,7 +634,6 @@ impl StarcoinVM {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
                         let output = self.execute_user_transaction(transaction, &mut data_cache);
-
                         // only need to check for user transactions.
                         if check_gas {
                             match gas_left.checked_sub(output.gas_used()) {
@@ -642,9 +643,17 @@ impl StarcoinVM {
                         }
 
                         if let TransactionStatus::Keep(_) = output.status() {
+                            if !state_view.is_genesis() && output.gas_used() == 0 {
+                                warn!("Keep transaction gas used must not be zero");
+                                //TODO add a debug asset
+                                // debug_assert_ne!(
+                                //     output.gas_used(),
+                                //     0,
+                                //     "Keep transaction gas used must not be zero"
+                                // );
+                            }
                             data_cache.push_write_set(output.write_set())
                         }
-
                         result.push(output);
                     }
                 }
@@ -745,6 +754,27 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
     blocks
 }
 
+pub(crate) fn charge_global_write_gas_usage<R: RemoteCache>(
+    cost_strategy: &mut CostStrategy,
+    session: &Session<R>,
+) -> Result<(), VMStatus> {
+    let total_cost = session.num_mutated_accounts()
+        * cost_strategy
+            .cost_table()
+            .gas_constants
+            .global_memory_per_byte_write_cost
+            .mul(
+                cost_strategy
+                    .cost_table()
+                    .gas_constants
+                    .default_account_size,
+            )
+            .get();
+    cost_strategy
+        .deduct_gas(GasUnits::new(total_cost))
+        .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())
+}
+
 pub(crate) fn discard_error_output(err: VMStatus) -> TransactionOutput {
     info!("discard error output: {:?}", err);
     // Since this transaction will be discarded, no writeset will be included.
@@ -836,8 +866,8 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: RemoteCache>(
 
     let effects = session.finish().map_err(|e| e.into_vm_status())?;
     let (write_set, events) = txn_effects_to_writeset_and_events_cached(ap_cache, effects)?;
-    //TODO add gas usage metric.
-    //TXN_TOTAL_GAS_USAGE.observe(gas_used as f64);
+
+    TXN_EXECUTION_GAS_USAGE.observe(gas_used as f64);
 
     Ok(TransactionOutput::new(
         write_set,

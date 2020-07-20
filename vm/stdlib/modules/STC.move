@@ -1,11 +1,15 @@
 address 0x1{
 
 module STC {
-    use 0x1::Token;
+    use 0x1::Token::{Self, Token};
     use 0x1::Signer;
     use 0x1::CoreAddresses;
 
     struct STC { }
+
+    resource struct SharedBurnCapability{
+        cap: Token::BurnCapability<STC>,
+    }
 
     public fun initialize(account: &signer) {
         assert(Signer::address_of(account) == token_address(), 0);
@@ -16,14 +20,18 @@ module STC {
             1000,    // fractional_part = 10^3
         );
 
-        // TODO: whether STC should provide burn cap.
-        // let burn_cap = Token::remove_burn_capability<STC>(&t, token_address());
-        // Token::destroy_burn_capability(burn_cap);
+        let burn_cap = Token::remove_burn_capability<STC>(account);
+        move_to(account, SharedBurnCapability{cap: burn_cap});
     }
 
     /// Returns true if `TokenType` is `STC::STC`
     public fun is_stc<TokenType>(): bool {
         Token::is_registered_in<TokenType>(CoreAddresses::GENESIS_ACCOUNT())
+    }
+
+    public fun burn(token: Token<STC>) acquires SharedBurnCapability{
+        let cap = borrow_global<SharedBurnCapability>(token_address());
+        Token::burn_with_capability(&cap.cap, token);
     }
 
     public fun token_address(): address {

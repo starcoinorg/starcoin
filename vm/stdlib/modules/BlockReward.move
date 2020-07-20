@@ -21,11 +21,11 @@ module BlockReward {
 
     struct RewardInfo {
         height: u64,
-        reward: u64,
+        reward: u128,
         miner: address,
     }
 
-    public fun initialize(account: &signer, reward_balance: u64, reward_delay: u64) {
+    public fun initialize(account: &signer, reward_balance: u128, reward_delay: u64) {
         assert(Timestamp::is_genesis(), 1);
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
         assert(reward_delay > 0, 4);
@@ -40,7 +40,7 @@ module BlockReward {
         });
     }
 
-    fun withdraw(amount: u64): Token<STC> acquires BlockReward {
+    fun withdraw(amount: u128): Token<STC> acquires BlockReward {
         let block_reward = borrow_global_mut<BlockReward>(CoreAddresses::GENESIS_ACCOUNT());
         let real_amount = if (Token::value<STC>(&block_reward.balance) < amount) {
             Token::value<STC>(&block_reward.balance)
@@ -50,7 +50,7 @@ module BlockReward {
         Token::withdraw<STC>(&mut block_reward.balance, real_amount)
     }
 
-    public fun process_block_reward(account: &signer, current_height: u64, current_reward: u64,
+    public fun process_block_reward(account: &signer, current_height: u64, current_reward: u128,
         current_author: address, auth_key_prefix: vector<u8>) acquires RewardQueue, BlockReward {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
 

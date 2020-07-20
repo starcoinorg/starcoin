@@ -4,10 +4,11 @@ module Token {
     use 0x1::Signer;
     use 0x1::Vector;
     use 0x1::LCS;
+
     /// The token has a `TokenType` color that tells us what token the
     /// `value` inside represents.
     resource struct Token<TokenType> {
-        value: u64,
+        value: u128,
     }
 
     /// A minting capability allows tokens of type `TokenType` to be minted
@@ -17,14 +18,14 @@ module Token {
 
     struct MintEvent {
         /// funds added to the system
-        amount: u64,
+        amount: u128,
         /// full info of Token.
         token_code: vector<u8>,
     }
 
     struct BurnEvent {
         /// funds removed from the system
-        amount: u64,
+        amount: u128,
         /// full info of Token
         token_code: vector<u8>,
     }
@@ -35,25 +36,22 @@ module Token {
         total_value: u128,
         /// The scaling factor for the token (i.e. the amount to multiply by
         /// to get to the human-readable reprentation for this token). e.g. 10^6 for Token1
-        scaling_factor: u64,
+        scaling_factor: u128,
         /// The smallest fractional part (number of decimal places) to be
         /// used in the human-readable representation for the token (e.g.
         /// 10^2 for Token1 cents)
-        fractional_part: u64,
-        // The code symbol for this `TokenType`. UTF-8 encoded.
-        // e.g. for "STC" this is x"4C4252". No character limit.
-        // token_code: TokenCode,
+        fractional_part: u128,
         /// event stream for minting
         mint_events: Event::EventHandle<MintEvent>,
         /// event stream for burning
         burn_events: Event::EventHandle<BurnEvent>,
     }
 
-    /// Register the type `TokenType` as a Token.
+    /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
     public fun register_token<TokenType>(
         account: &signer,
-        scaling_factor: u64,
-        fractional_part: u64,
+        scaling_factor: u128,
+        fractional_part: u128,
     ) {
         let (token_address, _, _) = name_of<TokenType>();
         assert(Signer::address_of(account) == token_address, 401);
@@ -86,7 +84,6 @@ module Token {
         let MintCapability<TokenType>{  } = cap;
     }
 
-
     public fun remove_burn_capability<TokenType>(
         signer: &signer,
     ): BurnCapability<TokenType> acquires BurnCapability {
@@ -96,8 +93,7 @@ module Token {
     public fun add_burn_capability<TokenType>(signer: &signer,
         cap: BurnCapability<TokenType>)  {
             move_to(signer, cap)
-        }
-
+    }
 
     public fun destroy_burn_capability<TokenType>(cap: BurnCapability<TokenType>) {
         let BurnCapability<TokenType>{  } = cap;
@@ -107,7 +103,7 @@ module Token {
     /// Fails if the sender does not have a published MintCapability.
     public fun mint<TokenType>(
         account: &signer,
-        amount: u64,
+        amount: u128,
     ): Token<TokenType> acquires TokenInfo, MintCapability {
         mint_with_capability(
             borrow_global<MintCapability<TokenType>>(Signer::address_of(account)),
@@ -120,10 +116,9 @@ module Token {
     /// `borrow_sender_mint_capability`
     public fun mint_with_capability<TokenType>(
         _capability: &MintCapability<TokenType>,
-        value: u64,
+        value: u128,
     ): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
-        // assert_is_token<TokenType>();
         let (token_address, module_name, token_name) = name_of<TokenType>();
         let info = borrow_global_mut<TokenInfo<TokenType>>(token_address);
         info.total_value = info.total_value + (value as u128);
@@ -171,7 +166,7 @@ module Token {
     }
 
     /// Public accessor for the value of a token
-    public fun value<TokenType>(token: &Token<TokenType>): u64 {
+    public fun value<TokenType>(token: &Token<TokenType>): u128 {
         token.value
     }
 
@@ -179,7 +174,7 @@ module Token {
     /// It leverages `Self::withdraw` for any verifications of the values
     public fun split<TokenType>(
         token: Token<TokenType>,
-        amount: u64,
+        amount: u128,
     ): (Token<TokenType>, Token<TokenType>) {
         let other = withdraw(&mut token, amount);
         (token, other)
@@ -191,7 +186,7 @@ module Token {
     /// Fails if the tokens value is less than `amount`
     public fun withdraw<TokenType>(
         token: &mut Token<TokenType>,
-        amount: u64,
+        amount: u128,
     ): Token<TokenType> {
         // Check that `amount` is less than the token's value
         assert(token.value >= amount, 10);
@@ -226,22 +221,19 @@ module Token {
         assert(value == 0, 5)
     }
 
-
     /// Returns the scaling factor for the `TokenType` token.
-    public fun scaling_factor<TokenType>(): u64
+    public fun scaling_factor<TokenType>(): u128
     acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
 
     /// Returns the representable fractional part for the `TokenType` token.
-    public fun fractional_part<TokenType>(): u64
+    public fun fractional_part<TokenType>(): u128
     acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).fractional_part
     }
-
-
 
     /// Return the total amount of token minted of type `TokenType`
     public fun market_cap<TokenType>(): u128 acquires TokenInfo {

@@ -31,7 +31,7 @@ pub struct TransferOpt {
     /// if `to` account not exist on chain, must provide public_key of the account.
     public_key: Option<String>,
     #[structopt(short = "v")]
-    amount: u64,
+    amount: u128,
     #[structopt(
         short = "g",
         long = "max-gas",

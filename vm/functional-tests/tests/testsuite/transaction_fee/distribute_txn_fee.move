@@ -26,7 +26,7 @@ use 0x1::TransactionFee;
 fun distribute_fees(account: &signer) {
     let coin = TransactionFee::distribute_transaction_fees<STC>(account);
     let value = Token::value<STC>(&coin);
-    assert( value == 200, value);
+    assert( value == 200, 10000);
     Account::deposit_to_sender(account, coin);
 }
 }

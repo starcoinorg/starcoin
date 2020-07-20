@@ -69,7 +69,7 @@ impl FakeExecutor {
 
     /// Creates a number of [`Account`] instances all with the same balance and sequence number,
     /// and publishes them to this executor's data store.
-    pub fn create_accounts(&mut self, size: usize, balance: u64, seq_num: u64) -> Vec<Account> {
+    pub fn create_accounts(&mut self, size: usize, balance: u128, seq_num: u64) -> Vec<Account> {
         let mut accounts: Vec<Account> = Vec::with_capacity(size);
         for _i in 0..size {
             let account_data = AccountData::new(balance, seq_num);

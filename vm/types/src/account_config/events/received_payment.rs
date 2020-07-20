@@ -24,23 +24,22 @@ pub static ACCOUNT_RECEIVED_EVENT_PATH: Lazy<Vec<u8>> = Lazy::new(|| {
 /// Struct that represents a ReceivedPaymentEvent.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReceivedPaymentEvent {
-    amount: u64,
-    currency_code: Identifier,
+    amount: u128,
+    token_code: Identifier,
     sender: AccountAddress,
     metadata: Vec<u8>,
 }
 
 impl ReceivedPaymentEvent {
-    // TODO: should only be used for libra client testing and be removed eventually
     pub fn new(
-        amount: u64,
-        currency_code: Identifier,
+        amount: u128,
+        token_code: Identifier,
         sender: AccountAddress,
         metadata: Vec<u8>,
     ) -> Self {
         Self {
             amount,
-            currency_code,
+            token_code,
             sender,
             metadata,
         }
@@ -56,7 +55,7 @@ impl ReceivedPaymentEvent {
     }
 
     /// Get the amount sent or received
-    pub fn amount(&self) -> u64 {
+    pub fn amount(&self) -> u128 {
         self.amount
     }
 
@@ -67,7 +66,7 @@ impl ReceivedPaymentEvent {
 
     /// Return the currency code that the payment was made in.
     pub fn currency_code(&self) -> &IdentStr {
-        &self.currency_code
+        &self.token_code
     }
 }
 
