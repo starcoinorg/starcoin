@@ -5,7 +5,7 @@ fun main<TokenType>(
     account: &signer,
     payee: address,
     auth_key_prefix: vector<u8>,
-    amount: u64,
+    amount: u128,
     metadata: vector<u8>,
     metadata_signature: vector<u8>
 ) {

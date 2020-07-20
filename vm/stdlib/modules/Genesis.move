@@ -22,7 +22,7 @@ module Genesis {
                          uncle_rate_target:u64,epoch_time_target: u64,
                          reward_half_epoch: u64, init_block_time_target: u64,
                          block_difficulty_window: u64, min_time_target:u64,
-                         reward_per_uncle_percent: u64, max_uncles_per_block:u64, total_supply: u64,
+                         reward_per_uncle_percent: u64, max_uncles_per_block:u64, total_supply: u128,
                          pre_mine_percent:u64, parent_hash: vector<u8>,
                          association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
    ){
@@ -47,12 +47,12 @@ module Genesis {
         let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), copy dummy_auth_key_prefix);
         Account::accept_token<STC>(&association);
 
-        let association_balance = total_supply * pre_mine_percent / 100;
+        let association_balance = total_supply * (pre_mine_percent as u128) / 100;
         if (association_balance > 0) {
              Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), association_balance);
         };
         let miner_reward_balance = total_supply - association_balance;
-        let init_reward_per_epoch = miner_reward_balance / (reward_half_epoch * 2);
+        let init_reward_per_epoch = miner_reward_balance / (reward_half_epoch * 2 as u128);
         Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_difficulty_window,
                                 init_reward_per_epoch, reward_per_uncle_percent, min_time_target, max_uncles_per_block);
 

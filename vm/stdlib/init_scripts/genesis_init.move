@@ -7,7 +7,7 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
                  reward_half_epoch: u64, init_block_time_target: u64,
                  block_difficulty_window: u64, reward_per_uncle_percent: u64,
                  min_time_target:u64, max_uncles_per_block:u64,
-                 total_supply: u64, pre_mine_percent:u64, parent_hash: vector<u8>,
+                 total_supply: u128, pre_mine_percent:u64, parent_hash: vector<u8>,
                  association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
                  ) {
     Genesis::initialize(publishing_option, instruction_schedule,

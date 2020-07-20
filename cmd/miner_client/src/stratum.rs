@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 use anyhow::Result;
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
 use byteorder::{ByteOrder, LittleEndian};
@@ -7,7 +10,7 @@ use futures::{SinkExt, StreamExt};
 pub use jsonrpc_core::types::{
     id, request, response, version, Error as Jsonrpc_err, Id, MethodCall, Params, Value, Version,
 };
-use jsonrpc_core::Output;
+use jsonrpc_core::{Output, Response};
 use logger::prelude::*;
 use serde_json::error::Error as JsonError;
 use serde_json::{self, json};
@@ -51,12 +54,15 @@ impl StratumClient {
             let reader = BufReader::new(&*tcp_stream);
             let mut lines = reader.lines();
             while let Some(line) = lines.next().await {
-                let response: String = line.unwrap();
-                debug!("Receive from stratum: {}", &response);
-                if let Ok(job) = StratumClient::process_response(response) {
-                    if let Err(e) = job_tx.send(job).await {
-                        error!("stratum subscribe job tx send failed:{:?}", e);
+                let request: String = line.unwrap();
+                debug!("Receive from stratum: {}", &request);
+                match process_request(request.as_str()) {
+                    Ok(job) => {
+                        if let Err(e) = job_tx.send(job).await {
+                            error!("stratum subscribe job tx send failed:{:?}", e);
+                        }
                     }
+                    Err(err) => error!("Process request {:?} error: {:?}", request, err),
                 }
             }
         };
@@ -80,30 +86,13 @@ impl StratumClient {
         let params = vec![json!("miner"), json!("")];
         let method = "mining.authorize".to_owned();
         self.request(method, params, 0).await?;
-        let mut buf = String::new();
-        BufReader::new(&*tcp_stream).read_line(&mut buf).await?;
-        let output =
-            serde_json::from_slice::<Output>(buf.as_bytes()).map_err(StratumError::Json)?;
-        let authed = parse_response::<bool>(output)?;
+        let mut auth_response = String::new();
+        BufReader::new(&*tcp_stream)
+            .read_line(&mut auth_response)
+            .await?;
+        debug!("auth response: {}", auth_response);
+        let authed = parse_response::<bool>(auth_response.as_str())?;
         Ok(authed)
-    }
-
-    fn process_response(resp: String) -> Result<(Vec<u8>, U256)> {
-        let output =
-            serde_json::from_slice::<MethodCall>(resp.as_bytes()).map_err(StratumError::Json)?;
-        let params: Params = output.params.parse()?;
-        if let Params::Array(mut values) = params {
-            let difficulty: U256 = values
-                .pop()
-                .unwrap()
-                .as_str()
-                .unwrap()
-                .to_string()
-                .parse()?;
-            let header = values.pop().unwrap().as_str().unwrap().as_bytes().to_vec();
-            return Ok((header, difficulty));
-        }
-        Err(anyhow::anyhow!("mining.notify with bad params"))
     }
 
     async fn request(&mut self, method: String, params: Vec<Value>, id: u64) -> Result<()> {
@@ -127,16 +116,43 @@ impl StratumClient {
 #[derive(Error, Debug)]
 pub enum StratumError {
     #[error("json error")]
-    Json(JsonError),
+    Json(#[from] JsonError),
     #[error("rpc failed")]
     Fail(Jsonrpc_err),
 }
 
-fn parse_response<T: serde::de::DeserializeOwned>(output: Output) -> Result<T, StratumError> {
-    match output {
-        Output::Success(success) => {
-            serde_json::from_value::<T>(success.result).map_err(StratumError::Json)
+pub(crate) fn parse_response<T: serde::de::DeserializeOwned>(
+    resp: &str,
+) -> Result<T, StratumError> {
+    let response = Response::from_json(resp).map_err(StratumError::Json)?;
+    match response {
+        Response::Single(output) => match output {
+            Output::Success(success) => {
+                serde_json::from_value::<T>(success.result).map_err(StratumError::Json)
+            }
+            Output::Failure(failure) => Err(StratumError::Fail(failure.error)),
+        },
+        Response::Batch(outputs) => {
+            error!("Unsupported batch response: {:?}", outputs);
+            Err(StratumError::Fail(Jsonrpc_err::parse_error()))
         }
-        Output::Failure(failure) => Err(StratumError::Fail(failure.error)),
     }
+}
+
+pub(crate) fn process_request(req: &str) -> Result<(Vec<u8>, U256)> {
+    let value = serde_json::from_str::<Value>(req).map_err(StratumError::Json)?;
+    let request = serde_json::from_value::<MethodCall>(value).map_err(StratumError::Json)?;
+    let params: Params = request.params.parse()?;
+    if let Params::Array(mut values) = params {
+        let difficulty: U256 = values
+            .pop()
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string()
+            .parse()?;
+        let header = values.pop().unwrap().as_str().unwrap().as_bytes().to_vec();
+        return Ok((header, difficulty));
+    }
+    Err(anyhow::anyhow!("mining.notify with bad params"))
 }

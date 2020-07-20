@@ -8,7 +8,7 @@ use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
 use chain::BlockChain;
-use config::{NodeConfig, PacemakerStrategy};
+use config::NodeConfig;
 use crypto::hash::HashValue;
 use futures::{channel::mpsc, prelude::*};
 use logger::prelude::*;
@@ -68,17 +68,13 @@ where
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
             ctx.add_message_stream(receiver);
-            match &config.miner.pacemaker_strategy {
-                PacemakerStrategy::HeadBlock => {
-                    let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender);
-                    pacemaker.start();
-                }
-                PacemakerStrategy::Ondemand => {
-                    let transaction_receiver = txpool.subscribe_txns();
-
-                    OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
-                }
-            };
+            let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender.clone());
+            pacemaker.start();
+            //TODO should start OndemandPacemaker in other network?
+            if config.net().is_dev() {
+                let transaction_receiver = txpool.subscribe_txns();
+                OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
+            }
 
             let miner = miner::Miner::new(bus.clone(), config.clone());
 

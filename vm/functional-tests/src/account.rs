@@ -357,28 +357,28 @@ impl Default for Account {
 /// Struct that represents an account balance resource for tests.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Balance {
-    coin: u64,
+    token: u128,
 }
 
 impl Balance {
     /// Create a new balance with amount `balance`
-    pub fn new(coin: u64) -> Self {
-        Self { coin }
+    pub fn new(token: u128) -> Self {
+        Self { token }
     }
 
     /// Retrieve the balance inside of this
-    pub fn coin(&self) -> u64 {
-        self.coin
+    pub fn token(&self) -> u128 {
+        self.token
     }
 
     /// Returns the Move Value for the account balance
     pub fn to_value(&self) -> Value {
-        Value::struct_(Struct::pack(vec![Value::u64(self.coin)], true))
+        Value::struct_(Struct::pack(vec![Value::u128(self.token)], true))
     }
 
     /// Returns the value layout for the account balance
     pub fn layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::U64])
+        MoveStructLayout::new(vec![MoveTypeLayout::U128])
     }
 }
 
@@ -437,7 +437,7 @@ impl AccountData {
     /// Creates a new `AccountData` with a new account.
     ///
     /// Most tests will want to use this constructor.
-    pub fn new(balance: u64, sequence_number: u64) -> Self {
+    pub fn new(balance: u128, sequence_number: u64) -> Self {
         Self::with_account(
             Account::new(),
             balance,
@@ -453,7 +453,7 @@ impl AccountData {
     /// Creates a new `AccountData` with the provided account.
     pub fn with_account(
         account: Account,
-        balance: u64,
+        balance: u128,
         balance_currency_code: Identifier,
         sequence_number: u64,
     ) -> Self {
@@ -473,7 +473,7 @@ impl AccountData {
     pub fn with_keypair(
         privkey: Ed25519PrivateKey,
         pubkey: Ed25519PublicKey,
-        balance: u64,
+        balance: u128,
         balance_currency_code: Identifier,
         sequence_number: u64,
     ) -> Self {
@@ -484,7 +484,7 @@ impl AccountData {
     /// Creates a new `AccountData` with custom parameters.
     pub fn with_account_and_event_counts(
         account: Account,
-        balance: u64,
+        balance: u128,
         balance_currency_code: Identifier,
         sequence_number: u64,
         sent_events_count: u64,
@@ -529,7 +529,7 @@ impl AccountData {
 
     pub fn sent_payment_event_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
-            MoveTypeLayout::U64,
+            MoveTypeLayout::U128,
             MoveTypeLayout::Address,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
         ])
@@ -537,7 +537,7 @@ impl AccountData {
 
     pub fn received_payment_event_type() -> MoveStructLayout {
         MoveStructLayout::new(vec![
-            MoveTypeLayout::U64,
+            MoveTypeLayout::U128,
             MoveTypeLayout::Address,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
         ])
@@ -674,11 +674,11 @@ impl AccountData {
     }
 
     /// Returns the initial balance.
-    pub fn balance(&self, currency_code: &IdentStr) -> u64 {
+    pub fn balance(&self, currency_code: &IdentStr) -> u128 {
         self.balances
             .get(currency_code)
             .expect("get balance by currency_code fail")
-            .coin()
+            .token()
     }
 
     /// Returns the initial sequence number.
@@ -777,12 +777,12 @@ pub fn peer_to_peer_txn(
     sender: &Account,
     receiver: &Account,
     seq_num: u64,
-    transfer_amount: u64,
+    transfer_amount: u128,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*receiver.address()));
     args.push(TransactionArgument::U8Vector(receiver.auth_key_prefix()));
-    args.push(TransactionArgument::U64(transfer_amount));
+    args.push(TransactionArgument::U128(transfer_amount));
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
@@ -822,12 +822,12 @@ pub fn mint_txn(
 pub fn create_account_txn_sent_as_association(
     new_account: &Account,
     seq_num: u64,
-    initial_amount: u64,
+    initial_amount: u128,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*new_account.address()));
     args.push(TransactionArgument::U8Vector(new_account.auth_key_prefix()));
-    args.push(TransactionArgument::U64(initial_amount));
+    args.push(TransactionArgument::U128(initial_amount));
 
     create_signed_txn_with_association_account(
         TransactionPayload::Script(Script::new(

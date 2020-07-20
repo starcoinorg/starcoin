@@ -7,11 +7,12 @@ license = "GPL-3.0"
 [dependencies]
 ethereum-types = "0.6.0"
 keccak-hash = "0.2.0"
-jsonrpc-core = "12.0.0"
-jsonrpc-tcp-server = "12.0.0"
+jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
+jsonrpc-tcp-server = "14.0"
 log = "0.4"
 parking_lot = "0.11"
 starcoin-logger = { path = "../../commons/logger"}
+starcoin-config = { path = "../../config"}
 
 
 [dev-dependencies]

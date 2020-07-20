@@ -160,6 +160,7 @@ impl Genesis {
             .pop()
             .expect("Execute output must exist.");
         let (write_set, events, gas_used, _, status) = output.into_inner();
+        assert_eq!(gas_used, 0, "Genesis txn output's gas_used must be zero");
         ensure!(
             status.vm_status().status_code() == StatusCode::EXECUTED,
             "Genesis txn execute fail for: {:?}",

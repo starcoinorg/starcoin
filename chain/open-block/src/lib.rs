@@ -5,14 +5,7 @@ use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use std::{
-    convert::TryInto,
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
-use storage::Store;
-use traits::ExcludedTxns;
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
@@ -20,7 +13,15 @@ use types::{
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
+    vm_error::StatusCode,
 };
+use std::{
+    convert::TryInto,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
+use storage::Store;
+use traits::ExcludedTxns;
 
 pub struct OpenedBlock {
     previous_header: BlockHeader,
@@ -158,6 +159,13 @@ impl OpenedBlock {
                     discard_txns.push(txn.try_into().expect("user txn"));
                 }
                 TransactionStatus::Keep(_) => {
+                    if output.status().vm_status().status_code() != StatusCode::EXECUTED {
+                        debug!(
+                            "txn {:?} execute error: {:?}",
+                            txn_hash,
+                            output.status().vm_status()
+                        );
+                    }
                     let gas_used = output.gas_used();
                     self.push_txn_and_state(txn_hash, output)?;
                     self.gas_used += gas_used;
