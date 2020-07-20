@@ -228,10 +228,11 @@ where
         )?;
 
         let mut uncles = HashSet::new();
-        for branch_header_id in &self.startup_info.branches {
+        let branchs = self.find_available_branch(epoch_start_number)?;
+        for branch_header_id in branchs {
             let available_uncles = self.find_available_uncles_in_branch(
                 epoch_start_number,
-                *branch_header_id,
+                branch_header_id,
                 &exists_uncles,
             )?;
             for uncle in available_uncles {
@@ -245,6 +246,67 @@ where
             }
         }
         Ok(uncles.into_iter().collect())
+    }
+
+    fn find_available_branch(&self, epoch_start_number: BlockNumber) -> Result<Vec<HashValue>> {
+        let mut result = Vec::new();
+        let master_block_headers = self.master_blocks_since(epoch_start_number)?;
+
+        for branch_header_id in &self.startup_info.branches {
+            if self.check_common_ancestor(
+                *branch_header_id,
+                epoch_start_number,
+                &master_block_headers,
+            )? {
+                result.push(*branch_header_id)
+            }
+        }
+        Ok(result)
+    }
+
+    fn master_blocks_since(&self, epoch_start_number: BlockNumber) -> Result<HashSet<BlockHeader>> {
+        let mut result = HashSet::new();
+
+        let mut id = self.startup_info.master;
+
+        loop {
+            let block_header = self.storage.get_block_header_by_hash(id)?;
+
+            if let Some(block_header) = block_header {
+                id = block_header.parent_hash;
+                if block_header.number <= epoch_start_number {
+                    break;
+                }
+                result.insert(block_header);
+            }
+        }
+        Ok(result)
+    }
+
+    fn check_common_ancestor(
+        &self,
+        header_id: HashValue,
+        epoch_start_number: BlockNumber,
+        master_block_headers: &HashSet<BlockHeader>,
+    ) -> Result<bool> {
+        let mut id = header_id;
+
+        let mut result = false;
+        loop {
+            let block_header = self.storage.get_block_header_by_hash(id)?;
+
+            if let Some(block_header) = block_header {
+                id = block_header.parent_hash;
+                if block_header.number <= epoch_start_number {
+                    break;
+                }
+                if master_block_headers.contains(&block_header) {
+                    result = true;
+                    break;
+                }
+            }
+        }
+        Ok(result)
     }
 
     fn merge_exists_uncles(
