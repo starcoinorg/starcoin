@@ -1,19 +1,23 @@
 Move prover returns: exiting with boogie verification errors
 error: abort not covered by any of the `aborts_if` clauses
 
-   ┌── tests/sources/functional/script_incorrect.move:5:1 ───
+   ┌── tests/sources/functional/script_incorrect.move:7:1 ───
    │
- 5 │ ╭ fun main<Token>() {
- 6 │ │     ScriptProvider::register<Token>();
- 7 │ │ }
+ 7 │ ╭ fun main<Token>(account: &signer) {
+ 8 │ │     ScriptProvider::register<Token>(account);
+ 9 │ │ }
    │ ╰─^
    │
-   =     at tests/sources/functional/script_incorrect.move:5:1: main (entry)
-   =     at tests/sources/functional/script_provider.move:14:5: register (entry)
-   =     at tests/sources/functional/script_provider.move:15:9: register (ABORTED)
+   =     at tests/sources/functional/script_incorrect.move:7:1: main
+   =         account = <redacted>
+   =     at tests/sources/functional/script_provider.move:17:5: register
+   =         account = <redacted>,
+   =         $t1 = <redacted>
+   =     at tests/sources/functional/script_provider.move:19:9: register
+   =     at tests/sources/functional/script_provider.move:18:24: register (ABORTED)
 
-    ┌── tests/sources/functional/script_provider.move:15:9 ───
+    ┌── tests/sources/functional/script_provider.move:18:24 ───
     │
- 15 │         Transaction::assert(Transaction::sender() == 0x1, 1);
-    │         ---------------------------------------------------- abort happened here
+ 18 │         assert(Signer::address_of(account) == 0x1, 1);
+    │                        ---------- abort happened here
     │
