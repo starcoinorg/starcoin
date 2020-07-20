@@ -284,7 +284,7 @@ fn get_transaction_parameters<'a>(
         } else {
             std::cmp::min(
                 max_number_of_gas_units.get(),
-                account_balance.coin() / gas_unit_price,
+                (account_balance.token() / gas_unit_price as u128) as u64,
             )
         }
     });

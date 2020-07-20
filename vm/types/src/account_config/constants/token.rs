@@ -10,19 +10,19 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use once_cell::sync::Lazy;
 
-pub const COIN_MODULE_NAME: &str = "Coin";
-static COIN_MODULE_IDENTIFIER: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new(COIN_MODULE_NAME).unwrap());
-static COIN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Coin").unwrap());
+pub const TOKEN_MODULE_NAME: &str = "Token";
+static TOKEN_MODULE_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new(TOKEN_MODULE_NAME).unwrap());
+static TOKEN_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Token").unwrap());
 pub static COIN_MODULE: Lazy<ModuleId> =
-    Lazy::new(|| ModuleId::new(CORE_CODE_ADDRESS, COIN_MODULE_IDENTIFIER.clone()));
+    Lazy::new(|| ModuleId::new(CORE_CODE_ADDRESS, TOKEN_MODULE_IDENTIFIER.clone()));
 
-pub fn coin_module_name() -> &'static IdentStr {
-    &*COIN_MODULE_IDENTIFIER
+pub fn token_module_name() -> &'static IdentStr {
+    &*TOKEN_MODULE_IDENTIFIER
 }
 
-pub fn coin_struct_name() -> &'static IdentStr {
-    &*COIN_STRUCT_NAME
+pub fn token_struct_name() -> &'static IdentStr {
+    &*TOKEN_STRUCT_NAME
 }
 
 // TODO: This imposes a few implied restrictions:

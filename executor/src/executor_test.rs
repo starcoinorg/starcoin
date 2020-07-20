@@ -10,7 +10,8 @@ use starcoin_functional_tests::account::{
 use starcoin_genesis::Genesis;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_transaction_builder::{
-    build_stdlib_package, create_signed_txn_with_association_account,
+    build_stdlib_package, create_signed_txn_with_association_account, StdlibScript,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::language_storage::CORE_CODE_ADDRESS;
 use starcoin_types::transaction::TransactionOutput;
@@ -22,6 +23,7 @@ use starcoin_types::{
     transaction::TransactionStatus,
     transaction::{Module, TransactionPayload},
 };
+use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::{
     parser,
     transaction::Package,
@@ -92,7 +94,10 @@ fn test_block_execute_gas_limit() -> Result<()> {
             .expect("Output must exist.")
             .gas_used()
     };
-
+    assert!(
+        transfer_txn_gas > 0,
+        "transfer_txn_gas used must not be zero."
+    );
     let block_gas_limit = 10_000;
     let max_include_txn_num: u64 = block_gas_limit / transfer_txn_gas;
     {
@@ -209,6 +214,38 @@ fn test_validate_txn() -> Result<()> {
     let txn2 = account1.sign_txn(raw_txn);
     let output = crate::validate_transaction(&chain_state, txn2);
     assert_eq!(output, None);
+    Ok(())
+}
+
+//TODO after fix gas charge bug, enable this test.
+#[ignore]
+#[stest::test]
+fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
+    let chain_state = prepare_genesis();
+
+    let sequence_number1 = get_sequence_number(account_config::association_address(), &chain_state);
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1,
+        sequence_number1,
+        50_000_000,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(VMStatus::Executed, *output1.status().vm_status());
+
+    let sequence_number2 = get_sequence_number(*account1.address(), &chain_state);
+    let txn2 = Transaction::UserTransaction(account1.create_signed_txn_with_args(
+        StdlibScript::EmptyScript.compiled_bytes().into_vec(),
+        vec![],
+        vec![TransactionArgument::U64(0)],
+        sequence_number2,
+        DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
+        1,                      // this is a default for gas
+    ));
+    let output2 = execute_and_apply(&chain_state, txn2);
+    println!("output: {:?}", output2);
+    //assert!(*output3.status().vm_status().status_type());
+    assert!(output2.gas_used() > 0, "gas used must not be zero.");
     Ok(())
 }
 
@@ -390,7 +427,7 @@ fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u6
         .unwrap_or_default()
 }
 
-fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u64 {
+fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u128 {
     let account_reader = AccountStateReader::new(chain_state.as_super());
     account_reader
         .get_balance(&address)
@@ -401,7 +438,9 @@ fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u64 {
 fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
     let stdlib_files = stdlib_files();
     let compiled_result =
-        starcoin_move_compiler::compile_source_string(code, &stdlib_files, address)
+        starcoin_move_compiler::compile_source_string_no_report(code, &stdlib_files, address)
+            .expect("compile fail")
+            .1
             .expect("compile fail");
     Module::new(compiled_result.serialize())
 }
@@ -530,7 +569,7 @@ fn get_token_balance(
     address: AccountAddress,
     state_db: &dyn ChainStateReader,
     token: String,
-) -> Result<Option<u64>> {
+) -> Result<Option<u128>> {
     let account_state_reader = AccountStateReader::new(state_db);
     let type_tag = parser::parse_type_tags(token.as_ref())?[0].clone();
     debug!("type_tag= {:?}", type_tag);

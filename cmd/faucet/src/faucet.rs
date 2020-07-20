@@ -23,7 +23,7 @@ impl Faucet {
 
     pub fn transfer(
         &self,
-        amount: u64,
+        amount: u128,
         receiver: AccountAddress,
         auth_key: Vec<u8>,
     ) -> Result<Result<(), anyhow::Error>> {

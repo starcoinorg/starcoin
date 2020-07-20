@@ -35,8 +35,8 @@ pub struct EpochResource {
     start_number: u64,
     end_number: u64,
     block_time_target: u64,
-    reward_per_epoch: u64,
-    reward_per_block: u64,
+    reward_per_epoch: u128,
+    reward_per_block: u128,
     new_epoch_events: EventHandle,
 }
 
@@ -47,8 +47,8 @@ impl EpochResource {
         start_number: u64,
         end_number: u64,
         block_time_target: u64,
-        reward_per_epoch: u64,
-        reward_per_block: u64,
+        reward_per_epoch: u128,
+        reward_per_block: u128,
         new_epoch_events: EventHandle,
     ) -> Self {
         Self {

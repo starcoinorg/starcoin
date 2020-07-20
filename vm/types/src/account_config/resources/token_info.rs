@@ -11,39 +11,28 @@ use crate::{
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::{
-    identifier::{IdentStr, Identifier},
+    identifier::Identifier,
     language_storage::{ResourceKey, StructTag},
     move_resource::MoveResource,
 };
 use serde::{Deserialize, Serialize};
 
-/// Struct that represents a CurrencyInfo resource
+/// Struct that represents a TokenInfo resource
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CurrencyInfoResource {
+pub struct TokenInfoResource {
     total_value: u128,
-    preburn_value: u64,
-    to_stc_exchange_rate: u64,
-    is_synthetic: bool,
     scaling_factor: u64,
     fractional_part: u64,
-    currency_code: Identifier,
-    can_mint: bool,
     mint_events: EventHandle,
     burn_events: EventHandle,
-    preburn_events: EventHandle,
-    cancel_burn_events: EventHandle,
 }
 
-impl MoveResource for CurrencyInfoResource {
-    const MODULE_NAME: &'static str = "Coin";
-    const STRUCT_NAME: &'static str = "CurrencyInfo";
+impl MoveResource for TokenInfoResource {
+    const MODULE_NAME: &'static str = "Token";
+    const STRUCT_NAME: &'static str = "TokenInfo";
 }
 
-impl CurrencyInfoResource {
-    pub fn currency_code(&self) -> &IdentStr {
-        &self.currency_code
-    }
-
+impl TokenInfoResource {
     pub fn scaling_factor(&self) -> u64 {
         self.scaling_factor
     }
@@ -52,23 +41,17 @@ impl CurrencyInfoResource {
         self.fractional_part
     }
 
-    pub fn convert_to_lbr(&self, amount: u64) -> u64 {
-        let mut mult = (amount as u128) * (self.to_stc_exchange_rate as u128);
-        mult >>= 32;
-        mult as u64
-    }
-
     pub fn struct_tag_for(
-        currency_module_address: AccountAddress,
-        currency_code: Identifier,
+        token_module_address: AccountAddress,
+        token_name: Identifier,
     ) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
-            module: CurrencyInfoResource::module_identifier(),
-            name: CurrencyInfoResource::struct_identifier(),
+            module: TokenInfoResource::module_identifier(),
+            name: TokenInfoResource::struct_identifier(),
             type_params: vec![type_tag_for_currency_code(
-                Some(currency_module_address),
-                currency_code,
+                Some(token_module_address),
+                token_name,
             )],
         }
     }
@@ -84,7 +67,7 @@ impl CurrencyInfoResource {
         };
         let resource_key = ResourceKey::new(
             resource_address,
-            CurrencyInfoResource::struct_tag_for(currency_module_address, currency_code),
+            TokenInfoResource::struct_tag_for(currency_module_address, currency_code),
         );
         AccessPath::resource_access_path(&resource_key)
     }
@@ -93,7 +76,7 @@ impl CurrencyInfoResource {
         currency_module_address: AccountAddress,
         currency_code: Identifier,
     ) -> Vec<u8> {
-        AccessPath::resource_access_vec(&CurrencyInfoResource::struct_tag_for(
+        AccessPath::resource_access_vec(&TokenInfoResource::struct_tag_for(
             currency_module_address,
             currency_code,
         ))

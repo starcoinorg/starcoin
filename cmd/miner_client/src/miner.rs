@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 use crate::stratum::StratumClient;
 use crate::worker::{start_worker, WorkerController, WorkerMessage};
 use actix::{Actor, Arbiter, Context, System};

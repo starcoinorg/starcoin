@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use config::{ConsensusStrategy, MinerConfig};
 use futures::executor;
 use logger::{self, prelude::*};
