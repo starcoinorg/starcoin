@@ -10,7 +10,7 @@ use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
-use traits::{ChainReader, ChainWriter, Consensus};
+use traits::{ChainReader, ChainWriter, ConnectBlockResult, Consensus};
 use txpool::TxPool;
 use types::account_address;
 use types::transaction::authenticator::AuthenticationKey;
@@ -50,24 +50,25 @@ async fn gen_master_chain(
     if times > 0 {
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
+            println!("startup_info: {:?}", startup_info);
             let block_chain = BlockChain::<DevConsensus>::new(
                 node_config.clone(),
                 startup_info.master,
                 storage.clone(),
             )
             .unwrap();
-            let block_template = chain
-                .clone()
+            let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
                     Some(miner_account.get_auth_key().prefix().to_vec()),
                     None,
                     Vec::new(),
+                    vec![],
                 )
-                .await
                 .unwrap();
             let block = DevConsensus::create_block(&block_chain, block_template).unwrap();
-            let _ = chain.clone().try_connect(block).await.unwrap();
+            let connect_result = chain.clone().try_connect(block).await.unwrap();
+            assert_eq!(connect_result, ConnectBlockResult::SUCCESS);
             if delay {
                 Delay::new(Duration::from_millis(1000)).await;
             }
