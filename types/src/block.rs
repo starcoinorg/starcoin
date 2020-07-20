@@ -330,6 +330,10 @@ impl Block {
         }
     }
 
+    pub fn new_with_body(header: BlockHeader, body: BlockBody) -> Self {
+        Block { header, body }
+    }
+
     pub fn id(&self) -> HashValue {
         self.header.id()
     }

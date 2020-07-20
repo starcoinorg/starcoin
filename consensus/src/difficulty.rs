@@ -27,26 +27,29 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let epoch = ArgonConsensus::epoch(chain)?;
     let blocks = {
         let mut blocks: Vec<BlockDiffInfo> = vec![];
-        let calculate_window = if current_header.number < epoch.window() {
-            current_header.number
-        } else {
-            epoch.window()
-        };
-        blocks.push(BlockDiffInfo {
-            timestamp: current_header.timestamp,
-            target: difficult_to_target(current_header.difficulty),
-        });
-        for _ in 1..calculate_window {
+
+        loop {
+            if epoch.block_difficulty_window() == 0
+                || epoch.start_number() > current_header.number()
+                || epoch.end_number() <= current_header.number()
+            {
+                break;
+            }
+            blocks.push(BlockDiffInfo {
+                timestamp: current_header.timestamp,
+                target: difficult_to_target(current_header.difficulty),
+            });
+
+            if (blocks.len() as u64) >= epoch.block_difficulty_window() {
+                break;
+            }
+
             match chain.get_header(current_header.parent_hash)? {
                 Some(header) => {
                     // Skip genesis
                     if header.number == 0 {
                         break;
                     }
-                    blocks.push(BlockDiffInfo {
-                        timestamp: header.timestamp,
-                        target: difficult_to_target(header.difficulty),
-                    });
                     current_header = header;
                 }
                 None => {
@@ -76,7 +79,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     if avg_time == 0 {
         avg_time = 1
     }
-    let time_plan = epoch.time_target();
+    let time_plan = epoch.block_time_target();
     // new_target = avg_target * avg_time_used/time_plan
     // avoid the target increase or reduce too fast.
     let new_target =

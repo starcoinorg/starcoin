@@ -77,3 +77,20 @@ Feature: cmd integration test
     Examples:
       |  |
 
+  Scenario Outline: [cmd]  cli continuous 4
+    Then cmd: "chain branches $[0].head_block"
+    Then cmd: "chain get_txn_by_block  $[0].transaction_hash"
+    Then cmd: "chain get_txn $.txn_info_id"
+
+    Examples:
+      |  |
+
+  Scenario Outline: [cmd]  cli continuous 5
+#    Then cmd: "wallet list "
+    Then cmd: "wallet unlock $.None"
+    Then cmd: "dev compile ../examples/my_counter/module/MyCounter.move -o ../examples $.result"
+    Then cmd: "dev execute $.txn_hash"
+#    Then cmd: "chain get_txn $.major_status"
+
+    Examples:
+      |  |

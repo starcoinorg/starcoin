@@ -586,8 +586,8 @@ impl GenericProto {
             Some(conn) => conn,
         };
 
-        info!(target: "sub-libp2p", "External API => Packet for {:?}", target);
-        info!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
+        trace!(target: "sub-libp2p", "External API => Packet for {:?}", target);
+        trace!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id: target.clone(),
             handler: NotifyHandler::One(conn),

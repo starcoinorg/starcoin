@@ -15,16 +15,6 @@ pub static TRANSACTION_TIMEOUT_MODULE: Lazy<ModuleId> = Lazy::new(|| {
     )
 });
 
-pub static REWARD_CONF_MODULE_NAME: &str = "RewardConfig";
-
-/// The ModuleId for the reward config module
-pub static REWARD_CONF_MODULE: Lazy<ModuleId> = Lazy::new(|| {
-    ModuleId::new(
-        CORE_CODE_ADDRESS,
-        Identifier::new(REWARD_CONF_MODULE_NAME).unwrap(),
-    )
-});
-
 pub static BLOCK_MODULE_NAME: &str = "Block";
 pub static TRANSACTION_MANAGER_MODULE_NAME: &str = "TransactionManager";
 

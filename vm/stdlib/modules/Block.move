@@ -55,7 +55,7 @@ module Block {
     }
 
     // Call at block prologue
-    public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64): u64 acquires BlockMetadata{
+    public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64): (u64, u64) acquires BlockMetadata{
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT());
@@ -64,7 +64,7 @@ module Block {
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;
 
-        Consensus::adjust_epoch(account, new_height, timestamp, uncles);
+        let reward = Consensus::adjust_epoch(account, new_height, timestamp, uncles);
 
         Event::emit_event<NewBlockEvent>(
           &mut block_metadata_ref.new_block_events,
@@ -74,7 +74,7 @@ module Block {
             timestamp: timestamp,
           }
         );
-        new_height
+        (new_height, reward)
     }
 }
 }
