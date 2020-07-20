@@ -401,7 +401,9 @@ fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u64 {
 fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
     let stdlib_files = stdlib_files();
     let compiled_result =
-        starcoin_move_compiler::compile_source_string(code, &stdlib_files, address)
+        starcoin_move_compiler::compile_source_string_no_report(code, &stdlib_files, address)
+            .expect("compile fail")
+            .1
             .expect("compile fail");
     Module::new(compiled_result.serialize())
 }

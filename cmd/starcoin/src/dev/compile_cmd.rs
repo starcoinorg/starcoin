@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::command_line::parse_address;
 use starcoin_move_compiler::shared::Address;
+use starcoin_move_compiler::{compile_source_string_no_report, errors};
 use starcoin_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
@@ -40,7 +42,7 @@ impl CommandAction for CompileCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = CompileOpt;
-    type ReturnItem = PathBuf;
+    type ReturnItem = StringView;
 
     fn run(
         &self,
@@ -64,11 +66,25 @@ impl CommandAction for CompileCommand {
         let mut deps = stdlib::stdlib_files();
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone());
-        let compile_result = starcoin_move_compiler::compile_source_string(
-            std::fs::read_to_string(source_file_path)?.as_str(),
+        let (sources, compile_result) = compile_source_string_no_report(
+            std::fs::read_to_string(source_file_path)
+                .expect("read file error")
+                .as_str(),
             &deps,
             AccountAddress::new(sender.to_u8()),
         )?;
+        let compile_unit = match compile_result {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!(
+                    "{}",
+                    String::from_utf8_lossy(
+                        errors::report_errors_to_color_buffer(sources, e).as_slice()
+                    )
+                );
+                bail!("compile error")
+            }
+        };
 
         let mut txn_path = ctx
             .opt()
@@ -78,7 +94,11 @@ impl CommandAction for CompileCommand {
 
         txn_path.push(source_file_path.file_name().unwrap());
         txn_path.set_extension(stdlib::STAGED_EXTENSION);
-        File::create(txn_path.clone())?.write_all(&compile_result.serialize())?;
-        Ok(txn_path)
+        let mut file = File::create(txn_path.clone()).expect("unable create out file");
+        file.write_all(&compile_unit.serialize())
+            .expect("write out file error");
+        Ok(StringView {
+            result: txn_path.to_str().unwrap().to_string(),
+        })
     }
 }
