@@ -18,10 +18,10 @@ module Timestamp {
         move_to<CurrentTimeSeconds>(account, timer);
     }
     spec fun initialize {
-        aborts_if Signer::get_address(account) != CoreAddresses::GENESIS_ACCOUNT();
-        aborts_if exists<CurrentTimeSeconds>(Signer::get_address(account));
-        ensures exists<CurrentTimeSeconds>(Signer::get_address(account));
-        ensures global<CurrentTimeSeconds>(Signer::get_address(account)).seconds == 0;
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ACCOUNT();
+        aborts_if exists<CurrentTimeSeconds>(Signer::spec_address_of(account));
+        ensures exists<CurrentTimeSeconds>(Signer::spec_address_of(account));
+        ensures global<CurrentTimeSeconds>(Signer::spec_address_of(account)).seconds == 0;
     }
 
     // Update the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
@@ -33,8 +33,8 @@ module Timestamp {
         global_timer.seconds = timestamp;
     }
     spec fun update_global_time {
-        aborts_if !exists<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT());
-        ensures global<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT()).seconds == timestamp;
+        aborts_if !exists<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ACCOUNT());
+        ensures global<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ACCOUNT()).seconds == timestamp;
     }
 
     // Get the timestamp representing `now` in seconds.
@@ -42,8 +42,8 @@ module Timestamp {
         borrow_global<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT()).seconds
     }
     spec fun now_seconds {
-        aborts_if !exists<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT());
-        ensures result == global<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT()).seconds;
+        aborts_if !exists<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ACCOUNT());
+        ensures result == global<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ACCOUNT()).seconds;
     }
 
     // Helper function to determine if the blockchain is at genesis state.
@@ -52,7 +52,7 @@ module Timestamp {
     }
     spec fun is_genesis {
         aborts_if false;
-        ensures result == !exists<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT());
+        ensures result == !exists<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ACCOUNT());
     }
 }
 }

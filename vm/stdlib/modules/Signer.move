@@ -14,8 +14,15 @@ module Signer {
         *borrow_address(s)
     }
 
+    spec fun address_of {
+        pragma opaque = true;
+        aborts_if false;
+        ensures result == spec_address_of(s);
+    }
+
     spec module {
-        native define get_address(account: signer): address;
+        /// Specification version of `Self::address_of`.
+        native define spec_address_of(account: signer): address;
     }
 }
 }
