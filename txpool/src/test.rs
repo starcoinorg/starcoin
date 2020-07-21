@@ -153,7 +153,7 @@ async fn test_rollback() -> Result<()> {
         chain_state.flush()?;
     }
     pool.get_service()
-        .rollback(vec![enacted_block], vec![retracted_block])
+        .chain_new_block(vec![enacted_block], vec![retracted_block])
         .unwrap();
     let txns = pool.get_service().get_pending_txns(Some(100));
     assert_eq!(txns.len(), 0);
