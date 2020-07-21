@@ -6400,7 +6400,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-cmd"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "backtrace",
