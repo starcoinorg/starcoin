@@ -6665,7 +6665,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-metrics"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "futures 0.3.5",
