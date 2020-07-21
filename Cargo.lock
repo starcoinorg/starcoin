@@ -7170,7 +7170,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-sync"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "actix",
  "actix-rt",
