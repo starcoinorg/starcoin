@@ -147,7 +147,7 @@ where
     }
 
     fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
-        if let Err(e) = self.txpool.rollback(enacted, retracted) {
+        if let Err(e) = self.txpool.chain_new_block(enacted, retracted) {
             error!("rollback err : {:?}", e);
         }
     }

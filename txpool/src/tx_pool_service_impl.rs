@@ -12,7 +12,7 @@ use crate::{
 };
 
 use anyhow::Result;
-use common_crypto::hash::{HashValue, PlainCryptoHash};
+use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::TxPoolConfig;
@@ -126,7 +126,7 @@ impl TxPoolSyncService for TxPoolService {
     }
 
     /// rollback
-    fn rollback(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
+    fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
             .with_label_values(&["rollback"])
             .start_timer();
@@ -237,18 +237,15 @@ impl Inner {
                 .collect::<Vec<_>>()
         );
 
-        let hashes: Vec<_> = enacted
-            .iter()
-            .flat_map(|b| b.transactions().iter())
-            .map(|t| t.crypto_hash())
-            .collect();
-        let _ = self.queue.remove(hashes.iter(), false);
-
         // new head block, update chain header
         if let Some(block) = enacted.last() {
             self.notify_new_chain_header(block.header().clone());
         }
 
+        // remove outdated txns.
+        self.queue.cull(self.get_pool_client());
+
+        // import retracted txns.
         let txns = retracted
             .into_iter()
             .flat_map(|b| {
@@ -257,12 +254,6 @@ impl Inner {
             })
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
         let _ = self.queue.import(self.get_pool_client(), txns);
-
-        // ignore import result
-        // for r in import_result {
-        //     r?;
-        // }
-        // self.queue.cull(client);
 
         Ok(())
     }

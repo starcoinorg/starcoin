@@ -1,6 +1,18 @@
+use crate::rpc_impl::NetworkRpcImpl;
 use accumulator::node::AccumulatorStoreType;
+use actix::Addr;
+use anyhow::Result;
+use chain::ChainActorRef;
 use crypto::HashValue;
+use futures::channel::mpsc;
+use network_api::messages::RawRpcRequestMessage;
+use network_rpc_core::server::NetworkRpcServer;
+use rpc::gen_server::NetworkRpc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use storage::Store;
+use traits::Consensus;
+use txpool::TxPoolService;
 use types::block::{BlockHeader, BlockNumber};
 use types::transaction::SignedUserTransaction;
 
@@ -9,8 +21,19 @@ mod rpc_impl;
 #[cfg(test)]
 mod tests;
 
-pub use rpc::{gen_client, gen_server};
-pub use rpc_impl::NetworkRpcImpl;
+pub use rpc::gen_client;
+pub fn start_network_rpc_server<C>(
+    rpc_rx: mpsc::UnboundedReceiver<RawRpcRequestMessage>,
+    chain: ChainActorRef<C>,
+    storage: Arc<dyn Store>,
+    txpool: TxPoolService,
+) -> Result<Addr<NetworkRpcServer>>
+where
+    C: Consensus + Sync + Send + 'static + Clone,
+{
+    let rpc_impl = NetworkRpcImpl::new(chain, txpool, storage);
+    NetworkRpcServer::start(rpc_rx, rpc_impl.to_delegate())
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransactionsData {

@@ -1,0 +1,8 @@
+# see https://github.com/sunng87/cargo-release/
+sign-commit = true
+sign-tag = true
+disable-push = true
+disable-publish = true
+consolidate-commits = true
+tag-prefix = "v"
+exclude-paths = ["/docs/**", "/README.md", "/.github"]

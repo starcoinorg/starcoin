@@ -10,8 +10,6 @@ edition = "2018"
 name = "txfactory"
 path = "src/main.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = "1.0"
 structopt = "0.3.2"

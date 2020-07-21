@@ -6,8 +6,6 @@ license = "Apache-2.0"
 publish = false
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = "1.0"
 actix = "0.10.0-alpha.3"
@@ -39,5 +37,6 @@ starcoin-state-service = { path = "../state/service"}
 starcoin-txpool-api = {path = "../txpool/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 starcoin-block-relayer = {path = "../block-relayer"}
+starcoin-network-rpc = {path = "../network-rpc"}
 stest = {path = "../commons/stest"}
 

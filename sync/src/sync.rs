@@ -1,5 +1,4 @@
 use crate::download::DownloadActor;
-use crate::process::ProcessActor;
 use crate::txn_sync::TxnSyncActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
@@ -9,7 +8,6 @@ use config::NodeConfig;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
-use network_api::messages::RawRpcRequestMessage;
 use starcoin_storage::Store;
 use starcoin_sync_api::{PeerNewBlock, SyncNotify};
 use std::sync::Arc;
@@ -21,7 +19,6 @@ pub struct SyncActor<C>
 where
     C: Consensus + Sync + Send + 'static + Clone,
 {
-    _process_address: Addr<ProcessActor<C>>,
     download_address: Addr<DownloadActor<C>>,
     #[allow(dead_code)]
     txn_sync_address: Addr<TxnSyncActor>,
@@ -40,10 +37,8 @@ where
         txpool: TxPoolService,
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
-        rpc_rx: futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) -> Result<Addr<SyncActor<C>>> {
-        let txn_sync_addr = TxnSyncActor::launch(txpool.clone(), network.clone(), bus.clone());
-        let process_address = ProcessActor::launch(chain.clone(), txpool, storage.clone(), rpc_rx)?;
+        let txn_sync_addr = TxnSyncActor::launch(txpool, network.clone(), bus.clone());
         let download_address = DownloadActor::launch(
             node_config,
             peer_id,
@@ -55,7 +50,6 @@ where
 
         let actor = SyncActor {
             download_address,
-            _process_address: process_address,
             txn_sync_address: txn_sync_addr,
             bus,
         };

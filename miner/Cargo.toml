@@ -1,10 +1,8 @@
 [package]
 name = "starcoin-miner"
 version = "0.1.0"
-authors = ["tiangong3624749 <tiangong3624749@163.com>"]
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"
@@ -43,3 +41,4 @@ sync = {path = "../sync", package="starcoin-sync" }
 starcoin-genesis = {path = "../core/genesis"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 stest = { path = "../commons/stest" }
+network-rpc = {path="../network-rpc", package = "starcoin-network-rpc"}

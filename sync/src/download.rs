@@ -19,8 +19,9 @@ use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
+use network_rpc::{gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders};
 use starcoin_storage::Store;
-use starcoin_sync_api::{BlockBody, GetBlockHeaders, SyncNotify};
+use starcoin_sync_api::SyncNotify;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -46,6 +47,7 @@ where
 {
     downloader: Arc<Downloader<C>>,
     self_peer_id: Arc<PeerId>,
+    rpc_client: NetworkRpcClient<NetworkAsyncService>,
     network: NetworkAsyncService,
     bus: Addr<BusActor>,
     sync_event_sender: mpsc::Sender<SyncEvent>,
@@ -76,6 +78,7 @@ where
             DownloadActor {
                 downloader: Arc::new(Downloader::new(chain_reader)),
                 self_peer_id: peer_id,
+                rpc_client: NetworkRpcClient::new(network.clone()),
                 network,
                 bus,
                 sync_event_sender,
@@ -175,6 +178,7 @@ where
                         self.self_peer_id.as_ref().clone(),
                         self.node_config.clone().base.net().is_main(),
                         self.downloader.clone(),
+                        self.rpc_client.clone(),
                         self.network.clone(),
                         self.storage.clone(),
                         sync_task,
@@ -184,6 +188,7 @@ where
                 } else {
                     Self::sync_block_from_best_peer(
                         self.downloader.clone(),
+                        self.rpc_client.clone(),
                         self.network.clone(),
                         sync_task,
                         self.syncing.clone(),
@@ -225,6 +230,7 @@ where
         self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<C>>,
+        rpc_client: NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
@@ -241,6 +247,7 @@ where
                 self_peer_id.clone(),
                 main_network,
                 downloader.clone(),
+                rpc_client.clone(),
                 network.clone(),
                 storage.clone(),
                 sync_task.clone(),
@@ -255,6 +262,7 @@ where
                         self_peer_id.clone(),
                         main_network,
                         downloader.clone(),
+                        rpc_client,
                         network.clone(),
                         storage.clone(),
                         sync_task,
@@ -279,6 +287,7 @@ where
         self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<C>>,
+        rpc_client: NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
@@ -297,6 +306,7 @@ where
             if let Some(ancestor_header) = downloader
                 .find_ancestor_header(
                     best_peer.get_peer_id(),
+                    &rpc_client,
                     network.clone(),
                     begin_number,
                     false,
@@ -324,7 +334,7 @@ where
 
                 // 3. sync task
                 let (root, block_info) = Downloader::<C>::get_pivot(
-                    &network,
+                    &rpc_client,
                     best_peer.get_peer_id(),
                     (latest_block_id, latest_number),
                     min_behind as usize,
@@ -381,6 +391,7 @@ where
 
     fn sync_block_from_best_peer(
         downloader: Arc<Downloader<C>>,
+        rpc_client: NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
         sync_task: SyncTask,
         syncing: Arc<AtomicBool>,
@@ -395,6 +406,7 @@ where
                     .inc();
                 match Self::sync_block_from_best_peer_inner(
                     downloader,
+                    rpc_client,
                     network,
                     sync_task,
                     download_address,
@@ -417,6 +429,7 @@ where
 
     async fn sync_block_from_best_peer_inner(
         downloader: Arc<Downloader<C>>,
+        rpc_client: NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
         sync_task: SyncTask,
         download_address: Addr<DownloadActor<C>>,
@@ -427,6 +440,7 @@ where
                 match downloader
                     .find_ancestor_header(
                         best_peer.get_peer_id(),
+                        &rpc_client,
                         network.clone(),
                         header.number(),
                         true,
@@ -500,6 +514,7 @@ where
     pub async fn find_ancestor_header(
         &self,
         peer_id: PeerId,
+        rpc_client: &NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
         block_number: BlockNumber,
         is_full_mode: bool,
@@ -519,7 +534,7 @@ where
             let get_block_headers_by_number_req =
                 get_headers_msg_for_ancestor(latest_block_number, 1);
             let headers =
-                get_headers_by_number(&network, peer_id.clone(), get_block_headers_by_number_req)
+                get_headers_by_number(rpc_client, peer_id.clone(), get_block_headers_by_number_req)
                     .await?;
             if !headers.is_empty() {
                 latest_block_number = headers
@@ -583,18 +598,19 @@ where
     }
 
     async fn get_pivot(
-        network: &NetworkAsyncService,
+        rpc_client: &NetworkRpcClient<NetworkAsyncService>,
         peer_id: PeerId,
         latest_block: (HashValue, BlockNumber),
         step: usize,
     ) -> Result<(BlockHeader, BlockInfo)> {
         let get_headers_req = GetBlockHeaders::new(latest_block.0, step, true, 1);
-        let mut headers = get_headers_with_peer(&network, peer_id.clone(), get_headers_req).await?;
+        let mut headers =
+            get_headers_with_peer(&rpc_client, peer_id.clone(), get_headers_req).await?;
         if let Some(pivot) = headers.pop() {
             let number = latest_block.1 - step as u64;
             if pivot.number() == number {
                 let mut infos =
-                    get_info_by_hash(&network, peer_id, vec![pivot.parent_hash()]).await?;
+                    get_info_by_hash(&rpc_client, peer_id, vec![pivot.parent_hash()]).await?;
                 if let Some(block_info) = infos.pop() {
                     if Self::verify_pivot(&pivot, &block_info) {
                         Ok((pivot, block_info))
