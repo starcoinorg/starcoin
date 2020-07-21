@@ -16,7 +16,7 @@ use types::{
 };
 
 use crate::{
-    gen_server::NetworkRpc, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
+    rpc::gen_server::NetworkRpc, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetTxns, TransactionsData,
 };
 use txpool_api::TxPoolSyncService;

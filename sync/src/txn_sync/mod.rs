@@ -1,6 +1,3 @@
-mod txn_handler;
-pub use txn_handler::GetTxnsHandler;
-
 use crate::helper;
 use actix::prelude::*;
 use anyhow::{bail, Result};
@@ -8,7 +5,8 @@ use bus::{Bus, BusActor};
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
-use starcoin_sync_api::{GetTxns, StartSyncTxnEvent};
+use network_rpc::{gen_client::NetworkRpcClient, GetTxns};
+use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use txpool::TxPoolService;
 use types::peer_info::PeerId;
@@ -28,6 +26,7 @@ impl TxnSyncActor {
         let actor = TxnSyncActor {
             inner: Inner {
                 pool: txpool,
+                rpc_client: NetworkRpcClient::new(network.clone()),
                 network_service: network,
             },
             bus,
@@ -82,6 +81,7 @@ impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
 #[derive(Clone)]
 struct Inner {
     pool: TxPoolService,
+    rpc_client: NetworkRpcClient<NetworkAsyncService>,
     network_service: NetworkAsyncService,
 }
 
@@ -103,13 +103,9 @@ impl Inner {
         bail!("fail to sync txn from all peers")
     }
     async fn sync_txn_from_peer(&self, peer_id: PeerId) -> Result<()> {
-        let txn_data = helper::get_txns(
-            &self.network_service,
-            peer_id.clone(),
-            GetTxns { ids: None },
-        )
-        .await?
-        .txns;
+        let txn_data = helper::get_txns(&self.rpc_client, peer_id.clone(), GetTxns { ids: None })
+            .await?
+            .txns;
         let import_result = self.pool.add_txns(txn_data);
         let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
         info!("succ to sync {} txn from peer {}", succ_num, peer_id);

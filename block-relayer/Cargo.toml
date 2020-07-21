@@ -27,7 +27,7 @@ starcoin-block-relayer-api = { path = "./api"}
 starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-types = {path = "../types", package = "starcoin-types" }
 starcoin-metrics = {path = "../commons/metrics"}
-
+network-rpc = { path = "../network-rpc", package = "starcoin-network-rpc" }
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
 actix-rt = "1.1"

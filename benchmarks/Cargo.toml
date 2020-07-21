@@ -40,7 +40,7 @@ starcoin-network-api = {path = "../network/api", package="network-api"}
 executor-benchmark = {path = "../executor/benchmark", package="starcoin-executor-benchmark" }
 futures = "0.3"
 logger = {path = "../commons/logger",package="starcoin-logger"}
-
+network-rpc = {path ="../network-rpc", package = "starcoin-network-rpc"}
 [dev-dependencies]
 
 [[bench]]
