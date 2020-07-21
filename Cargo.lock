@@ -6511,7 +6511,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-decrypt"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "aes-gcm 0.5.0",
  "anyhow",
