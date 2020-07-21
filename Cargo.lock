@@ -4680,7 +4680,7 @@ checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "peerset"
-version = "2.0.0-alpha.3"
+version = "0.1.0"
 dependencies = [
  "futures 0.3.5",
  "libp2p",
@@ -6219,7 +6219,7 @@ dependencies = [
 
 [[package]]
 name = "sp-utils"
-version = "2.0.0-rc4"
+version = "0.1.0"
 dependencies = [
  "futures 0.3.5",
  "futures-core",
