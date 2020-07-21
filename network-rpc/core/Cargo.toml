@@ -1,0 +1,16 @@
+[package]
+name = "network-rpc-core"
+version = "0.1.0"
+authors = ["fikgol <hit.cs.lijun@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+futures = "0.3"
+actix = "0.10.0-alpha.3"
+
+starcoin-types = { path = "../../types", package = "starcoin-types" }
+network-api = { path = "../../network/api"}
+logger = { path = "../../commons/logger", package = "starcoin-logger" }

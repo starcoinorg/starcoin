@@ -505,12 +505,12 @@ impl Inner {
                     .await?;
             }
 
-            PeerMessage::RawRPCRequest(id, _rpc_path, request) => {
+            PeerMessage::RawRPCRequest(id, rpc_path, request) => {
                 debug!("do request {} from peer {}", id, peer_id);
                 let (tx, rx) = mpsc::channel(1);
                 self.rpc_tx.unbounded_send(RawRpcRequestMessage {
                     responder: tx,
-                    request,
+                    request: (rpc_path, request, peer_id.clone().into()),
                 })?;
                 let network_service = self.network_service.clone();
                 async_std::task::spawn(Self::handle_response(id, peer_id, rx, network_service));
@@ -1075,7 +1075,7 @@ mod tests {
             let mut responder = msg.responder.clone();
             let f = async move {
                 responder
-                    .send((network_p2p::PROTOCOL_NAME.into(), msg.request))
+                    .send((network_p2p::PROTOCOL_NAME.into(), msg.request.1))
                     .await
                     .unwrap();
             };

@@ -4,7 +4,7 @@ use actix::Actor;
 use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
-use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
+use config::NodeConfig;
 use consensus::dev::DevConsensus;
 use logger::prelude::*;
 use network::network::NetworkActor;
@@ -34,9 +34,7 @@ fn test_miner_with_ondemand_pacemaker() {
 
     let fut = async move {
         let peer_id = Arc::new(PeerId::random());
-        let mut conf = NodeConfig::random_for_test();
-        conf.miner.pacemaker_strategy = PacemakerStrategy::Ondemand;
-        conf.miner.consensus_strategy = ConsensusStrategy::Dummy(1);
+        let conf = NodeConfig::random_for_test();
         let config = Arc::new(conf);
         let bus = BusActor::launch();
         let storage = Arc::new(
