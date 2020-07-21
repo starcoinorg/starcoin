@@ -78,8 +78,7 @@ impl TxPoolSyncService for MockTxPoolService {
         todo!()
     }
 
-    /// rollback
-    fn rollback(&self, _enacted: Vec<Block>, _retracted: Vec<Block>) -> Result<()> {
+    fn chain_new_block(&self, _enacted: Vec<Block>, _retracted: Vec<Block>) -> Result<()> {
         todo!()
     }
 }
