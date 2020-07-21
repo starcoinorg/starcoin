@@ -16,6 +16,8 @@ pub enum ConnectBlockResult {
     VerifyBlockIdFailed,
     VerifyConsensusFailed,
     VerifyBodyFailed,
+    UncleBlockIllegal,
+    DuplicateUncles,
     VerifyTxnInfoFailed,
     SUCCESS,
 }
