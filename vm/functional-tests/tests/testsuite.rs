@@ -43,7 +43,7 @@ impl std::error::Error for MoveSourceCompilerError {}
 
 impl Compiler for MoveSourceCompiler {
     /// Compile a transaction script or module.
-    fn compile<Logger: FnMut(String) -> ()>(
+    fn compile<Logger: FnMut(String)>(
         &mut self,
         _log: Logger,
         address: AccountAddress,
