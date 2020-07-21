@@ -443,7 +443,7 @@ checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
 name = "benchmarks"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "actix",
  "anyhow",
