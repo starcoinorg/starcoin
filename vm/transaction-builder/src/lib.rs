@@ -45,7 +45,7 @@ pub fn build_transfer_txn(
     gas_price: u64,
     max_gas: u64,
 ) -> RawUserTransaction {
-    build_transfer_txn_by_coin_type(
+    build_transfer_txn_by_token_type(
         sender,
         receiver,
         receiver_auth_key_prefix,
@@ -57,7 +57,7 @@ pub fn build_transfer_txn(
     )
 }
 
-pub fn build_transfer_txn_by_coin_type(
+pub fn build_transfer_txn_by_token_type(
     sender: AccountAddress,
     receiver: AccountAddress,
     receiver_auth_key_prefix: Vec<u8>,
@@ -65,7 +65,7 @@ pub fn build_transfer_txn_by_coin_type(
     amount: u128,
     gas_price: u64,
     max_gas: u64,
-    coin_type: TypeTag,
+    token_type: TypeTag,
 ) -> RawUserTransaction {
     raw_peer_to_peer_txn(
         sender,
@@ -75,18 +75,18 @@ pub fn build_transfer_txn_by_coin_type(
         seq_num,
         gas_price,
         max_gas,
-        coin_type,
+        token_type,
     )
 }
 
-pub fn build_accept_coin_txn(
+pub fn build_accept_token_txn(
     sender: AccountAddress,
     seq_num: u64,
     gas_price: u64,
     max_gas: u64,
-    coin_type: TypeTag,
+    token_type: TypeTag,
 ) -> RawUserTransaction {
-    raw_accept_coin_txn(sender, seq_num, gas_price, max_gas, coin_type)
+    raw_accept_token_txn(sender, seq_num, gas_price, max_gas, token_type)
 }
 
 pub fn raw_peer_to_peer_txn(
@@ -97,7 +97,7 @@ pub fn raw_peer_to_peer_txn(
     seq_num: u64,
     gas_price: u64,
     max_gas: u64,
-    coin_type: TypeTag,
+    token_type: TypeTag,
 ) -> RawUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(receiver));
@@ -109,7 +109,7 @@ pub fn raw_peer_to_peer_txn(
         seq_num,
         TransactionPayload::Script(Script::new(
             StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
-            vec![coin_type],
+            vec![token_type],
             args,
         )),
         max_gas,
@@ -118,19 +118,19 @@ pub fn raw_peer_to_peer_txn(
     )
 }
 
-pub fn raw_accept_coin_txn(
+pub fn raw_accept_token_txn(
     sender: AccountAddress,
     seq_num: u64,
     gas_price: u64,
     max_gas: u64,
-    coin_type: TypeTag,
+    token_type: TypeTag,
 ) -> RawUserTransaction {
     RawUserTransaction::new(
         sender,
         seq_num,
         TransactionPayload::Script(Script::new(
             StdlibScript::AcceptToken.compiled_bytes().into_vec(),
-            vec![coin_type],
+            vec![token_type],
             vec![],
         )),
         max_gas,
