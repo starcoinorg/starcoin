@@ -295,7 +295,7 @@ where
         chain.clone(),
         default_account,
     )?;
-    let miner_client = if config.miner.enable {
+    let miner_client = if config.miner.enable_miner_client {
         Some(MinerClientActor::new(config.miner.clone()).start())
     } else {
         None
