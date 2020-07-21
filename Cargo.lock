@@ -6434,7 +6434,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-config"
-version = "0.3.0"
+version = "0.3.1-alpha.0"
 dependencies = [
  "anyhow",
  "dirs 3.0.1",
