@@ -7131,7 +7131,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-storage"
-version = "0.3.0"
+version = "0.3.1-alpha.0"
 dependencies = [
  "anyhow",
  "byteorder 1.3.4",
