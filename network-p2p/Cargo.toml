@@ -53,7 +53,7 @@ bs58 = "0.3.1"
 
 
 [dependencies.libp2p]
-version = "0.21.1"
+version = "0.22.0"
 default-features = false
 features = ["identify", "kad", "mdns", "mplex", "noise", "ping", "tcp-async-std", "websocket", "yamux"]
 
@@ -61,7 +61,7 @@ features = ["identify", "kad", "mdns", "mplex", "noise", "ping", "tcp-async-std"
 stest = {path = "../commons/stest"}
 async-std = "1.5"
 tempfile = "3.1.0"
-libp2p = { version = "0.21.1", default-features = false, features = ["secio"] }
+libp2p = { version = "0.22.0", default-features = false, features = ["secio"] }
 
 
 [features]
