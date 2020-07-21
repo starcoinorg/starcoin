@@ -6945,7 +6945,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-client"
-version = "0.3.0"
+version = "0.3.1-alpha.0"
 dependencies = [
  "actix",
  "actix-rt",
