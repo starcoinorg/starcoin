@@ -7054,7 +7054,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-api"
-version = "0.3.0"
+version = "0.3.1-alpha.0"
 dependencies = [
  "anyhow",
  "async-trait",
