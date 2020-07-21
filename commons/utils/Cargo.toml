@@ -1,7 +1,7 @@
 [package]
 name = "sp-utils"
 #for unify version with project.
-version = "0.3.0"
+version = "0.3.1-alpha.0"
 authors = ["Parity Technologies <admin@parity.io>","Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 license = "Apache-2.0"
