@@ -6338,7 +6338,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-bus"
-version = "0.3.0"
+version = "0.3.1-alpha.0"
 dependencies = [
  "actix",
  "actix-rt",
