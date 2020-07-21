@@ -6488,7 +6488,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-crypto"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "libra-crypto",
  "once_cell",
