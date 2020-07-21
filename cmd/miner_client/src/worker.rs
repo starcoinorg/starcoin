@@ -3,7 +3,7 @@
 
 use crate::{nonce_generator, partition_nonce};
 use config::{ConsensusStrategy, MinerConfig};
-use consensus::{argon, dev::DevConsensus, difficulty::difficult_to_target};
+use consensus::{argon, dev::DevConsensus, difficulty::difficult_to_target, dummy::DummyConsensus};
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
@@ -53,9 +53,9 @@ pub fn start_worker(
                 .collect();
             WorkerController::new(worker_txs)
         }
-        ConsensusStrategy::Dummy(_dev_period) => {
+        strategy => {
             let (worker_tx, worker_rx) = mpsc::unbounded();
-            let worker_name = "starcoin-miner-dummy-worker".to_owned();
+            let worker_name = format!("starcoin-miner-{}-worker", strategy);
             let pb =
                 if let Some(mp) = mp.as_ref() {
                     let pb = mp.add(ProgressBar::new(100));
@@ -68,12 +68,17 @@ pub fn start_worker(
                     None
                 };
             let nonce_range = partition_nonce(1 as u64, 2 as u64);
+            let solver = match strategy {
+                ConsensusStrategy::Dev => dev_solver,
+                ConsensusStrategy::Dummy => dummy_solver,
+                _ => unreachable!("Unsupported consensus {:?}", strategy),
+            };
             thread::Builder::new()
                 .name(worker_name)
                 .spawn(move || {
                     let mut worker = Worker::new(worker_rx, nonce_tx);
                     let rng = nonce_generator(nonce_range);
-                    worker.run(rng, dummy_solver, pb);
+                    worker.run(rng, solver, pb);
                 })
                 .expect("Start worker thread failed");
             WorkerController::new(vec![worker_tx])
@@ -215,13 +220,27 @@ fn argon_solver(
     false
 }
 
-fn dummy_solver(
+fn dev_solver(
     pow_header: &[u8],
     nonce: u64,
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
     DevConsensus::solve_consensus_header(pow_header, diff);
+    if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
+        error!("Failed to send nonce: {:?}", e);
+        return false;
+    };
+    true
+}
+
+fn dummy_solver(
+    pow_header: &[u8],
+    nonce: u64,
+    diff: U256,
+    mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
+) -> bool {
+    DummyConsensus::solve_consensus_header(pow_header, diff);
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
         return false;

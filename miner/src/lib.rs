@@ -134,6 +134,7 @@ where
         let miner_account = self.miner_account.clone();
         // block_gas_limit / min_gas_per_txn
         let max_txns = self.config.miner.block_gas_limit / 600;
+        let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
         let f = async move {
             let txns = txpool.get_pending_txns(Some(max_txns));
             let startup_info = chain.clone().master_startup_info().await?;
@@ -142,19 +143,25 @@ where
                 startup_info.master,
                 txns.len()
             );
-            let master = *startup_info.get_master();
-            let block_chain = BlockChain::<C>::new(config.clone(), master, storage.clone())?;
-            let block_template = chain
-                .create_block_template(
-                    *miner_account.address(),
-                    Some(miner_account.get_auth_key().prefix().to_vec()),
-                    None,
-                    txns,
-                )
-                .await?;
 
-            mint::<C>(stratum, miner, &block_chain, block_template)?;
-            Ok(())
+            if txns.is_empty() && !enable_mint_empty_block {
+                debug!("The flag enable_mint_empty_block is false and no txn in pool, so skip mint empty block.");
+                Ok(())
+            } else {
+                let master = *startup_info.get_master();
+                let block_chain = BlockChain::<C>::new(config.clone(), master, storage.clone())?;
+                let block_template = chain
+                    .create_block_template(
+                        *miner_account.address(),
+                        Some(miner_account.get_auth_key().prefix().to_vec()),
+                        None,
+                        txns,
+                    )
+                    .await?;
+
+                mint::<C>(stratum, miner, &block_chain, block_template)?;
+                Ok(())
+            }
         }
         .map(|result: Result<()>| {
             if let Err(err) = result {

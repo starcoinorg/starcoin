@@ -46,7 +46,7 @@ pub use chain_config::{
 pub use libra_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
-pub use miner_config::{ConsensusStrategy, MinerConfig, PacemakerStrategy};
+pub use miner_config::{ConsensusStrategy, MinerConfig};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use storage_config::StorageConfig;
@@ -125,10 +125,6 @@ pub struct StarcoinOpt {
     /// P2P network seed, if want add more seeds, please edit config file.
     pub seed: Option<Multiaddr>,
 
-    #[structopt(long = "dev-period", default_value = "0")]
-    /// Block period in second to use in dev network mode (0 = mine only if transaction pending)
-    pub dev_period: u64,
-
     #[structopt(long = "node-key")]
     /// Node network private key, only work for first init.
     pub node_key: Option<String>,
@@ -153,11 +149,15 @@ pub struct StarcoinOpt {
     /// Disable metrics.
     pub disable_metrics: bool,
 
-    #[structopt(long = "disable-mine")]
+    #[structopt(long = "disable-miner-client")]
     /// Don't start a miner client in node.
-    pub disable_mine: bool,
+    pub disable_miner_client: bool,
 
-    #[structopt(long = "miner_thread")]
+    #[structopt(long = "disable-mint-empty-block")]
+    /// Do not mint empty block, default is true in Dev network.
+    pub disable_mint_empty_block: Option<bool>,
+
+    #[structopt(long = "miner-thread")]
     /// Miner thread number, not work for dev network, default is 1
     pub miner_thread: Option<u16>,
 
@@ -165,7 +165,7 @@ pub struct StarcoinOpt {
     /// Disable seed for seed node.
     pub disable_seed: bool,
 
-    #[structopt(long = "rpc_address")]
+    #[structopt(long = "rpc-address")]
     /// Rpc address, default is 127.0.0.1
     pub rpc_address: Option<String>,
 }
