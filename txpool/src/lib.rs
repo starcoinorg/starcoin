@@ -18,7 +18,6 @@ use starcoin_txpool_api::TxnStatusFullEvent;
 use std::{fmt::Debug, sync::Arc};
 use storage::Store;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
-use types::system_events::NewHeadBlock;
 
 use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
 pub use pool::TxStatus;
@@ -124,21 +123,6 @@ impl actix::Actor for TxPoolActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        // subscribe system block event
-        let myself = ctx.address().recipient::<NewHeadBlock>();
-        self.bus
-            .clone()
-            .subscribe(myself)
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                if let Err(e) = res {
-                    error!("fail to subscribe system events, err: {:?}", e);
-                    ctx.terminate();
-                }
-                async {}.into_actor(act)
-            })
-            .wait(ctx);
-
         // subscribe txn relayer peer txns
         let myself = ctx.address().recipient::<PeerTransactions>();
         self.bus
@@ -212,16 +196,6 @@ impl StreamHandler<TxnStatusFullEvent> for TxPoolActor {
                 async {}.into_actor(act)
             })
             .wait(ctx);
-    }
-}
-
-impl actix::Handler<NewHeadBlock> for TxPoolActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
-        let NewHeadBlock(block) = msg;
-        self.inner.notify_new_chain_header(block.header().clone());
-        self.inner.cull()
     }
 }
 

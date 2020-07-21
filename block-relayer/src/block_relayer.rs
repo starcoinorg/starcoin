@@ -4,10 +4,11 @@ use bus::Bus;
 use bus::{Broadcast, BusActor, Subscription};
 use crypto::HashValue;
 use logger::prelude::*;
+use network_rpc::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
 use starcoin_network::network::NetworkAsyncService;
 use starcoin_sync::helper::get_txns;
-use starcoin_sync_api::{GetTxns, PeerNewBlock};
+use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     block::{Block, BlockBody},
@@ -25,7 +26,7 @@ where
 {
     bus: Addr<BusActor>,
     txpool: P,
-    network: NetworkAsyncService,
+    rpc_client: NetworkRpcClient<NetworkAsyncService>,
 }
 
 impl<P> BlockRelayer<P>
@@ -40,14 +41,14 @@ where
         let block_relayer = BlockRelayer {
             bus,
             txpool,
-            network,
+            rpc_client: NetworkRpcClient::new(network),
         };
         Ok(block_relayer.start())
     }
 
     async fn fill_compact_block(
         txpool: P,
-        network: NetworkAsyncService,
+        rpc_client: NetworkRpcClient<NetworkAsyncService>,
         compact_block: CompactBlock,
         peer_id: PeerId,
     ) -> Result<Block> {
@@ -88,7 +89,7 @@ where
                 .map(|&short_id| short_id.0)
                 .collect();
             let fetched_missing_txn = get_txns(
-                &network,
+                &rpc_client,
                 peer_id,
                 GetTxns {
                     ids: Some(missing_txn_ids),
@@ -211,14 +212,14 @@ where
         _ctx: &mut Self::Context,
     ) -> Self::Result {
         let bus = self.bus.clone();
-        let network = self.network.clone();
+        let rpc_client = self.rpc_client.clone();
         let txpool = self.txpool.clone();
         let fut = async move {
             let compact_block = cmpct_block_msg.compact_block;
             let peer_id = cmpct_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             if let Ok(block) =
-                BlockRelayer::fill_compact_block(txpool, network, compact_block, peer_id.clone())
+                BlockRelayer::fill_compact_block(txpool, rpc_client, compact_block, peer_id.clone())
                     .await
             {
                 bus.do_send(Broadcast {

@@ -264,6 +264,20 @@ where
                         );
                         //todo: state_sync_address.expect("").reset();
                     }
+                    ConnectBlockResult::UncleBlockIllegal => {
+                        error!(
+                            "Connect block {:?} verify txn info failed.",
+                            current_block_id
+                        );
+                        //todo: state_sync_address.expect("").reset();
+                    }
+                    ConnectBlockResult::DuplicateUncles => {
+                        error!(
+                            "Connect block {:?} verify txn info failed.",
+                            current_block_id
+                        );
+                        //todo: state_sync_address.expect("").reset();
+                    }
                 }
             }
             Err(e) => error!("Connect block {:?} failed : {:?}", current_block_id, e),

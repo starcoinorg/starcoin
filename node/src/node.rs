@@ -239,6 +239,13 @@ where
             )
         })
         .await??;
+    // network rpc server
+    let _network_rpc_server = starcoin_network_rpc::start_network_rpc_server(
+        rpc_rx,
+        chain.clone(),
+        storage.clone(),
+        txpool_service.clone(),
+    )?;
 
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
@@ -266,7 +273,6 @@ where
                 sync_txpool,
                 sync_network,
                 sync_storage,
-                rpc_rx,
             )
         })
         .await??;

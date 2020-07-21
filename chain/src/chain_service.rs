@@ -9,7 +9,8 @@ use config::NodeConfig;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
-use starcoin_state_api::AccountStateReader;
+use scs::SCSCodec;
+use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
@@ -146,7 +147,7 @@ where
     }
 
     fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
-        if let Err(e) = self.txpool.rollback(enacted, retracted) {
+        if let Err(e) = self.txpool.chain_new_block(enacted, retracted) {
             error!("rollback err : {:?}", e);
         }
     }
@@ -370,6 +371,76 @@ where
         });
     }
 
+    fn verify_uncles(
+        &self,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+        reader: &dyn ChainStateReader,
+    ) -> Result<ConnectBlockResult> {
+        if uncles.len() > MAX_UNCLE_COUNT_PER_BLOCK {
+            debug!("too many uncles {} in block {}", uncles.len(), header.id());
+            return Ok(ConnectBlockResult::UncleBlockIllegal);
+        }
+
+        for uncle in uncles {
+            if uncle.number >= header.number {
+                debug!("uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}",uncle.number,header.number);
+                return Ok(ConnectBlockResult::UncleBlockIllegal);
+            }
+        }
+
+        match header.uncle_hash {
+            Some(uncle_hash) => {
+                let calculated_hash = HashValue::sha3_256_of(&uncles.to_vec().encode()?);
+                if !calculated_hash.eq(&uncle_hash) {
+                    debug!(
+                        "uncle hash in header is {},uncle hash calculated is {}",
+                        uncle_hash, calculated_hash
+                    );
+                    return Ok(ConnectBlockResult::UncleBlockIllegal);
+                }
+            }
+            None => {
+                return Ok(ConnectBlockResult::UncleBlockIllegal);
+            }
+        }
+
+        let account_reader = AccountStateReader::new(reader);
+        let epoch = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)?;
+        let epoch_start_number = if let Some(epoch) = epoch {
+            epoch.start_number()
+        } else {
+            header.number
+        };
+
+        let master_block_headers = self.master_blocks_since(epoch_start_number)?;
+        for uncle in uncles {
+            if !self.check_common_ancestor(uncle.id(), epoch_start_number, &master_block_headers)? {
+                debug!(
+                    "can't find ancestor in master uncle id is {:?},epoch start number is {:?}",
+                    uncle.id(),
+                    header.number
+                );
+                return Ok(ConnectBlockResult::UncleBlockIllegal);
+            }
+        }
+
+        let mut exists_uncles = HashSet::new();
+        self.merge_exists_uncles(
+            epoch_start_number,
+            self.startup_info.master,
+            &mut exists_uncles,
+        )?;
+        for uncle in uncles {
+            if exists_uncles.contains(uncle) {
+                debug!("uncle block exists in master,uncle id is {:?}", uncle.id(),);
+                return Ok(ConnectBlockResult::DuplicateUncles);
+            }
+        }
+
+        Ok(ConnectBlockResult::FutureBlock)
+    }
+
     fn connect_inner(&mut self, block: Block, execute: bool) -> Result<ConnectBlockResult> {
         let (block_exist, fork) = self.find_or_fork(block.header())?;
         if block_exist {
@@ -380,6 +451,13 @@ where
                 .exe_block_time
                 .with_label_values(&["time"])
                 .start_timer();
+            if let Some(uncles) = block.uncles() {
+                if let ConnectBlockResult::VerifyConsensusFailed =
+                    self.verify_uncles(uncles, &block.header, branch.chain_state_reader())?
+                {
+                    return Ok(ConnectBlockResult::VerifyConsensusFailed);
+                }
+            }
             let connected = if execute {
                 branch.apply(block.clone())?
             } else {
