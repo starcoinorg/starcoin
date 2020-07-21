@@ -14,6 +14,10 @@ cargo build
 
 For prerequisites and detailed build instructions please read [Build from source](http://developer.starcoin.org/en/build/) document.
 
+## Install binary
+
+Download binary release from github [releases](https://github.com/starcoinorg/starcoin/releases) page.
+
 
 ## Run dev node:
 
