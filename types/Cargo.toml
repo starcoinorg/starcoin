@@ -31,7 +31,7 @@ actix = "0.10.0-alpha.3"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
 libra-types = { git = "https://github.com/starcoinorg/libra", rev="be82f8ee963a3c5aff40a11a3d76876cf7913cca" }
-libp2p = "0.21.1"
+libp2p = "0.22.0"
 starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3"
 starcoin-accumulator = {path = "../core/accumulator"}
