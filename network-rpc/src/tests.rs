@@ -1,6 +1,5 @@
-use crate::GetBlockHeadersByNumber;
-use crate::NetworkRpcImpl;
-use crate::{gen_client, gen_server::NetworkRpc};
+use crate::gen_client;
+use crate::{start_network_rpc_server, GetBlockHeadersByNumber};
 use actix::{Actor, Addr, System};
 use block_relayer::BlockRelayer;
 use bus::BusActor;
@@ -15,7 +14,6 @@ use miner::{MinerActor, MinerClientActor};
 use network::{NetworkActor, NetworkAsyncService};
 use network_api::messages::RawRpcRequestMessage;
 use network_api::{Multiaddr, NetworkService};
-use network_rpc_core::server::NetworkRpcServer;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::cache_storage::CacheStorage;
@@ -114,8 +112,13 @@ fn gen_chain_env(
         miner_account,
     )
     .unwrap();
-    let rpc_impl = NetworkRpcImpl::new(chain.clone(), tx_pool_service.clone(), storage.clone());
-    NetworkRpcServer::start(rpc_rx, rpc_impl.to_delegate()).unwrap();
+    start_network_rpc_server(
+        rpc_rx,
+        chain.clone(),
+        storage.clone(),
+        tx_pool_service.clone(),
+    )
+    .unwrap();
     (chain, storage, tx_pool_service, network, net_addr)
 }
 

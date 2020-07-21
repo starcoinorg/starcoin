@@ -23,6 +23,7 @@ use std::{sync::Arc, time::Duration};
 use traits::ChainAsyncService;
 use txpool::{TxPool, TxPoolService};
 use types::system_events::SyncBegin;
+
 #[test]
 fn test_network_actor_rpc() {
     ::logger::init_for_test();
@@ -80,6 +81,14 @@ fn test_network_actor_rpc() {
             tx_pool_service.clone(),
         )
         .unwrap();
+        // network rpc server
+        network_rpc::start_network_rpc_server(
+            rx_1,
+            first_chain.clone(),
+            storage_1.clone(),
+            tx_pool_service.clone(),
+        )
+        .unwrap();
         // sync
         let first_p = Arc::new(network_1.identify().clone().into());
         let _first_sync_actor = SyncActor::launch(
@@ -90,7 +99,6 @@ fn test_network_actor_rpc() {
             txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
-            rx_1,
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
@@ -182,6 +190,15 @@ fn test_network_actor_rpc() {
             txpool_2.get_service(),
         )
         .unwrap();
+        // network rpc server
+
+        network_rpc::start_network_rpc_server(
+            rx_2,
+            second_chain.clone(),
+            storage_2.clone(),
+            txpool_2.get_service(),
+        )
+        .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
         let _second_sync_actor = SyncActor::<DevConsensus>::launch(
@@ -192,7 +209,6 @@ fn test_network_actor_rpc() {
             txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
-            rx_2,
         )
         .unwrap();
 
@@ -272,7 +288,7 @@ fn test_network_actor_rpc_2() {
         };
 
         // network
-        let (network_1, addr_1, rx_1) = gen_network(
+        let (network_1, addr_1, _rx_1) = gen_network(
             node_config_1.clone(),
             bus_1.clone(),
             handle.clone(),
@@ -299,7 +315,6 @@ fn test_network_actor_rpc_2() {
             txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
-            rx_1,
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;
@@ -353,7 +368,7 @@ fn test_network_actor_rpc_2() {
             )
         };
         // network
-        let (network_2, addr_2, rx_2) =
+        let (network_2, addr_2, _rx_2) =
             gen_network(node_config_2.clone(), bus_2.clone(), handle, genesis_hash);
         debug!("addr_2 : {:?}", addr_2);
         BlockRelayer::new(bus_2.clone(), txpool_2.get_service(), network_2.clone()).unwrap();
@@ -376,7 +391,6 @@ fn test_network_actor_rpc_2() {
             txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
-            rx_2,
         )
         .unwrap();
         Delay::new(Duration::from_secs(1)).await;

@@ -79,6 +79,14 @@ fn test_miner_with_ondemand_pacemaker() {
             txpool_service.clone(),
         )
         .unwrap();
+        // network rpc server
+        network_rpc::start_network_rpc_server(
+            rx,
+            chain.clone(),
+            storage.clone(),
+            txpool_service.clone(),
+        )
+        .unwrap();
         let miner_account = WalletAccount::random();
         let _miner =
             MinerActor::<DevConsensus, TxPoolService, ChainActorRef<DevConsensus>, Storage>::launch(
@@ -98,7 +106,6 @@ fn test_miner_with_ondemand_pacemaker() {
             txpool.get_service(),
             network.clone(),
             storage.clone(),
-            rx,
         )
         .unwrap();
 

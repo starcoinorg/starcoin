@@ -6,18 +6,16 @@ use criterion::{BatchSize, Bencher};
 use crypto::HashValue;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
+use network_rpc::gen_client::NetworkRpcClient;
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
 use starcoin_config::{get_random_available_port, NodeConfig};
 use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
-use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
+use starcoin_network::{NetworkActor, NetworkAsyncService};
 use starcoin_network_api::NetworkService;
+use starcoin_sync::helper::{get_body_by_hash, get_headers, get_headers_msg_for_common};
 use starcoin_sync::Downloader;
-use starcoin_sync::{
-    helper::{get_body_by_hash, get_headers, get_headers_msg_for_common},
-    ProcessActor,
-};
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
@@ -34,24 +32,21 @@ impl SyncBencher {
     pub fn sync_block(&self, num: u64) {
         let mut system = System::new("sync-bench");
         system.block_on(async move {
-            let (_bus_1, addr_1, network_1, chain_1, tx_1, storage_1, rpc_rx) =
+            let (_bus_1, addr_1, network_1, chain_1, _tx_pool, _storage_1) =
                 create_node(Some(num), None).await.unwrap();
-            let chain_1_clone = chain_1.clone();
-            let _processor = Arbiter::new()
-                .exec(move || -> Addr<ProcessActor<DummyConsensus>> {
-                    ProcessActor::launch(chain_1_clone, tx_1, storage_1, rpc_rx).unwrap()
-                })
-                .await
-                .unwrap();
-
-            let (_, _, network_2, chain_2, _, _, _) =
+            let (_, _, network_2, chain_2, _, _) =
                 create_node(None, Some((addr_1, network_1))).await.unwrap();
             let chain_2_clone = chain_2.clone();
             let downloader = Arc::new(Downloader::new(chain_2_clone));
+            let rpc_client = NetworkRpcClient::new(network_2.clone());
             for i in 0..3 {
-                SyncBencher::sync_block_inner(downloader.clone(), network_2.clone())
-                    .await
-                    .unwrap();
+                SyncBencher::sync_block_inner(
+                    downloader.clone(),
+                    rpc_client.clone(),
+                    network_2.clone(),
+                )
+                .await
+                .unwrap();
                 let first = chain_1.clone().master_head().await.unwrap();
                 let second = chain_2.clone().master_head().await.unwrap();
                 if first.get_head() != second.get_head() {
@@ -78,6 +73,7 @@ impl SyncBencher {
 
     async fn sync_block_inner(
         downloader: Arc<Downloader<DummyConsensus>>,
+        rpc_client: NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
     ) -> Result<()> {
         if let Some(best_peer) = network.best_peer().await? {
@@ -88,6 +84,7 @@ impl SyncBencher {
                 if let Some(ancestor_header) = downloader
                     .find_ancestor_header(
                         best_peer.get_peer_id(),
+                        &rpc_client,
                         network.clone(),
                         begin_number,
                         true,
@@ -101,13 +98,13 @@ impl SyncBencher {
                             break;
                         }
                         let get_headers_req = get_headers_msg_for_common(latest_block_id);
-                        let headers = get_headers(&network, get_headers_req).await?;
+                        let headers = get_headers(&network, &rpc_client, get_headers_req).await?;
                         let latest_header = headers.last().expect("headers is empty.");
                         latest_block_id = latest_header.id();
                         latest_number = latest_header.number();
                         let hashs: Vec<HashValue> =
                             headers.iter().map(|header| header.id()).collect();
-                        let bodies = get_body_by_hash(&network, hashs.clone()).await?;
+                        let bodies = get_body_by_hash(&rpc_client, &network, hashs.clone()).await?;
                         info!(
                             "sync block number : {:?} from peer {:?}",
                             latest_number,
@@ -133,7 +130,6 @@ async fn create_node(
     ChainActorRef<DummyConsensus>,
     TxPoolService,
     Arc<Storage>,
-    futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>,
 )> {
     let bus = BusActor::launch();
     // storage
@@ -206,6 +202,13 @@ async fn create_node(
             .unwrap()
         })
         .await?;
+    // network rpc server
+    let _ = network_rpc::start_network_rpc_server(
+        rpc_rx,
+        chain.clone(),
+        storage.clone(),
+        txpool_service.clone(),
+    )?;
 
     if let Some(n) = num {
         let miner_account = WalletAccount::random();
@@ -239,13 +242,5 @@ async fn create_node(
             chain.clone().try_connect(block).await.unwrap();
         }
     }
-    Ok((
-        bus,
-        my_addr,
-        network,
-        chain,
-        txpool_service,
-        storage,
-        rpc_rx,
-    ))
+    Ok((bus, my_addr, network, chain, txpool_service, storage))
 }

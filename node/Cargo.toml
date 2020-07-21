@@ -39,5 +39,6 @@ starcoin-state-service = { path = "../state/service"}
 starcoin-txpool-api = {path = "../txpool/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 starcoin-block-relayer = {path = "../block-relayer"}
+starcoin-network-rpc = {path = "../network-rpc"}
 stest = {path = "../commons/stest"}
 
