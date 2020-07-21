@@ -6218,7 +6218,7 @@ dependencies = [
 
 [[package]]
 name = "sp-utils"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "futures 0.3.5",
  "futures-core",
