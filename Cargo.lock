@@ -6502,7 +6502,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-crypto-macro"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "proc-macro2 1.0.19",
  "quote 1.0.7",
