@@ -45,6 +45,6 @@ actix-rt = "1.1"
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.2"
 starcoin-wallet-api = { path = "../wallet/api"}
-libp2p = "0.21.1"
+libp2p = "0.22.0"
 stest = { path = "../commons/stest"}
 starcoin-block-relayer = { path = "../block-relayer"}
