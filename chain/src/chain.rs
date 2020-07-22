@@ -387,6 +387,15 @@ where
             );
         }
 
+        if header.gas_used > header.gas_limit {
+            error!(
+                "gas used {} in transaction is bigger than gas limit {}",
+                header.gas_used, header.gas_limit
+            );
+            return Ok(ConnectBlockResult::VerifyConsensusFailed);
+        }
+
+        // TODO 最小值是否需要
         if let Err(e) = C::verify(self, header) {
             error!("verify header failed : {:?}", e);
             return Ok(ConnectBlockResult::VerifyConsensusFailed);
