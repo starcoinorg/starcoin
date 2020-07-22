@@ -418,9 +418,19 @@ where
         Ok(())
     }
 
-    fn verify_header(&self, header: &BlockHeader) -> Result<ConnectBlockResult> {
+    fn verify_header(
+        &self,
+        header: &BlockHeader,
+        verify_head_id: bool,
+    ) -> Result<ConnectBlockResult> {
         let pre_hash = header.parent_hash();
-        assert_eq!(self.head_block().id(), pre_hash);
+        if verify_head_id {
+            assert_eq!(
+                self.head_block().id(),
+                pre_hash,
+                "Invalid block: Parent id mismatch."
+            );
+        }
         // do not check genesis block timestamp check
         if let Some(pre_block) = self.get_block(pre_hash)? {
             ensure!(
@@ -459,13 +469,13 @@ where
         );
 
         if !is_genesis {
-            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header)? {
+            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header, true)? {
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
             if let Some(uncles) = block.uncles() {
                 for uncle_header in uncles {
                     if let ConnectBlockResult::VerifyConsensusFailed =
-                        self.verify_header(uncle_header)?
+                        self.verify_header(uncle_header, false)?
                     {
                         return Ok(ConnectBlockResult::VerifyConsensusFailed);
                     }
