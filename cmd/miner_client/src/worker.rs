@@ -3,7 +3,7 @@
 
 use crate::{nonce_generator, partition_nonce};
 use config::{ConsensusStrategy, MinerConfig};
-use consensus::{argon, dev::DevConsensus, difficulty::difficult_to_target, dummy::DummyConsensus};
+use consensus::{argon, dev, difficulty::difficult_to_target, dummy};
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
@@ -226,7 +226,7 @@ fn dev_solver(
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    DevConsensus::solve_consensus_header(pow_header, diff);
+    dev::DevConsensus::solve_consensus_nonce(pow_header, diff);
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
         return false;
@@ -240,7 +240,7 @@ fn dummy_solver(
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    DummyConsensus::solve_consensus_header(pow_header, diff);
+    dummy::DummyConsensus::solve_consensus_nonce(pow_header, diff);
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
         return false;

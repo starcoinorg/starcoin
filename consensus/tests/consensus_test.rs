@@ -10,7 +10,7 @@ fn raw_hash_test() {
     let id_1 = header_1.id();
     let raw_1: RawBlockHeader = header_1.into();
     let raw_id_1 = raw_1.crypto_hash();
-    header.consensus_header = b"aaa".to_vec();
+    header.nonce = 42;
     let header_2 = header;
     let id_2 = header_2.id();
     let raw_2: RawBlockHeader = header_2.into();
@@ -23,13 +23,13 @@ fn raw_hash_test() {
 fn verify_header_test() {
     let header = BlockHeader::random();
     let raw_header: RawBlockHeader = header.into();
-    let nonce = ArgonConsensus::solve_consensus_header(
+    let nonce = ArgonConsensus::solve_consensus_nonce(
         raw_header.crypto_hash().to_vec().as_slice(),
         1.into(),
     );
     assert!(verify(
         raw_header.crypto_hash().to_vec().as_slice(),
-        nonce.nonce,
+        nonce,
         1.into(),
     ));
 }

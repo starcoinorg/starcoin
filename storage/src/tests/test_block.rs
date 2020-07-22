@@ -26,7 +26,6 @@ fn test_block() {
         db_storage,
     ))
     .unwrap();
-    let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
     let block_header1 = BlockHeader::new(
@@ -40,7 +39,7 @@ fn test_block() {
         0,
         0,
         U256::zero(),
-        consensus_header,
+        0,
         None,
     );
     storage
@@ -90,7 +89,6 @@ fn test_block_number() {
         db_storage,
     ))
     .unwrap();
-    let consensus_header = vec![0u8; 1];
     let dt = Local::now();
 
     let block_header1 = BlockHeader::new(
@@ -104,7 +102,7 @@ fn test_block_number() {
         0,
         0,
         U256::zero(),
-        consensus_header,
+        0,
         None,
     );
     storage

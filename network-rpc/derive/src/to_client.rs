@@ -30,7 +30,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
                                 Ok(arg_ser) => arg_ser,
                                 Err(e) => return Err(format_err!("Failed to encode rpc input argument: {:?}", e))
                             };
-                            info!("Network rpc call method: {:?}, args: {:?}", stringify!(#name), #user_arg_indent);
+                            debug!("Network rpc call method: {:?}, args: {:?}", stringify!(#name), #user_arg_indent);
                             let peer_id = match PeerId::from_bytes(#peer_id_indent.into_bytes()){
                                 Ok(peer_id) => peer_id,
                                 Err(e) => return Err(format_err!("Invalid rpc peer id:{:?}",e))

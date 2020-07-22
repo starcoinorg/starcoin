@@ -7,7 +7,7 @@ mod consensus;
 
 pub use chain::{Chain, ChainReader, ChainWriter, ExcludedTxns};
 pub use chain_service::{ChainAsyncService, ChainService};
-pub use consensus::{Consensus, ConsensusHeader};
+pub use consensus::Consensus;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum ConnectBlockResult {
