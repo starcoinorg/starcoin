@@ -5,8 +5,8 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use structopt::StructOpt;
 use starcoin_vm_types::on_chain_config::EpochInfo;
+use structopt::StructOpt;
 
 /// Epoch info of master.
 #[derive(Debug, StructOpt)]

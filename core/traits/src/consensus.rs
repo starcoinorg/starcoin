@@ -11,7 +11,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::{
     account_config::genesis_address,
-    on_chain_config::{Consensus as ConsensusConfig, EpochInfo, EpochResource,EpochDataResource},
+    on_chain_config::{Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource},
 };
 use std::convert::TryFrom;
 use std::fmt::Debug;
@@ -38,7 +38,7 @@ pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
             .get_on_chain_config::<ConsensusConfig>()?
             .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
 
-        Ok(EpochInfo::new(&epoch, epoch_data,&consensus_conf))
+        Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
     }
 
     fn calculate_next_difficulty(reader: &dyn ChainReader) -> Result<U256>;

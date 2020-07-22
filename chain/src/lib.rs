@@ -22,6 +22,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
+use starcoin_vm_types::on_chain_config::EpochInfo;
 use std::sync::Arc;
 use storage::Store;
 use traits::{ChainAsyncService, ChainService, ConnectBlockResult, Consensus};
@@ -34,7 +35,6 @@ use types::{
     system_events::MinedBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
-use starcoin_vm_types::on_chain_config::{EpochInfo};
 
 /// actor for block chain.
 pub struct ChainActor<C>
@@ -180,9 +180,8 @@ where
             ChainRequest::GetEventsByTxnInfoId { txn_info_id } => Ok(ChainResponse::Events(
                 self.service.get_events_by_txn_info_id(txn_info_id)?,
             )),
-            ChainRequest::GetEpochInfo()=>{
-                Ok(ChainResponse::EpochInfo(
-                self.service.epoch_info()?))
+            ChainRequest::GetEpochInfo() => {
+                Ok(ChainResponse::EpochInfo(self.service.epoch_info()?))
             }
         }
     }
@@ -478,7 +477,7 @@ where
         }
     }
 
-    async fn epoch_info(self) -> Result<EpochInfo>{
+    async fn epoch_info(self) -> Result<EpochInfo> {
         let response = self
             .address
             .send(ChainRequest::GetEpochInfo())

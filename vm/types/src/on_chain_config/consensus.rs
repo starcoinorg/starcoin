@@ -103,14 +103,18 @@ pub struct EpochInfo {
 }
 
 impl EpochInfo {
-    pub fn new(epoch: &EpochResource,epoch_data:EpochDataResource,consensus: &Consensus) -> Self {
+    pub fn new(
+        epoch: &EpochResource,
+        epoch_data: EpochDataResource,
+        consensus: &Consensus,
+    ) -> Self {
         EpochInfo {
             start_number: epoch.start_number,
             end_number: epoch.end_number,
             block_time_target: epoch.block_time_target,
             block_difficulty_window: consensus.block_difficulty_window,
-            uncles:epoch_data.uncles,
-            total_reward:epoch_data.total_reward,
+            uncles: epoch_data.uncles,
+            total_reward: epoch_data.total_reward,
         }
     }
 
@@ -137,7 +141,6 @@ impl EpochInfo {
     pub fn total_reward(&self) -> u128 {
         self.total_reward
     }
-
 }
 
 /// The Epoch data resource held under an account.
@@ -153,10 +156,7 @@ impl MoveResource for EpochDataResource {
 }
 
 impl EpochDataResource {
-    pub fn new(
-        uncles: u64,
-        total_reward: u128,
-    ) -> Self {
+    pub fn new(uncles: u64, total_reward: u128) -> Self {
         Self {
             uncles,
             total_reward,

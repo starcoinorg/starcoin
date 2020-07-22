@@ -2,6 +2,7 @@
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
+use starcoin_vm_types::on_chain_config::EpochInfo;
 use traits::ConnectBlockResult;
 use types::{
     account_address::AccountAddress,
@@ -10,7 +11,6 @@ use types::{
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
-use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Clone)]
 pub enum ChainRequest {

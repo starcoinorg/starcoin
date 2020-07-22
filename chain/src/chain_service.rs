@@ -14,7 +14,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
-use starcoin_vm_types::on_chain_config::{EpochResource,EpochInfo};
+use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource};
 use std::collections::HashSet;
 use std::sync::Arc;
 use storage::Store;

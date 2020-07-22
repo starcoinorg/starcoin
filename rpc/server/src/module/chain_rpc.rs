@@ -11,10 +11,7 @@ use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use starcoin_vm_types::{
-    on_chain_config::{EpochInfo},
-};
-
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 pub struct ChainRpcImpl<S>
 where
@@ -135,11 +132,9 @@ where
         Box::new(fut.compat())
     }
 
-    fn current_epoch(&self) -> FutureResult<EpochInfo>{
-        let fut = self.service.clone().epoch_info()
-            .map_err(map_err);
+    fn current_epoch(&self) -> FutureResult<EpochInfo> {
+        let fut = self.service.clone().epoch_info().map_err(map_err);
 
         Box::new(fut.compat())
     }
-
 }

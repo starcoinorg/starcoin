@@ -389,8 +389,10 @@ impl RpcClient {
     }
 
     pub fn epoch_info(&self) -> anyhow::Result<EpochInfo> {
-        self.call_rpc_blocking(|inner| async move { inner.chain_client.current_epoch().compat().await })
-            .map_err(map_err)
+        self.call_rpc_blocking(
+            |inner| async move { inner.chain_client.current_epoch().compat().await },
+        )
+        .map_err(map_err)
     }
 
     pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Block> {
