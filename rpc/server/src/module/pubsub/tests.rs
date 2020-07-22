@@ -23,9 +23,13 @@ use starcoin_types::{
 };
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
+use tokio::time::timeout;
+
+use tokio::time::Duration;
 
 #[actix_rt::test]
 pub async fn test_subscribe_to_events() -> Result<()> {
+    starcoin_logger::init_for_test();
     // prepare
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
@@ -49,12 +53,13 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         Some(miner_account.get_auth_key().prefix().to_vec()),
         None,
         vec![txn.clone()],
+        vec![],
     )?;
     debug!(
         "block_template: gas_used: {}, gas_limit: {}",
         block_template.gas_used, block_template.gas_limit
     );
-    let new_block = DevConsensus::create_block(config.clone(), &block_chain, block_template)?;
+    let new_block = DevConsensus::create_block(&block_chain, block_template)?;
     block_chain.apply(new_block.clone())?;
 
     let reader = AccountStateReader::new(block_chain.chain_state_reader());
@@ -73,7 +78,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     io.extend_with(pubsub);
 
     let mut metadata = Metadata::default();
-    let (sender, receiver) = futures01::sync::mpsc::channel(8);
+    let (sender, receiver) = futures01::sync::mpsc::channel(128);
     metadata.session = Some(Arc::new(Session::new(sender)));
 
     // Subscribe
@@ -99,7 +104,11 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     bus.broadcast(NewHeadBlock(block_detail)).await?;
 
     let mut receiver = receiver.compat();
-    let res = receiver.next().await.transpose().unwrap();
+
+    let res = timeout(Duration::from_secs(5), receiver.next())
+        .await?
+        .transpose()
+        .unwrap();
     assert!(res.is_some());
 
     let res = res.unwrap();
@@ -151,14 +160,13 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     );
     // Send new transactions
     let txn = {
-        let pri_key = Ed25519PrivateKey::genesis();
-        let public_key = pri_key.public_key();
-        let account_address = account_address::from_public_key(&public_key);
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
+        let auth_key = AuthenticationKey::random();
+        let account_address = auth_key.derived_address();
+        let auth_prefix = auth_key.prefix().to_vec();
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
             auth_prefix,
-            1,
+            0,
             10000,
         );
         txn.as_signed_user_txn()?.clone()
@@ -179,7 +187,11 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         Some(response.to_owned())
     );
 
-    let res = receiver.next().await.transpose().unwrap();
+    let res = timeout(Duration::from_secs(5), receiver.next())
+        .await?
+        .transpose()
+        .unwrap();
+
     assert_eq!(res, None);
     Ok(())
 }

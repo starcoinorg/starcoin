@@ -1,9 +1,20 @@
 use anyhow::{bail, format_err, Result};
 use crypto::hash::HashValue;
 use logger::prelude::*;
+use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::{
+    account_address::AccountAddress,
+    block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
+    block_metadata::BlockMetadata,
+    error::BlockExecutorError,
+    transaction::{
+        SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
+    },
+    vm_error::StatusCode,
+};
 use std::{
     convert::TryInto,
     sync::Arc,
@@ -11,15 +22,6 @@ use std::{
 };
 use storage::Store;
 use traits::ExcludedTxns;
-use types::{
-    account_address::AccountAddress,
-    block::{BlockHeader, BlockInfo, BlockTemplate},
-    block_metadata::BlockMetadata,
-    error::BlockExecutorError,
-    transaction::{
-        SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
-    },
-};
 
 pub struct OpenedBlock {
     previous_header: BlockHeader,
@@ -32,6 +34,7 @@ pub struct OpenedBlock {
 
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
+    uncles: Vec<BlockHeader>,
 }
 
 impl OpenedBlock {
@@ -41,6 +44,7 @@ impl OpenedBlock {
         block_gas_limit: u64,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
+        uncles: Vec<BlockHeader>,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -59,8 +63,13 @@ impl OpenedBlock {
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
-        let block_meta =
-            BlockMetadata::new(previous_block_id, block_timestamp, author, auth_key_prefix);
+        let block_meta = BlockMetadata::new(
+            previous_block_id,
+            block_timestamp,
+            author,
+            auth_key_prefix,
+            uncles.len() as u64,
+        );
         let mut opened_block = Self {
             previous_header,
             previous_block_info: block_info,
@@ -71,6 +80,7 @@ impl OpenedBlock {
             txn_accumulator,
             gas_used: 0,
             included_user_txns: vec![],
+            uncles,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -149,6 +159,13 @@ impl OpenedBlock {
                     discard_txns.push(txn.try_into().expect("user txn"));
                 }
                 TransactionStatus::Keep(_) => {
+                    if output.status().vm_status().status_code() != StatusCode::EXECUTED {
+                        debug!(
+                            "txn {:?} execute error: {:?}",
+                            txn_hash,
+                            output.status().vm_status()
+                        );
+                    }
                     let gas_used = output.gas_used();
                     self.push_txn_and_state(txn_hash, output)?;
                     self.gas_used += gas_used;
@@ -206,7 +223,7 @@ impl OpenedBlock {
             txn_state_root,
             events.as_slice(),
             gas_used,
-            status.major_status,
+            status.status_code(),
         );
         let (accumulator_root, _) = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))
@@ -216,8 +233,17 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, auth_key_prefix) = self.block_meta.into_inner();
+        let (parent_id, timestamp, author, auth_key_prefix, _uncles) = self.block_meta.into_inner();
 
+        let (uncle_hash, uncles) = if !self.uncles.is_empty() {
+            (
+                Some(HashValue::sha3_256_of(&self.uncles.encode()?)),
+                Some(self.uncles),
+            )
+        } else {
+            (None, None)
+        };
+        let body = BlockBody::new(self.included_user_txns, uncles);
         let block_template = BlockTemplate::new(
             parent_id,
             self.previous_block_info
@@ -231,7 +257,8 @@ impl OpenedBlock {
             state_root,
             self.gas_used,
             self.gas_limit,
-            self.included_user_txns.into(),
+            uncle_hash,
+            body,
         );
         Ok(block_template)
     }

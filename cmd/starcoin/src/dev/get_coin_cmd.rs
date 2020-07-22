@@ -7,7 +7,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_executor::TXN_RESERVED;
+use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::{account_config, transaction::authenticator::AuthenticationKey};
@@ -21,7 +21,7 @@ use tokio::time::Duration;
 pub struct GetCoinOpt {
     #[structopt(short = "v")]
     /// if amount absent, transfer 20% of association_address's balance.
-    amount: Option<u64>,
+    amount: Option<u128>,
 }
 
 pub struct GetCoinCommand;
@@ -77,7 +77,7 @@ impl CommandAction for GetCoinCommand {
             account_resource.sequence_number(),
             amount,
             1,
-            TXN_RESERVED,
+            DEFAULT_MAX_GAS_AMOUNT,
         );
         client.wallet_unlock(
             association_address,

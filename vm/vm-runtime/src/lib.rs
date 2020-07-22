@@ -7,3 +7,14 @@ pub mod data_cache;
 pub mod metrics;
 pub mod starcoin_vm;
 pub use move_vm_runtime::move_vm;
+mod access_path_cache;
+
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::language_storage::{ResourceKey, StructTag};
+
+/// Get the AccessPath to a resource stored under `address` with type name `tag`
+fn create_access_path(address: AccountAddress, tag: StructTag) -> AccessPath {
+    let resource_tag = ResourceKey::new(address, tag);
+    AccessPath::resource_access_path(&resource_tag)
+}

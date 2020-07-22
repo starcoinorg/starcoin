@@ -1,0 +1,48 @@
+[package]
+name = "starcoin-network-rpc"
+version = "0.3.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+futures = "0.3"
+actix = "0.10.0-alpha.3"
+actix-rt = "1.1"
+hex = "0.4.2"
+bytes = "0.5.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.41"
+parity-codec = { version = "3.2", features = ["derive"] }
+tokio = { version = "0.2", features = ["full"] }
+
+netowrk-rpc-derive = {path = "derive", package = "network-rpc-derive"}
+network-rpc-core = { path = "core"}
+config = {path = "../config", package="starcoin-config"}
+bus = {path = "../bus", package="starcoin-bus"}
+logger = {path = "../commons/logger",package="starcoin-logger"}
+crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+stest = { path = "../commons/stest" }
+prometheus = "0.8"
+network-api = { path="../network/api" }
+scs = { path = "../commons/scs", package = "starcoin-canonical-serialization" }
+block-relayer-api = { path = "../block-relayer/api/", package = "starcoin-block-relayer-api" }
+types = { path = "../types", package = "starcoin-types" }
+accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
+starcoin-state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
+txpool = { path = "../txpool", package = "starcoin-txpool" }
+chain = { path = "../chain",package = "starcoin-chain" }
+traits = { path = "../core/traits", package = "starcoin-traits" }
+storage = { path = "../storage", package = "starcoin-storage" }
+genesis = { path = "../core/genesis", package = "starcoin-genesis" }
+txpool-api = {path = "../txpool/api", package = "starcoin-txpool-api"}
+
+[dev-dependencies]
+network = {path = "../network", package = "starcoin-network" }
+consensus = { path = "../consensus", package = "starcoin-consensus" }
+wallet-api = { path = "../wallet/api", package = "starcoin-wallet-api"}
+miner = {path = "../miner", package="starcoin-miner" }
+block-relayer = { path = "../block-relayer", package = "starcoin-block-relayer"}
+futures-timer = "3.0"

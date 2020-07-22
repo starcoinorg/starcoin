@@ -8,14 +8,19 @@ use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::shared::Address;
-use starcoin_move_compiler::{command_line::parse_address, compile_or_load_move_file};
+use starcoin_move_compiler::{
+    command_line::parse_address, compile_source_string_no_report, errors, load_bytecode_file,
+    CompiledUnit, MOVE_EXTENSION,
+};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::vm_error::StatusCode;
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_types::transaction::Transaction;
+use starcoin_vm_types::vm_status::StatusCode;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -75,6 +80,10 @@ pub struct ExecuteOpt {
     /// dry-run script, only get transaction output, no state change to chain
     dry_run: bool,
 
+    #[structopt(long = "local")]
+    /// Whether dry-run in local cli or remote node.
+    local_mode: bool,
+
     #[structopt(name = "move_file", parse(from_os_str))]
     /// bytecode file or move script source file
     move_file: PathBuf,
@@ -105,10 +114,41 @@ impl CommandAction for ExecuteCommand {
         };
 
         let move_file_path = ctx.opt().move_file.clone();
-        let mut deps = stdlib::stdlib_files();
-        // add extra deps
-        deps.append(&mut ctx.opt().deps.clone());
-        let (bytecode, is_script) = compile_or_load_move_file(move_file_path, &deps, sender)?;
+        let ext = move_file_path
+            .as_path()
+            .extension()
+            .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
+            .unwrap_or_else(|| "");
+        let (bytecode, is_script) = if ext == MOVE_EXTENSION {
+            let mut deps = stdlib::stdlib_files();
+            // add extra deps
+            deps.append(&mut ctx.opt().deps.clone());
+            let (sources, compile_result) = compile_source_string_no_report(
+                std::fs::read_to_string(move_file_path.as_path())?.as_str(),
+                &deps,
+                sender,
+            )?;
+            let compile_unit = match compile_result {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!(
+                        "{}",
+                        String::from_utf8_lossy(
+                            errors::report_errors_to_color_buffer(sources, e).as_slice()
+                        )
+                    );
+                    bail!("compile error")
+                }
+            };
+
+            let is_script = match compile_unit {
+                CompiledUnit::Module { .. } => false,
+                CompiledUnit::Script { .. } => true,
+            };
+            (compile_unit.serialize(), is_script)
+        } else {
+            load_bytecode_file(move_file_path.as_path())?
+        };
 
         let type_tags = opt.type_tags.clone();
         let args = opt.args.clone();
@@ -145,8 +185,21 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-        let output = client.dry_run(signed_txn.clone())?;
-        if output.status().vm_status().major_status != StatusCode::EXECUTED {
+
+        let output = if opt.local_mode {
+            let mut vm = StarcoinVM::new();
+            let state_view = RemoteStateReader::new(client);
+            vm.execute_transactions(
+                &state_view,
+                vec![Transaction::UserTransaction(signed_txn.clone())],
+            )?
+            .pop()
+            .expect("at least one txn output")
+        } else {
+            client.dry_run(signed_txn.clone())?
+        };
+
+        if output.status().vm_status().status_code() != StatusCode::EXECUTED {
             bail!("move file pre-run failed, {:?}", output.status());
         }
         if !opt.dry_run {

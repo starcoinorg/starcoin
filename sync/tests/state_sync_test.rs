@@ -24,7 +24,7 @@ use traits::ChainAsyncService;
 use txpool::{TxPool, TxPoolService};
 use types::system_events::SyncBegin;
 
-#[stest::test(timeout = 120)]
+#[stest::test(timeout = 360)]
 fn test_state_sync() {
     ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -82,6 +82,14 @@ fn test_state_sync() {
             txpool_1.get_service(),
         )
         .unwrap();
+        // network rpc server
+        network_rpc::start_network_rpc_server(
+            rx_1,
+            first_chain.clone(),
+            storage_1.clone(),
+            txpool_1.get_service(),
+        )
+        .unwrap();
         // sync
         let first_p = Arc::new(network_1.identify().clone().into());
         let _first_sync_actor = SyncActor::launch(
@@ -92,7 +100,6 @@ fn test_state_sync() {
             txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
-            rx_1,
         )
         .unwrap();
         BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
@@ -114,7 +121,7 @@ fn test_state_sync() {
             miner_account,
         );
         MinerClientActor::new(node_config_1.miner.clone()).start();
-        Delay::new(Duration::from_secs(30)).await;
+        Delay::new(Duration::from_secs(60)).await;
         let mut block_1 = first_chain
             .clone()
             .master_head_block()
@@ -192,6 +199,14 @@ fn test_state_sync() {
             txpool_2.get_service(),
         )
         .unwrap();
+        // network rpc server
+        network_rpc::start_network_rpc_server(
+            rx_2,
+            second_chain.clone(),
+            storage_2.clone(),
+            txpool_2.get_service(),
+        )
+        .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
         let _second_sync_actor = SyncActor::<DevConsensus>::launch(
@@ -202,7 +217,6 @@ fn test_state_sync() {
             txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
-            rx_2,
         )
         .unwrap();
         Delay::new(Duration::from_secs(5)).await;

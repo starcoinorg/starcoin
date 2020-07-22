@@ -132,6 +132,7 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
+        uncles: Vec<BlockHeader>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
@@ -139,6 +140,7 @@ where
             self.config.miner.block_gas_limit,
             author,
             auth_key_prefix,
+            uncles,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -281,6 +283,7 @@ where
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
+        uncles: Vec<BlockHeader>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let block_id = match parent_hash {
             Some(hash) => hash,
@@ -290,7 +293,13 @@ where
         let previous_header = self
             .get_header(block_id)?
             .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
-        self.create_block_template_inner(author, auth_key_prefix, previous_header, user_txns)
+        self.create_block_template_inner(
+            author,
+            auth_key_prefix,
+            previous_header,
+            user_txns,
+            uncles,
+        )
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
@@ -378,7 +387,7 @@ where
             );
         }
 
-        if let Err(e) = C::verify(self.config.clone(), self, header) {
+        if let Err(e) = C::verify(self, header) {
             error!("verify header failed : {:?}", e);
             return Ok(ConnectBlockResult::VerifyConsensusFailed);
         }
@@ -397,13 +406,22 @@ where
             if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header)? {
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
+            if let Some(uncles) = block.uncles() {
+                for uncle_header in uncles {
+                    if let ConnectBlockResult::VerifyConsensusFailed =
+                        self.verify_header(uncle_header)?
+                    {
+                        return Ok(ConnectBlockResult::VerifyConsensusFailed);
+                    }
+                }
+            }
         }
 
         let txns = {
             let mut t = if is_genesis {
                 vec![]
             } else {
-                let block_metadata = header.clone().into_metadata();
+                let block_metadata = block.clone().into_metadata();
                 vec![Transaction::BlockMetadata(block_metadata)]
             };
             t.extend(
@@ -531,7 +549,7 @@ where
 
         // 2. verify body
         let txns = {
-            let block_metadata = block.header().clone().into_metadata();
+            let block_metadata = block.clone().into_metadata();
             let mut t = vec![Transaction::BlockMetadata(block_metadata)];
             t.extend(
                 block
@@ -547,10 +565,10 @@ where
         }
 
         // 3. verify block
-        if let Err(e) = C::verify(self.config.clone(), self, block.header()) {
-            error!("verify header failed : {:?}", e);
-            return Ok(ConnectBlockResult::VerifyConsensusFailed);
-        }
+        // if let Err(e) = C::verify(self, block.header()) {
+        //     error!("verify header failed : {:?}", e);
+        //     return Ok(ConnectBlockResult::VerifyConsensusFailed);
+        // }
 
         // 4. save all data
         let (accumulator_root, _) = self.txn_accumulator.append(&included_txn_info_hashes)?;

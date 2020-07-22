@@ -239,6 +239,13 @@ where
             )
         })
         .await??;
+    // network rpc server
+    let _network_rpc_server = starcoin_network_rpc::start_network_rpc_server(
+        rpc_rx,
+        chain.clone(),
+        storage.clone(),
+        txpool_service.clone(),
+    )?;
 
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
@@ -266,7 +273,6 @@ where
                 sync_txpool,
                 sync_network,
                 sync_storage,
-                rpc_rx,
             )
         })
         .await??;
@@ -295,7 +301,7 @@ where
         chain.clone(),
         default_account,
     )?;
-    let miner_client = if config.miner.enable {
+    let miner_client = if config.miner.enable_miner_client {
         Some(MinerClientActor::new(config.miner.clone()).start())
     } else {
         None

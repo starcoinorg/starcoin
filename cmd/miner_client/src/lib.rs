@@ -1,10 +1,12 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 pub mod miner;
 mod stratum;
 #[cfg(test)]
 mod test;
 mod worker;
 
-use byteorder::{LittleEndian, WriteBytesExt};
 use rand::Rng;
 use std::ops::Range;
 
@@ -23,12 +25,4 @@ fn nonce_generator(range: Range<u64>) -> impl FnMut() -> u64 {
     let mut rng = rand::thread_rng();
     let Range { start, end } = range;
     move || rng.gen_range(start, end)
-}
-
-pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
-    let len = header.len();
-    let mut header = header.to_owned();
-    header.truncate(len - 8);
-    let _ = header.write_u64::<LittleEndian>(nonce);
-    header
 }

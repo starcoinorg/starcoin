@@ -1,4 +1,8 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::miner::MinerClientActor;
+use crate::stratum::{parse_response, process_request};
 use actix::Actor;
 use actix_rt::System;
 use bus::BusActor;
@@ -33,7 +37,7 @@ fn test_stratum_client() {
         Delay::new(Duration::from_millis(3000)).await;
         info!("started stratum server");
         let mine_ctx = {
-            let header = BlockHeader::default();
+            let header = BlockHeader::random();
             let body = BlockBody::default();
             let block = Block::new(header, body);
             let block_template = BlockTemplate::from_block(block);
@@ -47,4 +51,19 @@ fn test_stratum_client() {
             Delay::new(Duration::from_millis(2000)).await;
         }
     });
+}
+
+#[test]
+fn test_json() {
+    let json_str = r#"
+        {"jsonrpc":"2.0","result":true,"id":0}
+    "#;
+    let result = parse_response::<bool>(json_str);
+    assert!(result.is_ok(), "parse response error: {:?}", result.err());
+
+    let json_str = r#"
+    { "id": 19, "method": "mining.notify", "params": ["e419ff9f57cc615f1b9ee900097f6ce34ad5eaff61eda78414efa1c3fa9e8200","1"] }
+    "#;
+    let result = process_request(json_str);
+    assert!(result.is_ok(), "process request fail:{:?}", result.err());
 }

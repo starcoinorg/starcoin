@@ -35,7 +35,7 @@ impl MockTxnGenerator {
             sequence_number,
             amount_to_transfer,
             1,
-            50_000_000,
+            10000,
         );
         Ok(transfer_txn)
     }

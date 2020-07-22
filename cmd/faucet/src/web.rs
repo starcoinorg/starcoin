@@ -76,7 +76,7 @@ pub async fn run(server: Server, faucet: Faucet) {
 
 struct QueryParam {
     address: AccountAddress,
-    amount: u64,
+    amount: u128,
     auth_key: Vec<u8>,
 }
 
@@ -110,7 +110,7 @@ fn parse_query(query: &str) -> Result<QueryParam> {
         }
     }
     let address = AccountAddress::from_str(address)?;
-    let amount = u64::from_str(amount)?;
+    let amount = u128::from_str(amount)?;
     let auth_key = hex::decode(auth_key).unwrap_or_default();
     let query_param = QueryParam {
         address,

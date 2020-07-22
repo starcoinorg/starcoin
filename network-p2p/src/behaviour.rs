@@ -27,7 +27,7 @@ use libp2p::swarm::{
 };
 use libp2p::NetworkBehaviour;
 use log::debug;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::{iter, task::Context, task::Poll};
 
 /// General behaviour of the network. Combines all protocols together.
@@ -75,7 +75,7 @@ impl Behaviour {
     }
 
     /// Returns the list of nodes that we know exist in the network.
-    pub fn known_peers(&mut self) -> impl Iterator<Item = &PeerId> {
+    pub fn known_peers(&mut self) -> HashSet<PeerId> {
         self.discovery.known_peers()
     }
 

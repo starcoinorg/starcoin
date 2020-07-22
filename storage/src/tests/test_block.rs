@@ -41,6 +41,7 @@ fn test_block() {
         0,
         U256::zero(),
         consensus_header,
+        None,
     );
     storage
         .block_storage
@@ -55,7 +56,7 @@ fn test_block() {
             .unwrap()
             .unwrap()
     );
-    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()]);
+    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()], None);
     storage
         .block_storage
         .save_body(block_id, block_body1.clone())
@@ -104,6 +105,7 @@ fn test_block_number() {
         0,
         U256::zero(),
         consensus_header,
+        None,
     );
     storage
         .block_storage
@@ -118,7 +120,7 @@ fn test_block_number() {
             .unwrap(),
         block_header1
     );
-    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()]);
+    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()], None);
     storage
         .block_storage
         .save_body(block_id, block_body1.clone())

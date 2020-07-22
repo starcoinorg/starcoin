@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
-use starcoin_executor::TXN_RESERVED;
+use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
@@ -38,7 +38,7 @@ pub struct GenTxnOpt {
 
     ///Transfer amount of every transaction, default is 1.
     #[structopt(short = "v", default_value = "1")]
-    amount: u64,
+    amount: u128,
 }
 
 pub struct GenTxnCommand;
@@ -46,7 +46,7 @@ pub struct GenTxnCommand;
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct GenerateResult {
     count: usize,
-    total_amount: u64,
+    total_amount: u128,
     submit_success: usize,
     submit_fail: usize,
     //TODO add execute result and gas_used after watch api provider.
@@ -119,7 +119,7 @@ impl CommandAction for GenTxnCommand {
                 sequence_number + i as u64,
                 opt.amount,
                 1,
-                TXN_RESERVED,
+                DEFAULT_MAX_GAS_AMOUNT,
             );
             gen_result.total_amount += opt.amount;
             let txn = client.wallet_sign_txn(raw_txn)?;

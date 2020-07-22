@@ -505,12 +505,12 @@ impl Inner {
                     .await?;
             }
 
-            PeerMessage::RawRPCRequest(id, _rpc_path, request) => {
+            PeerMessage::RawRPCRequest(id, rpc_path, request) => {
                 debug!("do request {} from peer {}", id, peer_id);
                 let (tx, rx) = mpsc::channel(1);
                 self.rpc_tx.unbounded_send(RawRpcRequestMessage {
                     responder: tx,
-                    request,
+                    request: (rpc_path, request, peer_id.clone().into()),
                 })?;
                 let network_service = self.network_service.clone();
                 async_std::task::spawn(Self::handle_response(id, peer_id, rx, network_service));
@@ -839,7 +839,7 @@ mod tests {
 
     #[test]
     fn test_peer_info() {
-        let mut peer_info = PeerInfo::default();
+        let mut peer_info = PeerInfo::random();
         peer_info.latest_header = BlockHeader::random();
         let data = peer_info.encode().unwrap();
         let peer_info_decode = PeerInfo::decode(&data).unwrap();
@@ -1009,7 +1009,7 @@ mod tests {
         mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) {
         let (network, rpc_rx) =
-            NetworkActor::launch(node_config, bus, HashValue::default(), PeerInfo::default());
+            NetworkActor::launch(node_config, bus, HashValue::default(), PeerInfo::random());
         (network, rpc_rx)
     }
 
@@ -1075,7 +1075,7 @@ mod tests {
             let mut responder = msg.responder.clone();
             let f = async move {
                 responder
-                    .send((network_p2p::PROTOCOL_NAME.into(), msg.request))
+                    .send((network_p2p::PROTOCOL_NAME.into(), msg.request.1))
                     .await
                     .unwrap();
             };

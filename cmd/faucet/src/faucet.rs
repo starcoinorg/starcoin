@@ -11,7 +11,7 @@ pub struct Faucet {
 }
 
 const DEFAULT_GAS_PRICE: u64 = 1;
-const MAX_GAS: u64 = 50_000_000;
+const MAX_GAS: u64 = 10000;
 
 impl Faucet {
     pub fn new(client: RpcClient, faucet_account: WalletAccount) -> Self {
@@ -23,7 +23,7 @@ impl Faucet {
 
     pub fn transfer(
         &self,
-        amount: u64,
+        amount: u128,
         receiver: AccountAddress,
         auth_key: Vec<u8>,
     ) -> Result<Result<(), anyhow::Error>> {

@@ -3,22 +3,20 @@
 
 use types::U256;
 
-pub const BLOCK_TIME_SEC: u32 = 20;
-pub const BLOCK_WINDOW: u64 = 24;
-
+use crate::argon::ArgonConsensus;
 use anyhow::Result;
 use logger::prelude::*;
-use traits::ChainReader;
+use traits::{ChainReader, Consensus};
 
 pub fn difficult_1_target() -> U256 {
     U256::max_value()
 }
 
-pub fn current_hash_rate(target: &[u8]) -> u64 {
-    // current_hash_rate = (difficult_1_target/target_current) * difficult_1_hash/block_per_esc
-    let target_u256: U256 = target.into();
-    (difficult_1_target() / target_u256).low_u64() / (BLOCK_TIME_SEC as u64)
-}
+// pub fn current_hash_rate(target: &[u8]) -> u64 {
+//     // current_hash_rate = (difficult_1_target/target_current) * difficult_1_hash/block_per_esc
+//     let target_u256: U256 = target.into();
+//     (difficult_1_target() / target_u256).low_u64() / (BLOCK_TIME_SEC as u64)
+// }
 
 /// Get the target of next pow work
 pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
@@ -26,28 +24,32 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     if current_header.number <= 1 {
         return Ok(difficult_to_target(current_header.difficulty));
     }
+    let epoch = ArgonConsensus::epoch(chain)?;
     let blocks = {
         let mut blocks: Vec<BlockDiffInfo> = vec![];
-        let calculate_window = if current_header.number < BLOCK_WINDOW {
-            current_header.number
-        } else {
-            BLOCK_WINDOW
-        };
-        blocks.push(BlockDiffInfo {
-            timestamp: current_header.timestamp,
-            target: difficult_to_target(current_header.difficulty),
-        });
-        for _ in 1..calculate_window {
+
+        loop {
+            if epoch.block_difficulty_window() == 0
+                || epoch.start_number() > current_header.number()
+                || epoch.end_number() <= current_header.number()
+            {
+                break;
+            }
+            blocks.push(BlockDiffInfo {
+                timestamp: current_header.timestamp,
+                target: difficult_to_target(current_header.difficulty),
+            });
+
+            if (blocks.len() as u64) >= epoch.block_difficulty_window() {
+                break;
+            }
+
             match chain.get_header(current_header.parent_hash)? {
                 Some(header) => {
                     // Skip genesis
                     if header.number == 0 {
                         break;
                     }
-                    blocks.push(BlockDiffInfo {
-                        timestamp: header.timestamp,
-                        target: difficult_to_target(header.difficulty),
-                    });
                     current_header = header;
                 }
                 None => {
@@ -77,7 +79,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     if avg_time == 0 {
         avg_time = 1
     }
-    let time_plan = BLOCK_TIME_SEC;
+    let time_plan = epoch.block_time_target();
     // new_target = avg_target * avg_time_used/time_plan
     // avoid the target increase or reduce too fast.
     let new_target =

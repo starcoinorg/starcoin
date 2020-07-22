@@ -70,7 +70,6 @@ async fn test_subscribe_txns() {
     let _ = pool.get_service().subscribe_txns();
 }
 
-// TODO: ignore test for now. will fire another PR to make this happen
 #[stest::test]
 async fn test_rollback() -> Result<()> {
     let (pool, storage) = test_helper::start_txpool();
@@ -115,6 +114,7 @@ async fn test_rollback() -> Result<()> {
             u64::MAX,
             account_address,
             Some(auth_prefix),
+            vec![],
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
@@ -140,7 +140,7 @@ async fn test_rollback() -> Result<()> {
             .collect();
         txns.insert(
             0,
-            Transaction::BlockMetadata(enacted_block.header().clone().into_metadata()),
+            Transaction::BlockMetadata(enacted_block.clone().into_metadata()),
         );
         let root = starcoin_executor::block_execute(
             &chain_state,
@@ -153,7 +153,7 @@ async fn test_rollback() -> Result<()> {
         chain_state.flush()?;
     }
     pool.get_service()
-        .rollback(vec![enacted_block], vec![retracted_block])
+        .chain_new_block(vec![enacted_block], vec![retracted_block])
         .unwrap();
     let txns = pool.get_service().get_pending_txns(Some(100));
     assert_eq!(txns.len(), 0);

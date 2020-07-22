@@ -6,10 +6,16 @@ use actix::Addr;
 use anyhow::{format_err, Error, Result};
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
+use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
+use scs::SCSCodec;
+use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
+use starcoin_vm_types::on_chain_config::EpochResource;
+use std::collections::HashSet;
 use std::sync::Arc;
 use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult, Consensus};
@@ -21,6 +27,8 @@ use types::{
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
+
+const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
 pub struct ChainServiceImpl<C, P>
 where
@@ -139,7 +147,7 @@ where
     }
 
     fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
-        if let Err(e) = self.txpool.rollback(enacted, retracted) {
+        if let Err(e) = self.txpool.chain_new_block(enacted, retracted) {
             error!("rollback err : {:?}", e);
         }
     }
@@ -212,11 +220,225 @@ where
         Ok(blocks)
     }
 
+    fn find_available_uncles(&self, epoch_start_number: BlockNumber) -> Result<Vec<BlockHeader>> {
+        let mut exists_uncles = HashSet::new();
+        self.merge_exists_uncles(
+            epoch_start_number,
+            self.startup_info.master,
+            &mut exists_uncles,
+        )?;
+
+        let mut uncles = HashSet::new();
+        let branchs = self.find_available_branch(epoch_start_number)?;
+        for branch_header_id in branchs {
+            let available_uncles = self.find_available_uncles_in_branch(
+                epoch_start_number,
+                branch_header_id,
+                &exists_uncles,
+            )?;
+            for uncle in available_uncles {
+                if !uncles.contains(&uncle) {
+                    uncles.insert(uncle.clone());
+                    exists_uncles.insert(uncle);
+                }
+                if uncles.len() == MAX_UNCLE_COUNT_PER_BLOCK {
+                    break;
+                }
+            }
+        }
+        Ok(uncles.into_iter().collect())
+    }
+
+    fn find_available_branch(&self, epoch_start_number: BlockNumber) -> Result<Vec<HashValue>> {
+        let mut result = Vec::new();
+        let master_block_headers = self.master_blocks_since(epoch_start_number)?;
+
+        for branch_header_id in &self.startup_info.branches {
+            if self.check_common_ancestor(
+                *branch_header_id,
+                epoch_start_number,
+                &master_block_headers,
+            )? {
+                result.push(*branch_header_id)
+            }
+        }
+        Ok(result)
+    }
+
+    fn master_blocks_since(&self, epoch_start_number: BlockNumber) -> Result<HashSet<BlockHeader>> {
+        let mut result = HashSet::new();
+
+        let mut id = self.startup_info.master;
+
+        loop {
+            let block_header = self.storage.get_block_header_by_hash(id)?;
+
+            if let Some(block_header) = block_header {
+                id = block_header.parent_hash;
+                if block_header.number <= epoch_start_number {
+                    break;
+                }
+                result.insert(block_header);
+            }
+        }
+        Ok(result)
+    }
+
+    fn check_common_ancestor(
+        &self,
+        header_id: HashValue,
+        epoch_start_number: BlockNumber,
+        master_block_headers: &HashSet<BlockHeader>,
+    ) -> Result<bool> {
+        let mut id = header_id;
+
+        let mut result = false;
+        loop {
+            let block_header = self.storage.get_block_header_by_hash(id)?;
+
+            if let Some(block_header) = block_header {
+                id = block_header.parent_hash;
+                if block_header.number <= epoch_start_number {
+                    break;
+                }
+                if master_block_headers.contains(&block_header) {
+                    result = true;
+                    break;
+                }
+            }
+        }
+        Ok(result)
+    }
+
+    fn merge_exists_uncles(
+        &self,
+        epoch_start_number: BlockNumber,
+        block_id: HashValue,
+        exists_uncles: &mut HashSet<BlockHeader>,
+    ) -> Result<()> {
+        let block = self.storage.get_block_by_hash(block_id)?;
+
+        if let Some(block) = block {
+            if block.header.number < epoch_start_number {
+                return Ok(());
+            }
+            if let Some(uncles) = block.uncles() {
+                for uncle in uncles {
+                    exists_uncles.insert(uncle.clone());
+                }
+            }
+            self.merge_exists_uncles(epoch_start_number, block.header.parent_hash, exists_uncles)?;
+        }
+        Ok(())
+    }
+
+    fn find_available_uncles_in_branch(
+        &self,
+        epoch_start_number: BlockNumber,
+        block_id: HashValue,
+        exists_uncles: &HashSet<BlockHeader>,
+    ) -> Result<Vec<BlockHeader>> {
+        let block = self.storage.get_block_by_hash(block_id)?;
+        let mut result = vec![];
+
+        if let Some(block) = block {
+            if block.header.number < epoch_start_number {
+                return Ok(result);
+            }
+            if let Some(uncles) = block.uncles() {
+                for uncle in uncles {
+                    if !exists_uncles.contains(uncle) {
+                        result.push(uncle.clone());
+                    }
+                    if result.len() == MAX_UNCLE_COUNT_PER_BLOCK {
+                        return Ok(result);
+                    }
+                }
+            }
+            self.find_available_uncles_in_branch(
+                epoch_start_number,
+                block.header.parent_hash,
+                exists_uncles,
+            )?;
+        }
+        Ok(result)
+    }
+
     pub fn broadcast_2_bus(&self, block: BlockDetail) {
         let bus = self.bus.clone();
         bus.do_send(Broadcast {
             msg: NewHeadBlock(Arc::new(block)),
         });
+    }
+
+    fn verify_uncles(
+        &self,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+        reader: &dyn ChainStateReader,
+    ) -> Result<ConnectBlockResult> {
+        if uncles.len() > MAX_UNCLE_COUNT_PER_BLOCK {
+            debug!("too many uncles {} in block {}", uncles.len(), header.id());
+            return Ok(ConnectBlockResult::UncleBlockIllegal);
+        }
+
+        for uncle in uncles {
+            if uncle.number >= header.number {
+                debug!("uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}",uncle.number,header.number);
+                return Ok(ConnectBlockResult::UncleBlockIllegal);
+            }
+        }
+
+        match header.uncle_hash {
+            Some(uncle_hash) => {
+                let calculated_hash = HashValue::sha3_256_of(&uncles.to_vec().encode()?);
+                if !calculated_hash.eq(&uncle_hash) {
+                    debug!(
+                        "uncle hash in header is {},uncle hash calculated is {}",
+                        uncle_hash, calculated_hash
+                    );
+                    return Ok(ConnectBlockResult::UncleBlockIllegal);
+                }
+            }
+            None => {
+                return Ok(ConnectBlockResult::UncleBlockIllegal);
+            }
+        }
+
+        let account_reader = AccountStateReader::new(reader);
+        let epoch = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)?;
+        let epoch_start_number = if let Some(epoch) = epoch {
+            epoch.start_number()
+        } else {
+            header.number
+        };
+
+        let master_block_headers = self.master_blocks_since(epoch_start_number)?;
+        for uncle in uncles {
+            if !self.check_common_ancestor(uncle.id(), epoch_start_number, &master_block_headers)? {
+                debug!(
+                    "can't find ancestor in master uncle id is {:?},epoch start number is {:?}",
+                    uncle.id(),
+                    header.number
+                );
+                return Ok(ConnectBlockResult::UncleBlockIllegal);
+            }
+        }
+
+        let mut exists_uncles = HashSet::new();
+        self.merge_exists_uncles(
+            epoch_start_number,
+            self.startup_info.master,
+            &mut exists_uncles,
+        )?;
+        for uncle in uncles {
+            if exists_uncles.contains(uncle) {
+                debug!("uncle block exists in master,uncle id is {:?}", uncle.id(),);
+                return Ok(ConnectBlockResult::DuplicateUncles);
+            }
+        }
+
+        Ok(ConnectBlockResult::FutureBlock)
     }
 
     fn connect_inner(&mut self, block: Block, execute: bool) -> Result<ConnectBlockResult> {
@@ -229,6 +451,13 @@ where
                 .exe_block_time
                 .with_label_values(&["time"])
                 .start_timer();
+            if let Some(uncles) = block.uncles() {
+                if let ConnectBlockResult::VerifyConsensusFailed =
+                    self.verify_uncles(uncles, &block.header, branch.chain_state_reader())?
+                {
+                    return Ok(ConnectBlockResult::VerifyConsensusFailed);
+                }
+            }
             let connected = if execute {
                 branch.apply(block.clone())?
             } else {
@@ -343,12 +572,30 @@ where
             None => self.get_master().current_header().id(),
         };
 
-        if let Ok(Some(_)) = self.get_block_by_hash(block_id) {
+        if let Ok(Some(block)) = self.get_block_by_hash(block_id) {
             //TODO ensure is need create a new chain?
             let block_chain = self.get_master().new_chain(block_id)?;
-            block_chain
-                .create_block_template(author, auth_key_prefix, Some(block_id), user_txns)
-                .map(|t| t.0)
+            let account_reader = AccountStateReader::new(block_chain.chain_state_reader());
+            let epoch = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)?;
+            let epoch_start_number = if let Some(epoch) = epoch {
+                epoch.start_number()
+            } else {
+                block.header.number
+            };
+            let uncles = self.find_available_uncles(epoch_start_number)?;
+            let (block_template, excluded_txns) = block_chain.create_block_template(
+                author,
+                auth_key_prefix,
+                Some(block_id),
+                user_txns,
+                uncles,
+            )?;
+            // remove invalid txn from txpool
+            for invalid_txn in excluded_txns.discarded_txns {
+                let _ = self.txpool.remove_txn(invalid_txn.crypto_hash(), true);
+            }
+
+            Ok(block_template)
         } else {
             Err(format_err!("Block {:?} not exist.", block_id))
         }

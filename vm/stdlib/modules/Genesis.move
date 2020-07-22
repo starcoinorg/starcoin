@@ -5,14 +5,11 @@ module Genesis {
    use 0x1::Account;
    use 0x1::Signer;
    use 0x1::TransactionTimeout;
-   use 0x1::Coin;
    use 0x1::Timestamp;
-   use 0x1::Association;
    use 0x1::STC::{Self,STC};
    use 0x1::PackageTxnManager;
    use 0x1::Consensus;
    use 0x1::Version;
-   use 0x1::RewardConfig;
    use 0x1::VMConfig;
    use 0x1::Vector;
    use 0x1::Block;
@@ -20,13 +17,14 @@ module Genesis {
    use 0x1::BlockReward;
 
    //TODO refactor when move support ABI, and pass struct by argument
-   public fun initialize(publishing_option: vector<u8>, instruction_schedule: vector<u8>,native_schedule: vector<u8>,
-                         reward_halving_interval: u64, reward_base: u64, reward_delay: u64,
-                         uncle_rate_target:u64,epoch_time_target: u64,reward_half_time_target: u64,
-                         total_supply: u64, pre_mine_percent:u64,
-                         parent_hash: vector<u8>,
-                         association_auth_key: vector<u8>,
-                         genesis_auth_key: vector<u8>,
+   public fun initialize(publishing_option: vector<u8>, instruction_schedule: vector<u8>,
+                         native_schedule: vector<u8>, reward_delay: u64,
+                         uncle_rate_target:u64,epoch_time_target: u64,
+                         reward_half_epoch: u64, init_block_time_target: u64,
+                         block_difficulty_window: u64, min_time_target:u64,
+                         reward_per_uncle_percent: u64, max_uncles_per_block:u64, total_supply: u128,
+                         pre_mine_percent:u64, parent_hash: vector<u8>,
+                         association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
    ){
         assert(Timestamp::is_genesis(), 1);
 
@@ -37,30 +35,28 @@ module Genesis {
 
         Block::initialize(&genesis_account, parent_hash);
 
-        Coin::initialize(&genesis_account);
-
         // init config
         VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule);
-        RewardConfig::initialize(&genesis_account, reward_halving_interval, reward_base, reward_delay);
         Version::initialize(&genesis_account);
-        Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_time_target);
 
         TransactionTimeout::initialize(&genesis_account);
 
         STC::initialize(&genesis_account);
-        Account::add_currency<STC>(&genesis_account);
+        Account::accept_token<STC>(&genesis_account);
 
         let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), copy dummy_auth_key_prefix);
-        Account::add_currency<STC>(&association);
-        Association::initialize(&association);
-        Association::grant_privilege<Coin::AddCurrency>(&association, &association);
+        Account::accept_token<STC>(&association);
 
-        let association_balance = total_supply * pre_mine_percent / 100;
+        let association_balance = total_supply * (pre_mine_percent as u128) / 100;
         if (association_balance > 0) {
              Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), association_balance);
         };
         let miner_reward_balance = total_supply - association_balance;
-        BlockReward::initialize(&genesis_account, miner_reward_balance);
+        let init_reward_per_epoch = miner_reward_balance / (reward_half_epoch * 2 as u128);
+        Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_difficulty_window,
+                                init_reward_per_epoch, reward_per_uncle_percent, min_time_target, max_uncles_per_block);
+
+        BlockReward::initialize(&genesis_account, miner_reward_balance, reward_delay);
 
         TransactionFee::initialize(&genesis_account);
         //Grant stdlib maintainer to association

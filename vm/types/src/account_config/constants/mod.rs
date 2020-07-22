@@ -4,12 +4,6 @@
 pub mod account;
 pub mod addresses;
 
-pub mod debug {
-    pub use libra_types::account_config::constants::debug::{
-        DEBUG_MODULE, DEBUG_MODULE_NAME, GENESIS_MODULE,
-    };
-}
-
 pub mod event {
     pub use libra_types::account_config::constants::event::{
         event_handle_generator_struct_name, event_handle_generator_struct_tag,
@@ -18,13 +12,12 @@ pub mod event {
 }
 
 pub mod chain;
-pub mod coin;
 pub mod stc;
+pub mod token;
 
 pub use account::*;
 pub use addresses::*;
 pub use chain::*;
-pub use coin::*;
-pub use debug::*;
 pub use event::*;
 pub use stc::*;
+pub use token::*;

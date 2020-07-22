@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-vm-types"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -10,16 +10,17 @@ edition = "2018"
 anyhow = "1.0"
 once_cell = "1.4.0"
 serde = { version = "1.0", default-features = false }
-num_enum = "0.4.1"
+num_enum = "0.5.0"
 chrono = { version = "0.4.7", default-features = false, features = ["clock"] }
-move-core-types = {git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
-move-vm-types = {git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
-libra_types = { package="libra-types", features=["fuzzing"], git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
-vm = { package="vm", git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
-libra-state-view = { package="libra-state-view", git = "https://github.com/starcoinorg/libra", rev="72a0989b02db1d8ee297f89f9da0f2e35730b005" }
+move-core-types = {git = "https://github.com/starcoinorg/libra", rev="be82f8ee963a3c5aff40a11a3d76876cf7913cca" }
+move-vm-types = {git = "https://github.com/starcoinorg/libra", rev="be82f8ee963a3c5aff40a11a3d76876cf7913cca" }
+libra_types = { package="libra-types", features=["fuzzing"], git = "https://github.com/starcoinorg/libra", rev="be82f8ee963a3c5aff40a11a3d76876cf7913cca" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev="be82f8ee963a3c5aff40a11a3d76876cf7913cca" }
+vm = { git = "https://github.com/starcoinorg/libra", rev="be82f8ee963a3c5aff40a11a3d76876cf7913cca" }
+libra-state-view = { package="libra-state-view", git = "https://github.com/starcoinorg/libra", rev="be82f8ee963a3c5aff40a11a3d76876cf7913cca" }
+move-ir-types = {git = "https://github.com/starcoinorg/libra", rev="be82f8ee963a3c5aff40a11a3d76876cf7913cca" }
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-crypto = { path = "../../commons/crypto"}
 
 [dev-dependencies]
-
+serde_json = { version="1.0", features = ["arbitrary_precision"] }

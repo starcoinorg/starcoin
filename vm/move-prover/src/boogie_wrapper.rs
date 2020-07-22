@@ -63,13 +63,19 @@ pub struct BoogieOutput {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BoogieErrorKind {
     Compilation,
+    Precondition,
     Postcondition,
     Assertion,
+    Inconclusive,
 }
 
 impl BoogieErrorKind {
     fn is_from_verification(self) -> bool {
-        self == BoogieErrorKind::Assertion || self == BoogieErrorKind::Postcondition
+        use BoogieErrorKind::*;
+        matches!(
+            self,
+            Assertion | Precondition | Postcondition | Inconclusive
+        )
     }
 }
 
@@ -77,6 +83,7 @@ impl BoogieErrorKind {
 pub struct BoogieError {
     pub kind: BoogieErrorKind,
     pub position: Location,
+    pub context_position: Option<Location>,
     pub message: String,
     pub execution_trace: Vec<(Location, TraceKind, String)>,
     pub model: Option<Model>,
@@ -115,6 +122,7 @@ impl<'env> BoogieWrapper<'env> {
                 debug!("analyzing boogie output");
                 let out = String::from_utf8_lossy(&output.stdout).to_string();
                 let mut errors = self.extract_verification_errors(&out);
+                errors.extend(self.extract_inconclusive_errors(&out));
                 errors.extend(self.extract_compilation_errors(&out));
                 return Ok(BoogieOutput {
                     errors,
@@ -138,10 +146,61 @@ impl<'env> BoogieWrapper<'env> {
         debug!("writing boogie log to {}", boogie_log_file);
         fs::write(&boogie_log_file, &all_output)?;
 
+        // Keep the set of locations which had a negative condition failure. These are errors
+        // which are expected.
+        let mut negative_cond_errors = BTreeSet::new();
+
         for error in &errors {
-            self.add_error(error);
+            if let Some(fun) = self.try_get_negative_error(error) {
+                negative_cond_errors.insert(fun);
+            } else {
+                // Errors from counter examples to the specification
+                self.add_error(error);
+            }
         }
+
+        // Add errors for functions with smoke tests
+        self.add_negative_errors(negative_cond_errors);
+
         Ok(())
+    }
+
+    /// Determine whether the boogie error represents the failure of a negative condition
+    /// and return its location of so.
+    fn try_get_negative_error(&self, error: &BoogieError) -> Option<Loc> {
+        // Find the source location of the error
+        let (_, loc_opt) = self.get_locations(error.position);
+        let source_loc = self.to_proper_source_location(loc_opt).and_then(|loc| {
+            if error.kind.is_from_verification() {
+                Some(loc)
+            } else {
+                None
+            }
+        })?;
+
+        // Check whether the condition which failed was a negative one.
+        self.env
+            .get_condition_info(&source_loc)
+            .filter(|info| info.negative_cond)?;
+        Some(source_loc)
+    }
+
+    /// Go over all negative conditions and check whether errors occurred for them.
+    /// For those which did not occur, report error.
+    fn add_negative_errors(&self, negative_cond_errors: BTreeSet<Loc>) {
+        self.env.with_condition_infos(|loc, info| {
+            if !info.negative_cond || negative_cond_errors.contains(loc) {
+                // Not a negative condition, or expected error happened.
+                return;
+            }
+            // Expected error did not happen, report it.
+            let diag = Diagnostic::new(
+                Severity::Error,
+                info.message.clone(),
+                Label::new(loc.file_id(), loc.span(), ""),
+            );
+            self.env.add_diag(diag);
+        });
     }
 
     /// Helper to add a boogie error as a codespan Diagnostic.
@@ -163,6 +222,24 @@ impl<'env> BoogieWrapper<'env> {
         };
 
         // Create the error
+        let (show_trace, message, call_loc) = loc_opt
+            .as_ref()
+            .and_then(|loc| self.env.get_condition_info(loc))
+            .map(|info| {
+                if let Some(msg) = info.message_if_requires.as_ref() {
+                    // Check whether the Boogie error indicates a precondition, or if this is
+                    // the only message we have.
+                    if error.kind == BoogieErrorKind::Precondition || info.message.is_empty() {
+                        // Extract the location of the call site.
+                        let call_loc = error
+                            .context_position
+                            .and_then(|p| self.to_proper_source_location(self.get_locations(p).1));
+                        return (!info.omit_trace, msg.clone(), call_loc);
+                    }
+                }
+                (!info.omit_trace, info.message, None)
+            })
+            .unwrap_or_else(|| (true, error.message.clone(), None));
         let mut diag = Diagnostic::new(
             if on_source {
                 Severity::Error
@@ -170,12 +247,17 @@ impl<'env> BoogieWrapper<'env> {
                 // Consider diags on boogie source as bugs
                 Severity::Bug
             },
-            &error.message,
+            message,
             label,
         );
+        if let Some(loc) = call_loc {
+            let label = Label::new(loc.file_id(), loc.span(), "called function");
+            diag.secondary_labels.push(label);
+        }
 
         // Now add trace diagnostics.
         if error.kind.is_from_verification()
+            && show_trace
             && !error.execution_trace.is_empty()
             // Reporting errors on boogie source seems to have some non-determinism, so skip
             // this if stable output is required
@@ -473,17 +555,22 @@ impl<'env> BoogieWrapper<'env> {
                 at += cap.get(0).unwrap().end();
                 // Check whether there is a `Related` message which points to the pre/post condition.
                 // If so, this has the real position.
-                let (line, col) = if let Some(cap1) = verification_diag_related.captures(&out[at..])
-                {
-                    at += cap1.get(0).unwrap().end();
-                    let line = cap1.name("line").unwrap().as_str();
-                    let col = cap1.name("col").unwrap().as_str();
-                    (line, col)
-                } else {
-                    let line = cap.name("line").unwrap().as_str();
-                    let col = cap.name("col").unwrap().as_str();
-                    (line, col)
-                };
+                let (pos, context_pos) =
+                    if let Some(cap1) = verification_diag_related.captures(&out[at..]) {
+                        let call_line = cap.name("line").unwrap().as_str();
+                        let call_col = cap.name("col").unwrap().as_str();
+                        at += cap1.get(0).unwrap().end();
+                        let line = cap1.name("line").unwrap().as_str();
+                        let col = cap1.name("col").unwrap().as_str();
+                        (
+                            make_position(line, col),
+                            Some(make_position(call_line, call_col)),
+                        )
+                    } else {
+                        let line = cap.name("line").unwrap().as_str();
+                        let col = cap.name("col").unwrap().as_str();
+                        (make_position(line, col), None)
+                    };
                 let mut trace = vec![];
                 if let Some(m) = verification_diag_trace.find(&out[at..]) {
                     at += m.end();
@@ -515,10 +602,13 @@ impl<'env> BoogieWrapper<'env> {
                 errors.push(BoogieError {
                     kind: if msg.contains("assertion might not hold") {
                         BoogieErrorKind::Assertion
+                    } else if msg.contains("precondition") {
+                        BoogieErrorKind::Precondition
                     } else {
                         BoogieErrorKind::Postcondition
                     },
-                    position: make_position(line, col),
+                    position: pos,
+                    context_position: context_pos,
                     message: msg.to_string(),
                     execution_trace: trace,
                     model,
@@ -528,6 +618,36 @@ impl<'env> BoogieWrapper<'env> {
             }
         }
         errors
+    }
+
+    /// Extracts inconclusive (timeout) errors.
+    fn extract_inconclusive_errors(&self, out: &str) -> Vec<BoogieError> {
+        let diag_re =
+            Regex::new(r"(?m)^.*\((?P<line>\d+),(?P<col>\d+)\).*Verification (inconclusive|out of resource).*$")
+                .unwrap();
+        diag_re
+            .captures_iter(&out)
+            .map(|cap| {
+                let line = cap.name("line").unwrap().as_str();
+                let col = cap.name("col").unwrap().as_str();
+                let msg = cap.get(0).unwrap().as_str();
+                BoogieError {
+                    kind: BoogieErrorKind::Inconclusive,
+                    position: make_position(line, col),
+                    context_position: None,
+                    message: if msg.contains("out of resource") {
+                        format!(
+                            "verification out of resources/timeout (timeout set to {}s)",
+                            self.options.backend.vc_timeout
+                        )
+                    } else {
+                        "verification inconclusive".to_string()
+                    },
+                    execution_trace: vec![],
+                    model: None,
+                }
+            })
+            .collect_vec()
     }
 
     /// Extracts compilation errors. This captures any kind of errors different than the
@@ -544,6 +664,7 @@ impl<'env> BoogieWrapper<'env> {
                 BoogieError {
                     kind: BoogieErrorKind::Compilation,
                     position: make_position(line, col),
+                    context_position: None,
                     message: msg.to_string(),
                     execution_trace: vec![],
                     model: None,
@@ -567,6 +688,13 @@ fn make_position(line_str: &str, col_str: &str) -> Location {
 // -----------------------------------------------
 // # Boogie Model Analysis
 
+/// Represents whether the Vector type is implemented at the SMT level using integer maps or sequences
+#[derive(Debug, PartialEq, Eq)]
+pub enum ValueArrayRep {
+    ValueArrayIsMap,
+    ValueArrayIsSeq,
+}
+
 /// Represents a boogie model.
 #[derive(Debug)]
 pub struct Model {
@@ -574,6 +702,7 @@ pub struct Model {
     tracked_locals: BTreeMap<Loc, Vec<(LocalDescriptor, ModelValue)>>,
     tracked_aborts: BTreeMap<(String, LineIndex), AbortDescriptor>,
     tracked_exps: BTreeMap<ExpDescriptor, Vec<ModelValue>>,
+    value_array_rep: ValueArrayRep,
 }
 
 impl Model {
@@ -661,11 +790,17 @@ impl Model {
                 //    );
                 // }
                 // END DEBUG
+                let value_array_rep = if wrapper.options.backend.vector_using_sequences {
+                    ValueArrayRep::ValueArrayIsSeq
+                } else {
+                    ValueArrayRep::ValueArrayIsMap
+                };
                 let model = Model {
                     vars,
                     tracked_locals,
                     tracked_aborts,
                     tracked_exps,
+                    value_array_rep,
                 };
                 Ok(model)
             })
@@ -886,45 +1021,87 @@ impl ModelValue {
         args[0].extract_value_array(model)
     }
 
-    /// Extracts a value array from `(ValueArray map_key size)`. This follows indirections in the
-    /// model. We find the value array map at `Select_[$int]$Value`. This has e.g. the form
-    ///
+    /// Extracts a value array from it's representation.
+    /// If the representation uses maps it is defined by `(ValueArray map_key size)`. The function
+    /// follows indirections in the model. We find the value array map at `Select_[$int]$Value`.
+    /// This has e.g. the form
     /// ```model
     ///   Select_[$int]$Value -> {
-    //      |T@[Int]Value!val!1| 0 -> (Integer 2)
-    //      |T@[Int]Value!val!1| 22 -> (Integer 2)
-    //      else -> (Integer 0)
-    //    }
-    // ```
+    ///      |T@[Int]Value!val!1| 0 -> (Integer 2)
+    ///      |T@[Int]Value!val!1| 22 -> (Integer 2)
+    ///      else -> (Integer 0)
+    ///    }
+    /// ```
+    /// If the value array is represented by a sequence instead, there are no indirections.
+    /// It has the form
+    /// ```(seq.++ (seq.unit (Integer 0)) (seq.unit (Integer 1)))```
+    /// or
+    /// ```(as seq.empty (Seq T@$Value))```
+    /// depending on whether it is an empty or nonempty sequence, respectively.
+    // In this case the sequence representation does not explicitly denote a constructor like ValueArray(..),
+    // instead reducing expressions to native SMT sequence theory expressions.
+
     fn extract_value_array(&self, model: &Model) -> Option<ModelValueVector> {
-        let args = self.extract_list("$ValueArray")?;
-        if args.len() != 2 {
-            return None;
-        }
-        let size = (&args[1]).extract_number()?;
-        let map_key = &args[0];
-        let value_array_map = model
-            .vars
-            .get(&ModelValue::literal("Select_[$int]$Value"))?
-            .extract_map()?;
-        let mut values = BTreeMap::new();
-        let mut default = ModelValue::error();
-        for (key, value) in value_array_map {
-            if let ModelValue::List(elems) = key {
-                if elems.len() == 2 && &elems[0] == map_key {
-                    if let Some(idx) = elems[1].extract_number() {
-                        values.insert(idx, value.clone());
-                    }
+        if ValueArrayRep::ValueArrayIsSeq == model.value_array_rep {
+            // Implementation of $ValueArray using sequences
+            let seq_type_modelvalue = ModelValue::List(vec![
+                ModelValue::literal("Seq"),
+                ModelValue::List(vec![ModelValue::literal("T@$Value")]),
+            ]);
+            let empty_seq_model_value = ModelValue::List(vec![
+                ModelValue::literal("as"),
+                ModelValue::List(vec![ModelValue::literal("seq.empty")]),
+                seq_type_modelvalue,
+            ]);
+            let default = ModelValue::error();
+            let (size, values) = if &empty_seq_model_value == self {
+                (0, BTreeMap::new())
+            } else {
+                let mut values = BTreeMap::new();
+                let seq_elems = self.extract_list("seq.++")?;
+                for (index, wrapped_seq_value_at_index) in seq_elems.iter().enumerate() {
+                    let seq_value_at_index =
+                        (&wrapped_seq_value_at_index).extract_list("seq.unit")?;
+                    values.insert(index, (&seq_value_at_index[0]).clone());
                 }
-            } else if key == &ModelValue::literal("else") {
-                default = value.clone();
+                (seq_elems.len(), values)
+            };
+            Some(ModelValueVector {
+                size,
+                values,
+                default,
+            })
+        } else {
+            // Implementation of $ValueArray using integer maps
+            let args = self.extract_list("$ValueArray")?;
+            if args.len() != 2 {
+                return None;
             }
+            let size = (&args[1]).extract_number()?;
+            let map_key = &args[0];
+            let value_array_map = model
+                .vars
+                .get(&ModelValue::literal("Select_[$int]$Value"))?
+                .extract_map()?;
+            let mut values = BTreeMap::new();
+            let mut default = ModelValue::error();
+            for (key, value) in value_array_map {
+                if let ModelValue::List(elems) = key {
+                    if elems.len() == 2 && &elems[0] == map_key {
+                        if let Some(idx) = elems[1].extract_number() {
+                            values.insert(idx, value.clone());
+                        }
+                    }
+                } else if key == &ModelValue::literal("else") {
+                    default = value.clone();
+                }
+            }
+            Some(ModelValueVector {
+                size,
+                values,
+                default,
+            })
         }
-        Some(ModelValueVector {
-            size,
-            values,
-            default,
-        })
     }
 
     fn extract_map(&self) -> Option<&BTreeMap<ModelValue, ModelValue>> {
@@ -1009,7 +1186,7 @@ impl ModelValue {
             Type::Primitive(PrimitiveType::Bool) => Some(PrettyDoc::text(
                 self.extract_primitive("$Boolean")?.to_string(),
             )),
-            Type::Primitive(PrimitiveType::Address) => {
+            Type::Primitive(PrimitiveType::Address) | Type::Primitive(PrimitiveType::Signer) => {
                 let addr = BigInt::parse_bytes(
                     &self.extract_primitive("$Address")?.clone().into_bytes(),
                     10,

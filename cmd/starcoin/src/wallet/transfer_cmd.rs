@@ -31,7 +31,7 @@ pub struct TransferOpt {
     /// if `to` account not exist on chain, must provide public_key of the account.
     public_key: Option<String>,
     #[structopt(short = "v")]
-    amount: u64,
+    amount: u128,
     #[structopt(
         short = "g",
         long = "max-gas",
@@ -50,13 +50,13 @@ pub struct TransferOpt {
     gas_price: u64,
 
     #[structopt(
-    short = "c",
-    long = "coin",
-    name = "coin_type",
-    help = "coin's type tag, for example: 0x0::STC::T, default is STC",
+    short = "t",
+    long = "token-type",
+    name = "token-type",
+    help = "token's type tag, for example: 0x0::STC::STC, default is STC",
     parse(try_from_str = parse_type_tag)
     )]
-    coin_type: Option<TypeTag>,
+    token_type: Option<TypeTag>,
 
     #[structopt(
         short = "b",
@@ -125,8 +125,8 @@ impl CommandAction for TransferCommand {
                     sender.address()
                 )
             })?;
-        let coin_type = opt.coin_type.clone().unwrap_or_else(stc_type_tag);
-        let raw_txn = starcoin_executor::build_transfer_txn_by_coin_type(
+        let token_type = opt.token_type.clone().unwrap_or_else(stc_type_tag);
+        let raw_txn = starcoin_executor::build_transfer_txn_by_token_type(
             sender.address,
             receiver,
             receiver_auth_key_prefix,
@@ -134,7 +134,7 @@ impl CommandAction for TransferCommand {
             opt.amount,
             opt.gas_price,
             opt.max_gas_amount,
-            coin_type,
+            token_type,
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
         let succ = client.submit_transaction(txn.clone())?;

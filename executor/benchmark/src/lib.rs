@@ -187,6 +187,7 @@ impl<'test> TxnExecutor<'test> {
                         .as_secs(),
                     AccountAddress::random(),
                     Some(miner_account.auth_key_prefix()),
+                    0,
                 );
 
                 transactions.insert(0, Transaction::BlockMetadata(block_meta));

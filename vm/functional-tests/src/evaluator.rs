@@ -7,9 +7,6 @@ use crate::{
     errors::*,
     executor::FakeExecutor,
 };
-use bytecode_verifier::verifier::{
-    verify_module_dependencies, verify_script_dependencies, VerifiedModule, VerifiedScript,
-};
 use mirai_annotations::checked_verify;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
@@ -22,11 +19,13 @@ use starcoin_types::{
         SignedUserTransaction, Transaction as StarcoinTransaction, TransactionOutput,
         TransactionStatus,
     },
-    vm_error::{StatusCode, VMStatus},
 };
+use starcoin_vm_types::errors::{Location, VMError};
 use starcoin_vm_types::{
+    bytecode_verifier::DependencyChecker,
     file_format::{CompiledModule, CompiledScript},
     views::ModuleView,
+    vm_status::StatusCode,
 };
 use starcoin_vm_types::{
     gas_schedule::{GasAlgebra, GasConstants},
@@ -195,7 +194,7 @@ impl fmt::Display for EvaluationLog {
 fn fetch_script_dependencies(
     exec: &mut FakeExecutor,
     script: &CompiledScript,
-) -> Vec<VerifiedModule> {
+) -> Vec<CompiledModule> {
     let inner = script.as_inner();
     let idents = inner.module_handles.iter().map(|handle| {
         ModuleId::new(
@@ -209,7 +208,7 @@ fn fetch_script_dependencies(
 fn fetch_module_dependencies(
     exec: &mut FakeExecutor,
     module: &CompiledModule,
-) -> Vec<VerifiedModule> {
+) -> Vec<CompiledModule> {
     let idents = ModuleView::new(module)
         .module_handles()
         .map(|handle_view| handle_view.module_id());
@@ -219,38 +218,40 @@ fn fetch_module_dependencies(
 fn fetch_dependencies(
     exec: &mut FakeExecutor,
     idents: impl Iterator<Item = ModuleId>,
-) -> Vec<VerifiedModule> {
-    // idents.into_inner().
+) -> Vec<CompiledModule> {
     idents
         .flat_map(|ident| fetch_dependency(exec, ident))
         .collect()
 }
 
-fn fetch_dependency(exec: &mut FakeExecutor, ident: ModuleId) -> Option<VerifiedModule> {
+fn fetch_dependency(exec: &mut FakeExecutor, ident: ModuleId) -> Option<CompiledModule> {
     let ap = AccessPath::from(&ident);
     let blob: Vec<u8> = exec.get_state_view().get(&ap).ok().flatten()?;
     let compiled: CompiledModule = CompiledModule::deserialize(&blob).ok()?;
-    VerifiedModule::new(compiled).ok()
+    match bytecode_verifier::verify_module(&compiled) {
+        Ok(_) => Some(compiled),
+        Err(_) => None,
+    }
 }
 
 /// Verify a script with its dependencies.
 pub fn verify_script(
     script: CompiledScript,
-    deps: &[VerifiedModule],
-) -> std::result::Result<VerifiedScript, VMStatus> {
-    let verified_script = VerifiedScript::new(script).map_err(|(_, e)| e)?;
-    verify_script_dependencies(&verified_script, deps)?;
-    Ok(verified_script)
+    deps: &[CompiledModule],
+) -> std::result::Result<CompiledScript, VMError> {
+    bytecode_verifier::verify_script(&script)?;
+    DependencyChecker::verify_script(&script, deps)?;
+    Ok(script)
 }
 
 /// Verify a module with its dependencies.
 pub fn verify_module(
     module: CompiledModule,
-    deps: &[VerifiedModule],
-) -> std::result::Result<VerifiedModule, VMStatus> {
-    let verified_module = VerifiedModule::new(module).map_err(|(_, e)| e)?;
-    verify_module_dependencies(&verified_module, deps)?;
-    Ok(verified_module)
+    deps: &[CompiledModule],
+) -> std::result::Result<CompiledModule, VMError> {
+    bytecode_verifier::verify_module(&module)?;
+    DependencyChecker::verify_module(&module, deps)?;
+    Ok(module)
 }
 
 /// A set of common parameters required to create transactions.
@@ -283,7 +284,7 @@ fn get_transaction_parameters<'a>(
         } else {
             std::cmp::min(
                 max_number_of_gas_units.get(),
-                account_balance.coin() / gas_unit_price,
+                (account_balance.token() / gas_unit_price as u128) as u64,
             )
         }
     });
@@ -361,7 +362,7 @@ fn run_transaction(
         match output.status() {
             TransactionStatus::Keep(status) => {
                 exec.apply_write_set(output.write_set());
-                if status.major_status == StatusCode::EXECUTED {
+                if status.status_code() == StatusCode::EXECUTED {
                     Ok(output)
                 } else {
                     debug!("VM status:: {:?}", output.status().vm_status());
@@ -383,7 +384,8 @@ fn run_transaction(
 fn serialize_and_deserialize_script(script: &CompiledScript) -> Result<()> {
     let mut script_blob = vec![];
     script.serialize(&mut script_blob)?;
-    let deserialized_script = CompiledScript::deserialize(&script_blob)?;
+    let deserialized_script = CompiledScript::deserialize(&script_blob)
+        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
 
     if *script != deserialized_script {
         return Err(ErrorKind::Other(
@@ -399,7 +401,8 @@ fn serialize_and_deserialize_script(script: &CompiledScript) -> Result<()> {
 fn serialize_and_deserialize_module(module: &CompiledModule) -> Result<()> {
     let mut module_blob = vec![];
     module.serialize(&mut module_blob)?;
-    let deserialized_module = CompiledModule::deserialize(&module_blob)?;
+    let deserialized_module = CompiledModule::deserialize(&module_blob)
+        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
 
     if *module != deserialized_module {
         return Err(ErrorKind::Other(
@@ -459,9 +462,9 @@ fn eval_transaction<TComp: Compiler>(
             log.append(EvaluationOutput::Stage(Stage::Verifier));
             let deps = fetch_script_dependencies(exec, &compiled_script);
             let compiled_script = match verify_script(compiled_script, &deps) {
-                Ok(script) => script.into_inner(),
+                Ok(script) => script,
                 Err(err) => {
-                    let err: Error = ErrorKind::VerificationError(err).into();
+                    let err: Error = ErrorKind::VerificationError(err.into_vm_status()).into();
                     log.append(EvaluationOutput::Error(Box::new(err)));
                     return Ok(Status::Failure);
                 }
@@ -497,9 +500,9 @@ fn eval_transaction<TComp: Compiler>(
             log.append(EvaluationOutput::Stage(Stage::Verifier));
             let deps = fetch_module_dependencies(exec, &compiled_module);
             let compiled_module = match verify_module(compiled_module, &deps) {
-                Ok(module) => module.into_inner(),
+                Ok(module) => module,
                 Err(err) => {
-                    let err: Error = ErrorKind::VerificationError(err).into();
+                    let err: Error = ErrorKind::VerificationError(err.into_vm_status()).into();
                     log.append(EvaluationOutput::Error(Box::new(err)));
                     return Ok(Status::Failure);
                 }

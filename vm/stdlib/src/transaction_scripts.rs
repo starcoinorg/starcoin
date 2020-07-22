@@ -23,7 +23,7 @@ const STAGED_TXN_SCRIPTS_DIR: Dir = include_dir!("staged/transaction_scripts");
 /// All of the Move transaction scripts that can be executed on the Libra blockchain
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum StdlibScript {
-    AcceptCoin,
+    AcceptToken,
     CreateAccount,
     EmptyScript,
     Mint,
@@ -39,7 +39,7 @@ impl StdlibScript {
     pub fn all() -> Vec<Self> {
         use StdlibScript::*;
         vec![
-            AcceptCoin,
+            AcceptToken,
             CreateAccount,
             EmptyScript,
             Mint,
@@ -133,7 +133,7 @@ impl fmt::Display for StdlibScript {
             f,
             "{}",
             match self {
-                AcceptCoin => "accept_coin",
+                AcceptToken => "accept_token",
                 CreateAccount => "create_account",
                 EmptyScript => "empty_script",
                 Mint => "mint",

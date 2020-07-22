@@ -1,0 +1,16 @@
+[package]
+name = "network-rpc-core"
+version = "0.3.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+futures = "0.3"
+actix = "0.10.0-alpha.3"
+
+starcoin-types = { path = "../../types", package = "starcoin-types" }
+network-api = { path = "../../network/api"}
+logger = { path = "../../commons/logger", package = "starcoin-logger" }

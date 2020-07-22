@@ -59,7 +59,7 @@ use wasm_timer::Instant;
 /// The role of the `GenericProto` is to synchronize the following components:
 ///
 /// - The libp2p swarm that opens new connections and reports disconnects.
-/// - The connection handler (see `handler.rs`) that handles individual connections.
+/// - The connection handler (see `server`) that handles individual connections.
 /// - The peerset manager (PSM) that requests links to peers to be established or broken.
 /// - The external API, that requires knowledge of the links that have been established.
 ///
@@ -586,8 +586,8 @@ impl GenericProto {
             Some(conn) => conn,
         };
 
-        info!(target: "sub-libp2p", "External API => Packet for {:?}", target);
-        info!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
+        trace!(target: "sub-libp2p", "External API => Packet for {:?}", target);
+        trace!(target: "sub-libp2p", "Handler({:?}) <= Packet", target);
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id: target.clone(),
             handler: NotifyHandler::One(conn),

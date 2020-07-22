@@ -1,10 +1,8 @@
 [package]
 name = "network-api"
-version = "0.1.0"
-authors = ["tiangong3624749 <tiangong3624749@163.com>"]
+version = "0.3.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 starcoin-types = {path = "../../types"}
@@ -15,4 +13,4 @@ serde = { version = "1.0", default-features = false }
 starcoin-crypto = { path = "../../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 async-trait = "0.1.13"
-libp2p = "0.20.1"
+libp2p = "0.22.0"

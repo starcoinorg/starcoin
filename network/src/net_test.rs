@@ -75,7 +75,7 @@ mod tests {
                 first_addr = Some(config.listen.to_string());
             }
 
-            let server = build_network_service(&config, HashValue::default(), PeerInfo::default());
+            let server = build_network_service(&config, HashValue::default(), PeerInfo::random());
             result.push({
                 let c: NetworkComponent = server;
                 c
@@ -240,7 +240,7 @@ mod tests {
             .unwrap();
 
         let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
-            build_network_service(&node_config1, HashValue::default(), PeerInfo::default());
+            build_network_service(&node_config1, HashValue::default(), PeerInfo::random());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -254,7 +254,7 @@ mod tests {
             .unwrap();
         node_config2.seeds = vec![seed.clone()];
         let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) =
-            build_network_service(&node_config2, HashValue::default(), PeerInfo::default());
+            build_network_service(&node_config2, HashValue::default(), PeerInfo::random());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -264,7 +264,7 @@ mod tests {
             .unwrap();
         node_config3.seeds = vec![seed];
         let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-            build_network_service(&node_config3, HashValue::default(), PeerInfo::default());
+            build_network_service(&node_config3, HashValue::default(), PeerInfo::random());
 
         thread::sleep(Duration::from_secs(1));
 
@@ -295,12 +295,12 @@ mod tests {
         thread::sleep(Duration::from_secs(10));
 
         let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) =
-            build_network_service(&node_config2, HashValue::default(), PeerInfo::default());
+            build_network_service(&node_config2, HashValue::default(), PeerInfo::random());
 
         thread::sleep(Duration::from_secs(1));
 
         let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-            build_network_service(&node_config3, HashValue::default(), PeerInfo::default());
+            build_network_service(&node_config3, HashValue::default(), PeerInfo::random());
 
         thread::sleep(Duration::from_secs(1));
 

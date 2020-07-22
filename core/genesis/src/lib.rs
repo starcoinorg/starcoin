@@ -160,8 +160,9 @@ impl Genesis {
             .pop()
             .expect("Execute output must exist.");
         let (write_set, events, gas_used, _, status) = output.into_inner();
+        assert_eq!(gas_used, 0, "Genesis txn output's gas_used must be zero");
         ensure!(
-            status.vm_status().major_status == StatusCode::EXECUTED,
+            status.vm_status().status_code() == StatusCode::EXECUTED,
             "Genesis txn execute fail for: {:?}",
             status
         );
@@ -173,7 +174,7 @@ impl Genesis {
             state_root,
             events.as_slice(),
             gas_used,
-            status.vm_status().major_status,
+            status.vm_status().status_code(),
         ))
     }
 
@@ -262,8 +263,9 @@ mod tests {
     use starcoin_storage::cache_storage::CacheStorage;
     use starcoin_storage::storage::StorageInstance;
     use starcoin_storage::{BlockStore, IntoSuper, Storage};
+    use starcoin_types::account_config::genesis_address;
     use starcoin_vm_types::account_config::association_address;
-    use starcoin_vm_types::on_chain_config::{RegisteredCurrencies, VMConfig, Version};
+    use starcoin_vm_types::on_chain_config::{EpochResource, VMConfig, Version};
 
     #[stest::test]
     pub fn test_genesis_load() -> Result<()> {
@@ -319,23 +321,13 @@ mod tests {
             "association account must exist in genesis state."
         );
 
-        let currencies = account_state_reader.get_on_chain_config::<RegisteredCurrencies>();
-        assert!(
-            currencies.is_some(),
-            "RegisteredCurrencies on_chain_config should exist."
-        );
-        assert!(
-            !currencies.unwrap().currency_codes().is_empty(),
-            "RegisteredCurrencies should not empty."
-        );
-
-        let vm_config = account_state_reader.get_on_chain_config::<VMConfig>();
+        let vm_config = account_state_reader.get_on_chain_config::<VMConfig>()?;
         assert!(
             vm_config.is_some(),
             "VMConfig on_chain_config should exist."
         );
 
-        let version = account_state_reader.get_on_chain_config::<Version>();
+        let version = account_state_reader.get_on_chain_config::<Version>()?;
         assert!(version.is_some(), "Version on_chain_config should exist.");
 
         let block_info = storage
@@ -369,6 +361,9 @@ mod tests {
         //ensure block_accumulator can work.
         block_accumulator.append(&[HashValue::random()])?;
         block_accumulator.flush()?;
+
+        let epoch = account_state_reader.get_resource::<EpochResource>(genesis_address())?;
+        assert!(epoch.is_some(), "Epoch resource should exist.");
 
         Ok(())
     }

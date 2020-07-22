@@ -17,25 +17,11 @@ use vm::{
 pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
     use Bytecode::*;
     let mut instrs = vec![
-        (
-            MoveToSender(StructDefinitionIndex::new(0)),
-            GasCost::new(774, 1),
-        ),
-        (
-            MoveToSenderGeneric(StructDefInstantiationIndex::new(0)),
-            GasCost::new(774, 1),
-        ),
-        (
-            MoveTo(StructDefinitionIndex::new(0)),
-            /* MoveToSender + ReadRef == 774 + 51 == 825 */
-            GasCost::new(825, 1),
-        ),
+        (MoveTo(StructDefinitionIndex::new(0)), GasCost::new(825, 1)),
         (
             MoveToGeneric(StructDefInstantiationIndex::new(0)),
-            /* MoveToSender + ReadRef == 774 + 51 == 825 */
             GasCost::new(825, 1),
         ),
-        (GetTxnSenderAddress, GasCost::new(30, 1)),
         (
             MoveFrom(StructDefinitionIndex::new(0)),
             GasCost::new(917, 1),
@@ -147,9 +133,13 @@ pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
     let native_table = (0..NUMBER_OF_NATIVE_FUNCTIONS)
         .map(|_| GasCost::new(0, 0))
         .collect::<Vec<GasCost>>();
+    let mut gas_constants = GasConstants::default();
+
+    //TODO use different max txn size for package and script.
+    gas_constants.max_transaction_size_in_bytes = 40960;
     CostTable {
         instruction_table,
         native_table,
-        gas_constants: GasConstants::default(),
+        gas_constants,
     }
 });

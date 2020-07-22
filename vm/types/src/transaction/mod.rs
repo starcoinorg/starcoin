@@ -4,15 +4,18 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::contract_event::ContractEventHasher;
+use crate::transaction::authenticator::TransactionAuthenticator;
 use crate::{
     account_address::AccountAddress,
     account_config::stc_type_tag,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
-    vm_error::{StatusCode, StatusType, VMStatus},
+    vm_status::{StatusCode, StatusType, VMStatus},
     write_set::WriteSet,
 };
 use anyhow::{format_err, Error, Result};
+use libra_types::proof::accumulator::InMemoryAccumulator;
 use serde::{de, ser, Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::{
@@ -36,12 +39,9 @@ mod package;
 mod pending_transaction;
 mod transaction_argument;
 
-use crate::contract_event::ContractEventHasher;
-use crate::transaction::authenticator::TransactionAuthenticator;
 pub use error::CallError;
 pub use error::Error as TransactionError;
-use libra_types::proof::accumulator::InMemoryAccumulator;
-pub use libra_types::transaction::{ChangeSet, Module, Script};
+pub use libra_types::transaction::{Module, Script};
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
@@ -188,7 +188,7 @@ impl RawUserTransaction {
         private_key: &Ed25519PrivateKey,
         public_key: Ed25519PublicKey,
     ) -> Result<SignatureCheckedTransaction> {
-        let signature = private_key.sign_message(&self.crypto_hash());
+        let signature = private_key.sign(&self);
         Ok(SignatureCheckedTransaction(SignedUserTransaction::new(
             self, public_key, signature,
         )))
@@ -220,7 +220,7 @@ impl RawUserTransaction {
 
     pub fn mock_from(compiled_script: Vec<u8>) -> Self {
         Self::new(
-            AccountAddress::default(),
+            AccountAddress::ZERO,
             0,
             TransactionPayload::Script(Script::new(compiled_script, vec![stc_type_tag()], vec![])),
             600,
@@ -398,8 +398,7 @@ impl SignedUserTransaction {
     /// Checks that the signature of given transaction. Returns `Ok(SignatureCheckedTransaction)` if
     /// the signature is valid.
     pub fn check_signature(self) -> Result<SignatureCheckedTransaction> {
-        self.authenticator
-            .verify_signature(&self.raw_txn.crypto_hash())?;
+        self.authenticator.verify(&self.raw_txn)?;
         Ok(SignatureCheckedTransaction(self))
     }
 
@@ -435,6 +434,13 @@ impl TransactionStatus {
     pub fn vm_status(&self) -> &VMStatus {
         match self {
             TransactionStatus::Discard(vm_status) | TransactionStatus::Keep(vm_status) => vm_status,
+        }
+    }
+
+    pub fn is_discarded(&self) -> bool {
+        match self {
+            TransactionStatus::Discard(_) => true,
+            TransactionStatus::Keep(_) => false,
         }
     }
 }

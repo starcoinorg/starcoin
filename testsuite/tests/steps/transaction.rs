@@ -4,7 +4,7 @@
 use crate::MyWorld;
 use anyhow::Error;
 use cucumber::{Steps, StepsBuilder};
-use starcoin_executor::TXN_RESERVED;
+use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
@@ -49,7 +49,7 @@ fn transfer_txn(
     client: &RpcClient,
     to: &WalletAccount,
     from: AccountAddress,
-    amount: Option<u64>,
+    amount: Option<u128>,
 ) -> Result<(), Error> {
     let to_auth_key_prefix = AuthenticationKey::ed25519(&to.public_key).prefix();
     let chain_state_reader = RemoteStateReader::new(client);
@@ -67,7 +67,7 @@ fn transfer_txn(
         account_resource.sequence_number(),
         amount,
         1,
-        TXN_RESERVED,
+        DEFAULT_MAX_GAS_AMOUNT,
     );
 
     let txn = sign_txn(client, raw_txn).unwrap();

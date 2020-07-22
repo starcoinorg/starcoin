@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use config::{ConsensusStrategy, NodeConfig};
 use logger::prelude::*;
 use rand::prelude::*;
 use std::convert::TryFrom;
-use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use traits::ChainReader;
 use traits::{Consensus, ConsensusHeader};
 use types::block::BlockHeader;
@@ -40,38 +38,36 @@ pub struct DevConsensus {}
 impl Consensus for DevConsensus {
     type ConsensusHeader = DummyHeader;
 
-    fn calculate_next_difficulty(
-        config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
-    ) -> Result<U256> {
-        let mut rng = rand::thread_rng();
-        // if produce block on demand, use a default wait time.
-        match &config.miner.consensus_strategy {
-            ConsensusStrategy::Dummy(dev_period) => {
-                let high: u64 = if *dev_period == 0 {
-                    1000
-                } else {
-                    *dev_period * 1000
-                };
-                let time: u64 = rng.gen_range(1, high);
-                Ok(time.into())
-            }
-            ConsensusStrategy::Argon(_) => panic!("Incompatible consensus strategy"),
-        }
+    fn calculate_next_difficulty(chain: &dyn ChainReader) -> Result<U256> {
+        let epoch = Self::epoch(chain)?;
+        info!("epoch: {:?}", epoch);
+        let current_header = chain.current_header();
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)?
+            .as_secs();
+        //in dev mode, if disable_empty_block = true,
+        //may escape a long time between block,
+        //so, just set the difficulty to 1 for sleep less time for this case.
+        let target =
+            (now as i64) - (current_header.timestamp as i64) - (epoch.block_time_target() as i64);
+        let target = if target >= 0 { 1 } else { target.abs() * 1000 };
+
+        Ok(target.into())
     }
 
     fn solve_consensus_header(_header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
-        let time: u64 = difficulty.as_u64();
-        debug!("DevConsensus rand sleep time : {}", time);
+        let mut rng = rand::thread_rng();
+        let time: u64 = rng.gen_range(1, difficulty.as_u64() * 2);
+        info!(
+            "DevConsensus rand sleep time in millis second : {}, difficulty : {}",
+            time,
+            difficulty.as_u64()
+        );
         thread::sleep(Duration::from_millis(time));
         DummyHeader {}
     }
 
-    fn verify(
-        _config: Arc<NodeConfig>,
-        _reader: &dyn ChainReader,
-        _header: &BlockHeader,
-    ) -> Result<()> {
+    fn verify(_reader: &dyn ChainReader, _header: &BlockHeader) -> Result<()> {
         Ok(())
     }
 }

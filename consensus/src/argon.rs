@@ -1,18 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::difficulty;
 use crate::difficulty::{difficult_to_target, target_to_difficulty};
+use crate::{difficulty, set_header_nonce};
 use anyhow::{Error, Result};
 use argon2::{self, Config};
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
-use config::NodeConfig;
+use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
 use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use rand::Rng;
 use std::convert::TryFrom;
 use std::io::Cursor;
-use std::sync::Arc;
 use traits::ChainReader;
 use traits::{Consensus, ConsensusHeader};
 use types::block::{BlockHeader, RawBlockHeader};
@@ -49,20 +47,19 @@ pub struct ArgonConsensus {}
 impl Consensus for ArgonConsensus {
     type ConsensusHeader = ArgonConsensusHeader;
 
-    fn calculate_next_difficulty(
-        _config: Arc<NodeConfig>,
-        reader: &dyn ChainReader,
-    ) -> Result<U256> {
+    fn calculate_next_difficulty(reader: &dyn ChainReader) -> Result<U256> {
         let target = difficulty::get_next_work_required(reader)?;
         Ok(target_to_difficulty(target))
     }
+
     fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
         let mut nonce = generate_nonce();
         loop {
             let pow_hash: U256 = calculate_hash(&set_header_nonce(&header_hash, nonce))
                 .expect("calculate hash should work")
                 .into();
-            if pow_hash > difficulty {
+            let target = difficult_to_target(difficulty);
+            if pow_hash > target {
                 nonce += 1;
                 continue;
             }
@@ -71,12 +68,8 @@ impl Consensus for ArgonConsensus {
         ArgonConsensusHeader { nonce }
     }
 
-    fn verify(
-        config: Arc<NodeConfig>,
-        reader: &dyn ChainReader,
-        header: &BlockHeader,
-    ) -> Result<()> {
-        let difficulty = ArgonConsensus::calculate_next_difficulty(config, reader)?;
+    fn verify(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+        let difficulty = ArgonConsensus::calculate_next_difficulty(reader)?;
         if header.difficulty() != difficulty {
             return Err(anyhow::Error::msg("Invalid difficulty"));
         }
@@ -89,7 +82,7 @@ impl Consensus for ArgonConsensus {
         );
         let raw_block_header: RawBlockHeader = header.clone().into();
         if verify(
-            raw_block_header.crypto_hash().to_vec().as_slice(),
+            raw_block_header.crypto_hash().to_hex().as_bytes(),
             nonce,
             difficulty,
         ) {
@@ -100,13 +93,7 @@ impl Consensus for ArgonConsensus {
     }
 }
 
-pub fn u64_to_vec(u: u64) -> Vec<u8> {
-    let mut wtr = vec![];
-    wtr.write_u64::<LittleEndian>(u).unwrap();
-    wtr
-}
-
-fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
+pub fn verify(header: &[u8], nonce: u64, difficulty: U256) -> bool {
     let pow_header = set_header_nonce(header, nonce);
     let pow_hash = calculate_hash(&pow_header);
     if pow_hash.is_err() {
@@ -132,14 +119,6 @@ fn generate_nonce() -> u64 {
     let mut rng = rand::thread_rng();
     rng.gen::<u64>();
     rng.gen_range(0, u64::max_value())
-}
-
-pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
-    // let len = header.len();
-    let mut header = header.to_owned();
-    // header.truncate(len - 8);
-    let _ = header.write_u64::<LittleEndian>(nonce);
-    header
 }
 
 pub fn vec_to_u64(v: Vec<u8>) -> u64 {

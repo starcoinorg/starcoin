@@ -2,31 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    headblock_pacemaker::HeadBlockPacemaker, ondemand_pacemaker::OndemandPacemaker,
-    schedule_pacemaker::SchedulePacemaker, stratum::mint,
+    headblock_pacemaker::HeadBlockPacemaker, ondemand_pacemaker::OndemandPacemaker, stratum::mint,
 };
 use actix::prelude::*;
 use anyhow::Result;
 use bus::BusActor;
 use chain::BlockChain;
-use config::{ConsensusStrategy, NodeConfig, PacemakerStrategy};
-use crypto::hash::{HashValue, PlainCryptoHash};
+use config::NodeConfig;
+use crypto::hash::HashValue;
 use futures::{channel::mpsc, prelude::*};
 use logger::prelude::*;
 use sc_stratum::Stratum;
 pub use starcoin_miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_wallet_api::WalletAccount;
-use std::{marker::PhantomData, sync::Arc, time::Duration};
+use std::{marker::PhantomData, sync::Arc};
 use storage::Store;
-use traits::{ChainAsyncService, ChainReader, Consensus};
+use traits::{ChainAsyncService, Consensus};
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
 mod metrics;
 pub mod miner;
 mod ondemand_pacemaker;
-mod schedule_pacemaker;
 pub mod stratum;
 pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 
@@ -70,25 +68,13 @@ where
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
             ctx.add_message_stream(receiver);
-            match &config.miner.pacemaker_strategy {
-                PacemakerStrategy::HeadBlock => {
-                    let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender);
-                    pacemaker.start();
-                }
-                PacemakerStrategy::Ondemand => {
-                    let transaction_receiver = txpool.subscribe_txns();
-
-                    OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
-                }
-                PacemakerStrategy::Schedule => match config.miner.consensus_strategy {
-                    ConsensusStrategy::Dummy(dev_period) => {
-                        SchedulePacemaker::new(Duration::from_secs(dev_period), sender).start();
-                    }
-                    ConsensusStrategy::Argon(_) => {
-                        panic!("Incompatible consensus strategy");
-                    }
-                },
-            };
+            let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender.clone());
+            pacemaker.start();
+            //TODO should start OndemandPacemaker in other network?
+            if config.net().is_dev() {
+                let transaction_receiver = txpool.subscribe_txns();
+                OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
+            }
 
             let miner = miner::Miner::new(bus.clone(), config.clone());
 
@@ -148,30 +134,34 @@ where
         let miner_account = self.miner_account.clone();
         // block_gas_limit / min_gas_per_txn
         let max_txns = self.config.miner.block_gas_limit / 600;
+        let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
         let f = async move {
             let txns = txpool.get_pending_txns(Some(max_txns));
-            let startup_info = chain.master_startup_info().await?;
+            let startup_info = chain.clone().master_startup_info().await?;
             debug!(
                 "On GenerateBlockEvent, master: {:?}, txn len: {}",
                 startup_info.master,
                 txns.len()
             );
-            let master = *startup_info.get_master();
-            let block_chain = BlockChain::<C>::new(config.clone(), master, storage)?;
-            let (block_template, excluded_txns) = block_chain.create_block_template(
-                *miner_account.address(),
-                Some(miner_account.get_auth_key().prefix().to_vec()),
-                None,
-                txns,
-            )?;
 
-            // remove invalid txn from txpool
-            for invalid_txn in excluded_txns.discarded_txns {
-                let _ = txpool.remove_txn(invalid_txn.crypto_hash(), true);
+            if txns.is_empty() && !enable_mint_empty_block {
+                debug!("The flag enable_mint_empty_block is false and no txn in pool, so skip mint empty block.");
+                Ok(())
+            } else {
+                let master = *startup_info.get_master();
+                let block_chain = BlockChain::<C>::new(config.clone(), master, storage.clone())?;
+                let block_template = chain
+                    .create_block_template(
+                        *miner_account.address(),
+                        Some(miner_account.get_auth_key().prefix().to_vec()),
+                        None,
+                        txns,
+                    )
+                    .await?;
+
+                mint::<C>(stratum, miner, &block_chain, block_template)?;
+                Ok(())
             }
-
-            mint::<C>(stratum, miner, config, &block_chain, block_template)?;
-            Ok(())
         }
         .map(|result: Result<()>| {
             if let Err(err) = result {

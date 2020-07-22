@@ -156,7 +156,7 @@ impl PeerInfo {
     ) -> Self {
         PeerInfo {
             peer_id,
-            latest_header: BlockHeader::default(),
+            latest_header: BlockHeader::random(),
             total_difficulty: U256::zero(),
             rpc_protocols,
         }
@@ -177,7 +177,7 @@ impl PeerInfo {
     }
 
     pub fn new_only_proto(rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>) -> Self {
-        let mut only_proto = Self::default();
+        let mut only_proto = Self::random();
         only_proto.rpc_protocols = rpc_protocols;
         only_proto
     }
@@ -233,11 +233,11 @@ impl PeerInfo {
         }
     }
 
-    pub fn default() -> Self {
+    pub fn random() -> Self {
         Self {
             peer_id: PeerId::random(),
             total_difficulty: U256::from(0),
-            latest_header: BlockHeader::default(),
+            latest_header: BlockHeader::random(),
             rpc_protocols: Vec::new(),
         }
     }

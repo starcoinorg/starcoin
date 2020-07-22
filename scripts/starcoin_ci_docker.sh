@@ -48,43 +48,43 @@ function start_txfactory() {
   check_errs $? "Docker run txfactory error"
 }
 
-function start_cluster(){
-    local number=$1
-    local cluster_name=$2;
-    local net=$3
-    shift 3;
-    if [ -z "$NODE_KEYS" ];then
-       exit -1;
-    fi
-    IFS=', ' read -r -a node_keys <<< $NODE_KEYS
-    seed_host=$(docker-machine ip $cluster_name-0)
-    rpc_address=$(docker-machine ssh $cluster_name-0 ifconfig eth1 | awk -F ' *|:' '/inet /{print $3}'|tr -d '\n')
-    if [ -z "$rpc_address" ];then
-	rpc_address="127.0.0.1"
-    fi
-    
-    start_starcoin $cluster_name-0 starcoin-0 9840 9101 $net --node-key ${node_keys[0]} -s full --rpc_address $rpc_address --disable-seed
-    sleep 5
-    seed_peer_id=$(docker-machine ssh $cluster_name-0 grep  'Local\ node\ identity\ is:\ ' $cfg_root/starcoin-0/$net/starcoin.log|awk '{print $8}'|tac|head -n 1)
-    seed=/ip4/$seed_host/tcp/9840/p2p/$seed_peer_id
-    for((c=1; c<$number;c++));do
-	rpc_address=$(docker-machine ssh $cluster_name-$c ifconfig eth1 | awk -F ' *|:' '/inet /{print $3}'|tr -d '\n')
-	if [ -z "$rpc_address" ];then
-	    rpc_address="127.0.0.1"
-	fi
-	start_starcoin $cluster_name-$c starcoin-$c 9840 9101 $net --seed $seed -s full --node-key ${node_keys[$c]} --rpc_address $rpc_address
+function start_cluster() {
+  local number=$1
+  local cluster_name=$2
+  local net=$3
+  shift 3
+  if [ -z "$NODE_KEYS" ]; then
+    exit -1
+  fi
+  IFS=', ' read -r -a node_keys <<<$NODE_KEYS
+  seed_host=$(docker-machine ip $cluster_name-0)
+  rpc_address=$(docker-machine ssh $cluster_name-0 ifconfig eth1 | awk -F ' *|:' '/inet /{print $3}' | tr -d '\n')
+  if [ -z "$rpc_address" ]; then
+    rpc_address="127.0.0.1"
+  fi
 
-    done
-    start_txfactory $cluster_name-0 starcoin-0 txfactory-0 $net
+  start_starcoin $cluster_name-0 starcoin-0 9840 9101 $net --node-key ${node_keys[0]} -s full --rpc-address $rpc_address --disable-seed
+  sleep 5
+  seed_peer_id=$(docker-machine ssh $cluster_name-0 grep 'Local\ node\ identity\ is:\ ' $cfg_root/starcoin-0/$net/starcoin.log | awk '{print $8}' | tac | head -n 1)
+  seed=/ip4/$seed_host/tcp/9840/p2p/$seed_peer_id
+  for ((c = 1; c < $number; c++)); do
+    rpc_address=$(docker-machine ssh $cluster_name-$c ifconfig eth1 | awk -F ' *|:' '/inet /{print $3}' | tr -d '\n')
+    if [ -z "$rpc_address" ]; then
+      rpc_address="127.0.0.1"
+    fi
+    start_starcoin $cluster_name-$c starcoin-$c 9840 9101 $net --seed $seed -s full --node-key ${node_keys[$c]} --rpc-address $rpc_address
+
+  done
+  start_txfactory $cluster_name-0 starcoin-0 txfactory-0 $net
 }
 
-usage(){
-    echo "Usage $(basename $0)  [number, cluster_name, network]"
-    exit -1
+usage() {
+  echo "Usage $(basename $0)  [number, cluster_name, network]"
+  exit -1
 }
 
 if [ $# -lt 3 ]; then
-    usage;
+  usage
 fi
 
 start_cluster $1 $2 $3

@@ -13,7 +13,6 @@ use starcoin_types::{
     access_path::AccessPath,
     block_metadata::BlockMetadata,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
-    vm_error::VMStatus,
     write_set::WriteSet,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
@@ -24,6 +23,7 @@ use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::ModuleId,
     state_view::StateView,
+    vm_status::VMStatus,
 };
 
 /// Provides an environment to run a VM instance.
@@ -69,7 +69,7 @@ impl FakeExecutor {
 
     /// Creates a number of [`Account`] instances all with the same balance and sequence number,
     /// and publishes them to this executor's data store.
-    pub fn create_accounts(&mut self, size: usize, balance: u64, seq_num: u64) -> Vec<Account> {
+    pub fn create_accounts(&mut self, size: usize, balance: u128, seq_num: u64) -> Vec<Account> {
         let mut accounts: Vec<Account> = Vec::with_capacity(size);
         for _i in 0..size {
             let account_data = AccountData::new(balance, seq_num);
@@ -195,7 +195,6 @@ impl FakeExecutor {
     /// Verifies the given transaction by running it through the VM verifier.
     pub fn verify_transaction(&self, txn: SignedUserTransaction) -> Option<VMStatus> {
         let mut vm = StarcoinVM::new();
-        vm.load_configs(self.get_state_view());
         vm.verify_transaction(&self.data_store, txn)
     }
 
@@ -205,7 +204,7 @@ impl FakeExecutor {
 
     pub fn new_block(&mut self) {
         self.block_time += 1;
-        let new_block = BlockMetadata::new(HashValue::zero(), 0, association_address(), None);
+        let new_block = BlockMetadata::new(HashValue::zero(), 0, association_address(), None, 0);
         let output = self
             .execute_transaction_block(vec![Transaction::BlockMetadata(new_block)])
             .expect("Executing block prologue should succeed")

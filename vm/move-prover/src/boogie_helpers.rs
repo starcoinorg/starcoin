@@ -3,6 +3,7 @@
 
 //! Helpers for emitting Boogie code.
 
+use crate::cli::Options;
 use itertools::Itertools;
 use spec_lang::{
     env::{
@@ -186,7 +187,7 @@ fn boogie_well_formed_expr_impl(
         Type::Vector(elem_ty) => {
             conds.push(format!("$Vector_is_well_formed({})", name));
             if !matches!(**elem_ty, Type::TypeParameter(..)) {
-                let nest_value = &format!("$vmap({})[$${}]", name, nest);
+                let nest_value = &format!("$select_vector({},$${})", name, nest);
                 conds.push(format!(
                     "(forall $${}: int :: {{{}}} $${} >= 0 && $${} < $vlen({}) ==> {})",
                     nest,
@@ -263,7 +264,12 @@ pub fn boogie_requires_well_formed(
 ) -> String {
     let expr = boogie_well_formed_expr(env, name, ty, mode);
     if !expr.is_empty() {
-        format!("{} {};\n", type_requires_str, expr)
+        let assert_kind = if type_requires_str.starts_with("free") {
+            "assume"
+        } else {
+            "assert"
+        };
+        format!("{} {};\n", assert_kind, expr)
     } else {
         "".to_string()
     }
@@ -315,10 +321,21 @@ pub fn boogie_global_declarator(
     }
 }
 
-pub fn boogie_byte_blob(val: &[u8]) -> String {
-    let mut res = "$mk_vector()".to_string();
-    for b in val {
-        res = format!("$push_back_vector({}, $Integer({}))", res, b);
+pub fn boogie_byte_blob(options: &Options, val: &[u8]) -> String {
+    if options.backend.vector_using_sequences {
+        // Use concatenation.
+        let mut res = "$mk_vector()".to_string();
+        for b in val {
+            res = format!("$push_back_vector({}, $Integer({}))", res, b);
+        }
+        res
+    } else {
+        // Repeated push backs very expensive in map representation, so construct the value
+        // array directly.
+        let mut ctor_expr = "$MapConstValue($DefaultValue())".to_owned();
+        for (i, b) in val.iter().enumerate() {
+            ctor_expr = format!("{}[{} := $Integer({})]", ctor_expr, i, *b);
+        }
+        format!("$Vector($ValueArray({}, {}))", ctor_expr, val.len())
     }
-    res
 }

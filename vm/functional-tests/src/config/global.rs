@@ -22,7 +22,7 @@ static DEFAULT_BALANCE: Lazy<Balance> = Lazy::new(|| Balance {
 
 #[derive(Debug, Clone)]
 pub struct Balance {
-    pub amount: u64,
+    pub amount: u128,
     pub currency_code: Identifier,
 }
 
@@ -31,10 +31,11 @@ impl FromStr for Balance {
 
     fn from_str(s: &str) -> Result<Self> {
         // TODO: Try to get this from the on-chain config?
-        let coin_types = vec!["STC"];
-        let mut coin_type: Vec<&str> = coin_types.into_iter().filter(|x| s.ends_with(x)).collect();
-        let currency_code = coin_type.pop().unwrap_or("STC");
-        if !coin_type.is_empty() {
+        let token_types = vec!["STC"];
+        let mut token_type: Vec<&str> =
+            token_types.into_iter().filter(|x| s.ends_with(x)).collect();
+        let currency_code = token_type.pop().unwrap_or("STC");
+        if !token_type.is_empty() {
             return Err(ErrorKind::Other(
                 "Multiple coin types supplied for account. Accounts are single currency"
                     .to_string(),
@@ -43,7 +44,7 @@ impl FromStr for Balance {
         }
         let s = s.trim_end_matches(currency_code);
         Ok(Balance {
-            amount: s.parse::<u64>()?,
+            amount: s.parse::<u128>()?,
             currency_code: account_config::from_currency_code_string(currency_code)?,
         })
     }

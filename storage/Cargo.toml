@@ -1,12 +1,10 @@
 [package]
 name = "starcoin-storage"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"
@@ -16,8 +14,8 @@ crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 chrono = "0.4"
 byteorder = "1.3.2"
-lru = "0.4.3"
-parking_lot = "0.10.2"
+lru = "0.5.3"
+parking_lot = "0.11.0"
 once_cell = "1.4.0"
 #state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 starcoin-state-store-api = {path = "../state/state-store-api"}

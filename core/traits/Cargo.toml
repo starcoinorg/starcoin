@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-traits"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -15,4 +15,5 @@ starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-config = { path = "../../config" }
 thiserror = "1.0.14"
+starcoin-vm-types = { path = "../../vm/types"}
 

@@ -1,12 +1,10 @@
 [package]
 name = "starcoin-block-relayer"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"
@@ -29,10 +27,10 @@ starcoin-block-relayer-api = { path = "./api"}
 starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-types = {path = "../types", package = "starcoin-types" }
 starcoin-metrics = {path = "../commons/metrics"}
-
+network-rpc = { path = "../network-rpc", package = "starcoin-network-rpc" }
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
 actix-rt = "1.1"
 hex = "0.4.2"
-libp2p = "0.20.1"
+libp2p = "0.22.0"
 stest = { path = "../commons/stest"}

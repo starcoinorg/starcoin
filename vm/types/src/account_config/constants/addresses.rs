@@ -5,10 +5,9 @@ use crate::account_address::AccountAddress;
 
 pub use move_core_types::language_storage::CORE_CODE_ADDRESS;
 
-pub use libra_types::account_config::constants::addresses::{
-    association_address, transaction_fee_address,
-};
-
+pub fn association_address() -> AccountAddress {
+    libra_types::account_config::constants::addresses::libra_root_address()
+}
 pub fn core_code_address() -> AccountAddress {
     CORE_CODE_ADDRESS
 }

@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::miner::{MineCtx, Miner};
-use config::NodeConfig;
 use logger::prelude::*;
 use sc_stratum::*;
 use std::sync::Arc;
 use traits::{ChainReader, Consensus};
 use types::block::BlockTemplate;
+
 pub struct StratumManager<C>
 where
     C: Consensus + Sync + Send + 'static,
@@ -38,14 +38,13 @@ where
 pub fn mint<C>(
     stratum: Arc<Stratum>,
     mut miner: Miner<C>,
-    config: Arc<NodeConfig>,
     chain: &dyn ChainReader,
     block_template: BlockTemplate,
 ) -> anyhow::Result<()>
 where
     C: Consensus,
 {
-    let difficulty = C::calculate_next_difficulty(config, chain)?;
+    let difficulty = C::calculate_next_difficulty(chain)?;
     miner.set_mint_job(MineCtx::new(block_template, difficulty));
     let job = miner.get_mint_job();
     debug!("Push job to worker {}", job);

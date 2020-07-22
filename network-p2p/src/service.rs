@@ -338,6 +338,7 @@ impl NetworkWorker {
             let swarm = &mut *swarm;
             let list = swarm
                 .known_peers()
+                .iter()
                 .filter(|p| open.iter().all(|n| n != *p))
                 .cloned()
                 .collect::<Vec<_>>();
@@ -386,7 +387,7 @@ impl NetworkWorker {
     }
 
     /// Returns the list of all the peers we are connected to.
-    pub fn connected_peers(&mut self) -> impl Iterator<Item = &PeerId> {
+    pub fn connected_peers(&mut self) -> HashSet<PeerId> {
         self.network_service.known_peers()
     }
 

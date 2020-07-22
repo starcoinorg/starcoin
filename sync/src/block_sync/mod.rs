@@ -12,13 +12,13 @@ use crypto::hash::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
-use starcoin_sync_api::BlockBody;
+use network_rpc::{gen_client::NetworkRpcClient, BlockBody};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::Consensus;
-use types::block::{Block, BlockHeader, BlockNumber};
+use types::block::{Block, BlockBody as RealBlockBody, BlockHeader, BlockNumber};
 
 const MAX_LEN: usize = 100;
 const MAX_SIZE: usize = 10;
@@ -124,6 +124,7 @@ where
     body_task: BlockSyncTask,
     downloader: Arc<Downloader<C>>,
     network: NetworkAsyncService,
+    rpc_client: NetworkRpcClient<NetworkAsyncService>,
     state: SyncTaskState,
     download_address: Addr<DownloadActor<C>>,
 }
@@ -163,7 +164,8 @@ where
             headers: HashMap::new(),
             body_task: BlockSyncTask::new(),
             downloader,
-            network,
+            network: network.clone(),
+            rpc_client: NetworkRpcClient::new(network),
             state: if start {
                 SyncTaskState::Ready
             } else {
@@ -197,6 +199,7 @@ where
 
         let next = self.next.0;
         let network = self.network.clone();
+        let rpc_client = self.rpc_client.clone();
         Arbiter::spawn(async move {
             // sync header
             if sync_header_flag {
@@ -205,7 +208,7 @@ where
                     .sync_done_time
                     .with_label_values(&[LABEL_HASH])
                     .start_timer();
-                let event = match get_headers(&network, get_headers_req).await {
+                let event = match get_headers(&network, &rpc_client, get_headers_req).await {
                     Ok(headers) => SyncDataEvent::new_header_event(headers),
                     Err(e) => {
                         error!("Sync headers err: {:?}", e);
@@ -224,7 +227,7 @@ where
                     .sync_done_time
                     .with_label_values(&[LABEL_BLOCK_BODY])
                     .start_timer();
-                let event = match get_body_by_hash(&network, hashs.clone()).await {
+                let event = match get_body_by_hash(&rpc_client, &network, hashs.clone()).await {
                     Ok(bodies) => SyncDataEvent::new_body_event(bodies, Vec::new()),
                     Err(e) => {
                         error!("Sync bodies err: {:?}", e);
@@ -250,13 +253,14 @@ where
 
         let next = self.next.0;
         let network = self.network.clone();
+        let rpc_client = self.rpc_client.clone();
         Arbiter::spawn(async move {
             let get_headers_req = get_headers_msg_for_common(next);
             let hash_timer = SYNC_METRICS
                 .sync_done_time
                 .with_label_values(&[LABEL_HASH])
                 .start_timer();
-            let event = match get_headers(&network, get_headers_req).await {
+            let event = match get_headers(&network, &rpc_client, get_headers_req).await {
                 Ok(headers) => SyncDataEvent::new_header_event(headers),
                 Err(e) => {
                     error!("Sync headers err: {:?}", e);
@@ -288,12 +292,13 @@ where
     fn _sync_bodies(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
         if let Some(hashs) = self.body_task.take_hashs() {
             let network = self.network.clone();
+            let rpc_client = self.rpc_client.clone();
             Arbiter::spawn(async move {
                 let block_body_timer = SYNC_METRICS
                     .sync_done_time
                     .with_label_values(&[LABEL_BLOCK_BODY])
                     .start_timer();
-                let event = match get_body_by_hash(&network, hashs.clone()).await {
+                let event = match get_body_by_hash(&rpc_client, &network, hashs.clone()).await {
                     Ok(bodies) => SyncDataEvent::new_body_event(bodies, Vec::new()),
                     Err(e) => {
                         error!("Sync bodies err: {:?}", e);
@@ -317,9 +322,10 @@ where
             let len = bodies.len();
             let mut blocks: Vec<Block> = Vec::new();
             for block_body in bodies {
-                let (block_id, transactions) = block_body.into();
-                let block_header = self.headers.remove(&block_id);
-                let block = Block::new(block_header.expect("block_header is none."), transactions);
+                let block_header = self.headers.remove(&block_body.hash);
+                let body = RealBlockBody::new(block_body.transactions, block_body.uncles);
+                let block =
+                    Block::new_with_body(block_header.expect("block_header is none."), body);
                 blocks.push(block);
             }
 
@@ -339,6 +345,7 @@ where
         let downloader = self.downloader.clone();
         let fut = async move {
             let mut blocks = blocks;
+            blocks.reverse();
             loop {
                 let block = blocks.pop();
                 if let Some(b) = block {

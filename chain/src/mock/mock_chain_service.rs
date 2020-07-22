@@ -106,7 +106,7 @@ impl ChainAsyncService for MockChainService {
         _auth_key_prefix: Option<Vec<u8>>,
         _parent_hash: Option<HashValue>,
         _txs: Vec<SignedUserTransaction>,
-    ) -> Result<Option<BlockTemplate>> {
+    ) -> Result<BlockTemplate> {
         unimplemented!()
     }
 }

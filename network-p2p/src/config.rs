@@ -150,7 +150,8 @@ impl Default for NetworkConfiguration {
                 use_yamux_flow_control: false,
             },
             genesis_hash: HashValue::default(),
-            self_info: PeerInfo::default(),
+            //TODO should use random? maybe set this value to Option be more appropriate
+            self_info: PeerInfo::random(),
             disable_seed: false,
             protocols: vec![],
         }

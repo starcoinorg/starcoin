@@ -1,4 +1,4 @@
-use crate::vm_error::VMStatus;
+use crate::vm_status::VMStatus;
 use std::{error, fmt};
 
 type Gas = u64;

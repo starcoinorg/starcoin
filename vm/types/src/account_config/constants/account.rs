@@ -8,8 +8,6 @@ use crate::{
 };
 use once_cell::sync::Lazy;
 
-pub use libra_types::account_config::constants::account::{received_event_name, sent_event_name};
-
 pub const ACCOUNT_MODULE_NAME: &str = "Account";
 
 // Account

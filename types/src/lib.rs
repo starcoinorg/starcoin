@@ -42,8 +42,9 @@ pub mod transaction {
     pub use starcoin_vm_types::transaction::*;
 }
 
+//TODO rename or remove this mode.
 pub mod vm_error {
-    pub use starcoin_vm_types::vm_error::*;
+    pub use starcoin_vm_types::vm_status::*;
 }
 
 pub mod language_storage {

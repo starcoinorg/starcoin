@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-logger"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-log = "0.4.8"
+log = "0.4.11"
 chrono = "0.4.11"
 log4rs = { version="0.12.0", features = ["background_rotation", "gzip"]}
 lazy_static = "1.4.0"

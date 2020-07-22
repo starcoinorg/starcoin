@@ -50,7 +50,7 @@ fun main(account: &signer) {
 }
 
 // check: EXECUTED
-// check: delta_size 8
+//// check: delta_size 8
 
 
 //! new-transaction
@@ -65,7 +65,7 @@ fun main(account: &signer) {
 }
 
 // check: EXECUTED
-// check: delta_size -8
+//// check: delta_size -8
 
 
 //! new-transaction
@@ -82,7 +82,7 @@ fun main(account: &signer) {
 }
 
 // check: EXECUTED
-// check: delta_size 0
+//// check: delta_size 0
 
 //! new-transaction
 //! sender: bob
@@ -98,5 +98,5 @@ fun main(account: &signer) {
 }
 
 // check: EXECUTED
-// check: delta_size 8
+//// check: delta_size 8
 

@@ -14,16 +14,16 @@ use serde::{Deserialize, Serialize};
 /// The balance resource held under an account.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BalanceResource {
-    coin: u64,
+    token: u128,
 }
 
 impl BalanceResource {
-    pub fn new(coin: u64) -> Self {
-        Self { coin }
+    pub fn new(token: u128) -> Self {
+        Self { token }
     }
 
-    pub fn coin(&self) -> u64 {
-        self.coin
+    pub fn token(&self) -> u128 {
+        self.token
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.

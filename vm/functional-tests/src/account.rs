@@ -3,7 +3,7 @@
 
 //! Test infrastructure for modeling Libra accounts.
 
-use executor::{create_signed_txn_with_association_account, TXN_RESERVED};
+use executor::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_config::genesis_key_pair;
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
@@ -18,18 +18,15 @@ use starcoin_types::{
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
-use starcoin_vm_types::account_config::{
-    KeyRotationCapabilityResource, WithdrawCapabilityResource,
-};
+use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::stc_type_tag,
     account_config::{
         self, from_currency_code_string, type_tag_for_currency_code, AccountResource,
-        BalanceResource, ReceivedPaymentEvent, SentPaymentEvent, STC_NAME,
+        BalanceResource, STC_NAME,
     },
     identifier::{IdentStr, Identifier},
     language_storage::{ResourceKey, StructTag, TypeTag},
-    loaded_data::types::{FatStructType, FatType},
     move_resource::MoveResource,
     values::{Struct, Value},
 };
@@ -316,7 +313,7 @@ impl Account {
             *self.address(),
             TransactionPayload::Script(script),
             sequence_number,
-            TXN_RESERVED,
+            DEFAULT_MAX_GAS_AMOUNT,
             0, // gas price
         )
     }
@@ -360,35 +357,28 @@ impl Default for Account {
 /// Struct that represents an account balance resource for tests.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Balance {
-    coin: u64,
+    token: u128,
 }
 
 impl Balance {
     /// Create a new balance with amount `balance`
-    pub fn new(coin: u64) -> Self {
-        Self { coin }
+    pub fn new(token: u128) -> Self {
+        Self { token }
     }
 
     /// Retrieve the balance inside of this
-    pub fn coin(&self) -> u64 {
-        self.coin
+    pub fn token(&self) -> u128 {
+        self.token
     }
 
     /// Returns the Move Value for the account balance
     pub fn to_value(&self) -> Value {
-        Value::struct_(Struct::pack(vec![Value::u64(self.coin)], true))
+        Value::struct_(Struct::pack(vec![Value::u128(self.token)], true))
     }
 
     /// Returns the value layout for the account balance
-    pub fn type_() -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: AccountResource::module_identifier(),
-            name: BalanceResource::struct_identifier(),
-            is_resource: true,
-            ty_args: vec![],
-            layout: vec![FatType::U64],
-        }
+    pub fn layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::U128])
     }
 }
 
@@ -397,6 +387,7 @@ impl Balance {
 //---------------------------------------------------------------------------
 
 /// Struct that represents the event generator resource stored under accounts
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EventHandleGenerator {
     counter: u64,
@@ -418,16 +409,8 @@ impl EventHandleGenerator {
             true,
         ))
     }
-
-    pub fn type_() -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: account_config::event_module_name().to_owned(),
-            name: account_config::event_handle_generator_struct_name().to_owned(),
-            is_resource: true,
-            ty_args: vec![],
-            layout: vec![FatType::U64, FatType::Address],
-        }
+    pub fn layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::U64, MoveTypeLayout::Address])
     }
 }
 
@@ -442,8 +425,6 @@ pub struct AccountData {
     withdrawal_capability: Option<WithdrawCapability>,
     sent_events: EventHandle,
     received_events: EventHandle,
-    is_frozen: bool,
-
     balances: BTreeMap<Identifier, Balance>,
     event_generator: EventHandleGenerator,
 }
@@ -456,7 +437,7 @@ impl AccountData {
     /// Creates a new `AccountData` with a new account.
     ///
     /// Most tests will want to use this constructor.
-    pub fn new(balance: u64, sequence_number: u64) -> Self {
+    pub fn new(balance: u128, sequence_number: u64) -> Self {
         Self::with_account(
             Account::new(),
             balance,
@@ -472,7 +453,7 @@ impl AccountData {
     /// Creates a new `AccountData` with the provided account.
     pub fn with_account(
         account: Account,
-        balance: u64,
+        balance: u128,
         balance_currency_code: Identifier,
         sequence_number: u64,
     ) -> Self {
@@ -485,7 +466,6 @@ impl AccountData {
             0,
             false,
             false,
-            false,
         )
     }
 
@@ -493,7 +473,7 @@ impl AccountData {
     pub fn with_keypair(
         privkey: Ed25519PrivateKey,
         pubkey: Ed25519PublicKey,
-        balance: u64,
+        balance: u128,
         balance_currency_code: Identifier,
         sequence_number: u64,
     ) -> Self {
@@ -504,14 +484,13 @@ impl AccountData {
     /// Creates a new `AccountData` with custom parameters.
     pub fn with_account_and_event_counts(
         account: Account,
-        balance: u64,
+        balance: u128,
         balance_currency_code: Identifier,
         sequence_number: u64,
         sent_events_count: u64,
         received_events_count: u64,
         delegated_key_rotation_capability: bool,
         delegated_withdrawal_capability: bool,
-        is_frozen: bool,
     ) -> Self {
         let mut balances = BTreeMap::new();
         balances.insert(balance_currency_code, Balance::new(balance));
@@ -531,7 +510,6 @@ impl AccountData {
             account,
             balances,
             sequence_number,
-            is_frozen,
             key_rotation_capability,
             withdrawal_capability,
             sent_events: new_event_handle(sent_events_count),
@@ -549,73 +527,42 @@ impl AccountData {
         self.account.rotate_key(privkey, pubkey)
     }
 
-    pub fn sent_payment_event_type() -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: AccountResource::module_identifier(),
-            name: SentPaymentEvent::struct_identifier(),
-            is_resource: false,
-            ty_args: vec![],
-            layout: vec![
-                FatType::U64,
-                FatType::Address,
-                FatType::Vector(Box::new(FatType::U8)),
-            ],
-        }
+    pub fn sent_payment_event_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U128,
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+        ])
     }
 
-    pub fn received_payment_event_type() -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: AccountResource::module_identifier(),
-            name: ReceivedPaymentEvent::struct_identifier(),
-            is_resource: false,
-            ty_args: vec![],
-            layout: vec![
-                FatType::U64,
-                FatType::Address,
-                FatType::Vector(Box::new(FatType::U8)),
-            ],
-        }
+    pub fn received_payment_event_type() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U128,
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+        ])
     }
 
-    pub fn event_handle_type(ty: FatType) -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: account_config::event_module_name().to_owned(),
-            name: account_config::event_handle_struct_name().to_owned(),
-            is_resource: true,
-            ty_args: vec![ty],
-            layout: vec![FatType::U64, FatType::Vector(Box::new(FatType::U8))],
-        }
+    pub fn event_handle_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U64,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+        ])
     }
 
     /// Returns the (Move value) layout of the Account::Account struct
-    pub fn type_() -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: AccountResource::module_identifier(),
-            name: AccountResource::struct_identifier(),
-            is_resource: true,
-            ty_args: vec![],
-            layout: vec![
-                FatType::Vector(Box::new(FatType::U8)),
-                FatType::Vector(Box::new(FatType::Struct(Box::new(
-                    WithdrawCapability::type_(),
-                )))),
-                FatType::Vector(Box::new(FatType::Struct(Box::new(
-                    KeyRotationCapability::type_(),
-                )))),
-                FatType::Struct(Box::new(Self::event_handle_type(FatType::Struct(
-                    Box::new(Self::sent_payment_event_type()),
-                )))),
-                FatType::Struct(Box::new(Self::event_handle_type(FatType::Struct(
-                    Box::new(Self::received_payment_event_type()),
-                )))),
-                FatType::U64,
-                FatType::Bool,
-            ],
-        }
+    pub fn layout() -> MoveStructLayout {
+        use MoveStructLayout as S;
+        use MoveTypeLayout as T;
+
+        S::new(vec![
+            T::Vector(Box::new(T::U8)),
+            T::Vector(Box::new(T::Struct(WithdrawCapability::layout()))),
+            T::Vector(Box::new(T::Struct(KeyRotationCapability::layout()))),
+            T::Struct(Self::event_handle_layout()),
+            T::Struct(Self::event_handle_layout()),
+            T::U64,
+        ])
     }
 
     /// Creates and returns the top-level resources to be published under the account
@@ -627,19 +574,12 @@ impl AccountData {
             .map(|(code, balance)| (code.clone(), balance.to_value()))
             .collect();
         let event_generator = self.event_generator.to_value();
-
         let account = Value::struct_(Struct::pack(
             vec![
                 // TODO: this needs to compute the auth key instead
                 Value::vector_u8(AuthenticationKey::ed25519(&self.account.pubkey).to_vec()),
-                self.withdrawal_capability
-                    .as_ref()
-                    .map(|t| t.value())
-                    .unwrap_or_else(|| Value::vector_general(vec![])),
-                self.key_rotation_capability
-                    .as_ref()
-                    .map(|t| t.value())
-                    .unwrap_or_else(|| Value::vector_general(vec![])),
+                self.withdrawal_capability.as_ref().unwrap().value(),
+                self.key_rotation_capability.as_ref().unwrap().value(),
                 Value::struct_(Struct::pack(
                     vec![
                         Value::u64(self.received_events.count()),
@@ -655,7 +595,6 @@ impl AccountData {
                     true,
                 )),
                 Value::u64(self.sequence_number),
-                Value::bool(self.is_frozen),
             ],
             true,
         ));
@@ -691,31 +630,29 @@ impl AccountData {
         let mut write_set = Vec::new();
         let account = account_blob
             .value_as::<Struct>()
-            .expect("account blob must be struct")
-            .simple_serialize(&AccountData::type_())
-            .expect("account serialize must success.");
+            .unwrap()
+            .simple_serialize(&AccountData::layout())
+            .unwrap();
         write_set.push((self.make_account_access_path(), WriteOp::Value(account)));
         for (code, balance_blob) in balance_blobs.into_iter() {
             let balance = balance_blob
                 .value_as::<Struct>()
-                .expect("balance blob must be struct")
-                .simple_serialize(&Balance::type_())
-                .expect("balance serialize must success");
+                .unwrap()
+                .simple_serialize(&Balance::layout())
+                .unwrap();
             write_set.push((self.make_balance_access_path(code), WriteOp::Value(balance)));
         }
 
         let event_generator = event_generator_blob
             .value_as::<Struct>()
-            .expect("event blob must be struct")
-            .simple_serialize(&EventHandleGenerator::type_())
-            .expect("event serialize must success");
+            .unwrap()
+            .simple_serialize(&EventHandleGenerator::layout())
+            .unwrap();
         write_set.push((
             self.make_event_generator_access_path(),
             WriteOp::Value(event_generator),
         ));
-        WriteSetMut::new(write_set)
-            .freeze()
-            .expect("freeze write_set must success.")
+        WriteSetMut::new(write_set).freeze().unwrap()
     }
 
     /// Returns the address of the account. This is a hash of the public key the account was created
@@ -737,11 +674,11 @@ impl AccountData {
     }
 
     /// Returns the initial balance.
-    pub fn balance(&self, currency_code: &IdentStr) -> u64 {
+    pub fn balance(&self, currency_code: &IdentStr) -> u128 {
         self.balances
             .get(currency_code)
             .expect("get balance by currency_code fail")
-            .coin()
+            .token()
     }
 
     /// Returns the initial sequence number.
@@ -769,6 +706,7 @@ impl AccountData {
         self.received_events.count()
     }
 }
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WithdrawCapability {
     account_address: AccountAddress,
@@ -778,19 +716,12 @@ impl WithdrawCapability {
         Self { account_address }
     }
 
-    pub fn type_() -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: WithdrawCapabilityResource::module_identifier(),
-            name: WithdrawCapabilityResource::struct_identifier(),
-            is_resource: true,
-            ty_args: vec![],
-            layout: vec![FatType::Address],
-        }
+    pub fn layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
 
     pub fn value(&self) -> Value {
-        Value::vector_general(vec![Value::struct_(Struct::pack(
+        Value::vector_resource_for_testing_only(vec![Value::struct_(Struct::pack(
             vec![Value::address(self.account_address)],
             true,
         ))])
@@ -806,19 +737,12 @@ impl KeyRotationCapability {
         Self { account_address }
     }
 
-    pub fn type_() -> FatStructType {
-        FatStructType {
-            address: account_config::CORE_CODE_ADDRESS,
-            module: KeyRotationCapabilityResource::module_identifier(),
-            name: KeyRotationCapabilityResource::struct_identifier(),
-            is_resource: true,
-            ty_args: vec![],
-            layout: vec![FatType::Address],
-        }
+    pub fn layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
 
     pub fn value(&self) -> Value {
-        Value::vector_general(vec![Value::struct_(Struct::pack(
+        Value::vector_resource_for_testing_only(vec![Value::struct_(Struct::pack(
             vec![Value::address(self.account_address)],
             true,
         ))])
@@ -842,7 +766,7 @@ pub fn create_account_txn(
         vec![],
         args,
         seq_num,
-        TXN_RESERVED,
+        DEFAULT_MAX_GAS_AMOUNT,
         1,
     )
 }
@@ -853,12 +777,12 @@ pub fn peer_to_peer_txn(
     sender: &Account,
     receiver: &Account,
     seq_num: u64,
-    transfer_amount: u64,
+    transfer_amount: u128,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*receiver.address()));
     args.push(TransactionArgument::U8Vector(receiver.auth_key_prefix()));
-    args.push(TransactionArgument::U64(transfer_amount));
+    args.push(TransactionArgument::U128(transfer_amount));
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
@@ -866,8 +790,8 @@ pub fn peer_to_peer_txn(
         vec![stc_type_tag()],
         args,
         seq_num,
-        TXN_RESERVED, // this is a default for gas
-        1,            // this is a default for gas
+        DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
+        1,                      // this is a default for gas
     )
 }
 
@@ -886,11 +810,11 @@ pub fn mint_txn(
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
         StdlibScript::Mint.compiled_bytes().into_vec(),
-        vec![],
+        vec![stc_type_tag()],
         args,
         seq_num,
-        TXN_RESERVED, // this is a default for gas
-        1,            // this is a default for gas
+        DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
+        1,                      // this is a default for gas
     )
 }
 
@@ -898,12 +822,12 @@ pub fn mint_txn(
 pub fn create_account_txn_sent_as_association(
     new_account: &Account,
     seq_num: u64,
-    initial_amount: u64,
+    initial_amount: u128,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*new_account.address()));
     args.push(TransactionArgument::U8Vector(new_account.auth_key_prefix()));
-    args.push(TransactionArgument::U64(initial_amount));
+    args.push(TransactionArgument::U128(initial_amount));
 
     create_signed_txn_with_association_account(
         TransactionPayload::Script(Script::new(
@@ -912,7 +836,7 @@ pub fn create_account_txn_sent_as_association(
             args,
         )),
         seq_num,
-        TXN_RESERVED,
+        DEFAULT_MAX_GAS_AMOUNT,
         1,
     )
 }

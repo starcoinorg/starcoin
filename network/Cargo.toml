@@ -1,12 +1,10 @@
 [package]
 name = "starcoin-network"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"
@@ -16,12 +14,12 @@ actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 yamux = "0.4.2"
 futures-timer = "3.0"
-log = "0.4.8"
+log = "0.4.11"
 hex = "0.4.2"
 bytes = "0.5.0"
 
 parity-codec = { version = "3.2", features = ["derive"] }
-libp2p = "0.20.1"
+libp2p = "0.22.0"
 
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
@@ -36,15 +34,15 @@ scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 fnv = "1.0.6"
 zeroize = "1.0.0"
 bitflags = "1.2.0"
-smallvec = "0.6.10"
+smallvec = "1.4.1"
 
 tempfile = "3.1.0"
 rand = "0.7.3"
-parking_lot = "0.10.2"
-lru = "0.4.0"
+parking_lot = "0.11.0"
+lru = "0.5.3"
 
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.41"
+serde_json = { version="1.0", features = ["arbitrary_precision"]}
 slog = { version = "2.5.2", features = ["nested-values"] }
 slog_derive = "0.2.0"
 derive_more = "0.99.2"
