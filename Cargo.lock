@@ -6943,6 +6943,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-state-api",
  "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-wallet-api",
  "thiserror",
 ]
@@ -7048,6 +7049,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-txpool-mock-service",
  "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-wallet-api",
  "starcoin-wallet-service",
  "stest",

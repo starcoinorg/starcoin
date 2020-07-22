@@ -11,6 +11,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 /// TODO: figure out a better place for it.
 #[derive(Clone, Debug)]
@@ -46,6 +47,7 @@ pub trait ChainReader {
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
     fn get_total_difficulty(&self) -> Result<U256>;
     fn exist_block(&self, block_id: HashValue) -> bool;
+    fn epoch_info(&self,) -> Result<EpochInfo>;
 }
 
 pub trait ChainWriter {

@@ -9,6 +9,10 @@ use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
+use starcoin_vm_types::{
+    on_chain_config::{EpochInfo},
+};
+
 
 #[rpc]
 pub trait ChainApi {
@@ -58,4 +62,9 @@ pub trait ChainApi {
     /// Get branches of current chain, first is master.
     #[rpc(name = "chain.branches")]
     fn branches(&self) -> FutureResult<Vec<ChainInfo>>;
+
+    /// Get current epoch info.
+    #[rpc(name = "chain.epoch")]
+    fn current_epoch(&self) -> FutureResult<EpochInfo>;
+
 }

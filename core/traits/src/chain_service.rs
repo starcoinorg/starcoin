@@ -14,6 +14,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
     transaction::SignedUserTransaction,
 };
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 /// implement ChainService
 pub trait ChainService {
@@ -48,6 +49,7 @@ pub trait ChainService {
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>>;
+    fn epoch_info(&self) -> Result<EpochInfo>;
 
     /// just for test
     fn create_block_template(
@@ -95,6 +97,7 @@ pub trait ChainAsyncService:
     async fn master_block_header_by_number(self, number: BlockNumber) -> Result<BlockHeader>;
     async fn master_startup_info(self) -> Result<StartupInfo>;
     async fn master_head(self) -> Result<ChainInfo>;
+    async fn epoch_info(self) -> Result<EpochInfo>;
 
     /// just for test
     async fn create_block_template(

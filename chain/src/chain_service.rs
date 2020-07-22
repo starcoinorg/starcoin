@@ -14,7 +14,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
-use starcoin_vm_types::on_chain_config::EpochResource;
+use starcoin_vm_types::on_chain_config::{EpochResource,EpochInfo};
 use std::collections::HashSet;
 use std::sync::Arc;
 use storage::Store;
@@ -563,6 +563,10 @@ where
         count: u64,
     ) -> Result<Vec<Block>> {
         self.get_master().get_blocks_by_number(number, count)
+    }
+
+    fn epoch_info(&self) -> Result<EpochInfo> {
+        self.get_master().epoch_info()
     }
 
     fn create_block_template(

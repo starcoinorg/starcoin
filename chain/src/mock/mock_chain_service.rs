@@ -11,6 +11,7 @@ use types::{
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 //TODO implement Mock service
 #[derive(Clone, Default)]
@@ -97,6 +98,10 @@ impl ChainAsyncService for MockChainService {
     }
 
     async fn master_head(self) -> Result<ChainInfo> {
+        unimplemented!()
+    }
+
+    async fn epoch_info(self) -> Result<EpochInfo>{
         unimplemented!()
     }
 

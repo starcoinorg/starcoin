@@ -10,6 +10,7 @@ use types::{
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Clone)]
 pub enum ChainRequest {
@@ -31,6 +32,7 @@ pub enum ChainRequest {
     ConnectBlockWithoutExe(Box<Block>),
     GetStartupInfo(),
     GetHeadChainInfo(),
+    GetEpochInfo(),
     GetTransaction(HashValue),
     GetTransactionInfo(HashValue),
     GetBlockTransactionInfos(HashValue),
@@ -66,4 +68,5 @@ pub enum ChainResponse {
     None,
     Conn(ConnectBlockResult),
     BlockState(Option<Box<BlockState>>),
+    EpochInfo(EpochInfo),
 }

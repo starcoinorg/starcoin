@@ -51,7 +51,7 @@ starcoin-metrics = {path = "../../commons/metrics"}
 starcoin-bus = {path = "../../bus"}
 starcoin-storage = {path = "../../storage"}
 starcoin-executor = {path = "../../executor"}
-
+starcoin-vm-types = { path = "../../vm/types"}
 network-api = {package="network-api", path="../../network/api"}
 
 [dev-dependencies]
