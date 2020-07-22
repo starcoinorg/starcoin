@@ -10,7 +10,7 @@ description = "Starcoin metrics"
 [dependencies]
 anyhow = "1.0"
 futures = "0.3"
-hyper = "0.13"
+hyper = "0.13.7"
 starcoin-logger = { path = "../logger" }
 once_cell = "1.4.0"
 prometheus = { version = "0.9.0", default-features = false }

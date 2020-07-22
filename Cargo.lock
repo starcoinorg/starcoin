@@ -1813,7 +1813,7 @@ dependencies = [
  "bincode",
  "byteorder 1.3.4",
  "criterion",
- "hex 0.4.2",
+ "hex",
  "mirai-annotations",
  "num-derive",
  "num-traits",
@@ -2309,12 +2309,6 @@ dependencies = [
 
 [[package]]
 name = "hex"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
-
-[[package]]
-name = "hex"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
@@ -2703,7 +2697,7 @@ source = "git+https://github.com/starcoinorg/libra?rev=be82f8ee963a3c5aff40a11a3
 dependencies = [
  "anyhow",
  "codespan",
- "hex 0.4.2",
+ "hex",
  "libra-types",
  "libra-workspace-hack",
  "move-core-types",
@@ -3427,7 +3421,7 @@ dependencies = [
  "curve25519-dalek 2.1.0 (git+https://github.com/novifinancial/curve25519-dalek.git?branch=fiat2)",
  "digest 0.9.0",
  "ed25519-dalek 1.0.0-pre.3 (git+https://github.com/novifinancial/ed25519-dalek.git?branch=fiat2)",
- "hex 0.4.2",
+ "hex",
  "hmac 0.8.1",
  "libra-canonical-serialization",
  "libra-crypto-derive",
@@ -3529,7 +3523,7 @@ name = "libra-temppath"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=be82f8ee963a3c5aff40a11a3d76876cf7913cca#be82f8ee963a3c5aff40a11a3d76876cf7913cca"
 dependencies = [
- "hex 0.4.2",
+ "hex",
  "libra-workspace-hack",
  "rand 0.7.3",
 ]
@@ -3542,7 +3536,7 @@ dependencies = [
  "anyhow",
  "bytes 0.5.6",
  "chrono",
- "hex 0.4.2",
+ "hex",
  "itertools 0.9.0",
  "libra-canonical-serialization",
  "libra-crypto",
@@ -3891,7 +3885,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=be82f8ee963a3c5aff40a11a3d76876cf7913cca#be82f8ee963a3c5aff40a11a3d76876cf7913cca"
 dependencies = [
  "anyhow",
- "hex 0.4.2",
+ "hex",
  "libra-canonical-serialization",
  "libra-crypto",
  "libra-crypto-derive",
@@ -3930,7 +3924,7 @@ source = "git+https://github.com/starcoinorg/libra?rev=be82f8ee963a3c5aff40a11a3
 dependencies = [
  "anyhow",
  "codespan",
- "hex 0.4.2",
+ "hex",
  "libra-types",
  "libra-workspace-hack",
  "move-core-types",
@@ -3951,7 +3945,7 @@ dependencies = [
  "codespan-reporting",
  "datatest-stable",
  "difference",
- "hex 0.4.2",
+ "hex",
  "ir-to-bytecode",
  "libra-canonical-serialization",
  "libra-types",
@@ -4144,7 +4138,7 @@ dependencies = [
  "futures 0.3.5",
  "futures-timer",
  "futures_codec 0.3.4",
- "hex 0.4.2",
+ "hex",
  "ip_network",
  "libp2p",
  "linked-hash-map",
@@ -6303,7 +6297,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.5",
- "hex 0.4.2",
+ "hex",
  "libp2p",
  "network-api",
  "once_cell",
@@ -6409,7 +6403,7 @@ dependencies = [
  "crossbeam-channel",
  "forkable-jellyfish-merkle",
  "futures 0.3.5",
- "hex 0.4.2",
+ "hex",
  "scmd",
  "serde",
  "serde_json",
@@ -6440,7 +6434,7 @@ version = "0.3.1"
 dependencies = [
  "anyhow",
  "dirs 3.0.1",
- "hex 0.4.2",
+ "hex",
  "libp2p",
  "libra-temppath",
  "num_enum",
@@ -6473,7 +6467,7 @@ dependencies = [
  "async-std",
  "byteorder 1.3.4",
  "futures 0.3.5",
- "hex 0.4.2",
+ "hex",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "rust-argon2 0.8.2",
@@ -6583,7 +6577,7 @@ dependencies = [
  "ascii",
  "futures 0.3.5",
  "futures-timer",
- "hex 0.4.2",
+ "hex",
  "rust-embed",
  "starcoin-config",
  "starcoin-executor",
@@ -6688,7 +6682,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "futures 0.3.5",
- "hex 0.4.2",
+ "hex",
  "once_cell",
  "starcoin-accumulator",
  "starcoin-bus",
@@ -6733,7 +6727,7 @@ dependencies = [
  "futures 0.3.5",
  "futures-channel",
  "futures-timer",
- "hex 0.4.2",
+ "hex",
  "indicatif",
  "jsonrpc-core",
  "jsonrpc-tcp-server",
@@ -6786,7 +6780,7 @@ dependencies = [
  "fnv",
  "futures 0.3.5",
  "futures-timer",
- "hex 0.4.2",
+ "hex",
  "libp2p",
  "log 0.4.11",
  "lru 0.5.3",
@@ -6827,7 +6821,7 @@ dependencies = [
  "bytes 0.5.6",
  "futures 0.3.5",
  "futures-timer",
- "hex 0.4.2",
+ "hex",
  "network-api",
  "network-rpc-core",
  "network-rpc-derive",
@@ -6929,7 +6923,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "futures 0.3.5",
- "hex 0.4.2",
+ "hex",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
@@ -7010,7 +7004,7 @@ dependencies = [
  "anyhow",
  "futures 0.3.5",
  "futures-channel",
- "hex 0.3.2",
+ "hex",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
@@ -7186,7 +7180,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.5",
  "futures-timer",
- "hex 0.4.2",
+ "hex",
  "itertools 0.9.0",
  "libp2p",
  "network-api",
@@ -7367,7 +7361,7 @@ dependencies = [
  "bytes 0.5.6",
  "ethereum-types 0.2.3",
  "futures 0.3.5",
- "hex 0.4.2",
+ "hex",
  "itertools 0.9.0",
  "libp2p",
  "libra-types",
@@ -7805,7 +7799,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
- "sha2 0.8.2",
+ "sha2 0.9.1",
  "starcoin-chain",
  "starcoin-cmd",
  "starcoin-config",

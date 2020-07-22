@@ -11,7 +11,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
-hex = "0.4"
+hex = "0.4.2"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
