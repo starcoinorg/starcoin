@@ -92,21 +92,29 @@ impl MoveResource for EpochResource {
     const STRUCT_NAME: &'static str = "Epoch";
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EpochInfo {
     start_number: u64,
     end_number: u64,
     block_time_target: u64,
     block_difficulty_window: u64,
+    uncles: u64,
+    total_reward: u128,
 }
 
 impl EpochInfo {
-    pub fn new(epoch: &EpochResource, consensus: &Consensus) -> Self {
+    pub fn new(
+        epoch: &EpochResource,
+        epoch_data: EpochDataResource,
+        consensus: &Consensus,
+    ) -> Self {
         EpochInfo {
             start_number: epoch.start_number,
             end_number: epoch.end_number,
             block_time_target: epoch.block_time_target,
             block_difficulty_window: consensus.block_difficulty_window,
+            uncles: epoch_data.uncles,
+            total_reward: epoch_data.total_reward,
         }
     }
 
@@ -124,5 +132,57 @@ impl EpochInfo {
 
     pub fn block_difficulty_window(&self) -> u64 {
         self.block_difficulty_window
+    }
+
+    pub fn uncles(&self) -> u64 {
+        self.uncles
+    }
+
+    pub fn total_reward(&self) -> u128 {
+        self.total_reward
+    }
+}
+
+/// The Epoch data resource held under an account.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EpochDataResource {
+    uncles: u64,
+    total_reward: u128,
+}
+
+impl MoveResource for EpochDataResource {
+    const MODULE_NAME: &'static str = CONSENSUS_MODULE_NAME;
+    const STRUCT_NAME: &'static str = "EpochData";
+}
+
+impl EpochDataResource {
+    pub fn new(uncles: u64, total_reward: u128) -> Self {
+        Self {
+            uncles,
+            total_reward,
+        }
+    }
+
+    pub fn uncles(&self) -> u64 {
+        self.uncles
+    }
+
+    pub fn total_reward(&self) -> u128 {
+        self.total_reward
+    }
+
+    // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
+    pub fn struct_tag_for_epoch() -> StructTag {
+        StructTag {
+            address: CORE_CODE_ADDRESS,
+            name: EpochDataResource::struct_identifier(),
+            module: EpochDataResource::module_identifier(),
+            type_params: vec![],
+        }
+    }
+
+    // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
+    pub fn access_path_for() -> Vec<u8> {
+        AccessPath::resource_access_vec(&EpochDataResource::struct_tag_for_epoch())
     }
 }

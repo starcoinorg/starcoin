@@ -9,8 +9,12 @@ use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::on_chain_config::{
+    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
+};
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, marker::PhantomData, sync::Arc};
@@ -258,6 +262,23 @@ where
 
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
         self.storage.get_transaction(txn_hash)
+    }
+
+    fn epoch_info(&self) -> Result<EpochInfo> {
+        let account_reader = AccountStateReader::new(self.chain_state_reader());
+        let epoch = account_reader
+            .get_resource::<EpochResource>(genesis_address())?
+            .ok_or_else(|| format_err!("Epoch is none."))?;
+
+        let epoch_data = account_reader
+            .get_resource::<EpochDataResource>(genesis_address())?
+            .ok_or_else(|| format_err!("Epoch is none."))?;
+
+        let consensus_conf = account_reader
+            .get_on_chain_config::<ConsensusConfig>()?
+            .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
+
+        Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
