@@ -497,6 +497,22 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn create_dev_block(
+        &self,
+        author: AccountAddress,
+        auth_key_prefix: Vec<u8>,
+        parent_id: Option<HashValue>,
+    ) -> anyhow::Result<HashValue> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .create_dev_block(author, auth_key_prefix, parent_id)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn subscribe_events(
         &self,
         filter: EventFilter,

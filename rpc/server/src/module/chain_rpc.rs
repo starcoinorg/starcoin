@@ -3,10 +3,12 @@
 
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
+use starcoin_consensus::dev::DummyHeader;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
@@ -136,5 +138,30 @@ where
         let fut = self.service.clone().epoch_info().map_err(map_err);
 
         Box::new(fut.compat())
+    }
+
+    fn create_dev_block(
+        &self,
+        author: AccountAddress,
+        auth_key_prefix: Vec<u8>,
+        parent_id: Option<HashValue>,
+    ) -> FutureResult<HashValue> {
+        let service = self.service.clone();
+        let fut = async move {
+            let block_template = service
+                .clone()
+                .create_block_template(author, Some(auth_key_prefix), parent_id, Vec::new())
+                .await?;
+
+            let block = block_template.into_block(DummyHeader {}, 10000.into());
+            let block_id = block.id();
+
+            let _ = service.clone().try_connect(block).await?;
+
+            Ok(block_id)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
 }
