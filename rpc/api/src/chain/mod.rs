@@ -73,4 +73,8 @@ pub trait ChainApi {
         auth_key_prefix: Vec<u8>,
         parent_id: Option<HashValue>,
     ) -> FutureResult<HashValue>;
+
+    /// Get chain blocks by number
+    #[rpc(name = "chain.get_block_by_uncle")]
+    fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>>;
 }

@@ -35,6 +35,9 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
+    async fn master_block_by_uncle(&self, _uncle_id: HashValue) -> Result<Option<Block>> {
+        unimplemented!()
+    }
     async fn get_block_state_by_hash(self, _hash: &HashValue) -> Result<Option<BlockState>> {
         unimplemented!()
     }

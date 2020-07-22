@@ -133,6 +133,13 @@ where
                     None
                 },
             )),
+            ChainRequest::GetBlockByUncle(uncle_id) => Ok(ChainResponse::OptionBlock(
+                if let Some(block) = self.service.master_block_by_uncle(uncle_id)? {
+                    Some(Box::new(block))
+                } else {
+                    None
+                },
+            )),
             ChainRequest::GetBlockStateByHash(hash) => Ok(ChainResponse::BlockState(
                 if let Some(block_state) = self.service.get_block_state_by_hash(hash)? {
                     Some(Box::new(block_state))
@@ -284,6 +291,21 @@ where
             match block {
                 Some(b) => Ok(*b),
                 None => bail!("get block by hash is none: {:?}", hash),
+            }
+        } else {
+            bail!("get block by hash error.")
+        }
+    }
+
+    async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
+        if let ChainResponse::OptionBlock(block) = self
+            .address
+            .send(ChainRequest::GetBlockByUncle(uncle_id))
+            .await??
+        {
+            match block {
+                Some(b) => Ok(Some(*b)),
+                None => Ok(None),
             }
         } else {
             bail!("get block by hash error.")

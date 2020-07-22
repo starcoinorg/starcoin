@@ -402,6 +402,17 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn chain_get_block_by_uncle(&self, uncle_id: HashValue) -> anyhow::Result<Option<Block>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_block_by_uncle(uncle_id)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn chain_get_block_by_number(&self, number: BlockNumber) -> anyhow::Result<Block> {
         self.call_rpc_blocking(|inner| async move {
             inner

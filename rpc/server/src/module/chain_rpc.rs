@@ -58,6 +58,17 @@ where
         Box::new(fut.compat())
     }
 
+    fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let block = service.clone().master_block_by_uncle(uncle_id).await?;
+            Ok(block)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
+    }
+
     fn get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,

@@ -221,6 +221,32 @@ where
         self.storage.get_block_by_hash(block_id)
     }
 
+    fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>> {
+        let mut number = self.current_header().number();
+        let latest_number = number;
+        loop {
+            if number == 0 || (number + times) <= latest_number {
+                break;
+            }
+
+            let block = self
+                .get_block_by_number(number)?
+                .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
+
+            if block.uncles().is_some() {
+                for uncle in block.uncles().expect("uncles is none.") {
+                    if uncle.id() == uncle_id {
+                        return Ok(Some(block));
+                    }
+                }
+            }
+
+            number -= 1;
+        }
+
+        Ok(None)
+    }
+
     fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
         let mut block_vec = vec![];
         let mut current_num = match number {

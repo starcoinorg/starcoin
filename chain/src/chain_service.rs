@@ -550,6 +550,10 @@ where
         self.get_master().get_block_by_number(number)
     }
 
+    fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
+        self.get_master().get_latest_block_by_uncle(uncle_id, 100)
+    }
+
     fn master_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
         self.get_master().get_header_by_number(number)
     }

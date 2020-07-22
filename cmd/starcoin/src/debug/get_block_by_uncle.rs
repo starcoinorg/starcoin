@@ -4,10 +4,9 @@
 use crate::cli_state::CliState;
 use crate::view::BlockHeaderView;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
 ///Query block by uncle hash
@@ -25,12 +24,19 @@ impl CommandAction for GetBlockByUncleCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetBlockByUncleOpt;
-    type ReturnItem = BlockHeaderView;
+    type ReturnItem = Option<BlockHeaderView>;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        unimplemented!()
+        let client = ctx.state().client();
+        let opt = ctx.opt();
+        let block = client.chain_get_block_by_uncle(opt.uncle)?;
+
+        match block {
+            Some(b) => Ok(Some(b.into())),
+            None => Ok(None),
+        }
     }
 }
