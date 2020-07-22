@@ -11,7 +11,7 @@ ethereum-types = "0.6.0"
 keccak-hash = "0.2.0"
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
 jsonrpc-tcp-server = "14.0"
-log = "0.4"
+log = "0.4.11"
 parking_lot = "0.11"
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-config = { path = "../../config"}
