@@ -596,6 +596,7 @@ where
                 block.header.number
             };
             let uncles = self.find_available_uncles(epoch_start_number)?;
+            debug!("uncles len: {}", uncles.len());
             let (block_template, excluded_txns) = block_chain.create_block_template(
                 author,
                 auth_key_prefix,

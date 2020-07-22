@@ -159,12 +159,22 @@ where
     ) -> FutureResult<HashValue> {
         let service = self.service.clone();
         let fut = async move {
+            let p_id = match parent_id {
+                Some(id) => id,
+                None => service
+                    .clone()
+                    .master_head_header()
+                    .await?
+                    .expect("head is none.")
+                    .parent_hash(),
+            };
+
             let block_template = service
                 .clone()
-                .create_block_template(author, Some(auth_key_prefix), parent_id, Vec::new())
+                .create_block_template(author, Some(auth_key_prefix), Some(p_id), Vec::new())
                 .await?;
 
-            let block = block_template.into_block(DummyHeader {}, 10000.into());
+            let block = block_template.into_block(DummyHeader {}, 1.into());
             let block_id = block.id();
 
             let _ = service.clone().try_connect(block).await?;
