@@ -89,8 +89,22 @@ Feature: cmd integration test
 #    Then cmd: "wallet list "
     Then cmd: "wallet unlock $.None"
     Then cmd: "dev compile ../examples/my_counter/module/MyCounter.move -o ../examples $.result"
-    Then cmd: "dev execute $.txn_hash"
-#    Then cmd: "chain get_txn $.major_status"
+    Then cmd: "dev execute --blocking $.txn_hash"
+    Then cmd: "chain get_txn $.txn_info_id"
+
+    Examples:
+      |  |
+
+  Scenario Outline: [cmd]  cli continuous 6
+    Then cmd: "wallet unlock $.None"
+    Then cmd: "dev compile ../examples/my_token/module/MyToken.move -o ../examples $.result"
+    Then cmd: "dev deploy $.None"
+    Then cmd: "dev compile ../examples/my_token/scripts/init.move -d ../examples/my_token/module/MyToken.move -o ../examples $.result"
+    Then cmd: "dev execute --blocking $.txn_hash"
+    Then cmd: "chain get_txn $.txn_info_id"
+    Then cmd: "dev compile ../examples/my_token/scripts/mint.move -d ../examples/my_token/module/MyToken.move -o ../examples $.result"
+    Then cmd: "dev execute --arg 1000000u128 --blocking $.txn_hash"
+    Then cmd: "chain get_txn $.txn_info_id"
 
     Examples:
       |  |
