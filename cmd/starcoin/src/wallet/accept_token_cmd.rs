@@ -13,8 +13,8 @@ use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "accept_coin")]
-pub struct AcceptCoinOpt {
+#[structopt(name = "accept_token")]
+pub struct AcceptTokenOpt {
     #[structopt(short = "s")]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
@@ -36,11 +36,11 @@ pub struct AcceptCoinOpt {
     gas_price: u64,
 
     #[structopt(
-    name = "coin_type",
-    help = "coin's type tag, for example: 0x0::STC::T, default is STC",
+    name = "token-type",
+    help = "token's type tag, for example: 0x0::STC::STC, default is STC",
     parse(try_from_str = parse_type_tag)
     )]
-    coin_type: TypeTag,
+    token_type: TypeTag,
 
     #[structopt(
         short = "b",
@@ -51,12 +51,12 @@ pub struct AcceptCoinOpt {
     blocking: bool,
 }
 
-pub struct AcceptCoinCommand;
+pub struct AcceptTokenCommand;
 
-impl CommandAction for AcceptCoinCommand {
+impl CommandAction for AcceptTokenCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = AcceptCoinOpt;
+    type Opt = AcceptTokenOpt;
     type ReturnItem = HashValue;
 
     fn run(
@@ -80,15 +80,15 @@ impl CommandAction for AcceptCoinCommand {
 
         let account_resource = account_resource.unwrap();
 
-        let accept_coin_txn = starcoin_executor::build_accept_coin_txn(
+        let accept_token_txn = starcoin_executor::build_accept_token_txn(
             sender.address,
             account_resource.sequence_number(),
             opt.gas_price,
             opt.max_gas_amount,
-            opt.coin_type.clone(),
+            opt.token_type.clone(),
         );
 
-        let signed_txn = client.wallet_sign_txn(accept_coin_txn)?;
+        let signed_txn = client.wallet_sign_txn(accept_token_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
         if let Err(e) = succ {

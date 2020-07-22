@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-mod accept_coin_cmd;
+mod accept_token_cmd;
 mod create_cmd;
 mod execute_builtin_script_cmd;
 mod export_cmd;
@@ -12,7 +12,7 @@ mod show_cmd;
 mod transfer_cmd;
 mod unlock_cmd;
 
-pub use accept_coin_cmd::*;
+pub use accept_token_cmd::*;
 pub use create_cmd::*;
 pub use execute_builtin_script_cmd::*;
 pub use export_cmd::*;
