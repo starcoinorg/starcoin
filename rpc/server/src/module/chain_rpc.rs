@@ -3,7 +3,6 @@
 
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
-use starcoin_consensus::dev::DummyHeader;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::FutureResult;
@@ -174,7 +173,7 @@ where
                 .create_block_template(author, Some(auth_key_prefix), Some(p_id), Vec::new())
                 .await?;
 
-            let block = block_template.into_block(DummyHeader {}, 1.into());
+            let block = block_template.into_block(0, 1.into());
             let block_id = block.id();
 
             let _ = service.clone().try_connect(block).await?;
