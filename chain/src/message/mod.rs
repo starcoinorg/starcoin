@@ -27,6 +27,7 @@ pub enum ChainRequest {
     ),
     // just fot test
     GetBlockByHash(HashValue),
+    GetBlockByUncle(HashValue),
     GetBlockInfoByHash(HashValue),
     ConnectBlock(Box<Block>),
     ConnectBlockWithoutExe(Box<Block>),

@@ -225,8 +225,12 @@ where
             self.merge_exists_uncles(epoch_start_number, self.startup_info.master)?;
 
         let mut uncles = HashSet::new();
-        let branchs = self.find_available_branch(epoch_start_number)?;
-        for branch_header_id in branchs {
+        let branches = self.find_available_branch(epoch_start_number)?;
+        for branch_header_id in branches {
+            if uncles.len() == MAX_UNCLE_COUNT_PER_BLOCK {
+                break;
+            }
+
             let available_uncles = self.find_available_uncles_in_branch(
                 epoch_start_number,
                 branch_header_id,
@@ -353,17 +357,13 @@ where
                     if block.header.number < epoch_start_number {
                         break;
                     }
-                    if let Some(uncles) = block.uncles() {
-                        for uncle in uncles {
-                            if !exists_uncles.contains(uncle) {
-                                result.push(uncle.clone());
-                            }
-                            if result.len() == MAX_UNCLE_COUNT_PER_BLOCK {
-                                break;
-                            }
-                        }
+                    if !exists_uncles.contains(block.header()) {
+                        result.push(block.header().clone());
                     }
-                    id = block.header.parent_hash;
+                    if result.len() == MAX_UNCLE_COUNT_PER_BLOCK {
+                        break;
+                    }
+                    id = block.header().parent_hash();
                 }
                 None => {
                     break;
@@ -550,6 +550,10 @@ where
         self.get_master().get_block_by_number(number)
     }
 
+    fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
+        self.get_master().get_latest_block_by_uncle(uncle_id, 500)
+    }
+
     fn master_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
         self.get_master().get_header_by_number(number)
     }
@@ -592,6 +596,7 @@ where
                 block.header.number
             };
             let uncles = self.find_available_uncles(epoch_start_number)?;
+            debug!("uncles len: {}", uncles.len());
             let (block_template, excluded_txns) = block_chain.create_block_template(
                 author,
                 auth_key_prefix,

@@ -221,6 +221,32 @@ where
         self.storage.get_block_by_hash(block_id)
     }
 
+    fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>> {
+        let mut number = self.current_header().number();
+        let latest_number = number;
+        loop {
+            if number == 0 || (number + times) <= latest_number {
+                break;
+            }
+
+            let block = self
+                .get_block_by_number(number)?
+                .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
+
+            if block.uncles().is_some() {
+                for uncle in block.uncles().expect("uncles is none.") {
+                    if uncle.id() == uncle_id {
+                        return Ok(Some(block));
+                    }
+                }
+            }
+
+            number -= 1;
+        }
+
+        Ok(None)
+    }
+
     fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
         let mut block_vec = vec![];
         let mut current_num = match number {
@@ -392,9 +418,19 @@ where
         Ok(())
     }
 
-    fn verify_header(&self, header: &BlockHeader) -> Result<ConnectBlockResult> {
+    fn verify_header(
+        &self,
+        header: &BlockHeader,
+        verify_head_id: bool,
+    ) -> Result<ConnectBlockResult> {
         let pre_hash = header.parent_hash();
-        assert_eq!(self.head_block().id(), pre_hash);
+        if verify_head_id {
+            assert_eq!(
+                self.head_block().id(),
+                pre_hash,
+                "Invalid block: Parent id mismatch."
+            );
+        }
         // do not check genesis block timestamp check
         if let Some(pre_block) = self.get_block(pre_hash)? {
             ensure!(
@@ -433,13 +469,13 @@ where
         );
 
         if !is_genesis {
-            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header)? {
+            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header, true)? {
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
             if let Some(uncles) = block.uncles() {
                 for uncle_header in uncles {
                     if let ConnectBlockResult::VerifyConsensusFailed =
-                        self.verify_header(uncle_header)?
+                        self.verify_header(uncle_header, false)?
                     {
                         return Ok(ConnectBlockResult::VerifyConsensusFailed);
                     }

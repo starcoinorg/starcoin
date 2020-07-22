@@ -52,9 +52,9 @@ impl fmt::Display for ConsensusStrategy {
 
 impl ConfigModule for MinerConfig {
     fn default_with_net(net: ChainNetwork) -> Self {
-        let (consensus_strategy, enable_mint_empty_block) = match net {
-            ChainNetwork::Dev => (ConsensusStrategy::Dev, false),
-            _ => (ConsensusStrategy::Argon(1), true),
+        let consensus_strategy = match net {
+            ChainNetwork::Dev => ConsensusStrategy::Dev,
+            _ => ConsensusStrategy::Argon(1),
         };
         let port = match net {
             ChainNetwork::Dev => get_available_port_from(DEFAULT_STRATUM_SERVER_PORT),
@@ -70,7 +70,7 @@ impl ConfigModule for MinerConfig {
                 .expect("parse address must success."),
             thread_num: 1,
             enable_miner_client: true,
-            enable_mint_empty_block,
+            enable_mint_empty_block: true,
             enable_stderr: false,
             block_gas_limit,
             consensus_strategy,
@@ -103,9 +103,7 @@ impl ConfigModule for MinerConfig {
         if opt.disable_miner_client {
             self.enable_miner_client = false;
         }
-        if disable_mint_empty_block {
-            self.enable_mint_empty_block = false;
-        }
+        self.enable_mint_empty_block = !disable_mint_empty_block;
         Ok(())
     }
 }
