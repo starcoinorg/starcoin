@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
-use byteorder::{ByteOrder, LittleEndian};
 use config::MinerConfig;
 use futures::channel::mpsc;
 use futures::{SinkExt, StreamExt};
@@ -79,10 +78,8 @@ impl StratumClient {
 
     pub async fn submit_seal(&mut self, seal: (Vec<u8>, u64)) -> Result<()> {
         let (_pow_header, nonce) = seal;
-        let mut buf = vec![0u8; 8];
-        LittleEndian::write_u64(buf.as_mut(), nonce);
-        let nonce = hex::encode(buf);
-        let params = vec![json!(0), json!(0), json!(nonce)];
+        let nonce_hex = format!("{:x}", nonce);
+        let params = vec![json!(0), json!(0), json!(nonce_hex)];
         let method = "mining.submit".to_owned();
         self.request(method, params, 0).await?;
         Ok(())

@@ -49,14 +49,14 @@ pub struct BlockHeader {
     pub gas_limit: u64,
     /// Block difficulty
     pub difficulty: U256,
-    /// Consensus extend header field.
-    pub consensus_header: Vec<u8>,
+    /// Consensus nonce field.
+    pub nonce: u64,
     /// hash for uncle blocks header
     pub uncle_hash: Option<HashValue>,
 }
 
 impl BlockHeader {
-    pub fn new<H>(
+    pub fn new(
         parent_hash: HashValue,
         parent_block_accumulator_root: HashValue,
         timestamp: u64,
@@ -67,12 +67,9 @@ impl BlockHeader {
         gas_used: u64,
         gas_limit: u64,
         difficulty: U256,
-        consensus_header: H,
+        nonce: u64,
         uncle_hash: Option<HashValue>,
-    ) -> BlockHeader
-    where
-        H: Into<Vec<u8>>,
-    {
+    ) -> BlockHeader {
         Self::new_with_auth(
             parent_hash,
             parent_block_accumulator_root,
@@ -85,12 +82,12 @@ impl BlockHeader {
             gas_used,
             gas_limit,
             difficulty,
-            consensus_header,
+            nonce,
             uncle_hash,
         )
     }
 
-    pub fn new_with_auth<H>(
+    pub fn new_with_auth(
         parent_hash: HashValue,
         parent_block_accumulator_root: HashValue,
         timestamp: u64,
@@ -102,12 +99,9 @@ impl BlockHeader {
         gas_used: u64,
         gas_limit: u64,
         difficulty: U256,
-        consensus_header: H,
+        nonce: u64,
         uncle_hash: Option<HashValue>,
-    ) -> BlockHeader
-    where
-        H: Into<Vec<u8>>,
-    {
+    ) -> BlockHeader {
         BlockHeader {
             parent_hash,
             parent_block_accumulator_root,
@@ -120,7 +114,7 @@ impl BlockHeader {
             gas_used,
             gas_limit,
             difficulty,
-            consensus_header: consensus_header.into(),
+            nonce,
             uncle_hash,
         }
     }
@@ -161,8 +155,8 @@ impl BlockHeader {
         self.gas_limit
     }
 
-    pub fn consensus_header(&self) -> &[u8] {
-        self.consensus_header.as_slice()
+    pub fn nonce(&self) -> u64 {
+        self.nonce
     }
     pub fn difficulty(&self) -> U256 {
         self.difficulty
@@ -178,7 +172,7 @@ impl BlockHeader {
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
-        consensus_header: Vec<u8>,
+        nonce: u64,
     ) -> Self {
         Self {
             parent_hash,
@@ -192,7 +186,7 @@ impl BlockHeader {
             gas_used: 0,
             gas_limit: 0,
             difficulty,
-            consensus_header,
+            nonce,
             uncle_hash: None,
         }
     }
@@ -210,7 +204,7 @@ impl BlockHeader {
             gas_used: rand::random(),
             gas_limit: rand::random(),
             difficulty: U256::max_value(),
-            consensus_header: vec![],
+            nonce: 0,
             uncle_hash: None,
         }
     }
@@ -360,7 +354,7 @@ impl Block {
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
-        consensus_header: Vec<u8>,
+        nonce: u64,
         genesis_txn: SignedUserTransaction,
     ) -> Self {
         let header = BlockHeader::genesis_block_header(
@@ -369,7 +363,7 @@ impl Block {
             accumulator_root,
             state_root,
             difficulty,
-            consensus_header,
+            nonce,
         );
         Self {
             header,
@@ -589,10 +583,7 @@ impl BlockTemplate {
         }
     }
 
-    pub fn into_block<H>(self, consensus_header: H, difficulty: U256) -> Block
-    where
-        H: Into<Vec<u8>>,
-    {
+    pub fn into_block(self, nonce: u64, difficulty: U256) -> Block {
         let header = BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -605,7 +596,7 @@ impl BlockTemplate {
             self.gas_used,
             self.gas_limit,
             difficulty,
-            consensus_header.into(),
+            nonce,
             self.uncle_hash,
         );
         Block {
@@ -631,10 +622,7 @@ impl BlockTemplate {
         }
     }
 
-    pub fn into_block_header<H>(self, consensus_header: H, difficulty: U256) -> BlockHeader
-    where
-        H: Into<Vec<u8>>,
-    {
+    pub fn into_block_header(self, nonce: u64, difficulty: U256) -> BlockHeader {
         BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -647,7 +635,7 @@ impl BlockTemplate {
             self.gas_used,
             self.gas_limit,
             difficulty,
-            consensus_header.into(),
+            nonce,
             self.uncle_hash,
         )
     }

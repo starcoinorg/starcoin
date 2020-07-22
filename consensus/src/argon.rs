@@ -3,56 +3,26 @@
 
 use crate::difficulty::{difficult_to_target, target_to_difficulty};
 use crate::{difficulty, set_header_nonce};
-use anyhow::{Error, Result};
+use anyhow::Result;
 use argon2::{self, Config};
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
+use byteorder::{ByteOrder, LittleEndian};
 use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use rand::Rng;
-use std::convert::TryFrom;
-use std::io::Cursor;
-use traits::ChainReader;
-use traits::{Consensus, ConsensusHeader};
+use traits::{ChainReader, Consensus};
 use types::block::{BlockHeader, RawBlockHeader};
 use types::{H256, U256};
-
-#[derive(Clone, Debug)]
-pub struct ArgonConsensusHeader {
-    pub nonce: u64,
-}
-
-impl ConsensusHeader for ArgonConsensusHeader {}
-
-impl TryFrom<Vec<u8>> for ArgonConsensusHeader {
-    type Error = Error;
-
-    fn try_from(value: Vec<u8>) -> Result<Self> {
-        let mut rdr = Cursor::new(value.as_slice());
-        let nonce = rdr.read_u64::<LittleEndian>()?;
-        Ok(ArgonConsensusHeader { nonce })
-    }
-}
-
-impl Into<Vec<u8>> for ArgonConsensusHeader {
-    fn into(self) -> Vec<u8> {
-        let mut buf = vec![0u8; 8];
-        LittleEndian::write_u64(buf.as_mut(), self.nonce);
-        buf
-    }
-}
 
 #[derive(Clone)]
 pub struct ArgonConsensus {}
 
 impl Consensus for ArgonConsensus {
-    type ConsensusHeader = ArgonConsensusHeader;
-
     fn calculate_next_difficulty(reader: &dyn ChainReader) -> Result<U256> {
         let target = difficulty::get_next_work_required(reader)?;
         Ok(target_to_difficulty(target))
     }
 
-    fn solve_consensus_header(header_hash: &[u8], difficulty: U256) -> Self::ConsensusHeader {
+    fn solve_consensus_nonce(header_hash: &[u8], difficulty: U256) -> u64 {
         let mut nonce = generate_nonce();
         loop {
             let pow_hash: U256 = calculate_hash(&set_header_nonce(&header_hash, nonce))
@@ -65,7 +35,7 @@ impl Consensus for ArgonConsensus {
             }
             break;
         }
-        ArgonConsensusHeader { nonce }
+        nonce
     }
 
     fn verify(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
@@ -73,9 +43,7 @@ impl Consensus for ArgonConsensus {
         if header.difficulty() != difficulty {
             return Err(anyhow::Error::msg("Invalid difficulty"));
         }
-        let consensus_header: ArgonConsensusHeader =
-            ArgonConsensusHeader::try_from(header.consensus_header().to_vec())?;
-        let nonce = consensus_header.nonce;
+        let nonce = header.nonce;
         debug!(
             "Verify header, nonce, difficulty :{:?}, {:o}, {:x}",
             header, nonce, difficulty
