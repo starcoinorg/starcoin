@@ -3,14 +3,13 @@
 
 use crate::metrics::MINER_METRICS;
 use actix::prelude::*;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_metrics::HistogramTimer;
-use std::convert::TryFrom;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -80,14 +79,15 @@ where
         let mut state = self.state.lock().unwrap();
         let metrics_timer = state.as_mut().unwrap().metrics_timer.take();
         let block_template = state.as_ref().unwrap().block_template.clone();
-
-        let payload = hex::decode(payload).unwrap();
-        let consensus_header = match C::ConsensusHeader::try_from(payload) {
-            Ok(h) => h,
-            Err(_) => return Err(anyhow::anyhow!("Invalid payload submit")),
-        };
+        let nonce = u64::from_str_radix(&payload, 16).map_err(|e| {
+            format_err!(
+                "Invalid payload submit: {}, decode failed:{}",
+                payload,
+                e.to_string()
+            )
+        })?;
         let difficulty = state.as_ref().unwrap().difficulty;
-        let block = block_template.into_block(consensus_header, difficulty);
+        let block = block_template.into_block(nonce, difficulty);
         info!("Miner new block with id: {:?}", block.id());
         self.bus.do_send(Broadcast {
             msg: MinedBlock(Arc::new(block)),

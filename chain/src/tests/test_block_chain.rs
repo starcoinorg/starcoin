@@ -2,7 +2,7 @@ use crate::{test_helper, BlockChain, ChainActor, ChainActorRef, ChainAsyncServic
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
-use consensus::dev::{DevConsensus, DummyHeader};
+use consensus::dev::DevConsensus;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use futures_timer::Delay;
 use logger::prelude::*;
@@ -110,7 +110,7 @@ async fn test_block_chain_forks() {
                 )
                 .await
                 .unwrap()
-                .into_block(DummyHeader {}, 10000.into());
+                .into_block(0, 10000.into());
             info!(
                 "{}:{:?}:{:?}:{:?}",
                 i,

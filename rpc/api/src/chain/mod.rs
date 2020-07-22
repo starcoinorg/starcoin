@@ -5,10 +5,12 @@ pub use self::gen_client::Client as ChainClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[rpc]
 pub trait ChainApi {
@@ -58,4 +60,21 @@ pub trait ChainApi {
     /// Get branches of current chain, first is master.
     #[rpc(name = "chain.branches")]
     fn branches(&self) -> FutureResult<Vec<ChainInfo>>;
+
+    /// Get current epoch info.
+    #[rpc(name = "chain.epoch")]
+    fn current_epoch(&self) -> FutureResult<EpochInfo>;
+
+    /// Create a block for master.
+    #[rpc(name = "chain.create_dev_block")]
+    fn create_dev_block(
+        &self,
+        author: AccountAddress,
+        auth_key_prefix: Vec<u8>,
+        parent_id: Option<HashValue>,
+    ) -> FutureResult<HashValue>;
+
+    /// Get chain blocks by number
+    #[rpc(name = "chain.get_block_by_uncle")]
+    fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>>;
 }

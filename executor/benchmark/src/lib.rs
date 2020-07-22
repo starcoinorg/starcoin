@@ -12,9 +12,9 @@ use starcoin_config::ChainNetwork;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::ChainState;
 use statedb::ChainStateDB;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
@@ -160,6 +160,7 @@ impl TransactionGenerator {
 struct TxnExecutor<'test> {
     chain_state: &'test dyn ChainState,
     block_receiver: mpsc::Receiver<Vec<Transaction>>,
+    time: MockTimeService,
 }
 
 impl<'test> TxnExecutor<'test> {
@@ -170,6 +171,7 @@ impl<'test> TxnExecutor<'test> {
         Self {
             chain_state,
             block_receiver,
+            time: MockTimeService::new(),
         }
     }
 
@@ -179,12 +181,10 @@ impl<'test> TxnExecutor<'test> {
         while let Ok(mut transactions) = self.block_receiver.recv() {
             let execute_start = std::time::Instant::now();
             {
+                self.time.increment();
                 let block_meta = BlockMetadata::new(
                     HashValue::random(),
-                    SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .expect("Clock may have gone backwards")
-                        .as_secs(),
+                    self.time.now() * 1_000_000,
                     AccountAddress::random(),
                     Some(miner_account.auth_key_prefix()),
                     0,
@@ -268,6 +268,32 @@ fn create_transaction(sequence_number: u64, program: Script) -> Transaction {
         1,
     );
     Transaction::UserTransaction(signed_txn)
+}
+
+/// A mock-time TimeService
+#[derive(Clone, Default)]
+pub struct MockTimeService {
+    now: Arc<AtomicU64>,
+}
+
+impl MockTimeService {
+    pub fn new() -> Self {
+        Self {
+            now: Arc::new(AtomicU64::new(0)),
+        }
+    }
+
+    pub fn increment(&self) {
+        self.now.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn increment_by(&self, value: u64) {
+        self.now.fetch_add(value, Ordering::Relaxed);
+    }
+
+    pub fn now(&self) -> u64 {
+        self.now.load(Ordering::Relaxed)
+    }
 }
 
 #[cfg(test)]

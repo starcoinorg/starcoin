@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod branchs_cmd;
+mod epoch_info;
 mod get_block_by_number_cmd;
 mod get_block_cmd;
 mod get_events_cmd;
@@ -12,6 +13,7 @@ mod list_block_cmd;
 mod show_cmd;
 
 pub use branchs_cmd::*;
+pub use epoch_info::*;
 pub use get_block_by_number_cmd::*;
 pub use get_block_cmd::*;
 pub use get_events_cmd::*;

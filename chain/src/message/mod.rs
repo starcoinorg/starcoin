@@ -2,6 +2,7 @@
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
+use starcoin_vm_types::on_chain_config::EpochInfo;
 use traits::ConnectBlockResult;
 use types::{
     account_address::AccountAddress,
@@ -26,11 +27,13 @@ pub enum ChainRequest {
     ),
     // just fot test
     GetBlockByHash(HashValue),
+    GetBlockByUncle(HashValue),
     GetBlockInfoByHash(HashValue),
     ConnectBlock(Box<Block>),
     ConnectBlockWithoutExe(Box<Block>),
     GetStartupInfo(),
     GetHeadChainInfo(),
+    GetEpochInfo(),
     GetTransaction(HashValue),
     GetTransactionInfo(HashValue),
     GetBlockTransactionInfos(HashValue),
@@ -66,4 +69,5 @@ pub enum ChainResponse {
     None,
     Conn(ConnectBlockResult),
     BlockState(Option<Box<BlockState>>),
+    EpochInfo(EpochInfo),
 }

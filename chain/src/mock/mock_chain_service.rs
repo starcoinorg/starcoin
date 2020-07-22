@@ -4,6 +4,7 @@
 use crate::{ChainAsyncService, ConnectBlockResult};
 use anyhow::{Error, Result};
 use crypto::HashValue;
+use starcoin_vm_types::on_chain_config::EpochInfo;
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -34,6 +35,9 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
+    async fn master_block_by_uncle(&self, _uncle_id: HashValue) -> Result<Option<Block>> {
+        unimplemented!()
+    }
     async fn get_block_state_by_hash(self, _hash: &HashValue) -> Result<Option<BlockState>> {
         unimplemented!()
     }
@@ -97,6 +101,10 @@ impl ChainAsyncService for MockChainService {
     }
 
     async fn master_head(self) -> Result<ChainInfo> {
+        unimplemented!()
+    }
+
+    async fn epoch_info(self) -> Result<EpochInfo> {
         unimplemented!()
     }
 

@@ -9,8 +9,12 @@ use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::on_chain_config::{
+    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
+};
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, marker::PhantomData, sync::Arc};
@@ -217,6 +221,32 @@ where
         self.storage.get_block_by_hash(block_id)
     }
 
+    fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>> {
+        let mut number = self.current_header().number();
+        let latest_number = number;
+        loop {
+            if number == 0 || (number + times) <= latest_number {
+                break;
+            }
+
+            let block = self
+                .get_block_by_number(number)?
+                .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
+
+            if block.uncles().is_some() {
+                for uncle in block.uncles().expect("uncles is none.") {
+                    if uncle.id() == uncle_id {
+                        return Ok(Some(block));
+                    }
+                }
+            }
+
+            number -= 1;
+        }
+
+        Ok(None)
+    }
+
     fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
         let mut block_vec = vec![];
         let mut current_num = match number {
@@ -258,6 +288,23 @@ where
 
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
         self.storage.get_transaction(txn_hash)
+    }
+
+    fn epoch_info(&self) -> Result<EpochInfo> {
+        let account_reader = AccountStateReader::new(self.chain_state_reader());
+        let epoch = account_reader
+            .get_resource::<EpochResource>(genesis_address())?
+            .ok_or_else(|| format_err!("Epoch is none."))?;
+
+        let epoch_data = account_reader
+            .get_resource::<EpochDataResource>(genesis_address())?
+            .ok_or_else(|| format_err!("Epoch is none."))?;
+
+        let consensus_conf = account_reader
+            .get_on_chain_config::<ConsensusConfig>()?
+            .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
+
+        Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
@@ -371,9 +418,19 @@ where
         Ok(())
     }
 
-    fn verify_header(&self, header: &BlockHeader) -> Result<ConnectBlockResult> {
+    fn verify_header(
+        &self,
+        header: &BlockHeader,
+        verify_head_id: bool,
+    ) -> Result<ConnectBlockResult> {
         let pre_hash = header.parent_hash();
-        assert_eq!(self.head_block().id(), pre_hash);
+        if verify_head_id {
+            assert_eq!(
+                self.head_block().id(),
+                pre_hash,
+                "Invalid block: Parent id mismatch."
+            );
+        }
         // do not check genesis block timestamp check
         if let Some(pre_block) = self.get_block(pre_hash)? {
             ensure!(
@@ -387,6 +444,15 @@ where
             );
         }
 
+        if header.gas_used > header.gas_limit {
+            error!(
+                "gas used {} in transaction is bigger than gas limit {}",
+                header.gas_used, header.gas_limit
+            );
+            return Ok(ConnectBlockResult::VerifyConsensusFailed);
+        }
+
+        // TODO 最小值是否需要
         if let Err(e) = C::verify(self, header) {
             error!("verify header failed : {:?}", e);
             return Ok(ConnectBlockResult::VerifyConsensusFailed);
@@ -403,13 +469,13 @@ where
         );
 
         if !is_genesis {
-            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header)? {
+            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header, true)? {
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
             if let Some(uncles) = block.uncles() {
                 for uncle_header in uncles {
                     if let ConnectBlockResult::VerifyConsensusFailed =
-                        self.verify_header(uncle_header)?
+                        self.verify_header(uncle_header, false)?
                     {
                         return Ok(ConnectBlockResult::VerifyConsensusFailed);
                     }

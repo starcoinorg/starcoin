@@ -11,7 +11,7 @@ parking_lot = "0.11"
 futures-channel = "0.3"
 anyhow = "1.0"
 thiserror = "1.0"
-hex = { version = "0.3.2", default-features = false }
+hex = { version = "0.4.2", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 actix = "0.10.0-alpha.3"
@@ -51,13 +51,13 @@ starcoin-metrics = {path = "../../commons/metrics"}
 starcoin-bus = {path = "../../bus"}
 starcoin-storage = {path = "../../storage"}
 starcoin-executor = {path = "../../executor"}
-
+starcoin-vm-types = { path = "../../vm/types"}
+starcoin-consensus= {path = "../../consensus"}
 network-api = {package="network-api", path="../../network/api"}
 
 [dev-dependencies]
 starcoin-rpc-client = { path = "../client"}
 starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
 starcoin-executor={path="../../executor"}
-starcoin-consensus= {path = "../../consensus"}
 tokio = { version = "0.2", features = ["full"] }
 starcoin-genesis = {path = "../../core/genesis"}

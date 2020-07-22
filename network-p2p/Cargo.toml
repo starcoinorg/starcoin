@@ -28,7 +28,7 @@ nohash-hasher = "0.2.0"
 parking_lot = "0.11.0"
 prost = "0.6.1"
 rand = "0.7.3"
-rustc-hex = "2.0.1"
+rustc-hex = "2.1.0"
 pin-project = "0.4.6"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
@@ -39,7 +39,7 @@ thiserror = "1"
 unsigned-varint = { version = "0.3.1", features = ["futures", "futures-codec"] }
 void = "1.0.2"
 zeroize = "1.0.0"
-hex="0.4.2"
+hex= "0.4.2"
 wasm-timer = "0.2"
 peerset = {  path = "peerset" }
 sg_config = {path = "../config", package="starcoin-config"}

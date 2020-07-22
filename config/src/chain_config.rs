@@ -168,8 +168,8 @@ pub struct ChainConfig {
     pub reward_delay: u64,
     /// Genesis difficulty, should match consensus in different ChainNetwork.
     pub difficulty: U256,
-    /// Genesis consensus header.
-    pub consensus_header: Vec<u8>,
+    /// Genesis consensus nonce.
+    pub nonce: u64,
     /// pre mine to Association account, percent of total_supply, from 0~100.
     pub pre_mine_percent: u64,
     /// VM config for publishing_option and gas_schedule
@@ -221,7 +221,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         total_supply: STARCOIN_TOTAL_SUPPLY, //420_000_000 * 1_000_000 + 1_680_000_000 * 1_000_000 // 840_000_000 * 1_000_000 * 2 = (70_000_000 * 1_000_000 * 12) * 2 = (840_000_000 * 1_000_000 / 116) * 2
         reward_delay: 1,
         difficulty: 1.into(),
-        consensus_header: vec![],
+        nonce: 0,
         pre_mine_percent: 20,
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
@@ -249,7 +249,7 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         total_supply: STARCOIN_TOTAL_SUPPLY,
         reward_delay: 3,
         difficulty: 10.into(),
-        consensus_header: vec![],
+        nonce: 0,
         pre_mine_percent: 20,
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
@@ -282,7 +282,7 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         total_supply: STARCOIN_TOTAL_SUPPLY,
         reward_delay: 7,
         difficulty: 10.into(),
-        consensus_header: vec![],
+        nonce: 0,
         pre_mine_percent: 20,
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
@@ -314,7 +314,7 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     total_supply: STARCOIN_TOTAL_SUPPLY,
     reward_delay: 7,
     difficulty: 10.into(),
-    consensus_header: vec![],
+    nonce: 0,
     pre_mine_percent: 0,
     vm_config: VMConfig {
         publishing_option: VMPublishingOption::Open,

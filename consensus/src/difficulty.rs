@@ -12,12 +12,6 @@ pub fn difficult_1_target() -> U256 {
     U256::max_value()
 }
 
-// pub fn current_hash_rate(target: &[u8]) -> u64 {
-//     // current_hash_rate = (difficult_1_target/target_current) * difficult_1_hash/block_per_esc
-//     let target_u256: U256 = target.into();
-//     (difficult_1_target() / target_u256).low_u64() / (BLOCK_TIME_SEC as u64)
-// }
-
 /// Get the target of next pow work
 pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let mut current_header = chain.current_header();

@@ -22,6 +22,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
+use starcoin_vm_types::on_chain_config::EpochInfo;
 use std::sync::Arc;
 use storage::Store;
 use traits::{ChainAsyncService, ChainService, ConnectBlockResult, Consensus};
@@ -132,6 +133,13 @@ where
                     None
                 },
             )),
+            ChainRequest::GetBlockByUncle(uncle_id) => Ok(ChainResponse::OptionBlock(
+                if let Some(block) = self.service.master_block_by_uncle(uncle_id)? {
+                    Some(Box::new(block))
+                } else {
+                    None
+                },
+            )),
             ChainRequest::GetBlockStateByHash(hash) => Ok(ChainResponse::BlockState(
                 if let Some(block_state) = self.service.get_block_state_by_hash(hash)? {
                     Some(Box::new(block_state))
@@ -179,6 +187,9 @@ where
             ChainRequest::GetEventsByTxnInfoId { txn_info_id } => Ok(ChainResponse::Events(
                 self.service.get_events_by_txn_info_id(txn_info_id)?,
             )),
+            ChainRequest::GetEpochInfo() => {
+                Ok(ChainResponse::EpochInfo(self.service.epoch_info()?))
+            }
         }
     }
 }
@@ -280,6 +291,21 @@ where
             match block {
                 Some(b) => Ok(*b),
                 None => bail!("get block by hash is none: {:?}", hash),
+            }
+        } else {
+            bail!("get block by hash error.")
+        }
+    }
+
+    async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
+        if let ChainResponse::OptionBlock(block) = self
+            .address
+            .send(ChainRequest::GetBlockByUncle(uncle_id))
+            .await??
+        {
+            match block {
+                Some(b) => Ok(Some(*b)),
+                None => Ok(None),
             }
         } else {
             bail!("get block by hash error.")
@@ -470,6 +496,19 @@ where
             Ok(chain_info)
         } else {
             bail!("get head chain info error.")
+        }
+    }
+
+    async fn epoch_info(self) -> Result<EpochInfo> {
+        let response = self
+            .address
+            .send(ChainRequest::GetEpochInfo())
+            .await
+            .map_err(Into::<Error>::into)??;
+        if let ChainResponse::EpochInfo(chain_info) = response {
+            Ok(chain_info)
+        } else {
+            bail!("get epoch chain info error.")
         }
     }
 
