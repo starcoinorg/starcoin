@@ -105,8 +105,10 @@ pub struct ProverOptions {
     pub stable_test_output: bool,
     /// Scope of what functions to verify.
     pub verify_scope: VerificationScope,
-    /// Whether to emit global axiom that resources are well-formed.
+    /// [deprecated] Whether to emit global axiom that resources are well-formed.
     pub resource_wellformed_axiom: bool,
+    /// Whether to assume wellformedness when elements are read from memory.
+    pub assume_wellformed_on_access: bool,
     /// Whether to automatically debug trace values of specification expression leafs.
     pub debug_trace: bool,
 }
@@ -120,7 +122,8 @@ impl Default for ProverOptions {
             omit_model_debug: false,
             stable_test_output: false,
             verify_scope: VerificationScope::Public,
-            resource_wellformed_axiom: true,
+            resource_wellformed_axiom: false,
+            assume_wellformed_on_access: false,
             debug_trace: false,
         }
     }
@@ -168,6 +171,8 @@ pub struct BackendOptions {
     pub proc_cores: usize,
     /// A (soft) timeout for the solver, per verification condition, in seconds.
     pub vc_timeout: usize,
+    /// Whether Boogie output and log should be saved.
+    pub keep_artifacts: bool,
 }
 
 impl Default for BackendOptions {
@@ -192,6 +197,7 @@ impl Default for BackendOptions {
             random_seed: 0,
             proc_cores: 1,
             vc_timeout: 40,
+            keep_artifacts: false,
         }
     }
 }
@@ -266,7 +272,6 @@ impl Options {
             )
             .arg(
                 Arg::with_name("generate-only")
-                    .short("g")
                     .long("generate-only")
                     .help("only generate boogie file but do not call boogie"),
             )
@@ -275,6 +280,12 @@ impl Options {
                     .long("trace")
                     .short("t")
                     .help("enables automatic tracing of expressions in prover errors")
+            )
+            .arg(
+                Arg::with_name("keep")
+                    .long("keep")
+                    .short("k")
+                    .help("keep intermediate artifacts of the backend around")
             )
             .arg(
                 Arg::with_name("seed")
@@ -371,10 +382,16 @@ impl Options {
         };
 
         let mut options = if matches.is_present("config") {
+            if matches.is_present("config-str") {
+                return Err(anyhow!(
+                    "currently, if `--config` (including via $MOVE_PROVER_CONFIG) is given \
+                       `--config-str` cannot be used. Consider editing your \
+                       configuration file instead."
+                ));
+            }
             Self::create_from_toml_file(matches.value_of("config").unwrap())?
         } else if matches.is_present("config-str") {
-            let config_lines = get_vec("config-str").join("\n");
-            Self::create_from_toml(&config_lines)?
+            Self::create_from_toml(matches.value_of("config-str").unwrap())?
         } else {
             Options::default()
         };
@@ -418,6 +435,9 @@ impl Options {
         }
         if matches.is_present("trace") {
             options.prover.debug_trace = true;
+        }
+        if matches.is_present("keep") {
+            options.backend.keep_artifacts = true;
         }
         if matches.is_present("seed") {
             options.backend.random_seed = matches.value_of("seed").unwrap().parse::<usize>()?;
