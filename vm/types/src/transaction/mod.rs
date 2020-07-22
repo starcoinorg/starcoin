@@ -16,7 +16,7 @@ use crate::{
 };
 use anyhow::{format_err, Error, Result};
 use libra_types::proof::accumulator::InMemoryAccumulator;
-use serde::{de, ser, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::{
     ed25519::*,
@@ -25,7 +25,7 @@ use starcoin_crypto::{
     HashValue,
 };
 use std::ops::Deref;
-use std::{convert::TryFrom, fmt, time::Duration};
+use std::{convert::TryFrom, fmt};
 
 pub mod authenticator {
     pub use libra_types::transaction::authenticator::{
@@ -68,46 +68,14 @@ pub struct RawUserTransaction {
     // Maximal price can be paid per gas.
     gas_unit_price: u64,
 
-    // Expiration time for this transaction.  If storage is queried and
+    // Expiration timestamp for this transaction. timestamp is represented
+    // as u64 in seconds from Unix Epoch. If storage is queried and
     // the time returned is greater than or equal to this time and this
     // transaction has not been included, you can be certain that it will
     // never be included.
     // A transaction that doesn't expire is represented by a very large value like
     // u64::max_value().
-    #[serde(serialize_with = "serialize_duration")]
-    #[serde(deserialize_with = "deserialize_duration")]
-    expiration_time: Duration,
-}
-
-// TODO(#1307)
-fn serialize_duration<S>(d: &Duration, serializer: S) -> std::result::Result<S::Ok, S::Error>
-where
-    S: ser::Serializer,
-{
-    serializer.serialize_u64(d.as_secs())
-}
-
-fn deserialize_duration<'de, D>(deserializer: D) -> std::result::Result<Duration, D::Error>
-where
-    D: de::Deserializer<'de>,
-{
-    struct DurationVisitor;
-    impl<'de> de::Visitor<'de> for DurationVisitor {
-        type Value = Duration;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-            formatter.write_str("Duration as u64")
-        }
-
-        fn visit_u64<E>(self, v: u64) -> std::result::Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(Duration::from_secs(v))
-        }
-    }
-
-    deserializer.deserialize_u64(DurationVisitor)
+    expiration_timestamp_secs: u64,
 }
 
 impl RawUserTransaction {
@@ -121,7 +89,7 @@ impl RawUserTransaction {
         payload: TransactionPayload,
         max_gas_amount: u64,
         gas_unit_price: u64,
-        expiration_time: Duration,
+        expiration_timestamp_secs: u64,
     ) -> Self {
         RawUserTransaction {
             sender,
@@ -129,7 +97,7 @@ impl RawUserTransaction {
             payload,
             max_gas_amount,
             gas_unit_price,
-            expiration_time,
+            expiration_timestamp_secs,
         }
     }
 
@@ -142,7 +110,7 @@ impl RawUserTransaction {
         script: Script,
         max_gas_amount: u64,
         gas_unit_price: u64,
-        expiration_time: Duration,
+        expiration_timestamp_secs: u64,
     ) -> Self {
         RawUserTransaction {
             sender,
@@ -150,7 +118,7 @@ impl RawUserTransaction {
             payload: TransactionPayload::Script(script),
             max_gas_amount,
             gas_unit_price,
-            expiration_time,
+            expiration_timestamp_secs,
         }
     }
 
@@ -164,7 +132,7 @@ impl RawUserTransaction {
         module: Module,
         max_gas_amount: u64,
         gas_unit_price: u64,
-        expiration_time: Duration,
+        expiration_timestamp_secs: u64,
     ) -> Self {
         RawUserTransaction {
             sender,
@@ -175,7 +143,7 @@ impl RawUserTransaction {
             ),
             max_gas_amount,
             gas_unit_price,
-            expiration_time,
+            expiration_timestamp_secs,
         }
     }
 
@@ -214,7 +182,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(vec![], vec![], vec![])),
             0,
             0,
-            Duration::new(0, 0),
+            u64::max_value(),
         )
     }
 
@@ -225,7 +193,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(compiled_script, vec![stc_type_tag()], vec![])),
             600,
             0,
-            Duration::new(0, 0),
+            u64::max_value(),
         )
     }
 }
@@ -385,8 +353,8 @@ impl SignedUserTransaction {
         self.raw_txn.gas_unit_price
     }
 
-    pub fn expiration_time(&self) -> Duration {
-        self.raw_txn.expiration_time
+    pub fn expiration_timestamp_secs(&self) -> u64 {
+        self.raw_txn.expiration_timestamp_secs
     }
 
     pub fn raw_txn_bytes_len(&self) -> usize {

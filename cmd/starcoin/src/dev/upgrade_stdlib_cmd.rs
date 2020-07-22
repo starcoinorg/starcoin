@@ -10,8 +10,8 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::build_stdlib_package;
 use starcoin_types::transaction::RawUserTransaction;
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::transaction::TransactionPayload;
-use std::time::Duration;
 use stdlib::StdLibOptions;
 use structopt::StructOpt;
 
@@ -75,7 +75,7 @@ impl CommandAction for UpgradeStdlibCommand {
             let upgrade_package =
                 build_stdlib_package(cli_state.net(), StdLibOptions::Fresh, false)?;
 
-            let expiration_time = Duration::from_secs(opt.expiration_time);
+            let expiration_time = opt.expiration_time + get_current_timestamp();
             let upgrade_txn = RawUserTransaction::new(
                 association_account.address,
                 account_resource.sequence_number(),

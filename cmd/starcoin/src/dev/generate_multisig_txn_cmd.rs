@@ -18,12 +18,12 @@ use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
 use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::path::PathBuf;
-use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -165,7 +165,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             bail!("address {} not exists on chain", &sender);
         }
         let account_resource = account_resource.unwrap();
-        let expiration_time = Duration::from_secs(opt.expiration_time);
+        let expiration_time = opt.expiration_time + get_current_timestamp();
         let script_txn = RawUserTransaction::new_script(
             sender,
             account_resource.sequence_number(),

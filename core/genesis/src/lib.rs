@@ -29,7 +29,6 @@ use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
 use traits::{ChainReader, ConnectBlockResult, Consensus};
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
@@ -142,7 +141,7 @@ impl Genesis {
             TransactionPayload::Package(package),
             0,
             0,
-            Duration::from_secs(0),
+            1, // init to 1 to pass time check
         );
         let (genesis_private_key, genesis_public_key) = genesis_key_pair();
         let sign_txn = txn.sign(&genesis_private_key, genesis_public_key)?;

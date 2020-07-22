@@ -11,7 +11,7 @@ use move_core_types::gas_schedule::{
 };
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, HashValue, PrivateKey};
-use std::{convert::TryFrom, time::Duration};
+use std::convert::TryFrom;
 
 pub struct TransactionMetadata {
     pub sender: AccountAddress,
@@ -20,7 +20,7 @@ pub struct TransactionMetadata {
     pub max_gas_amount: GasUnits<GasCarrier>,
     pub gas_unit_price: GasPrice<GasCarrier>,
     pub transaction_size: AbstractMemorySize<GasCarrier>,
-    pub expiration_time: Duration,
+    pub expiration_timestamp_secs: u64,
     //TODO refactor this when can pass struct to Move script,
     // use PayloadMetadata to wrap there's fields.
     pub payload_type: TransactionPayloadType,
@@ -40,7 +40,7 @@ impl TransactionMetadata {
             max_gas_amount: GasUnits::new(txn.max_gas_amount()),
             gas_unit_price: GasPrice::new(txn.gas_unit_price()),
             transaction_size: AbstractMemorySize::new(txn.raw_txn_bytes_len() as u64),
-            expiration_time: txn.expiration_time(),
+            expiration_timestamp_secs: txn.expiration_timestamp_secs(),
             payload_type: txn.payload().payload_type(),
             script_or_package_hash: match txn.payload() {
                 TransactionPayload::Script(script) => HashValue::sha3_256_of(script.code()),
@@ -77,8 +77,8 @@ impl TransactionMetadata {
         self.transaction_size
     }
 
-    pub fn expiration_time(&self) -> u64 {
-        self.expiration_time.as_secs()
+    pub fn expiration_time_secs(&self) -> u64 {
+        self.expiration_timestamp_secs
     }
 
     pub fn payload_type(&self) -> TransactionPayloadType {
@@ -102,7 +102,7 @@ impl Default for TransactionMetadata {
             max_gas_amount: GasUnits::new(100_000_000),
             gas_unit_price: GasPrice::new(0),
             transaction_size: AbstractMemorySize::new(0),
-            expiration_time: Duration::new(0, 0),
+            expiration_timestamp_secs: 0,
             payload_type: TransactionPayloadType::Script,
             script_or_package_hash: HashValue::zero(),
             package_address: None,
