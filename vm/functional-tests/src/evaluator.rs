@@ -20,17 +20,15 @@ use starcoin_types::{
         TransactionStatus,
     },
 };
-use starcoin_vm_types::errors::{Location, VMError};
 use starcoin_vm_types::{
-    bytecode_verifier::DependencyChecker,
+    bytecode_verifier::{self, DependencyChecker},
+    errors::{Location, VMError},
     file_format::{CompiledModule, CompiledScript},
-    views::ModuleView,
-    vm_status::StatusCode,
-};
-use starcoin_vm_types::{
     gas_schedule::{GasAlgebra, GasConstants},
     language_storage::ModuleId,
     state_view::StateView,
+    views::ModuleView,
+    vm_status::StatusCode,
 };
 use std::fmt;
 use std::str::FromStr;

@@ -6,16 +6,16 @@ use crate::create_access_path;
 use move_vm_runtime::data_cache::RemoteCache;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
-use starcoin_vm_types::on_chain_config::ConfigStorage;
-use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     access_path::AccessPath,
+    errors::*,
+    language_storage::{ModuleId, TypeTag},
+    on_chain_config::ConfigStorage,
+    state_view::StateView,
     vm_status::StatusCode,
     write_set::{WriteOp, WriteSet},
 };
 use std::collections::btree_map::BTreeMap;
-use vm::errors::*;
 
 /// A local cache for a given a `StateView`. The cache is private to the Libra layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`

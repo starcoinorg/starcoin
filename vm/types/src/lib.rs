@@ -61,12 +61,8 @@ pub mod values {
 }
 
 pub mod loaded_data {
-    pub mod types {
-        pub use move_vm_types::loaded_data::types::{FatStructType, FatType};
-    }
-
     pub mod runtime_types {
-        pub use move_vm_types::loaded_data::runtime_types::{StructType, Type, TypeConverter};
+        pub use move_vm_types::loaded_data::runtime_types::{StructType, Type};
     }
 }
 
@@ -90,6 +86,7 @@ pub mod access {
 
 pub mod errors {
     pub use vm::errors::*;
+    pub use vm::IndexKind;
 }
 
 pub mod write_set {
