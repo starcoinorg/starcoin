@@ -25,7 +25,7 @@ pub fn add_command(
                 .subcommand(wallet::CreateCommand)
                 .subcommand(wallet::ShowCommand)
                 .subcommand(wallet::TransferCommand)
-                .subcommand(wallet::AcceptCoinCommand)
+                .subcommand(wallet::AcceptTokenCommand)
                 .subcommand(wallet::ListCommand)
                 .subcommand(wallet::PartialSignTxnCommand)
                 .subcommand(wallet::UnlockCommand)

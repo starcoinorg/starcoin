@@ -82,6 +82,14 @@ fn test_state_sync() {
             txpool_1.get_service(),
         )
         .unwrap();
+        // network rpc server
+        network_rpc::start_network_rpc_server(
+            rx_1,
+            first_chain.clone(),
+            storage_1.clone(),
+            txpool_1.get_service(),
+        )
+        .unwrap();
         // sync
         let first_p = Arc::new(network_1.identify().clone().into());
         let _first_sync_actor = SyncActor::launch(
@@ -92,7 +100,6 @@ fn test_state_sync() {
             txpool_1.get_service(),
             network_1.clone(),
             storage_1.clone(),
-            rx_1,
         )
         .unwrap();
         BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
@@ -192,6 +199,14 @@ fn test_state_sync() {
             txpool_2.get_service(),
         )
         .unwrap();
+        // network rpc server
+        network_rpc::start_network_rpc_server(
+            rx_2,
+            second_chain.clone(),
+            storage_2.clone(),
+            txpool_2.get_service(),
+        )
+        .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
         let _second_sync_actor = SyncActor::<DevConsensus>::launch(
@@ -202,7 +217,6 @@ fn test_state_sync() {
             txpool_2.get_service(),
             network_2.clone(),
             storage_2.clone(),
-            rx_2,
         )
         .unwrap();
         Delay::new(Duration::from_secs(5)).await;

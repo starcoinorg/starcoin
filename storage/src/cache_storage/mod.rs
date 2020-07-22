@@ -28,7 +28,7 @@ impl CacheStorage {
     pub fn get_obj(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<CacheObject>> {
         record_metrics("cache", prefix_name, "get").end_with(|| {
             compose_key(prefix_name.to_string(), key)
-                .and_then(|key| Ok(self.cache.lock().get(&key).cloned()))
+                .map(|key| self.cache.lock().get(&key).cloned())
         })
     }
 
@@ -71,7 +71,7 @@ impl InnerStore for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         record_metrics("cache", prefix_name, "get").end_with(|| {
             compose_key(prefix_name.to_string(), key)
-                .and_then(|key| Ok(self.cache.lock().get(&key).and_then(|v| v.into())))
+                .map(|key| self.cache.lock().get(&key).and_then(|v| v.into()))
         })
     }
 

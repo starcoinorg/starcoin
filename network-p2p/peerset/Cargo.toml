@@ -3,8 +3,9 @@ description = "Connectivity manager based on reputation"
 homepage = "http://parity.io"
 license = "GPL-3.0"
 name = "peerset"
-version = "2.0.0-alpha.3"
-authors = ["Parity Technologies <admin@parity.io>"]
+#for unify version with project.
+version = "0.3.1"
+authors = ["Parity Technologies <admin@parity.io>","Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 repository = "https://github.com/paritytech/substrate/"
 documentation = "https://docs.rs/sc-peerset"

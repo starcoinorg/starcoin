@@ -406,6 +406,15 @@ where
             if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header)? {
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
+            if let Some(uncles) = block.uncles() {
+                for uncle_header in uncles {
+                    if let ConnectBlockResult::VerifyConsensusFailed =
+                        self.verify_header(uncle_header)?
+                    {
+                        return Ok(ConnectBlockResult::VerifyConsensusFailed);
+                    }
+                }
+            }
         }
 
         let txns = {

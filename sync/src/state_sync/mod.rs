@@ -18,6 +18,7 @@ use futures::executor::block_on;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
+use network_rpc::gen_client::NetworkRpcClient;
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_state_tree::StateNode;
@@ -68,7 +69,7 @@ impl Roots {
 async fn sync_accumulator_node<C>(
     node_key: HashValue,
     peer_id: PeerId,
-    network_service: NetworkAsyncService,
+    rpc_client: NetworkRpcClient<NetworkAsyncService>,
     address: Addr<StateSyncTaskActor<C>>,
 ) where
     C: Consensus + Sync + Send + 'static + Clone,
@@ -78,7 +79,7 @@ async fn sync_accumulator_node<C>(
         .with_label_values(&[LABEL_ACCUMULATOR])
         .start_timer();
     let accumulator_node = match get_accumulator_node_by_node_hash(
-        &network_service,
+        &rpc_client,
         peer_id.clone(),
         node_key,
         AccumulatorStoreType::Block,
@@ -128,7 +129,7 @@ async fn sync_accumulator_node<C>(
 async fn sync_state_node<C>(
     node_key: HashValue,
     peer_id: PeerId,
-    network_service: NetworkAsyncService,
+    rpc_client: NetworkRpcClient<NetworkAsyncService>,
     address: Addr<StateSyncTaskActor<C>>,
 ) where
     C: Consensus + Sync + Send + 'static + Clone,
@@ -137,37 +138,37 @@ async fn sync_state_node<C>(
         .sync_done_time
         .with_label_values(&[LABEL_STATE])
         .start_timer();
-    let state_node =
-        match get_state_node_by_node_hash(&network_service, peer_id.clone(), node_key).await {
-            Ok(state_node) => {
-                if node_key == state_node.0.hash() {
-                    SYNC_METRICS
-                        .sync_succ_count
-                        .with_label_values(&[LABEL_STATE])
-                        .inc();
-                    Some(state_node)
-                } else {
-                    SYNC_METRICS
-                        .sync_verify_fail_count
-                        .with_label_values(&[LABEL_STATE])
-                        .inc();
-                    warn!(
-                        "state node hash miss match {} :{:?}",
-                        node_key,
-                        state_node.0.hash()
-                    );
-                    None
-                }
-            }
-            Err(e) => {
+    let state_node = match get_state_node_by_node_hash(&rpc_client, peer_id.clone(), node_key).await
+    {
+        Ok(state_node) => {
+            if node_key == state_node.0.hash() {
                 SYNC_METRICS
-                    .sync_fail_count
+                    .sync_succ_count
                     .with_label_values(&[LABEL_STATE])
                     .inc();
-                debug!("{:?}", e);
+                Some(state_node)
+            } else {
+                SYNC_METRICS
+                    .sync_verify_fail_count
+                    .with_label_values(&[LABEL_STATE])
+                    .inc();
+                warn!(
+                    "state node hash miss match {} :{:?}",
+                    node_key,
+                    state_node.0.hash()
+                );
                 None
             }
-        };
+        }
+        Err(e) => {
+            SYNC_METRICS
+                .sync_fail_count
+                .with_label_values(&[LABEL_STATE])
+                .inc();
+            debug!("{:?}", e);
+            None
+        }
+    };
     state_timer.observe_duration();
 
     if let Err(err) = address.try_send(StateSyncTaskEvent::new_state(peer_id, node_key, state_node))
@@ -179,7 +180,7 @@ async fn sync_state_node<C>(
 async fn sync_txn_info<C>(
     block_id: HashValue,
     peer_id: PeerId,
-    network_service: NetworkAsyncService,
+    rpc_client: NetworkRpcClient<NetworkAsyncService>,
     address: Addr<StateSyncTaskActor<C>>,
 ) where
     C: Consensus + Sync + Send + 'static + Clone,
@@ -188,7 +189,7 @@ async fn sync_txn_info<C>(
         .sync_done_time
         .with_label_values(&[LABEL_TXN_INFO])
         .start_timer();
-    let txn_infos = match get_txn_infos(&network_service, peer_id.clone(), block_id).await {
+    let txn_infos = match get_txn_infos(&rpc_client, peer_id.clone(), block_id).await {
         Ok(infos) => {
             SYNC_METRICS
                 .sync_succ_count
@@ -327,6 +328,7 @@ where
     self_peer_id: PeerId,
     roots: Roots,
     storage: Arc<dyn Store>,
+    rpc_client: NetworkRpcClient<NetworkAsyncService>,
     network_service: NetworkAsyncService,
     state_sync_task: StateSyncTask<(HashValue, bool)>,
     txn_info_sync_task: StateSyncTask<HashValue>,
@@ -414,11 +416,12 @@ where
         block_accumulator_sync_task.push_back(*roots.block_accumulator_root());
         let mut txn_info_sync_task = StateSyncTask::new();
         txn_info_sync_task.push_back(*roots.pivot_id());
-
+        let rpc_client = NetworkRpcClient::new(network_service.clone());
         let address = StateSyncTaskActor::create(move |_ctx| Self {
             self_peer_id,
             roots,
             storage,
+            rpc_client,
             network_service,
             state_sync_task,
             txn_info_sync_task,
@@ -482,17 +485,12 @@ where
                     if self.self_peer_id == best_peer.get_peer_id() {
                         return;
                     }
-                    let network_service = self.network_service.clone();
+                    let rpc_client = self.rpc_client.clone();
                     self.state_sync_task
                         .insert(best_peer.get_peer_id(), (node_key, is_global));
                     Arbiter::spawn(async move {
-                        sync_state_node(
-                            node_key,
-                            best_peer.get_peer_id(),
-                            network_service,
-                            address,
-                        )
-                        .await;
+                        sync_state_node(node_key, best_peer.get_peer_id(), rpc_client, address)
+                            .await;
                     });
                 } else {
                     warn!("best peer is none, state sync may be failed.");
@@ -591,12 +589,12 @@ where
                     if self.self_peer_id != best_peer.get_peer_id() {
                         self.block_accumulator_sync_task
                             .insert(best_peer.get_peer_id(), node_key);
-                        let network_service = self.network_service.clone();
+                        let rpc_client = self.rpc_client.clone();
                         Arbiter::spawn(async move {
                             sync_accumulator_node(
                                 node_key,
                                 best_peer.get_peer_id(),
-                                network_service,
+                                rpc_client,
                                 address,
                             )
                             .await;
@@ -693,12 +691,11 @@ where
                     if self.self_peer_id == best_peer.get_peer_id() {
                         return;
                     }
-                    let network_service = self.network_service.clone();
+                    let rpc_client = self.rpc_client.clone();
                     self.txn_info_sync_task
                         .insert(best_peer.get_peer_id(), block_id);
                     Arbiter::spawn(async move {
-                        sync_txn_info(block_id, best_peer.get_peer_id(), network_service, address)
-                            .await;
+                        sync_txn_info(block_id, best_peer.get_peer_id(), rpc_client, address).await;
                     });
                 } else {
                     warn!("best peer is none, state sync may be failed.");

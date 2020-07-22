@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-tx-factory"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -9,8 +9,6 @@ edition = "2018"
 [[bin]]
 name = "txfactory"
 path = "src/main.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"

@@ -145,7 +145,7 @@ where
     fn get_block_accumulator(&self) -> Option<Arc<MerkleAccumulator>> {
         let mut lock = self.pivot.write();
         let lock = lock.as_mut();
-        lock.and_then(|pivot_block| -> Option<Arc<MerkleAccumulator>> {
+        lock.map(|pivot_block| -> Arc<MerkleAccumulator> {
             let block_accumulator_info = pivot_block.block_info.get_block_accumulator_info();
             if pivot_block.block_accumulator.is_none() {
                 let block_accumulator = MerkleAccumulator::new(
@@ -162,7 +162,7 @@ where
                 .unwrap();
                 pivot_block.block_accumulator = Some(Arc::new(block_accumulator));
             }
-            Some(pivot_block.block_accumulator.clone().unwrap())
+            pivot_block.block_accumulator.clone().unwrap()
         })
     }
 
@@ -258,6 +258,20 @@ where
                         //TODO:
                     }
                     ConnectBlockResult::VerifyTxnInfoFailed => {
+                        error!(
+                            "Connect block {:?} verify txn info failed.",
+                            current_block_id
+                        );
+                        //todo: state_sync_address.expect("").reset();
+                    }
+                    ConnectBlockResult::UncleBlockIllegal => {
+                        error!(
+                            "Connect block {:?} verify txn info failed.",
+                            current_block_id
+                        );
+                        //todo: state_sync_address.expect("").reset();
+                    }
+                    ConnectBlockResult::DuplicateUncles => {
                         error!(
                             "Connect block {:?} verify txn info failed.",
                             current_block_id

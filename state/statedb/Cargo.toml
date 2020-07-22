@@ -1,11 +1,10 @@
 [package]
 name = "starcoin-statedb"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
-
 
 [dependencies]
 anyhow = "1.0"

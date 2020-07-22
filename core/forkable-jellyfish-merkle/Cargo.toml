@@ -1,7 +1,7 @@
 [package]
 name = "forkable-jellyfish-merkle"
-version = "0.1.0"
-authors = ["Libra Association <opensource@libra.org>"]
+version = "0.3.1"
+authors = ["Libra Association <opensource@libra.org>","Starcoin Core Dev <dev@starcoin.org>"]
 description = "Libra jellyfish merkle"
 license = "Apache-2.0"
 publish = false
@@ -21,7 +21,7 @@ thiserror = "1.0"
 tiny-keccak = "1.5"
 hex="0.4"
 once_cell = "1.4.0"
-starcoin-crypto = { path = "../../commons/crypto", version = "0.1.0" }
+starcoin-crypto = { path = "../../commons/crypto" }
 scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization" }
 
 [dev-dependencies]

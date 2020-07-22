@@ -1,6 +1,6 @@
 [package]
 name = "benchmarks"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -40,7 +40,7 @@ starcoin-network-api = {path = "../network/api", package="network-api"}
 executor-benchmark = {path = "../executor/benchmark", package="starcoin-executor-benchmark" }
 futures = "0.3"
 logger = {path = "../commons/logger",package="starcoin-logger"}
-
+network-rpc = {path ="../network-rpc", package = "starcoin-network-rpc"}
 [dev-dependencies]
 
 [[bench]]
