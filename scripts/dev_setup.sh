@@ -95,6 +95,10 @@ else
     brew install llvm
   fi
 fi
+
+echo "Install tools for move prover......"
+bash scripts/move_prover.sh
+
 cat <<EOF
 Finished installing all dependencies.
 
