@@ -3,18 +3,18 @@
 
 #![forbid(unsafe_code)]
 
+use include_dir::{include_dir, Dir};
 use once_cell::sync::Lazy;
+use sha2::{Digest, Sha256};
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
 use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
-use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     fs::File,
     io::{Read, Write},
     path::{Path, PathBuf},
 };
-use include_dir::{include_dir, Dir};
 
 pub mod init_scripts;
 pub mod transaction_scripts;
