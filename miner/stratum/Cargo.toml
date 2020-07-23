@@ -18,5 +18,5 @@ starcoin-config = { path = "../../config"}
 
 
 [dev-dependencies]
-tokio = "0.1"
+tokio = "0.2"
 tokio-io = "0.1"
