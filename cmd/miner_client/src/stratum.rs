@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use anyhow::Result;
+use anyhow::{anyhow, ensure, format_err, Result};
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
 use config::MinerConfig;
 use futures::channel::mpsc;
@@ -32,7 +32,9 @@ impl StratumClient {
         task::spawn(async move {
             let mut stream = &*writer;
             while let Some(request) = request_rx.next().await {
-                stream.write_all(&request).await.unwrap();
+                if let Err(e) = stream.write_all(&request).await {
+                    error!("Failed to write stream in stratum client:{:?}", e)
+                }
             }
         });
         Ok(Self {
@@ -53,21 +55,28 @@ impl StratumClient {
             let reader = BufReader::new(&*tcp_stream);
             let mut lines = reader.lines();
             while let Some(line) = lines.next().await {
-                let request: String = line.unwrap();
-                if let Ok(response_ok) = parse_response::<bool>(&request) {
-                    if !response_ok {
-                        error!("stratum received server respond false");
-                    }
-                    continue;
-                };
-                debug!("Receive from stratum: {}", &request);
-                match process_request(request.as_str()) {
-                    Ok(job) => {
-                        if let Err(e) = job_tx.send(job).await {
-                            error!("stratum subscribe job tx send failed:{:?}", e);
+                match line {
+                    Ok(request) => {
+                        if let Ok(response_ok) = parse_response::<bool>(&request) {
+                            if !response_ok {
+                                error!("stratum received server respond false");
+                            }
+                            continue;
+                        };
+                        debug!("Receive from stratum: {}", &request);
+                        match process_request(request.as_str()) {
+                            Ok(job) => {
+                                if let Err(e) = job_tx.send(job).await {
+                                    error!("stratum subscribe job tx send failed:{:?}", e);
+                                }
+                            }
+                            Err(err) => error!("Process request {:?} error: {:?}", request, err),
                         }
                     }
-                    Err(err) => error!("Process request {:?} error: {:?}", request, err),
+                    Err(err) => error!(
+                        "Stratum client Failed to read request from tcp stream:{:?}",
+                        err
+                    ),
                 }
             }
         };
@@ -105,12 +114,9 @@ impl StratumClient {
             jsonrpc: Some(Version::V2),
             id: Id::Num(id),
         };
-        let mut req = serde_json::to_vec(&call).unwrap();
+        let mut req = serde_json::to_vec(&call)?;
         req.extend(b"\n");
-        info!(
-            "Request to stratum: {}",
-            String::from_utf8(req.clone()).unwrap()
-        );
+        info!("Request to stratum: {}", String::from_utf8(req.clone())?);
         self.request_tx.send(req).await?;
         Ok(())
     }
@@ -146,16 +152,25 @@ pub(crate) fn process_request(req: &str) -> Result<(Vec<u8>, U256)> {
     let value = serde_json::from_str::<Value>(req).map_err(StratumError::Json)?;
     let request = serde_json::from_value::<MethodCall>(value).map_err(StratumError::Json)?;
     let params: Params = request.params.parse()?;
-    if let Params::Array(mut values) = params {
-        let difficulty: U256 = values
-            .pop()
-            .unwrap()
+    if let Params::Array(values) = params {
+        ensure!(values.len() == 2, "Invalid mint request params");
+        let header = values[0]
             .as_str()
-            .unwrap()
-            .to_string()
-            .parse()?;
-        let header = values.pop().unwrap().as_str().unwrap().as_bytes().to_vec();
+            .ok_or_else(|| format_err!("Invalid header field in request"))
+            .and_then(|h| {
+                hex::decode(h).map_err(|_| anyhow!("Invalid header field with bad hex encode"))
+            })?;
+        ensure!(header.len() == 32, "Invalid header length");
+
+        let difficulty = values[1]
+            .as_str()
+            .ok_or_else(|| format_err!("Invalid difficulty field in request"))
+            .and_then(|d| {
+                d.to_owned()
+                    .parse::<U256>()
+                    .map_err(|e| anyhow!(e.to_string()))
+            })?;
         return Ok((header, difficulty));
     }
-    Err(anyhow::anyhow!("mining.notify with bad params"))
+    Err(anyhow!("mining.notify with bad params"))
 }

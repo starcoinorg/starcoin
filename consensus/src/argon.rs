@@ -49,11 +49,7 @@ impl Consensus for ArgonConsensus {
             header, nonce, difficulty
         );
         let raw_block_header: RawBlockHeader = header.clone().into();
-        if verify(
-            raw_block_header.crypto_hash().to_hex().as_bytes(),
-            nonce,
-            difficulty,
-        ) {
+        if verify(&raw_block_header.crypto_hash().to_vec(), nonce, difficulty) {
             Ok(())
         } else {
             Err(anyhow::Error::msg("Invalid header"))
