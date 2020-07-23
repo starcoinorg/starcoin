@@ -95,7 +95,7 @@ impl LoggerConfigArg {
         enable_stderr: bool,
         level: LevelFilter,
         module_levels: Vec<(String, LevelFilter)>,
-        pattern: LogPattern,
+        pattern: Option<LogPattern>,
     ) -> Self {
         Self {
             enable_stderr,
@@ -104,7 +104,7 @@ impl LoggerConfigArg {
             log_path: None,
             max_file_size: 0,
             max_backup: 0,
-            pattern,
+            pattern: pattern.unwrap_or_else(|| LogPattern::by_level(level)),
         }
     }
 }
@@ -271,10 +271,13 @@ lazy_static! {
 }
 
 pub fn init() -> Arc<LoggerHandle> {
-    init_with_default_level("info", LogPattern::Default)
+    init_with_default_level("info", None)
 }
 
-pub fn init_with_default_level(default_level: &str, pattern: LogPattern) -> Arc<LoggerHandle> {
+pub fn init_with_default_level(
+    default_level: &str,
+    pattern: Option<LogPattern>,
+) -> Arc<LoggerHandle> {
     let (global_level, module_levels) = env_log_level(default_level);
     LOG_INIT.call_once(|| {
         let arg = LoggerConfigArg::new(true, global_level, module_levels, pattern);
@@ -303,7 +306,7 @@ pub fn init_with_default_level(default_level: &str, pattern: LogPattern) -> Arc<
 static LOG_INIT: Once = Once::new();
 
 pub fn init_for_test() -> Arc<LoggerHandle> {
-    init_with_default_level("debug", LogPattern::WithLine)
+    init_with_default_level("debug", Some(LogPattern::WithLine))
 }
 
 #[derive(Default, Eq, PartialEq, Clone, Debug)]

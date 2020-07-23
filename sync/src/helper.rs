@@ -17,7 +17,7 @@ use types::{
 };
 
 const HEAD_CT: usize = 10;
-
+// TODO: those rpc info is not used in network layout. consider remove them.
 const GET_TXNS_STR: &str = "GetTxns";
 const GET_TXN_INFOS_STR: &str = "GetTxnInfos";
 const GET_BLOCK_HEADERS_BY_NUM_STR: &str = "GetBlockHeadersByNumber";

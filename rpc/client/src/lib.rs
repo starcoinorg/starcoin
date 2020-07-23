@@ -402,6 +402,17 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn chain_get_block_by_uncle(&self, uncle_id: HashValue) -> anyhow::Result<Option<Block>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_block_by_uncle(uncle_id)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn chain_get_block_by_number(&self, number: BlockNumber) -> anyhow::Result<Block> {
         self.call_rpc_blocking(|inner| async move {
             inner
@@ -495,6 +506,22 @@ impl RpcClient {
     pub fn dry_run(&self, txn: SignedUserTransaction) -> anyhow::Result<TransactionOutput> {
         self.call_rpc_blocking(|inner| async move { inner.dev_client.dry_run(txn).compat().await })
             .map_err(map_err)
+    }
+
+    pub fn create_dev_block(
+        &self,
+        author: AccountAddress,
+        auth_key_prefix: Vec<u8>,
+        parent_id: Option<HashValue>,
+    ) -> anyhow::Result<HashValue> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .create_dev_block(author, auth_key_prefix, parent_id)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
     }
 
     pub fn subscribe_events(

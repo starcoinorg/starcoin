@@ -31,6 +31,7 @@ pub trait ChainReader {
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>>;
 
     /// get txn info at version in main chain.
     fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<TransactionInfo>>;

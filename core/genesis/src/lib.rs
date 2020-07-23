@@ -129,7 +129,7 @@ impl Genesis {
             accumulator_root,
             transaction_info.state_root_hash(),
             chain_config.difficulty,
-            chain_config.consensus_header.clone(),
+            chain_config.nonce,
             txn,
         ))
     }
