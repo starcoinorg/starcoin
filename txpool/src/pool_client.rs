@@ -9,6 +9,7 @@ use types::{
     account_address::AccountAddress,
     block::BlockHeader,
     transaction,
+    transaction::helpers::get_current_timestamp,
     transaction::{CallError, SignedUserTransaction, TransactionError},
 };
 
@@ -144,6 +145,13 @@ impl crate::pool::Client for PoolClient {
             .clone()
             .check_signature()
             .map_err(|e| TransactionError::InvalidSignature(e.to_string()))?;
+        // as we only know the best block, we just check it.
+        // We also check against on current timestamp.
+        if txn.expiration_timestamp_secs() <= self.best_block_header.timestamp()
+            && txn.expiration_timestamp_secs() <= get_current_timestamp()
+        {
+            return Err(TransactionError::Expired);
+        }
         match starcoin_executor::validate_transaction(self.nonce_client.statedb.as_ref(), txn) {
             None => Ok(checked_txn),
             Some(status) => {

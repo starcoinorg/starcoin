@@ -9,6 +9,8 @@ type GasPrice = u64;
 pub enum Error {
     /// Transaction is already imported to the queue
     AlreadyImported,
+    /// txn is expired.
+    Expired,
     /// Transaction is not valid anymore (state already has higher nonce)
     Old,
     /// Transaction was not imported to the queue because limit has been reached.
@@ -75,6 +77,7 @@ impl fmt::Display for Error {
         use self::Error::*;
         let msg = match self {
             AlreadyImported => "Already imported".into(),
+            Expired => "Transaction expired".into(),
             Old => "No longer valid".into(),
             TooCheapToReplace { prev, new } => format!(
                 "Gas price too low to replace, previous tx gas: {:?}, new tx gas: {:?}",

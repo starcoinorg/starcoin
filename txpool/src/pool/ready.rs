@@ -37,17 +37,18 @@ use super::{client::AccountSeqNumberClient, SeqNumber, VerifiedTransaction};
 pub struct State<C> {
     nonces: HashMap<Address, SeqNumber>,
     state: C,
-    max_nonce: Option<SeqNumber>,
+    max_seq_number: Option<SeqNumber>,
     stale_id: Option<usize>,
 }
 
 impl<C> State<C> {
     /// Create new State checker, given client interface.
-    pub fn new(state: C, stale_id: Option<usize>, max_nonce: Option<SeqNumber>) -> Self {
+    pub fn new(state: C, stale_id: Option<usize>) -> Self {
         State {
             nonces: Default::default(),
             state,
-            max_nonce,
+            // disable the feature for now.
+            max_seq_number: None,
             stale_id,
         }
     }
@@ -55,8 +56,8 @@ impl<C> State<C> {
 
 impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C> {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
-        // Check max nonce
-        match self.max_nonce {
+        // Check max seq number
+        match self.max_seq_number {
             Some(nonce) if tx.transaction.sequence_number() > nonce => {
                 return tx_pool::Readiness::Future;
             }
@@ -84,6 +85,27 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
                 *nonce = nonce.saturating_add(1);
                 tx_pool::Readiness::Ready
             }
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Expiration {
+    now: u64,
+}
+impl Expiration {
+    /// Create a new expiration checker given current UTC timestamp.
+    pub fn new(now: u64) -> Self {
+        Expiration { now }
+    }
+}
+
+impl tx_pool::Ready<VerifiedTransaction> for Expiration {
+    fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
+        if tx.transaction.transaction.expiration_timestamp_secs() <= self.now {
+            tx_pool::Readiness::Stale
+        } else {
+            tx_pool::Readiness::Ready
         }
     }
 }

@@ -3,16 +3,23 @@ use crate::pool::AccountSeqNumberClient;
 use anyhow::Result;
 use common_crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use parking_lot::RwLock;
+use starcoin_executor::{
+    create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_MAX_GAS_AMOUNT,
+};
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
+use std::thread::sleep;
 use std::{collections::HashMap, sync::Arc};
 use storage::BlockStore;
 use types::{
     account_address::{self, AccountAddress},
     account_config,
-    transaction::{authenticator::AuthenticationKey, SignedUserTransaction, Transaction},
+    transaction::{
+        authenticator::AuthenticationKey, helpers::get_current_timestamp, SignedUserTransaction,
+        Transaction, TransactionPayload,
+    },
     U256,
 };
 
@@ -40,6 +47,33 @@ impl AccountSeqNumberClient for MockNonceClient {
             }
         }
     }
+}
+
+#[stest::test]
+async fn test_txn_expire() -> Result<()> {
+    let (pool, _storage) = test_helper::start_txpool();
+    let txpool_service = pool.get_service();
+
+    let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
+    let account_address = account_address::from_public_key(&public_key);
+    let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
+    let txn = create_signed_txn_with_association_account(
+        TransactionPayload::Script(encode_transfer_script(&account_address, auth_prefix, 10000)),
+        0,
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        Some(get_current_timestamp() + 1),
+    );
+    txpool_service.add_txns(vec![txn]).pop().unwrap()?;
+    let pendings = txpool_service.get_pending_txns(None);
+    assert_eq!(pendings.len(), 1);
+
+    sleep(std::time::Duration::from_secs(1));
+
+    let pendings = txpool_service.get_pending_txns(None);
+    assert_eq!(pendings.len(), 0);
+
+    Ok(())
 }
 
 #[stest::test]
