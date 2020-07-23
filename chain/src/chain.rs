@@ -336,7 +336,8 @@ where
             Some(hash) => hash,
             None => self.current_header().id(),
         };
-        assert!(self.exist_block(block_id));
+        ensure!(self.exist_block(block_id), "Block id not exist");
+
         let previous_header = self
             .get_header(block_id)?
             .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
@@ -425,9 +426,8 @@ where
     ) -> Result<ConnectBlockResult> {
         let pre_hash = header.parent_hash();
         if verify_head_id {
-            assert_eq!(
-                self.head_block().id(),
-                pre_hash,
+            ensure!(
+                self.head_block().id() == pre_hash,
                 "Invalid block: Parent id mismatch."
             );
         }
@@ -504,13 +504,11 @@ where
             executor::block_execute(&self.chain_state, txns.clone(), block.header().gas_limit())?;
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
-        assert_eq!(
-            block.header().state_root(),
-            state_root,
-            "verify block:{:?} state_root fail.",
-            block.header().id()
+        ensure!(
+            state_root == block.header().state_root(),
+            "verify block:{:?} state_root fail",
+            block.header().id(),
         );
-
         let block_gas_used = vec_transaction_info
             .iter()
             .fold(0u64, |acc, i| acc + i.gas_used());

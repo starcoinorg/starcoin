@@ -3,7 +3,7 @@
 
 use crate::{chain::BlockChain, chain_metrics::CHAIN_METRICS};
 use actix::Addr;
-use anyhow::{format_err, Error, Result};
+use anyhow::{ensure, format_err, Error, Result};
 use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::hash::PlainCryptoHash;
@@ -184,7 +184,7 @@ where
             number -= 1;
         }
 
-        assert!(
+        ensure!(
             ancestor.is_some(),
             "Can not find ancestors from block accumulator."
         );
