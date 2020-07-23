@@ -6,25 +6,12 @@ use crate::{
     transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload},
 };
 use anyhow::Result;
-use chrono::Utc;
 use starcoin_crypto::{ed25519::*, test_utils::KeyPair, traits::SigningKey};
 
-pub fn create_unsigned_txn(
-    payload: TransactionPayload,
-    sender_address: AccountAddress,
-    sender_sequence_number: u64,
-    max_gas_amount: u64,
-    gas_unit_price: u64,
-    txn_expiration: i64, // for compatibility with UTC's timestamp.
-) -> RawUserTransaction {
-    RawUserTransaction::new(
-        sender_address,
-        sender_sequence_number,
-        payload,
-        max_gas_amount,
-        gas_unit_price,
-        std::time::Duration::new((Utc::now().timestamp() + txn_expiration) as u64, 0),
-    )
+/// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
+/// (aka "UNIX timestamp").
+pub fn get_current_timestamp() -> u64 {
+    chrono::Utc::now().timestamp() as u64
 }
 
 pub trait TransactionSigner {
@@ -39,15 +26,15 @@ pub fn create_user_txn<T: TransactionSigner + ?Sized>(
     sender_sequence_number: u64,
     max_gas_amount: u64,
     gas_unit_price: u64,
-    txn_expiration: i64, // for compatibility with UTC's timestamp.
+    expiration_timestamp_secs: u64,
 ) -> Result<SignedUserTransaction> {
-    let raw_txn = create_unsigned_txn(
-        payload,
+    let raw_txn = RawUserTransaction::new(
         sender_address,
         sender_sequence_number,
+        payload,
         max_gas_amount,
         gas_unit_price,
-        txn_expiration,
+        expiration_timestamp_secs,
     );
     signer.sign_txn(raw_txn)
 }

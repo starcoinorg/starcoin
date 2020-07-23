@@ -8,7 +8,7 @@ use starcoin_vm_types::{
     parser::{parse_transaction_argument, parse_type_tags},
     transaction_argument::TransactionArgument,
 };
-use std::{collections::BTreeSet, str::FromStr, time::Duration};
+use std::{collections::BTreeSet, str::FromStr};
 
 /// A partially parsed transaction argument.
 #[derive(Debug)]
@@ -131,7 +131,7 @@ pub struct Config<'a> {
     pub max_gas: Option<u64>,
     pub gas_price: Option<u64>,
     pub sequence_number: Option<u64>,
-    pub expiration_time: Option<Duration>,
+    pub expiration_time: Option<u64>,
 }
 
 impl<'a> Config<'a> {
@@ -213,7 +213,7 @@ impl<'a> Config<'a> {
                     }
                 },
                 Entry::ExpirationTime(sn) => match expiration_time {
-                    None => expiration_time = Some(Duration::from_secs(*sn)),
+                    None => expiration_time = Some(*sn),
                     Some(_) => {
                         return Err(
                             ErrorKind::Other("expiration time already set".to_string()).into()

@@ -40,14 +40,11 @@ module TransactionTimeout {
     ensures global<TTL>(Signer::spec_address_of(account)).duration_seconds == new_duration;
   }
 
-  public fun is_valid_transaction_timestamp(_txn_timestamp: u64): bool acquires TTL {
+  public fun is_valid_transaction_timestamp(txn_timestamp: u64): bool acquires TTL {
     let current_block_time = Timestamp::now_seconds();
     let timeout = borrow_global<TTL>(CoreAddresses::GENESIS_ACCOUNT()).duration_seconds;
-    let _max_txn_time = current_block_time + timeout;
-    //TODO check max_txn_time
-    //current_block_time < txn_timestamp
-    // see #879
-    return true
+    let max_txn_time = current_block_time + timeout;
+    current_block_time < txn_timestamp && txn_timestamp < max_txn_time
   }
 }
 }

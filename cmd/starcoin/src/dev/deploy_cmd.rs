@@ -9,10 +9,10 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::{Module, RawUserTransaction};
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule};
 use std::fs::OpenOptions;
 use std::io::Read;
-use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -94,7 +94,7 @@ impl CommandAction for DeployCommand {
 
         let account_resource = account_resource.unwrap();
 
-        let expiration_time = Duration::from_secs(opt.expiration_time);
+        let expiration_time = opt.expiration_time + get_current_timestamp();
         let deploy_txn = RawUserTransaction::new_module(
             module_address,
             account_resource.sequence_number(),

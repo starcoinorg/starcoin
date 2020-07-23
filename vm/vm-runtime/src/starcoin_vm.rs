@@ -421,7 +421,7 @@ impl StarcoinVM {
         let txn_public_key = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_amount = txn_data.max_gas_amount().get();
-        let txn_expiration_time = txn_data.expiration_time();
+        let txn_expiration_time = txn_data.expiration_time_secs();
         let payload_type: u8 = txn_data.payload_type().into();
         let script_or_package_hash = txn_data.script_or_package_hash();
         let package_address = txn_data

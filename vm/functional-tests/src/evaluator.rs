@@ -20,6 +20,7 @@ use starcoin_types::{
         TransactionStatus,
     },
 };
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},
     errors::{Location, VMError},
@@ -32,7 +33,6 @@ use starcoin_vm_types::{
 };
 use std::fmt;
 use std::str::FromStr;
-use std::time::Duration;
 
 pub type TransactionId = usize;
 
@@ -260,7 +260,7 @@ struct TransactionParameters<'a> {
     pub sequence_number: u64,
     pub max_gas_amount: u64,
     pub gas_unit_price: u64,
-    pub expiration_time: Duration,
+    pub expiration_timestamp_secs: u64,
 }
 
 /// Gets the transaction parameters from the current execution environment and the config.
@@ -296,10 +296,9 @@ fn get_transaction_parameters<'a>(
             .unwrap_or_else(|| account_resource.sequence_number()),
         max_gas_amount,
         gas_unit_price,
-        // TTL is 86400s. Initial time was set to 0.
-        expiration_time: config
+        expiration_timestamp_secs: config
             .expiration_time
-            .unwrap_or_else(|| Duration::from_secs(40000)),
+            .unwrap_or_else(|| get_current_timestamp() + 40000),
     }
 }
 
@@ -320,7 +319,7 @@ fn make_script_transaction(
         script,
         params.max_gas_amount,
         params.gas_unit_price,
-        params.expiration_time,
+        params.expiration_timestamp_secs,
     )
     .sign(params.privkey, params.pubkey.clone())?
     .into_inner())
@@ -343,7 +342,7 @@ fn make_module_transaction(
         module,
         params.max_gas_amount,
         params.gas_unit_price,
-        params.expiration_time,
+        params.expiration_timestamp_secs,
     )
     .sign(params.privkey, params.pubkey.clone())?
     .into_inner())

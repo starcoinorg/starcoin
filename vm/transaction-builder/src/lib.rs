@@ -10,11 +10,11 @@ use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,
     TransactionArgument, TransactionPayload,
 };
-use std::time::Duration;
 use stdlib::init_scripts::InitScript;
 pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions};
@@ -114,7 +114,7 @@ pub fn raw_peer_to_peer_txn(
         )),
         max_gas,
         gas_price,
-        Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
     )
 }
 
@@ -135,7 +135,7 @@ pub fn raw_accept_token_txn(
         )),
         max_gas,
         gas_price,
-        Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
     )
 }
 
@@ -198,8 +198,7 @@ pub fn create_signed_txn_with_association_account(
         payload,
         max_gas_amount,
         gas_unit_price,
-        // TTL is 86400s. Initial time was set to 0.
-        Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
     );
     ChainNetwork::Dev
         .sign_with_association(raw_txn)

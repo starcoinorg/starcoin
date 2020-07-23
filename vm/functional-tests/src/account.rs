@@ -18,6 +18,7 @@ use starcoin_types::{
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::stc_type_tag,
@@ -31,7 +32,6 @@ use starcoin_vm_types::{
     values::{Struct, Value},
 };
 use std::collections::BTreeMap;
-use std::time::Duration;
 use stdlib::transaction_scripts::StdlibScript;
 
 // TTL is 86400s. Initial time was set to 0.
@@ -155,54 +155,6 @@ impl Account {
     /// Return the first 16 bytes of the account's auth key
     pub fn auth_key_prefix(&self) -> Vec<u8> {
         AuthenticationKey::ed25519(&self.pubkey).prefix().to_vec()
-    }
-
-    //
-    // Helpers to read data from an Account resource
-    //
-
-    //
-    // Helpers for transaction creation with Account instance as sender
-    //
-
-    /// Returns a [`SignedTransaction`] with a payload and this account as the sender.
-    ///
-    /// This is the most generic way to create a transaction for testing.
-    /// Max gas amount and gas unit price are ignored for WriteSet transactions.
-    pub fn create_user_txn(
-        &self,
-        sequence_number: u64,
-        payload: TransactionPayload,
-        max_gas_amount: u64,
-        gas_unit_price: u64,
-    ) -> SignedUserTransaction {
-        Self::create_raw_user_txn(
-            *self.address(),
-            sequence_number,
-            payload,
-            max_gas_amount,
-            gas_unit_price,
-        )
-        .sign(&self.privkey, self.pubkey.clone())
-        .unwrap()
-        .into_inner()
-    }
-
-    pub fn create_raw_user_txn(
-        sender: AccountAddress,
-        sequence_number: u64,
-        payload: TransactionPayload,
-        max_gas_amount: u64,
-        gas_unit_price: u64,
-    ) -> RawUserTransaction {
-        RawUserTransaction::new(
-            sender,
-            sequence_number,
-            payload,
-            max_gas_amount,
-            gas_unit_price,
-            Duration::from_secs(DEFAULT_EXPIRATION_TIME),
-        )
     }
 
     /// Returns a [`SignedUserTransaction`] with the arguments defined in `args` and this account as
@@ -331,8 +283,7 @@ impl Account {
             program,
             max_gas_amount,
             gas_unit_price,
-            // TTL is 86400s. Initial time was set to 0.
-            Duration::from_secs(DEFAULT_EXPIRATION_TIME),
+            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
         )
     }
 
