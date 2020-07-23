@@ -296,7 +296,12 @@ where
             let readline = rl.readline(prompt.as_str());
             match readline {
                 Ok(line) => {
-                    let params: Vec<&str> = line.trim().split(' ').map(str::trim).collect();
+                    let params: Vec<&str> = line
+                        .trim()
+                        .split(' ')
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty())
+                        .collect();
                     let cmd_name = params[0];
                     match cmd_name {
                         "quit" | "exit" | "q!" => {
