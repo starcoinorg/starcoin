@@ -12,7 +12,7 @@ itertools = { version = "0.9.0", default-features = false }
 rand = "0.7.3"
 rayon = "1"
 structopt = "0.3"
-tokio = { version = "0.2.12", features = ["full"] }
+tokio = { version = "0.2.22", features = ["full"] }
 executor = {path = "../../executor", package="starcoin-executor" }
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 logger = {path = "../../commons/logger", package="starcoin-logger"}
