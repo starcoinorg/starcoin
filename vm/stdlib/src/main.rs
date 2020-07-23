@@ -9,8 +9,8 @@ use std::{
     path::{Path, PathBuf},
 };
 use stdlib::{
-    build_stdlib, compile_script, filter_move_files, INIT_SCRIPTS, STAGED_EXTENSION,
-    STAGED_OUTPUT_PATH, STAGED_STDLIB_NAME, TRANSACTION_SCRIPTS,
+    build_stdlib, compile_script, filter_move_files, save_binary, INIT_SCRIPTS, STAGED_EXTENSION,
+    STAGED_OUTPUT_PATH, STAGED_STDLIB_PATH, TRANSACTION_SCRIPTS,
 };
 
 fn compile_scripts(script_dir: &Path) {
@@ -42,19 +42,18 @@ fn main() {
 
     // Write the stdlib blob
     let mut module_path = PathBuf::from(STAGED_OUTPUT_PATH);
-    module_path.push(STAGED_STDLIB_NAME);
-    module_path.set_extension(STAGED_EXTENSION);
-    let modules: Vec<Vec<u8>> = build_stdlib()
-        .into_iter()
-        .map(|verified_module| {
-            let mut ser = Vec::new();
-            verified_module.into_inner().serialize(&mut ser).unwrap();
-            ser
-        })
-        .collect();
-    let bytes = scs::to_bytes(&modules).unwrap();
-    let mut module_file = File::create(module_path).unwrap();
-    module_file.write_all(&bytes).unwrap();
+    module_path.push(STAGED_STDLIB_PATH);
+    std::fs::remove_dir_all(&module_path).unwrap();
+    std::fs::create_dir_all(&module_path).unwrap();
+    for (name, module) in build_stdlib().into_iter() {
+        let mut bytes = Vec::new();
+        module.serialize(&mut bytes).unwrap();
+        module_path.push(name);
+        module_path.set_extension(STAGED_EXTENSION);
+        save_binary(module_path.as_path(), &bytes);
+        module_path.pop();
+    }
+
     compile_scripts(Path::new(INIT_SCRIPTS));
     compile_scripts(Path::new(TRANSACTION_SCRIPTS));
 }
