@@ -349,7 +349,7 @@ pub fn dummy_request(addr: &SocketAddr, data: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::timer::{timeout, Timeout};
+    use jsonrpc_tcp_server::tokio::timer::{timeout, Timeout};
 
     pub struct VoidManager;
 
