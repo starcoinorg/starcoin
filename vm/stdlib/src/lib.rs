@@ -3,11 +3,18 @@
 
 #![forbid(unsafe_code)]
 
+use include_dir::{include_dir, Dir};
 use once_cell::sync::Lazy;
+use sha2::{Digest, Sha256};
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
 use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
-use std::path::PathBuf;
+use std::{
+    collections::BTreeMap,
+    fs::File,
+    io::{Read, Write},
+    path::{Path, PathBuf},
+};
 
 pub mod init_scripts;
 pub mod transaction_scripts;
@@ -22,19 +29,20 @@ pub const TRANSACTION_SCRIPTS: &str = "transaction_scripts";
 pub const INIT_SCRIPTS: &str = "init_scripts";
 /// The output path under which staged files will be put
 pub const STAGED_OUTPUT_PATH: &str = "staged";
-/// The file name for the staged stdlib
-pub const STAGED_STDLIB_NAME: &str = "stdlib";
+/// The output path for the staged stdlib
+pub const STAGED_STDLIB_PATH: &str = "stdlib";
 /// The extension for staged files
 pub const STAGED_EXTENSION: &str = "mv";
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
-static FRESH_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> = Lazy::new(build_stdlib);
+static FRESH_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> =
+    Lazy::new(|| build_stdlib().values().cloned().collect());
 
 // This needs to be a string literal due to restrictions imposed by include_bytes.
-/// The staged library needs to be included in the Rust binary due to Docker deployment issues.
+/// The compiled library needs to be included in the Rust binary due to Docker deployment issues.
 /// This is why we include it here.
-pub const STAGED_STDLIB_BYTES: &[u8] = std::include_bytes!("../staged/stdlib.mv");
+const COMPILED_STDLIB_DIR: Dir = include_dir!("staged/stdlib");
 
 // The staged version of the move standard library.
 // Similarly to genesis, we keep a compiled version of the standard library and scripts around, and
@@ -46,14 +54,26 @@ pub const STAGED_STDLIB_BYTES: &[u8] = std::include_bytes!("../staged/stdlib.mv"
 // specified either by the MOVE_NO_USE_STAGED env var, or by passing the "StdLibOptions::Fresh"
 // option to `stdlib_modules`.
 static STAGED_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> = Lazy::new(|| {
-    let modules: Vec<CompiledModule> = scs::from_bytes::<Vec<Vec<u8>>>(STAGED_STDLIB_BYTES)
-        .unwrap()
-        .into_iter()
-        .map(|bytes| CompiledModule::deserialize(&bytes).unwrap())
+    let mut modules: Vec<(String, CompiledModule)> = COMPILED_STDLIB_DIR
+        .files()
+        .iter()
+        .map(|file| {
+            (
+                file.path().to_str().unwrap().to_string(),
+                CompiledModule::deserialize(&file.contents()).unwrap(),
+            )
+        })
         .collect();
 
+    // We need to verify modules based on their dependency order.
+    modules.sort_by_key(|(path, _)| {
+        let splits: Vec<_> = path.split('_').collect();
+        assert!(splits.len() == 2, "Invalid module name encountered");
+        splits[0].parse::<u64>().unwrap()
+    });
+
     let mut verified_modules = vec![];
-    for module in modules {
+    for (_, module) in modules.into_iter() {
         verify_module(&module).expect("stdlib module failed to verify");
         DependencyChecker::verify_module(&module, &verified_modules)
             .expect("stdlib module dependency failed to verify");
@@ -119,17 +139,20 @@ pub fn stdlib_files() -> Vec<String> {
     filter_move_files(dirfiles).collect::<Vec<_>>()
 }
 
-pub fn build_stdlib() -> Vec<CompiledModule> {
+pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
     let (_, compiled_units) =
         move_compile(&stdlib_files(), &[], Some(Address::LIBRA_CORE)).unwrap();
-    let mut modules = vec![];
-    for compiled_unit in compiled_units {
+    let mut modules = BTreeMap::new();
+    for (i, compiled_unit) in compiled_units.into_iter().enumerate() {
+        let name = compiled_unit.name();
         match compiled_unit {
             CompiledUnit::Module { module, .. } => {
                 verify_module(&module).expect("stdlib module failed to verify");
-                DependencyChecker::verify_module(&module, &modules)
+                DependencyChecker::verify_module(&module, modules.values())
                     .expect("stdlib module dependency failed to verify");
-                modules.push(module)
+                // Tag each module with its index in the module dependency order. Needed for
+                // when they are deserialized and verified later on.
+                modules.insert(format!("{}_{}", i, name), module);
             }
             CompiledUnit::Script { .. } => panic!("Unexpected Script in stdlib"),
         }
@@ -151,4 +174,16 @@ pub fn compile_script(source_file_str: String) -> Vec<u8> {
         CompiledUnit::Script { script, .. } => script.serialize(&mut script_bytes).unwrap(),
     };
     script_bytes
+}
+
+pub fn save_binary(path: &Path, binary: &[u8]) {
+    if path.exists() {
+        let mut bytes = vec![];
+        File::open(path).unwrap().read_to_end(&mut bytes).unwrap();
+        if Sha256::digest(binary) == Sha256::digest(&bytes) {
+            return;
+        }
+    }
+
+    File::create(path).unwrap().write_all(binary).unwrap();
 }

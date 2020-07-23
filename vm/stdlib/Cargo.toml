@@ -16,3 +16,4 @@ scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-move-compiler = { path = "../../vm/compiler"}
 once_cell = "1.4.0"
 include_dir = "0.6.0"
+sha2 = "0.9.1"
