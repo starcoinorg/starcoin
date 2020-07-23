@@ -32,7 +32,7 @@ use starcoin_vm_types::on_chain_config::{VMPublishingOption, INITIAL_GAS_SCHEDUL
 use starcoin_vm_types::transaction::{Package, Script};
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
-    errors,
+    errors::{self, IndexKind, Location},
     event::EventKey,
     gas_schedule::{self, CostTable, GasAlgebra, GasCarrier, GasUnits},
     language_storage::TypeTag,
@@ -44,8 +44,6 @@ use starcoin_vm_types::{
 };
 use std::convert::TryFrom;
 use std::sync::Arc;
-use vm::errors::Location;
-use vm::IndexKind;
 
 // The value should be tuned carefully
 pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
@@ -643,14 +641,12 @@ impl StarcoinVM {
                         }
 
                         if let TransactionStatus::Keep(_) = output.status() {
-                            if !state_view.is_genesis() && output.gas_used() == 0 {
-                                warn!("Keep transaction gas used must not be zero");
-                                //TODO add a debug asset
-                                // debug_assert_ne!(
-                                //     output.gas_used(),
-                                //     0,
-                                //     "Keep transaction gas used must not be zero"
-                                // );
+                            if !state_view.is_genesis() {
+                                debug_assert_ne!(
+                                    output.gas_used(),
+                                    0,
+                                    "Keep transaction gas used must not be zero"
+                                );
                             }
                             data_cache.push_write_set(output.write_set())
                         }

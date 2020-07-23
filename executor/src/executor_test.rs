@@ -23,7 +23,6 @@ use starcoin_types::{
     transaction::TransactionStatus,
     transaction::{Module, TransactionPayload},
 };
-use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::{
     parser,
     transaction::Package,
@@ -217,8 +216,6 @@ fn test_validate_txn() -> Result<()> {
     Ok(())
 }
 
-//TODO after fix gas charge bug, enable this test.
-#[ignore]
 #[stest::test]
 fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
     let chain_state = prepare_genesis();
@@ -235,9 +232,10 @@ fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
 
     let sequence_number2 = get_sequence_number(*account1.address(), &chain_state);
     let txn2 = Transaction::UserTransaction(account1.create_signed_txn_with_args(
-        StdlibScript::EmptyScript.compiled_bytes().into_vec(),
+        StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
         vec![],
-        vec![TransactionArgument::U64(0)],
+        //Do not pass any argument.
+        vec![],
         sequence_number2,
         DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
         1,                      // this is a default for gas

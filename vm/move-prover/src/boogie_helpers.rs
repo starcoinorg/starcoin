@@ -7,8 +7,8 @@ use crate::cli::Options;
 use itertools::Itertools;
 use spec_lang::{
     env::{
-        FieldEnv, FunctionEnv, GlobalEnv, ModuleEnv, ModuleId, SpecFunId, StructEnv, StructId,
-        SCRIPT_MODULE_NAME,
+        FieldEnv, FunctionEnv, GlobalEnv, ModuleEnv, ModuleId, QualifiedId, SpecFunId, StructEnv,
+        StructId, SCRIPT_MODULE_NAME,
     },
     symbol::Symbol,
     ty::{PrimitiveType, Type},
@@ -106,7 +106,9 @@ pub fn boogie_type_value(env: &GlobalEnv, ty: &Type) -> String {
         // TODO: function and tuple types?
         Type::Tuple(_args) => "Tuple_type_value()".to_string(),
         Type::Fun(_args, _result) => "Function_type_value()".to_string(),
-        Type::Error | Type::Var(..) | Type::TypeDomain(..) => panic!("unexpected transient type"),
+        Type::Error => panic!("unexpected error type"),
+        Type::Var(..) => panic!("unexpected type variable"),
+        Type::TypeDomain(..) => panic!("unexpected transient type"),
     }
 }
 
@@ -125,6 +127,17 @@ pub fn boogie_struct_type_value(
     )
 }
 
+/// Creates the name of the resource memory for the given struct.
+pub fn boogie_resource_memory_name(env: &GlobalEnv, memory: QualifiedId<StructId>) -> String {
+    let struct_env = env.get_module(memory.module_id).into_struct(memory.id);
+    format!("{}_$memory", boogie_struct_name(&struct_env))
+}
+
+/// For global update invariants, creates the name where the last resource memory is stored.
+pub fn boogie_saved_resource_memory_name(env: &GlobalEnv, memory: QualifiedId<StructId>) -> String {
+    format!("{}_$old", boogie_resource_memory_name(env, memory))
+}
+
 /// Create boogie type value list, separated by comma.
 pub fn boogie_type_values(env: &GlobalEnv, args: &[Type]) -> String {
     args.iter()
@@ -132,10 +145,31 @@ pub fn boogie_type_values(env: &GlobalEnv, args: &[Type]) -> String {
         .join(", ")
 }
 
+/// Creates a type value array for given types.
+pub fn boogie_type_value_array(env: &GlobalEnv, args: &[Type]) -> String {
+    let args = args
+        .iter()
+        .map(|ty| boogie_type_value(env, ty))
+        .collect_vec();
+    boogie_type_value_array_from_strings(&args)
+}
+
+/// Creates a type value array for types given as strings.
+pub fn boogie_type_value_array_from_strings(args: &[String]) -> String {
+    if args.is_empty() {
+        return "$EmptyTypeValueArray".to_string();
+    }
+    let mut map = String::from("$MapConstTypeValue($DefaultTypeValue())");
+    for (i, arg) in args.iter().enumerate() {
+        map = format!("{}[{} := {}]", map, i, arg);
+    }
+    format!("$TypeValueArray({}, {})", map, args.len())
+}
+
 /// Return boogie type for a local with given signature token.
 pub fn boogie_local_type(ty: &Type) -> String {
     if ty.is_reference() {
-        "$Reference".to_string()
+        "$Mutation".to_string()
     } else {
         "$Value".to_string()
     }

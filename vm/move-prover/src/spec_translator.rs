@@ -16,8 +16,10 @@ use log::{debug, info, warn};
 use crate::{
     boogie_helpers::{
         boogie_byte_blob, boogie_declare_global, boogie_field_name, boogie_global_declarator,
-        boogie_local_type, boogie_spec_fun_name, boogie_spec_var_name, boogie_struct_name,
-        boogie_struct_type_value, boogie_type_value, boogie_well_formed_expr, WellFormedMode,
+        boogie_local_type, boogie_resource_memory_name, boogie_saved_resource_memory_name,
+        boogie_spec_fun_name, boogie_spec_var_name, boogie_struct_name, boogie_type_value,
+        boogie_type_value_array, boogie_type_value_array_from_strings, boogie_well_formed_expr,
+        WellFormedMode,
     },
     cli::Options,
 };
@@ -27,15 +29,17 @@ use spec_lang::{
     code_writer::CodeWriter,
     emit, emitln,
     env::{
-        ConditionInfo, GlobalEnv, SpecVarId, ABORTS_IF_IS_PARTIAL_PRAGMA,
-        ABORTS_IF_IS_STRICT_PRAGMA, CONDITION_EXPORT, CONDITION_INJECTED_PROP,
-        EXPORT_ENSURES_PRAGMA, OPAQUE_PRAGMA, REQUIRES_IF_ABORTS,
+        ConditionInfo, GlobalEnv, GlobalId, QualifiedId, SpecVarId, ABORTS_IF_IS_PARTIAL_PRAGMA,
+        ABORTS_IF_IS_STRICT_PRAGMA, CONDITION_ABSTRACT_PROP, CONDITION_CONCRETE_PROP,
+        CONDITION_EXPORT_PROP, CONDITION_INJECTED_PROP, EXPORT_ENSURES_PRAGMA, OPAQUE_PRAGMA,
+        REQUIRES_IF_ABORTS,
     },
     symbol::Symbol,
     ty::TypeDisplayContext,
 };
 use stackless_bytecode_generator::{
-    function_target::FunctionTarget, stackless_bytecode::SpecBlockId,
+    function_target::FunctionTarget, function_target_pipeline::FunctionTargetsHolder,
+    stackless_bytecode::SpecBlockId, usage_analysis::TransitiveUsage,
 };
 use std::collections::BTreeSet;
 
@@ -44,6 +48,7 @@ const ENSURES_FAILS_MESSAGE: &str = "post-condition does not hold";
 const ABORTS_IF_FAILS_MESSAGE: &str = "function does not abort under this condition";
 const SUCCEEDS_IF_FAILS_MESSAGE: &str = "function does not succeed under this condition";
 const INVARIANT_FAILS_MESSAGE: &str = "data invariant does not hold";
+const GLOBAL_INVARIANT_FAILS_MESSAGE: &str = "global memory invariant does not hold";
 
 pub enum SpecEnv<'env> {
     Module(ModuleEnv<'env>),
@@ -113,7 +118,9 @@ pub struct SpecTranslator<'env> {
     options: &'env Options,
     /// The code writer.
     writer: &'env CodeWriter,
-    /// Whether the translation context supports native `old`,
+    /// A reference to the function targets holder.
+    targets: &'env FunctionTargetsHolder,
+    /// Whether the translation context supports native `old`
     supports_native_old: bool,
     /// Whether we are currently in the context of translating an `old(...)` expression.
     in_old: RefCell<bool>,
@@ -137,7 +144,6 @@ pub struct SpecTranslator<'env> {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum TraceItem {
     // Automatically traced items when `options.prover.debug_trace_exp` is on.
-    Sender,
     Local(bool, Symbol),
     SpecVar(bool, ModuleId, SpecVarId, Vec<Type>),
     Exp,
@@ -180,6 +186,7 @@ impl<'env> SpecTranslator<'env> {
     pub fn new<E>(
         writer: &'env CodeWriter,
         env: E,
+        targets: &'env FunctionTargetsHolder,
         options: &'env Options,
         supports_native_old: bool,
     ) -> SpecTranslator<'env>
@@ -190,6 +197,7 @@ impl<'env> SpecTranslator<'env> {
             spec_env: env.into(),
             options,
             writer,
+            targets,
             supports_native_old,
             in_old: RefCell::new(false),
             in_assert_or_assume: RefCell::new(false),
@@ -306,15 +314,26 @@ impl<'env> SpecTranslator<'env> {
                 continue;
             }
             let result_type = boogie_local_type(&fun.result_type);
-            let spec_var_params = fun.used_spec_vars.iter().map(|(mid, vid)| {
-                let declaring_module = self.module_env().env.get_module(*mid);
-                let decl = declaring_module.get_spec_var(*vid);
-                let boogie_name = boogie_spec_var_name(&declaring_module, decl.name);
-                boogie_global_declarator(
-                    declaring_module.env,
-                    &boogie_name,
-                    decl.type_params.len(),
-                    &decl.type_,
+            let spec_var_params = fun.used_spec_vars.iter().map(
+                |QualifiedId {
+                     module_id: mid,
+                     id: vid,
+                 }| {
+                    let declaring_module = self.module_env().env.get_module(*mid);
+                    let decl = declaring_module.get_spec_var(*vid);
+                    let boogie_name = boogie_spec_var_name(&declaring_module, decl.name);
+                    boogie_global_declarator(
+                        declaring_module.env,
+                        &boogie_name,
+                        decl.type_params.len(),
+                        &decl.type_,
+                    )
+                },
+            );
+            let mem_params = fun.used_memory.iter().map(|memory| {
+                format!(
+                    "{}: $Memory",
+                    boogie_resource_memory_name(self.module_env().env, *memory)
                 )
             });
             let type_params = fun
@@ -329,15 +348,9 @@ impl<'env> SpecTranslator<'env> {
                     boogie_local_type(ty)
                 )
             });
-            let state_params = if fun.is_pure {
-                vec![]
-            } else {
-                vec!["$m: $Memory, $txn: $Transaction".to_string()]
-            };
             self.writer.set_location(&fun.loc);
             let boogie_name = boogie_spec_fun_name(&self.module_env(), *id);
-            let param_list = state_params
-                .into_iter()
+            let param_list = mem_params
                 .chain(spec_var_params)
                 .chain(type_params)
                 .chain(params)
@@ -453,24 +466,7 @@ impl<'env> SpecTranslator<'env> {
             &spec.conditions,
         );
         if !requires.is_empty() {
-            // Each requires condition is or-ed with the aborts condition (unless pragma
-            // `requires_if_aborts` is true). That is, the requires only needs to hold if the
-            // function does not abort.
-            self.translate_seq(requires.iter(), "\n", |cond| {
-                self.writer.set_location(&cond.loc);
-                self.set_condition_info(&cond.loc, REQUIRES_FAILS_MESSAGE, true);
-                emit!(self.writer, "requires b#$Boolean(");
-                self.translate_exp(&cond.exp);
-                emit!(self.writer, ")");
-                if !func_target.is_pragma_true(REQUIRES_IF_ABORTS, || false) {
-                    for aborts in &aborts_if {
-                        emit!(self.writer, "\n    || b#$Boolean(");
-                        self.translate_exp(&aborts.exp);
-                        emit!(self.writer, ")")
-                    }
-                }
-                emit!(self.writer, ";")
-            });
+            self.emit_requires(false, &aborts_if, &requires);
             emitln!(self.writer);
         }
 
@@ -556,6 +552,54 @@ impl<'env> SpecTranslator<'env> {
             *self.in_ensures.borrow_mut() = false;
             emitln!(self.writer);
         }
+
+        // If this is an opaque function, also generate ensures for type assumptions.
+        if opaque
+            && matches!(
+                for_entry_point,
+                FunctionEntryPoint::Indirect
+                    | FunctionEntryPoint::DirectIntraModule
+                    | FunctionEntryPoint::DirectInterModule
+            )
+        {
+            for (i, ty) in func_target.get_return_types().iter().enumerate() {
+                let result_name = format!("$ret{}", i);
+                let check = boogie_well_formed_expr(
+                    self.module_env().env,
+                    &result_name,
+                    ty,
+                    WellFormedMode::Default,
+                );
+                if !check.is_empty() {
+                    emitln!(self.writer, "ensures {};", check)
+                }
+            }
+        }
+    }
+
+    /// Emit either assume or requires for preconditions, or-ing them with the aborts
+    /// conditions,
+    fn emit_requires(&self, assume: bool, aborts_if: &[&Condition], requires: &[&Condition]) {
+        let func_target = self.function_target();
+        self.translate_seq(requires.iter(), "\n", |cond| {
+            self.writer.set_location(&cond.loc);
+            self.set_condition_info(&cond.loc, REQUIRES_FAILS_MESSAGE, true);
+            emit!(
+                self.writer,
+                "{} b#$Boolean(",
+                if assume { "assume" } else { "requires" }
+            );
+            self.translate_exp(&cond.exp);
+            emit!(self.writer, ")");
+            if !func_target.is_pragma_true(REQUIRES_IF_ABORTS, || false) {
+                for aborts in aborts_if {
+                    emit!(self.writer, "\n    || b#$Boolean(");
+                    self.translate_exp(&aborts.exp);
+                    emit!(self.writer, ")")
+                }
+            }
+            emit!(self.writer, ";")
+        });
     }
 
     /// Generates assumptions to make at function entry points.
@@ -571,10 +615,7 @@ impl<'env> SpecTranslator<'env> {
             // (a) init prelude specific stuff.
             emitln!(self.writer, "call $InitVerification();");
 
-            // (b) assume implicit preconditions.
-            self.assume_preconditions();
-
-            // (c) assume reference parameters to be based on the Param(i) Location, ensuring
+            // (b) assume reference parameters to be based on the Param(i) Location, ensuring
             // they are disjoint from all other references. This prevents aliasing and is justified as
             // follows:
             // - for mutual references, by their exclusive access in Move.
@@ -588,17 +629,17 @@ impl<'env> SpecTranslator<'env> {
                         .string(func_target.get_local_name(i));
                     emitln!(
                         self.writer,
-                        "assume l#$Reference({}) == $Param({});",
+                        "assume l#$Mutation({}) == $Param({});",
                         name,
                         i
                     );
-                    emitln!(
-                        self.writer,
-                        "assume size#Path(p#$Reference({})) == 0;",
-                        name
-                    );
+                    emitln!(self.writer, "assume size#Path(p#$Mutation({})) == 0;", name);
                 }
             }
+
+            // (c) assume invariants and preconditions.
+            self.assume_invariants_for_verify();
+            self.assume_preconditions_for_verify();
         }
     }
 
@@ -620,7 +661,16 @@ impl<'env> SpecTranslator<'env> {
                 if !kinds.contains(&cond.kind) {
                     return false;
                 }
+                let env = self.module_env().env;
+                let abstract_ = env
+                    .is_property_true(&cond.properties, CONDITION_ABSTRACT_PROP)
+                    .unwrap_or(false);
+                let concrete = env
+                    .is_property_true(&cond.properties, CONDITION_CONCRETE_PROP)
+                    .unwrap_or(false);
                 match entry_point {
+                    DirectInterModule | DirectIntraModule | Indirect if concrete => false,
+                    Verification if abstract_ => false,
                     DirectIntraModule => {
                         // For intra-module calls, all Requires and RequiresModule are visible.
                         // Ensures are only visible if the function is opaque.
@@ -649,7 +699,12 @@ impl<'env> SpecTranslator<'env> {
                         }
                         _ => false,
                     },
-                    Verification => true,
+                    Verification => {
+                        // During verification, we emit requires as assumes in the entry point.
+                        // Boogie doesn't seem to propagate `requires` as assumptions to the
+                        // inlined function.
+                        !matches!(cond.kind, Requires | RequiresModule)
+                    }
                     _ => false,
                 }
             })
@@ -664,7 +719,7 @@ impl<'env> SpecTranslator<'env> {
         !env.is_property_true(&cond.properties, CONDITION_INJECTED_PROP)
             .unwrap_or(false)
             || env
-                .is_property_true(&cond.properties, CONDITION_EXPORT)
+                .is_property_true(&cond.properties, CONDITION_EXPORT_PROP)
                 .unwrap_or(false)
     }
 
@@ -696,27 +751,81 @@ impl<'env> SpecTranslator<'env> {
 
     /// Assumes preconditions for function. This is used for the top-level verification
     /// entry point of a function.
-    pub fn assume_preconditions(&self) {
-        emitln!(self.writer, "assume $Memory__is_well_formed($m);");
+    pub fn assume_preconditions_for_verify(&self) {
         let func_target = self.function_target();
-        // Assume requires.
+        // Collect all requires.
         let requires = func_target
             .get_spec()
-            .filter(|c| match c.kind {
-                ConditionKind::Requires => true,
-                ConditionKind::RequiresModule => true,
-                _ => false,
+            .filter(|c| {
+                matches!(
+                    c.kind,
+                    ConditionKind::Requires | ConditionKind::RequiresModule
+                )
             })
             .collect_vec();
         if !requires.is_empty() {
-            self.translate_seq(requires.iter(), "\n", |cond| {
-                self.writer.set_location(&cond.loc);
-                emit!(self.writer, "assume b#$Boolean(");
-                self.translate_exp(&cond.exp);
-                emit!(self.writer, ");")
-            });
+            // TODO(wrwg): investigate soundness of emitting those assumptions without
+            // or-ing with aborts conditions.
+            self.emit_requires(true, &[], &requires);
             emitln!(self.writer);
         }
+    }
+
+    pub fn assume_invariants_for_verify(&self) {
+        let func_target = self.function_target();
+        let usage = TransitiveUsage::default();
+        let used_mem = usage.get_used_memory(
+            self.module_env().env,
+            self.targets,
+            func_target
+                .module_env()
+                .get_id()
+                .qualified(func_target.get_id()),
+        );
+        let mut invariants: BTreeSet<GlobalId> = BTreeSet::new();
+        for mem in used_mem {
+            // Emit type well-formedness invariant.
+            let struct_env = self
+                .module_env()
+                .env
+                .get_module(mem.module_id)
+                .into_struct(mem.id);
+            emit!(self.writer, "assume ");
+            let memory_name = boogie_resource_memory_name(func_target.global_env(), mem);
+            emit!(self.writer, "(forall $inv_addr: int");
+            let mut type_args = vec![];
+            for i in 0..struct_env.get_type_parameters().len() {
+                emit!(self.writer, ", $inv_tv{}: $TypeValue", i);
+                type_args.push(format!("$inv_tv{}", i));
+            }
+            let get_resource = format!(
+                "contents#$Memory({})[{}, $inv_addr]",
+                memory_name,
+                boogie_type_value_array_from_strings(&type_args)
+            );
+            emitln!(self.writer, " :: {{{}}}", get_resource);
+            self.writer.indent();
+            emitln!(
+                self.writer,
+                "{}_is_well_formed({})",
+                boogie_struct_name(&struct_env),
+                get_resource,
+            );
+            self.writer.unindent();
+            emitln!(self.writer, ");");
+
+            // Collect global invariants.
+            invariants.extend(
+                func_target
+                    .module_env()
+                    .env
+                    .get_global_invariants_for_memory(mem)
+                    .into_iter(),
+            );
+        }
+
+        // Now emit global invariants which touch the used memory.
+        self.emit_global_invariants(true, invariants.into_iter().collect_vec())
     }
 }
 
@@ -724,9 +833,6 @@ impl<'env> SpecTranslator<'env> {
 /// ==========
 
 impl<'env> SpecTranslator<'env> {
-    /// Emitting invariant functions
-    /// ----------------------------
-
     /// Emits functions and procedures needed for invariants.
     pub fn translate_invariant_functions(&self) {
         self.translate_assume_well_formed();
@@ -785,36 +891,6 @@ impl<'env> SpecTranslator<'env> {
         self.writer.unindent();
         emitln!(self.writer, "}");
         emitln!(self.writer);
-
-        if struct_env.is_resource() && self.options.prover.resource_wellformed_axiom {
-            // Emit axiom that for all addresses, this resource as stored in global memory
-            // is well-formed.
-            emit!(self.writer, "axiom (forall m: $Memory, a: $Value");
-            let mut type_args = vec![];
-            for i in 0..struct_env.get_type_parameters().len() {
-                emit!(self.writer, ", $tv{}: $TypeValue", i);
-                type_args.push(Type::TypeParameter(i as u16));
-            }
-            emitln!(
-                self.writer,
-                " :: $Memory__is_well_formed(m) && is#$Address(a) ==> "
-            );
-            self.writer.indent();
-            emitln!(
-                self.writer,
-                "{}_is_well_formed($ResourceValue(m, {}, a))",
-                boogie_struct_name(struct_env),
-                boogie_struct_type_value(
-                    &struct_env.module_env.env,
-                    struct_env.module_env.get_id(),
-                    struct_env.get_id(),
-                    &type_args
-                ),
-            );
-            self.writer.unindent();
-            emitln!(self.writer, ");");
-            emitln!(self.writer);
-        }
     }
 
     /// Determines whether a before-update invariant is generated for this struct.
@@ -1084,6 +1160,61 @@ impl<'env> SpecTranslator<'env> {
             }
         }
     }
+
+    pub fn save_memory_for_update_invariants(&self, memory: QualifiedId<StructId>) {
+        let env = self.module_env().env;
+        let mut memory_to_save = BTreeSet::new();
+        // Collect all update invariants.
+        for id in env.get_global_invariants_for_memory(memory) {
+            let inv = env.get_global_invariant(id).unwrap();
+            if inv.kind == ConditionKind::InvariantUpdate {
+                memory_to_save.extend(inv.mem_usage.iter());
+            }
+        }
+        // Save their memory.
+        for used_memory in memory_to_save {
+            let name = boogie_resource_memory_name(env, used_memory);
+            let saved_name = boogie_saved_resource_memory_name(env, used_memory);
+            emitln!(self.writer, "{} := {};", saved_name, name);
+        }
+    }
+
+    pub fn emit_global_invariants_for_memory(&self, assume: bool, memory: QualifiedId<StructId>) {
+        let env = self.module_env().env;
+        self.emit_global_invariants(assume, env.get_global_invariants_for_memory(memory))
+    }
+
+    fn emit_global_invariants(&self, assume: bool, invariants: Vec<GlobalId>) {
+        let env = self.module_env().env;
+        for inv in invariants
+            .into_iter()
+            .map(|id| env.get_global_invariant(id).unwrap())
+        {
+            self.writer.set_location(&inv.loc);
+            if assume && inv.kind == ConditionKind::InvariantUpdate {
+                // Update invariants are never assumed.
+                continue;
+            }
+            if assume {
+                emit!(self.writer, "assume b#$Boolean(");
+            } else {
+                self.set_condition_info(&inv.loc, GLOBAL_INVARIANT_FAILS_MESSAGE, false);
+                emit!(self.writer, "assert b#$Boolean(");
+            }
+            // We need to use a translator for the module which declared the invariant, which is not
+            // necessarily the one which is emitting the invariants, such that node_id annotations
+            // of the expression are right.
+            let translator_for_exp = SpecTranslator::new(
+                self.writer,
+                env.get_module(inv.declaring_module),
+                self.targets,
+                self.options,
+                self.supports_native_old,
+            );
+            translator_for_exp.translate_exp(&inv.cond);
+            emitln!(self.writer, ");")
+        }
+    }
 }
 
 // Types
@@ -1237,6 +1368,8 @@ impl<'env> SpecTranslator<'env> {
                 let mut var_name = self.module_env().symbol_pool().string(name);
                 if let SpecEnv::Function(func_target) = &self.spec_env {
                     // overwrite ty and var_name if func_target provides a binding for name
+                    // TODO(wrwg): this interferes with name scoping rules in Move/spec lang
+                    // and needs to be fixed.
                     if let Some(local_index) = func_target.get_local_index(name) {
                         if *self.in_assert_or_assume.borrow() {
                             if let Some(proxy_index) = if ty.is_reference() {
@@ -1352,9 +1485,6 @@ impl<'env> SpecTranslator<'env> {
             Operation::Global => self.translate_resource_access(node_id, args),
             Operation::Exists => self.translate_resource_exists(node_id, args),
             Operation::Len => self.translate_primitive_call("$vlen_value", args),
-            Operation::Sender => self.trace_value(node_id, TraceItem::Sender, || {
-                emit!(self.writer, "$TxnSender($txn)")
-            }),
             Operation::All => self.translate_all_or_exists(&loc, true, args),
             Operation::Any => self.translate_all_or_exists(&loc, false, args),
             Operation::TypeValue => self.translate_type_value(node_id),
@@ -1365,6 +1495,8 @@ impl<'env> SpecTranslator<'env> {
             ),
             Operation::Update => self.translate_primitive_call("$update_vector_by_value", args),
             Operation::Concat => self.translate_primitive_call("$append_vector", args),
+            Operation::Empty => self.translate_primitive_call("$mk_vector", args),
+            Operation::Single => self.translate_primitive_call("$single_vector", args),
             Operation::Old => self.translate_old(args),
             Operation::Trace => self.trace_value(node_id, TraceItem::Explicit, || {
                 self.translate_exp(&args[0])
@@ -1401,12 +1533,7 @@ impl<'env> SpecTranslator<'env> {
         let fun_decl = module_env.get_spec_fun(fun_id);
         let name = boogie_spec_fun_name(&module_env, fun_id);
         emit!(self.writer, "{}(", name);
-        let mut first = if !fun_decl.is_pure {
-            emit!(self.writer, "$m, $txn");
-            false
-        } else {
-            true
-        };
+        let mut first = true;
         let mut maybe_comma = || {
             if first {
                 first = false;
@@ -1414,7 +1541,16 @@ impl<'env> SpecTranslator<'env> {
                 emit!(self.writer, ", ");
             }
         };
-        for (mid, vid) in &fun_decl.used_spec_vars {
+        for memory in &fun_decl.used_memory {
+            maybe_comma();
+            let memory = boogie_resource_memory_name(self.module_env().env, *memory);
+            emit!(self.writer, &memory);
+        }
+        for QualifiedId {
+            module_id: mid,
+            id: vid,
+        } in &fun_decl.used_spec_vars
+        {
             maybe_comma();
             let declaring_module = self.module_env().env.get_module(*mid);
             let var_decl = declaring_module.get_spec_var(*vid);
@@ -1425,6 +1561,7 @@ impl<'env> SpecTranslator<'env> {
         }
         for ty in instantiation.iter() {
             maybe_comma();
+            assert!(!ty.is_incomplete());
             emit!(self.writer, &self.translate_type(ty));
         }
         for exp in args {
@@ -1464,18 +1601,38 @@ impl<'env> SpecTranslator<'env> {
     fn translate_resource_access(&self, node_id: NodeId, args: &[Exp]) {
         self.trace_value(node_id, TraceItem::Exp, || {
             let rty = &self.module_env().get_node_instantiation(node_id)[0];
-            let type_value = self.translate_type(rty);
-            emit!(self.writer, "$ResourceValue($m, {}, ", type_value);
+            let (mid, sid, targs) = rty.require_struct();
+            let env = self.module_env().env;
+            emit!(
+                self.writer,
+                "$ResourceValue({}, {}, ",
+                self.get_memory_name(mid.qualified(sid)),
+                boogie_type_value_array(env, targs)
+            );
             self.translate_exp(&args[0]);
             emit!(self.writer, ")");
         });
     }
 
+    fn get_memory_name(&self, memory: QualifiedId<StructId>) -> String {
+        if self.supports_native_old || !*self.in_old.borrow() {
+            boogie_resource_memory_name(self.module_env().env, memory)
+        } else {
+            boogie_saved_resource_memory_name(self.module_env().env, memory)
+        }
+    }
+
     fn translate_resource_exists(&self, node_id: NodeId, args: &[Exp]) {
         self.trace_value(node_id, TraceItem::Exp, || {
             let rty = &self.module_env().get_node_instantiation(node_id)[0];
-            let type_value = self.translate_type(rty);
-            emit!(self.writer, "$ResourceExists($m, {}, ", type_value);
+            let (mid, sid, targs) = rty.require_struct();
+            let env = self.module_env().env;
+            emit!(
+                self.writer,
+                "$ResourceExists({}, {}, ",
+                self.get_memory_name(mid.qualified(sid)),
+                boogie_type_value_array(env, targs)
+            );
             self.translate_exp(&args[0]);
             emit!(self.writer, ")");
         });

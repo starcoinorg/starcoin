@@ -19,7 +19,9 @@ struct TestAttributeOpts {
 /// The async test need actix.
 /// ## Usage
 ///
-/// ```no-run
+/// ```no_run
+/// use std::time::Duration;
+/// use actix::{Context, Actor};
 /// #[stest::test]
 /// async fn my_async_test() {
 ///     assert!(true);
@@ -30,10 +32,6 @@ struct TestAttributeOpts {
 ///     assert!(true);
 /// }
 ///
-/// #[stest::test]
-/// async fn my_async_test_false() {
-///     assert!(false);
-/// }
 ///
 /// #[stest::test]
 /// fn my_sync_test_false() {
@@ -73,6 +71,11 @@ struct TestAttributeOpts {
 ///     assert!(false);
 /// }
 ///
+/// struct MyActor;
+/// impl Actor for MyActor {
+///     type Context = Context<Self>;
+/// }
+///
 /// #[stest::test(timeout = 10)]
 /// async fn my_async_test_actor() {
 ///     let myactor = MyActor {};
@@ -81,20 +84,12 @@ struct TestAttributeOpts {
 ///     assert!(false);
 /// }
 ///
-/// struct MyActor;
-/// impl Actor for MyActor {
-///     type Context = Context<Self>;
-/// }
 ///
 /// #[stest::test(timeout = 10)]
 /// fn my_sync_test_actor() {
 ///     assert!(false);
 /// }
 ///
-/// #[stest::test(timeout = 1)]
-/// fn test_timeout() {
-///     std::thread::sleep(Duration::from_secs(6));
-/// }
 ///
 ///
 /// ```
