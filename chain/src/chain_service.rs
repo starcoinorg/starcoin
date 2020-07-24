@@ -16,6 +16,7 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
 use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource};
 use std::collections::HashSet;
+use std::iter::Iterator;
 use std::sync::Arc;
 use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult, Consensus};
@@ -224,8 +225,15 @@ where
         let mut exists_uncles =
             self.merge_exists_uncles(epoch_start_number, self.startup_info.master)?;
 
+        let master_block_headers = self.master_blocks_since(epoch_start_number)?;
+
         let mut uncles = HashSet::new();
-        let branches = self.find_available_branch(epoch_start_number)?;
+        let branches = self.find_available_branch(epoch_start_number, &master_block_headers)?;
+
+        let master_block_header_ids = master_block_headers
+            .iter()
+            .map(|header| header.id())
+            .collect();
         for branch_header_id in branches {
             if uncles.len() == MAX_UNCLE_COUNT_PER_BLOCK {
                 break;
@@ -235,6 +243,7 @@ where
                 epoch_start_number,
                 branch_header_id,
                 &exists_uncles,
+                &master_block_header_ids,
             )?;
             for uncle in available_uncles {
                 if !uncles.contains(&uncle) {
@@ -249,9 +258,12 @@ where
         Ok(uncles.into_iter().collect())
     }
 
-    fn find_available_branch(&self, epoch_start_number: BlockNumber) -> Result<Vec<HashValue>> {
+    fn find_available_branch(
+        &self,
+        epoch_start_number: BlockNumber,
+        master_block_headers: &HashSet<BlockHeader>,
+    ) -> Result<Vec<HashValue>> {
         let mut result = Vec::new();
-        let master_block_headers = self.master_blocks_since(epoch_start_number)?;
 
         for branch_header_id in &self.startup_info.branches {
             if self.check_common_ancestor(
@@ -345,6 +357,7 @@ where
         epoch_start_number: BlockNumber,
         block_id: HashValue,
         exists_uncles: &HashSet<BlockHeader>,
+        master_block_headers: &HashSet<HashValue>,
     ) -> Result<Vec<BlockHeader>> {
         let mut id = block_id;
         let mut result = vec![];
@@ -357,7 +370,9 @@ where
                     if block.header.number < epoch_start_number {
                         break;
                     }
-                    if !exists_uncles.contains(block.header()) {
+                    if !exists_uncles.contains(block.header())
+                        && master_block_headers.contains(&block.header.parent_hash)
+                    {
                         result.push(block.header().clone());
                     }
                     if result.len() == MAX_UNCLE_COUNT_PER_BLOCK {
