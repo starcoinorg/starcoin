@@ -29,7 +29,7 @@ module MyConfig{
     }
 
     public fun publish_new_config_with_capability(account: &signer, myconfig: MyConfig){
-        assert(Signer::address_of(account) == {{alice}}, 1000);
+        assert(Signer::address_of(account) == {{bob}}, 1000);
         let cap = Config::publish_new_config_with_capability<MyConfig>(account, myconfig);
         move_to(account, CapHolder{cap: cap});
     }
@@ -75,7 +75,7 @@ fun main(account: &signer) {
 // check: EXECUTED
 
 //! new-transaction
-//! sender: alice
+//! sender: bob
 script {
 use {{alice}}::MyConfig;
 
@@ -84,7 +84,7 @@ fun main(account: &signer) {
 }
 }
 
-// check: EXECUTION_FAILURE
+// check: EXECUTED
 
 // update config by Config module
 //! new-transaction
