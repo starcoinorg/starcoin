@@ -1,34 +1,9 @@
-//! account: alice
 //! account: bob
-
-//! sender: alice
-module Math {
-    // babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
-    public fun sqrt(y: u128): u64 {
-        if (y < 4) {
-            if (y == 0) {
-                0u64
-            } else {
-                1u64
-            }
-        } else {
-            let z = y;
-            let x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            };
-            (z as u64)
-        }
-    }
-}
-// check: EXECUTED
-// check: 0
 
 //! new-transaction
 //! sender: bob
 script {
-    use {{alice}}::Math::sqrt;
+    use 0x1::Math::sqrt;
     fun main(_signer: &signer) {
         assert(sqrt(0) == 0, 0);
         assert(sqrt(1) == 1, 1);
