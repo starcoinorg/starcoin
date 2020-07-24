@@ -237,22 +237,21 @@ module Consensus {
         let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ACCOUNT());
         if (block_height == epoch_ref.start_number) {
             epoch_data.total_reward = reward;
+            Event::emit_event(
+                &mut epoch_ref.new_epoch_events,
+                NewEpochEvent {
+                    epoch_number: epoch_ref.epoch_number,
+                    epoch_start_time: epoch_ref.epoch_start_time,
+                    start_number: epoch_ref.start_number,
+                    end_number: epoch_ref.end_number,
+                    block_time_target: epoch_ref.block_time_target,
+                    reward_per_epoch: epoch_ref.reward_per_epoch,
+                    reward_per_block: epoch_ref.reward_per_block,
+                }
+            );
         } else {
             epoch_data.total_reward = epoch_data.total_reward + reward;
         };
-
-        Event::emit_event(
-            &mut epoch_ref.new_epoch_events,
-            NewEpochEvent {
-                epoch_number: epoch_ref.epoch_number,
-                epoch_start_time: epoch_ref.epoch_start_time,
-                start_number: epoch_ref.start_number,
-                end_number: epoch_ref.end_number,
-                block_time_target: epoch_ref.block_time_target,
-                reward_per_epoch: epoch_ref.reward_per_epoch,
-                reward_per_block: epoch_ref.reward_per_block,
-            }
-        );
 
         reward
     }
