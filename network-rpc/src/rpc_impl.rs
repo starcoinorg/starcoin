@@ -58,7 +58,7 @@ where
             let data = {
                 match req.ids {
                     // get from txpool
-                    None => txpool.get_pending_txns(None),
+                    None => txpool.get_pending_txns(None, None),
                     // get from storage
                     Some(ids) => {
                         let mut data = vec![];

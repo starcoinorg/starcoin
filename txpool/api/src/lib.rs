@@ -24,7 +24,13 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction>;
 
     /// Get all pending txns which is ok to be packaged to mining.
-    fn get_pending_txns(&self, max_len: Option<u64>) -> Vec<SignedUserTransaction>;
+    /// `now` is the current timestamp in secs, if it's None, it default to real world's current timestamp.
+    /// It's an Option to make mock time easier.
+    fn get_pending_txns(
+        &self,
+        max_len: Option<u64>,
+        now: Option<u64>,
+    ) -> Vec<SignedUserTransaction>;
 
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.

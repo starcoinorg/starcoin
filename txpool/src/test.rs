@@ -4,21 +4,20 @@ use anyhow::Result;
 use common_crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use parking_lot::RwLock;
 use starcoin_executor::{
-    create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_MAX_GAS_AMOUNT,
+    create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_EXPIRATION_TIME,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
-use std::thread::sleep;
 use std::{collections::HashMap, sync::Arc};
 use storage::BlockStore;
 use types::{
     account_address::{self, AccountAddress},
     account_config,
     transaction::{
-        authenticator::AuthenticationKey, helpers::get_current_timestamp, SignedUserTransaction,
-        Transaction, TransactionPayload,
+        authenticator::AuthenticationKey, SignedUserTransaction, Transaction, TransactionPayload,
     },
     U256,
 };
@@ -62,15 +61,13 @@ async fn test_txn_expire() -> Result<()> {
         0,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
-        Some(get_current_timestamp() + 1),
+        2,
     );
     txpool_service.add_txns(vec![txn]).pop().unwrap()?;
-    let pendings = txpool_service.get_pending_txns(None);
+    let pendings = txpool_service.get_pending_txns(None, Some(0));
     assert_eq!(pendings.len(), 1);
 
-    sleep(std::time::Duration::from_secs(2));
-
-    let pendings = txpool_service.get_pending_txns(None);
+    let pendings = txpool_service.get_pending_txns(None, Some(2));
     assert_eq!(pendings.len(), 0);
 
     Ok(())
@@ -83,13 +80,18 @@ async fn test_tx_pool() -> Result<()> {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-    let txn =
-        starcoin_executor::build_transfer_from_association(account_address, auth_prefix, 0, 10000);
+    let txn = starcoin_executor::build_transfer_from_association(
+        account_address,
+        auth_prefix,
+        0,
+        10000,
+        1,
+    );
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.crypto_hash();
     let mut result = txpool_service.add_txns(vec![txn]);
     assert!(result.pop().unwrap().is_ok());
-    let mut pending_txns = txpool_service.get_pending_txns(Some(10));
+    let mut pending_txns = txpool_service.get_pending_txns(Some(10), Some(0));
     assert_eq!(pending_txns.pop().unwrap().crypto_hash(), txn_hash);
 
     let next_sequence_number =
@@ -107,6 +109,7 @@ async fn test_subscribe_txns() {
 #[stest::test]
 async fn test_rollback() -> Result<()> {
     let (pool, storage) = test_helper::start_txpool();
+    let start_timestamp = 0;
     let retracted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
@@ -116,6 +119,7 @@ async fn test_rollback() -> Result<()> {
             auth_prefix,
             0,
             10000,
+            start_timestamp + DEFAULT_EXPIRATION_TIME,
         );
         txn.as_signed_user_txn()?.clone()
     };
@@ -130,6 +134,7 @@ async fn test_rollback() -> Result<()> {
             auth_prefix,
             0,
             20000,
+            start_timestamp + DEFAULT_EXPIRATION_TIME,
         );
         txn.as_signed_user_txn()?.clone()
     };
@@ -148,6 +153,7 @@ async fn test_rollback() -> Result<()> {
             u64::MAX,
             account_address,
             Some(auth_prefix),
+            start_timestamp + 60 * 10,
             vec![],
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
@@ -189,7 +195,9 @@ async fn test_rollback() -> Result<()> {
     pool.get_service()
         .chain_new_block(vec![enacted_block], vec![retracted_block])
         .unwrap();
-    let txns = pool.get_service().get_pending_txns(Some(100));
+    let txns = pool
+        .get_service()
+        .get_pending_txns(Some(100), Some(start_timestamp + 60 * 10));
     assert_eq!(txns.len(), 0);
     Ok(())
 }

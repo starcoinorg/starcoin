@@ -99,15 +99,20 @@ impl TxPoolSyncService for TxPoolService {
     }
 
     /// Get all pending txns which is ok to be packaged to mining.
-    fn get_pending_txns(&self, max_len: Option<u64>) -> Vec<SignedUserTransaction> {
+    fn get_pending_txns(
+        &self,
+        max_len: Option<u64>,
+        current_timestamp_secs: Option<u64>,
+    ) -> Vec<SignedUserTransaction> {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
             .with_label_values(&["get_pending_txns"])
             .start_timer();
         // should we expose the timestamp to let caller specify the time?
-        let current_timestamp = get_current_timestamp();
+        let current_timestamp_secs =
+            current_timestamp_secs.unwrap_or_else(|| get_current_timestamp());
         let r = self
             .inner
-            .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp);
+            .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs);
         r.into_iter().map(|t| t.signed().clone()).collect()
     }
 

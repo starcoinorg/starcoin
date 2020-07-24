@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_wallet_api::WalletAccount;
 
@@ -36,6 +38,7 @@ impl MockTxnGenerator {
             amount_to_transfer,
             1,
             10000,
+            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
         );
         Ok(transfer_txn)
     }

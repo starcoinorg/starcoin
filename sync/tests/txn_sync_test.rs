@@ -22,6 +22,7 @@ use std::{sync::Arc, time::Duration};
 use txpool::TxPool;
 use types::{
     account_address,
+    transaction::helpers::get_current_timestamp,
     transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
 };
 
@@ -196,7 +197,7 @@ fn test_txn_sync_actor() {
         Delay::new(Duration::from_secs(10)).await;
 
         // check txn
-        let mut txns = txpool_2.get_service().get_pending_txns(None);
+        let mut txns = txpool_2.get_service().get_pending_txns(None, None);
         assert!(txns.len() == 1);
         let txn = txns.pop().unwrap();
         assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());
@@ -210,6 +211,12 @@ fn gen_user_txn() -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-    let txn = executor::build_transfer_from_association(account_address, auth_prefix, 0, 10000);
+    let txn = executor::build_transfer_from_association(
+        account_address,
+        auth_prefix,
+        0,
+        10000,
+        get_current_timestamp() + 40000,
+    );
     txn.as_signed_user_txn().unwrap().clone()
 }
