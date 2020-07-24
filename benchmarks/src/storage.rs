@@ -3,7 +3,7 @@
 
 use criterion::{BatchSize, Bencher};
 use crypto::HashValue;
-use starcoin_vm_types::vm_status::StatusCode;
+use starcoin_vm_types::vm_status::KeptVMStatus;
 use storage::Storage;
 use storage::TransactionInfoStore;
 use types::transaction::TransactionInfo;
@@ -50,7 +50,7 @@ impl StorageBencher {
                 HashValue::zero(),
                 vec![].as_slice(),
                 0,
-                StatusCode::ABORTED,
+                KeptVMStatus::Executed,
             );
             self.storage
                 .save_transaction_info(transaction_info1)

@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::shared::Address;
@@ -21,7 +21,7 @@ use starcoin_types::transaction::{
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::transaction::Transaction;
-use starcoin_vm_types::vm_status::StatusCode;
+use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -186,7 +186,7 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-
+        //TODO show VMStatus in dry run
         let output = if opt.local_mode {
             let mut vm = StarcoinVM::new();
             let state_view = RemoteStateReader::new(client);
@@ -196,12 +196,15 @@ impl CommandAction for ExecuteCommand {
             )?
             .pop()
             .expect("at least one txn output")
+            .1
         } else {
             client.dry_run(signed_txn.clone())?
         };
-
-        if output.status().vm_status().status_code() != StatusCode::EXECUTED {
-            bail!("move file pre-run failed, {:?}", output.status());
+        let keep_status = output.status().status().map_err(|status_code| {
+            format_err!("TransactionStatus is discard: {:?}", status_code)
+        })?;
+        if keep_status != KeptVMStatus::Executed {
+            bail!("move file pre-run failed, {:?}", keep_status);
         }
         if !opt.dry_run {
             let succ = client.submit_transaction(signed_txn)?;

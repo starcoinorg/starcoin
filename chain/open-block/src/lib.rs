@@ -5,6 +5,7 @@ use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
@@ -13,7 +14,6 @@ use starcoin_types::{
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
-    vm_error::StatusCode,
 };
 use std::{convert::TryInto, sync::Arc};
 use storage::Store;
@@ -152,16 +152,12 @@ impl OpenedBlock {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus::Discard(status) => {
-                    debug!("discard txn {}, vm status: {}", txn_hash, status);
+                    debug!("discard txn {}, vm status: {:?}", txn_hash, status);
                     discard_txns.push(txn.try_into().expect("user txn"));
                 }
-                TransactionStatus::Keep(_) => {
-                    if output.status().vm_status().status_code() != StatusCode::EXECUTED {
-                        debug!(
-                            "txn {:?} execute error: {:?}",
-                            txn_hash,
-                            output.status().vm_status()
-                        );
+                TransactionStatus::Keep(status) => {
+                    if status != &KeptVMStatus::Executed {
+                        debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
                     self.push_txn_and_state(txn_hash, output)?;
@@ -187,12 +183,9 @@ impl OpenedBlock {
 
         match output.status() {
             TransactionStatus::Discard(status) => {
-                bail!("block_metadata txn is discarded, vm status: {}", status);
+                bail!("block_metadata txn is discarded, vm status: {:?}", status);
             }
             TransactionStatus::Keep(_) => {
-                // let (write_set, events, gas_used, status) = output.into_inner();
-                let gas_used = output.gas_used();
-                debug_assert_eq!(gas_used, 0, "execute block meta should not use any gas");
                 let _ = self.push_txn_and_state(block_meta_txn_hash, output)?;
             }
         };
@@ -206,7 +199,9 @@ impl OpenedBlock {
     ) -> Result<(HashValue, HashValue)> {
         let (write_set, events, gas_used, _, status) = output.into_inner();
         debug_assert!(matches!(status, TransactionStatus::Keep(_)));
-        let status = status.vm_status();
+        let status = status
+            .status()
+            .expect("TransactionStatus at here must been KeptVMStatus");
         self.state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
@@ -220,7 +215,7 @@ impl OpenedBlock {
             txn_state_root,
             events.as_slice(),
             gas_used,
-            status.status_code(),
+            status,
         );
         let (accumulator_root, _) = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))

@@ -51,7 +51,6 @@ async fn gen_master_chain(
     if times > 0 {
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
-            println!("startup_info: {:?}", startup_info);
             let block_chain = BlockChain::<DevConsensus>::new(
                 node_config.clone(),
                 startup_info.master,

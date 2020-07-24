@@ -14,8 +14,6 @@ use traits::ChainReader;
 use types::{account_address, account_config, transaction::authenticator::AuthenticationKey};
 #[stest::test]
 pub fn test_open_block() -> Result<()> {
-    // uncomment this to see debug message.
-    // let _ = logger::init_for_test();
     let config = Arc::new(NodeConfig::random_for_test());
     let chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config)?;
     let header = chain.current_header();

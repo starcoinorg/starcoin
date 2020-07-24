@@ -10,7 +10,7 @@ use crate::{Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO
 use anyhow::Result;
 use crypto::HashValue;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::vm_error::StatusCode;
+use starcoin_types::vm_error::KeptVMStatus;
 use std::sync::Arc;
 
 #[test]
@@ -67,7 +67,7 @@ fn test_storage() {
         HashValue::zero(),
         vec![].as_slice(),
         0,
-        StatusCode::ABORTED,
+        KeptVMStatus::Executed,
     );
     let id = transaction_info1.id();
     storage
@@ -94,7 +94,7 @@ fn test_two_level_storage() {
         HashValue::zero(),
         vec![].as_slice(),
         0,
-        StatusCode::ABORTED,
+        KeptVMStatus::Executed,
     );
     let id = transaction_info1.id();
     storage
@@ -144,7 +144,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
         HashValue::zero(),
         vec![].as_slice(),
         0,
-        StatusCode::ABORTED,
+        KeptVMStatus::Executed,
     );
     let id = transaction_info1.id();
     storage

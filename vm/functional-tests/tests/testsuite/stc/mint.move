@@ -35,5 +35,6 @@ fun main(account: &signer) {
 }
 
 // will fail with MISSING_DATA because sender doesn't have the mint capability
-// check: Keep
 // check: MISSING_DATA
+// check: Keep
+

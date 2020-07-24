@@ -14,11 +14,11 @@ use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::transaction::{TransactionInfo, TransactionStatus};
-use starcoin_types::vm_error::StatusCode;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction, U256};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::TransactionOutput;
+use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::write_set::WriteOp;
 use starcoin_wallet_api::WalletAccount;
 use std::collections::HashMap;
@@ -121,7 +121,7 @@ pub struct TransactionInfoView {
     pub state_root_hash: HashValue,
     pub event_root_hash: HashValue,
     pub gas_used: u64,
-    pub major_status: StatusCode,
+    pub status: KeptVMStatus,
 }
 
 impl From<TransactionInfo> for TransactionInfoView {
@@ -132,7 +132,7 @@ impl From<TransactionInfo> for TransactionInfoView {
             state_root_hash: tx.state_root_hash(),
             event_root_hash: tx.event_root_hash(),
             gas_used: tx.gas_used(),
-            major_status: tx.major_status(),
+            status: tx.status().clone(),
         }
     }
 }
