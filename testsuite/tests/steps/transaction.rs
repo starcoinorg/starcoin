@@ -4,7 +4,7 @@
 use crate::MyWorld;
 use anyhow::Error;
 use cucumber::{Steps, StepsBuilder};
-use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
+use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
@@ -12,6 +12,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 use std::time::Duration;
 
@@ -68,6 +69,7 @@ fn transfer_txn(
         amount,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
+        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
     );
 
     let txn = sign_txn(client, raw_txn).unwrap();
