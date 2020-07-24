@@ -15,11 +15,7 @@ use starcoin_types::{
     },
     vm_error::StatusCode,
 };
-use std::{
-    convert::TryInto,
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::{convert::TryInto, sync::Arc};
 use storage::Store;
 use traits::ExcludedTxns;
 
@@ -44,6 +40,7 @@ impl OpenedBlock {
         block_gas_limit: u64,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
+        block_timestamp: u64,
         uncles: Vec<BlockHeader>,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
@@ -59,7 +56,7 @@ impl OpenedBlock {
             AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
         )?;
-        let block_timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        // let block_timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));

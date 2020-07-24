@@ -37,6 +37,7 @@ starcoin-metrics = {path = "../commons/metrics"}
 once_cell = "1.4.0"
 dyn-clone = "1.0.1"
 network-rpc = { path = "../network-rpc", package = "starcoin-network-rpc" }
+
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
 actix-rt = "1.1"
@@ -46,3 +47,4 @@ starcoin-wallet-api = { path = "../wallet/api"}
 libp2p = "0.22.0"
 stest = { path = "../commons/stest"}
 starcoin-block-relayer = { path = "../block-relayer"}
+starcoin-statedb = {path = "../state/statedb"}

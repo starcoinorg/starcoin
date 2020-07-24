@@ -10,7 +10,6 @@ use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,
     TransactionArgument, TransactionPayload,
@@ -27,12 +26,14 @@ pub fn build_transfer_from_association(
     auth_key_prefix: Vec<u8>,
     association_sequence_num: u64,
     amount: u128,
+    expiration_timstamp_secs: u64,
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
         auth_key_prefix,
         association_sequence_num,
         amount,
+        expiration_timstamp_secs,
     ))
 }
 
@@ -44,6 +45,7 @@ pub fn build_transfer_txn(
     amount: u128,
     gas_price: u64,
     max_gas: u64,
+    expiration_timstamp_secs: u64,
 ) -> RawUserTransaction {
     build_transfer_txn_by_token_type(
         sender,
@@ -54,6 +56,7 @@ pub fn build_transfer_txn(
         gas_price,
         max_gas,
         stc_type_tag(),
+        expiration_timstamp_secs,
     )
 }
 
@@ -66,6 +69,7 @@ pub fn build_transfer_txn_by_token_type(
     gas_price: u64,
     max_gas: u64,
     token_type: TypeTag,
+    expiration_timstamp_secs: u64,
 ) -> RawUserTransaction {
     raw_peer_to_peer_txn(
         sender,
@@ -76,6 +80,7 @@ pub fn build_transfer_txn_by_token_type(
         gas_price,
         max_gas,
         token_type,
+        expiration_timstamp_secs,
     )
 }
 
@@ -85,8 +90,16 @@ pub fn build_accept_token_txn(
     gas_price: u64,
     max_gas: u64,
     token_type: TypeTag,
+    expiration_timstamp_secs: u64,
 ) -> RawUserTransaction {
-    raw_accept_token_txn(sender, seq_num, gas_price, max_gas, token_type)
+    raw_accept_token_txn(
+        sender,
+        seq_num,
+        gas_price,
+        max_gas,
+        token_type,
+        expiration_timstamp_secs,
+    )
 }
 
 pub fn raw_peer_to_peer_txn(
@@ -98,6 +111,7 @@ pub fn raw_peer_to_peer_txn(
     gas_price: u64,
     max_gas: u64,
     token_type: TypeTag,
+    expiration_timstamp_secs: u64,
 ) -> RawUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(receiver));
@@ -114,7 +128,7 @@ pub fn raw_peer_to_peer_txn(
         )),
         max_gas,
         gas_price,
-        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+        expiration_timstamp_secs,
     )
 }
 
@@ -124,6 +138,7 @@ pub fn raw_accept_token_txn(
     gas_price: u64,
     max_gas: u64,
     token_type: TypeTag,
+    expiration_timstamp_secs: u64,
 ) -> RawUserTransaction {
     RawUserTransaction::new(
         sender,
@@ -135,7 +150,7 @@ pub fn raw_accept_token_txn(
         )),
         max_gas,
         gas_price,
-        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+        expiration_timstamp_secs,
     )
 }
 
@@ -176,13 +191,14 @@ pub fn peer_to_peer_txn_sent_as_association(
     auth_key_prefix: Vec<u8>,
     seq_num: u64,
     amount: u128,
+    expiration_timstamp_secs: u64,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
         TransactionPayload::Script(encode_transfer_script(&recipient, auth_key_prefix, amount)),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
-        None,
+        expiration_timstamp_secs,
     )
 }
 
@@ -192,7 +208,7 @@ pub fn create_signed_txn_with_association_account(
     sequence_number: u64,
     max_gas_amount: u64,
     gas_unit_price: u64,
-    expiration_timstamp_secs: Option<u64>,
+    expiration_timstamp_secs: u64,
 ) -> SignedUserTransaction {
     let raw_txn = RawUserTransaction::new(
         account_config::association_address(),
@@ -200,8 +216,7 @@ pub fn create_signed_txn_with_association_account(
         payload,
         max_gas_amount,
         gas_unit_price,
-        expiration_timstamp_secs
-            .unwrap_or_else(|| get_current_timestamp() + DEFAULT_EXPIRATION_TIME),
+        expiration_timstamp_secs,
     );
     ChainNetwork::Dev
         .sign_with_association(raw_txn)
