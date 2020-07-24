@@ -11,7 +11,8 @@ fun main() {
 }
 }
 
+// check: OUT_OF_GAS
 // check: gas_used
 // check: 1000
-// check: OUT_OF_GAS
+
 

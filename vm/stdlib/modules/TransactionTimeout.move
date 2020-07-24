@@ -42,6 +42,11 @@ module TransactionTimeout {
 
   public fun is_valid_transaction_timestamp(txn_timestamp: u64): bool acquires TTL {
     let current_block_time = Timestamp::now_seconds();
+    // if now is genesis, just return true.
+    // TODO: need to figure out a better way to handle this.
+    if (current_block_time == 0) {
+      return txn_timestamp > 0
+    };
     let timeout = borrow_global<TTL>(CoreAddresses::GENESIS_ACCOUNT()).duration_seconds;
     let max_txn_time = current_block_time + timeout;
     current_block_time < txn_timestamp && txn_timestamp < max_txn_time

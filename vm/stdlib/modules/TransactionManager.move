@@ -13,9 +13,9 @@ module TransactionManager {
     use 0x1::TransactionFee;
     use 0x1::Timestamp;
 
-    //TODO change to constants after Move support constant.
-    fun TXN_PAYLOAD_TYPE_SCRIPT():u8{0u8}
-    fun TXN_PAYLOAD_TYPE_PACKAGE():u8{ 1u8}
+    const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 6;
+    const TXN_PAYLOAD_TYPE_SCRIPT: u8 =0;
+    const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
 
 
     // The prologue is invoked at the beginning of every transaction
@@ -39,10 +39,10 @@ module TransactionManager {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
 
         Account::txn_prologue<TokenType>(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
-        assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), 7);
-        if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE()){
+        assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), EPROLOGUE_TRANSACTION_EXPIRED);
+        if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
             PackageTxnManager::package_txn_prologue(account, txn_sender, txn_package_address, txn_script_or_package_hash);
-        }else if(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT()){
+        }else if(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT){
             //TODO verify script hash.
         };
     }
@@ -67,7 +67,7 @@ module TransactionManager {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
 
         Account::txn_epilogue<TokenType>(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining, state_cost_amount, cost_is_negative);
-        if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE()){
+        if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
            PackageTxnManager::package_txn_epilogue(account, txn_sender, txn_package_address, success);
         }
     }

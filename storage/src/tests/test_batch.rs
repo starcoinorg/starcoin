@@ -8,7 +8,7 @@ use crate::storage::{InnerStore, ValueCodec};
 use crate::DEFAULT_PREFIX_NAME;
 use crypto::HashValue;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::vm_error::StatusCode;
+use starcoin_types::vm_error::KeptVMStatus;
 use std::sync::Arc;
 
 #[test]
@@ -21,7 +21,7 @@ fn test_db_batch() {
         HashValue::zero(),
         vec![].as_slice(),
         0,
-        StatusCode::ABORTED,
+        KeptVMStatus::Executed,
     );
     let id = transaction_info1.id();
     write_batch
@@ -32,7 +32,7 @@ fn test_db_batch() {
         HashValue::zero(),
         vec![].as_slice(),
         1,
-        StatusCode::ABORTED,
+        KeptVMStatus::Executed,
     );
     let id2 = transaction_info2.id();
     write_batch
@@ -72,7 +72,7 @@ fn test_cache_batch() {
         HashValue::zero(),
         vec![].as_slice(),
         0,
-        StatusCode::ABORTED,
+        KeptVMStatus::Executed,
     );
     let id = transaction_info1.id();
     write_batch
@@ -83,7 +83,7 @@ fn test_cache_batch() {
         HashValue::zero(),
         vec![].as_slice(),
         1,
-        StatusCode::ABORTED,
+        KeptVMStatus::Executed,
     );
     let id2 = transaction_info2.id();
     write_batch

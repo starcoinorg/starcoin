@@ -11,13 +11,15 @@ use crate::{
     account_config::stc_type_tag,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
-    vm_status::{StatusCode, StatusType, VMStatus},
+    vm_status::{DiscardedVMStatus, KeptVMStatus},
+    vm_status::{StatusCode, VMStatus},
     write_set::WriteSet,
 };
 use anyhow::{format_err, Error, Result};
 use libra_types::proof::accumulator::InMemoryAccumulator;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 use starcoin_crypto::{
     ed25519::*,
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
@@ -33,21 +35,20 @@ pub mod authenticator {
     };
 }
 
-mod error;
-pub mod helpers;
-mod package;
-mod pending_transaction;
-mod transaction_argument;
-
 pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use libra_types::transaction::{Module, Script};
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
-use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
+
+mod error;
+pub mod helpers;
+mod package;
+mod pending_transaction;
+mod transaction_argument;
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
@@ -389,19 +390,20 @@ impl SignedUserTransaction {
 /// The status of executing a transaction. The VM decides whether or not we should `Keep` the
 /// transaction output or `Discard` it based upon the execution of the transaction. We wrap these
 /// decisions around a `VMStatus` that provides more detail on the final execution state of the VM.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum TransactionStatus {
     /// Discard the transaction output
-    Discard(VMStatus),
+    Discard(DiscardedVMStatus),
 
     /// Keep the transaction output
-    Keep(VMStatus),
+    Keep(KeptVMStatus),
 }
 
 impl TransactionStatus {
-    pub fn vm_status(&self) -> &VMStatus {
+    pub fn status(&self) -> Result<KeptVMStatus, StatusCode> {
         match self {
-            TransactionStatus::Discard(vm_status) | TransactionStatus::Keep(vm_status) => vm_status,
+            TransactionStatus::Keep(status) => Ok(status.clone()),
+            TransactionStatus::Discard(code) => Err(*code),
         }
     }
 
@@ -415,27 +417,9 @@ impl TransactionStatus {
 
 impl From<VMStatus> for TransactionStatus {
     fn from(vm_status: VMStatus) -> Self {
-        let should_discard = match vm_status.status_type() {
-            // Any unknown error should be discarded
-            StatusType::Unknown => true,
-            // Any error that is a validation status (i.e. an error arising from the prologue)
-            // causes the transaction to not be included.
-            StatusType::Validation => true,
-            // If the VM encountered an invalid internal state, we should discard the transaction.
-            StatusType::InvariantViolation => true,
-            // A transaction that publishes code that cannot be verified will be charged.
-            StatusType::Verification => false,
-            // Even if we are unable to decode the transaction, there should be a charge made to
-            // that user's account for the gas fees related to decoding, running the prologue etc.
-            StatusType::Deserialization => false,
-            // Any error encountered during the execution of the transaction will charge gas.
-            StatusType::Execution => false,
-        };
-
-        if should_discard {
-            TransactionStatus::Discard(vm_status)
-        } else {
-            TransactionStatus::Keep(vm_status)
+        match vm_status.keep_or_discard() {
+            Ok(recorded) => TransactionStatus::Keep(recorded),
+            Err(code) => TransactionStatus::Discard(code),
         }
     }
 }
@@ -523,10 +507,10 @@ pub struct TransactionInfo {
     /// The amount of gas used.
     gas_used: u64,
 
-    /// The major status. This will provide the general error class. Note that this is not
-    /// particularly high fidelity in the presence of sub statuses but, the major status does
-    /// determine whether or not the transaction is applied to the global state or not.
-    major_status: StatusCode,
+    /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
+    /// failures and Move abort's receive more detailed information. But other errors are generally
+    /// categorized with no status code or other information
+    status: KeptVMStatus,
 }
 
 impl TransactionInfo {
@@ -537,7 +521,7 @@ impl TransactionInfo {
         state_root_hash: HashValue,
         events: &[ContractEvent],
         gas_used: u64,
-        major_status: StatusCode,
+        status: KeptVMStatus,
     ) -> TransactionInfo {
         let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
         let events_accumulator_hash =
@@ -548,7 +532,7 @@ impl TransactionInfo {
             state_root_hash,
             event_root_hash: events_accumulator_hash,
             gas_used,
-            major_status,
+            status,
         }
     }
 
@@ -578,8 +562,8 @@ impl TransactionInfo {
         self.gas_used
     }
 
-    pub fn major_status(&self) -> StatusCode {
-        self.major_status
+    pub fn status(&self) -> &KeptVMStatus {
+        &self.status
     }
 }
 

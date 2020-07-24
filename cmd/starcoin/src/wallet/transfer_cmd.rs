@@ -8,11 +8,13 @@ use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
+use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::parser::parse_type_tag;
 use structopt::StructOpt;
@@ -135,6 +137,7 @@ impl CommandAction for TransferCommand {
             opt.gas_price,
             opt.max_gas_amount,
             token_type,
+            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
         let succ = client.submit_transaction(txn.clone())?;

@@ -18,7 +18,6 @@ use starcoin_types::{
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::stc_type_tag,
@@ -167,6 +166,7 @@ impl Account {
         sequence_number: u64,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
     ) -> SignedUserTransaction {
         self.create_signed_txn_impl(
             *self.address(),
@@ -174,64 +174,7 @@ impl Account {
             sequence_number,
             max_gas_amount,
             gas_unit_price,
-        )
-    }
-
-    pub fn create_raw_txn_with_args(
-        address: AccountAddress,
-        program: Vec<u8>,
-        ty_args: Vec<TypeTag>,
-        args: Vec<TransactionArgument>,
-        sequence_number: u64,
-        max_gas_amount: u64,
-        gas_unit_price: u64,
-    ) -> RawUserTransaction {
-        Self::create_raw_txn_impl(
-            address,
-            TransactionPayload::Script(Script::new(program, ty_args, args)),
-            sequence_number,
-            max_gas_amount,
-            gas_unit_price,
-        )
-    }
-
-    /// Returns a [`SignedUserTransaction`] with the arguments defined in `args` and a custom sender.
-    ///
-    /// The transaction is signed with the key corresponding to this account, not the custom sender.
-    pub fn create_signed_txn_with_args_and_sender(
-        &self,
-        sender: AccountAddress,
-        program: Vec<u8>,
-        ty_args: Vec<TypeTag>,
-        args: Vec<TransactionArgument>,
-        sequence_number: u64,
-        max_gas_amount: u64,
-        gas_unit_price: u64,
-    ) -> SignedUserTransaction {
-        self.create_signed_txn_impl(
-            sender,
-            TransactionPayload::Script(Script::new(program, ty_args, args)),
-            sequence_number,
-            max_gas_amount,
-            gas_unit_price,
-        )
-    }
-
-    pub fn create_raw_txn_with_args_and_sender(
-        sender: AccountAddress,
-        program: Vec<u8>,
-        ty_args: Vec<TypeTag>,
-        args: Vec<TransactionArgument>,
-        sequence_number: u64,
-        max_gas_amount: u64,
-        gas_unit_price: u64,
-    ) -> RawUserTransaction {
-        Self::create_raw_txn_impl(
-            sender,
-            TransactionPayload::Script(Script::new(program, ty_args, args)),
-            sequence_number,
-            max_gas_amount,
-            gas_unit_price,
+            expiration_timestamp_secs,
         )
     }
 
@@ -245,6 +188,7 @@ impl Account {
         sequence_number: u64,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
     ) -> SignedUserTransaction {
         Self::create_raw_txn_impl(
             sender,
@@ -252,30 +196,21 @@ impl Account {
             sequence_number,
             max_gas_amount,
             gas_unit_price,
+            expiration_timestamp_secs,
         )
         .sign(&self.privkey, self.pubkey.clone())
         .unwrap()
         .into_inner()
     }
 
-    /// Create a transaction containing `script` signed by `sender` with default values for gas
-    /// cost, gas price, expiration time, and currency type.
-    pub fn signed_script_txn(&self, script: Script, sequence_number: u64) -> SignedUserTransaction {
-        self.create_signed_txn_impl(
-            *self.address(),
-            TransactionPayload::Script(script),
-            sequence_number,
-            DEFAULT_MAX_GAS_AMOUNT,
-            0, // gas price
-        )
-    }
-
+    // get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
     pub fn create_raw_txn_impl(
         sender: AccountAddress,
         program: TransactionPayload,
         sequence_number: u64,
         max_gas_amount: u64,
         gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
     ) -> RawUserTransaction {
         RawUserTransaction::new(
             sender,
@@ -283,7 +218,7 @@ impl Account {
             program,
             max_gas_amount,
             gas_unit_price,
-            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            expiration_timestamp_secs,
         )
     }
 
@@ -700,28 +635,6 @@ impl KeyRotationCapability {
     }
 }
 
-/// Returns a transaction to create a new account with the given arguments.
-pub fn create_account_txn(
-    sender: &Account,
-    new_account: &Account,
-    seq_num: u64,
-    initial_amount: u64,
-) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(*new_account.address()));
-    args.push(TransactionArgument::U8Vector(new_account.auth_key_prefix()));
-    args.push(TransactionArgument::U64(initial_amount));
-
-    sender.create_signed_txn_with_args(
-        StdlibScript::CreateAccount.compiled_bytes().into_vec(),
-        vec![],
-        args,
-        seq_num,
-        DEFAULT_MAX_GAS_AMOUNT,
-        1,
-    )
-}
-
 /// Returns a transaction to transfer coin from one account to another (possibly new) one, with the
 /// given arguments.
 pub fn peer_to_peer_txn(
@@ -729,6 +642,7 @@ pub fn peer_to_peer_txn(
     receiver: &Account,
     seq_num: u64,
     transfer_amount: u128,
+    expiration_timestamp_secs: u64,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*receiver.address()));
@@ -743,29 +657,7 @@ pub fn peer_to_peer_txn(
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
         1,                      // this is a default for gas
-    )
-}
-
-/// Returns a transaction to mint new funds with the given arguments.
-pub fn mint_txn(
-    sender: &Account,
-    receiver: &Account,
-    seq_num: u64,
-    transfer_amount: u64,
-) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(*receiver.address()));
-    args.push(TransactionArgument::U8Vector(receiver.auth_key_prefix()));
-    args.push(TransactionArgument::U64(transfer_amount));
-
-    // get a SignedTransaction
-    sender.create_signed_txn_with_args(
-        StdlibScript::Mint.compiled_bytes().into_vec(),
-        vec![stc_type_tag()],
-        args,
-        seq_num,
-        DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
-        1,                      // this is a default for gas
+        expiration_timestamp_secs,
     )
 }
 
@@ -774,6 +666,7 @@ pub fn create_account_txn_sent_as_association(
     new_account: &Account,
     seq_num: u64,
     initial_amount: u128,
+    expiration_timstamp_secs: u64,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*new_account.address()));
@@ -789,6 +682,6 @@ pub fn create_account_txn_sent_as_association(
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
-        None,
+        expiration_timstamp_secs,
     )
 }

@@ -6,9 +6,11 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
@@ -86,6 +88,7 @@ impl CommandAction for AcceptTokenCommand {
             opt.gas_price,
             opt.max_gas_amount,
             opt.token_type.clone(),
+            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
         );
 
         let signed_txn = client.wallet_sign_txn(accept_token_txn)?;

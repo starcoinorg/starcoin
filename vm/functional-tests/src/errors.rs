@@ -2,15 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub use anyhow::{anyhow, bail, format_err, Error, Result};
-use starcoin_vm_types::{transaction::TransactionOutput, vm_status::VMStatus};
+use starcoin_vm_types::transaction::TransactionOutput;
+use starcoin_vm_types::vm_status::VMStatus;
 use thiserror::Error;
 
 /// Defines all errors in this crate.
 #[derive(Clone, Debug, Error)]
 pub enum ErrorKind {
-    #[error("an error occurred when executing the transaction, vm status {:?}", .0.status())]
-    VMExecutionFailure(TransactionOutput),
-    #[error("the transaction was discarded")]
+    #[error(
+    "an error occurred when executing the transaction, vm status {:?}, txn status {:?}",
+    .0,
+    .1.status(),
+    )]
+    VMExecutionFailure(VMStatus, TransactionOutput),
+    #[error("the transaction was discarded: {0:?}")]
     DiscardedTransaction(TransactionOutput),
     #[error("the checker has failed to match the directives against the output")]
     CheckerFailure,

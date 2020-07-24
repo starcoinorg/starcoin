@@ -52,7 +52,7 @@ where
         compact_block: CompactBlock,
         peer_id: PeerId,
     ) -> Result<Block> {
-        let txns_pool_vec = txpool.get_pending_txns(None);
+        let txns_pool_vec = txpool.get_pending_txns(None, None);
         let txns_pool_map: HashMap<ShortId, &SignedUserTransaction> = {
             let pool_id_txn_iter = txns_pool_vec
                 .iter()
@@ -124,7 +124,7 @@ where
     fn block_into_compact(&self, block: Block) -> CompactBlock {
         let mut prefilled_txn = Vec::new();
         let txns_pool_map: HashMap<HashValue, SignedUserTransaction> = {
-            let pool_id_txn = self.txpool.get_pending_txns(None);
+            let pool_id_txn = self.txpool.get_pending_txns(None, None);
             HashMap::from_iter(
                 pool_id_txn
                     .iter()

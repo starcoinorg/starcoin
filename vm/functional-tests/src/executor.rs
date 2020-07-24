@@ -160,7 +160,7 @@ impl FakeExecutor {
     pub fn execute_block(
         &self,
         txn_block: Vec<SignedUserTransaction>,
-    ) -> Result<Vec<TransactionOutput>> {
+    ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         self.execute_transaction_block(
             txn_block
                 .iter()
@@ -172,12 +172,12 @@ impl FakeExecutor {
     pub fn execute_transaction_block(
         &self,
         txn_block: Vec<Transaction>,
-    ) -> Result<Vec<TransactionOutput>> {
+    ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         let mut vm = StarcoinVM::new();
         vm.execute_transactions(&self.data_store, txn_block)
     }
 
-    pub fn execute_transaction(&self, txn: SignedUserTransaction) -> TransactionOutput {
+    pub fn execute_transaction(&self, txn: SignedUserTransaction) -> (VMStatus, TransactionOutput) {
         let txn_block = vec![txn];
         let mut outputs = self
             .execute_block(txn_block)
@@ -205,7 +205,7 @@ impl FakeExecutor {
     pub fn new_block(&mut self) {
         self.block_time += 1;
         let new_block = BlockMetadata::new(HashValue::zero(), 0, association_address(), None, 0);
-        let output = self
+        let (_vm_status, output) = self
             .execute_transaction_block(vec![Transaction::BlockMetadata(new_block)])
             .expect("Executing block prologue should succeed")
             .pop()
