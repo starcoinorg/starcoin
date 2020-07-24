@@ -62,6 +62,7 @@ struct TransactionGenerator {
     block_sender: Option<mpsc::SyncSender<Vec<Transaction>>>,
 
     sequence: u64,
+    time: MockTimeService,
 }
 
 impl TransactionGenerator {
@@ -86,6 +87,7 @@ impl TransactionGenerator {
             rng,
             block_sender: Some(block_sender),
             sequence: 0,
+            time: MockTimeService::new(),
         }
     }
 
@@ -97,8 +99,20 @@ impl TransactionGenerator {
     /// Generates transactions that allocate `init_account_balance` to every account.
     fn gen_mint_transactions(&mut self, init_account_balance: u64, block_size: usize) {
         for (_i, block) in self.accounts.chunks(block_size).enumerate() {
-            let mut transactions = Vec::with_capacity(block_size);
-            for (_j, account) in block.iter().enumerate() {
+            self.time.increment();
+
+            let mut transactions = Vec::with_capacity(block_size + 1);
+            let minter_account = AccountData::random();
+            let block_meta = BlockMetadata::new(
+                HashValue::random(),
+                self.time.now(),
+                minter_account.address,
+                Some(minter_account.auth_key_prefix()),
+                0,
+            );
+            transactions.push(Transaction::BlockMetadata(block_meta));
+
+            for (j, account) in block.iter().enumerate() {
                 let txn = create_transaction(
                     self.sequence,
                     encode_create_account_script(
@@ -106,6 +120,7 @@ impl TransactionGenerator {
                         account.auth_key_prefix(),
                         init_account_balance,
                     ),
+                    self.time.now() + j as u64 + 1,
                 );
                 transactions.push(txn);
                 self.sequence += 1;
@@ -122,8 +137,19 @@ impl TransactionGenerator {
     /// Generates transactions for random pairs of accounts.
     fn gen_transfer_transactions(&mut self, block_size: usize, num_blocks: usize) {
         for _i in 0..num_blocks {
-            let mut transactions = Vec::with_capacity(block_size);
-            for _j in 0..block_size {
+            self.time.increment();
+            let mut transactions = Vec::with_capacity(block_size + 1);
+            let minter_account = AccountData::random();
+            let block_meta = BlockMetadata::new(
+                HashValue::random(),
+                self.time.now(),
+                minter_account.address,
+                Some(minter_account.auth_key_prefix()),
+                0,
+            );
+            transactions.push(Transaction::BlockMetadata(block_meta));
+
+            for j in 0..block_size {
                 let indices = rand::seq::index::sample(&mut self.rng, self.accounts.len(), 2);
                 //                let sender_idx = indices.index(0);
                 let receiver_idx = indices.index(1);
@@ -137,6 +163,7 @@ impl TransactionGenerator {
                         receiver.auth_key_prefix(),
                         1, /* amount */
                     ),
+                    self.time.now() + j as u64 + 1,
                 );
                 transactions.push(txn);
 
@@ -160,7 +187,6 @@ impl TransactionGenerator {
 struct TxnExecutor<'test> {
     chain_state: &'test dyn ChainState,
     block_receiver: mpsc::Receiver<Vec<Transaction>>,
-    time: MockTimeService,
 }
 
 impl<'test> TxnExecutor<'test> {
@@ -171,28 +197,13 @@ impl<'test> TxnExecutor<'test> {
         Self {
             chain_state,
             block_receiver,
-            time: MockTimeService::new(),
         }
     }
 
     fn run(&mut self) {
         let mut version = 0;
-        let miner_account = AccountData::random();
-        while let Ok(mut transactions) = self.block_receiver.recv() {
+        while let Ok(transactions) = self.block_receiver.recv() {
             let execute_start = std::time::Instant::now();
-            {
-                self.time.increment();
-                let block_meta = BlockMetadata::new(
-                    HashValue::random(),
-                    self.time.now() * 1_000_000,
-                    AccountAddress::random(),
-                    Some(miner_account.auth_key_prefix()),
-                    0,
-                );
-
-                transactions.insert(0, Transaction::BlockMetadata(block_meta));
-            };
-
             let num_txns = transactions.len();
             version += num_txns as u64;
 
@@ -260,13 +271,17 @@ pub fn run_benchmark(
     exe_thread.join().unwrap();
 }
 
-fn create_transaction(sequence_number: u64, program: Script) -> Transaction {
+fn create_transaction(
+    sequence_number: u64,
+    program: Script,
+    expiration_timestamp_secs: u64,
+) -> Transaction {
     let signed_txn = executor::create_signed_txn_with_association_account(
         TransactionPayload::Script(program),
         sequence_number,
         400_000,
         1,
-        None,
+        expiration_timestamp_secs,
     );
     Transaction::UserTransaction(signed_txn)
 }

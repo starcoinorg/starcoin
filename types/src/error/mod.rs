@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::vm_status::VMStatus;
+use starcoin_vm_types::vm_status::DiscardedVMStatus;
 use std::error::Error;
 use thiserror::Error;
 
@@ -10,8 +10,8 @@ pub type ExecutorResult<T> = anyhow::Result<T, BlockExecutorError>;
 
 #[derive(Error, Debug)]
 pub enum BlockExecutorError {
-    #[error("block transaction execute discard, vmstatus:{0}, transaction_id: {1}")]
-    BlockTransactionDiscard(VMStatus, HashValue),
+    #[error("block transaction execute discard, status:{0:?}, transaction_id: {1}")]
+    BlockTransactionDiscard(DiscardedVMStatus, HashValue),
     #[error("block transaction accumulator append error")]
     BlockAccumulatorAppendErr,
     #[error("block accumulator get proof error")]

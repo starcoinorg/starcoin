@@ -15,6 +15,7 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::on_chain_config::{
     Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
 };
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, marker::PhantomData, sync::Arc};
@@ -144,6 +145,7 @@ where
             self.config.miner.block_gas_limit,
             author,
             auth_key_prefix,
+            get_current_timestamp(),
             uncles,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;

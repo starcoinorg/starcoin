@@ -30,6 +30,7 @@ use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::on_chain_config::{VMPublishingOption, INITIAL_GAS_SCHEDULE};
 use starcoin_vm_types::transaction::{Package, Script};
+use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
     errors::{self, IndexKind, Location},
@@ -248,7 +249,7 @@ impl StarcoinVM {
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
         package: &Package,
-    ) -> Result<TransactionOutput, VMStatus> {
+    ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         let mut session = self.move_vm.new_session(remote_cache);
 
         {
@@ -353,7 +354,7 @@ impl StarcoinVM {
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
         script: &Script,
-    ) -> Result<TransactionOutput, VMStatus> {
+    ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         let mut session = self.move_vm.new_session(remote_cache);
 
         // Run the validation logic
@@ -535,28 +536,27 @@ impl StarcoinVM {
                 &mut cost_strategy,
             )
             .map_err(|err| err.into_vm_status())?;
-
-        get_transaction_output(
+        Ok(get_transaction_output(
             &mut (),
             session,
             &cost_strategy,
             &txn_data,
-            VMStatus::Executed,
-        )
+            KeptVMStatus::Executed,
+        )?)
     }
 
     fn execute_user_transaction(
         &mut self,
         txn: SignedUserTransaction,
         remote_cache: &mut StateViewCache<'_>,
-    ) -> TransactionOutput {
+    ) -> (VMStatus, TransactionOutput) {
         let gas_schedule = match self.get_gas_schedule() {
             Ok(gas_schedule) => gas_schedule,
             Err(e) => {
                 if remote_cache.is_genesis() {
                     &INITIAL_GAS_SCHEDULE
                 } else {
-                    return discard_error_output(e);
+                    return discard_error_vm_status(e);
                 }
             }
         };
@@ -588,11 +588,11 @@ impl StarcoinVM {
                 };
 
                 match result {
-                    Ok(output) => output,
+                    Ok(status_and_output) => status_and_output,
                     Err(err) => {
                         let txn_status = TransactionStatus::from(err.clone());
                         if txn_status.is_discarded() {
-                            discard_error_output(err)
+                            discard_error_vm_status(err)
                         } else {
                             self.failed_transaction_cleanup(
                                 err,
@@ -605,7 +605,7 @@ impl StarcoinVM {
                     }
                 }
             }
-            Err(e) => discard_error_output(e),
+            Err(e) => discard_error_vm_status(e),
         }
     }
 
@@ -616,7 +616,7 @@ impl StarcoinVM {
         state_view: &dyn StateView,
         transactions: Vec<Transaction>,
         block_gas_limit: Option<u64>,
-    ) -> Result<Vec<TransactionOutput>> {
+    ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         let mut data_cache = StateViewCache::new(state_view);
 
         let check_gas = block_gas_limit.is_some();
@@ -631,7 +631,8 @@ impl StarcoinVM {
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
-                        let output = self.execute_user_transaction(transaction, &mut data_cache);
+                        let (status, output) =
+                            self.execute_user_transaction(transaction, &mut data_cache);
                         // only need to check for user transactions.
                         if check_gas {
                             match gas_left.checked_sub(output.gas_used()) {
@@ -650,21 +651,29 @@ impl StarcoinVM {
                             }
                             data_cache.push_write_set(output.write_set())
                         }
-                        result.push(output);
+                        result.push((status, output));
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
-                    let output = self
-                        .process_block_metadata(&mut data_cache, block_metadata)
-                        .unwrap_or_else(discard_error_output);
-                    debug_assert!(
-                        output.gas_used() == 0,
+                    let (status, output) =
+                        match self.process_block_metadata(&mut data_cache, block_metadata) {
+                            Ok(output) => (VMStatus::Executed, output),
+                            Err(vm_status) => discard_error_vm_status(vm_status),
+                        };
+                    debug_assert_eq!(
+                        output.gas_used(),
+                        0,
                         "Block metadata transaction gas_used must be zero."
                     );
-                    if let TransactionStatus::Keep(_) = output.status() {
+                    if let TransactionStatus::Keep(status) = output.status() {
+                        debug_assert_eq!(
+                            status,
+                            &KeptVMStatus::Executed,
+                            "Block metadata transaction keep status must been Executed."
+                        );
                         data_cache.push_write_set(output.write_set())
                     }
-                    result.push(output);
+                    result.push((status, output));
                 }
             }
         }
@@ -675,7 +684,7 @@ impl StarcoinVM {
         &mut self,
         state_view: &dyn StateView,
         transactions: Vec<Transaction>,
-    ) -> Result<Vec<TransactionOutput>> {
+    ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         self.execute_block_transactions(state_view, transactions, None)
     }
 
@@ -685,39 +694,46 @@ impl StarcoinVM {
         gas_schedule: &CostTable,
         gas_left: GasUnits<GasCarrier>,
         txn_data: &TransactionMetadata,
-    ) -> Result<TransactionOutput, VMStatus> {
+    ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         let mut cost_strategy = CostStrategy::system(gas_schedule, gas_left);
         self.run_epilogue(&mut session, &mut cost_strategy, txn_data, true)?;
 
-        Ok(get_transaction_output(
-            &mut (),
-            session,
-            &cost_strategy,
-            txn_data,
+        Ok((
             VMStatus::Executed,
-        )?)
+            get_transaction_output(
+                &mut (),
+                session,
+                &cost_strategy,
+                txn_data,
+                KeptVMStatus::Executed,
+            )?,
+        ))
     }
 
-    /// Generates a transaction output for a transaction that encountered errors during the
-    /// execution process. This is public for now only for tests.
-    pub fn failed_transaction_cleanup(
+    fn failed_transaction_cleanup(
         &self,
         error_code: VMStatus,
         gas_schedule: &CostTable,
         gas_left: GasUnits<GasCarrier>,
         txn_data: &TransactionMetadata,
-        remote_cache: &mut StateViewCache<'_>,
-    ) -> TransactionOutput {
+        remote_cache: &StateViewCache<'_>,
+    ) -> (VMStatus, TransactionOutput) {
         let mut cost_strategy = CostStrategy::system(gas_schedule, gas_left);
         let mut session = self.move_vm.new_session(remote_cache);
-        match TransactionStatus::from(error_code) {
-            TransactionStatus::Keep(status) => self
-                .run_epilogue(&mut session, &mut cost_strategy, txn_data, false)
-                .and_then(|_| {
+        match TransactionStatus::from(error_code.clone()) {
+            TransactionStatus::Keep(status) => {
+                if let Err(e) = self.run_epilogue(&mut session, &mut cost_strategy, txn_data, false)
+                {
+                    return discard_error_vm_status(e);
+                }
+                let txn_output =
                     get_transaction_output(&mut (), session, &cost_strategy, txn_data, status)
-                })
-                .unwrap_or_else(discard_error_output),
-            TransactionStatus::Discard(status) => discard_error_output(status),
+                        .unwrap_or_else(|e| discard_error_vm_status(e).1);
+                (error_code, txn_output)
+            }
+            TransactionStatus::Discard(status) => {
+                (VMStatus::Error(status), discard_error_output(status))
+            }
         }
     }
 }
@@ -771,7 +787,19 @@ pub(crate) fn charge_global_write_gas_usage<R: RemoteCache>(
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())
 }
 
-pub(crate) fn discard_error_output(err: VMStatus) -> TransactionOutput {
+pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, TransactionOutput) {
+    let vm_status = err.clone();
+    let error_code = match err.keep_or_discard() {
+        Ok(_) => {
+            debug_assert!(false, "discarding non-discardable error: {:?}", vm_status);
+            vm_status.status_code()
+        }
+        Err(code) => code,
+    };
+    (vm_status, discard_error_output(error_code))
+}
+
+pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
     info!("discard error output: {:?}", err);
     // Since this transaction will be discarded, no writeset will be included.
     TransactionOutput::new(
@@ -853,7 +881,7 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: RemoteCache>(
     session: Session<R>,
     cost_strategy: &CostStrategy,
     txn_data: &TransactionMetadata,
-    status: VMStatus,
+    status: KeptVMStatus,
 ) -> Result<TransactionOutput, VMStatus> {
     let gas_used: u64 = txn_data
         .max_gas_amount()

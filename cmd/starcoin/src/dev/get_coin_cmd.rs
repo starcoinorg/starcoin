@@ -7,9 +7,10 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
+use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
+use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_types::{account_config, transaction::authenticator::AuthenticationKey};
 use structopt::StructOpt;
 use tokio::time::Duration;
@@ -78,6 +79,7 @@ impl CommandAction for GetCoinCommand {
             amount,
             1,
             DEFAULT_MAX_GAS_AMOUNT,
+            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
         );
         client.wallet_unlock(
             association_address,

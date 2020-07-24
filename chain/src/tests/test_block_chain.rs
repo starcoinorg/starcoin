@@ -7,6 +7,7 @@ use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, Private
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis as StarcoinGenesis;
+use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
@@ -50,7 +51,6 @@ async fn gen_master_chain(
     if times > 0 {
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
-            println!("startup_info: {:?}", startup_info);
             let block_chain = BlockChain::<DevConsensus>::new(
                 node_config.clone(),
                 startup_info.master,
@@ -158,7 +158,13 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let account_address = account_address::from_public_key(&public_key);
     let signed_txn_t2 = {
         let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
-        let txn = executor::build_transfer_from_association(account_address, auth_prefix, 0, 10000);
+        let txn = executor::build_transfer_from_association(
+            account_address,
+            auth_prefix,
+            0,
+            10000,
+            get_current_timestamp() + 40000,
+        );
         txn.as_signed_user_txn()?.clone()
     };
     let tnx_hash = signed_txn_t2.crypto_hash();

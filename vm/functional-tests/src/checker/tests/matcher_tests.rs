@@ -81,7 +81,6 @@ fn match_mixed_1() {
 #[test]
 fn match_mixed_2() {
     let log = log![err!("abc de"), err!("foo 3"), err!("5 bar 6"), err!("7")];
-    println!("{:?}", log);
     let directives = dirs![
         "// not: 1",
         "// not: 2",

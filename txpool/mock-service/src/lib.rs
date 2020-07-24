@@ -51,7 +51,11 @@ impl TxPoolSyncService for MockTxPoolService {
     }
 
     /// Get all pending txns which is ok to be packaged to mining.
-    fn get_pending_txns(&self, max_len: Option<u64>) -> Vec<SignedUserTransaction> {
+    fn get_pending_txns(
+        &self,
+        max_len: Option<u64>,
+        _now: Option<u64>,
+    ) -> Vec<SignedUserTransaction> {
         match max_len {
             Some(max) => self
                 .pool
@@ -95,7 +99,7 @@ mod tests {
             .pop()
             .unwrap()
             .unwrap();
-        let txns = pool.get_pending_txns(None);
+        let txns = pool.get_pending_txns(None, None);
         assert_eq!(1, txns.len())
     }
 }

@@ -7202,6 +7202,7 @@ dependencies = [
  "starcoin-network",
  "starcoin-network-rpc",
  "starcoin-state-tree",
+ "starcoin-statedb",
  "starcoin-storage",
  "starcoin-sync-api",
  "starcoin-traits",

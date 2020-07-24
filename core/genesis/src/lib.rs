@@ -18,11 +18,12 @@ use starcoin_storage::{Storage, Store};
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::{block::Block, transaction::Transaction, vm_error::StatusCode};
+use starcoin_types::{block::Block, transaction::Transaction};
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
+use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
@@ -160,10 +161,13 @@ impl Genesis {
             .expect("Execute output must exist.");
         let (write_set, events, gas_used, _, status) = output.into_inner();
         assert_eq!(gas_used, 0, "Genesis txn output's gas_used must be zero");
+        let keep_status = status
+            .status()
+            .map_err(|e| format_err!("Genesis txn is discard by: {:?}", e))?;
         ensure!(
-            status.vm_status().status_code() == StatusCode::EXECUTED,
+            keep_status == KeptVMStatus::Executed,
             "Genesis txn execute fail for: {:?}",
-            status
+            keep_status
         );
         chain_state.apply_write_set(write_set)?;
         let state_root = chain_state.commit()?;
@@ -173,7 +177,7 @@ impl Genesis {
             state_root,
             events.as_slice(),
             gas_used,
-            status.vm_status().status_code(),
+            keep_status,
         ))
     }
 
