@@ -451,13 +451,14 @@ where
             );
             return Ok(ConnectBlockResult::VerifyConsensusFailed);
         }
-
         // TODO 最小值是否需要
-        if let Err(e) = C::verify(self, header) {
-            error!("verify header failed : {:?}", e);
-            return Ok(ConnectBlockResult::VerifyConsensusFailed);
+        // TODO: Skip C::verify in uncle block since the difficulty recalculate now work in uncle block
+        if verify_head_id {
+            if let Err(e) = C::verify(self, header) {
+                error!("verify header:{:?} failed: {:?}", header.id(), e,);
+                return Ok(ConnectBlockResult::VerifyConsensusFailed);
+            }
         }
-
         Ok(ConnectBlockResult::SUCCESS)
     }
 

@@ -3,7 +3,7 @@
 
 use crate::difficulty::{difficult_to_target, target_to_difficulty};
 use crate::{difficulty, set_header_nonce};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian};
 use crypto::hash::PlainCryptoHash;
@@ -41,7 +41,11 @@ impl Consensus for ArgonConsensus {
     fn verify(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
         let difficulty = ArgonConsensus::calculate_next_difficulty(reader)?;
         if header.difficulty() != difficulty {
-            return Err(anyhow::Error::msg("Invalid difficulty"));
+            return Err(anyhow!(
+                "Difficulty mismatch: {:?}, {:?}",
+                header.difficulty(),
+                difficulty
+            ));
         }
         let nonce = header.nonce;
         debug!(

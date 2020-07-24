@@ -276,6 +276,7 @@ where
                         .with_label_values(&[LABEL_STATE])
                         .inc();
                     if flag {
+                        download_address.do_send(SyncTaskType::STATE);
                         syncing.store(false, Ordering::Relaxed);
                     }
                 }
@@ -302,7 +303,6 @@ where
                 .await?
                 .ok_or_else(|| format_err!("Master head is none."))?
                 .number();
-
             if let Some(ancestor_header) = downloader
                 .find_ancestor_header(
                     best_peer.get_peer_id(),
@@ -379,7 +379,7 @@ where
             //     )
             //     .await;
             } else {
-                return Err(format_err!("find_ancestor return none."));
+                return Ok(true);
             }
         } else {
             Delay::new(Duration::from_secs(5)).await;
@@ -524,6 +524,7 @@ where
             .get_peer(&peer_id.clone().into())
             .await?
             .ok_or_else(|| format_err!("get peer {:?} not exist.", peer_id))?;
+
         if peer_info.latest_header.number() <= block_number {
             return Ok(ancestor_header);
         }
