@@ -65,7 +65,7 @@ if [ $SKIP_PROMPTS -eq 0 ]; then
 fi
 
 # Set the flags necessary for coverage output
-export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Coverflow-checks=off -Zno-landing-pads -Clink-arg=-Wl,--no-keep-memory,-fuse-ld=gold,--no-map-whole-files"
+export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Coverflow-checks=off"
 export RUSTC_BOOTSTRAP=1
 export CARGO_INCREMENTAL=0
 
