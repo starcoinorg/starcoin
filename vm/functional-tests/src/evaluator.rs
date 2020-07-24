@@ -20,7 +20,6 @@ use starcoin_types::{
         TransactionStatus,
     },
 };
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},
     errors::{Location, VMError},
@@ -296,9 +295,7 @@ fn get_transaction_parameters<'a>(
             .unwrap_or_else(|| account_resource.sequence_number()),
         max_gas_amount,
         gas_unit_price,
-        expiration_timestamp_secs: config
-            .expiration_time
-            .unwrap_or_else(|| get_current_timestamp() + 40000),
+        expiration_timestamp_secs: config.expiration_time.unwrap_or(40000),
     }
 }
 

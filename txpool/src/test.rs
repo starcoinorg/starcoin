@@ -68,7 +68,7 @@ async fn test_txn_expire() -> Result<()> {
     let pendings = txpool_service.get_pending_txns(None);
     assert_eq!(pendings.len(), 1);
 
-    sleep(std::time::Duration::from_secs(1));
+    sleep(std::time::Duration::from_secs(2));
 
     let pendings = txpool_service.get_pending_txns(None);
     assert_eq!(pendings.len(), 0);
