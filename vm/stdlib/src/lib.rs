@@ -4,6 +4,7 @@
 #![forbid(unsafe_code)]
 
 use include_dir::{include_dir, Dir};
+use log::LevelFilter;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
@@ -33,6 +34,11 @@ pub const STAGED_OUTPUT_PATH: &str = "staged";
 pub const STAGED_STDLIB_PATH: &str = "stdlib";
 /// The extension for staged files
 pub const STAGED_EXTENSION: &str = "mv";
+
+/// The output path for stdlib documentation.
+pub const STD_LIB_DOC_DIR: &str = "modules/doc";
+/// The output path for transaction script documentation.
+pub const TRANSACTION_SCRIPTS_DOC_DIR: &str = "transaction_scripts/doc";
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
@@ -139,6 +145,20 @@ pub fn stdlib_files() -> Vec<String> {
     filter_move_files(dirfiles).collect::<Vec<_>>()
 }
 
+pub fn transaction_script_files() -> Vec<String> {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push(TRANSACTION_SCRIPTS);
+    let dirfiles = datatest_stable::utils::iterate_directory(&path);
+    filter_move_files(dirfiles).collect::<Vec<_>>()
+}
+
+pub fn init_script_files() -> Vec<String> {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push(INIT_SCRIPTS);
+    let dirfiles = datatest_stable::utils::iterate_directory(&path);
+    filter_move_files(dirfiles).collect::<Vec<_>>()
+}
+
 pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
     let (_, compiled_units) =
         move_compile(&stdlib_files(), &[], Some(Address::LIBRA_CORE)).unwrap();
@@ -186,4 +206,46 @@ pub fn save_binary(path: &Path, binary: &[u8]) {
     }
 
     File::create(path).unwrap().write_all(binary).unwrap();
+}
+
+pub fn build_stdlib_doc() {
+    build_doc(STD_LIB_DOC_DIR, "", stdlib_files().as_slice(), "")
+}
+
+pub fn build_transaction_script_doc() {
+    for txn_script_file in transaction_script_files() {
+        build_doc(
+            TRANSACTION_SCRIPTS_DOC_DIR,
+            STD_LIB_DOC_DIR,
+            &[txn_script_file],
+            STD_LIB_DIR,
+        )
+    }
+    for init_script_file in init_script_files() {
+        build_doc(
+            TRANSACTION_SCRIPTS_DOC_DIR,
+            STD_LIB_DOC_DIR,
+            &[init_script_file],
+            STD_LIB_DIR,
+        )
+    }
+}
+
+fn build_doc(output_path: &str, doc_path: &str, sources: &[String], dep_path: &str) {
+    let mut options = move_prover::cli::Options::default();
+    options.move_sources = sources.to_vec();
+    if !dep_path.is_empty() {
+        options.move_deps = vec![dep_path.to_string()]
+    }
+    options.verbosity_level = LevelFilter::Warn;
+    options.run_docgen = true;
+    options.docgen.include_impl = true;
+    options.docgen.include_private_fun = true;
+    options.docgen.specs_inlined = false;
+    if !doc_path.is_empty() {
+        options.docgen.doc_path = vec![doc_path.to_string()];
+    }
+    options.docgen.output_directory = output_path.to_string();
+    options.setup_logging_for_test();
+    move_prover::run_move_prover_errors_to_stderr(options).unwrap();
 }
