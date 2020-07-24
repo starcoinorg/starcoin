@@ -13,5 +13,9 @@ fun main() {
     let positive = SignedInteger64::add_u64(150, copy i1);
     assert(SignedInteger64::get_value(copy positive) == 50, 4);
     assert(SignedInteger64::is_negative(copy positive) == false, 5);
+
+    let i2 = SignedInteger64::create_from_raw_value(0, false);
+    let z2 = SignedInteger64::add_u64(100, copy i2);
+    assert(SignedInteger64::get_value(z2) == 100, 6);
 }
 }

@@ -28,6 +28,12 @@ module MyConfig{
         });
     }
 
+    public fun publish_new_config_with_capability(account: &signer, myconfig: MyConfig){
+        assert(Signer::address_of(account) == {{alice}}, 1000);
+        let cap = Config::publish_new_config_with_capability<MyConfig>(account, myconfig);
+        move_to(account, CapHolder{cap: cap});
+    }
+
     public fun extract_modify_config_capability(account: &signer){
         assert(Signer::address_of(account) == {{alice}}, 1000);
         let cap = Config::extract_modify_config_capability<MyConfig>(account);
@@ -48,6 +54,10 @@ module MyConfig{
         Config::get_by_address<MyConfig>({{alice}}).version
     }
 
+    public fun get(): u64 {
+        Config::get_by_address<MyConfig>({{alice}}).version
+    }
+
 }
 
 // check: EXECUTED
@@ -64,6 +74,18 @@ fun main(account: &signer) {
 
 // check: EXECUTED
 
+//! new-transaction
+//! sender: alice
+script {
+use {{alice}}::MyConfig;
+
+fun main(account: &signer) {
+    MyConfig::publish_new_config_with_capability(account,MyConfig::new_config(10));
+}
+}
+
+// check: EXECUTION_FAILURE
+
 // update config by Config module
 //! new-transaction
 //! sender: alice
@@ -74,6 +96,7 @@ use {{alice}}::MyConfig;
 fun main(account: &signer) {
     Config::set(account, MyConfig::new_config(2));
     assert(MyConfig::get_my_config() == 2, 1001);
+     assert(MyConfig::get() == 2, 1002);
 }
 }
 
@@ -102,10 +125,13 @@ use {{alice}}::MyConfig;
 fun main(account: &signer) {
     Config::set(account, MyConfig::new_config(3));
     assert(MyConfig::get_my_config() == 3, 1002);
+//    assert(MyConfig::get() == 3, 1003);
 }
 }
 
 // check: ABORTED
+// check: 24
+
 
 // Any one can update config by MyConfig module.
 //! new-transaction
@@ -116,6 +142,7 @@ use {{alice}}::MyConfig;
 fun main() {
     MyConfig::update_my_config(4);
     assert(MyConfig::get_my_config() == 4, 1003);
+    assert(MyConfig::get() == 4, 1004);
 }
 }
 
@@ -144,6 +171,7 @@ use {{alice}}::MyConfig;
 fun main(account: &signer) {
     Config::set(account, MyConfig::new_config(5));
     assert(MyConfig::get_my_config() == 5, 1004);
+    assert(MyConfig::get() == 5, 1005);
 }
 }
 

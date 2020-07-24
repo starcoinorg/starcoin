@@ -25,7 +25,7 @@ echo "Converting trace file..."
 cargo run --bin move-trace-conversion -- -f "$TRACE_PATH" -o trace.mvcov
 
 echo "Producing coverage summaries..."
-cargo run --bin coverage-summaries -- -t trace.mvcov -s ../stdlib/staged/stdlib
+cargo run --bin coverage-summaries -- --summarize-functions -t trace.mvcov -s ../stdlib/staged/stdlib
 
 echo "==========================================================================="
 echo "You can check source coverage for a module by running:"

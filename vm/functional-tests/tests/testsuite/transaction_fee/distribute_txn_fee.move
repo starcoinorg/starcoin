@@ -31,3 +31,20 @@ fun distribute_fees(account: &signer) {
 }
 }
 // check: EXECUTED
+
+
+//! new-transaction
+//! sender: alice
+script {
+use 0x1::Account;
+use 0x1::STC::{STC};
+use 0x1::TransactionFee;
+
+fun main(account: &signer) {
+   let coin = TransactionFee::distribute_transaction_fees<STC>(account);
+   Account::deposit_to_sender(account, coin);
+}
+}
+
+// check: ABORTED
+
