@@ -279,8 +279,6 @@ pub struct PendingSettings {
     pub block_number: u64,
     /// Current timestamp (affects readiness of some transactions).
     pub current_timestamp: u64,
-    /// Nonce cap (for dust protection; EIP-168)
-    pub nonce_cap: Option<SeqNumber>,
     /// Maximal number of transactions in pending the set.
     pub max_len: usize,
     /// Ordering of transactions.
@@ -293,7 +291,6 @@ impl PendingSettings {
         PendingSettings {
             block_number,
             current_timestamp,
-            nonce_cap: None,
             max_len: usize::max_value(),
             ordering: PendingOrdering::Priority,
         }

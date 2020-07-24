@@ -63,4 +63,8 @@ impl BlockMetadata {
     pub fn parent_hash(&self) -> HashValue {
         self.parent_hash
     }
+
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp
+    }
 }

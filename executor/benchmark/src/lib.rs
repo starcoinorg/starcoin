@@ -266,6 +266,7 @@ fn create_transaction(sequence_number: u64, program: Script) -> Transaction {
         sequence_number,
         400_000,
         1,
+        None,
     );
     Transaction::UserTransaction(signed_txn)
 }

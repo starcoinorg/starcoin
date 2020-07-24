@@ -789,5 +789,6 @@ pub fn create_account_txn_sent_as_association(
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
+        None,
     )
 }

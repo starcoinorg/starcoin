@@ -366,7 +366,6 @@ impl TransactionQueue {
         let PendingSettings {
             block_number,
             current_timestamp,
-            nonce_cap,
             max_len,
             ordering,
         } = settings;
@@ -380,7 +379,7 @@ impl TransactionQueue {
         //     return pending;
         // }
 
-        let ready = Self::ready(client, block_number, current_timestamp, nonce_cap);
+        let ready = Self::ready(client, block_number, current_timestamp);
 
         match ordering {
             // In case we don't have a cached set, but we don't care about order
@@ -409,24 +408,23 @@ impl TransactionQueue {
         client: C,
         block_number: u64,
         current_timestamp: u64,
-        nonce_cap: Option<SeqNumber>,
-    ) -> (ready::Condition, ready::State<C>)
+    ) -> ((ready::Expiration, ready::Condition), ready::State<C>)
     where
         C: client::AccountSeqNumberClient,
     {
         let pending_readiness = ready::Condition::new(block_number, current_timestamp);
         // don't mark any transactions as stale at this point.
-        let stale_id = None;
-        let state_readiness = ready::State::new(client, stale_id, nonce_cap);
+        let state_readiness = ready::State::new(client, None);
 
-        (pending_readiness, state_readiness)
+        (
+            (ready::Expiration::new(current_timestamp), pending_readiness),
+            state_readiness,
+        )
     }
 
     /// Culls all stalled transactions from the pool.
-    pub fn cull<C: client::AccountSeqNumberClient>(&self, client: C) {
+    pub fn cull<C: client::AccountSeqNumberClient>(&self, client: C, now: u64) {
         trace_time!("pool::cull");
-        // We don't care about future transactions, so nonce_cap is not important.
-        let nonce_cap = None;
         // We want to clear stale transactions from the queue as well.
         // (Transactions that are occuping the queue for a long time without being included)
         let stale_id = {
@@ -448,8 +446,10 @@ impl TransactionQueue {
         };
         for chunk in senders.chunks(CULL_SENDERS_CHUNK) {
             trace_time!("pool::cull::chunk");
-            let state_readiness = ready::State::new(client.clone(), stale_id, nonce_cap);
-            removed += self.pool.write().cull(Some(chunk), state_readiness);
+            let state_readiness = ready::State::new(client.clone(), stale_id);
+            // also remove expired txns.
+            let readiness = (ready::Expiration::new(now), state_readiness);
+            removed += self.pool.write().cull(Some(chunk), readiness);
         }
         debug!(target: "txqueue", "Removed {} stalled transactions. {}", removed, self.status());
     }
@@ -464,7 +464,7 @@ impl TransactionQueue {
         // Also we ignore stale transactions in the queue.
         let stale_id = None;
 
-        let state_readiness = ready::State::new(client, stale_id, None);
+        let state_readiness = ready::State::new(client, stale_id);
 
         self.pool
             .read()

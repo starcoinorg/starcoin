@@ -23,6 +23,7 @@ use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
     transaction,
+    transaction::helpers::get_current_timestamp,
     transaction::SignedUserTransaction,
 };
 
@@ -102,7 +103,11 @@ impl TxPoolSyncService for TxPoolService {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
             .with_label_values(&["get_pending_txns"])
             .start_timer();
-        let r = self.inner.get_pending(max_len.unwrap_or(u64::MAX));
+        // should we expose the timestamp to let caller specify the time?
+        let current_timestamp = get_current_timestamp();
+        let r = self
+            .inner
+            .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp);
         r.into_iter().map(|t| t.signed().clone()).collect()
     }
 
@@ -174,7 +179,8 @@ impl Inner {
         // we need to remove invalid txn here.
         // In fact, it would be better if caller can make it into one.
         // In this situation, we don't need to reimport invalid txn on chain_new_block.
-        self.queue.cull(self.get_pool_client())
+        self.queue
+            .cull(self.get_pool_client(), self.chain_header.read().timestamp)
     }
 
     pub(crate) fn import_txns(
@@ -196,11 +202,14 @@ impl Inner {
             .pop()
             .expect("remove should return one result per hash")
     }
-    pub(crate) fn get_pending(&self, max_len: u64) -> Vec<Arc<VerifiedTransaction>> {
+    pub(crate) fn get_pending(
+        &self,
+        max_len: u64,
+        current_timestamp_secs: u64,
+    ) -> Vec<Arc<VerifiedTransaction>> {
         let pending_settings = PendingSettings {
             block_number: u64::max_value(),
-            current_timestamp: u64::max_value(),
-            nonce_cap: None,
+            current_timestamp: current_timestamp_secs,
             max_len: max_len as usize,
             ordering: PendingOrdering::Priority,
         };
@@ -243,7 +252,7 @@ impl Inner {
         }
 
         // remove outdated txns.
-        self.queue.cull(self.get_pool_client());
+        self.cull();
 
         // import retracted txns.
         let txns = retracted
