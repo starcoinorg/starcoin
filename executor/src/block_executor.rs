@@ -66,7 +66,7 @@ pub fn block_execute(
                     txn_state_root,
                     events.as_slice(),
                     gas_used,
-                    status.status_code(),
+                    status,
                 ));
                 executed_data.txn_events.push(events);
             }

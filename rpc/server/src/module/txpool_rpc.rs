@@ -57,7 +57,6 @@ mod tests {
     fn test_submit_transaction() {
         let txn = SignedUserTransaction::mock();
         let result = serde_json::to_string(&txn).unwrap();
-        println!("{}", result);
         let txn1 = serde_json::from_str::<SignedUserTransaction>(result.as_str()).unwrap();
         assert_eq!(txn, txn1);
 

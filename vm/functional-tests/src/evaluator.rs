@@ -9,7 +9,6 @@ use crate::{
 };
 use mirai_annotations::checked_verify;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_logger::prelude::*;
 use starcoin_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -20,6 +19,7 @@ use starcoin_types::{
         TransactionStatus,
     },
 };
+use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},
     errors::{Location, VMError},
@@ -28,7 +28,6 @@ use starcoin_vm_types::{
     language_storage::ModuleId,
     state_view::StateView,
     views::ModuleView,
-    vm_status::StatusCode,
 };
 use std::fmt;
 use std::str::FromStr;
@@ -352,19 +351,17 @@ fn run_transaction(
 ) -> Result<TransactionOutput> {
     let mut outputs = exec.execute_block(vec![transaction]).unwrap();
     if outputs.len() == 1 {
-        let output = outputs.pop().unwrap();
+        let (vm_status, output) = outputs.pop().unwrap();
         match output.status() {
             TransactionStatus::Keep(status) => {
                 exec.apply_write_set(output.write_set());
-                if status.status_code() == StatusCode::EXECUTED {
+                if status == &KeptVMStatus::Executed {
                     Ok(output)
                 } else {
-                    debug!("VM status:: {:?}", output.status().vm_status());
-                    Err(ErrorKind::VMExecutionFailure(output).into())
+                    Err(ErrorKind::VMExecutionFailure(vm_status, output).into())
                 }
             }
-            TransactionStatus::Discard(status) => {
-                error!("VM status:: {:?}", status);
+            TransactionStatus::Discard(_status) => {
                 checked_verify!(output.write_set().is_empty());
                 Err(ErrorKind::DiscardedTransaction(output).into())
             }
@@ -534,7 +531,7 @@ pub fn eval_block_metadata(
 
     match outputs {
         Ok(mut outputs) => {
-            let output = outputs
+            let (_vm_status, output) = outputs
                 .pop()
                 .expect("There should be one output in the result");
             match output.status() {
@@ -546,7 +543,7 @@ pub fn eval_block_metadata(
                     Ok(Status::Success)
                 }
                 TransactionStatus::Discard(status) => {
-                    let err: Error = ErrorKind::VerificationError(status.clone()).into();
+                    let err: Error = ErrorKind::VerificationError(VMStatus::Error(*status)).into();
                     log.append(EvaluationOutput::Error(Box::new(err)));
                     Ok(Status::Failure)
                 }

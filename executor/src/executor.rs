@@ -10,13 +10,7 @@ pub fn execute_transactions(
     chain_state: &dyn StateView,
     txns: Vec<Transaction>,
 ) -> Result<Vec<TransactionOutput>> {
-    let timer = TXN_EXECUTION_HISTOGRAM
-        .with_label_values(&["execute_transactions"])
-        .start_timer();
-    let mut vm = StarcoinVM::new();
-    let result = vm.execute_transactions(chain_state, txns)?;
-    timer.observe_duration();
-    Ok(result)
+    do_execute_block_transactions(chain_state, txns, None)
 }
 
 /// Execute a block transactions with gas_limit,
@@ -26,11 +20,23 @@ pub fn execute_block_transactions(
     txns: Vec<Transaction>,
     block_gas_limit: u64,
 ) -> Result<Vec<TransactionOutput>> {
+    do_execute_block_transactions(chain_state, txns, Some(block_gas_limit))
+}
+
+fn do_execute_block_transactions(
+    chain_state: &dyn StateView,
+    txns: Vec<Transaction>,
+    block_gas_limit: Option<u64>,
+) -> Result<Vec<TransactionOutput>> {
     let timer = TXN_EXECUTION_HISTOGRAM
         .with_label_values(&["execute_block_transactions"])
         .start_timer();
     let mut vm = StarcoinVM::new();
-    let result = vm.execute_block_transactions(chain_state, txns, Some(block_gas_limit))?;
+    let result = vm
+        .execute_block_transactions(chain_state, txns, block_gas_limit)?
+        .into_iter()
+        .map(|(_, output)| output)
+        .collect();
     timer.observe_duration();
     Ok(result)
 }
