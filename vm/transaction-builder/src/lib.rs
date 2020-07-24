@@ -182,6 +182,7 @@ pub fn peer_to_peer_txn_sent_as_association(
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
+        None,
     )
 }
 
@@ -191,6 +192,7 @@ pub fn create_signed_txn_with_association_account(
     sequence_number: u64,
     max_gas_amount: u64,
     gas_unit_price: u64,
+    expiration_timstamp_secs: Option<u64>,
 ) -> SignedUserTransaction {
     let raw_txn = RawUserTransaction::new(
         account_config::association_address(),
@@ -198,7 +200,8 @@ pub fn create_signed_txn_with_association_account(
         payload,
         max_gas_amount,
         gas_unit_price,
-        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+        expiration_timstamp_secs
+            .unwrap_or_else(|| get_current_timestamp() + DEFAULT_EXPIRATION_TIME),
     );
     ChainNetwork::Dev
         .sign_with_association(raw_txn)

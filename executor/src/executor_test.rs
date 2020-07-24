@@ -556,6 +556,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         0,
         2_000_000,
         1,
+        None,
     );
     let output = execute_and_apply(&chain_state, Transaction::UserTransaction(txn));
     assert_eq!(VMStatus::Executed, *output.status().vm_status());
