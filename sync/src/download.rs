@@ -340,7 +340,6 @@ where
                     min_behind as usize,
                 )
                 .await?;
-
                 let block_sync_task = BlockSyncTaskActor::launch(
                     &ancestor_header,
                     latest_number,
@@ -449,6 +448,9 @@ where
                 {
                     Ok(ancestor) => {
                         if let Some(ancestor_header) = ancestor {
+                            if ancestor_header.number() >= end_number {
+                                return Ok(true);
+                            }
                             let block_sync_task = BlockSyncTaskActor::launch(
                                 &ancestor_header,
                                 end_number,
