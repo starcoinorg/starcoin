@@ -156,7 +156,7 @@ where
         start: bool,
         download_address: Addr<DownloadActor<C>>,
     ) -> BlockSyncTaskRef<C> {
-        assert!(ancestor_header.number() < target_number);
+        debug_assert!(ancestor_header.number() < target_number);
         let address = BlockSyncTaskActor::create(move |_ctx| Self {
             ancestor_number: ancestor_header.number(),
             target_number,
