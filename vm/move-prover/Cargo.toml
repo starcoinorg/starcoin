@@ -20,7 +20,7 @@ move-ir-types = { git = "https://github.com/starcoinorg/libra", rev="c4bb8f7fe90
 abigen = { git = "https://github.com/starcoinorg/libra", rev="c4bb8f7fe90693d1aeb7751dd73bd76f13ee343d" }
 
 # external dependencies
-anyhow = "1.0.31"
+anyhow = "1.0.32"
 clap = "2.33.1"
 codespan = "0.8.0"
 codespan-reporting = "0.8.0"
