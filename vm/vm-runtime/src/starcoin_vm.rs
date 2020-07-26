@@ -29,7 +29,8 @@ use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::on_chain_config::{VMPublishingOption, INITIAL_GAS_SCHEDULE};
-use starcoin_vm_types::transaction::{Package, Script};
+use starcoin_vm_types::transaction::{Package, Script, TransactionPayloadType};
+use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
@@ -417,23 +418,27 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
     ) -> Result<(), VMStatus> {
         let genesis_address = genesis_address();
-        let gas_currency_ty = DEFAULT_CURRENCY_TY.clone();
+        let gas_token_ty = txn_data.gas_token_code().into();
         let txn_sequence_number = txn_data.sequence_number();
         let txn_public_key = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_amount = txn_data.max_gas_amount().get();
         let txn_expiration_time = txn_data.expiration_time_secs();
-        let payload_type: u8 = txn_data.payload_type().into();
-        let script_or_package_hash = txn_data.script_or_package_hash();
-        let package_address = txn_data
-            .package_address
-            .unwrap_or_else(|| AccountAddress::ZERO);
+        let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
+            TransactionPayloadMetadata::Script(hash) => {
+                (TransactionPayloadType::Script, *hash, AccountAddress::ZERO)
+            }
+            TransactionPayloadMetadata::Package(hash, package_address) => {
+                (TransactionPayloadType::Package, *hash, *package_address)
+            }
+        };
+
         // Run prologue by genesis account
         session
             .execute_function(
                 &account_config::TRANSACTION_MANAGER_MODULE,
                 &PROLOGUE_NAME,
-                vec![gas_currency_ty],
+                vec![gas_token_ty],
                 vec![
                     Value::transaction_argument_signer_reference(genesis_address),
                     Value::address(txn_data.sender),
@@ -442,7 +447,7 @@ impl StarcoinVM {
                     Value::u64(txn_gas_price),
                     Value::u64(txn_max_gas_amount),
                     Value::u64(txn_expiration_time),
-                    Value::u8(payload_type),
+                    Value::u8(payload_type.into()),
                     Value::vector_u8(script_or_package_hash.to_vec()),
                     Value::address(package_address),
                 ],
@@ -462,7 +467,7 @@ impl StarcoinVM {
         success: bool,
     ) -> Result<(), VMStatus> {
         let genesis_address = genesis_address();
-        let gas_currency_ty = DEFAULT_CURRENCY_TY.clone();
+        let gas_token_ty = txn_data.gas_token_code().into();
         let txn_sequence_number = txn_data.sequence_number();
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_amount = txn_data.max_gas_amount().get();
@@ -470,17 +475,20 @@ impl StarcoinVM {
         let data_size = 0i64; //data_store.get_size(txn_data.sender);
         let cost_is_negative = data_size.is_negative();
         let state_cost_amount = data_size.wrapping_abs() as u64;
-        let payload_type: u8 = txn_data.payload_type().into();
-        let script_or_package_hash = txn_data.script_or_package_hash();
-        let package_address = txn_data
-            .package_address
-            .unwrap_or_else(|| AccountAddress::ZERO);
+        let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
+            TransactionPayloadMetadata::Script(hash) => {
+                (TransactionPayloadType::Script, *hash, AccountAddress::ZERO)
+            }
+            TransactionPayloadMetadata::Package(hash, package_address) => {
+                (TransactionPayloadType::Package, *hash, *package_address)
+            }
+        };
         // Run epilogue by genesis account
         session
             .execute_function(
                 &account_config::TRANSACTION_MANAGER_MODULE,
                 &EPILOGUE_NAME,
-                vec![gas_currency_ty],
+                vec![gas_token_ty],
                 vec![
                     Value::transaction_argument_signer_reference(genesis_address),
                     Value::address(txn_data.sender),
@@ -490,7 +498,7 @@ impl StarcoinVM {
                     Value::u64(gas_remaining),
                     Value::u64(state_cost_amount),
                     Value::bool(cost_is_negative),
-                    Value::u8(payload_type),
+                    Value::u8(payload_type.into()),
                     Value::vector_u8(script_or_package_hash.to_vec()),
                     Value::address(package_address),
                     Value::bool(success),

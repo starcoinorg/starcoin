@@ -1,6 +1,6 @@
 // Test the mint flow
 
-//! account: alice, 0STC
+//! account: alice, 0 0x1::STC::STC
 
 // Minting from a privileged account should work
 //! sender: genesis

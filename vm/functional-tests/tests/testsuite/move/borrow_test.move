@@ -1,5 +1,5 @@
-//! account: alice, 90000STC
-//! account: bob, 90000STC
+//! account: alice, 90000 0x1::STC::STC
+//! account: bob, 90000 0x1::STC::STC
 
 //! sender: alice
 

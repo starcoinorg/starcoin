@@ -5,58 +5,12 @@
 
 ### Table of Contents
 
--  [Function `TXN_PAYLOAD_TYPE_SCRIPT`](#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT)
--  [Function `TXN_PAYLOAD_TYPE_PACKAGE`](#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE)
 -  [Function `prologue`](#0x1_TransactionManager_prologue)
 -  [Function `epilogue`](#0x1_TransactionManager_epilogue)
 -  [Function `block_prologue`](#0x1_TransactionManager_block_prologue)
 -  [Function `distribute`](#0x1_TransactionManager_distribute)
 
 
-
-<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT"></a>
-
-## Function `TXN_PAYLOAD_TYPE_SCRIPT`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>(): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>():u8{0u8}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE"></a>
-
-## Function `TXN_PAYLOAD_TYPE_PACKAGE`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>(): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>():u8{ 1u8}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_TransactionManager_prologue"></a>
 
@@ -89,10 +43,10 @@
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 33);
 
     <a href="Account.md#0x1_Account_txn_prologue">Account::txn_prologue</a>&lt;TokenType&gt;(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
-    <b>assert</b>(<a href="TransactionTimeout.md#0x1_TransactionTimeout_is_valid_transaction_timestamp">TransactionTimeout::is_valid_transaction_timestamp</a>(txn_expiration_time), 7);
-    <b>if</b> (txn_payload_type == <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>()){
+    <b>assert</b>(<a href="TransactionTimeout.md#0x1_TransactionTimeout_is_valid_transaction_timestamp">TransactionTimeout::is_valid_transaction_timestamp</a>(txn_expiration_time), EPROLOGUE_TRANSACTION_EXPIRED);
+    <b>if</b> (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
         <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">PackageTxnManager::package_txn_prologue</a>(account, txn_sender, txn_package_address, txn_script_or_package_hash);
-    }<b>else</b> <b>if</b>(txn_payload_type == <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>()){
+    }<b>else</b> <b>if</b>(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT){
         //TODO verify <b>script</b> hash.
     };
 }
@@ -135,7 +89,7 @@
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 33);
 
     <a href="Account.md#0x1_Account_txn_epilogue">Account::txn_epilogue</a>&lt;TokenType&gt;(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining, state_cost_amount, cost_is_negative);
-    <b>if</b> (txn_payload_type == <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>()){
+    <b>if</b> (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
        <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_epilogue">PackageTxnManager::package_txn_epilogue</a>(account, txn_sender, txn_package_address, success);
     }
 }

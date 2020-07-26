@@ -12,12 +12,10 @@ pub mod event {
 }
 
 pub mod chain;
-pub mod stc;
-pub mod token;
 
+pub use crate::token::stc::*;
+pub use crate::token::*;
 pub use account::*;
 pub use addresses::*;
 pub use chain::*;
 pub use event::*;
-pub use stc::*;
-pub use token::*;

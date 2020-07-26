@@ -53,8 +53,9 @@ module Token {
         scaling_factor: u128,
         fractional_part: u128,
     ) {
-        let (token_address, _, _) = name_of<TokenType>();
+        let (token_address, module_name, token_name) = name_of<TokenType>();
         assert(Signer::address_of(account) == token_address, 401);
+        assert(module_name == token_name, 402);
         move_to(account, MintCapability<TokenType> {});
         move_to(account, BurnCapability<TokenType> {});
         move_to(

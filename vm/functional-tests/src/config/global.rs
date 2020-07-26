@@ -8,8 +8,7 @@ use crate::account::{Account, AccountData};
 use crate::{common::strip, errors::*, genesis_accounts::make_genesis_accounts};
 use once_cell::sync::Lazy;
 use starcoin_crypto::keygen::KeyGen;
-use starcoin_types::account_config;
-use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
 use std::{
     collections::{btree_map, BTreeMap},
     str::FromStr,
@@ -17,13 +16,13 @@ use std::{
 
 static DEFAULT_BALANCE: Lazy<Balance> = Lazy::new(|| Balance {
     amount: 1_000_000,
-    currency_code: account_config::from_currency_code_string(account_config::STC_NAME).unwrap(),
+    token_code: STC_TOKEN_CODE_STR.to_string(),
 });
 
 #[derive(Debug, Clone)]
 pub struct Balance {
     pub amount: u128,
-    pub currency_code: Identifier,
+    pub token_code: String,
 }
 
 impl FromStr for Balance {
@@ -31,21 +30,20 @@ impl FromStr for Balance {
 
     fn from_str(s: &str) -> Result<Self> {
         // TODO: Try to get this from the on-chain config?
-        let token_types = vec!["STC"];
+        let token_types = vec![STC_TOKEN_CODE_STR];
         let mut token_type: Vec<&str> =
             token_types.into_iter().filter(|x| s.ends_with(x)).collect();
-        let currency_code = token_type.pop().unwrap_or("STC");
+        let token_code = token_type.pop().unwrap_or(STC_TOKEN_CODE_STR);
         if !token_type.is_empty() {
             return Err(ErrorKind::Other(
-                "Multiple coin types supplied for account. Accounts are single currency"
-                    .to_string(),
+                "Multiple coin types supplied for account. Accounts are single token".to_string(),
             )
             .into());
         }
-        let s = s.trim_end_matches(currency_code);
+        let s = s.trim_end_matches(token_code).trim();
         Ok(Balance {
             amount: s.parse::<u128>()?,
-            currency_code: account_config::from_currency_code_string(currency_code)?,
+            token_code: token_code.to_string(),
         })
     }
 }
@@ -88,8 +86,16 @@ impl FromStr for Entry {
                 )
                 .into());
             }
-            let balance = v.get(1).and_then(|s| s.parse::<Balance>().ok());
-            let sequence_number = v.get(2).and_then(|s| s.parse::<u64>().ok());
+            let balance_config = v.get(1);
+            let balance = match balance_config {
+                Some(s) => Some(s.parse::<Balance>()?),
+                None => None,
+            };
+            let sequence_number_config = v.get(2);
+            let sequence_number = match sequence_number_config {
+                Some(s) => Some(s.parse::<u64>()?),
+                None => None,
+            };
             // These two are mutually exclusive, so we can double-use the third position
 
             return Ok(Entry::AccountDefinition(AccountDefinition {
@@ -131,7 +137,7 @@ impl Config {
                         privkey,
                         pubkey,
                         balance.amount,
-                        balance.currency_code,
+                        balance.token_code.as_str(),
                         def.sequence_number.unwrap_or(0),
                     );
                     let name = def.name.to_ascii_lowercase();
@@ -158,7 +164,7 @@ impl Config {
                 privkey,
                 pubkey,
                 DEFAULT_BALANCE.amount,
-                DEFAULT_BALANCE.currency_code.clone(),
+                DEFAULT_BALANCE.token_code.as_str(),
                 /* sequence_number */
                 0,
             ));

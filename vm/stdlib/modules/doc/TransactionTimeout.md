@@ -116,6 +116,11 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionTimeout_is_valid_transaction_timestamp">is_valid_transaction_timestamp</a>(txn_timestamp: u64): bool <b>acquires</b> <a href="#0x1_TransactionTimeout_TTL">TTL</a> {
   <b>let</b> current_block_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
+  // <b>if</b> now is genesis, just <b>return</b> <b>true</b>.
+  // TODO: need <b>to</b> figure out a better way <b>to</b> handle this.
+  <b>if</b> (current_block_time == 0) {
+    <b>return</b> txn_timestamp &gt; 0
+  };
   <b>let</b> timeout = borrow_global&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>()).duration_seconds;
   <b>let</b> max_txn_time = current_block_time + timeout;
   current_block_time &lt; txn_timestamp && txn_timestamp &lt; max_txn_time

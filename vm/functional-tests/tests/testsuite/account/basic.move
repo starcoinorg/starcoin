@@ -1,5 +1,5 @@
-//! account: bob, 10000STC
-//! account: alice, 0STC
+//! account: bob, 10000 0x1::STC::STC
+//! account: alice, 0 0x1::STC::STC
 
 module Holder {
     use 0x1::Signer;
@@ -100,7 +100,7 @@ script {
 }
 // check: EXECUTED
 
-// test coreaddress
+// test core address
 //! new-transaction
 script {
     use 0x1::CoreAddresses;

@@ -6,7 +6,7 @@ use crate::{
     errors::*,
     tests::parse_each_line_as,
 };
-use starcoin_vm_types::identifier::IdentStr;
+use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
 
 #[test]
 fn parse_account_positive() {
@@ -55,7 +55,7 @@ fn build_global_config_1() {
     assert!(config.accounts.contains_key("default"));
     assert!(config.accounts.contains_key("alice"));
     let bob = config.accounts.get("bob").unwrap();
-    assert_eq!(bob.balance(IdentStr::new("STC").unwrap()), 2000);
+    assert_eq!(bob.balance(STC_TOKEN_CODE_STR), 2000);
     assert_eq!(bob.sequence_number(), 10);
 }
 
@@ -85,17 +85,27 @@ fn build_global_config_4() {
 
     assert_eq!(config.accounts.len(), 1);
     let default = config.accounts.get("default").unwrap();
-    assert_eq!(default.balance(IdentStr::new("STC").unwrap()), 50);
+    assert_eq!(default.balance(STC_TOKEN_CODE_STR), 50);
 }
 
 #[rustfmt::skip]
 #[test]
 fn build_global_config_5() {
     let config = parse_and_build_config(r"
-        //! account: default, 50STC,
+        //! account: default, 50 0x1::STC::STC,
     ").unwrap();
 
     assert_eq!(config.accounts.len(), 1);
     let default = config.accounts.get("default").unwrap();
-    assert_eq!(default.balance(IdentStr::new("STC").unwrap()), 50);
+    assert_eq!(default.balance(STC_TOKEN_CODE_STR), 50);
+}
+
+#[rustfmt::skip]
+#[test]
+fn build_global_config_6() {
+    // test invalid balance config. 50STC should be 50 0x1::STC::STC
+    let config = parse_and_build_config(r"
+        //! account: default, 50STC,
+    ");
+    assert!(config.is_err());
 }

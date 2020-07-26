@@ -1,6 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath,
     account_config::constants::{stc_type_tag, ACCOUNT_MODULE_NAME, CORE_CODE_ADDRESS},
@@ -27,18 +28,22 @@ impl BalanceResource {
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
-    pub fn struct_tag_for_currency(currency_typetag: TypeTag) -> StructTag {
+    pub fn struct_tag_for_token(token_type_tag: TypeTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             name: BalanceResource::struct_identifier(),
             module: BalanceResource::module_identifier(),
-            type_params: vec![currency_typetag],
+            type_params: vec![token_type_tag],
         }
     }
 
+    pub fn struct_tag_for_token_code(token_code: TokenCode) -> StructTag {
+        Self::struct_tag_for_token(token_code.into())
+    }
+
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
-    pub fn access_path_for(currency_typetag: TypeTag) -> Vec<u8> {
-        AccessPath::resource_access_vec(&BalanceResource::struct_tag_for_currency(currency_typetag))
+    pub fn access_path_for(token_type_tag: TypeTag) -> Vec<u8> {
+        AccessPath::resource_access_vec(&BalanceResource::struct_tag_for_token(token_type_tag))
     }
 }
 
